@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include <memory>
+
 #include "Core.h"
 #include "spdlog/spdlog.h"
 #include "spdlog/fmt/ostr.h"
@@ -24,6 +25,7 @@ namespace Prism {
 		static std::shared_ptr<spdlog::logger> s_ClientLogger;
 	};
 }
+
 
 // Core log macros 引擎核心日志
 #define PR_CORE_TRACE(...)   ::Prism::Log::GetCoreLogger()->trace(__VA_ARGS__)

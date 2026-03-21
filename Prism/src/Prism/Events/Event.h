@@ -92,11 +92,24 @@ namespace Prism
 		Event& m_Event;
 	};
 
-	inline std::ostream& operator<<(std::ostream& os, const Prism::Event& e)
+	inline std::ostream& operator<<(std::ostream& os, const Event& e)
 	{
 		return os << e.ToString();
 	}
 }
 
 
+
+
 // TODO: 这里写的log相关记转移到特定的地方
+#include <spdlog/fmt/fmt.h>// 确保包含 fmt 核心
+
+template <typename T>
+struct fmt::formatter<T, std::enable_if_t<std::is_base_of_v<Prism::Event, T>, char>>
+	: fmt::formatter<std::string>
+{
+	// 直接复用 std::string 的格式化逻辑
+	auto format(const Prism::Event& e, format_context& ctx) const {
+		return fmt::formatter<std::string>::format(e.ToString(), ctx);
+	}
+};
