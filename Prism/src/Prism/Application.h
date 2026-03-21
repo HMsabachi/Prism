@@ -2,6 +2,8 @@
 
 #include "Core.h" 
 
+
+
 namespace Prism
 {
 	class PRISM_API Application

@@ -4,6 +4,9 @@
     <Filter Include="Prism">
       <UniqueIdentifier>{90F9E60D-FC0D-0FBF-C58F-B21E31630BF0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Prism\Events">
+      <UniqueIdentifier>{7443B267-60A6-410C-092C-7AC2F56D0D8F}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Prism.h" />
@@ -15,6 +18,18 @@
     </ClInclude>
     <ClInclude Include="src\Prism\EntryPoint.h">
       <Filter>Prism</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Prism\Events\ApplicationEvent.h">
+      <Filter>Prism\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Prism\Events\Event.h">
+      <Filter>Prism\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Prism\Events\KeyEvent.h">
+      <Filter>Prism\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Prism\Events\MouseEvent.h">
+      <Filter>Prism\Events</Filter>
     </ClInclude>
     <ClInclude Include="src\Prism\Log.h">
       <Filter>Prism</Filter>

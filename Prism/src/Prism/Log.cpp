@@ -1,6 +1,5 @@
 ﻿#include "Log.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
-
 #pragma region 为支持中文额外设置
 
 #ifdef PR_PLATFORM_WINDOWS
