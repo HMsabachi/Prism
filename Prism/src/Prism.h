@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include "Prism/Application.h"
+#include "Prism/Log.h"
 
 // ---Entry Point 入口点 ------------------------
 #include "Prism/EntryPoint.h"
