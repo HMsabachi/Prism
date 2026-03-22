@@ -2,6 +2,7 @@
 
 #include "Core.h" 
 #include "Events/Event.h"
+#include "Prism/Events/ApplicationEvent.h"
 #include "Window.h"
 
 
@@ -13,7 +14,14 @@ namespace Prism
 		Application();
 		virtual ~Application();
 
+		// The main loop of the application 启动应用主循环
 		void Run();
+
+		// Event handling function 事件处理函数
+		void OnEvent(Event& e);
+
+	private:
+		bool OnWindowClose(WindowCloseEvent& e);
 
 	private:
 		std::unique_ptr<Window> m_Window;

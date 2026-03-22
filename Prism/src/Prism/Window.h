@@ -37,8 +37,13 @@ namespace Prism {
 		virtual unsigned int GetWidth() const = 0;
 		virtual unsigned int GetHeight() const = 0;
 
-		// Window attributes 窗口属性
+		
+		/// <summary>
+		/// 设置事件回调函数
+		/// </summary>
+		/// <param name="callback">一个function指针 形如void func(Event& e)</param>
 		virtual void SetEventCallback(const EventCallbackFn& callback) = 0;
+
 		virtual void SetVSync(bool enabled) = 0;
 		virtual bool IsVSync() const = 0;
 
