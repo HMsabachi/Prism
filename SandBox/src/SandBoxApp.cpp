@@ -10,12 +10,13 @@ public:
 
 	void OnUpdate() override
 	{
-		PR_INFO("ExampleLayer::Update");
+		//PR_INFO("ExampleLayer::Update");
 	}
 
 	void OnEvent(Prism::Event& event) override
 	{
-		PR_TRACE("{0}", event);
+		if (event.GetEventType() == Prism::EventType::WindowResize)
+			PR_TRACE("{0}", event);
 	}
 
 };
@@ -26,6 +27,7 @@ public:
 	Sandbox()
 	{
 		PushLayer(new ExampleLayer());
+		PushOverlay(new Prism::ImGuiLayer());
 	}
 	~Sandbox()
 	{

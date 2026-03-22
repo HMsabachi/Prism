@@ -24,6 +24,9 @@ namespace Prism
 
 		void PushLayer(Layer* layer);
 		void PushOverlay(Layer* overlay);
+
+		inline static Application& Get() { return *s_Instance; }
+		inline Window& GetWindow() const { return *m_Window; }
 	private:
 		// Update function for the application(frame update) 应用更新函数(帧更新)
 		void OnUpdate(); 
@@ -33,6 +36,8 @@ namespace Prism
 		std::unique_ptr<Window> m_Window;
 		bool m_Running = true;
 		LayerStack m_LayerStack;
+	private:
+		static Application* s_Instance;
 	};
 
 	// To be defined in CLIENT 需要在客户端定义

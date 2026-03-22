@@ -4,3 +4,6 @@
 [submodule "Prism/vendor/GLFW"]
 	path = Prism/vendor/GLFW
 	url = https://github.com/HMsabachi/glfw
+[submodule "Prism/vendor/imgui"]
+	path = Prism/vendor/imgui
+	url = https://github.com/HMsabachi/imgui

@@ -8,9 +8,15 @@
 namespace Prism
 {
 #define BIND_EVENT_FN(x) std::bind(&Application::x, this, std::placeholders::_1)
+#define ERROR_COLOR 1, 0, 1, 1
+
+	Application* Application::s_Instance = nullptr;
 
 	Application::Application()
 	{
+		PR_CORE_ASSERT(!s_Instance, "Application already exists! 应用已经存在");
+		s_Instance = this;
+
 		m_Window = std::unique_ptr<Window>(Window::Create());
 		m_Window->SetEventCallback(BIND_EVENT_FN(OnEvent));
 	}
@@ -46,9 +52,9 @@ namespace Prism
 
 	void Application::OnUpdate()
 	{
-		m_Window->OnUpdate();
 		for (Layer* layer : m_LayerStack)
 			layer->OnUpdate();
+		m_Window->OnUpdate();
 	}
 	
 #pragma region Event Handling 事件处理
@@ -63,10 +69,14 @@ namespace Prism
 	void Application::PushLayer(Layer* layer)
 	{
 		m_LayerStack.PushLayer(layer);
+		//layer->OnAttach(); 
+		// 这里根据我的想法是有区别的 OnAttach() 应该在LayerStack 中被调用
 	}
 	void Application::PushOverlay(Layer* layer)
 	{
 		m_LayerStack.PushOverlay(layer);
+		//layer->OnAttach();
+		// 这里根据我的想法是有区别的 OnAttach() 应该在LayerStack 中被调用
 	}
 #pragma endregion
 }

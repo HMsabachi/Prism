@@ -19,12 +19,15 @@ namespace Prism
 	void LayerStack::PushLayer(Layer* layer)
 	{
 		m_LayerInsert = m_Layers.emplace(m_LayerInsert, layer);
+		// TODO: layer->OnAttach()的位置有所不同
+		layer->OnAttach();
 	}
 
 	// Push a new overlay to the top of the stack 将一个新的 overlay 压入栈顶
 	void LayerStack::PushOverlay(Layer* overlay)
 	{
 		m_Layers.emplace_back(overlay);
+		overlay->OnAttach();
 	}
 
 	void LayerStack::PopLayer(Layer* layer)
@@ -34,6 +37,8 @@ namespace Prism
 		{
 			m_Layers.erase(it);
 			m_LayerInsert--;
+			layer->OnDetach();
+			delete layer;
 		}
 	}
 
@@ -41,7 +46,11 @@ namespace Prism
 	{
 		auto it = std::find(m_Layers.begin(), m_Layers.end(), overlay);
 		if (it != m_Layers.end())
+		{
 			m_Layers.erase(it);
+			overlay->OnDetach();
+			delete overlay;
+		}
 	}
 
 }

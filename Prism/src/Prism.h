@@ -7,6 +7,8 @@
 #include "Prism/Layer.h"
 #include "Prism/Log.h"
 
+#include "Prism/ImGui/ImGuiLayer.h"
+
 // ---Entry Point 入口点 ------------------------
 #include "Prism/EntryPoint.h"
 
