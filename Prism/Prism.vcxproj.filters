@@ -34,6 +34,7 @@
     <ClInclude Include="src\Prism\Log.h">
       <Filter>Prism</Filter>
     </ClInclude>
+    <ClInclude Include="src\prpch.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Prism\Application.cpp">
@@ -42,5 +43,6 @@
     <ClCompile Include="src\Prism\Log.cpp">
       <Filter>Prism</Filter>
     </ClCompile>
+    <ClCompile Include="src\prpch.cpp" />
   </ItemGroup>
 </Project>

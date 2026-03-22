@@ -1,10 +1,7 @@
-﻿#include "Log.h"
+﻿#include "prpch.h"
+#include "Log.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #pragma region 为支持中文额外设置
-
-#ifdef PR_PLATFORM_WINDOWS
-	#include <windows.h>
-#endif
 
 void Prism::InitConsoleUTF8()
 {

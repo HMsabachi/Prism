@@ -1,8 +1,6 @@
 ﻿#pragma once
 #include "Event.h"
 
-#include <sstream>
-
 namespace Prism {
 
 	/// Window Resize Event 窗口大小改变事件

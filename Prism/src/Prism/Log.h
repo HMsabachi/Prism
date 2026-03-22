@@ -1,14 +1,9 @@
 ﻿#pragma once
 
-#include <memory>
-
 #include "Core.h"
 #include "spdlog/spdlog.h"
 #include "spdlog/fmt/ostr.h"
 
-#ifdef PR_PLATFORM_WINDOWS
-	#include <windows.h>
-#endif
 
 namespace Prism {
 	void InitConsoleUTF8();

@@ -2,8 +2,6 @@
 
 #include "Event.h"
 
-#include <sstream>
-
 namespace Prism
 {
 	/// represents a base class for key press events 表示一个按键事件基类

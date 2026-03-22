@@ -1,10 +1,7 @@
 ﻿#pragma once
-
 #include "Event.h"
 
-#include <sstream>
-
-namespace Prism {
+namespace Prism { 
 
 	/// Mouse moved event 鼠标移动事件
 	class PRISM_API MouseMovedEvent : public Event
