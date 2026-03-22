@@ -1,6 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="Platform">
+      <UniqueIdentifier>{2AC788B4-1694-E3BF-3FAD-D1672BD9184E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Platform\Windows">
+      <UniqueIdentifier>{64FBD71A-50F4-F66C-7926-DCF1657ED678}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Prism">
       <UniqueIdentifier>{90F9E60D-FC0D-0FBF-C58F-B21E31630BF0}</UniqueIdentifier>
     </Filter>
@@ -9,6 +15,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Platform\Windows\WindowsWindow.h">
+      <Filter>Platform\Windows</Filter>
+    </ClInclude>
     <ClInclude Include="src\Prism.h" />
     <ClInclude Include="src\Prism\Application.h">
       <Filter>Prism</Filter>
@@ -34,9 +43,15 @@
     <ClInclude Include="src\Prism\Log.h">
       <Filter>Prism</Filter>
     </ClInclude>
+    <ClInclude Include="src\Prism\Window.h">
+      <Filter>Prism</Filter>
+    </ClInclude>
     <ClInclude Include="src\prpch.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Platform\Windows\WindowsWindow.cpp">
+      <Filter>Platform\Windows</Filter>
+    </ClCompile>
     <ClCompile Include="src\Prism\Application.cpp">
       <Filter>Prism</Filter>
     </ClCompile>

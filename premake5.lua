@@ -10,6 +10,13 @@
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
+-- Include directories relative to root folder (solution directory)
+-- 包括相对于根文件夹（解决方案目录）的子目录
+IncludeDir = {}
+IncludeDir["GLFW"] = "Prism/vendor/GLFW/include"
+
+include "Prism/vendor/GLFW"
+
 project "Prism"
 	location "Prism"
 	kind "SharedLib"
@@ -29,8 +36,16 @@ project "Prism"
 
 	includedirs
 	{
+		"%{prj.name}/src",
 		"%{prj.name}/vendor/spdlog/include",
-		"%{prj.name}/src"
+		"%{IncludeDir.GLFW}"
+	}
+
+	links 
+	{ 
+		"GLFW",
+		"opengl32.lib",
+		"dwmapi.lib"
 	}
 
 	filter "system:windows"
