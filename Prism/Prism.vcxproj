@@ -79,8 +79,8 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>prpch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>PR_PLATFORM_WINDOWS;PR_BUILD_DLL;PR_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>src;vendor\spdlog\include;vendor\GLFW\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>PR_PLATFORM_WINDOWS;PR_BUILD_DLL;GLFW_INCLUDE_NONE;PR_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>src;vendor\spdlog\include;vendor\GLFW\include;vendor\Glad\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -109,8 +109,8 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>prpch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>PR_PLATFORM_WINDOWS;PR_BUILD_DLL;PR_RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>src;vendor\spdlog\include;vendor\GLFW\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>PR_PLATFORM_WINDOWS;PR_BUILD_DLL;GLFW_INCLUDE_NONE;PR_RELEASE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>src;vendor\spdlog\include;vendor\GLFW\include;vendor\Glad\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -139,8 +139,8 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>prpch.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
-      <PreprocessorDefinitions>PR_PLATFORM_WINDOWS;PR_BUILD_DLL;PR_DIST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>src;vendor\spdlog\include;vendor\GLFW\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>PR_PLATFORM_WINDOWS;PR_BUILD_DLL;GLFW_INCLUDE_NONE;PR_DIST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>src;vendor\spdlog\include;vendor\GLFW\include;vendor\Glad\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <Optimization>Full</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -165,8 +165,6 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="src\Prism\LayerStack.h" />
-    <ClInclude Include="src\Prism\Layer.h" />
     <ClInclude Include="src\Platform\Windows\WindowsWindow.h" />
     <ClInclude Include="src\Prism.h" />
     <ClInclude Include="src\Prism\Application.h" />
@@ -176,15 +174,17 @@
     <ClInclude Include="src\Prism\Events\Event.h" />
     <ClInclude Include="src\Prism\Events\KeyEvent.h" />
     <ClInclude Include="src\Prism\Events\MouseEvent.h" />
+    <ClInclude Include="src\Prism\Layer.h" />
+    <ClInclude Include="src\Prism\LayerStack.h" />
     <ClInclude Include="src\Prism\Log.h" />
     <ClInclude Include="src\Prism\Window.h" />
     <ClInclude Include="src\prpch.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Prism\LayerStack.cpp" />
-    <ClCompile Include="src\Prism\Layer.cpp" />
     <ClCompile Include="src\Platform\Windows\WindowsWindow.cpp" />
     <ClCompile Include="src\Prism\Application.cpp" />
+    <ClCompile Include="src\Prism\Layer.cpp" />
+    <ClCompile Include="src\Prism\LayerStack.cpp" />
     <ClCompile Include="src\Prism\Log.cpp" />
     <ClCompile Include="src\prpch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
@@ -193,6 +193,9 @@
   <ItemGroup>
     <ProjectReference Include="vendor\GLFW\GLFW.vcxproj">
       <Project>{154B857C-0182-860D-AA6E-6C109684020F}</Project>
+    </ProjectReference>
+    <ProjectReference Include="vendor\Glad\Glad.vcxproj">
+      <Project>{BDD6857C-A90D-870D-52FA-6C103E10030F}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

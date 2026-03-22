@@ -14,8 +14,10 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 -- 包括相对于根文件夹（解决方案目录）的子目录
 IncludeDir = {}
 IncludeDir["GLFW"] = "Prism/vendor/GLFW/include"
+IncludeDir["Glad"] = "Prism/vendor/Glad/include"
 
 include "Prism/vendor/GLFW"
+include "Prism/vendor/Glad"
 
 project "Prism"
 	location "Prism"
@@ -38,12 +40,14 @@ project "Prism"
 	{
 		"%{prj.name}/src",
 		"%{prj.name}/vendor/spdlog/include",
-		"%{IncludeDir.GLFW}"
+		"%{IncludeDir.GLFW}",
+		"%{IncludeDir.Glad}",
 	}
 
 	links 
 	{ 
 		"GLFW",
+		"Glad",
 		"opengl32.lib",
 		"dwmapi.lib"
 	}
@@ -58,7 +62,8 @@ project "Prism"
 		defines
 		{
 			"PR_PLATFORM_WINDOWS",
-			"PR_BUILD_DLL"
+			"PR_BUILD_DLL",
+			"GLFW_INCLUDE_NONE"
 		}
 
 		postbuildcommands

@@ -6,6 +6,8 @@
 #include "Prism/Events/MouseEvent.h"
 #include "Prism/Events/KeyEvent.h"
 
+#include <glad/glad.h>
+
 namespace Prism {
 
 	static bool s_GLFWInitialized = false;
@@ -49,6 +51,9 @@ namespace Prism {
 
 		m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, m_Data.Title.c_str(), nullptr, nullptr);
 		glfwMakeContextCurrent(m_Window);
+		// There begin processing Glad  这里开始处理Glad
+		int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+		PR_CORE_ASSERT(status, "Failed to initialize Glad!\n 初始化 Glad 失败！");
 		glfwSetWindowUserPointer(m_Window, &m_Data);
 		SetVSync(true);
 

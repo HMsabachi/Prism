@@ -40,6 +40,12 @@
     <ClInclude Include="src\Prism\Events\MouseEvent.h">
       <Filter>Prism\Events</Filter>
     </ClInclude>
+    <ClInclude Include="src\Prism\Layer.h">
+      <Filter>Prism</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Prism\LayerStack.h">
+      <Filter>Prism</Filter>
+    </ClInclude>
     <ClInclude Include="src\Prism\Log.h">
       <Filter>Prism</Filter>
     </ClInclude>
@@ -47,8 +53,6 @@
       <Filter>Prism</Filter>
     </ClInclude>
     <ClInclude Include="src\prpch.h" />
-    <ClInclude Include="src\Prism\Layer.h" />
-    <ClInclude Include="src\Prism\LayerStack.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Platform\Windows\WindowsWindow.cpp">
@@ -57,11 +61,15 @@
     <ClCompile Include="src\Prism\Application.cpp">
       <Filter>Prism</Filter>
     </ClCompile>
+    <ClCompile Include="src\Prism\Layer.cpp">
+      <Filter>Prism</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Prism\LayerStack.cpp">
+      <Filter>Prism</Filter>
+    </ClCompile>
     <ClCompile Include="src\Prism\Log.cpp">
       <Filter>Prism</Filter>
     </ClCompile>
     <ClCompile Include="src\prpch.cpp" />
-    <ClCompile Include="src\Prism\Layer.cpp" />
-    <ClCompile Include="src\Prism\LayerStack.cpp" />
   </ItemGroup>
 </Project>
