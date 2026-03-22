@@ -18,13 +18,20 @@ namespace Prism
 	Application::~Application()
 	{
 	}
+	
 
 	void Application::OnEvent(Event& e)
 	{
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<WindowCloseEvent>(BIND_EVENT_FN(OnWindowClose));
 
-		PR_CORE_TRACE("{0}", e);
+		for (auto it = m_LayerStack.end(); it != m_LayerStack.begin(); )
+		{
+			(*--it)->OnEvent(e);
+			if (e.Handled)
+				break;
+		}
+		//PR_CORE_TRACE("{0}", e);
 	}
 
 	void Application::Run()
@@ -33,18 +40,34 @@ namespace Prism
 		{
 			glClearColor(1, 0, 1, 1);
 			glClear(GL_COLOR_BUFFER_BIT);
-			m_Window->OnUpdate();
+			OnUpdate();
 		}
+	}
+
+	void Application::OnUpdate()
+	{
+		m_Window->OnUpdate();
+		for (Layer* layer : m_LayerStack)
+			layer->OnUpdate();
 	}
 	
 #pragma region Event Handling 事件处理
-
 	bool Application::OnWindowClose(WindowCloseEvent& e)
 	{
 		m_Running = false;
 		return true;
 	}
+#pragma endregion
 
+#pragma region LayerStack 层栈
+	void Application::PushLayer(Layer* layer)
+	{
+		m_LayerStack.PushLayer(layer);
+	}
+	void Application::PushOverlay(Layer* layer)
+	{
+		m_LayerStack.PushOverlay(layer);
+	}
 #pragma endregion
 }
 

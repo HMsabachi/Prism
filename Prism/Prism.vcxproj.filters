@@ -47,6 +47,8 @@
       <Filter>Prism</Filter>
     </ClInclude>
     <ClInclude Include="src\prpch.h" />
+    <ClInclude Include="src\Prism\Layer.h" />
+    <ClInclude Include="src\Prism\LayerStack.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Platform\Windows\WindowsWindow.cpp">
@@ -59,5 +61,7 @@
       <Filter>Prism</Filter>
     </ClCompile>
     <ClCompile Include="src\prpch.cpp" />
+    <ClCompile Include="src\Prism\Layer.cpp" />
+    <ClCompile Include="src\Prism\LayerStack.cpp" />
   </ItemGroup>
 </Project>

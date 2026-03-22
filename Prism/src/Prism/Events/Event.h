@@ -5,7 +5,6 @@
 
 namespace Prism
 {
-	// TODO： 这里的注释做提示作用记得删除
 	// Events in Prism are currently blocking, meaning when an event occurs it
 	// immediately gets dispatched and must be dealt with right then an there.
 	// For the future, a better strategy might be to buffer events in an event
@@ -57,8 +56,10 @@ namespace Prism
 		{
 			return GetCategoryFlags() & category;
 		}
-	protected:
-		bool m_Handled = false; /// Is event handled 事件是否被处理过
+	public:
+		bool Handled = false; /// Is event handled 事件是否被处理过
+	private:
+		// Passed 占位
 	};
 
 
@@ -80,7 +81,7 @@ namespace Prism
 		{
 			if (m_Event.GetEventType() == T::GetStaticType())
 			{
-				m_Event.m_Handled = func(*(T*)&m_Event);
+				m_Event.Handled = func(*(T*)&m_Event);
 				return true;
 			}
 			return false;

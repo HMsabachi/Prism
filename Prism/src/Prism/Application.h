@@ -1,9 +1,11 @@
 ﻿#pragma once
 
-#include "Core.h" 
-#include "Events/Event.h"
-#include "Prism/Events/ApplicationEvent.h"
+#include "Core.h"
+
 #include "Window.h"
+#include "Prism/LayerStack.h"
+#include "Prism/Events/Event.h"
+#include "Prism/Events/ApplicationEvent.h"
 
 
 namespace Prism
@@ -20,12 +22,17 @@ namespace Prism
 		// Event handling function 事件处理函数
 		void OnEvent(Event& e);
 
+		void PushLayer(Layer* layer);
+		void PushOverlay(Layer* overlay);
 	private:
+		// Update function for the application(frame update) 应用更新函数(帧更新)
+		void OnUpdate(); 
 		bool OnWindowClose(WindowCloseEvent& e);
 
 	private:
 		std::unique_ptr<Window> m_Window;
 		bool m_Running = true;
+		LayerStack m_LayerStack;
 	};
 
 	// To be defined in CLIENT 需要在客户端定义
