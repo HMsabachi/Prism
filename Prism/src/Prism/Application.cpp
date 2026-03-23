@@ -9,7 +9,7 @@
 namespace Prism
 {
 #define BIND_EVENT_FN(x) std::bind(&Application::x, this, std::placeholders::_1)
-#define ERROR_COLOR 1, 0, 1, 1
+#define PR_ERROR_COLOR 1, 0, 1, 1
 
 	Application* Application::s_Instance = nullptr;
 
@@ -45,7 +45,7 @@ namespace Prism
 	{
 		while (m_Running)
 		{
-			glClearColor(1, 0, 1, 1);
+			glClearColor(PR_ERROR_COLOR);
 			glClear(GL_COLOR_BUFFER_BIT);
 			OnUpdate();
 		}
