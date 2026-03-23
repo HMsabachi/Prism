@@ -1,5 +1,6 @@
 ﻿workspace "Prism"
 	architecture "x64"
+	startproject "Sandbox"
 
 	configurations
 	{
@@ -17,14 +18,17 @@ IncludeDir["GLFW"] = "Prism/vendor/GLFW/include"
 IncludeDir["Glad"] = "Prism/vendor/Glad/include"
 IncludeDir["ImGui"] = "Prism/vendor/imgui"
 
-include "Prism/vendor/GLFW"
-include "Prism/vendor/Glad"
-include "Prism/vendor/imgui"
+group "Dependencies"
+	include "Prism/vendor/GLFW"
+	include "Prism/vendor/Glad"
+	include "Prism/vendor/imgui"
+group ""
 
 project "Prism"
 	location "Prism"
 	kind "SharedLib"
 	language "C++"
+	staticruntime "off"
 
 	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
@@ -58,7 +62,6 @@ project "Prism"
 
 	filter "system:windows"
 		cppdialect "C++17"
-		staticruntime "On"
 		systemversion "latest"
 
 		buildoptions { "/utf-8" }
@@ -72,27 +75,30 @@ project "Prism"
 
 		postbuildcommands
 		{
-			("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/Sandbox")
+			--("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/Sandbox")
+			("{COPY} %{cfg.buildtarget.relpath} \"../bin/" .. outputdir .. "/Sandbox/\"")
 		}
 	filter "configurations:Debug"
 		defines "PR_DEBUG"
-		optimize "On"
-		buildoptions "/MDd"
+		optimize "Off"    
+		symbols "On"
+		runtime "Debug"
 
 	filter "configurations:Release"
 		defines "PR_RELEASE"
 		optimize "On"
-		buildoptions "/MD"
+		runtime "Release"
 
 	filter "configurations:Dist"
 		defines "PR_DIST"
 		optimize "On"
-		buildoptions "/MD"
+		runtime "Release"
 
 project "Sandbox"
 	location "Sandbox"
 	kind "ConsoleApp"
 	language "C++"
+	staticruntime "off"
 
 	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
@@ -117,7 +123,6 @@ project "Sandbox"
 
 	filter "system:windows"
 		cppdialect "C++17"
-		staticruntime "On"
 		systemversion "latest"
 
 		buildoptions { "/utf-8" }
@@ -129,15 +134,16 @@ project "Sandbox"
 
 	filter "configurations:Debug"
 		defines "PR_DEBUG"
-		optimize "On"
-		buildoptions "/MDd"
+		optimize "Off"    
+		symbols "On"
+		runtime "Debug"
 
 	filter "configurations:Release"
 		defines "PR_RELEASE"
 		optimize "On"
-		buildoptions "/MD"
+		runtime "Release"
 
 	filter "configurations:Dist"
 		defines "PR_DIST"
 		optimize "On"
-		buildoptions "/MD"
+		runtime  "Release"

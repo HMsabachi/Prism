@@ -5,6 +5,8 @@
 #include "Prism/Events/KeyEvent.h"
 #include "Prism/Events/ApplicationEvent.h"
 
+struct ImGuiIO;
+
 namespace Prism
 {
 	class PRISM_API ImGuiLayer : public Layer
@@ -29,6 +31,7 @@ namespace Prism
 
 	private:
 		void InitializeImGui();
+		void SetKeyMap(ImGuiIO& io);
 		void ImGuiRender();
 
 	private:

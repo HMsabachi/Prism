@@ -96,6 +96,11 @@ namespace Prism
 	}
 }
 
+namespace fmt
+{
+	
+}
+
 
 
 

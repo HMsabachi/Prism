@@ -4,8 +4,9 @@
 
 #include "Prism/Log.h"
 
-#define IMGL3W_IMPL
 #include "imgui.h"
+
+#define IMGL3W_IMPL
 #include "Platform/OpenGL/ImGuiOpenGLRenderer.h"
 
 #include <GLFW/glfw3.h>
@@ -136,10 +137,15 @@ namespace Prism
 		io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors; // Enable mouse cursor  启用鼠标光标
 		io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos; // Enable setting mouse position  启用设置鼠标位置
 
-		//io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable docking  启用停靠
-		//io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable keyboard navigation  启用键盘导航
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable docking  启用停靠
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable keyboard navigation  启用键盘导航
+		
+		SetKeyMap(io);// TODO: 应该使用Prism的按键码 should eventually use Prism key codes
 
-		// TODO: 应该使用Prism的按键码 should eventually use Prism key codes
+		ImGui_ImplOpenGL3_Init("#version 410"); // Initialize the OpenGL renderer  初始化OpenGL渲染器
+	}
+	void ImGuiLayer::SetKeyMap(ImGuiIO& io)
+	{
 		io.KeyMap[ImGuiKey_Tab] = GLFW_KEY_TAB;
 		io.KeyMap[ImGuiKey_LeftArrow] = GLFW_KEY_LEFT;
 		io.KeyMap[ImGuiKey_RightArrow] = GLFW_KEY_RIGHT;
@@ -161,8 +167,6 @@ namespace Prism
 		io.KeyMap[ImGuiKey_X] = GLFW_KEY_X;
 		io.KeyMap[ImGuiKey_Y] = GLFW_KEY_Y;
 		io.KeyMap[ImGuiKey_Z] = GLFW_KEY_Z;
-
-		ImGui_ImplOpenGL3_Init("#version 410"); // Initialize the OpenGL renderer  初始化OpenGL渲染器
 	}
 	void ImGuiLayer::ImGuiRender()
 	{

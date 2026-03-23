@@ -16,7 +16,7 @@ public:
 	void OnEvent(Prism::Event& event) override
 	{
 		if (event.GetEventType() == Prism::EventType::WindowResize)
-			PR_TRACE("{0}", event);
+			PR_TRACE(event);
 	}
 
 };
