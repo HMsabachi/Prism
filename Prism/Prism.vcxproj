@@ -173,9 +173,11 @@
     <ClInclude Include="src\Prism\Events\MouseEvent.h" />
     <ClInclude Include="src\Prism\ImGui\ImGuiLayer.h" />
     <ClInclude Include="src\Prism\Input.h" />
+    <ClInclude Include="src\Prism\KeyCodes.h" />
     <ClInclude Include="src\Prism\Layer.h" />
     <ClInclude Include="src\Prism\LayerStack.h" />
     <ClInclude Include="src\Prism\Log.h" />
+    <ClInclude Include="src\Prism\MouseButtonCodes.h" />
     <ClInclude Include="src\Prism\Window.h" />
     <ClInclude Include="src\prpch.h" />
     <ClInclude Include="src\Platform\Windows\WindowsInput.h" />

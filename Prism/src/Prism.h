@@ -7,6 +7,10 @@
 #include "Prism/Layer.h"
 #include "Prism/Log.h"
 
+#include "Prism/Input.h"
+#include "Prism/KeyCodes.h"
+#include "Prism/MouseButtonCodes.h"
+
 #include "Prism/ImGui/ImGuiLayer.h"
 
 // ---Entry Point 入口点 ------------------------

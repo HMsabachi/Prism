@@ -1,15 +1,14 @@
 ﻿#include "prpch.h"
 #include "WindowsInput.h"
 
-#include "WindowsInput.h"
-
 #include "Prism/Application.h"
 #include <GLFW/glfw3.h>
 
 namespace Prism
 {
-
+#ifdef PR_PLATFORM_WINDOWS
 	Input* Input::s_Instance = new WindowsInput();
+#endif
 
 	bool WindowsInput::IsKeyPressedImpl(int keycode)
 	{

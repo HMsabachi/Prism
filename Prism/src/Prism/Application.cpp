@@ -2,6 +2,7 @@
 #include "Application.h"
 
 #include "Prism/Log.h"
+#include "Prism/Input.h"
 
 #include <glad/glad.h>
 
