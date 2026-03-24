@@ -11,7 +11,6 @@
 #include "backends/imgui_impl_opengl3.h"
 
 #include <GLFW/glfw3.h>
-#include <glad/glad.h>
 
 namespace Prism
 {
@@ -48,7 +47,8 @@ namespace Prism
 	{
 		ImGuiIO& io = ImGui::GetIO();
 		Application& app = Application::Get();
-		io.DisplaySize = ImVec2(app.GetWindow().GetWidth(), app.GetWindow().GetHeight());
+		io.DisplaySize = ImVec2(static_cast<float>(app.GetWindow().GetWidth()), static_cast<float> (app.GetWindow().GetHeight()));
+
 		// Rendering
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

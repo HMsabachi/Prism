@@ -31,6 +31,8 @@ project "Prism"
 	language "C++"
 	staticruntime "off"
 
+	defines { "PR_DYNAMIC_LINK" , "_CRT_SECURE_NO_WARNINGS" }
+
 	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
 
@@ -104,6 +106,8 @@ project "Sandbox"
 	kind "ConsoleApp"
 	language "C++"
 	staticruntime "off"
+
+	defines "PR_DYNAMIC_LINK"
 
 	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")

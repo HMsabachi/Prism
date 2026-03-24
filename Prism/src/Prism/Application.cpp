@@ -4,6 +4,7 @@
 #include "Prism/Log.h"
 #include "Prism/Input.h"
 
+// TODO: 这里还有未被封装的OpenGL函数 There are still some OpenGL functions not wrapped here
 #include <glad/glad.h>
 
 namespace Prism

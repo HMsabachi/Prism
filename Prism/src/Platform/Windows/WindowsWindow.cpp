@@ -1,12 +1,11 @@
 ﻿#include "prpch.h"
 #include "WindowsWindow.h"
 
+#include "Platform/OpenGL/OpenGLContect.h"
 
 #include "Prism/Events/ApplicationEvent.h"
 #include "Prism/Events/MouseEvent.h"
 #include "Prism/Events/KeyEvent.h"
-
-#include <glad/glad.h>
 
 namespace Prism {
 
@@ -50,14 +49,47 @@ namespace Prism {
 		}
 
 		m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, m_Data.Title.c_str(), nullptr, nullptr);
-		glfwMakeContextCurrent(m_Window);
-		// There begin processing Glad  这里开始处理Glad
-		int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
-		PR_CORE_ASSERT(status, "Failed to initialize Glad!\n 初始化 Glad 失败！");
+		
+		// 创建图形API上下文 Creat graphics API Context
+		CreatGraphicsApiContext();
+
 		glfwSetWindowUserPointer(m_Window, &m_Data);
 		SetVSync(true);
 
+		// 设置GLFW事件回调 Set GLFW event callback
 		SetGlfwEventCallback();
+	}
+
+	void WindowsWindow::Shutdown()
+	{
+		glfwDestroyWindow(m_Window);
+	}
+
+	void WindowsWindow::OnUpdate()
+	{
+		glfwPollEvents();
+		m_Context->SwapBuffers();
+	}
+
+	void WindowsWindow::SetVSync(bool enabled)
+	{
+		if (enabled)
+			glfwSwapInterval(1);
+		else
+			glfwSwapInterval(0);
+
+		m_Data.VSync = enabled;
+	}
+
+	bool WindowsWindow::IsVSync() const
+	{
+		return m_Data.VSync;
+	}
+
+	void WindowsWindow::CreatGraphicsApiContext()
+	{
+		m_Context = new OpenGLContext(m_Window);
+		m_Context->Init();
 	}
 
 	void WindowsWindow::SetGlfwEventCallback()
@@ -155,31 +187,4 @@ namespace Prism {
 				data.EventCallback(event);
 			});
 	}
-
-	void WindowsWindow::Shutdown()
-	{
-		glfwDestroyWindow(m_Window);
-	}
-
-	void WindowsWindow::OnUpdate()
-	{
-		glfwPollEvents();
-		glfwSwapBuffers(m_Window);
-	}
-
-	void WindowsWindow::SetVSync(bool enabled)
-	{
-		if (enabled)
-			glfwSwapInterval(1);
-		else
-			glfwSwapInterval(0);
-
-		m_Data.VSync = enabled;
-	}
-
-	bool WindowsWindow::IsVSync() const
-	{
-		return m_Data.VSync;
-	}
-
 }

@@ -1,10 +1,14 @@
 ﻿#pragma once
 
 #ifdef PR_PLATFORM_WINDOWS
-	#ifdef PR_BUILD_DLL
-		#define PRISM_API __declspec(dllexport)
+	#if PR_DYNAMIC_LINK
+		#ifdef PR_BUILD_DLL
+			#define PRISM_API __declspec(dllexport)
+		#else
+			#define PRISM_API __declspec(dllimport)
+		#endif
 	#else
-		#define PRISM_API __declspec(dllimport)
+		#define PRISM_API
 	#endif
 #else
 	#error Prism only supports Windows!
