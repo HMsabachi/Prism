@@ -19,11 +19,60 @@ namespace Prism
 		PR_CORE_ASSERT(!s_Instance, "Application already exists! 应用已经存在");
 		s_Instance = this;
 
+		// 初始化窗口 Initialize Window
 		m_Window = std::unique_ptr<Window>(Window::Create());
 		m_Window->SetEventCallback(BIND_EVENT_FN(OnEvent));
 
 		m_ImGuiLayer = new ImGuiLayer();
 		PushOverlay(m_ImGuiLayer);
+		
+		// 下面做一些小测试 Just some small tests below
+		// Vertex Array
+		// Vertex Buffer
+		// Index Buffer
+		// Shader
+
+		glGenVertexArrays(1, &m_VertexArray);
+		glBindVertexArray(m_VertexArray);
+
+		glGenBuffers(1, &m_VertexBuffer);
+		glBindBuffer(GL_ARRAY_BUFFER, m_VertexBuffer);
+		float vertices[] = {
+			-0.5f, -0.5f, 0.0f,
+			0.5f, -0.5f, 0.0f,
+			0.0f, 0.5f, 0.0f
+		};
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+		glGenBuffers(1, &m_IndexBuffer);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_IndexBuffer);
+		unsigned int indeces[] = { 0, 1, 2 };
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indeces), indeces, GL_STATIC_DRAW);
+
+		// Shader
+		std::string vertexSrc = R"(
+			#version 330 core
+			layout (location = 0) in vec3 aPos;
+			out vec3 vPos;
+			void main()
+			{
+				vPos = aPos;
+				gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
+			}
+		)";
+		std::string fragmentSrc = R"(
+			#version 330 core
+			in vec3 vPos;
+			out vec4 FragColor;
+			void main()
+			{
+				FragColor = vec4(vPos * 0.5 + 0.5, 1.0);
+			}
+		)";
+		m_Shader.reset(new Shader(vertexSrc, fragmentSrc));
 	}
 
 	Application::~Application()
@@ -51,6 +100,12 @@ namespace Prism
 		{
 			glClearColor(PR_ERROR_COLOR);
 			glClear(GL_COLOR_BUFFER_BIT);
+
+			m_Shader->Bind();
+			glBindVertexArray(m_VertexArray);
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_IndexBuffer);
+			glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr);
+
 			OnUpdate();
 		}
 	}

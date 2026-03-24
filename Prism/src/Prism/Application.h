@@ -8,6 +8,7 @@
 #include "Prism/Events/ApplicationEvent.h"
 
 #include "Prism/ImGui/ImGuiLayer.h"
+#include "Prism/Renderer/Shader.h"
 
 
 namespace Prism
@@ -29,11 +30,11 @@ namespace Prism
 
 		inline static Application& Get() { return *s_Instance; }
 		inline Window& GetWindow() const { return *m_Window; }
+
 	private:
 		// Update function for the application(frame update) 应用更新函数(帧更新)
 		void OnUpdate(); 
 		bool OnWindowClose(WindowCloseEvent& e);
-
 	private:
 		std::unique_ptr<Window> m_Window;
 		bool m_Running = true;
@@ -41,6 +42,9 @@ namespace Prism
 		LayerStack m_LayerStack;
 	private:
 		static Application* s_Instance;
+	private:
+		unsigned int m_VertexArray, m_VertexBuffer, m_IndexBuffer;
+		std::unique_ptr<Shader> m_Shader;
 	};
 
 	// To be defined in CLIENT 需要在客户端定义
