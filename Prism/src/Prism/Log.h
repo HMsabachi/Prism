@@ -28,13 +28,13 @@ namespace Prism {
 #define PR_CORE_INFO(...)    ::Prism::Log::GetCoreLogger()->info(__VA_ARGS__)
 #define PR_CORE_WARN(...)    ::Prism::Log::GetCoreLogger()->warn(__VA_ARGS__)
 #define PR_CORE_ERROR(...)   ::Prism::Log::GetCoreLogger()->error(__VA_ARGS__)
-#define PR_CORE_FATAL(...)   ::Prism::Log::GetCoreLogger()->fatal(__VA_ARGS__)
+#define PR_CORE_FATAL(...)   ::Prism::Log::GetCoreLogger()->critical(__VA_ARGS__)
 
 // Client log macros 客户端日志
 #define PR_TRACE(...)        ::Prism::Log::GetClientLogger()->trace(__VA_ARGS__)
 #define PR_INFO(...)         ::Prism::Log::GetClientLogger()->info(__VA_ARGS__)
 #define PR_WARN(...)         ::Prism::Log::GetClientLogger()->warn(__VA_ARGS__)
 #define PR_ERROR(...)        ::Prism::Log::GetClientLogger()->error(__VA_ARGS__)
-#define PR_FATAL(...)        ::Prism::Log::GetClientLogger()->fatal(__VA_ARGS__)
+#define PR_FATAL(...)        ::Prism::Log::GetClientLogger()->critical(__VA_ARGS__)
 
 // If dist build 如果是发布版本
