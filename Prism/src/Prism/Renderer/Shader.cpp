@@ -7,7 +7,6 @@ namespace Prism
 {
 	Shader::Shader(const std::string& VertexShader, const std::string& FragmentShader)
 	{
-		PR_CORE_TRACE("Creating Shader Program...");
 		// 编译着色器 Compile Shaders
 		GLuint vertexShaderID, fragmentShaderID;
 		bool isCompiled = CompileShader(VertexShader, vertexShaderID, GL_VERTEX_SHADER);
@@ -22,8 +21,6 @@ namespace Prism
 		// 删除着色器 Delete Shaders
 		glDetachShader(m_RendererID, vertexShaderID);
 		glDetachShader(m_RendererID, fragmentShaderID);
-
-		PR_CORE_TRACE("Shader Program Created!");
 	}
 	Shader::~Shader()
 	{
