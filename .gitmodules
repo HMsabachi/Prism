@@ -7,3 +7,6 @@
 [submodule "Prism/vendor/imgui"]
 	path = Prism/vendor/imgui
 	url = https://github.com/HMsabachi/imgui
+[submodule "Prism/vendor/glm"]
+	path = Prism/vendor/glm
+	url = https://github.com/g-truc/glm

@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include "prpch.h"
 #include "Prism/Core.h"
 
 namespace Prism 
