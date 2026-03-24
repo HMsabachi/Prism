@@ -7,6 +7,8 @@
 #include "Prism/Events/Event.h"
 #include "Prism/Events/ApplicationEvent.h"
 
+#include "Prism/ImGui/ImGuiLayer.h"
+
 
 namespace Prism
 {
@@ -35,6 +37,7 @@ namespace Prism
 	private:
 		std::unique_ptr<Window> m_Window;
 		bool m_Running = true;
+		ImGuiLayer* m_ImGuiLayer;
 		LayerStack m_LayerStack;
 	private:
 		static Application* s_Instance;

@@ -1,4 +1,5 @@
 ﻿#include <Prism.h>
+#include "imgui/imgui.h"
 
 class ExampleLayer : public Prism::Layer
 {
@@ -8,6 +9,10 @@ public:
 	{
 	}
 
+	void OnImGuiRender() override
+	{
+
+	}
 	void OnUpdate() override
 	{
 		if (Prism::Input::IsKeyPressed(PR_KEY_TAB))
@@ -33,7 +38,6 @@ public:
 	Sandbox()
 	{
 		PushLayer(new ExampleLayer());
-		PushOverlay(new Prism::ImGuiLayer());
 	}
 	~Sandbox()
 	{

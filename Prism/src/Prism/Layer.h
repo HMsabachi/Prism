@@ -27,6 +27,10 @@ namespace Prism
 		// 当应用程序分派事件时调用
 		virtual void OnEvent(Event& event) {}
 
+		// Called when the layer is rendered on the ImGui layer
+		// 当层在ImGui层上渲染时调用
+		virtual void OnImGuiRender() {}
+
 		// Only be used by the Debugging  仅限于调试使用
 		inline const std::string& GetName() const { return m_DebugName; }
 	protected:

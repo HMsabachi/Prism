@@ -6,7 +6,7 @@ namespace Prism
 
 	LayerStack::LayerStack()
 	{
-		m_LayerInsert = m_Layers.begin();
+		
 	}
 
 	LayerStack::~LayerStack()
@@ -18,7 +18,8 @@ namespace Prism
 	// Push a new layer to the top of the stack 将一个新的 layer 压入栈顶
 	void LayerStack::PushLayer(Layer* layer)
 	{
-		m_LayerInsert = m_Layers.emplace(m_LayerInsert, layer);
+		m_Layers.emplace(m_Layers.begin() + m_LayerInsertIndex, layer);
+		m_LayerInsertIndex++;
 		// TODO: layer->OnAttach()的位置有所不同
 		layer->OnAttach();
 	}
@@ -36,7 +37,7 @@ namespace Prism
 		if (it != m_Layers.end())
 		{
 			m_Layers.erase(it);
-			m_LayerInsert--;
+			m_LayerInsertIndex--;
 			layer->OnDetach();
 			delete layer;
 		}
