@@ -4,8 +4,7 @@
 #include "Prism/Log.h"
 #include "Prism/Input.h"
 
-// TODO: 这里还有未被封装的OpenGL函数 There are still some OpenGL functions not wrapped here
-#include <glad/glad.h>
+#include "Prism/Renderer/Renderer.h"
 
 namespace Prism
 {
@@ -149,16 +148,18 @@ namespace Prism
 	{
 		while (m_Running)
 		{
-			glClearColor(PR_ERROR_COLOR);
-			glClear(GL_COLOR_BUFFER_BIT);
+			RenderCommand::SetClearColor({ PR_ERROR_COLOR });
+			RenderCommand::Clear();
 
+			Renderer::BeginScene();
 			m_BlueShader->Bind();
-			m_SquareVA->Bind();
-			glDrawElements(GL_TRIANGLES, m_SquareVA->GetIndexBuffer()->GetCount(), GL_UNSIGNED_INT, nullptr);
-
+			Renderer::Submit(m_SquareVA);
+			
 			m_Shader->Bind();
 			m_VertexArray->Bind();
-			glDrawElements(GL_TRIANGLES, m_VertexArray->GetIndexBuffer()->GetCount(), GL_UNSIGNED_INT, nullptr);
+			Renderer::Submit(m_VertexArray);
+
+			Renderer::EndScene();
 			OnUpdate();
 		}
 	}
