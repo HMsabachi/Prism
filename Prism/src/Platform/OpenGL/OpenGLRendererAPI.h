@@ -1,6 +1,5 @@
 ﻿#pragma once
 #include "Prism/Renderer/RendererAPI.h"
-#include <memory>
 
 namespace Prism
 {

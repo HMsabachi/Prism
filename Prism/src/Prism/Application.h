@@ -12,6 +12,8 @@
 #include "Prism/Renderer/Buffer.h"
 #include "Prism/Renderer/VertexArray.h"
 
+#include "Prism/Renderer/Camera/OrthographicCamera.h"
+
 
 namespace Prism
 {
@@ -51,6 +53,8 @@ namespace Prism
 
 		std::shared_ptr<Shader> m_BlueShader;
 		std::shared_ptr<VertexArray> m_SquareVA;
+		
+		OrthographicCamera m_Camera;
 	};
 
 	// To be defined in CLIENT 需要在客户端定义

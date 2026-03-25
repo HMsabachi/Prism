@@ -14,6 +14,7 @@ namespace Prism
 	Application* Application::s_Instance = nullptr;
 
 	Application::Application()
+		: m_Camera(-1, 1, -1, 1)
 	{
 		PR_CORE_ASSERT(!s_Instance, "Application already exists! 应用已经存在");
 		s_Instance = this;
@@ -75,13 +76,14 @@ namespace Prism
 			#version 330 core
 			layout (location = 0) in vec3 aPos;
 			layout (location = 1) in vec4 aColor;
+			uniform mat4 u_ViewProjection;
 			out vec4 vColor;
 			out vec3 vPos;
 			void main()
 			{
 				vPos = aPos;
 				vColor = aColor;
-				gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
+				gl_Position = u_ViewProjection * vec4(aPos.x, aPos.y, aPos.z, 1.0);
 			}
 		)";
 		std::string fragmentSrc = R"(
@@ -99,13 +101,13 @@ namespace Prism
 			#version 330 core
 			
 			layout(location = 0) in vec3 a_Position;
-
+			uniform mat4 u_ViewProjection;
 			out vec3 v_Position;
 
 			void main()
 			{
 				v_Position = a_Position;
-				gl_Position = vec4(a_Position, 1.0);	
+				gl_Position = u_ViewProjection * vec4(a_Position, 1.0);
 			}
 		)";
 
@@ -151,13 +153,12 @@ namespace Prism
 			RenderCommand::SetClearColor({ PR_ERROR_COLOR });
 			RenderCommand::Clear();
 
-			Renderer::BeginScene();
-			m_BlueShader->Bind();
-			Renderer::Submit(m_SquareVA);
+			Renderer::BeginScene(m_Camera);
 			
-			m_Shader->Bind();
-			m_VertexArray->Bind();
-			Renderer::Submit(m_VertexArray);
+			Renderer::Submit(m_BlueShader, m_SquareVA);
+			
+			
+			Renderer::Submit(m_Shader, m_VertexArray);
 
 			Renderer::EndScene();
 			OnUpdate();

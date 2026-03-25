@@ -5,25 +5,6 @@
 **Prism** 是一个轻量级、模块化、用 C++ 开发的跨平台游戏引擎，渲染后端使用 **OpenGL** （目前）。
 
 目前处于早期开发阶段，已实现基础渲染管线、Shader 管理、Vertex Array 封装、日志系统和跨平台构建支持。目标是打造一个清晰、易扩展、高性能的引擎，适合学习和小型游戏开发。
-
-## ✨ 特性（当前已实现）
-
-- **OpenGL 现代渲染管线**  
-  - OpenGL 上下文封装  
-  - Shader 类（支持从文件加载编译）  
-  - Vertex Array / Vertex Buffer / Index Buffer 抽象  
-  - 已成功渲染第一个三角形 ✅
-
-- **数学库**：集成 GLM 数学库
-
-- **日志系统**：底层使用 spdlog 统一日志输出，便于调试
-
-- **构建系统**：使用 Premake 5，支持 Windows / Linux / macOS 快速生成项目文件 （但目前只有Windows支持）
-
-- **示例项目**：SandBox 应用，用于快速测试引擎功能
-
-- **ImGui** 初步集成（Sandbox 中已出现配置）
-
 ## 🛠 快速开始
 
 ### 1. 克隆仓库（包含子模块）
@@ -47,6 +28,41 @@ premake5 xcode4        # macOS Xcode
 ### 3. 编译并运行
 
 打开生成的解决方案（或 Makefile），编译 `SandBox` 项目并运行，即可看到渲染结果。
+
+## ⚙️ 规划与实现
+
+- [ ] 资源管理系统
+- [ ] 场景图与实体组件系统
+- [ ] 物理系统集成
+- [ ] 编辑器界面
+- [ ] 2D 渲染管线
+- [ ] 相机系统 (目前正在进行)
+- - [x] 正交相机
+- [x] 基础渲染管线
+- [x] Shader 管理
+- [x] Vertex Array 封装
+- [x] 日志系统
+- [x] 跨平台构建支持
+## ✨ 特性（当前已实现）
+
+- **OpenGL 现代渲染管线**  
+  - OpenGL 上下文封装  
+  - Shader 类（支持从文件加载编译）  
+  - Vertex Array / Vertex Buffer / Index Buffer 抽象  
+  - 已成功渲染第一个三角形 ✅
+
+- **数学库**：集成 GLM 数学库
+
+- **日志系统**：底层使用 spdlog 统一日志输出，便于调试
+
+- **构建系统**：使用 Premake 5，支持 Windows / Linux / macOS 快速生成项目文件 （但目前只有Windows支持）
+
+- **示例项目**：SandBox 应用，用于快速测试引擎功能
+
+- **ImGui** 初步集成（Sandbox 中已出现配置）
+
+## 🧩 技术文档
+- [Renderer 文档](docs/Renderer.md)
 
 ## 📁 项目结构
 
