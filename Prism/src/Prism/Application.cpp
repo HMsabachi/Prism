@@ -13,6 +13,26 @@ namespace Prism
 #define PR_ERROR_COLOR 1, 0, 1, 1
 
 	Application* Application::s_Instance = nullptr;
+	
+	static GLenum ShaderDataTypeToOpenGLBaseType(ShaderDataType type)
+	{
+		switch (type)
+		{
+			case ShaderDataType::Float:    return GL_FLOAT;
+			case ShaderDataType::Float2:   return GL_FLOAT;
+			case ShaderDataType::Float3:   return GL_FLOAT;
+			case ShaderDataType::Float4:   return GL_FLOAT;
+			case ShaderDataType::Mat3:     return GL_FLOAT;
+			case ShaderDataType::Mat4:     return GL_FLOAT;
+			case ShaderDataType::Int:      return GL_INT;
+			case ShaderDataType::Int2:     return GL_INT;
+			case ShaderDataType::Int3:     return GL_INT;
+			case ShaderDataType::Int4:     return GL_INT;
+			case ShaderDataType::Bool:     return GL_BOOL;
+		}
+		PR_CORE_ASSERT(false, "Unknown ShaderDataType!");
+		return 0;
+	}
 
 	Application::Application()
 	{
@@ -36,14 +56,34 @@ namespace Prism
 		glBindVertexArray(m_VertexArray);
 
 		float vertices[] = {
-			-0.5f, -0.5f, 0.0f,
-			0.5f, -0.5f, 0.0f,
-			0.0f, 0.5f, 0.0f
+			-0.5f, -0.5f, 0.0f, 0.8f, 0.2f, 0.8f, 1.0f,
+			0.5f, -0.5f, 0.0f, 0.2f, 0.3f, 0.8f, 1.0f,
+			0.0f, 0.5f, 0.0f, 0.8f, 0.8f, 0.2f, 1.0f
 		};
 		m_VertexBuffer.reset(VertexBuffer::Create(vertices, sizeof(vertices)));
 		m_VertexBuffer->Bind();
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+		{
+			BufferLayout layout = {
+				{ShaderDataType::Float3, "aPos"},
+				{ShaderDataType::Float4, "aColor"}
+			};
+			m_VertexBuffer->SetLayout(layout);
+		}
+		uint32_t index = 0;
+		const auto& layout = m_VertexBuffer->GetLayout();
+		for (auto& element : layout)
+		{
+			glEnableVertexAttribArray(index);
+			glVertexAttribPointer(
+				index,
+				element.GetComponentCount(),
+				ShaderDataTypeToOpenGLBaseType(element.Type),
+				element.Normalized ? GL_TRUE : GL_FALSE,
+				layout.GetStride(),
+				reinterpret_cast<const void*> (element.Offset)
+			);
+			index++;
+		}
 
 		unsigned int indeces[] = { 0, 1, 2 };
 		m_IndexBuffer.reset(IndexBuffer::Create(indeces, 3));
@@ -52,20 +92,24 @@ namespace Prism
 		std::string vertexSrc = R"(
 			#version 330 core
 			layout (location = 0) in vec3 aPos;
+			layout (location = 1) in vec4 aColor;
+			out vec4 vColor;
 			out vec3 vPos;
 			void main()
 			{
 				vPos = aPos;
+				vColor = aColor;
 				gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
 			}
 		)";
 		std::string fragmentSrc = R"(
 			#version 330 core
 			in vec3 vPos;
+			in vec4 vColor;
 			out vec4 FragColor;
 			void main()
 			{
-				FragColor = vec4(vPos * 0.5 + 0.5, 1.0);
+				FragColor = vec4(vColor);
 			}
 		)";
 		m_Shader.reset(new Shader(vertexSrc, fragmentSrc));
