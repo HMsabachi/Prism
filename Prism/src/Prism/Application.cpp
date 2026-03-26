@@ -3,6 +3,7 @@
 
 #include "Prism/Log.h"
 #include "Prism/Input.h"
+#include "Prism/Core/Time.h"
 
 #include "Prism/Renderer/Renderer.h"
 
@@ -18,9 +19,7 @@ namespace Prism
 		PR_CORE_ASSERT(!s_Instance, "Application already exists! 应用已经存在");
 		s_Instance = this;
 
-		// 初始化窗口 Initialize Window
-		m_Window = std::unique_ptr<Window>(Window::Create());
-		m_Window->SetEventCallback(BIND_EVENT_FN(OnEvent));
+		Initialize();
 
 		m_ImGuiLayer = new ImGuiLayer();
 		PushOverlay(m_ImGuiLayer);
@@ -49,13 +48,14 @@ namespace Prism
 	{
 		while (m_Running)
 		{
-			
 			OnUpdate();
 		}
 	}
 
 	void Application::OnUpdate()
 	{
+		Time::Update();
+
 		for (Layer* layer : m_LayerStack)
 			layer->OnUpdate();
 
@@ -66,7 +66,17 @@ namespace Prism
 
 		m_Window->OnUpdate();
 	}
-	
+#pragma region Private Methods 私有方法
+	void Application::Initialize()
+	{
+		// 初始化窗口 Initialize Window
+		m_Window = std::unique_ptr<Window>(Window::Create());
+		m_Window->SetEventCallback(BIND_EVENT_FN(OnEvent));
+		// 初始化时间管理器 Initialize Time Manager
+		Time::Initialize();
+	}
+
+
 #pragma region Event Handling 事件处理
 	bool Application::OnWindowClose(WindowCloseEvent& e)
 	{
@@ -88,6 +98,8 @@ namespace Prism
 		//layer->OnAttach();
 		// 这里根据我的想法是有区别的 OnAttach() 应该在LayerStack 中被调用
 	}
+#pragma endregion
+
 #pragma endregion
 }
 

@@ -65,7 +65,7 @@ namespace Prism
 
 	/// Event dispatcher class to dispatch events to event handlers
 	/// 事件调度器类用于将事件派发到事件处理程序中
-	class EventDispatcher
+	class PRISM_API EventDispatcher
 	{
 		template<typename T>
 		using EventFn = std::function<bool(T&)>;

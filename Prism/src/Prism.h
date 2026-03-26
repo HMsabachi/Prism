@@ -6,6 +6,7 @@
 #include "Prism/Application.h"
 #include "Prism/Layer.h"
 #include "Prism/Log.h"
+#include "Prism/Core/Time.h"
 
 #include "Prism/Input.h"
 #include "Prism/KeyCodes.h"

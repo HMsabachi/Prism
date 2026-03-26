@@ -38,6 +38,7 @@ premake5 xcode4        # macOS Xcode
 - [ ] 2D 渲染管线
 - [ ] 相机系统 (目前正在进行)
 - - [x] 正交相机
+- [x] Time 系统
 - [x] 基础渲染管线
 - [x] Shader 管理
 - [x] Vertex Array 封装
@@ -62,7 +63,11 @@ premake5 xcode4        # macOS Xcode
 - **ImGui** 初步集成（Sandbox 中已出现配置）
 
 ## 🧩 技术文档
-- [Renderer 文档](docs/Renderer.md)
+- 中文版
+- - [Time 文档](docs/Time.md)
+- - [Renderer 文档](docs/Renderer.md)
+- English Version
+- - [Time Documentation](docs/TimeEN.md)
 
 ## 📁 项目结构
 

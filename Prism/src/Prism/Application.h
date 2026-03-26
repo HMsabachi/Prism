@@ -32,6 +32,7 @@ namespace Prism
 		inline Window& GetWindow() const { return *m_Window; }
 
 	private:
+		void Initialize();
 		// Update function for the application(frame update) 应用更新函数(帧更新)
 		void OnUpdate(); 
 		bool OnWindowClose(WindowCloseEvent& e);

@@ -124,8 +124,31 @@ public:
 
 	void OnEvent(Prism::Event& event) override
 	{
+		Prism::EventDispatcher dispatcher(event);
+		dispatcher.Dispatch<Prism::KeyPressedEvent>(PR_BIND_EVENT_FN(ExampleLayer::OnKeyPressedEvent));
 
 	}
+#pragma region 事件处理 Event Handling
+	public:
+		bool OnKeyPressedEvent(Prism::KeyPressedEvent& e)
+		{
+			if (e.GetKeyCode() == PR_KEY_LEFT)
+				m_CameraPosition.x -= 0.1f;
+			if (e.GetKeyCode() == PR_KEY_RIGHT)
+				m_CameraPosition.x += 0.1f;
+			if (e.GetKeyCode() == PR_KEY_UP)
+				m_CameraPosition.y += 0.1f;
+			if (e.GetKeyCode() == PR_KEY_DOWN)
+				m_CameraPosition.y -= 0.1f;
+			if (e.GetKeyCode() == PR_KEY_A)
+				PR_TRACE("Now delta time is {0}", Prism::Time::GetDeltaTime());
+
+			m_Camera.SetPosition(m_CameraPosition);
+			return false;
+		}
+
+#pragma endregion
+
 private:
 
 	std::shared_ptr<Prism::Shader> m_Shader;
@@ -135,6 +158,7 @@ private:
 	std::shared_ptr<Prism::VertexArray> m_SquareVA;
 
 	Prism::OrthographicCamera m_Camera;
+	glm::vec3 m_CameraPosition = { 0.0f, 0.0f, 0.0f };
 };
 
 class Sandbox : public Prism::Application
