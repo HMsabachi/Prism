@@ -12,6 +12,13 @@
 #include "Prism/MouseButtonCodes.h"
 
 #include "Prism/ImGui/ImGuiLayer.h"
+// ---Renderer-
+#include "Prism/Renderer/Renderer.h"
+#include "Prism/Renderer/Buffer.h"
+#include "Prism/Renderer/Shader.h"
+#include "Prism/Renderer/VertexArray.h"
+
+#include "Prism/Renderer/Camera/OrthographicCamera.h"
 
 // ---Entry Point 入口点 ------------------------
 #include "Prism/EntryPoint.h"
