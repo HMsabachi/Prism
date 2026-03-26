@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Core.h"
+#include "Core/Core.h"
 
 #include "Window.h"
 #include "Prism/LayerStack.h"

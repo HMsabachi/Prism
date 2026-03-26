@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include <memory>
-#include "Prism/Core.h"
+#include "Prism/Core/Core.h"
 #include "Prism/Renderer/Buffer.h"
 
 namespace Prism

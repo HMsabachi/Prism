@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "Prism/Core.h"
+#include "Prism/Core/Core.h"
 #include <memory>
 
 #include "glm/glm.hpp"
