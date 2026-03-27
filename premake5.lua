@@ -19,11 +19,13 @@ IncludeDir["Glad"] = "Prism/vendor/Glad/include"
 IncludeDir["ImGui"] = "Prism/vendor/imgui"
 IncludeDir["glm"] = "Prism/vendor/glm"
 IncludeDir["stb_image"] = "Prism/vendor/stb_image"
+IncludeDir["PrismShaderParser"] = "Prism/vendor/PrismShaderParser/src"
 
 group "Dependencies"
 	include "Prism/vendor/GLFW"
 	include "Prism/vendor/Glad"
 	include "Prism/vendor/imgui"
+	include "Prism/vendor/PrismShaderParser"
 group ""
 
 project "Prism"
@@ -59,7 +61,8 @@ project "Prism"
 		"%{IncludeDir.Glad}",
 		"%{IncludeDir.ImGui}",
 		"%{IncludeDir.glm}",
-		"%{IncludeDir.stb_image}"
+		"%{IncludeDir.stb_image}",
+		"%{IncludeDir.PrismShaderParser}",
 
 	}
 
@@ -68,6 +71,7 @@ project "Prism"
 		"GLFW",
 		"Glad",
 		"ImGui",
+		"PrismShaderParser",
 		"opengl32.lib",
 		"dwmapi.lib"
 	}
@@ -128,7 +132,8 @@ project "Sandbox"
 		"Prism/vendor/spdlog/include",
 		"Prism/src",
 		"Prism/vendor",
-		"%{IncludeDir.glm}"
+		"%{IncludeDir.glm}",
+		"%{IncludeDir.PrismShaderParser}"
 
 	}
 

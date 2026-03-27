@@ -37,6 +37,7 @@ premake5 xcode4        # macOS Xcode
 - [ ] 编辑器界面
 - [ ] 2D 渲染管线 (正在进行)
 - - [ ] 材质系统（正在进行） 
+- - [ ] 重构Shader以支持**PSL**(*Prism Shader Language*)
 - - [x] Transform
 - [ ] 相机系统
 - - [x] 正交相机
