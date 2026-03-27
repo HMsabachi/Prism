@@ -1,6 +1,6 @@
 ﻿#include "prpch.h"
 #include "Renderer.h"
-#include "Shader.h"
+#include "Shader/Shader.h"
 #include "RenderCommand.h"
 #include "Camera/OrthographicCamera.h"
 #include "VertexArray.h"

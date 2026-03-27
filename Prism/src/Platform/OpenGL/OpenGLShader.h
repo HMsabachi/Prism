@@ -1,11 +1,12 @@
 ﻿#pragma once
-#include "Prism/Renderer/Shader.h"
+#include "Prism/Renderer/Shader/Shader.h"
 #include <string>
 #include <glm/glm.hpp>
 
 namespace Prism
 {
-	class OpenGLShader : public Shader
+	// TODO: 这里的PRESM_API仅供测试 该接口不应对外开放
+	class PRISM_API OpenGLShader : public Shader
 	{
 	public:
 		OpenGLShader(const std::string& VertexShader, const std::string& FragmentShader);

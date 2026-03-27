@@ -36,8 +36,9 @@ premake5 xcode4        # macOS Xcode
 - [ ] 物理系统集成
 - [ ] 编辑器界面
 - [ ] 2D 渲染管线 (正在进行)
+- - [ ] 材质系统（正在进行） 
 - - [x] Transform
-- [ ] 相机系统 (目前正在进行)
+- [ ] 相机系统
 - - [x] 正交相机
 - [x] Time 系统
 - [x] Shader 管理
@@ -48,9 +49,9 @@ premake5 xcode4        # macOS Xcode
 
 - **OpenGL 现代渲染管线**  
   - OpenGL 上下文封装  
-  - Shader 类（支持从文件加载编译）  
+  - OpenGLShader 类 
   - Vertex Array / Vertex Buffer / Index Buffer 抽象  
-  - 已成功渲染第一个三角形 ✅
+
 
 - **数学库**：集成 GLM 数学库
 
