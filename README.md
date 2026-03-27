@@ -35,11 +35,11 @@ premake5 xcode4        # macOS Xcode
 - [ ] 场景图与实体组件系统
 - [ ] 物理系统集成
 - [ ] 编辑器界面
-- [ ] 2D 渲染管线
+- [ ] 2D 渲染管线 (正在进行)
+- - [x] Transform
 - [ ] 相机系统 (目前正在进行)
 - - [x] 正交相机
 - [x] Time 系统
-- [x] 基础渲染管线
 - [x] Shader 管理
 - [x] Vertex Array 封装
 - [x] 日志系统
