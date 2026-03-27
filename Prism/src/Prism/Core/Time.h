@@ -23,7 +23,7 @@ namespace Prism
 		static void SetTimeScale(float scale) noexcept;
 		static float GetTimeScale() noexcept { return s_TimeScale; }
 	private:
-		static void Initialize();
+		static void Init();
 		static void Update();
 		static bool ShouldFixedUpdate();
 		static void Reset();

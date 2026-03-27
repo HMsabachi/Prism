@@ -16,7 +16,7 @@ namespace Prism
 	std::chrono::steady_clock::time_point Time::s_LastFrameTime;
 	std::chrono::steady_clock::time_point Time::s_LastFixedTime;
 
-    void Time::Initialize()
+    void Time::Init()
     {
         auto now = std::chrono::steady_clock::now();
         s_StartTime = now;
@@ -63,7 +63,7 @@ namespace Prism
 
     void Time::Reset()
     {
-        Initialize();  // 重新初始化所有时间
+        Init();  // 重新初始化所有时间
     }
 
 	void Time::SetTimeScale(float scale) noexcept

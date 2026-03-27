@@ -72,8 +72,10 @@ namespace Prism
 		// 初始化窗口 Initialize Window
 		m_Window = std::unique_ptr<Window>(Window::Create());
 		m_Window->SetEventCallback(BIND_EVENT_FN(OnEvent));
+		// 初始化渲染器 Initialize Renderer
+		Renderer::Init();
 		// 初始化时间管理器 Initialize Time Manager
-		Time::Initialize();
+		Time::Init();
 	}
 
 
