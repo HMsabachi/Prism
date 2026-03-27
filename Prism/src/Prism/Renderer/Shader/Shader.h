@@ -16,7 +16,7 @@ namespace Prism
 		virtual void Unbind() const = 0;
 
 	public:
-		static Shader* Create(const std::string& VertexShader, const std::string& FragmentShader);
+		static Ref<Shader> Create(const std::string& VertexShader, const std::string& FragmentShader);
 	};
 }
 

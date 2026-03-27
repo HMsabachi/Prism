@@ -57,31 +57,68 @@ public:
 
 		// Shader
 		std::string vertexSrc = R"(
-			#version 330 core
-			layout (location = 0) in vec3 aPos;
-			layout (location = 1) in vec4 aColor;
-			uniform mat4 u_ViewProjection;
-			uniform mat4 u_Transform;
-			out vec4 vColor;
-			out vec3 vPos;
-			void main()
-			{
-				vPos = aPos;
-				vColor = aColor;
-				gl_Position = u_ViewProjection * u_Transform * vec4(aPos.x, aPos.y, aPos.z, 1.0);
-			}
+#version 450 core
+			#define PRISM_VERTEX_SHADER
+// ---- Prism Internal Globals ----
+layout(std140, binding = 0) uniform PrismGlobals {
+    mat4 Prism_ViewProjection;
+    mat4 Prism_Model;
+    vec4 Prism_Time; // x: t/20, y: t, z: t*2, w: t*3
+};
+// ---- Material Properties ----
+uniform vec4 _MainColor;
+uniform sampler2D _MainTex;
+uniform float _Gloss;
+uniform float _Cutoff;
+#ifdef PRISM_VERTEX_SHADER
+#define VARYING out
+#else
+#define VARYING in
+layout(location = 0) out vec4 FragColor;
+#endif
+// Error: Include not found: PrismBuiltin.glsl
+layout(location = 0) in vec3 aPos;
+layout(location = 2) in vec2 aUV;
+layout(location = 1) in vec3 aNormal;
+VARYING vec2 vUV;
+VARYING vec3 vNormal;
+void main()
+{
+    gl_Position = Prism_ViewProjection * Prism_Model * vec4(aPos, 1.0);
+    vUV = aUV;
+}
 		)";
 		std::string fragmentSrc = R"(
-			#version 330 core
-			in vec3 vPos;
-			in vec4 vColor;
-			out vec4 FragColor;
-			void main()
-			{
-				FragColor = vec4(vColor);
-			}
+#version 450 core
+			#define PRISM_FRAGMENT_SHADER
+// ---- Prism Internal Globals ----
+layout(std140, binding = 0) uniform PrismGlobals {
+    mat4 Prism_ViewProjection;
+    mat4 Prism_Model;
+    vec4 Prism_Time; // x: t/20, y: t, z: t*2, w: t*3
+};
+// ---- Material Properties ----
+uniform vec4 _MainColor;
+uniform sampler2D _MainTex;
+uniform float _Gloss;
+uniform float _Cutoff;
+#ifdef PRISM_VERTEX_SHADER
+#define VARYING out
+#else
+#define VARYING in
+layout(location = 0) out vec4 FragColor;
+#endif
+// Error: Include not found: PrismBuiltin.glsl
+VARYING vec2 vUV;
+VARYING vec3 vNormal;
+void main()
+{
+    vec4 col = texture(_MainTex, vUV) * _MainColor;
+    col.rgb *= sin(Prism_Time.y * 5.0) * 0.5 + 0.5;
+    FragColor = col;
+}
 		)";
-		m_Shader.reset(Prism::Shader::Create(vertexSrc, fragmentSrc));
+		m_Shader = Prism::Shader::Create(vertexSrc, fragmentSrc);
 		std::string flatColorShaderVertexSrc = R"(
 			#version 330 core
 			
@@ -111,7 +148,7 @@ public:
 			}
 		)";
 
-		m_FlatColorShader.reset(Prism::Shader::Create(flatColorShaderVertexSrc, flatColorShaderFragmentSrc));
+		m_FlatColorShader = Prism::Shader::Create(flatColorShaderVertexSrc, flatColorShaderFragmentSrc);
 		std::string textureShaderVertexSrc = R"(
 			#version 330 core
 			
@@ -142,7 +179,7 @@ public:
 			}
 		)";
 
-		m_TextureShader.reset(Prism::Shader::Create(textureShaderVertexSrc, textureShaderFragmentSrc));
+		m_TextureShader = Prism::Shader::Create(textureShaderVertexSrc, textureShaderFragmentSrc);
 		m_TestTexture = Prism::Texture2D::Create("Assets/Textures/TestImage.png");
 		std::dynamic_pointer_cast<Prism::OpenGLTexture2D>(m_TestTexture)->Bind();
 		std::dynamic_pointer_cast<Prism::OpenGLShader>(m_TextureShader)->UploadUniformInt("u_Texture", 0);

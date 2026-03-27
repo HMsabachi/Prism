@@ -5,6 +5,51 @@
 
 namespace Prism
 {
+    std::string PrismShaderParser::s_VersionHeader = "#version 450 core\n";
+    std::string PrismShaderParser::s_IncludeRoot = "Assets/Shaders/";
+    std::string PrismShaderParser::s_FileHeader = R"PRISM(
+// ---- Prism Internal Globals ----
+layout(std140, binding = 0) uniform PrismGlobals {
+    mat4 Prism_ViewProjection;
+    mat4 Prism_Model;
+    vec4 Prism_Time; // x: t/20, y: t, z: t*2, w: t*3
+};
+)PRISM";
+    PropertyType PrismShaderParser::StringToPropertyType(const std::string& typeStr, float& outMin, float& outMax)
+    {
+        if (typeStr == "Color") return PropertyType::Color;
+        if (typeStr == "Float") return PropertyType::Float;
+        if (typeStr == "Int")   return PropertyType::Int;
+        if (typeStr == "Vector2") return PropertyType::Vector2;
+        if (typeStr == "Vector3") return PropertyType::Vector3;
+        if (typeStr == "Vector4") return PropertyType::Vector4;
+        if (typeStr == "Texture2D") return PropertyType::Texture2D;
+
+        // 优化 Range 正则，支持科学计数法和小数点
+        std::regex rangeRegex(R"(Range\s*\(\s*([+-]?\d*\.?\d+)\s*,\s*([+-]?\d*\.?\d+)\s*\))");
+        std::smatch rangeMatch;
+        if (std::regex_match(typeStr, rangeMatch, rangeRegex)) {
+            outMin = std::stof(rangeMatch[1].str());
+            outMax = std::stof(rangeMatch[2].str());
+            return PropertyType::Range;
+        }
+
+        return PropertyType::Float;
+    }
+    std::string PrismShaderParser::PropertyTypeToString(PropertyType type)
+    {
+        switch (type)
+        {
+        case PropertyType::Color: return "uniform vec4"; break;
+        case PropertyType::Float: return "uniform float"; break;
+        case PropertyType::Int: return "uniform int"; break;
+        case PropertyType::Vector2: return "uniform vec2"; break;
+        case PropertyType::Vector3: return "uniform vec3"; break;
+        case PropertyType::Vector4: return "uniform vec4"; break;
+        case PropertyType::Texture2D: return "uniform sampler2D"; break;
+        case PropertyType::Range: return "uniform float"; break;
+        }
+    }
     // 辅助函数：去除首尾空格
     static std::string Trim(const std::string& s) {
         auto start = s.find_first_not_of(" \t\n\r");
@@ -12,7 +57,7 @@ namespace Prism
         return (start == std::string::npos) ? "" : s.substr(start, end - start + 1);
     }
     // 辅助函数：提取块
-    std::string ExtractBlock(const std::string& source, const std::string& key, size_t offset, size_t& outBlockEnd) {
+    static std::string ExtractBlock(const std::string& source, const std::string& key, size_t offset, size_t& outBlockEnd) {
         size_t keyPos = source.find(key, offset);
         if (keyPos == std::string::npos) return "";
 
@@ -50,7 +95,7 @@ namespace Prism
             std::cerr << "Error: Failed to parse SubShader block." << std::endl;
         }
         // 4. 处理 #include 指令
-        std::filesystem::path rootPath = std::filesystem::path("Assets");
+        std::filesystem::path rootPath = std::filesystem::path(s_IncludeRoot);
         for (auto& pass : result.Passes) {
             std::set<std::filesystem::path> history;
             // 1. 处理 #include 指令
@@ -65,7 +110,7 @@ namespace Prism
 
         return result;
     }
-    #pragma region 初步处理
+#pragma region 初步处理
     std::string PrismShaderParser::StripComments(const std::string& source)
     {
         std::string result;
@@ -175,28 +220,6 @@ namespace Prism
         return true;
     }
 
-    PropertyType PrismShaderParser::StringToPropertyType(const std::string& typeStr, float& outMin, float& outMax)
-    {
-        if (typeStr == "Color") return PropertyType::Color;
-        if (typeStr == "Float") return PropertyType::Float;
-        if (typeStr == "Int")   return PropertyType::Int;
-        if (typeStr == "Vector2") return PropertyType::Vector2;
-        if (typeStr == "Vector3") return PropertyType::Vector3;
-        if (typeStr == "Vector4") return PropertyType::Vector4;
-        if (typeStr == "Texture2D") return PropertyType::Texture2D;
-
-        // 优化 Range 正则，支持科学计数法和小数点
-        std::regex rangeRegex(R"(Range\s*\(\s*([+-]?\d*\.?\d+)\s*,\s*([+-]?\d*\.?\d+)\s*\))");
-        std::smatch rangeMatch;
-        if (std::regex_match(typeStr, rangeMatch, rangeRegex)) {
-            outMin = std::stof(rangeMatch[1].str());
-            outMax = std::stof(rangeMatch[2].str());
-            return PropertyType::Range;
-        }
-
-        return PropertyType::Float;
-    }
-
     bool PrismShaderParser::ParseSubShader(const std::string& source, ParseResult& outResult) {
         size_t subShaderEnd = 0;
         // 1. 提取 SubShader 块内容
@@ -289,7 +312,7 @@ namespace Prism
     }
 #pragma endregion
 
-    #pragma region 分离翻译为GLSL
+#pragma region 分离翻译为GLSL
     void PrismShaderParser::ProcessAttributes(PassDescriptor& pass) {
         // 正则匹配: attribute 类型 变量名 : 语义;
         // Group 1: 类型 (vec3), Group 2: 变量名 (aPos), Group 3: 语义 (POSITION)
@@ -326,27 +349,12 @@ namespace Prism
         std::stringstream header;
 
         // 1. 注入版本 (工业级通常由引擎控制版本，方便跨平台)
-        header << "#version 450 core\n\n";
-
-        // 2. 注入全局 Uniform Block (PrismGlobals)
-        header << "// ---- Prism Internal Globals ----\n";
-        header << "layout(std140, binding = 0) uniform PrismGlobals {\n";
-        header << "    mat4 Prism_ViewProjection;\n";
-        header << "    mat4 Prism_Model;\n";
-        header << "    vec4 Prism_Time; // x: t/20, y: t, z: t*2, w: t*3\n";
-        header << "};\n\n";
+        header << s_FileHeader;
 
         // 3. 注入材质 Properties 转换的 Uniforms
         header << "// ---- Material Properties ----\n";
         for (const auto& prop : result.Properties) {
-            switch (prop.Type) {
-            case PropertyType::Color:     header << "uniform vec4 " << prop.Name << ";\n"; break;
-            case PropertyType::Texture2D: header << "uniform sampler2D " << prop.Name << ";\n"; break;
-            case PropertyType::Float:     header << "uniform float " << prop.Name << ";\n"; break;
-            case PropertyType::Range:     header << "uniform float " << prop.Name << ";\n"; break;
-            case PropertyType::Vector4:   header << "uniform vec4 " << prop.Name << ";\n"; break;
-                // ... 其他类型 ...
-            }
+            header << PropertyTypeToString(prop.Type) << " " << prop.Name << ";\n";
         }
         header << "\n";
 
@@ -364,13 +372,13 @@ namespace Prism
         std::string baseCode = pass.ProcessedGLSL;
 
         // --- 处理顶点着色器 (VS) ---
-        std::string vsCode = "#define PRISM_VERTEX_SHADER\n" + baseCode;
+        std::string vsCode = s_VersionHeader + "#define PRISM_VERTEX_SHADER\n" + baseCode;
         RemoveFunction(vsCode, "frag");
         // VS 需要保留 layout(location...) in，所以不需要额外处理
         pass.VertexShaderCode = vsCode;
 
         // --- 处理片元着色器 (FS) ---
-        std::string fsCode = "#define PRISM_FRAGMENT_SHADER\n" + baseCode;
+        std::string fsCode = s_VersionHeader + "#define PRISM_FRAGMENT_SHADER\n" + baseCode;
 
         // 1. 删掉原来的 main (顶点函数的入口)
         RemoveFunction(fsCode, "main");
@@ -420,9 +428,9 @@ namespace Prism
             }
         }
     }
-    #pragma endregion
+#pragma endregion
 
-    #pragma region 后处理
+#pragma region 后处理
     std::string PrismShaderParser::FormatGLSL(const std::string& code) {
         std::stringstream src(code);
         std::stringstream dst;
@@ -520,7 +528,7 @@ namespace Prism
         }
         code = result;
     }
-    #pragma endregion
+#pragma endregion
 
-    
-}   
+
+}

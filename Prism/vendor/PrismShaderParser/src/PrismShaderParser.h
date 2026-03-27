@@ -20,6 +20,12 @@
 #else
     #error Prism only supports Windows!
 #endif
+
+namespace Prism
+{
+    class Application;
+}
+
 namespace Prism
 {
     // 属性类型
@@ -90,11 +96,24 @@ namespace Prism
     // Prism Shader 解析器（目前只处理字符串，不涉及文件IO）
     class PRISM_API PrismShaderParser
     {
+        friend class Prism::Application;
+    private:
+    #pragma region 类型转换
+        // 将字符串类型转换为枚举
+        static PropertyType StringToPropertyType(const std::string& typeStr, float& outMin, float& outMax);
+        // 将枚举类型转换为字符串
+        static std::string PropertyTypeToString(PropertyType type);
+    #pragma endregion
+
     public:
-        // 主入口：传入整个 .prismshader 文件内容字符串
         ParseResult Parse(const std::string& source);
     private:
-
+        static void SetIncludeRoot(const std::string& root) { s_IncludeRoot = root; }
+        static std::string GetIncludeRoot() { return s_IncludeRoot; }
+        static std::string s_IncludeRoot;
+        static std::string s_VersionHeader;
+        static std::string s_FileHeader;
+    private:
         #pragma region 初步处理
         // 移除源代码中的所有单行和多行注释，并规范化换行符。
         static std::string StripComments(const std::string& source);
@@ -104,9 +123,6 @@ namespace Prism
 
         // 提取并解析 Properties { ... } 块
         static bool ParsePropertiesBlock(const std::string& source, ParseResult& outResult);
-
-        // 将字符串类型转换为枚举
-        static PropertyType StringToPropertyType(const std::string& typeStr, float& outMin, float& outMax);
 
         // 解析 SubShader { ... } 块
         static bool ParseSubShader(const std::string& source, ParseResult& outResult);
@@ -124,13 +140,13 @@ namespace Prism
 
         #pragma region 分离翻译为GLSL
         inline static int GetLocationBySemantic(const std::string& semantic, Prism::VertexSemantic& outSemantic) {
-            if (semantic == "POSITION") { outSemantic = Prism::VertexSemantic::Position; return 0; }
-            if (semantic == "NORMAL") { outSemantic = Prism::VertexSemantic::Normal;   return 1; }
-            if (semantic == "TEXCOORD0") { outSemantic = Prism::VertexSemantic::TexCoord0; return 2; }
-            if (semantic == "COLOR") { outSemantic = Prism::VertexSemantic::Color;    return 3; }
-            if (semantic == "TANGENT") { outSemantic = Prism::VertexSemantic::Tangent;  return 4; }
+            if (semantic == "POSITION") { outSemantic = VertexSemantic::Position; return static_cast<int>(outSemantic); }
+            if (semantic == "NORMAL") { outSemantic = VertexSemantic::Normal;   return static_cast<int>(outSemantic); }
+            if (semantic == "TEXCOORD0") { outSemantic = VertexSemantic::TexCoord0; return static_cast<int>(outSemantic); }
+            if (semantic == "COLOR") { outSemantic = VertexSemantic::Color;    return static_cast<int>(outSemantic); }
+            if (semantic == "TANGENT") { outSemantic = VertexSemantic::Tangent;  return static_cast<int>(outSemantic); }
 
-            outSemantic = Prism::VertexSemantic::Unknown;
+            outSemantic = VertexSemantic::Unknown;
             return -1;
         }
         static void ProcessAttributes(PassDescriptor& pass);

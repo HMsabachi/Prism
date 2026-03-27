@@ -6,12 +6,12 @@
 
 namespace Prism
 {
-	Shader* Shader::Create(const std::string& VertexShader, const std::string& FragmentShader)
+	Ref<Shader> Shader::Create(const std::string& VertexShader, const std::string& FragmentShader)
 	{
 		switch (RendererAPI::GetAPI())
 		{
 		case RendererAPI::API::None: PR_CORE_ASSERT(false, "RendererAPI::None is currently not supported!"); return nullptr;
-		case RendererAPI::API::OpenGL: return new OpenGLShader(VertexShader, FragmentShader);
+		case RendererAPI::API::OpenGL: return std::make_shared<OpenGLShader>(VertexShader, FragmentShader);
 		}
 		PR_CORE_ASSERT(false, "Unknown RendererAPI!");
 		return nullptr;
