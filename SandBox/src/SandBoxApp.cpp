@@ -8,7 +8,7 @@ class ExampleLayer : public Prism::Layer
 {
 public:
 	ExampleLayer()
-		: Layer("Example"), m_Camera(-1.0f, 1.0f, -1.0f, 1.0f)
+		: Layer("Example"), m_Camera(-1.7f, 1.7f, -1.0f, 1.0f)
 	{
 		// 创建VertexArray 1
 		m_VertexArray.reset(Prism::VertexArray::Create());
@@ -75,7 +75,7 @@ public:
 				FragColor = vec4(vColor);
 			}
 		)";
-		m_Shader.reset(new Prism::Shader(vertexSrc, fragmentSrc));
+		m_Shader.reset(Prism::Shader::Create(vertexSrc, fragmentSrc));
 		std::string blueShaderVertexSrc = R"(
 			#version 330 core
 			
@@ -104,7 +104,7 @@ public:
 			}
 		)";
 
-		m_BlueShader.reset(new Prism::Shader(blueShaderVertexSrc, blueShaderFragmentSrc));
+		m_BlueShader.reset(Prism::Shader::Create(blueShaderVertexSrc, blueShaderFragmentSrc));
 	}
 
 	void OnImGuiRender() override

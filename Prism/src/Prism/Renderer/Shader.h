@@ -9,19 +9,14 @@ namespace Prism
 	class PRISM_API Shader
 	{
 	public:
-		Shader(const std::string& VertexShader, const std::string& FragmentShader);
 		
-		~Shader();
+		virtual ~Shader() = default;
 
-		void Bind() const;
-		void Unbind() const;
+		virtual void Bind() const = 0;
+		virtual void Unbind() const = 0;
+
 	public:
-		void UploadUniformMat4(const std::string& name, const glm::mat4& matrix);
-	private:
-		static bool CompileShader(const std::string& shaderSource, unsigned int& ShaderID, unsigned int type);
-		static bool LinkShaders(unsigned int& programID, unsigned int vertexShader, unsigned int fragmentShader);
-	private:
-		unsigned int m_RendererID;
+		static Shader* Create(const std::string& VertexShader, const std::string& FragmentShader);
 	};
 }
 

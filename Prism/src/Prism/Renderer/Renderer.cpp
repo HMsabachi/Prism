@@ -5,6 +5,9 @@
 #include "Camera/OrthographicCamera.h"
 #include "VertexArray.h"
 
+#include "Platform/OpenGL/OpenGLShader.h"
+// TODO: 暂时使用OpenGLShader
+
 namespace Prism
 {
 	Renderer::SceneData* Renderer::m_SceneData = new Renderer::SceneData;
@@ -19,8 +22,8 @@ namespace Prism
 	void Renderer::Submit(const std::shared_ptr<Shader>& shader, const std::shared_ptr<VertexArray>& vertexArray, const glm::mat4& transform)
 	{
 		shader->Bind();
-		shader->UploadUniformMat4("u_Transform", transform);
-		shader->UploadUniformMat4("u_ViewProjection", m_SceneData->ViewProjectionMatrix);
+		std::dynamic_pointer_cast<OpenGLShader>(shader)->UploadUniformMat4("u_Transform", transform);
+		std::dynamic_pointer_cast<OpenGLShader>(shader)->UploadUniformMat4("u_ViewProjection", m_SceneData->ViewProjectionMatrix);
 		vertexArray->Bind();
 		RenderCommand::DrawIndexed(vertexArray);
 	}
