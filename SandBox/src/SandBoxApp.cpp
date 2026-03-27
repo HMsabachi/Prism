@@ -1,6 +1,8 @@
 ﻿#include <Prism.h>
 
 #include "../../Prism/src/Platform/OpenGL/OpenGLShader.h"
+#include "../../Prism/src/Platform/OpenGL/OpenGLTexture.h"
+
 
 #include "imgui/imgui.h"
 
@@ -20,7 +22,7 @@ public:
 			0.5f, -0.5f, 0.0f, 0.2f, 0.3f, 0.8f, 1.0f,
 			0.0f, 0.5f, 0.0f, 0.8f, 0.8f, 0.2f, 1.0f
 		};
-		std::shared_ptr<Prism::VertexBuffer> vertexBuffer;
+		Prism::Ref<Prism::VertexBuffer> vertexBuffer;
 		vertexBuffer.reset(Prism::VertexBuffer::Create(vertices, sizeof(vertices)));
 		Prism::BufferLayout layout = {
 			{Prism::ShaderDataType::Float3, "aPos"},
@@ -29,26 +31,27 @@ public:
 		vertexBuffer->SetLayout(layout);
 		m_VertexArray->AddVertexBuffer(vertexBuffer);
 		uint32_t indeces[] = { 0, 1, 2 };
-		std::shared_ptr<Prism::IndexBuffer> indexBuffer;
+		Prism::Ref<Prism::IndexBuffer> indexBuffer;
 		indexBuffer.reset(Prism::IndexBuffer::Create(indeces, sizeof(indeces) / sizeof(uint32_t)));
 		m_VertexArray->SetIndexBuffer(indexBuffer);
 
 		// 创建VertexArray 2
 		m_SquareVA.reset(Prism::VertexArray::Create());
-		float squareVertices[3 * 4] = {
-			-0.5f, -0.5f, 0.0f,
-			 0.5f, -0.5f, 0.0f,
-			 0.5f,  0.5f, 0.0f,
-			-0.5f,  0.5f, 0.0f
+		float squareVertices[5 * 4] = {
+			-0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
+			 0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+			 0.5f,  0.5f, 0.0f, 1.0f, 1.0f,
+			-0.5f,  0.5f, 0.0f, 0.0f, 1.0f
 		};
-		std::shared_ptr<Prism::VertexBuffer> squareVB;
+		Prism::Ref<Prism::VertexBuffer> squareVB;
 		squareVB.reset(Prism::VertexBuffer::Create(squareVertices, sizeof(squareVertices)));
 		squareVB->SetLayout({
-			{ Prism::ShaderDataType::Float3, "a_Position" }
+			{ Prism::ShaderDataType::Float3, "a_Position" },
+			{ Prism::ShaderDataType::Float2, "a_TexCoord" }
 			});
 		m_SquareVA->AddVertexBuffer(squareVB);
 		uint32_t squareIndices[6] = { 0, 1, 2, 2, 3, 0 };
-		std::shared_ptr<Prism::IndexBuffer> squareIB;
+		Prism::Ref<Prism::IndexBuffer> squareIB;
 		squareIB.reset(Prism::IndexBuffer::Create(squareIndices, sizeof(squareIndices) / sizeof(uint32_t)));
 		m_SquareVA->SetIndexBuffer(squareIB);
 
@@ -109,6 +112,40 @@ public:
 		)";
 
 		m_FlatColorShader.reset(Prism::Shader::Create(flatColorShaderVertexSrc, flatColorShaderFragmentSrc));
+		std::string textureShaderVertexSrc = R"(
+			#version 330 core
+			
+			layout(location = 0) in vec3 a_Position;
+			layout(location = 1) in vec2 a_TexCoord;
+			uniform mat4 u_ViewProjection;
+			uniform mat4 u_Transform;
+			out vec2 v_TexCoord;
+
+			void main()
+			{
+				v_TexCoord = a_TexCoord;
+				gl_Position = u_ViewProjection * u_Transform * vec4(a_Position, 1.0);
+			}
+		)";
+
+		std::string textureShaderFragmentSrc = R"(
+			#version 330 core
+			
+			layout(location = 0) out vec4 color;
+
+			in vec2 v_TexCoord;
+			uniform sampler2D u_Texture;
+
+			void main()
+			{
+				color = texture(u_Texture, v_TexCoord);
+			}
+		)";
+
+		m_TextureShader.reset(Prism::Shader::Create(textureShaderVertexSrc, textureShaderFragmentSrc));
+		m_TestTexture = Prism::Texture2D::Create("Assets/Textures/TestImage.png");
+		std::dynamic_pointer_cast<Prism::OpenGLTexture2D>(m_TestTexture)->Bind();
+		std::dynamic_pointer_cast<Prism::OpenGLShader>(m_TextureShader)->UploadUniformInt("u_Texture", 0);
 	}
 
 	void OnImGuiRender() override
@@ -119,21 +156,8 @@ public:
 	}
 	void OnUpdate() override
 	{
-		float delta = Prism::Time::GetDeltaTime();
-		if (Prism::Input::IsKeyPressed(PR_KEY_LEFT))
-			m_CameraPosition.x -= m_CameraMoveSpeed * delta;
-		if (Prism::Input::IsKeyPressed(PR_KEY_RIGHT))
-			m_CameraPosition.x += m_CameraMoveSpeed * delta;
-		if (Prism::Input::IsKeyPressed(PR_KEY_UP))
-			m_CameraPosition.y += m_CameraMoveSpeed * delta;
-		if (Prism::Input::IsKeyPressed(PR_KEY_DOWN))
-			m_CameraPosition.y -= m_CameraMoveSpeed * delta;
-		if (Prism::Input::IsKeyPressed(PR_KEY_A))
-			m_CameraRotation += m_CameraRotationSpeed * delta;
-		if (Prism::Input::IsKeyPressed(PR_KEY_D))
-			m_CameraRotation -= m_CameraRotationSpeed * delta;
-		m_Camera.SetPosition(m_CameraPosition);
-		m_Camera.SetRotation(m_CameraRotation);
+		HeadleCameraTransform(); // 处理摄像机位置和旋转
+		// 渲染
 		Prism::RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 0.1f });
 		Prism::RenderCommand::Clear();
 
@@ -148,13 +172,15 @@ public:
 		{
 			for (int j = 0; j < 20; j++)
 			{
-				glm::vec3 pos(i * 0.31f, j * 0.31f, 0.0f);
+				glm::vec3 pos(i * 0.11f, j * 0.11f, 0.0f);
 				glm::mat4 transform = glm::translate(glm::mat4(1.0f), pos) * scale;
 				Prism::Renderer::Submit(m_FlatColorShader, m_SquareVA, transform);
 			}
 		}
+		Prism::Renderer::Submit(m_TextureShader, m_SquareVA, glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
 
-		Prism::Renderer::Submit(m_Shader, m_VertexArray);
+		// 三角形 Triangle
+		//Prism::Renderer::Submit(m_Shader, m_VertexArray);
 
 		Prism::Renderer::EndScene();
 	}
@@ -166,23 +192,41 @@ public:
 
 	}
 #pragma region 事件处理 Event Handling
-	public:
+	private:
 		bool OnKeyPressedEvent(Prism::KeyPressedEvent& e)
 		{
 			if (e.GetKeyCode() == PR_KEY_T)
 				PR_TRACE("Now delta time is {0}", Prism::Time::GetDeltaTime());
 			return false;
 		}
-
+		void HeadleCameraTransform()
+		{
+			float delta = Prism::Time::GetDeltaTime();
+			if (Prism::Input::IsKeyPressed(PR_KEY_LEFT))
+				m_CameraPosition.x -= m_CameraMoveSpeed * delta;
+			if (Prism::Input::IsKeyPressed(PR_KEY_RIGHT))
+				m_CameraPosition.x += m_CameraMoveSpeed * delta;
+			if (Prism::Input::IsKeyPressed(PR_KEY_UP))
+				m_CameraPosition.y += m_CameraMoveSpeed * delta;
+			if (Prism::Input::IsKeyPressed(PR_KEY_DOWN))
+				m_CameraPosition.y -= m_CameraMoveSpeed * delta;
+			if (Prism::Input::IsKeyPressed(PR_KEY_A))
+				m_CameraRotation += m_CameraRotationSpeed * delta;
+			if (Prism::Input::IsKeyPressed(PR_KEY_D))
+				m_CameraRotation -= m_CameraRotationSpeed * delta;
+			m_Camera.SetPosition(m_CameraPosition);
+			m_Camera.SetRotation(m_CameraRotation);
+		}
 #pragma endregion
-
+	
 private:
 
-	std::shared_ptr<Prism::Shader> m_Shader;
-	std::shared_ptr<Prism::VertexArray> m_VertexArray;
+	Prism::Ref<Prism::Shader> m_Shader;
+	Prism::Ref<Prism::VertexArray> m_VertexArray;
 
-	std::shared_ptr<Prism::Shader> m_FlatColorShader;
-	std::shared_ptr<Prism::VertexArray> m_SquareVA;
+	Prism::Ref<Prism::Shader> m_FlatColorShader, m_TextureShader;
+	Prism::Ref<Prism::VertexArray> m_SquareVA;
+	Prism::Ref<Prism::Texture2D> m_TestTexture;
 
 	Prism::OrthographicCamera m_Camera;
 	glm::vec3 m_CameraPosition = { 0.0f, 0.0f, 0.0f };
