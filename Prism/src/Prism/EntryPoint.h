@@ -8,7 +8,6 @@ int main(int argc, char** argv)
 {
 	// TODO: Log 初始化暂时写在这里
 	Prism::Log::Init();
-	PR_CORE_WARN("初始化 Log!");
 
 	auto app = Prism::CreateApplication();
 	app->Run();

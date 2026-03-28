@@ -214,7 +214,18 @@ Shader "Custom/MyFirstShader"
 	{
 		Prism::EventDispatcher dispatcher(event);
 		dispatcher.Dispatch<Prism::KeyPressedEvent>(PR_BIND_EVENT_FN(ExampleLayer::OnKeyPressedEvent));
-
+		dispatcher.Dispatch<Prism::WindowResizeEvent>([&](Prism::WindowResizeEvent& e)
+			{
+				m_Camera.OnWindowResize(e.GetWidth(), e.GetHeight());
+				return false;
+			});
+		dispatcher.Dispatch<Prism::MouseScrolledEvent>([&](Prism::MouseScrolledEvent& e)
+			{
+				float offset = e.GetYOffset();
+				m_CameraZoomLevel *= 1.0f - offset * m_CameraZoomSpeed;
+				m_Camera.SetZoomLevel(m_CameraZoomLevel);
+				return false;
+			});
 	}
 #pragma region 事件处理 Event Handling
 	private:
@@ -258,6 +269,8 @@ private:
 	float m_CameraRotation = 0.0f;
 	float m_CameraMoveSpeed = 3.0f;
 	float m_CameraRotationSpeed = 10.0f;
+	float m_CameraZoomLevel = 1.0f;
+	float m_CameraZoomSpeed = 0.1f;
 	glm::vec3 m_SquareColor = { 0.2f, 0.3f, 0.8f };
 };
 

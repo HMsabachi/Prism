@@ -36,6 +36,7 @@ namespace Prism
 		// Update function for the application(frame update) 应用更新函数(帧更新)
 		void OnUpdate(); 
 		bool OnWindowClose(WindowCloseEvent& e);
+		bool OnWindowResize(WindowResizeEvent& e);
 	private:
 		std::unique_ptr<Window> m_Window;
 		bool m_Running = true;
