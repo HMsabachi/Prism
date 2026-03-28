@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "Prism/Core/Core.h"
 #include "Prism/Renderer/RenderCommand.h"
+#include "Shader/GlobalUniforms.h"
 
 namespace Prism
 {
@@ -25,6 +26,7 @@ namespace Prism
 		{
 			glm::mat4 ViewProjectionMatrix;
 		};
+		static PrismGlobalsUBO s_GlobalUBO;
 
 		static SceneData* m_SceneData;
 	};

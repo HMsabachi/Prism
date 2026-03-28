@@ -8,12 +8,24 @@ namespace Prism
     std::string PrismShaderParser::s_VersionHeader = "#version 450 core\n";
     std::string PrismShaderParser::s_IncludeRoot = "Assets/Shaders/";
     std::string PrismShaderParser::s_FileHeader = R"PRISM(
-// ---- Prism Internal Globals ----
-layout(std140, binding = 0) uniform PrismGlobals {
-    mat4 Prism_ViewProjection;
-    mat4 Prism_Model;
-    vec4 Prism_Time; // x: t/20, y: t, z: t*2, w: t*3
+// ==================== Prism 引擎全局 Uniform Block ====================
+layout(std140, binding = 0) uniform PrismGlobals
+{
+    mat4 Prism_ViewProjection;   // VP 矩阵（View * Projection）
+    mat4 Prism_Model_legacy;            // 当前物体的 Model 矩阵（每个 DrawCall 更新）
+    mat4 Prism_View;             // View 矩阵（可选，便于计算世界空间）
+    mat4 Prism_Projection;       // Projection 矩阵（可选）
+    
+    vec4 Prism_Time;             // x: time/20, y: time, z: time*2, w: time*3（常用动画）
+    vec3 Prism_CameraPosition;   // 相机世界位置（用于 Fresnel、反射等）
+    
+    float Prism_DeltaTime;       // 帧间隔（秒）
+    float Prism_AspectRatio;     // 屏幕宽高比
+    vec2  Prism_Resolution;      // 屏幕分辨率 (width, height)
+    
+    // 以后可以继续扩展 Light 数量、Fog 等
 };
+uniform mat4 Prism_Model; // 当前物体的 Model 矩阵（每个 DrawCall 更新）
 )PRISM";
     PropertyType PrismShaderParser::StringToPropertyType(const std::string& typeStr, float& outMin, float& outMax)
     {
@@ -24,8 +36,6 @@ layout(std140, binding = 0) uniform PrismGlobals {
         if (typeStr == "Vector3") return PropertyType::Vector3;
         if (typeStr == "Vector4") return PropertyType::Vector4;
         if (typeStr == "Texture2D") return PropertyType::Texture2D;
-
-        // 优化 Range 正则，支持科学计数法和小数点
         std::regex rangeRegex(R"(Range\s*\(\s*([+-]?\d*\.?\d+)\s*,\s*([+-]?\d*\.?\d+)\s*\))");
         std::smatch rangeMatch;
         if (std::regex_match(typeStr, rangeMatch, rangeRegex)) {
@@ -50,33 +60,6 @@ layout(std140, binding = 0) uniform PrismGlobals {
         case PropertyType::Range: return "uniform float"; break;
         }
     }
-    // 辅助函数：去除首尾空格
-    static std::string Trim(const std::string& s) {
-        auto start = s.find_first_not_of(" \t\n\r");
-        auto end = s.find_last_not_of(" \t\n\r");
-        return (start == std::string::npos) ? "" : s.substr(start, end - start + 1);
-    }
-    // 辅助函数：提取块
-    static std::string ExtractBlock(const std::string& source, const std::string& key, size_t offset, size_t& outBlockEnd) {
-        size_t keyPos = source.find(key, offset);
-        if (keyPos == std::string::npos) return "";
-
-        size_t openBrace = source.find('{', keyPos);
-        if (openBrace == std::string::npos) return "";
-
-        int braceCount = 1;
-        for (size_t i = openBrace + 1; i < source.size(); ++i) {
-            if (source[i] == '{') braceCount++;
-            else if (source[i] == '}') braceCount--;
-
-            if (braceCount == 0) {
-                outBlockEnd = i;
-                return source.substr(openBrace + 1, i - openBrace - 1);
-            }
-        }
-        return "";
-    }
-
     ParseResult PrismShaderParser::Parse(const std::string& source)
     {
         ParseResult result;
@@ -110,6 +93,10 @@ layout(std140, binding = 0) uniform PrismGlobals {
 
         return result;
     }
+    // 辅助函数：去除首尾空格
+    static std::string Trim(const std::string& s);
+    // 辅助函数：提取块
+    static std::string ExtractBlock(const std::string& source, const std::string& key, size_t offset, size_t& outBlockEnd);
 #pragma region 初步处理
     std::string PrismShaderParser::StripComments(const std::string& source)
     {
@@ -530,5 +517,30 @@ layout(std140, binding = 0) uniform PrismGlobals {
     }
 #pragma endregion
 
+    // 辅助函数：去除首尾空格
+    static std::string Trim(const std::string& s) {
+        auto start = s.find_first_not_of(" \t\n\r");
+        auto end = s.find_last_not_of(" \t\n\r");
+        return (start == std::string::npos) ? "" : s.substr(start, end - start + 1);
+    }
+    // 辅助函数：提取块
+    static std::string ExtractBlock(const std::string& source, const std::string& key, size_t offset, size_t& outBlockEnd) {
+        size_t keyPos = source.find(key, offset);
+        if (keyPos == std::string::npos) return "";
 
+        size_t openBrace = source.find('{', keyPos);
+        if (openBrace == std::string::npos) return "";
+
+        int braceCount = 1;
+        for (size_t i = openBrace + 1; i < source.size(); ++i) {
+            if (source[i] == '{') braceCount++;
+            else if (source[i] == '}') braceCount--;
+
+            if (braceCount == 0) {
+                outBlockEnd = i;
+                return source.substr(openBrace + 1, i - openBrace - 1);
+            }
+        }
+        return "";
+    }
 }

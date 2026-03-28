@@ -1,6 +1,6 @@
 ﻿#include <Prism.h>
 
-#include "../../Prism/src/Platform/OpenGL/OpenGLShader.h"
+#include "../../Prism/src/Platform/OpenGL/Shader/OpenGLShader.h"
 #include "../../Prism/src/Platform/OpenGL/OpenGLTexture.h"
 
 
@@ -18,15 +18,17 @@ public:
 		// 创建VertexArray 1
 		m_VertexArray.reset(Prism::VertexArray::Create());
 		float vertices[] = {
-			-0.5f, -0.5f, 0.0f, 0.8f, 0.2f, 0.8f, 1.0f,
-			0.5f, -0.5f, 0.0f, 0.2f, 0.3f, 0.8f, 1.0f,
-			0.0f, 0.5f, 0.0f, 0.8f, 0.8f, 0.2f, 1.0f
+			-0.5f, -0.5f, 0.0f, 0.8f, 0.2f, 0.8f, 1.0f, 1.0f,
+			0.5f, -0.5f, 0.0f, 0.2f, 0.3f, 0.8f, 1.0f, 1.0f,
+			0.0f, 0.5f, 0.0f, 0.8f, 0.8f, 0.2f, 1.0f, 1.0f
 		};
 		Prism::Ref<Prism::VertexBuffer> vertexBuffer;
 		vertexBuffer.reset(Prism::VertexBuffer::Create(vertices, sizeof(vertices)));
 		Prism::BufferLayout layout = {
 			{Prism::ShaderDataType::Float3, "aPos"},
-			{Prism::ShaderDataType::Float4, "aColor"}
+			{Prism::ShaderDataType::Float3, "aNormal"},
+			{Prism::ShaderDataType::Float2, "aUV"},
+
 		};
 		vertexBuffer->SetLayout(layout);
 		m_VertexArray->AddVertexBuffer(vertexBuffer);
@@ -58,13 +60,22 @@ public:
 		// Shader
 		std::string vertexSrc = R"(
 #version 450 core
-			#define PRISM_VERTEX_SHADER
-// ---- Prism Internal Globals ----
-layout(std140, binding = 0) uniform PrismGlobals {
-    mat4 Prism_ViewProjection;
-    mat4 Prism_Model;
-    vec4 Prism_Time; // x: t/20, y: t, z: t*2, w: t*3
+#define PRISM_VERTEX_SHADER
+// ==================== Prism 引擎全局 Uniform Block ====================
+layout(std140, binding = 0) uniform PrismGlobals
+{
+    mat4 Prism_ViewProjection;   // VP 矩阵（View * Projection）
+    mat4 Prism_Model_legacy;            // 当前物体的 Model 矩阵（每个 DrawCall 更新）
+    mat4 Prism_View;             // View 矩阵（可选，便于计算世界空间）
+    mat4 Prism_Projection;       // Projection 矩阵（可选）
+    vec4 Prism_Time;             // x: time/20, y: time, z: time*2, w: time*3（常用动画）
+    vec3 Prism_CameraPosition;   // 相机世界位置（用于 Fresnel、反射等）
+    float Prism_DeltaTime;       // 帧间隔（秒）
+    float Prism_AspectRatio;     // 屏幕宽高比
+    vec2  Prism_Resolution;      // 屏幕分辨率 (width, height)
+    // 以后可以继续扩展 Light 数量、Fog 等
 };
+uniform mat4 Prism_Model; // 当前物体的 Model 矩阵（每个 DrawCall 更新）
 // ---- Material Properties ----
 uniform vec4 _MainColor;
 uniform sampler2D _MainTex;
@@ -90,13 +101,22 @@ void main()
 		)";
 		std::string fragmentSrc = R"(
 #version 450 core
-			#define PRISM_FRAGMENT_SHADER
-// ---- Prism Internal Globals ----
-layout(std140, binding = 0) uniform PrismGlobals {
-    mat4 Prism_ViewProjection;
-    mat4 Prism_Model;
-    vec4 Prism_Time; // x: t/20, y: t, z: t*2, w: t*3
+#define PRISM_FRAGMENT_SHADER
+// ==================== Prism 引擎全局 Uniform Block ====================
+layout(std140, binding = 0) uniform PrismGlobals
+{
+    mat4 Prism_ViewProjection;   // VP 矩阵（View * Projection）
+    mat4 Prism_Model_legacy;            // 当前物体的 Model 矩阵（每个 DrawCall 更新）
+    mat4 Prism_View;             // View 矩阵（可选，便于计算世界空间）
+    mat4 Prism_Projection;       // Projection 矩阵（可选）
+    vec4 Prism_Time;             // x: time/20, y: time, z: time*2, w: time*3（常用动画）
+    vec3 Prism_CameraPosition;   // 相机世界位置（用于 Fresnel、反射等）
+    float Prism_DeltaTime;       // 帧间隔（秒）
+    float Prism_AspectRatio;     // 屏幕宽高比
+    vec2  Prism_Resolution;      // 屏幕分辨率 (width, height)
+    // 以后可以继续扩展 Light 数量、Fog 等
 };
+uniform mat4 Prism_Model; // 当前物体的 Model 矩阵（每个 DrawCall 更新）
 // ---- Material Properties ----
 uniform vec4 _MainColor;
 uniform sampler2D _MainTex;
@@ -113,8 +133,10 @@ VARYING vec2 vUV;
 VARYING vec3 vNormal;
 void main()
 {
-    vec4 col = texture(_MainTex, vUV) * _MainColor;
-    col.rgb *= sin(Prism_Time.y * 5.0) * 0.5 + 0.5;
+    vec4 col = vec4(1.0, 1.0, 1.0, 1.0);
+    col.r *= sin(Prism_Time.x * 2.0) * 0.5 + 0.5;
+    col.g *= sin(Prism_Time.y * 2.0) * 0.5 + 0.5;
+    col.b *= sin(Prism_Time.z * 2.0) * 0.5 + 0.5;
     FragColor = col;
 }
 		)";
@@ -214,10 +236,10 @@ void main()
 				Prism::Renderer::Submit(m_FlatColorShader, m_SquareVA, transform);
 			}
 		}
-		Prism::Renderer::Submit(m_TextureShader, m_SquareVA, glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
+		//Prism::Renderer::Submit(m_TextureShader, m_SquareVA, glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
 
 		// 三角形 Triangle
-		//Prism::Renderer::Submit(m_Shader, m_VertexArray);
+		Prism::Renderer::Submit(m_Shader, m_VertexArray);
 
 		Prism::Renderer::EndScene();
 	}

@@ -1,7 +1,7 @@
 ﻿#include "prpch.h"
 #include "Shader.h"
 #include "../RendererAPI.h"
-#include "Platform/OpenGL/OpenGLShader.h"
+#include "Platform/OpenGL/Shader/OpenGLShader.h"
 
 
 namespace Prism
