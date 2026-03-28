@@ -5,6 +5,11 @@
 #include "Renderer.h"
 namespace Prism
 {
+	Ref<Texture2D> Texture2D::ErrorTexture = nullptr;
+	void Texture2D::Init()
+	{
+		ErrorTexture = Create("Assets/Textures/Error.png");
+	}
 	Ref<Texture2D> Texture2D::Create(const std::string& path)
 	{
 		switch (RendererAPI::GetAPI())

@@ -16,6 +16,11 @@ namespace Prism
 	class PRISM_API Texture2D : public Texture
 	{
 	public:
+		virtual ~Texture2D() = default;
+		static void Init();
+	public:
+		static Ref<Texture2D> ErrorTexture;
+	public:
 		static Ref<Texture2D> Create(const std::string& path);
 	};
 }

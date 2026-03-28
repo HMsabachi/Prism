@@ -17,6 +17,7 @@
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Buffer.h"
 #include "Prism/Renderer/Shader/Shader.h"
+#include "Prism/Renderer/Shader/PrismShader.h"
 #include "Prism/Renderer/VertexArray.h"
 #include "Prism/Renderer/Texture.h"
 

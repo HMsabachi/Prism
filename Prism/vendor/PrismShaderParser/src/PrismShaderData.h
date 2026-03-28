@@ -81,8 +81,6 @@ namespace Prism
     {
         std::string ShaderName;
         std::vector<PropertyDescriptor> Properties;
-        std::string RawGLSL;        // 用户在 GLSL { } 里写的原始代码
-        std::string ProcessedGLSL;  // 经过预处理（注入全局+include）后的 GLSL
         std::vector<PassDescriptor> Passes;
     };
 }

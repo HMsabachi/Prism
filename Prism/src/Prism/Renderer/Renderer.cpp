@@ -4,6 +4,7 @@
 #include "RenderCommand.h"
 #include "Camera/OrthographicCamera.h"
 #include "VertexArray.h"
+#include "Texture.h"
 
 #include "Prism/Core/Time.h"
 #include "Prism/Application.h"
@@ -22,6 +23,7 @@ namespace Prism
 	{
 		RenderCommand::Init();
 		GlobalUniforms::Init();
+		Texture2D::Init();
 	}
 	void Renderer::BeginScene(OrthographicCamera& camera)
 	{

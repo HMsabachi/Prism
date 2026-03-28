@@ -58,89 +58,55 @@ public:
 		m_SquareVA->SetIndexBuffer(squareIB);
 
 		// Shader
-		std::string vertexSrc = R"(
-			#version 450 core
-			#define PRISM_VERTEX_SHADER
-			// ==================== Prism 引擎全局 Uniform Block ====================
-			layout(std140, binding = 0) uniform PrismGlobals
-			{
-				mat4 Prism_ViewProjection;   // VP 矩阵（View * Projection）
-				mat4 Prism_Model_legacy;            // 当前物体的 Model 矩阵（每个 DrawCall 更新）
-				mat4 Prism_View;             // View 矩阵（可选，便于计算世界空间）
-				mat4 Prism_Projection;       // Projection 矩阵（可选）
-				vec4 Prism_Time;             // x: time/20, y: time, z: time*2, w: time*3（常用动画）
-				vec3 Prism_CameraPosition;   // 相机世界位置（用于 Fresnel、反射等）
-				float Prism_DeltaTime;       // 帧间隔（秒）
-				float Prism_AspectRatio;     // 屏幕宽高比
-				vec2  Prism_Resolution;      // 屏幕分辨率 (width, height)
-				// 以后可以继续扩展 Light 数量、Fog 等
-			};
-			uniform mat4 Prism_Model; // 当前物体的 Model 矩阵（每个 DrawCall 更新）
-			// ---- Material Properties ----
-			uniform vec4 _MainColor;
-			uniform sampler2D _MainTex;
-			uniform float _Gloss;
-			uniform float _Cutoff;
-			#ifdef PRISM_VERTEX_SHADER
-			#define VARYING out
-			#else
-			#define VARYING in
-			layout(location = 0) out vec4 FragColor;
-			#endif
-			// Error: Include not found: PrismBuiltin.glsl
-			layout(location = 0) in vec3 aPos;
-			layout(location = 1) in vec3 aNormal;
-			layout(location = 2) in vec2 aUV;
-			VARYING vec2 vUV;
-			VARYING vec3 vNormal;
-			void main()
-			{
-				gl_Position = Prism_ViewProjection * Prism_Model * vec4(aPos, 1.0);
-				vUV = aUV;
-			}
-		)";
-		std::string fragmentSrc = R"(
-			#version 450 core
-			#define PRISM_FRAGMENT_SHADER
-			// ==================== Prism 引擎全局 Uniform Block ====================
-			layout(std140, binding = 0) uniform PrismGlobals
-			{
-				mat4 Prism_ViewProjection;   // VP 矩阵（View * Projection）
-				mat4 Prism_Model_legacy;            // 当前物体的 Model 矩阵（每个 DrawCall 更新）
-				mat4 Prism_View;             // View 矩阵（可选，便于计算世界空间）
-				mat4 Prism_Projection;       // Projection 矩阵（可选）
-				vec4 Prism_Time;             // x: time/20, y: time, z: time*2, w: time*3（常用动画）
-				vec3 Prism_CameraPosition;   // 相机世界位置（用于 Fresnel、反射等）
-				float Prism_DeltaTime;       // 帧间隔（秒）
-				float Prism_AspectRatio;     // 屏幕宽高比
-				vec2  Prism_Resolution;      // 屏幕分辨率 (width, height)
-				// 以后可以继续扩展 Light 数量、Fog 等
-			};
-			uniform mat4 Prism_Model; // 当前物体的 Model 矩阵（每个 DrawCall 更新）
-			// ---- Material Properties ----
-			uniform vec4 _MainColor;
-			uniform sampler2D _MainTex;
-			uniform float _Gloss;
-			uniform float _Cutoff;
-			#ifdef PRISM_VERTEX_SHADER
-			#define VARYING out
-			#else
-			#define VARYING in
-			layout(location = 0) out vec4 FragColor;
-			#endif
-			// Error: Include not found: PrismBuiltin.glsl
-			VARYING vec2 vUV;
-			VARYING vec3 vNormal;
-			void main()
-			{
-				vec4 col = vec4(1.0, 1.0, 1.0, 1.0);
-				col.r *= sin(Prism_Time.x * 2.0) * 0.5 + 0.5;
-				col.g *= sin(Prism_Time.y * 2.0) * 0.5 + 0.5;
-				col.b *= sin(Prism_Time.z * 2.0) * 0.5 + 0.5;
-				FragColor = col;
-			}
-		)";
-		m_Shader = Prism::Shader::Create(vertexSrc, fragmentSrc);
+		std::string Src = R"(
+// Prism Shader Language v1.0
+Shader "Custom/MyFirstShader"
+{
+    // ==================== Properties（材质参数） ====================
+    Properties
+    {
+        _MainColor("主颜色", Color) = (1, 1, 1, 1)
+        _MainTex("基础贴图", Texture2D) = "white" {}
+        _Gloss("光泽度", Float) = 0.5
+        _Cutoff("透明裁剪", Range(0, 1)) = 0.5
+    }
+    SubShader
+    {
+        
+        Pass
+        {
+            Tags { "Queue" = "Geometry" "RenderType" = "Opaque" }
+            Name "ForwardBase"
+            GLSL
+            {
+                #include "PrismBuiltin.glsl"
+                attribute vec3 aPos : POSITION;
+                attribute vec2 aUV : TEXCOORD0;
+                attribute vec3 aNormal : NORMAL;
+                VARYING vec2 vUV; // Prism 引擎定义的跨阶段变量
+                VARYING vec3 vNormal;
+                void main()
+                {
+                    gl_Position = Prism_ViewProjection * Prism_Model * vec4(aPos, 1.0); // Prism_ 前缀是引擎全局变量
+                    vUV = aUV;
+                }
+
+                void frag()
+                {
+                    vec4 col = vec4(1.0, 1.0, 1.0, 1.0);
+					col.r *= sin(Prism_Time.x * 2.0) * 0.5 + 0.5;
+					col.g *= sin(Prism_Time.y * 2.0) * 0.5 + 0.5;
+					col.b *= sin(Prism_Time.z * 2.0) * 0.5 + 0.5;
+					FragColor = col;
+                }
+            }
+        }
+    }
+}
+)";
+
+		m_Shader = Prism::PrismShader::Create(Src);
+		PR_TRACE("Prism Shader Property {0}", m_Shader->GetProperties());
 		std::string flatColorShaderVertexSrc = R"(
 			#version 330 core
 			
@@ -239,7 +205,7 @@ public:
 		Prism::Renderer::Submit(m_TextureShader, m_SquareVA, glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
 
 		// 三角形 Triangle
-		Prism::Renderer::Submit(m_Shader, m_VertexArray);
+		Prism::Renderer::Submit(m_Shader->GetOriginalShader(), m_VertexArray);
 
 		Prism::Renderer::EndScene();
 	}
@@ -280,7 +246,7 @@ public:
 	
 private:
 
-	Prism::Ref<Prism::Shader> m_Shader;
+	Prism::Ref<Prism::PrismShader> m_Shader;
 	Prism::Ref<Prism::VertexArray> m_VertexArray;
 
 	Prism::Ref<Prism::Shader> m_FlatColorShader, m_TextureShader;
