@@ -25,6 +25,12 @@ namespace Prism
 		PR_CORE_ASSERT(false, "Unknown ShaderDataType!");
 		return 0;
 	}
+	uint32_t OpenGLVertexArray::VertexSemanticToOpenGLLocation(VertexSemantic semantic)
+	{
+		PR_CORE_INFO("VertexSemanticToOpenGLLocation: {0}", static_cast<uint32_t>(semantic));
+		if(semantic == VertexSemantic::Unknown) return 9999;
+		return static_cast<uint32_t>(semantic);
+	}
 
 	OpenGLVertexArray::OpenGLVertexArray()
 	{
@@ -51,20 +57,24 @@ namespace Prism
 		PR_CORE_ASSERT(vertexBuffer->GetLayout().GetElements().size(), "Vertex Buffer has no layout!");
 		glBindVertexArray(m_RendererID);
 		vertexBuffer->Bind();
-		uint32_t index = 0;
+		uint32_t index = 10;
 		const auto& layout = vertexBuffer->GetLayout();
 		for (auto& element : layout)
 		{
-			glEnableVertexAttribArray(index);
+			uint32_t location = VertexSemanticToOpenGLLocation(element.Semantic) != 9999 ? VertexSemanticToOpenGLLocation(element.Semantic) : index;
+			PR_CORE_INFO("location: {0}", location);
+			glEnableVertexAttribArray(location);
 			glVertexAttribPointer(
-				index,
+				location,
 				element.GetComponentCount(),
 				ShaderDataTypeToOpenGLBaseType(element.Type),
 				element.Normalized ? GL_TRUE : GL_FALSE,
 				layout.GetStride(),
 				reinterpret_cast<const void*> (element.Offset)
 			);
-			index++;
+			if(element.Semantic == VertexSemantic::Unknown)
+				index++;
+			
 		}
 		m_VertexBuffers.push_back(vertexBuffer);
 	}
@@ -75,6 +85,7 @@ namespace Prism
 		indexBuffer->Bind();
 		m_IndexBuffer = indexBuffer;
 	}
+	
 }
 
 

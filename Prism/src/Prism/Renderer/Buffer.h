@@ -2,6 +2,7 @@
 
 #include "Prism/Core/Core.h"
 #include "Prism/Renderer/Renderer.h"
+#include "PrismShaderData.h"
 
 namespace Prism
 {
@@ -36,10 +37,11 @@ namespace Prism
 		ShaderDataType Type;
 		uint32_t Size;
 		uint32_t Offset;
+		VertexSemantic Semantic;
 		bool Normalized;
 		BufferElement() {}
-		BufferElement(ShaderDataType type, const std::string& name, bool normalized = false)
-			: Name(name), Type(type), Size(ShaderDataTypeSize(type)), Offset(0), Normalized(normalized)
+		BufferElement(ShaderDataType type, const std::string& name, VertexSemantic semantic = VertexSemantic::Unknown, bool normalized = false)
+			: Name(name), Type(type), Size(ShaderDataTypeSize(type)), Offset(0), Semantic(semantic), Normalized(normalized)
 		{
 		}
 		uint32_t GetComponentCount() const
