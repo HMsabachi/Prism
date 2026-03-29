@@ -59,73 +59,18 @@ public:
 
 		// Shader
 		std::string Src = "Assets/Shaders/FristShader.glsl";
-
-		m_Shader = Prism::PrismShader::Create(Src);
+		m_Shader = m_ShaderLibrary.Load(Src);
 		PR_TRACE("Prism Shader Property {0}", m_Shader->GetProperties());
-		std::string flatColorShaderVertexSrc = R"(
-			#version 330 core
-			
-			layout(location = 0) in vec3 a_Position;
-			uniform mat4 u_ViewProjection;
-			uniform mat4 u_Transform;
-			out vec3 v_Position;
 
-			void main()
-			{
-				v_Position = a_Position;
-				gl_Position = u_ViewProjection * u_Transform * vec4(a_Position, 1.0);
-			}
-		)";
+		std::string flatColorShader = "Assets/Shaders/FlatColor.glsl";
+		auto m_FlatColorShader = m_ShaderLibrary.Load(flatColorShader);
 
-		std::string flatColorShaderFragmentSrc = R"(
-			#version 330 core
-			
-			out vec4 color;
+		std::string textureShader = "Assets/Shaders/Texture.glsl";
+		m_TextureShader = m_ShaderLibrary.Load(textureShader);
 
-			in vec3 v_Position;
-			uniform vec3 u_Color;
-
-			void main()
-			{
-				color = vec4(u_Color, 1.0);
-			}
-		)";
-
-		m_FlatColorShader = Prism::Shader::Create(flatColorShaderVertexSrc, flatColorShaderFragmentSrc);
-		std::string textureShaderVertexSrc = R"(
-			#version 330 core
-			
-			layout(location = 0) in vec3 a_Position;
-			layout(location = 2) in vec2 a_TexCoord;
-			uniform mat4 u_ViewProjection;
-			uniform mat4 u_Transform;
-			out vec2 v_TexCoord;
-
-			void main()
-			{
-				v_TexCoord = a_TexCoord;
-				gl_Position = u_ViewProjection * u_Transform * vec4(a_Position, 1.0);
-			}
-		)";
-
-		std::string textureShaderFragmentSrc = R"(
-			#version 330 core
-			
-			layout(location = 0) out vec4 color;
-
-			in vec2 v_TexCoord;
-			uniform sampler2D u_Texture;
-
-			void main()
-			{
-				color = texture(u_Texture, v_TexCoord);
-			}
-		)";
-
-		m_TextureShader = Prism::Shader::Create(textureShaderVertexSrc, textureShaderFragmentSrc);
 		m_TestTexture = Prism::Texture2D::Create("Assets/Textures/TestImage.png");
 		std::dynamic_pointer_cast<Prism::OpenGLTexture2D>(m_TestTexture)->Bind();
-		std::dynamic_pointer_cast<Prism::OpenGLShader>(m_TextureShader)->UploadUniformInt("u_Texture", 0);
+		m_TextureShader->GetOriginalShader()->SetInt("_MainTex", 0);
 	}
 
 	void OnImGuiRender() override
@@ -145,8 +90,10 @@ public:
 
 		glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.1f));
 
-		std::dynamic_pointer_cast<Prism::OpenGLShader>(m_FlatColorShader)->Bind();
-		std::dynamic_pointer_cast<Prism::OpenGLShader>(m_FlatColorShader)->UploadUniformFloat3("u_Color", m_SquareColor);
+		auto& FlatColorShader = m_ShaderLibrary.Get("Custom/FlatColor");
+		FlatColorShader->GetOriginalShader()->Bind();
+		FlatColorShader->GetOriginalShader()->SetFloat3("_MainColor", m_SquareColor);
+		
 
 		for (int i = 0; i < 20; i++)
 		{
@@ -154,10 +101,10 @@ public:
 			{
 				glm::vec3 pos(i * 0.11f, j * 0.11f, 0.0f);
 				glm::mat4 transform = glm::translate(glm::mat4(1.0f), pos) * scale;
-				Prism::Renderer::Submit(m_FlatColorShader, m_SquareVA, transform);
+				Prism::Renderer::Submit(FlatColorShader->GetOriginalShader(), m_SquareVA, transform);
 			}
 		}
-		Prism::Renderer::Submit(m_TextureShader, m_SquareVA, glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
+		Prism::Renderer::Submit(m_TextureShader->GetOriginalShader(), m_SquareVA, glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
 
 		// 三角形 Triangle
 		Prism::Renderer::Submit(m_Shader->GetOriginalShader(), m_VertexArray);
@@ -211,11 +158,10 @@ public:
 #pragma endregion
 	
 private:
-
-	Prism::Ref<Prism::PrismShader> m_Shader;
+	Prism::ShaderLibrary m_ShaderLibrary;
+	Prism::Ref<Prism::PrismShader> m_Shader, m_TextureShader;
 	Prism::Ref<Prism::VertexArray> m_VertexArray;
 
-	Prism::Ref<Prism::Shader> m_FlatColorShader, m_TextureShader;
 	Prism::Ref<Prism::VertexArray> m_SquareVA;
 	Prism::Ref<Prism::Texture2D> m_TestTexture;
 

@@ -201,6 +201,7 @@ namespace Prism
 
 		std::string GetFilePath() const {return m_FilePath; };
 		std::string GetName() const { return m_ParseResult.ShaderName; }
+		std::string GetSource() const { return m_ParseResult.Passes[0].VertexShaderCode + m_ParseResult.Passes[0].FragmentShaderCode; }
 
 	private:
 		static bool ConvertValue(const std::string& value, PropertyType type, glm::vec4& outValue);
