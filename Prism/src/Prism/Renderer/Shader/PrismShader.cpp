@@ -4,9 +4,15 @@
 
 namespace Prism
 {
-	Ref<PrismShader> PrismShader::Create(const std::string& source)
+
+	Ref<PrismShader> PrismShader::Create(const std::string& source, const bool isFile)
 	{
-		return CreateRef<PrismShader>(source);
+		std::string src;
+		if (isFile)
+			src = ReadFile(source);
+		else
+			src = source;
+		return CreateRef<PrismShader>(src);
 	}
 
 	PrismShader::PrismShader(const std::string& source)

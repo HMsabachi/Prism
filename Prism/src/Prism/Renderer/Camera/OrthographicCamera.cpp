@@ -9,9 +9,9 @@ namespace Prism
 	{
 		RecalculateViewMatrix();
 	}
-	bool OrthographicCamera::OnWindowResize(float width, float height)
+	bool OrthographicCamera::OnWindowResize(uint32_t width, uint32_t height)
 	{
-		m_AspectRatio = width / height;
+		m_AspectRatio = width * 1.0f / height;
 		RecalculateProjectionMatrix();
 		return true;
 	}

@@ -13,7 +13,7 @@ namespace Prism
 {
 	namespace ShaderData
 	{
-		#pragma region Shader Property Structs
+		#pragma region Shader Property Structs Shader 属性结构体
 		struct PRISM_API PropertyElement
 		{
 			std::string Name;
@@ -191,7 +191,7 @@ namespace Prism
 	class PRISM_API PrismShader
 	{
 	public:
-		static Ref<PrismShader> Create(const std::string& source);
+		static Ref<PrismShader> Create(const std::string& source, const bool isFile = true);
 		~PrismShader();
 
 		Ref<Shader> GetOriginalShader() const { return m_Shader; }
@@ -199,6 +199,10 @@ namespace Prism
 	public:
 		PrismShader(const std::string& source);
 
+		std::string GetFilePath() const {return m_FilePath; };
+		std::string GetName() const { return m_ParseResult.ShaderName; }
+
+	private:
 		static bool ConvertValue(const std::string& value, PropertyType type, glm::vec4& outValue);
 		static bool ConvertValue(const std::string& value, PropertyType type, glm::ivec4& outValue);
 	
@@ -206,6 +210,7 @@ namespace Prism
 		Ref<Shader> m_Shader;
 		static std::string ReadFile(const std::string& filePath);
 	private:
+		std::string m_FilePath;
 		ShaderData::Property m_Properties;
 		ParseResult m_ParseResult;
 	};

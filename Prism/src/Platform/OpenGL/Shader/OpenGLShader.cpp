@@ -37,41 +37,85 @@ namespace Prism
 	}
 
 #pragma region 上传Uniforms
-	void OpenGLShader::UploadUniformInt(const std::string& name, int value)
+	void OpenGLShader::UploadUniformInt(const std::string& name, int value) const
 	{
 		GLint location = glGetUniformLocation(m_RendererID, name.c_str());
 		glUniform1i(location, value);
 	}
-	void OpenGLShader::UploadUniformFloat(const std::string& name, float value)
+	void OpenGLShader::UploadUniformIntArray(const std::string& name, int* values, uint32_t count) const
+	{
+		GLint location = glGetUniformLocation(m_RendererID, name.c_str());
+		glUniform1iv(location, count, values);
+	}
+	void OpenGLShader::UploadUniformFloat(const std::string& name, float value) const
 	{
 		GLint location = glGetUniformLocation(m_RendererID, name.c_str());
 		glUniform1f(location, value);
 	}
-	void OpenGLShader::UploadUniformFloat2(const std::string& name, const glm::vec2& vector)
+	void OpenGLShader::UploadUniformFloat2(const std::string& name, const glm::vec2& vector) const
 	{
 		GLint location = glGetUniformLocation(m_RendererID, name.c_str());
 		glUniform2f(location, vector.x, vector.y);
 	}
-	void OpenGLShader::UploadUniformFloat3(const std::string& name, const glm::vec3& vector)
+	void OpenGLShader::UploadUniformFloat3(const std::string& name, const glm::vec3& vector) const
 	{
 		GLint location = glGetUniformLocation(m_RendererID, name.c_str());
 		glUniform3f(location, vector.x, vector.y, vector.z);
 	}
-	void OpenGLShader::UploadUniformFloat4(const std::string& name, const glm::vec4& vector)
+	void OpenGLShader::UploadUniformFloat4(const std::string& name, const glm::vec4& vector) const
 	{
 		GLint location = glGetUniformLocation(m_RendererID, name.c_str());
 		glUniform4f(location, vector.x, vector.y, vector.z, vector.w);
 	}
-	void OpenGLShader::UploadUniformMat3(const std::string& name, const glm::mat3& matrix)
+	void OpenGLShader::UploadUniformMat3(const std::string& name, const glm::mat3& matrix) const
 	{
 		GLint location = glGetUniformLocation(m_RendererID, name.c_str());
 		glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
 	}
-	void OpenGLShader::UploadUniformMat4(const std::string& name, const glm::mat4& matrix)
+	void OpenGLShader::UploadUniformMat4(const std::string& name, const glm::mat4& matrix) const
 	{
 		GLint location = glGetUniformLocation(m_RendererID, name.c_str());
 		glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(matrix));
 	}
+	void OpenGLShader::SetInt(const std::string& Name, int Value) const
+	{
+		UploadUniformInt(Name, Value);
+	}
+	void OpenGLShader::SetIntArray(const std::string& Name, int* Values, uint32_t Count) const
+	{
+		UploadUniformIntArray(Name, Values, Count);
+	}
+
+	void OpenGLShader::SetFloat(const std::string& Name, float Value) const
+	{
+		UploadUniformFloat(Name, Value);
+	}
+
+	void OpenGLShader::SetFloat2(const std::string& Name, const glm::vec2& Value) const
+	{
+		UploadUniformFloat2(Name, Value);
+	}
+
+	void OpenGLShader::SetFloat3(const std::string& Name, const glm::vec3& Value) const
+	{
+		UploadUniformFloat3(Name, Value);
+	}
+
+	void OpenGLShader::SetFloat4(const std::string& Name, const glm::vec4& Value) const
+	{
+		UploadUniformFloat4(Name, Value);
+	}
+
+	void OpenGLShader::SetMat3(const std::string& Name, const glm::mat3& Value) const
+	{
+		UploadUniformMat3(Name, Value);
+	}
+
+	void OpenGLShader::SetMat4(const std::string& Name, const glm::mat4& Value) const
+	{
+		UploadUniformMat4(Name, Value);
+	}
+
 #pragma endregion
 
 #pragma region 私有方法 Private Methods
