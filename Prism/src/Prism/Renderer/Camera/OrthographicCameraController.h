@@ -23,9 +23,12 @@ namespace Prism
 		OrthographicCamera& GetCamera() { return m_Camera; }
 	private:
 		void HandleCameraTransform(const float deltaTime);
+		
 
 		bool OnMouseScrolled(MouseScrolledEvent& e);
 		bool OnWindowResize(WindowResizeEvent& e);
+	private:
+		static glm::vec3 BaseDirectionToRealDirection(glm::vec3& direction, float angle);
 	private:
 		float m_AspectRatio;
 		float m_ZoomLevel = 1.0f;
@@ -35,5 +38,6 @@ namespace Prism
 		glm::vec3 m_CameraPosition = { 0.0f, 0.0f, 0.0f };
 		float m_CameraRotation = 0.0f;
 		float m_CameraTranslationSpeed = 5.0f, m_CameraRotationSpeed = 180.0f;
+		float m_CameraBaseTranslationSpeed = 5.0f;
 	};
 }

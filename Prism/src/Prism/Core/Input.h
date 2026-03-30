@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "Prism/Core/Core.h"
+#include "Core.h"
 
 namespace Prism 
 {

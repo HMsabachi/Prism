@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Prism/Core/Core.h"
+#include "Core.h"
 #include "Layer.h"
 
 #include <vector>

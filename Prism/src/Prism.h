@@ -3,14 +3,14 @@
 // For use by Prism applications 被用于使用Prism引擎的应用
 
 #include <stdio.h>
-#include "Prism/Application.h"
-#include "Prism/Layer.h"
-#include "Prism/Log.h"
+#include "Prism/Core/Application.h"
+#include "Prism/Core/Layer.h"
+#include "Prism/Core/Log.h"
 #include "Prism/Core/Time.h"
 
-#include "Prism/Input.h"
-#include "Prism/KeyCodes.h"
-#include "Prism/MouseButtonCodes.h"
+#include "Prism/Core/Input.h"
+#include "Prism/Core/KeyCodes.h"
+#include "Prism/Core/MouseButtonCodes.h"
 
 #include "Prism/ImGui/ImGuiLayer.h"
 // ---Renderer-
@@ -26,7 +26,7 @@
 #include "Prism/Renderer/Camera/OrthographicCameraController.h"
 
 // ---Entry Point 入口点 ------------------------
-#include "Prism/EntryPoint.h"
+#include "Prism/Core/EntryPoint.h"
 
 
 // ---------------------------------------------

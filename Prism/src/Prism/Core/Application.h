@@ -1,11 +1,11 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Core.h"
 
-#include "Window.h"
-#include "Prism/LayerStack.h"
-#include "Prism/Events/Event.h"
+#include "LayerStack.h"
 #include "Prism/Events/ApplicationEvent.h"
+#include "Prism/Events/Event.h"
+#include "Window.h"
 
 #include "Prism/ImGui/ImGuiLayer.h"
 
@@ -40,6 +40,7 @@ namespace Prism
 	private:
 		std::unique_ptr<Window> m_Window;
 		bool m_Running = true;
+		bool m_Minimized = false;
 		ImGuiLayer* m_ImGuiLayer;
 		LayerStack m_LayerStack;
 	private:

@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Core/Core.h"
+#include "Core.h"
 #include "spdlog/spdlog.h"
 #include "spdlog/fmt/ostr.h"
 #include "spdlog/fmt/fmt.h"            // 显式包含（部分版本需要）

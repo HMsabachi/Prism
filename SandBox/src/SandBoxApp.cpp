@@ -14,7 +14,7 @@ public:
 		: Layer("Example"), m_CameraController(1980.0f / 1080.f, true)
 	{
 		// 创建VertexArray 1
-		m_VertexArray.reset(Prism::VertexArray::Create());
+		m_VertexArray = Prism::VertexArray::Create();
 		float vertices[] = {
 			-0.5f, -0.5f, 0.0f, 0.8f, 0.2f, 0.8f, 1.0f, 1.0f,
 			0.5f, -0.5f, 0.0f, 0.2f, 0.3f, 0.8f, 1.0f, 1.0f,
@@ -36,7 +36,7 @@ public:
 		m_VertexArray->SetIndexBuffer(indexBuffer);
 
 		// 创建VertexArray 2
-		m_SquareVA.reset(Prism::VertexArray::Create());
+		m_SquareVA = Prism::VertexArray::Create();
 		float squareVertices[5 * 4] = {
 			-0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
 			 0.5f, -0.5f, 0.0f, 1.0f, 0.0f,

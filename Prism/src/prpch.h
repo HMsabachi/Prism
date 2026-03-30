@@ -15,7 +15,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "Prism/Log.h"
+#include "Prism/Core/Log.h"
 
 #ifdef PR_PLATFORM_WINDOWS
 	#include <Windows.h>

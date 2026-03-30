@@ -1,7 +1,7 @@
 ﻿#include "prpch.h"
 #include "WindowsInput.h"
 
-#include "Prism/Application.h"
+#include "Prism/Core/Application.h"
 #include <GLFW/glfw3.h>
 
 namespace Prism

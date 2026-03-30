@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "Prism/Window.h"
+#include "Prism/Core/Window.h"
 #include "Prism/Renderer/GraphicsContext.h"
 
 #include <GLFW/glfw3.h>

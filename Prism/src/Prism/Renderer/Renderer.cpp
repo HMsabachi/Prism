@@ -7,7 +7,7 @@
 #include "Texture.h"
 
 #include "Prism/Core/Time.h"
-#include "Prism/Application.h"
+#include "Prism/Core/Application.h"
 
 
 #include "Platform/OpenGL/Shader/OpenGLShader.h"
@@ -24,6 +24,10 @@ namespace Prism
 		RenderCommand::Init();
 		GlobalUniforms::Init();
 		Texture2D::Init();
+	}
+	void Renderer::OnWindowResize(uint32_t width, uint32_t height)
+	{
+		RenderCommand::SetViewport(0, 0, width, height);
 	}
 	void Renderer::BeginScene(OrthographicCamera& camera)
 	{

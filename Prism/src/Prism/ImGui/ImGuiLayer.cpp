@@ -1,8 +1,8 @@
 ﻿#include "prpch.h"
 #include "ImGuiLayer.h"
-#include "Prism/Application.h"
+#include "Prism/Core/Application.h"
 
-#include "Prism/Log.h"
+#include "Prism/Core/Log.h"
 
 #include "imgui.h"
 

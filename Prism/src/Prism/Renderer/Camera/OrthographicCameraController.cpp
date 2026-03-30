@@ -1,8 +1,8 @@
 ﻿#include "prpch.h"
 #include "OrthographicCameraController.h"
 #include "Prism/Core/Time.h"
-#include "Prism/Input.h"
-#include "Prism/KeyCodes.h"
+#include "Prism/Core/Input.h"
+#include "Prism/Core/KeyCodes.h"
 
 
 namespace Prism
@@ -46,14 +46,15 @@ namespace Prism
 	}
 	void OrthographicCameraController::HandleCameraTransform(const float deltaTime)
 	{
+		glm::vec3 direction(0.0f);
 		if (Prism::Input::IsKeyPressed(PR_KEY_A))
-			m_CameraPosition.x -= m_CameraTranslationSpeed * deltaTime;
+			direction.x -= m_CameraTranslationSpeed * deltaTime;
 		if (Prism::Input::IsKeyPressed(PR_KEY_D))
-			m_CameraPosition.x += m_CameraTranslationSpeed * deltaTime;
+			direction.x += m_CameraTranslationSpeed * deltaTime;
 		if (Prism::Input::IsKeyPressed(PR_KEY_W))
-			m_CameraPosition.y += m_CameraTranslationSpeed * deltaTime;
+			direction.y += m_CameraTranslationSpeed * deltaTime;
 		if (Prism::Input::IsKeyPressed(PR_KEY_S))
-			m_CameraPosition.y -= m_CameraTranslationSpeed * deltaTime;
+			direction.y -= m_CameraTranslationSpeed * deltaTime;
 		if (m_Rotation)
 		{
 			if (Prism::Input::IsKeyPressed(PR_KEY_Q))
@@ -62,12 +63,25 @@ namespace Prism
 				m_CameraRotation -= m_CameraRotationSpeed * deltaTime;
 			m_Camera.SetRotation(m_CameraRotation);
 		}
+		direction = BaseDirectionToRealDirection(direction, m_CameraRotation);
+		m_CameraPosition += direction;
 		
 		m_Camera.SetPosition(m_CameraPosition);
 		
-		m_CameraTranslationSpeed = m_ZoomLevel;
+		m_CameraTranslationSpeed = m_ZoomLevel + m_CameraBaseTranslationSpeed;
 	}
 #pragma endregion
+
+#pragma region 静态方法 Static Methods
+	glm::vec3 OrthographicCameraController::BaseDirectionToRealDirection(glm::vec3& direction, float angle)
+	{
+		double radian = glm::radians(angle);
+		glm::vec3 realDirection = glm::vec3(direction.x * cos(radian) - direction.y * sin(radian), direction.x * sin(radian) + direction.y * cos(radian), direction.z);
+		return realDirection;
+	}
+
+#pragma endregion
+
 
 	
 }

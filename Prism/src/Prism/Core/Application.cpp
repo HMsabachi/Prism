@@ -1,9 +1,9 @@
 ﻿#include "prpch.h"
 #include "Application.h"
 
-#include "Prism/Log.h"
-#include "Prism/Input.h"
-#include "Prism/Core/Time.h"
+#include "Log.h"
+#include "Input.h"
+#include "Time.h"
 
 #include "Prism/Renderer/Renderer.h"
 
@@ -57,8 +57,11 @@ namespace Prism
 	{
 		Time::Update();
 
-		for (Layer* layer : m_LayerStack)
-			layer->OnUpdate();
+		if (!m_Minimized)
+		{
+			for (Layer* layer : m_LayerStack)
+				layer->OnUpdate();
+		}
 
 		m_ImGuiLayer->Begin();
 		for (Layer* layer : m_LayerStack)
@@ -88,7 +91,14 @@ namespace Prism
 	}
 	bool Application::OnWindowResize(WindowResizeEvent& e)
 	{
-		RenderCommand::SetViewport(0, 0, e.GetWidth(), e.GetHeight());
+		if (e.GetWidth() == 0 || e.GetHeight() == 0)
+		{
+			m_Minimized = true;
+			PR_CORE_INFO("已暂停引擎 Engine Paused");
+			return false;
+		}
+		m_Minimized = false;
+		Renderer::OnWindowResize(e.GetWidth(), e.GetHeight());
 		return false;
 	}
 #pragma endregion
