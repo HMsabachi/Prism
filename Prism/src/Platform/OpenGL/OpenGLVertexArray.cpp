@@ -27,7 +27,6 @@ namespace Prism
 	}
 	uint32_t OpenGLVertexArray::VertexSemanticToOpenGLLocation(VertexSemantic semantic)
 	{
-		PR_CORE_INFO("VertexSemanticToOpenGLLocation: {0}", static_cast<uint32_t>(semantic));
 		if(semantic == VertexSemantic::Unknown) return 9999;
 		return static_cast<uint32_t>(semantic);
 	}
@@ -62,7 +61,6 @@ namespace Prism
 		for (auto& element : layout)
 		{
 			uint32_t location = VertexSemanticToOpenGLLocation(element.Semantic) != 9999 ? VertexSemanticToOpenGLLocation(element.Semantic) : index;
-			PR_CORE_INFO("location: {0}", location);
 			glEnableVertexAttribArray(location);
 			glVertexAttribPointer(
 				location,

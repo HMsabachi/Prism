@@ -1,6 +1,4 @@
 ﻿#include <Prism.h>
-
-#include "../../Prism/src/Platform/OpenGL/Shader/OpenGLShader.h"
 #include "../../Prism/src/Platform/OpenGL/OpenGLTexture.h"
 
 
@@ -13,7 +11,7 @@ class ExampleLayer : public Prism::Layer
 {
 public:
 	ExampleLayer()
-		: Layer("Example"), m_Camera(-1.7f, 1.7f, -1.0f, 1.0f)
+		: Layer("Example"), m_CameraController(1980.0f / 1080.f, true)
 	{
 		// 创建VertexArray 1
 		m_VertexArray.reset(Prism::VertexArray::Create());
@@ -81,12 +79,12 @@ public:
 	}
 	void OnUpdate() override
 	{
-		HeadleCameraTransform(); // 处理摄像机位置和旋转
+		m_CameraController.OnUpdata();
 		// 渲染
 		Prism::RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 0.1f });
 		Prism::RenderCommand::Clear();
 
-		Prism::Renderer::BeginScene(m_Camera);
+		Prism::Renderer::BeginScene(m_CameraController.GetCamera());
 
 		glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.1f));
 
@@ -116,18 +114,7 @@ public:
 	{
 		Prism::EventDispatcher dispatcher(event);
 		dispatcher.Dispatch<Prism::KeyPressedEvent>(PR_BIND_EVENT_FN(ExampleLayer::OnKeyPressedEvent));
-		dispatcher.Dispatch<Prism::WindowResizeEvent>([&](Prism::WindowResizeEvent& e)
-			{
-				m_Camera.OnWindowResize(e.GetWidth(), e.GetHeight());
-				return false;
-			});
-		dispatcher.Dispatch<Prism::MouseScrolledEvent>([&](Prism::MouseScrolledEvent& e)
-			{
-				float offset = e.GetYOffset();
-				m_CameraZoomLevel *= 1.0f - offset * m_CameraZoomSpeed;
-				m_Camera.SetZoomLevel(m_CameraZoomLevel);
-				return false;
-			});
+		m_CameraController.OnEvent(event);
 	}
 #pragma region 事件处理 Event Handling
 	private:
@@ -136,24 +123,6 @@ public:
 			if (e.GetKeyCode() == PR_KEY_T)
 				PR_TRACE("Now delta time is {0}", Prism::Time::GetDeltaTime());
 			return false;
-		}
-		void HeadleCameraTransform()
-		{
-			float delta = Prism::Time::GetDeltaTime();
-			if (Prism::Input::IsKeyPressed(PR_KEY_LEFT))
-				m_CameraPosition.x -= m_CameraMoveSpeed * delta;
-			if (Prism::Input::IsKeyPressed(PR_KEY_RIGHT))
-				m_CameraPosition.x += m_CameraMoveSpeed * delta;
-			if (Prism::Input::IsKeyPressed(PR_KEY_UP))
-				m_CameraPosition.y += m_CameraMoveSpeed * delta;
-			if (Prism::Input::IsKeyPressed(PR_KEY_DOWN))
-				m_CameraPosition.y -= m_CameraMoveSpeed * delta;
-			if (Prism::Input::IsKeyPressed(PR_KEY_A))
-				m_CameraRotation += m_CameraRotationSpeed * delta;
-			if (Prism::Input::IsKeyPressed(PR_KEY_D))
-				m_CameraRotation -= m_CameraRotationSpeed * delta;
-			m_Camera.SetPosition(m_CameraPosition);
-			m_Camera.SetRotation(m_CameraRotation);
 		}
 #pragma endregion
 	
@@ -165,13 +134,7 @@ private:
 	Prism::Ref<Prism::VertexArray> m_SquareVA;
 	Prism::Ref<Prism::Texture2D> m_TestTexture;
 
-	Prism::OrthographicCamera m_Camera;
-	glm::vec3 m_CameraPosition = { 0.0f, 0.0f, 0.0f };
-	float m_CameraRotation = 0.0f;
-	float m_CameraMoveSpeed = 3.0f;
-	float m_CameraRotationSpeed = 10.0f;
-	float m_CameraZoomLevel = 1.0f;
-	float m_CameraZoomSpeed = 0.1f;
+	Prism::OrthographicCameraController m_CameraController;
 	glm::vec3 m_SquareColor = { 0.2f, 0.3f, 0.8f };
 };
 

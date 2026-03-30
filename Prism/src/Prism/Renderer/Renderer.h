@@ -22,6 +22,9 @@ namespace Prism
 
 		inline static RendererAPI::API GetAPI() { return RendererAPI::GetAPI(); }
 	private:
+		static void UpdateGlobalUniform(Prism::OrthographicCamera& camera);
+
+	private:
 		struct SceneData
 		{
 			glm::mat4 ViewProjectionMatrix;

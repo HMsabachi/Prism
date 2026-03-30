@@ -9,6 +9,11 @@ namespace Prism
 	{
 		RecalculateViewMatrix();
 	}
+	void OrthographicCamera::SetProjection(float left, float right, float bottom, float top)
+	{
+		m_ProjectionMatrix = glm::ortho(left, right, bottom, top, -1.0f, 1.0f);
+		RecalculateViewMatrix();
+	}
 	bool OrthographicCamera::OnWindowResize(uint32_t width, uint32_t height)
 	{
 		m_AspectRatio = width * 1.0f / height;

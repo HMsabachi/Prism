@@ -29,6 +29,23 @@ namespace Prism
 	{
 		m_SceneData->ViewProjectionMatrix = camera.GetViewProjectionMatrix();
 
+		UpdateGlobalUniform(camera);
+	}
+	
+	void Renderer::EndScene()
+	{
+	}
+	void Renderer::Submit(const std::shared_ptr<Shader>& shader, const std::shared_ptr<VertexArray>& vertexArray, const glm::mat4& transform)
+	{
+		shader->Bind();
+		shader->SetMat4("Prism_Model", transform);
+		vertexArray->Bind();
+		RenderCommand::DrawIndexed(vertexArray);
+	}
+
+
+	void Renderer::UpdateGlobalUniform(Prism::OrthographicCamera& camera)
+	{
 		float totalTime = Time::GetTime();
 		float deltaTime = Time::GetDeltaTime();
 
@@ -41,17 +58,5 @@ namespace Prism
 		s_GlobalUBO.Resolution = glm::vec2(Application::Get().GetWindow().GetWidth(), Application::Get().GetWindow().GetHeight());
 		s_GlobalUBO.AspectRatio = s_GlobalUBO.Resolution.x / s_GlobalUBO.Resolution.y;
 		GlobalUniforms::UpdateGlobalUniform(s_GlobalUBO);
-	}
-	void Renderer::EndScene()
-	{
-	}
-	void Renderer::Submit(const std::shared_ptr<Shader>& shader, const std::shared_ptr<VertexArray>& vertexArray, const glm::mat4& transform)
-	{
-		shader->Bind();
-		shader->SetMat4("Prism_Model", transform);
-		shader->SetMat4("u_Transform", transform);
-		shader->SetMat4("u_ViewProjection", m_SceneData->ViewProjectionMatrix);
-		vertexArray->Bind();
-		RenderCommand::DrawIndexed(vertexArray);
 	}
 }

@@ -18,6 +18,8 @@ namespace Prism
 		float GetZoomLevel() const { return m_ZoomLevel; }
 		void SetZoomLevel(float zoomLevel) { m_ZoomLevel = zoomLevel; RecalculateProjectionMatrix(); }
 
+		void SetProjection(float left, float right, float bottom, float top);
+
 		bool OnWindowResize(uint32_t width, uint32_t height);
 	
 		const glm::mat4& GetProjectionMatrix() const { return m_ProjectionMatrix; }

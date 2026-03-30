@@ -23,6 +23,7 @@
 #include "Prism/Renderer/Texture.h"
 
 #include "Prism/Renderer/Camera/OrthographicCamera.h"
+#include "Prism/Renderer/Camera/OrthographicCameraController.h"
 
 // ---Entry Point 入口点 ------------------------
 #include "Prism/EntryPoint.h"
