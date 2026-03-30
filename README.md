@@ -66,6 +66,7 @@ premake5 xcode4        # macOS Xcode
 
 ## 🧩 技术文档
 - 中文版
+- - [Prism Shader 文档](docs/PrismShader.md)
 - - [Time 文档](docs/Time.md)
 - - [Renderer 文档](docs/Renderer.md)
 - English Version

@@ -91,7 +91,6 @@ project "Prism"
 
 		postbuildcommands
 		{
-			--("{COPY} %{cfg.buildtarget.relpath} ../bin/" .. outputdir .. "/Sandbox")
 			("{COPY} %{cfg.buildtarget.relpath} \"../bin/" .. outputdir .. "/Sandbox/\"")
 		}
 	filter "configurations:Debug"
@@ -120,6 +119,11 @@ project "Sandbox"
 
 	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+
+	postbuildcommands
+	{
+    '{COPYDIR} "%{prj.location}/Assets" "%{cfg.targetdir}/Assets"'
+	}
 	
 	files
 	{
