@@ -33,7 +33,10 @@ Shader "Custom/FlatColor"
                 void frag()
                 {
                     vec2 uv = gl_FragCoord.xy / Prism_Resolution.xy;
-                    vec3 timeColor = sin(Prism_Time.rgb * 2.0) * 0.5 + 0.5;
+                    //vec2 uv = vUV;
+                    //uv += sin(Prism_Time.rg) * 0.5 + 0.5;
+                    //uv = fract(uv);
+                    vec3 timeColor = sin(Prism_Time.rgb * 2.0) * 0.5;
                     vec4 color = _MainColor;
                     color.rg = mix(color.rg, uv, 0.7);
                     color.rgb = mix(color.rgb, timeColor, 0.22);
