@@ -37,4 +37,7 @@ namespace Prism
 	{
 		return m_Shaders.find(name)!= m_Shaders.end();
 	}
+
+	
+
 }

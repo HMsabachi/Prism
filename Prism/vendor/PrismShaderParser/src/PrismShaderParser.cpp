@@ -6,7 +6,7 @@
 namespace Prism
 {
     std::string PrismShaderParser::s_VersionHeader = "#version 450 core\n";
-    std::string PrismShaderParser::s_IncludeRoot = "Assets/Shaders/";
+    std::string PrismShaderParser::s_IncludeRoot = "Assets/Shaders/Include";
     std::string PrismShaderParser::s_FileHeader = R"PRISM(
 // 暂无
 )PRISM";

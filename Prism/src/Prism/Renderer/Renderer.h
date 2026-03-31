@@ -22,8 +22,8 @@ namespace Prism
 		static void Submit(const std::shared_ptr<Shader>& shader, const std::shared_ptr<VertexArray>& vertexArray, const glm::mat4& transform = glm::mat4(1.0f));
 
 		inline static RendererAPI::API GetAPI() { return RendererAPI::GetAPI(); }
-	private:
-		static void UpdateGlobalUniform(Prism::OrthographicCamera& camera);
+	public:
+		static void UpdateGlobalUniform(const Prism::OrthographicCamera& camera);
 
 	private:
 		struct SceneData

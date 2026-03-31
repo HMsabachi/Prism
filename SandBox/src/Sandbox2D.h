@@ -5,6 +5,7 @@ class Sandbox2D : public Prism::Layer
 {
 public:
 	Sandbox2D();
+	virtual ~Sandbox2D() = default;
 
 	virtual void OnAttach() override;
 	virtual void OnDetach() override;
@@ -21,5 +22,5 @@ private:
 	Prism::Ref<Prism::Texture2D> m_Texture;
 	Prism::Ref<Prism::VertexArray> m_SquareVA;
 
-	glm::vec3 m_SquareColor = { 0.2f, 0.3f, 0.8f };
+	glm::vec4 m_SquareColor = { 0.8f, 0.2f, 0.3f, 1.0f };
 };

@@ -15,6 +15,7 @@
 #include "Prism/ImGui/ImGuiLayer.h"
 // ---Renderer-
 #include "Prism/Renderer/Renderer.h"
+#include "Prism/Renderer/Renderer2D.h"
 #include "Prism/Renderer/Buffer.h"
 #include "Prism/Renderer/Shader/Shader.h"
 #include "Prism/Renderer/Shader/PrismShader.h"

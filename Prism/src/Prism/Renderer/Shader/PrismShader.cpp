@@ -12,7 +12,9 @@ namespace Prism
 			src = ReadFile(source);
 		else
 			src = source;
-		return CreateRef<PrismShader>(src);
+		Ref<PrismShader> shader = CreateRef<PrismShader>(src);
+		if (isFile)	shader->m_FilePath = source;
+		return shader;
 	}
 
 	PrismShader::PrismShader(const std::string& source)

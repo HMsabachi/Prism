@@ -93,7 +93,7 @@ public:
 
 		auto& FlatColorShader = m_ShaderLibrary.Get("Custom/FlatColor");
 		FlatColorShader->GetOriginalShader()->Bind();
-		FlatColorShader->GetOriginalShader()->SetFloat3("_MainColor", m_SquareColor);
+		FlatColorShader->GetOriginalShader()->SetFloat4("_MainColor", glm::vec4(m_SquareColor, 1.0f));
 		
 
 		for (int i = 0; i < 20; i++)
@@ -105,7 +105,7 @@ public:
 				Prism::Renderer::Submit(FlatColorShader->GetOriginalShader(), m_SquareVA, transform);
 			}
 		}
-		Prism::Renderer::Submit(m_TextureShader->GetOriginalShader(), m_SquareVA, glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
+		//Prism::Renderer::Submit(m_TextureShader->GetOriginalShader(), m_SquareVA, glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
 
 		// 三角形 Triangle
 		Prism::Renderer::Submit(m_Shader->GetOriginalShader(), m_VertexArray);
@@ -146,7 +146,7 @@ class Sandbox : public Prism::Application
 public:
 	Sandbox()
 	{
-		//PushLayer(new ExampleLayer());
+		PushLayer(new ExampleLayer());
 		PushLayer(new Sandbox2D());
 		
 	}

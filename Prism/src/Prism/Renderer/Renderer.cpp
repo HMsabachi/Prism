@@ -1,5 +1,6 @@
 ﻿#include "prpch.h"
 #include "Renderer.h"
+#include "Renderer2D.h"
 #include "Shader/Shader.h"
 #include "RenderCommand.h"
 #include "Camera/OrthographicCamera.h"
@@ -21,6 +22,7 @@ namespace Prism
 
 	void Renderer::Init()
 	{
+		Renderer2D::Init();
 		RenderCommand::Init();
 		GlobalUniforms::Init();
 		Texture2D::Init();
@@ -48,7 +50,7 @@ namespace Prism
 	}
 
 
-	void Renderer::UpdateGlobalUniform(Prism::OrthographicCamera& camera)
+	void Renderer::UpdateGlobalUniform(const Prism::OrthographicCamera& camera)
 	{
 		float totalTime = Time::GetTime();
 		float deltaTime = Time::GetDeltaTime();
