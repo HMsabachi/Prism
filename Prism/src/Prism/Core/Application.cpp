@@ -56,6 +56,8 @@ namespace Prism
 	void Application::OnUpdate()
 	{
 		Time::Update();
+		RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 0.1f });
+		RenderCommand::Clear();
 
 		if (!m_Minimized)
 		{

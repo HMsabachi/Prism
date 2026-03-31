@@ -4,7 +4,7 @@ Shader "Custom/Texture"
     // ==================== Properties（材质参数） ====================
     Properties
     {
-        _MainColor("主颜色", Vector3) = (1, 1, 1)
+        _MainColor("主颜色", Vector4) = (1, 1, 1, 1)
         _MainTex("基础贴图", Texture2D) = "white" {}
         _Gloss("光泽度", Float) = 0.5
         _Cutoff("透明裁剪", Range(0, 1)) = 0.5
@@ -32,7 +32,7 @@ Shader "Custom/Texture"
 
                 void frag()
                 {
-                    FragColor = texture(_MainTex, vUV);
+                    FragColor = texture(_MainTex, vUV) * _MainColor;
                 }
             }
         }

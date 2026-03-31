@@ -14,7 +14,7 @@ Sandbox2D::Sandbox2D()
 void Sandbox2D::OnAttach()
 {
 	Layer::OnAttach();
-	PR_CORE_TRACE("Shader Library: {0} \n", m_ShaderLibrary);
+	m_Texture = Prism::Texture2D::Create("Assets/Textures/TestImage.png");
 }
 
 void Sandbox2D::OnDetach()
@@ -26,13 +26,13 @@ void Sandbox2D::OnUpdate()
 {
 	Layer::OnUpdate();
 	m_CameraController.OnUpdata();
-	// 渲染
-	Prism::RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 0.1f });
-	Prism::RenderCommand::Clear();
+	
 
 	Prism::Renderer2D::BeginScene(m_CameraController.GetCamera());
 
-	Prism::Renderer2D::DrawQuad({ 0.0f, 0.0f }, { 1.0f, 1.0f }, m_SquareColor);
+	Prism::Renderer2D::DrawQuad({ -0.3f, -0.3f }, { 1.0f, 1.0f }, m_SquareColor);
+
+	Prism::Renderer2D::DrawQuad({ 0.5f, 0.5f }, { 0.5f, 0.5f }, m_Texture);
 	Prism::Renderer2D::EndScene();
 
 	/*glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(1.5f));

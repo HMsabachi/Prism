@@ -82,10 +82,9 @@ public:
 	}
 	void OnUpdate() override
 	{
+
 		m_CameraController.OnUpdata();
 		// 渲染
-		Prism::RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 0.1f });
-		Prism::RenderCommand::Clear();
 
 		Prism::Renderer::BeginScene(m_CameraController.GetCamera());
 
@@ -105,7 +104,7 @@ public:
 				Prism::Renderer::Submit(FlatColorShader->GetOriginalShader(), m_SquareVA, transform);
 			}
 		}
-		//Prism::Renderer::Submit(m_TextureShader->GetOriginalShader(), m_SquareVA, glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
+		Prism::Renderer::Submit(m_TextureShader->GetOriginalShader(), m_SquareVA, glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
 
 		// 三角形 Triangle
 		Prism::Renderer::Submit(m_Shader->GetOriginalShader(), m_VertexArray);
@@ -146,7 +145,7 @@ class Sandbox : public Prism::Application
 public:
 	Sandbox()
 	{
-		PushLayer(new ExampleLayer());
+		//PushLayer(new ExampleLayer());
 		PushLayer(new Sandbox2D());
 		
 	}

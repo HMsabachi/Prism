@@ -11,6 +11,8 @@ namespace Prism
 	{
 		Ref<VertexArray> QuadVertexArray;
 		Ref<PrismShader> FlatColorShader;
+		Ref<PrismShader> TextureShader;
+		Ref<Texture2D> WhiteTexture;
 	};
 
 	static Renderer2DStorage* s_Data;
@@ -40,6 +42,11 @@ namespace Prism
 
 		std::string flatColorShader = "Assets/Shaders/FlatColor.glsl";
 		s_Data->FlatColorShader = PrismShader::Create(flatColorShader, true);
+		s_Data->TextureShader = PrismShader::Create("Assets/Shaders/Texture.glsl", true);
+		
+		s_Data->WhiteTexture = Texture2D::Create(1, 1);
+		uint32_t whiteTextureData = 0xffffffff;
+		s_Data->WhiteTexture->SetData(&whiteTextureData, sizeof(uint32_t));
 	}
 
 	void Renderer2D::Shutdown()
@@ -65,15 +72,35 @@ namespace Prism
 
 	void Renderer2D::DrawQuad(const glm::vec3& position, const glm::vec2& size, const glm::vec4& color)
 	{
-		s_Data->FlatColorShader->GetOriginalShader()->Bind();
-		s_Data->FlatColorShader->GetOriginalShader()->SetFloat4("_MainColor", color);
 		glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(position))
 			* glm::scale(glm::mat4(1.0f), glm::vec3(size, 1.0f));
+		s_Data->FlatColorShader->GetOriginalShader()->Bind();
 		s_Data->FlatColorShader->GetOriginalShader()->SetMat4("Prism_Model", transform);
-
+		s_Data->FlatColorShader->GetOriginalShader()->SetFloat4("_MainColor", color);
 		s_Data->QuadVertexArray->Bind();
+		s_Data->WhiteTexture->Bind(0);
 		RenderCommand::DrawIndexed(s_Data->QuadVertexArray);
 		
 	}
-	#pragma endregion 
+
+	void Renderer2D::DrawQuad(const glm::vec2& position, const glm::vec2& size, const Ref<Texture2D>& texture)
+	{
+		DrawQuad({ position.x, position.y, 0.0f }, size, texture);
+	}
+
+	void Renderer2D::DrawQuad(const glm::vec3& position, const glm::vec2& size, const Ref<Texture2D>& texture)
+	{
+		glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(position))
+			* glm::scale(glm::mat4(1.0f), glm::vec3(size, 1.0f));
+		s_Data->TextureShader->GetOriginalShader()->Bind();
+		s_Data->TextureShader->GetOriginalShader()->SetMat4("Prism_Model", transform);
+		s_Data->TextureShader->GetOriginalShader()->SetInt("_MainTex", 0);
+		s_Data->TextureShader->GetOriginalShader()->SetFloat4("_MainColor", glm::vec4(1.0f));
+
+		s_Data->QuadVertexArray->Bind();
+		texture->Bind(0);
+		RenderCommand::DrawIndexed(s_Data->QuadVertexArray);
+	}
+
+#pragma endregion 
 }
