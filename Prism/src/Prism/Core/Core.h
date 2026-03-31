@@ -48,11 +48,11 @@
 	#define PR_ENABLE_ASSERTS
 #endif
 #ifdef PR_ENABLE_ASSERTS
-#define PR_ASSERT(x, ...) { if(!(x)) { PR_ERROR("Assertion Failed: {0}", __VA_ARGS__); __debugbreak(); } }
-#define PR_CORE_ASSERT(x, ...) { if(!(x)) { PR_CORE_ERROR("Assertion Failed: {0}", __VA_ARGS__); __debugbreak(); } }
+	#define PR_ASSERT(x, ...) { if(!(x)) { PR_ERROR("Assertion Failed: {0}", __VA_ARGS__); __debugbreak(); } }
+	#define PR_CORE_ASSERT(x, ...) { if(!(x)) { PR_CORE_ERROR("Assertion Failed: {0}", __VA_ARGS__); __debugbreak(); } }
 #else
-#define PR_ASSERT(x, ...)
-#define PR_CORE_ASSERT(x, ...)
+	#define PR_ASSERT(x, ...)
+	#define PR_CORE_ASSERT(x, ...)
 #endif
 
 #define BIT(x) (1 << x)

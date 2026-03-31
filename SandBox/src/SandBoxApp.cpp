@@ -1,4 +1,5 @@
 ﻿#include <Prism.h>
+#include "Prism/Core/EntryPoint.h"
 #include "../../Prism/src/Platform/OpenGL/OpenGLTexture.h"
 
 
@@ -6,6 +7,8 @@
 
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
+
+#include "Sandbox2D.h"
 
 class ExampleLayer : public Prism::Layer
 {
@@ -143,7 +146,9 @@ class Sandbox : public Prism::Application
 public:
 	Sandbox()
 	{
-		PushLayer(new ExampleLayer());
+		//PushLayer(new ExampleLayer());
+		PushLayer(new Sandbox2D());
+		
 	}
 	~Sandbox()
 	{
