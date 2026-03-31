@@ -84,7 +84,6 @@ project "Prism"
 
 		defines
 		{
-			"PR_PLATFORM_WINDOWS",
 			"PR_BUILD_DLL",
 			"GLFW_INCLUDE_NONE"
 		}
@@ -154,7 +153,6 @@ project "Sandbox"
 
 		defines
 		{
-			"PR_PLATFORM_WINDOWS"
 		}
 
 	filter "configurations:Debug"

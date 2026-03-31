@@ -13,6 +13,5 @@ layout(std140, binding = 0) uniform PrismGlobals
     float Prism_AspectRatio;     // 屏幕宽高比
     vec2  Prism_Resolution;      // 屏幕分辨率 (width, height)
     
-    // 以后可以继续扩展 Light 数量、Fog 等
 };
 uniform mat4 Prism_Model; // 当前物体的 Model 矩阵（每个 DrawCall 更新）
