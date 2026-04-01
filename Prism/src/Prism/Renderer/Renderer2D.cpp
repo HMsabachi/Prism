@@ -19,6 +19,8 @@ namespace Prism
 
 	void Renderer2D::Init()
 	{
+		PR_PROFILE_FUNCTION();
+
 		s_Data = new Renderer2DStorage();
 		// 创建VertexArray 2
 		s_Data->QuadVertexArray = Prism::VertexArray::Create();
@@ -51,16 +53,21 @@ namespace Prism
 
 	void Renderer2D::Shutdown()
 	{
+		PR_PROFILE_FUNCTION();
+
 		delete s_Data;
 	}
 
 	void Renderer2D::BeginScene(const OrthographicCamera& camera)
 	{
+		PR_PROFILE_FUNCTION();
+
 		Renderer::UpdateGlobalUniform(camera);
 	}
 
 	void Renderer2D::EndScene()
 	{
+		PR_PROFILE_FUNCTION();
 
 	}
 

@@ -5,6 +5,7 @@ bin-int/
 Future/
 
 # Files
+*.json
 *.user
 *.vcxproj.user
 *.sln

@@ -8,6 +8,8 @@ namespace Prism
 {
 	OpenGLShader::OpenGLShader(const std::string& VertexShader, const std::string& FragmentShader)
 	{
+		PR_PROFILE_FUNCTION();
+
 		// 编译着色器 Compile Shaders
 		GLuint vertexShaderID, fragmentShaderID;
 		bool isCompiled = CompileShader(VertexShader, vertexShaderID, GL_VERTEX_SHADER);
@@ -25,14 +27,20 @@ namespace Prism
 	}
 	OpenGLShader::~OpenGLShader()
 	{
+		PR_PROFILE_FUNCTION();
+
 		glDeleteProgram(m_RendererID);
 	}
 	void OpenGLShader::Bind() const
 	{
+		PR_PROFILE_FUNCTION();
+
 		glUseProgram(m_RendererID);
 	}
 	void OpenGLShader::Unbind() const
 	{
+		PR_PROFILE_FUNCTION();
+
 		glUseProgram(0);
 	}
 
@@ -79,40 +87,53 @@ namespace Prism
 	}
 	void OpenGLShader::SetInt(const std::string& Name, int Value) const
 	{
+		PR_PROFILE_FUNCTION();
+
 		UploadUniformInt(Name, Value);
 	}
 	void OpenGLShader::SetIntArray(const std::string& Name, int* Values, uint32_t Count) const
 	{
+		PR_PROFILE_FUNCTION();
+
 		UploadUniformIntArray(Name, Values, Count);
 	}
 
 	void OpenGLShader::SetFloat(const std::string& Name, float Value) const
 	{
+		PR_PROFILE_FUNCTION();
+
 		UploadUniformFloat(Name, Value);
 	}
 
 	void OpenGLShader::SetFloat2(const std::string& Name, const glm::vec2& Value) const
 	{
+		PR_PROFILE_FUNCTION();
+
 		UploadUniformFloat2(Name, Value);
 	}
 
 	void OpenGLShader::SetFloat3(const std::string& Name, const glm::vec3& Value) const
 	{
+		PR_PROFILE_FUNCTION();
+
 		UploadUniformFloat3(Name, Value);
 	}
 
 	void OpenGLShader::SetFloat4(const std::string& Name, const glm::vec4& Value) const
 	{
+		PR_PROFILE_FUNCTION();
 		UploadUniformFloat4(Name, Value);
 	}
 
 	void OpenGLShader::SetMat3(const std::string& Name, const glm::mat3& Value) const
 	{
+		PR_PROFILE_FUNCTION();
 		UploadUniformMat3(Name, Value);
 	}
 
 	void OpenGLShader::SetMat4(const std::string& Name, const glm::mat4& Value) const
 	{
+		PR_PROFILE_FUNCTION();
 		UploadUniformMat4(Name, Value);
 	}
 

@@ -22,6 +22,8 @@ namespace Prism
 
 	void Renderer::Init()
 	{
+		PR_PROFILE_FUNCTION();
+
 		Renderer2D::Init();
 		RenderCommand::Init();
 		GlobalUniforms::Init();
@@ -52,6 +54,8 @@ namespace Prism
 
 	void Renderer::UpdateGlobalUniform(const Prism::OrthographicCamera& camera)
 	{
+		PR_PROFILE_FUNCTION();
+
 		float totalTime = Time::GetTime();
 		float deltaTime = Time::GetDeltaTime();
 

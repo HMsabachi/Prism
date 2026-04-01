@@ -23,16 +23,22 @@ namespace Prism {
 
 	WindowsWindow::WindowsWindow(const WindowProps& props)
 	{
+		PR_PROFILE_FUNCTION();
+
 		Init(props);
 	}
 
 	WindowsWindow::~WindowsWindow()
 	{
+		PR_PROFILE_FUNCTION();
+
 		Shutdown();
 	}
 
 	void WindowsWindow::Init(const WindowProps& props)
 	{
+		PR_PROFILE_FUNCTION();
+
 		m_Data.Title = props.Title;
 		m_Data.Width = props.Width;
 		m_Data.Height = props.Height;
@@ -41,6 +47,7 @@ namespace Prism {
 
 		if (!s_GLFWInitialized)
 		{
+			PR_PROFILE_SCOPE("Init GLFW Window");
 			// TODO: glfwTerminate on system shutdown 当系统关闭时调用glfwTerminate
 			int success = glfwInit();
 			PR_CORE_ASSERT(success, "Could not intialize GLFW!");
@@ -62,11 +69,15 @@ namespace Prism {
 
 	void WindowsWindow::Shutdown()
 	{
+		PR_PROFILE_FUNCTION();
+
 		glfwDestroyWindow(m_Window);
 	}
 
 	void WindowsWindow::OnUpdate()
 	{
+		PR_PROFILE_FUNCTION();
+
 		glfwPollEvents();
 		m_Context->SwapBuffers();
 	}
@@ -94,6 +105,8 @@ namespace Prism {
 
 	void WindowsWindow::SetGlfwEventCallback()
 	{
+		PR_PROFILE_FUNCTION();
+
 		// Set GLFW callbacks 设置GLFW回调函数
 		glfwSetWindowSizeCallback(m_Window,
 			[](GLFWwindow* window, int width, int height)

@@ -16,6 +16,7 @@ namespace Prism
 
 	Application::Application()
 	{
+		PR_PROFILE_FUNCTION();
 		PR_CORE_ASSERT(!s_Instance, "Application already exists! 应用已经存在");
 		s_Instance = this;
 
@@ -27,11 +28,13 @@ namespace Prism
 
 	Application::~Application()
 	{
+		PR_PROFILE_FUNCTION();
 	}
 	
 
 	void Application::OnEvent(Event& e)
 	{
+		PR_PROFILE_FUNCTION();
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<WindowCloseEvent>(BIND_EVENT_FN(OnWindowClose));
 		dispatcher.Dispatch<WindowResizeEvent>(BIND_EVENT_FN(OnWindowResize));
@@ -47,6 +50,7 @@ namespace Prism
 
 	void Application::Run()
 	{
+		PR_PROFILE_FUNCTION();
 		while (m_Running)
 		{
 			OnUpdate();
@@ -55,12 +59,14 @@ namespace Prism
 
 	void Application::OnUpdate()
 	{
+		PR_PROFILE_FUNCTION();
 		Time::Update();
 		RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 0.1f });
 		RenderCommand::Clear();
 
 		if (!m_Minimized)
 		{
+			PR_PROFILE_SCOPE("Update LayerStack")
 			for (Layer* layer : m_LayerStack)
 				layer->OnUpdate();
 		}
@@ -88,11 +94,13 @@ namespace Prism
 #pragma region Event Handling 事件处理
 	bool Application::OnWindowClose(WindowCloseEvent& e)
 	{
+		PR_PROFILE_FUNCTION();
 		m_Running = false;
 		return true;
 	}
 	bool Application::OnWindowResize(WindowResizeEvent& e)
 	{
+		PR_PROFILE_FUNCTION();
 		if (e.GetWidth() == 0 || e.GetHeight() == 0)
 		{
 			m_Minimized = true;

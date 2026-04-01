@@ -10,6 +10,8 @@ namespace Prism
 
 	OpenGLVertexBuffer::OpenGLVertexBuffer(float* vertices, uint32_t size)
 	{
+		PR_PROFILE_FUNCTION();
+
 		glCreateBuffers(1, &m_RendererID);
 		glBindBuffer(GL_ARRAY_BUFFER, m_RendererID);
 		glBufferData(GL_ARRAY_BUFFER, size, vertices, GL_STATIC_DRAW);
@@ -17,6 +19,8 @@ namespace Prism
 
 	OpenGLVertexBuffer::~OpenGLVertexBuffer()
 	{
+		PR_PROFILE_FUNCTION();
+
 		glDeleteBuffers(1, &m_RendererID);
 	}
 
@@ -37,6 +41,8 @@ namespace Prism
 	OpenGLIndexBuffer::OpenGLIndexBuffer(uint32_t* indices, uint32_t count)
 		: m_Count(count)
 	{
+		PR_PROFILE_FUNCTION();
+
 		glCreateBuffers(1, &m_RendererID);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_RendererID);
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, count * sizeof(uint32_t), indices, GL_STATIC_DRAW);
@@ -44,6 +50,8 @@ namespace Prism
 
 	OpenGLIndexBuffer::~OpenGLIndexBuffer()
 	{
+		PR_PROFILE_FUNCTION();
+
 		glDeleteBuffers(1, &m_RendererID);
 	}
 

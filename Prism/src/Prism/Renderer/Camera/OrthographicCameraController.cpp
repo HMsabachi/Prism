@@ -15,15 +15,21 @@ namespace Prism
 	}
 	void OrthographicCameraController::OnUpdata()
 	{
+		PR_PROFILE_FUNCTION();
+
 		float deltaTime = Time::GetDeltaTime();
 		OnUpdate(deltaTime);
 	}
 	void OrthographicCameraController::OnUpdate(const float deltaTime)
 	{
+		PR_PROFILE_FUNCTION();
+
 		HandleCameraTransform(deltaTime);
 	}
 	void OrthographicCameraController::OnEvent(Event& e)
 	{
+		PR_PROFILE_FUNCTION();
+
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<MouseScrolledEvent>(PR_BIND_EVENT_FN(OrthographicCameraController::OnMouseScrolled));
 		dispatcher.Dispatch<WindowResizeEvent>(PR_BIND_EVENT_FN(OrthographicCameraController::OnWindowResize));
@@ -33,6 +39,8 @@ namespace Prism
 #pragma region 事件处理 Event Handler
 	bool OrthographicCameraController::OnMouseScrolled(MouseScrolledEvent& e)
 	{
+		PR_PROFILE_FUNCTION();
+
 		m_ZoomLevel -= e.GetYOffset() * 0.25f;
 		m_ZoomLevel = std::max(m_ZoomLevel, 0.25f);
 		m_Camera.SetProjection(-m_AspectRatio * m_ZoomLevel, m_AspectRatio * m_ZoomLevel, -m_ZoomLevel, m_ZoomLevel);;
@@ -40,12 +48,16 @@ namespace Prism
 	}
 	bool OrthographicCameraController::OnWindowResize(WindowResizeEvent& e)
 	{
+		PR_PROFILE_FUNCTION();
+
 		m_AspectRatio = (float)e.GetWidth() / (float)e.GetHeight();
 		m_Camera.SetProjection(-m_AspectRatio * m_ZoomLevel, m_AspectRatio * m_ZoomLevel, -m_ZoomLevel, m_ZoomLevel);
 		return false;
 	}
 	void OrthographicCameraController::HandleCameraTransform(const float deltaTime)
 	{
+		PR_PROFILE_FUNCTION();
+
 		glm::vec3 direction(0.0f);
 		if (Prism::Input::IsKeyPressed(PR_KEY_A))
 			direction.x -= m_CameraTranslationSpeed * deltaTime;

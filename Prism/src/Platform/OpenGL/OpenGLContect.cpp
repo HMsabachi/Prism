@@ -15,6 +15,8 @@ namespace Prism {
 
 	void OpenGLContext::Init()
 	{
+		PR_PROFILE_FUNCTION();
+
 		glfwMakeContextCurrent(m_WindowHandle);
 		int status = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 		PR_CORE_ASSERT(status, "Failed to initialize Glad!");
@@ -27,6 +29,8 @@ namespace Prism {
 
 	void OpenGLContext::SwapBuffers()
 	{
+		PR_PROFILE_FUNCTION();
+
 		glfwSwapBuffers(m_WindowHandle);
 	}
 

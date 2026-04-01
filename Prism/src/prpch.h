@@ -16,6 +16,7 @@
 #include <unordered_set>
 
 #include "Prism/Core/Log.h"
+#include "Prism/Debug/Instrumentor.h"
 
 #ifdef PR_PLATFORM_WINDOWS
 	#include <Windows.h>
