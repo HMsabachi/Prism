@@ -45,6 +45,7 @@ namespace Prism
 		std::string flatColorShader = "Assets/Shaders/FlatColor.glsl";
 		s_Data->FlatColorShader = PrismShader::Create(flatColorShader, true);
 		s_Data->TextureShader = PrismShader::Create("Assets/Shaders/Texture.glsl", true);
+		PR_CORE_TRACE("Shader Source 着色器代码: {0}", s_Data->FlatColorShader->GetSource());
 		
 		s_Data->WhiteTexture = Texture2D::Create(1, 1);
 		uint32_t whiteTextureData = 0xffffffff;
@@ -80,34 +81,72 @@ namespace Prism
 	void Renderer2D::DrawQuad(const glm::vec3& position, const glm::vec2& size, const glm::vec4& color)
 	{
 		glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(position))
+			* glm::scale(glm::mat4(1.0f), glm::vec3(size, 1.0f));		
+		DrawQuadWithMatrix(transform, color);
+	}
+
+	void Renderer2D::DrawQuad(const glm::vec2& position, const glm::vec2& size, const Ref<Texture2D>& texture, const float tilingFactor, const glm::vec4& tintColor)
+	{
+		DrawQuad({ position.x, position.y, 0.0f }, size, texture, tilingFactor);
+	}
+
+	void Renderer2D::DrawQuad(const glm::vec3& position, const glm::vec2& size, const Ref<Texture2D>& texture, const float tilingFactor, const glm::vec4& tintColor)
+	{
+		glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(position))
 			* glm::scale(glm::mat4(1.0f), glm::vec3(size, 1.0f));
+		DrawQuadWithMatrix(transform, texture, tilingFactor);
+	}
+
+	void Renderer2D::DrawRotatedQuad(const glm::vec2& position, const glm::vec2& size, const float rotation, const glm::vec4& color)
+	{
+		DrawRotatedQuad({ position.x, position.y, 0.0f }, size, rotation, color);
+	}
+
+	void Renderer2D::DrawRotatedQuad(const glm::vec3& position, const glm::vec2& size, const float rotation, const glm::vec4& color)
+	{
+		glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(position))
+			* glm::rotate(glm::mat4(1.0f), rotation, glm::vec3(0.0f, 0.0f, 1.0f))
+			* glm::scale(glm::mat4(1.0f), glm::vec3(size, 1.0f));
+		DrawQuadWithMatrix(transform, color);
+	}
+
+	void Renderer2D::DrawRotatedQuad(const glm::vec2& position, const glm::vec2& size, const float rotation, const Ref<Texture2D>& texture, const float tilingFactor, const glm::vec4& tintColor)
+	{
+		DrawRotatedQuad({ position.x, position.y, 0.0f }, size, rotation, texture, tilingFactor);
+	}
+
+	void Renderer2D::DrawRotatedQuad(const glm::vec3& position, const glm::vec2& size, const float rotation, const Ref<Texture2D>& texture, const float tilingFactor, const glm::vec4& tintColor)
+	{
+		glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(position))
+			* glm::rotate(glm::mat4(1.0f), rotation, glm::vec3(0.0f, 0.0f, 1.0f))
+			* glm::scale(glm::mat4(1.0f), glm::vec3(size, 1.0f));
+		DrawQuadWithMatrix(transform, texture, tilingFactor);
+	}
+
+	void Renderer2D::DrawQuadWithMatrix(const glm::mat4& transform, const glm::vec4& color)
+	{
 		s_Data->FlatColorShader->GetOriginalShader()->Bind();
 		s_Data->FlatColorShader->GetOriginalShader()->SetMat4("Prism_Model", transform);
 		s_Data->FlatColorShader->GetOriginalShader()->SetFloat4("_MainColor", color);
 		s_Data->QuadVertexArray->Bind();
 		s_Data->WhiteTexture->Bind(0);
 		RenderCommand::DrawIndexed(s_Data->QuadVertexArray);
-		
 	}
 
-	void Renderer2D::DrawQuad(const glm::vec2& position, const glm::vec2& size, const Ref<Texture2D>& texture)
+	void Renderer2D::DrawQuadWithMatrix(const glm::mat4& transform, const Ref<Texture2D>& texture, const float tilingFactor, const glm::vec4& tintColor)
 	{
-		DrawQuad({ position.x, position.y, 0.0f }, size, texture);
-	}
-
-	void Renderer2D::DrawQuad(const glm::vec3& position, const glm::vec2& size, const Ref<Texture2D>& texture)
-	{
-		glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(position))
-			* glm::scale(glm::mat4(1.0f), glm::vec3(size, 1.0f));
 		s_Data->TextureShader->GetOriginalShader()->Bind();
 		s_Data->TextureShader->GetOriginalShader()->SetMat4("Prism_Model", transform);
 		s_Data->TextureShader->GetOriginalShader()->SetInt("_MainTex", 0);
-		s_Data->TextureShader->GetOriginalShader()->SetFloat4("_MainColor", glm::vec4(1.0f));
+		s_Data->TextureShader->GetOriginalShader()->SetFloat4("_MainColor", tintColor);
+		s_Data->TextureShader->GetOriginalShader()->SetFloat("_TillingFactor", tilingFactor);
 
 		s_Data->QuadVertexArray->Bind();
 		texture->Bind(0);
 		RenderCommand::DrawIndexed(s_Data->QuadVertexArray);
 	}
+
+	Prism::PrismGlobalsUBO Renderer2D::s_GlobalUBO;
 
 #pragma endregion 
 }

@@ -34,17 +34,17 @@ void Sandbox2D::OnUpdate()
 
 	Layer::OnUpdate();
 	{
-		PR_PROFILE_FUNCTION();
 		m_CameraController.OnUpdata();
 	}
 
 	{
-		PR_PROFILE_FUNCTION();
+		PR_PROFILE_SCOPE("Square Draw");
 		Prism::Renderer2D::BeginScene(m_CameraController.GetCamera());
 
 		Prism::Renderer2D::DrawQuad({ -0.3f, -0.3f }, { 1.0f, 1.0f }, m_SquareColor);
 
-		Prism::Renderer2D::DrawQuad({ 0.5f, 0.5f }, { 0.5f, 0.5f }, m_Texture);
+		Prism::Renderer2D::DrawQuad({ 0.5f, 0.5f }, { 0.5f, 0.5f }, m_Texture, 10.0f);
+		Prism::Renderer2D::DrawRotatedQuad({ -0.3f, 0.4f }, { 0.3f, 0.3f }, Prism::Time::GetTime(), m_SquareColor);
 		Prism::Renderer2D::EndScene();
 	}
 	/*glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(1.5f));
@@ -66,5 +66,6 @@ void Sandbox2D::OnImGuiRender()
 	Layer::OnImGuiRender();
 	ImGui::Begin("Settings");
 	ImGui::ColorEdit4("Square Color", glm::value_ptr(m_SquareColor));
+	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", Prism::Time::GetDeltaTime(), 1.0f / Prism::Time::GetDeltaTime());
 	ImGui::End();
 }

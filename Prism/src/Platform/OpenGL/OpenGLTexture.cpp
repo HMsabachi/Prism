@@ -28,7 +28,11 @@ namespace Prism
 		PR_PROFILE_FUNCTION();
 
 		int width, height, channels;
-		stbi_uc* data = stbi_load(path.c_str(), &width, &height, &channels, 0);
+		stbi_uc* data = nullptr;
+		{
+			PR_PROFILE_SCOPE("stbi_load - OpenGLTexture2D::OpenGLTexture2D(const std::string& path)");
+			data = stbi_load(path.c_str(), &width, &height, &channels, 0);
+		}
 		PR_CORE_ASSERT(data, "Failed to load image {0}", path);
 		m_Width = width;
 		m_Height = height;

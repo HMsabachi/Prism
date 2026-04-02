@@ -19,6 +19,7 @@ Shader "Custom/FlatColor"
             GLSL
             {
                 #include "PrismBuiltin.glsl"
+                #include "PrismUtility.glsl"
                 attribute vec3 aPos : POSITION;
                 attribute vec2 aUV : TEXCOORD0;
                 attribute vec3 aNormal : NORMAL;
@@ -32,12 +33,11 @@ Shader "Custom/FlatColor"
 
                 void frag()
                 {
-                    vec2 uv = gl_FragCoord.xy / Prism_Resolution.xy;
-                    //vec2 uv = vUV;
-                    //uv += sin(Prism_Time.rg) * 0.5 + 0.5;
-                    //uv = fract(uv);
+                    vec2 uv = gl_FragCoord.xy / Prism_Resolution;
+                    vec2 noise = vec2(PF_Noise((uv.xy + Prism_Time.xy * 0.3) * 10.0), PF_Noise((uv.yx + Prism_Time.xy * 0.3) * 10.0));
                     vec3 timeColor = sin(Prism_Time.rgb * 2.0) * 0.5;
                     vec4 color = _MainColor;
+                    color.gb = mix(color.gb, noise, 0.7);
                     color.rg = mix(color.rg, uv, 0.7);
                     color.rgb = mix(color.rgb, timeColor, 0.22);
                     FragColor = color;

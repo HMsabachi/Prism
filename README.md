@@ -128,7 +128,7 @@ Prism/
 喜欢这个项目？欢迎点个 ⭐ 支持一下！
 
 ## 参考资料
-
+- [Hazel Engine](https://github.com/TheCherno/Hazel)
 - [LearnOpenGL CN](https://learnopengl-cn.github.io/)
 - [spdlog](https://github.com/gabime/spdlog)    
 - [Premake 5](https://premake.github.io/)

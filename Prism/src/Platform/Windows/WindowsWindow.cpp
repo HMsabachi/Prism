@@ -84,6 +84,7 @@ namespace Prism {
 
 	void WindowsWindow::SetVSync(bool enabled)
 	{
+		PR_PROFILE_FUNCTION();
 		if (enabled)
 			glfwSwapInterval(1);
 		else

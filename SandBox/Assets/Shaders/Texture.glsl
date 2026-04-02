@@ -8,6 +8,7 @@ Shader "Custom/Texture"
         _MainTex("基础贴图", Texture2D) = "white" {}
         _Gloss("光泽度", Float) = 0.5
         _Cutoff("透明裁剪", Range(0, 1)) = 0.5
+        _TillingFactor("平铺因子", Float) = 1.0
     }
     SubShader
     {
@@ -32,7 +33,7 @@ Shader "Custom/Texture"
 
                 void frag()
                 {
-                    FragColor = texture(_MainTex, vUV) * _MainColor;
+                    FragColor = texture(_MainTex, vUV * _TillingFactor) * _MainColor;
                 }
             }
         }

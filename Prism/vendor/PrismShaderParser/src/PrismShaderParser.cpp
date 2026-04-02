@@ -366,6 +366,8 @@ namespace Prism
 
         pass.FragmentShaderCode = fsCode;
         // 4. 最后进行美化
+		pass.VertexShaderCode = StripComments(pass.VertexShaderCode);
+		pass.FragmentShaderCode = StripComments(pass.FragmentShaderCode);
         FormatCodeInPlace(pass.VertexShaderCode);
         FormatCodeInPlace(pass.FragmentShaderCode);
     }
