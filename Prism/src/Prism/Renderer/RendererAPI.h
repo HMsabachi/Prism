@@ -2,7 +2,7 @@
 
 namespace Prism
 {
-	class RendererAPI
+	class PRISM_API RendererAPI
 	{
 	private:
 

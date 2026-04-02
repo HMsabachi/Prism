@@ -8,7 +8,7 @@ namespace Prism
 	const unsigned int RenderCommandQueue::COMMAND_BUFFER_SIZE = 10 * 1024 * 1024;
 
 	RenderCommandQueue::RenderCommandQueue()
-		:m_RenderCommandCount(0)
+		:m_CommandCount(0)
 	{
 		m_CommandBuffer = new unsigned char[COMMAND_BUFFER_SIZE]; // 10MB buffer
 		m_CommandBufferPtr = m_CommandBuffer;
@@ -20,48 +20,44 @@ namespace Prism
 		delete[] m_CommandBuffer;
 	}
 
-	void RenderCommandQueue::Submit(const RenderCommand& command)
+	void* RenderCommandQueue::Allocate(RenderCommandFn fn, unsigned int size)
 	{
-		auto ptr = m_CommandBuffer;
+		PR_PROFILE_FUNCTION();
+		// TODO: 对齐 alignment
+		*(RenderCommandFn*)m_CommandBufferPtr = fn;
+		m_CommandBufferPtr += sizeof(RenderCommandFn);
 
-		memcpy(m_CommandBuffer, &command, sizeof(RenderCommand));
-		m_CommandBufferPtr += sizeof(RenderCommand);
-		m_RenderCommandCount++;
-	}
-	void RenderCommandQueue::SubmitCommand(const RenderCommandFn& fn, void* params, unsigned int size)
-	{
-		byte*& buffer = m_CommandBufferPtr;
-		memcpy(buffer, &fn, sizeof(RenderCommandFn));
-		buffer += sizeof(RenderCommandFn);
-		memcpy(buffer, params, size);
-		buffer += size;
+		*(int*)m_CommandBufferPtr = size;
+		m_CommandBufferPtr += sizeof(unsigned int);
 
-		// TODO: 这里的对齐有问题
-		auto totalSize = sizeof(RenderCommandFn) + size;
-		auto padding = (16 - totalSize % 16); // 16-byte alignment
-		buffer += padding;
+		void* memory = m_CommandBufferPtr;
+		m_CommandBufferPtr += size;
 
-		m_RenderCommandCount++;
+		m_CommandCount++;
+		return memory;
 	}
 
 	void RenderCommandQueue::Execute()
 	{
-		PR_RENDER_TRACE("RenderCommandQueue::Execute -- {0} commands, {1} bytes", m_RenderCommandCount, (m_CommandBufferPtr - m_CommandBuffer));
+		PR_PROFILE_FUNCTION();
+
+		//PR_RENDER_TRACE("RenderCommandQueue::Execute -- {0} commands, {1} bytes", m_CommandCount, (m_CommandBufferPtr - m_CommandBuffer));
 
 		byte* buffer = m_CommandBuffer;
 
-		for (int i = 0; i < m_RenderCommandCount; i++)
+		for (unsigned int i = 0; i < m_CommandCount; i++)
 		{
-			RenderCommandFn fn = *(RenderCommandFn*)buffer;
+			RenderCommandFn function = *(RenderCommandFn*)buffer;
 			buffer += sizeof(RenderCommandFn);
-			buffer += (*fn)(buffer);
 
-			auto padding = (int)(16 - (int)buffer % 16);
-			buffer += padding;
+			unsigned int size = *(unsigned int*)buffer;
+			buffer += sizeof(unsigned int);
+			function(buffer);
+			buffer += size;
 		}
 
 		m_CommandBufferPtr = m_CommandBuffer;
-		m_RenderCommandCount = 0;
+		m_CommandCount = 0;
 	}
 	
 

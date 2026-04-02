@@ -4,8 +4,9 @@
 #include "Log.h"
 #include "Input.h"
 #include "Time.h"
+#include "Prism/Renderer/Renderer.h"
 
-#include "Prism/Renderer/Renderer_Legacy.h"
+#include "Prism/Renderer/Legacy/Renderer_Legacy.h"
 
 namespace Prism
 {
@@ -63,21 +64,21 @@ namespace Prism
 	{
 		PR_PROFILE_FUNCTION();
 		Time::Update();
-		RenderCommand::SetClearColor({ 0.1f, 0.1f, 0.1f, 0.1f });
-		RenderCommand::Clear();
-
+		Renderer::SetClearColor( 0.1f, 0.1f, 0.1f, 0.1f );
+		Renderer::Clear(0.1f, 0.1f, 0.1f, 0.1f);
+		
 		if (!m_Minimized)
 		{
 			PR_PROFILE_SCOPE("Update LayerStack")
 			for (Layer* layer : m_LayerStack)
 				layer->OnUpdate();
 		}
+		Renderer::WaitAndRender();
 
 		m_ImGuiLayer->Begin();
 		for (Layer* layer : m_LayerStack)
 			layer->OnImGuiRender();
 		m_ImGuiLayer->End();
-
 
 		m_Window->OnUpdate();
 	}

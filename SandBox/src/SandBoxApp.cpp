@@ -5,7 +5,40 @@
 #include "Sandbox2D.h"
 #include "ExampleLayer.h"
 
+class GameLayer : public Prism::Layer
+{
+public:
+	GameLayer()
+	{
+	}
 
+	virtual ~GameLayer()
+	{
+	}
+
+	virtual void OnAttach() override
+	{
+	}
+
+	virtual void OnDetach() override
+	{
+	}
+
+	virtual void OnUpdate() override
+	{
+	}
+
+	virtual void OnImGuiRender() override
+	{
+		//ImGui::Begin("Example Window");
+		//ImGui::Text("Hello World!");
+		//ImGui::End();
+	}
+
+	virtual void OnEvent(Prism::Event& event) override
+	{
+	}
+};
 
 class Sandbox : public Prism::Application
 {
@@ -14,6 +47,7 @@ public:
 	{
 		//PushLayer(new ExampleLayer());
 		PushLayer(new Sandbox2D());
+		PushLayer(new GameLayer());
 		
 	}
 	~Sandbox()
