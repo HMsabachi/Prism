@@ -1,37 +1,35 @@
 ﻿#pragma once
-#include "Prism/Core/Core.h"
-#include "Prism/Renderer/RenderCommand.h"
-#include "Shader/GlobalUniforms.h"
+
+#include "RenderCommandQueue.h"
+#include "Legacy/RendererAPI_Legacy.h"
 
 namespace Prism
 {
-	class OrthographicCamera;
-	class Shader;
-}
-
-namespace Prism
-{
-
 	class PRISM_API Renderer
 	{
-	public:
-		static void Init();
-		static void OnWindowResize(uint32_t width, uint32_t height);
-		static void BeginScene(OrthographicCamera& camera);
-		static void EndScene();
-		static void Submit(const std::shared_ptr<Shader>& shader, const std::shared_ptr<VertexArray>& vertexArray, const glm::mat4& transform = glm::mat4(1.0f));
+	private:
 
-		inline static RendererAPI::API GetAPI() { return RendererAPI::GetAPI(); }
 	public:
-		static void UpdateGlobalUniform(const Prism::OrthographicCamera& camera);
+		static void Clear();
+		static void Clear(float r, float g, float b, float a = 1.0f);
+		static void SetClearColor(float r, float g, float b, float a);
+
+		static void ClearMagenta();
+
+		void Init();
+
+		static void Submit(const std::function<void()>& command)
+		{
+
+		}
+		void WaitAndRender();
+
+		inline static Renderer& Get() { return *s_Instance; }
 
 	private:
-		struct SceneData
-		{
-			glm::mat4 ViewProjectionMatrix;
-		};
-		static PrismGlobalsUBO s_GlobalUBO;
+		static Renderer* s_Instance;
 
-		static SceneData* m_SceneData;
+		RenderCommandQueue m_CommandQueue;
 	};
+#define PR_RENDER(x) ::Prism::Renderer::Submit([=](){ RendererAPI::x; })
 }

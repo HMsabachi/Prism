@@ -1,6 +1,6 @@
 ﻿#include "prpch.h"
 #include "Renderer2D.h"
-
+#include "Legacy/Renderer_Legacy.h"
 #include "VertexArray.h"
 #include "Shader/PrismShader.h"
 #include "glm/ext/matrix_transform.inl"
@@ -63,7 +63,7 @@ namespace Prism
 	{
 		PR_PROFILE_FUNCTION();
 
-		Renderer::UpdateGlobalUniform(camera);
+		Renderer_Legacy::UpdateGlobalUniform(camera);
 	}
 
 	void Renderer2D::EndScene()

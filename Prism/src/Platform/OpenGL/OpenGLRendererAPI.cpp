@@ -1,11 +1,13 @@
 ﻿#include "prpch.h"
 #include "OpenGLRendererAPI.h"
+#include "Prism/Renderer/RendererAPI.h"
 #include "Prism/Renderer/VertexArray.h"
 
 #include <glad/glad.h>
 
 namespace Prism
 {
+	#pragma region 即将废弃 Legacy
 	void OpenGLRendererAPI::Init()
 	{
 		PR_PROFILE_FUNCTION();
@@ -23,13 +25,27 @@ namespace Prism
 	{
 		glClearColor(color.r, color.g, color.b, color.a);
 	}
+
 	void OpenGLRendererAPI::Clear()
 	{
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	}
+
 	void OpenGLRendererAPI::DrawIndexed(const std::shared_ptr<VertexArray>& vertexArray)
 	{
 		glDrawElements(GL_TRIANGLES, vertexArray->GetIndexBuffer()->GetCount(), GL_UNSIGNED_INT, nullptr);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
+	#pragma endregion
+
+	void RendererAPI::Clear(float r, float g, float b, float a)
+	{
+		glClearColor(r, g, b, a);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	}
+	void RendererAPI::SetClearColor(float r, float g, float b, float a)
+	{
+		glClearColor(r, g, b, a);
+	}
+
 }

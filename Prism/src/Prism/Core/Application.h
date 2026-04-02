@@ -30,7 +30,9 @@ namespace Prism
 
 		inline static Application& Get() { return *s_Instance; }
 		inline Window& GetWindow() const { return *m_Window; }
-
+	private:
+		void OnInit() {}
+		void OnShutdown() {}
 	private:
 		void Initialize();
 		// Update function for the application(frame update) 应用更新函数(帧更新)

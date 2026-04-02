@@ -1,12 +1,12 @@
 ﻿#pragma once
 
 #include "Prism/Core/Core.h"
-#include "RendererAPI.h"
+#include "Legacy/RendererAPI_Legacy.h"
 
 #include <glm/glm.hpp>
 // 前向声明
 namespace Prism {
-	class RendererAPI;
+	class RendererAPI_Legacy;
 	class VertexArray;
 }
 
@@ -15,6 +15,7 @@ namespace Prism
 	class PRISM_API RenderCommand
 	{
 	public:
+#pragma region 即将弃用
 		inline static void Init()
 		{
 			s_RendererAPI->Init();
@@ -35,7 +36,11 @@ namespace Prism
 		{
 			s_RendererAPI->DrawIndexed(vertexArray);
 		}
+#pragma endregion
+
+	public:
+		static unsigned int Clear(void* datablock);
 	private:
-		static RendererAPI* s_RendererAPI;
+		static RendererAPI_Legacy* s_RendererAPI;
 	};
 }

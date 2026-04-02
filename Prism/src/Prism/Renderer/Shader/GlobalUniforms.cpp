@@ -1,7 +1,6 @@
 ﻿#include "prpch.h"
 #include "GlobalUniforms.h"
 #include "Platform/OpenGL/OpenGLGlobalUniform.h"
-#include "../Renderer.h"
 
 
 namespace Prism

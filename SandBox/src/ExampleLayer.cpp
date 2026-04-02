@@ -74,7 +74,7 @@ void ExampleLayer::OnUpdate()
 	m_CameraController.OnUpdata();
 	// 渲染
 
-	Prism::Renderer::BeginScene(m_CameraController.GetCamera());
+	Prism::Renderer_Legacy::BeginScene(m_CameraController.GetCamera());
 
 	glm::mat4 scale = glm::scale(glm::mat4(1.0f), glm::vec3(0.1f));
 
@@ -89,15 +89,15 @@ void ExampleLayer::OnUpdate()
 		{
 			glm::vec3 pos(i * 0.11f, j * 0.11f, 0.0f);
 			glm::mat4 transform = glm::translate(glm::mat4(1.0f), pos) * scale;
-			Prism::Renderer::Submit(FlatColorShader->GetOriginalShader(), m_SquareVA, transform);
+			Prism::Renderer_Legacy::Submit(FlatColorShader->GetOriginalShader(), m_SquareVA, transform);
 		}
 	}
-	Prism::Renderer::Submit(m_TextureShader->GetOriginalShader(), m_SquareVA, glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
+	Prism::Renderer_Legacy::Submit(m_TextureShader->GetOriginalShader(), m_SquareVA, glm::scale(glm::mat4(1.0f), glm::vec3(1.5f)));
 
 	// 三角形 Triangle
-	Prism::Renderer::Submit(m_Shader->GetOriginalShader(), m_VertexArray);
+	Prism::Renderer_Legacy::Submit(m_Shader->GetOriginalShader(), m_VertexArray);
 
-	Prism::Renderer::EndScene();
+	Prism::Renderer_Legacy::EndScene();
 }
 
 void ExampleLayer::OnEvent(Prism::Event& event)

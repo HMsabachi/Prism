@@ -2,7 +2,7 @@
 #include "Texture.h"
 
 #include "Platform/OpenGL/OpenGLTexture.h"
-#include "Renderer.h"
+#include "Legacy/RendererAPI_Legacy.h"
 namespace Prism
 {
 	Ref<Texture2D> Texture2D::ErrorTexture = nullptr;
@@ -12,10 +12,10 @@ namespace Prism
 	}
 	Ref<Texture2D> Texture2D::Create(const std::string& path)
 	{
-		switch (RendererAPI::GetAPI())
+		switch (RendererAPI_Legacy::GetAPI())
 		{
-		case RendererAPI::API::None: PR_CORE_ASSERT(false, "RendererAPI::None is currently not supported!"); return nullptr;
-		case RendererAPI::API::OpenGL: return CreateRef<OpenGLTexture2D>(path);
+		case RendererAPI_Legacy::API::None: PR_CORE_ASSERT(false, "RendererAPI::None is currently not supported!"); return nullptr;
+		case RendererAPI_Legacy::API::OpenGL: return CreateRef<OpenGLTexture2D>(path);
 		}
 
 		PR_CORE_ASSERT(false, "Unknown RendererAPI!");
@@ -24,10 +24,10 @@ namespace Prism
 
 	Prism::Ref<Prism::Texture2D> Texture2D::Create(const uint32_t width, const uint32_t height)
 	{
-		switch (RendererAPI::GetAPI())
+		switch (RendererAPI_Legacy::GetAPI())
 		{
-		case RendererAPI::API::None: PR_CORE_ASSERT(false, "RendererAPI::None is currently not supported!");
-		case RendererAPI::API::OpenGL: return CreateRef<OpenGLTexture2D>(width, height);
+		case RendererAPI_Legacy::API::None: PR_CORE_ASSERT(false, "RendererAPI::None is currently not supported!");
+		case RendererAPI_Legacy::API::OpenGL: return CreateRef<OpenGLTexture2D>(width, height);
 		}
 	}
 

@@ -2,7 +2,7 @@
 #include "Prism/Core/Core.h"
 #include "Camera/OrthographicCamera.h"
 #include "Texture.h"
-#include "Renderer.h"
+#include "Shader/GlobalUniforms.h"
 
 namespace Prism
 {
