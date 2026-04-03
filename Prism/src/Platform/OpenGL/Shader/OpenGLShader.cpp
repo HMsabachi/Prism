@@ -33,14 +33,10 @@ namespace Prism
 	}
 	void OpenGLShader::Bind() const
 	{
-		PR_PROFILE_FUNCTION();
-
 		glUseProgram(m_RendererID);
 	}
 	void OpenGLShader::Unbind() const
 	{
-		PR_PROFILE_FUNCTION();
-
 		glUseProgram(0);
 	}
 

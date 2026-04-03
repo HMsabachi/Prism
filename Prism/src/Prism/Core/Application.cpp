@@ -23,7 +23,7 @@ namespace Prism
 
 		Initialize();
 
-		m_ImGuiLayer = new ImGuiLayer();
+		m_ImGuiLayer = new ImGuiLayer("ImGui");
 		PushOverlay(m_ImGuiLayer);
 	}
 
@@ -64,8 +64,8 @@ namespace Prism
 	{
 		PR_PROFILE_FUNCTION();
 		Time::Update();
-		Renderer::SetClearColor( 0.1f, 0.1f, 0.1f, 0.1f );
-		Renderer::Clear(0.1f, 0.1f, 0.1f, 0.1f);
+		//Renderer::SetClearColor( 0.1f, 0.1f, 0.1f, 0.1f );
+		//Renderer::Clear(0.1f, 0.1f, 0.1f, 0.1f);
 		
 		if (!m_Minimized)
 		{
@@ -73,16 +73,24 @@ namespace Prism
 			for (Layer* layer : m_LayerStack)
 				layer->OnUpdate();
 		}
-		Renderer::WaitAndRender();
+		Application* app = this;
+		PR_RENDER_1(app, { app->RenderImGui(); });
 
-		m_ImGuiLayer->Begin();
-		for (Layer* layer : m_LayerStack)
-			layer->OnImGuiRender();
-		m_ImGuiLayer->End();
+		Renderer::WaitAndRender();
 
 		m_Window->OnUpdate();
 	}
 #pragma region Private Methods 私有方法
+
+	void Application::RenderImGui()
+	{
+		PR_PROFILE_FUNCTION();
+		m_ImGuiLayer->Begin();
+		for (Layer* layer : m_LayerStack)
+			layer->OnImGuiRender();
+		m_ImGuiLayer->End();
+	}
+
 	void Application::Initialize()
 	{
 		// 初始化窗口 Initialize Window
@@ -121,14 +129,10 @@ namespace Prism
 	void Application::PushLayer(Layer* layer)
 	{
 		m_LayerStack.PushLayer(layer);
-		//layer->OnAttach(); 
-		// 这里根据我的想法是有区别的 OnAttach() 应该在LayerStack 中被调用
 	}
 	void Application::PushOverlay(Layer* layer)
 	{
 		m_LayerStack.PushOverlay(layer);
-		//layer->OnAttach();
-		// 这里根据我的想法是有区别的 OnAttach() 应该在LayerStack 中被调用
 	}
 #pragma endregion
 

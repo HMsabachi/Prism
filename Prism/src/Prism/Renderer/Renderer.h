@@ -53,10 +53,11 @@ namespace Prism
 		new (mem) PR_RENDER_UNIQUE(PRRenderCommand)();\
 	}\
 
-#define PR_RENDER_I(arg0, code) \
+#define PR_RENDER_1(arg0, code) \
+	do{\
     struct PR_RENDER_UNIQUE(PRRenderCommand) \
     {\
-		PR_RENDER_UNIQUE(PRRenderCommand)(typename ::std::remove_const<typename ::std::remove_reference<decltype(param)>::type>::type arg0) \
+		PR_RENDER_UNIQUE(PRRenderCommand)(typename ::std::remove_const<typename ::std::remove_reference<decltype(arg0)>::type>::type arg0) \
 		: arg0(arg0) {}\
 		\
         static void Execute(void* self)\
@@ -70,9 +71,9 @@ namespace Prism
 	{\
 		auto mem = ::Prism::Renderer::Submit(PR_RENDER_UNIQUE(PRRenderCommand)::Execute, sizeof(PR_RENDER_UNIQUE(PRRenderCommand)));\
 		new (mem) PR_RENDER_UNIQUE(PRRenderCommand)(arg0);\
-	}\
+	}} while(0)
 
-#define PR_RENDER_II(arg0, arg1, code) \
+#define PR_RENDER_2(arg0, arg1, code) \
     struct PR_RENDER_UNIQUE(PRRenderCommand) \
     {\
 		PR_RENDER_UNIQUE(PRRenderCommand)(typename ::std::remove_const<typename ::std::remove_reference<decltype(arg0)>::type>::type arg0,\
@@ -94,7 +95,7 @@ namespace Prism
 		new (mem) PR_RENDER_UNIQUE(PRRenderCommand)(arg0, arg1);\
 	}\
 
-#define PR_RENDER_III(arg0, arg1, arg2, code) \
+#define PR_RENDER_3(arg0, arg1, arg2, code) \
     struct PR_RENDER_UNIQUE(PRRenderCommand) \
     {\
 		PR_RENDER_UNIQUE(PRRenderCommand)(typename ::std::remove_const<typename ::std::remove_reference<decltype(arg0)>::type>::type arg0,\
@@ -119,7 +120,7 @@ namespace Prism
 		new (mem) PR_RENDER_UNIQUE(PRRenderCommand)(arg0, arg1, arg2);\
 	}\
 
-#define PR_RENDER_IV(arg0, arg1, arg2, arg3, code) \
+#define PR_RENDER_4(arg0, arg1, arg2, arg3, code) \
     struct PR_RENDER_UNIQUE(PRRenderCommand) \
     {\
 		PR_RENDER_UNIQUE(PRRenderCommand)(typename ::std::remove_const<typename ::std::remove_reference<decltype(arg0)>::type>::type arg0,\

@@ -22,7 +22,6 @@ namespace Prism
 
 	void* RenderCommandQueue::Allocate(RenderCommandFn fn, unsigned int size)
 	{
-		PR_PROFILE_FUNCTION();
 		// TODO: 对齐 alignment
 		*(RenderCommandFn*)m_CommandBufferPtr = fn;
 		m_CommandBufferPtr += sizeof(RenderCommandFn);

@@ -13,6 +13,7 @@ namespace Prism
 	{
 	public:
 		ImGuiLayer();
+		ImGuiLayer(const std::string& name);
 		~ImGuiLayer();
 		
 		virtual void OnAttach() override;

@@ -16,7 +16,7 @@ namespace Prism
 
 	void Renderer::Clear(float r, float g, float b, float a /*= 1.0f*/)
 	{
-		PR_RENDER_IV(r, g, b, a, {
+		PR_RENDER_4(r, g, b, a, {
 			RendererAPI::Clear(r, g, b, a);
 			});
 	}

@@ -33,6 +33,7 @@ namespace Prism
 	private:
 		void OnInit() {}
 		void OnShutdown() {}
+		void RenderImGui();
 	private:
 		void Initialize();
 		// Update function for the application(frame update) 应用更新函数(帧更新)

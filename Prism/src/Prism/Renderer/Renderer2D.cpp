@@ -83,7 +83,7 @@ namespace Prism
 	{
 		glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(position))
 			* glm::scale(glm::mat4(1.0f), glm::vec3(size, 1.0f));
-		PR_RENDER_II(transform, color, {
+		PR_RENDER_2(transform, color, {
 			DrawQuadWithMatrix(transform, color);
 			};)
 		
@@ -98,7 +98,7 @@ namespace Prism
 	{
 		glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(position))
 			* glm::scale(glm::mat4(1.0f), glm::vec3(size, 1.0f));
-		PR_RENDER_III(transform, texture, tilingFactor, {
+		PR_RENDER_3(transform, texture, tilingFactor, {
 			DrawQuadWithMatrix(transform, texture, tilingFactor);
 			})
 	}
@@ -113,7 +113,7 @@ namespace Prism
 		glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(position))
 			* glm::rotate(glm::mat4(1.0f), rotation, glm::vec3(0.0f, 0.0f, 1.0f))
 			* glm::scale(glm::mat4(1.0f), glm::vec3(size, 1.0f));
-		PR_RENDER_II(transform, color, {
+		PR_RENDER_2(transform, color, {
 			DrawQuadWithMatrix(transform, color);
 			};)
 	}
@@ -128,7 +128,7 @@ namespace Prism
 		glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(position))
 			* glm::rotate(glm::mat4(1.0f), rotation, glm::vec3(0.0f, 0.0f, 1.0f))
 			* glm::scale(glm::mat4(1.0f), glm::vec3(size, 1.0f));
-		PR_RENDER_III(transform, texture, tilingFactor, {
+		PR_RENDER_3(transform, texture, tilingFactor, {
 			DrawQuadWithMatrix(transform, texture, tilingFactor);
 			})
 	}

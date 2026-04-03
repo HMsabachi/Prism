@@ -17,6 +17,12 @@ namespace Prism
 	ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer")
 	{
 	}
+
+	ImGuiLayer::ImGuiLayer(const std::string& name) : Layer(name)
+	{
+
+	}
+
 	ImGuiLayer::~ImGuiLayer()
 	{
 	}
@@ -62,8 +68,8 @@ namespace Prism
 	}
 	void ImGuiLayer::OnImGuiRender()
 	{
-		static bool show = true;
-		ImGui::ShowDemoWindow(&show);
+		//static bool show = true;
+		//ImGui::ShowDemoWindow(&show);
 	}
 #pragma endregion
 
