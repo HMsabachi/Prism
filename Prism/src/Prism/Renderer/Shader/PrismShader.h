@@ -1,13 +1,11 @@
 ﻿#pragma once
+#if 0
 #include "Prism/Core/Core.h"
 #include "Prism/Renderer/Shader/Shader.h"
 #include "PrismShaderParser.h"
 #include "glm/glm.hpp"
 
-namespace Prism
-{
-	class Texture2D;
-}
+
 
 namespace Prism
 {
@@ -91,13 +89,13 @@ namespace Prism
 		};
 		struct PRISM_API Texture2DPropertyElement : public PropertyElement
 		{
-			Ref<Texture2D> DefaultValue;
-			Ref<Texture2D> Value;
-			Texture2DPropertyElement(const std::string& name, const std::string& displayName, Ref<Texture2D>& defaultValue)
+			std::string DefaultValue;
+			std::string Value;
+			Texture2DPropertyElement(const std::string& name, const std::string& displayName, const std::string& defaultValue)
 				: PropertyElement(name, displayName, PropertyType::Texture2D), DefaultValue(defaultValue), Value(defaultValue) {
 			}
 			void* GetDefaultValue() const override { return(void*)(&DefaultValue); }
-			void SetValue(const void* value) override { Value = *(Ref<Texture2D>*)(value); }
+			void SetValue(const void* value) override { Value = *(std::string*)(value); }
 			void* GetValue() const override { return(void*)(&Value); }
 		};
 		#pragma endregion
@@ -168,8 +166,8 @@ namespace Prism
 					break;
 				}
 				case PropertyType::Texture2D: {
-					auto& tex = *static_cast<Ref<Texture2D>*>(rawValue);
-					if (tex) {
+					auto& tex = *static_cast<std::string*>(rawValue);
+					if (tex == "") {
 						ss << "[Texture2D Object]";
 					}
 					else {
@@ -216,3 +214,5 @@ namespace Prism
 		ParseResult m_ParseResult;
 	};
 }
+
+#endif

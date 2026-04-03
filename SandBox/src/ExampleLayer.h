@@ -1,4 +1,6 @@
 ﻿#pragma once
+
+#if 0
 #include "Prism.h"
 #include "imgui/imgui.h"
 
@@ -30,3 +32,5 @@ private:
 	Prism::OrthographicCameraController m_CameraController;
 	glm::vec3 m_SquareColor = { 0.2f, 0.3f, 0.8f };
 };
+
+#endif

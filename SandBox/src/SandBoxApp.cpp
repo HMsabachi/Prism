@@ -1,9 +1,9 @@
 ﻿#include <Prism.h>
-#include "Prism/Core/EntryPoint.h"
-#include "../../Prism/src/Platform/OpenGL/OpenGLTexture.h"
 
-#include "Sandbox2D.h"
-#include "ExampleLayer.h"
+#include "imgui/imgui.h"
+#include "Prism/Core/EntryPoint.h"
+#include "glm/gtc/type_ptr.inl"
+
 
 static void ImGuiShowHelpMarker(const char* desc)
 {
@@ -21,7 +21,7 @@ static void ImGuiShowHelpMarker(const char* desc)
 class EditorLayer : public Prism::Layer
 {
 public:
-	EditorLayer() : m_ClearColor{ 0.2f, 0.3f, 0.8f, 1.0f }
+	EditorLayer() : m_ClearColor{ 0.2f, 0.3f, 0.8f, 1.0f }, m_TriangleColor{ 0.8f, 0.2f, 0.3f, 1.0f }
 	{
 	}
 
@@ -31,6 +31,23 @@ public:
 
 	virtual void OnAttach() override
 	{
+		static float vertices[] = {
+			-0.5f, -0.5f, 0.0f,
+			 0.5f, -0.5f, 0.0f,
+			 0.0f,  0.5f, 0.0f
+		};
+
+		static unsigned int indices[] = {
+			0, 1, 2
+		};
+
+		m_VB = std::unique_ptr<Prism::VertexBuffer>(Prism::VertexBuffer::Create());
+		m_VB->SetData(vertices, sizeof(vertices));
+
+		m_IB = std::unique_ptr<Prism::IndexBuffer>(Prism::IndexBuffer::Create());
+		m_IB->SetData(indices, sizeof(indices));
+
+		m_Shader.reset(Prism::Shader::Create("assets/shaders/shader.glsl"));
 	}
 
 	virtual void OnDetach() override
@@ -39,7 +56,17 @@ public:
 
 	virtual void OnUpdate() override
 	{
-		Prism::Renderer::Clear(m_ClearColor[0], m_ClearColor[1], m_ClearColor[2], m_ClearColor[3]);
+		using namespace Prism;
+		Renderer::Clear(m_ClearColor[0], m_ClearColor[1], m_ClearColor[2], m_ClearColor[3]);
+
+		Prism::UniformBufferDeclaration<sizeof(glm::vec4), 1> buffer;
+		buffer.Push("u_Color", m_TriangleColor);
+		m_Shader->UploadUniformBuffer(buffer);
+
+		m_Shader->Bind();
+		m_VB->Bind();
+		m_IB->Bind();
+		Renderer::DrawIndexed(3);
 	}
 
 	virtual void OnImGuiRender() override
@@ -137,6 +164,7 @@ public:
 			ImGui::ShowDemoWindow(&show_demo_window);
 		ImGui::Begin("GameLayer");
 		ImGui::ColorEdit4("Clear Color", m_ClearColor);
+		ImGui::ColorEdit4("Triangle Color", glm::value_ptr(m_TriangleColor));
 		ImGui::End();
 	}
 
@@ -144,6 +172,10 @@ public:
 	{
 	}
 private:
+	std::unique_ptr<Prism::VertexBuffer> m_VB;
+	std::unique_ptr<Prism::IndexBuffer> m_IB;
+	std::unique_ptr<Prism::Shader> m_Shader;
+	glm::vec4 m_TriangleColor;
 	float m_ClearColor[4];
 };
 
@@ -153,7 +185,7 @@ public:
 	Sandbox()
 	{
 		//PushLayer(new ExampleLayer());
-		PushLayer(new Sandbox2D());
+		//PushLayer(new Sandbox2D());
 		PushLayer(new EditorLayer());
 		
 	}

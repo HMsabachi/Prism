@@ -1,29 +1,30 @@
 ﻿#pragma once
-#include "Prism/Core/Core.h"
-#include <string>
 
-namespace Prism
-{
+#include "Prism/Core/Core.h"
+
+namespace Prism {
+
+	enum class PRISM_API TextureFormat
+	{
+		None = 0,
+		RGB = 1,
+		RGBA = 2,
+	};
+
 	class PRISM_API Texture
 	{
 	public:
-		virtual ~Texture() = default;
-
-		virtual int GetWidth() const = 0;
-		virtual int GetHeight() const = 0;
-		virtual void Bind(uint32_t slot = 0) const = 0;
-		virtual void SetData(void* data, uint32_t size) const = 0;
+		virtual ~Texture() {}
 	};
+
 	class PRISM_API Texture2D : public Texture
 	{
 	public:
-		virtual ~Texture2D() = default;
-		static void Init();
-	public:
-		static Ref<Texture2D> ErrorTexture;
-	public:
-		static Ref<Texture2D> Create(const std::string& path);
-		static Ref<Texture2D> Create(const uint32_t width, const uint32_t height);
+		static Texture2D* Create(TextureFormat format, unsigned int width, unsigned int height);
 
+		virtual TextureFormat GetFormat() const = 0;
+		virtual unsigned int GetWidth() const = 0;
+		virtual unsigned int GetHeight() const = 0;
 	};
+
 }

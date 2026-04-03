@@ -14,15 +14,18 @@
 
 #include "Prism/ImGui/ImGuiLayer.h"
 // ---Renderer-
-#include "Prism/Renderer/Legacy/Renderer_Legacy.h"
 #include "Prism/Renderer/Renderer.h"
-#include "Prism/Renderer/Renderer2D.h"
-#include "Prism/Renderer/Buffer.h"
-#include "Prism/Renderer/Shader/Shader.h"
 #include "Prism/Renderer/Shader/PrismShader.h"
-#include "Prism/Renderer/Shader/ShaderLoader.h"
-#include "Prism/Renderer/VertexArray.h"
+
+#include "imgui/imgui.h"
+
+// --- Prism Render API ------------------------------
+#include "Prism/Renderer/Renderer.h"
+#include "Prism/Renderer/Framebuffer.h"
+#include "Prism/Renderer/Buffer.h"
 #include "Prism/Renderer/Texture.h"
+#include "Prism/Renderer/Shader.h"
+// ---------------------------------------------------
 
 #include "Prism/Renderer/Camera/OrthographicCamera.h"
 #include "Prism/Renderer/Camera/OrthographicCameraController.h"

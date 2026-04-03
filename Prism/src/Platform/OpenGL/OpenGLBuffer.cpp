@@ -1,67 +1,81 @@
 ﻿#include "prpch.h"
 #include "OpenGLBuffer.h"
 
-#include <glad/glad.h>
+#include <Glad/glad.h>
+
 namespace Prism
 {
-	/////////////////////////////////////////////////////////////////////////////
-	// VertexBuffer /////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////
 
-	OpenGLVertexBuffer::OpenGLVertexBuffer(float* vertices, uint32_t size)
+	//////////////////////////////////////////////////////////////////////////////////
+	// VertexBuffer
+	//////////////////////////////////////////////////////////////////////////////////
+
+	OpenGLVertexBuffer::OpenGLVertexBuffer(unsigned int size)
+		: m_RendererID(0), m_Size(size)
 	{
-		PR_PROFILE_FUNCTION();
-
-		glCreateBuffers(1, &m_RendererID);
-		glBindBuffer(GL_ARRAY_BUFFER, m_RendererID);
-		glBufferData(GL_ARRAY_BUFFER, size, vertices, GL_STATIC_DRAW);
+		PR_RENDER_S({
+			glGenBuffers(1, &self->m_RendererID);
+			});
 	}
 
 	OpenGLVertexBuffer::~OpenGLVertexBuffer()
 	{
-		PR_PROFILE_FUNCTION();
+		PR_RENDER_S({
+			glDeleteBuffers(1, &self->m_RendererID);
+			});
+	}
 
-		glDeleteBuffers(1, &m_RendererID);
+	void OpenGLVertexBuffer::SetData(void* buffer, unsigned int size, unsigned int offset)
+	{
+		PR_RENDER_S3(buffer, size, offset, {
+			glBindBuffer(GL_ARRAY_BUFFER, self->m_RendererID);
+			glBufferData(GL_ARRAY_BUFFER, size, buffer, GL_STATIC_DRAW);
+
+			glEnableVertexAttribArray(0);
+			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, 0);
+			});
+
 	}
 
 	void OpenGLVertexBuffer::Bind() const
 	{
-		glBindBuffer(GL_ARRAY_BUFFER, m_RendererID);
+		PR_RENDER_S({
+			glBindBuffer(GL_ARRAY_BUFFER, self->m_RendererID);
+			});
 	}
 
-	void OpenGLVertexBuffer::Unbind() const
+	//////////////////////////////////////////////////////////////////////////////////
+	// IndexBuffer
+	//////////////////////////////////////////////////////////////////////////////////
+
+	OpenGLIndexBuffer::OpenGLIndexBuffer(unsigned int size)
+		: m_RendererID(0), m_Size(size)
 	{
-		glBindBuffer(GL_ARRAY_BUFFER, 0);
-	}
-
-	/////////////////////////////////////////////////////////////////////////////
-	// IndexBuffer //////////////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////
-
-	OpenGLIndexBuffer::OpenGLIndexBuffer(uint32_t* indices, uint32_t count)
-		: m_Count(count)
-	{
-		PR_PROFILE_FUNCTION();
-
-		glCreateBuffers(1, &m_RendererID);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_RendererID);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, count * sizeof(uint32_t), indices, GL_STATIC_DRAW);
+		PR_RENDER_S({
+			glGenBuffers(1, &self->m_RendererID);
+			});
 	}
 
 	OpenGLIndexBuffer::~OpenGLIndexBuffer()
 	{
-		PR_PROFILE_FUNCTION();
+		PR_RENDER_S({
+			glDeleteBuffers(1, &self->m_RendererID);
+			});
+	}
 
-		glDeleteBuffers(1, &m_RendererID);
+	void OpenGLIndexBuffer::SetData(void* buffer, unsigned int size, unsigned int offset)
+	{
+		PR_RENDER_S3(buffer, size, offset, {
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self->m_RendererID);
+			glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, buffer, GL_STATIC_DRAW);
+			});
 	}
 
 	void OpenGLIndexBuffer::Bind() const
 	{
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_RendererID);
+		PR_RENDER_S({
+			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self->m_RendererID);
+			});
 	}
 
-	void OpenGLIndexBuffer::Unbind() const
-	{
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-	}
 }

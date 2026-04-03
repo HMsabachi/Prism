@@ -1,36 +1,47 @@
 ﻿#pragma once
-
 #include "Prism/Renderer/Buffer.h"
 
 namespace Prism
 {
-	class OpenGLVertexBuffer : public VertexBuffer
+
+	//////////////////////////////////////////////////////////////////////////////////
+	// VertexBuffer
+	//////////////////////////////////////////////////////////////////////////////////
+
+	class PRISM_API OpenGLVertexBuffer : public VertexBuffer
 	{
 	public:
-		OpenGLVertexBuffer(float* vertices, uint32_t size);
+		OpenGLVertexBuffer(unsigned int size);
 		virtual ~OpenGLVertexBuffer();
 
-		virtual void Bind() const override;
-		virtual void Unbind() const override;
+		virtual void SetData(void* buffer, unsigned int size, unsigned int offset = 0);
+		virtual void Bind() const;
 
-		virtual const BufferLayout& GetLayout() const override { return m_Layout; }
-		virtual void SetLayout(const BufferLayout& layout) override { m_Layout = layout; }
+		virtual unsigned int GetSize() const { return m_Size; }
+		virtual RendererID GetRendererID() const { return m_RendererID; }
 	private:
-		BufferLayout m_Layout;
-		uint32_t m_RendererID;
+		RendererID m_RendererID;
+		unsigned int m_Size;
 	};
-	class OpenGLIndexBuffer : public IndexBuffer
+
+	//////////////////////////////////////////////////////////////////////////////////
+	// IndexBuffer
+	//////////////////////////////////////////////////////////////////////////////////
+
+	class PRISM_API OpenGLIndexBuffer : public IndexBuffer
 	{
 	public:
-		OpenGLIndexBuffer(uint32_t* indices, uint32_t count);
+		OpenGLIndexBuffer(unsigned int size);
 		virtual ~OpenGLIndexBuffer();
 
-		virtual void Bind() const override;
-		virtual void Unbind() const override;
+		virtual void SetData(void* buffer, unsigned int size, unsigned int offset = 0);
+		virtual void Bind() const;
 
-		virtual uint32_t GetCount() const { return m_Count; }
+		virtual unsigned int GetSize() const { return m_Size; }
+		virtual RendererID GetRendererID() const { return m_RendererID; }
 	private:
-		uint32_t m_RendererID;
-		uint32_t m_Count;
+		RendererID m_RendererID;
+		unsigned int m_Size;
 	};
+
 }

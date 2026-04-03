@@ -1,26 +1,22 @@
 ﻿#pragma once
 
+#include "Prism/Renderer/RendererAPI.h"
 #include "Prism/Renderer/Texture.h"
 
-typedef unsigned int GLenum;
+namespace Prism {
 
-namespace Prism
-{
-	class OpenGLTexture2D : public Texture2D
+	class PRISM_API OpenGLTexture2D : public Texture2D
 	{
 	public:
-		OpenGLTexture2D (const uint32_t width, const uint32_t height);
-		OpenGLTexture2D (const std::string& path);
-		virtual ~OpenGLTexture2D();
+		OpenGLTexture2D(TextureFormat format, unsigned int width, unsigned int height);
+		~OpenGLTexture2D();
 
-		virtual int GetWidth() const override { return m_Width; }
-		virtual int GetHeight() const override { return m_Height; }
-		virtual void Bind(uint32_t slot = 0) const override;
-		virtual void SetData(void* data, uint32_t size) const override;
+		virtual TextureFormat GetFormat() const { return m_Format; }
+		virtual unsigned int GetWidth() const { return m_Width; }
+		virtual unsigned int GetHeight() const { return m_Height; }
 	private:
-		std::string m_Path;
-		uint32_t m_Width, m_Height;
-		uint32_t m_RendererID;
-		GLenum m_InternalFormat, m_DataFormat;
+		RendererID m_RendererID;
+		TextureFormat m_Format;
+		unsigned int m_Width, m_Height;
 	};
 }

@@ -1,6 +1,6 @@
 ﻿#include "prpch.h"
-#include "../Texture.h"
 #include "PrismShader.h"
+#if 0
 
 namespace Prism
 {
@@ -80,7 +80,8 @@ namespace Prism
 			}
 			case Prism::PropertyType::Texture2D:
 			{
-				Ref<ShaderData::Texture2DPropertyElement> texture2DProperty = std::make_shared<ShaderData::Texture2DPropertyElement>(property.Name, property.DisplayName, Texture2D::ErrorTexture);
+				//TODO: Texture error
+				Ref<ShaderData::Texture2DPropertyElement> texture2DProperty = std::make_shared<ShaderData::Texture2DPropertyElement>(property.Name, property.DisplayName, "");
 				m_Properties.Properties[property.Name] = texture2DProperty;
 				break;
 			}
@@ -227,3 +228,4 @@ namespace Prism
 
 	}
 }
+#endif

@@ -4,9 +4,12 @@
 
 namespace Prism
 {
+	Renderer* Renderer::s_Instance = new Renderer();
+	RendererAPIType RendererAPI::s_CurrentRendererAPI = RendererAPIType::OpenGL;
+
 	void Renderer::Init()
 	{
-
+		PR_RENDER({ RendererAPI::Init(); });
 	}
 
 	void Renderer::Clear()
@@ -31,12 +34,17 @@ namespace Prism
 		Clear(1, 0, 1);
 	}
 
+	void Renderer::DrawIndexed(unsigned int count)
+	{
+		PR_RENDER_1(count, {
+			RendererAPI::DrawIndexed(count);
+			});
+	}
 
 	void Renderer::WaitAndRender()
 	{
 		s_Instance->m_CommandQueue.Execute();
 	}
 
-	Prism::Renderer* Renderer::s_Instance = new Renderer();
 
 }

@@ -1,7 +1,6 @@
 ﻿#include "prpch.h"
 #include "RenderCommand.h"
 #include "RendererAPI.h"
-#include "Platform/OpenGL/OpenGLRendererAPI.h"
 
 namespace Prism
 {
@@ -20,5 +19,4 @@ namespace Prism
 		return sizeof(float) * 4;
 	}
 
-	RendererAPI_Legacy* RenderCommand::s_RendererAPI = new OpenGLRendererAPI();
 }

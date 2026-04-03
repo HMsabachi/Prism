@@ -1,32 +1,28 @@
 ﻿#include "prpch.h"
-#include "Buffer.h"
-#include "Legacy/RendererAPI_Legacy.h"
 
 #include "Platform/OpenGL/OpenGLBuffer.h"
 
-namespace Prism
-{
-	VertexBuffer* VertexBuffer::Create(float* vertices, uint32_t size)
-	{
-		switch (RendererAPI_Legacy::GetAPI())
-		{
-		case RendererAPI_Legacy::API::None:    PR_CORE_ASSERT(false, "RendererAPI::None is currently not supported!"); return nullptr;
-		case RendererAPI_Legacy::API::OpenGL:  return new OpenGLVertexBuffer(vertices, size);
-		}
+namespace Prism {
 
-		PR_CORE_ASSERT(false, "Unknown RendererAPI!");
+	VertexBuffer* VertexBuffer::Create(unsigned int size)
+	{
+		switch (RendererAPI::Current())
+		{
+		case RendererAPIType::None:    return nullptr;
+		case RendererAPIType::OpenGL:  return new OpenGLVertexBuffer(size);
+		}
 		return nullptr;
+
 	}
 
-	IndexBuffer* IndexBuffer::Create(uint32_t* indices, uint32_t count)
+	IndexBuffer* IndexBuffer::Create(unsigned int size)
 	{
-		switch (RendererAPI_Legacy::GetAPI())
+		switch (RendererAPI::Current())
 		{
-		case RendererAPI_Legacy::API::None:    PR_CORE_ASSERT(false, "RendererAPI::None is currently not supported!"); return nullptr;
-		case RendererAPI_Legacy::API::OpenGL:  return new OpenGLIndexBuffer(indices, count);
+		case RendererAPIType::None:    return nullptr;
+		case RendererAPIType::OpenGL:  return new OpenGLIndexBuffer(size);
 		}
-
-		PR_CORE_ASSERT(false, "Unknown RendererAPI!");
 		return nullptr;
+
 	}
 }

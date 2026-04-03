@@ -1,4 +1,5 @@
-﻿#include "Sandbox2D.h"
+﻿#if 0
+#include "Sandbox2D.h"
 
 #include <imgui/imgui.h>
 
@@ -69,3 +70,5 @@ void Sandbox2D::OnImGuiRender()
 	ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", Prism::Time::GetDeltaTime(), 1.0f / Prism::Time::GetDeltaTime());
 	ImGui::End();
 }
+
+#endif

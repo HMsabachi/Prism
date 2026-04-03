@@ -1,4 +1,5 @@
-﻿#include "ExampleLayer.h"
+﻿#if 0
+#include "ExampleLayer.h"
 #include <memory>
 #include "Platform/OpenGL/OpenGLTexture.h"
 
@@ -11,8 +12,8 @@ ExampleLayer::ExampleLayer() : Layer("Example"), m_CameraController(1980.0f / 10
 		0.5f, -0.5f, 0.0f, 0.2f, 0.3f, 0.8f, 1.0f, 1.0f,
 		0.0f, 0.5f, 0.0f, 0.8f, 0.8f, 0.2f, 1.0f, 1.0f
 	};
-	Prism::Ref<Prism::VertexBuffer> vertexBuffer;
-	vertexBuffer.reset(Prism::VertexBuffer::Create(vertices, sizeof(vertices)));
+	Prism::Ref<Prism::VertexBuffer_Legacy> vertexBuffer;
+	vertexBuffer.reset(Prism::VertexBuffer_Legacy::Create(vertices, sizeof(vertices)));
 	Prism::BufferLayout layout = {
 		{Prism::ShaderDataType::Float3, "aPos", Prism::VertexSemantic::Position},
 		{Prism::ShaderDataType::Float3, "aNormal", Prism::VertexSemantic::Normal},
@@ -34,8 +35,8 @@ ExampleLayer::ExampleLayer() : Layer("Example"), m_CameraController(1980.0f / 10
 		 0.5f,  0.5f, 0.0f, 1.0f, 1.0f,
 		-0.5f,  0.5f, 0.0f, 0.0f, 1.0f
 	};
-	Prism::Ref<Prism::VertexBuffer> squareVB;
-	squareVB.reset(Prism::VertexBuffer::Create(squareVertices, sizeof(squareVertices)));
+	Prism::Ref<Prism::VertexBuffer_Legacy> squareVB;
+	squareVB.reset(Prism::VertexBuffer_Legacy::Create(squareVertices, sizeof(squareVertices)));
 	squareVB->SetLayout({
 		{ Prism::ShaderDataType::Float3, "a_Position", Prism::VertexSemantic::Position },
 		{ Prism::ShaderDataType::Float2, "a_TexCoord", Prism::VertexSemantic::TexCoord0}
@@ -114,3 +115,4 @@ bool ExampleLayer::OnKeyPressedEvent(Prism::KeyPressedEvent& e)
 	return false;
 }
 
+#endif

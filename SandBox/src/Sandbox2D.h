@@ -1,4 +1,5 @@
 ﻿#pragma once
+#if 0
 #include <Prism.h>
 
 class Sandbox2D : public Prism::Layer
@@ -25,3 +26,4 @@ private:
 	glm::vec4 m_SquareColor = { 0.8f, 0.2f, 0.3f, 1.0f };
 
 };
+#endif

@@ -6,7 +6,6 @@
 #include "Time.h"
 #include "Prism/Renderer/Renderer.h"
 
-#include "Prism/Renderer/Legacy/Renderer_Legacy.h"
 
 namespace Prism
 {
@@ -97,7 +96,7 @@ namespace Prism
 		m_Window = std::unique_ptr<Window>(Window::Create());
 		m_Window->SetEventCallback(BIND_EVENT_FN(OnEvent));
 		// 初始化渲染器 Initialize Renderer
-		Renderer_Legacy::Init();
+
 		// 初始化时间管理器 Initialize Time Manager
 		Time::Init();
 	}
@@ -120,7 +119,7 @@ namespace Prism
 			return false;
 		}
 		m_Minimized = false;
-		Renderer_Legacy::OnWindowResize(e.GetWidth(), e.GetHeight());
+
 		return false;
 	}
 #pragma endregion
