@@ -20,8 +20,8 @@ namespace Prism {
 		virtual RendererID GetColorAttachmentRendererID() const { return m_ColorAttachment; }
 		virtual RendererID GetDepthAttachmentRendererID() const { return m_DepthAttachment; }
 
-		virtual uint32_t GetWidth() const { return m_Width; }
-		virtual uint32_t GetHeight() const { return m_Height; }
+		virtual uint32_t GetWidth() const override { return m_Width; }
+		virtual uint32_t GetHeight() const override { return m_Height; }
 		virtual FramebufferFormat GetFormat() const { return m_Format; }
 	private:
 		RendererID m_RendererID = 0;

@@ -1,9 +1,10 @@
 ﻿#include "prpch.h"
 #include "PrismShader.h"
-#if 0
+#if 1
 
 namespace Prism
 {
+	std::vector<PrismShader> PrismShader::s_AllPrismShader;
 
 	Ref<PrismShader> PrismShader::Create(const std::string& source, const bool isFile)
 	{
@@ -23,72 +24,9 @@ namespace Prism
 		m_ParseResult = parser.Parse(source);
 
 		// 处理Property
-		for (auto& property : m_ParseResult.Properties)
-		{
-			glm::vec4 fValue = glm::vec4(0.0f);
-			glm::ivec4 iValue = glm::ivec4(0);
-			switch (property.Type)
-			{
-			case Prism::PropertyType::Float:
-			{
-				ConvertValue(property.DefaultValue, property.Type, fValue);
-				Ref<ShaderData::FloatPropertyElement> floatProperty = std::make_shared<ShaderData::FloatPropertyElement>(property.Name, property.DisplayName, fValue.x);
-				m_Properties.Properties[property.Name] = floatProperty;
-				break;
-			}
-			case Prism::PropertyType::Range:
-			{
-				ConvertValue(property.DefaultValue, property.Type, fValue);
-				Ref<ShaderData::FloatPropertyElement> floatProperty = std::make_shared<ShaderData::FloatPropertyElement>(property.Name, property.DisplayName, fValue.x);
-				m_Properties.Properties[property.Name] = floatProperty;
-				break;
-			}
-			case Prism::PropertyType::Int:
-			{
-				ConvertValue(property.DefaultValue, property.Type, iValue);
-				Ref<ShaderData::IntPropertyElement> intProperty = std::make_shared<ShaderData::IntPropertyElement>(property.Name, property.DisplayName, iValue.x);
-				m_Properties.Properties[property.Name] = intProperty;
-				break;
-			}
-			case Prism::PropertyType::Color:
-			{
-				ConvertValue(property.DefaultValue, property.Type, fValue);
-				Ref<ShaderData::ColorPropertyElement> colorProperty = std::make_shared<ShaderData::ColorPropertyElement>(property.Name, property.DisplayName, fValue);
-				m_Properties.Properties[property.Name] = colorProperty;
-				break;
-			}
-			case Prism::PropertyType::Vector2:
-			{
-				ConvertValue(property.DefaultValue, property.Type, fValue);
-				Ref<ShaderData::Vec2PropertyElement> vec2Property = std::make_shared<ShaderData::Vec2PropertyElement>(property.Name, property.DisplayName, glm::vec2(fValue.x, fValue.y));
-				m_Properties.Properties[property.Name] = vec2Property;
-				break;
-			}
-			case Prism::PropertyType::Vector3:
-			{
-				ConvertValue(property.DefaultValue, property.Type, fValue);
-				Ref<ShaderData::Vec3PropertyElement> vec3Property = std::make_shared<ShaderData::Vec3PropertyElement>(property.Name, property.DisplayName, glm::vec3(fValue.x, fValue.y, fValue.z));
-				m_Properties.Properties[property.Name] = vec3Property;
-				break;
-			}
-			case Prism::PropertyType::Vector4:
-			{
-				ConvertValue(property.DefaultValue, property.Type, fValue);
-				Ref<ShaderData::Vec4PropertyElement> vec4Property = std::make_shared<ShaderData::Vec4PropertyElement>(property.Name, property.DisplayName, glm::vec4(fValue.x, fValue.y, fValue.z, fValue.w));
-				m_Properties.Properties[property.Name] = vec4Property;
-				break;
-			}
-			case Prism::PropertyType::Texture2D:
-			{
-				//TODO: Texture error
-				Ref<ShaderData::Texture2DPropertyElement> texture2DProperty = std::make_shared<ShaderData::Texture2DPropertyElement>(property.Name, property.DisplayName, "");
-				m_Properties.Properties[property.Name] = texture2DProperty;
-				break;
-			}
-			}
+		//HandleProperty();
 
-		}
-		m_Shader = Shader::Create(m_ParseResult.Passes[0].VertexShaderCode, m_ParseResult.Passes[0].FragmentShaderCode);
+		m_Shader.reset(Shader::Create(m_ParseResult.ShaderName, m_ParseResult.Passes[0].VertexShaderCode, m_ParseResult.Passes[0].FragmentShaderCode));
 
 	}
 	bool PrismShader::ConvertValue(const std::string& value, PropertyType type, glm::vec4& outValue)
@@ -227,5 +165,75 @@ namespace Prism
 	{
 
 	}
+
+	void PrismShader::HandleProperty()
+	{
+		for (auto& property : m_ParseResult.Properties)
+		{
+			glm::vec4 fValue = glm::vec4(0.0f);
+			glm::ivec4 iValue = glm::ivec4(0);
+			switch (property.Type)
+			{
+			case Prism::PropertyType::Float:
+			{
+				ConvertValue(property.DefaultValue, property.Type, fValue);
+				Ref<ShaderData::FloatPropertyElement> floatProperty = std::make_shared<ShaderData::FloatPropertyElement>(property.Name, property.DisplayName, fValue.x);
+				m_Properties.Properties[property.Name] = floatProperty;
+				break;
+			}
+			case Prism::PropertyType::Range:
+			{
+				ConvertValue(property.DefaultValue, property.Type, fValue);
+				Ref<ShaderData::FloatPropertyElement> floatProperty = std::make_shared<ShaderData::FloatPropertyElement>(property.Name, property.DisplayName, fValue.x);
+				m_Properties.Properties[property.Name] = floatProperty;
+				break;
+			}
+			case Prism::PropertyType::Int:
+			{
+				ConvertValue(property.DefaultValue, property.Type, iValue);
+				Ref<ShaderData::IntPropertyElement> intProperty = std::make_shared<ShaderData::IntPropertyElement>(property.Name, property.DisplayName, iValue.x);
+				m_Properties.Properties[property.Name] = intProperty;
+				break;
+			}
+			case Prism::PropertyType::Color:
+			{
+				ConvertValue(property.DefaultValue, property.Type, fValue);
+				Ref<ShaderData::ColorPropertyElement> colorProperty = std::make_shared<ShaderData::ColorPropertyElement>(property.Name, property.DisplayName, fValue);
+				m_Properties.Properties[property.Name] = colorProperty;
+				break;
+			}
+			case Prism::PropertyType::Vector2:
+			{
+				ConvertValue(property.DefaultValue, property.Type, fValue);
+				Ref<ShaderData::Vec2PropertyElement> vec2Property = std::make_shared<ShaderData::Vec2PropertyElement>(property.Name, property.DisplayName, glm::vec2(fValue.x, fValue.y));
+				m_Properties.Properties[property.Name] = vec2Property;
+				break;
+			}
+			case Prism::PropertyType::Vector3:
+			{
+				ConvertValue(property.DefaultValue, property.Type, fValue);
+				Ref<ShaderData::Vec3PropertyElement> vec3Property = std::make_shared<ShaderData::Vec3PropertyElement>(property.Name, property.DisplayName, glm::vec3(fValue.x, fValue.y, fValue.z));
+				m_Properties.Properties[property.Name] = vec3Property;
+				break;
+			}
+			case Prism::PropertyType::Vector4:
+			{
+				ConvertValue(property.DefaultValue, property.Type, fValue);
+				Ref<ShaderData::Vec4PropertyElement> vec4Property = std::make_shared<ShaderData::Vec4PropertyElement>(property.Name, property.DisplayName, glm::vec4(fValue.x, fValue.y, fValue.z, fValue.w));
+				m_Properties.Properties[property.Name] = vec4Property;
+				break;
+			}
+			case Prism::PropertyType::Texture2D:
+			{
+				//TODO: Texture error
+				Ref<ShaderData::Texture2DPropertyElement> texture2DProperty = std::make_shared<ShaderData::Texture2DPropertyElement>(property.Name, property.DisplayName, "");
+				m_Properties.Properties[property.Name] = texture2DProperty;
+				break;
+			}
+			}
+
+		}
+	}
+
 }
 #endif

@@ -21,13 +21,27 @@ namespace Prism
 		Reload();
 		
 	}
+
+	OpenGLShader::OpenGLShader(const std::string& name, const std::string& source)
+		:m_Name(name), m_ShaderSource(source), m_RendererID(0), m_AssetsPath("")
+	{
+		PR_RENDER_S({
+			self->CompileAndUploadShader();
+		});
+	}
+
 	void OpenGLShader::Reload()
 	{
+		if (m_AssetsPath == "")
+		{
+			PR_CORE_WARN("The shader from PrismShader!");
+			return;
+		}	
 		ReadShaderFromFile(m_AssetsPath);
 		PR_RENDER_S({
 			if (self->m_RendererID)
 				glDeleteProgram(self->m_RendererID);
-
+		// TODO :这里加入Prismshader逻辑
 			self->CompileAndUploadShader();
 			});
 	}

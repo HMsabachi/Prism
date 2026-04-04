@@ -24,9 +24,10 @@ namespace Prism
         inline static int GetLocationBySemantic(const std::string& semantic, Prism::VertexSemantic& outSemantic) {
             if (semantic == "POSITION") { outSemantic = VertexSemantic::Position; return static_cast<int>(outSemantic); }
             if (semantic == "NORMAL") { outSemantic = VertexSemantic::Normal;   return static_cast<int>(outSemantic); }
+            if (semantic == "TANGENT") { outSemantic = VertexSemantic::Tangent;  return static_cast<int>(outSemantic); }
+            if (semantic == "BINORMAL") { outSemantic = VertexSemantic::Binormal;  return static_cast<int>(outSemantic); }
             if (semantic == "TEXCOORD0") { outSemantic = VertexSemantic::TexCoord0; return static_cast<int>(outSemantic); }
             if (semantic == "COLOR") { outSemantic = VertexSemantic::Color;    return static_cast<int>(outSemantic); }
-            if (semantic == "TANGENT") { outSemantic = VertexSemantic::Tangent;  return static_cast<int>(outSemantic); }
 
             outSemantic = VertexSemantic::Unknown;
             return -1;

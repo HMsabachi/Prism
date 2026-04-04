@@ -31,6 +31,7 @@ namespace Prism
         Vector3,
         Vector4,
         Texture2D,
+        TextureCube,
         Range       // Float + [min, max]
     };
 
@@ -47,11 +48,12 @@ namespace Prism
     // 顶点语义枚举（映射到底层的 location）
     enum class PRISM_API VertexSemantic
     {
-        Position,   // 对应 location = 0
-        Normal,     // 对应 location = 1
-        TexCoord0,  // 对应 location = 2
-        Color,      // 对应 location = 3
-        Tangent,    // 对应 location = 4
+		Position,
+		Normal,
+		Tangent,
+        Binormal,
+		TexCoord0,
+		Color,
         Unknown
     };
     // 单个顶点属性的描述

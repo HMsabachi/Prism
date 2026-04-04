@@ -1,7 +1,7 @@
 ﻿#pragma once
-#if 0
+#if 1
 #include "Prism/Core/Core.h"
-#include "Prism/Renderer/Shader/Shader.h"
+#include "Prism/Renderer/Shader.h"
 #include "PrismShaderParser.h"
 #include "glm/glm.hpp"
 
@@ -197,6 +197,9 @@ namespace Prism
 	public:
 		PrismShader(const std::string& source);
 
+	private:
+		void HandleProperty();
+
 		std::string GetFilePath() const {return m_FilePath; };
 		std::string GetName() const { return m_ParseResult.ShaderName; }
 		std::string GetSource() const { return m_ParseResult.Passes[0].VertexShaderCode + m_ParseResult.Passes[0].FragmentShaderCode; }
@@ -212,6 +215,8 @@ namespace Prism
 		std::string m_FilePath;
 		ShaderData::Property m_Properties;
 		ParseResult m_ParseResult;
+	private:
+		static std::vector<PrismShader> s_AllPrismShader;
 	};
 }
 

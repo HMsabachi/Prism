@@ -19,6 +19,7 @@ namespace Prism
         if (typeStr == "Vector3") return PropertyType::Vector3;
         if (typeStr == "Vector4") return PropertyType::Vector4;
         if (typeStr == "Texture2D") return PropertyType::Texture2D;
+        if (typeStr == "TextureCube") return PropertyType::TextureCube;
         std::regex rangeRegex(R"(Range\s*\(\s*([+-]?\d*\.?\d+)\s*,\s*([+-]?\d*\.?\d+)\s*\))");
         std::smatch rangeMatch;
         if (std::regex_match(typeStr, rangeMatch, rangeRegex)) {
@@ -40,6 +41,7 @@ namespace Prism
         case PropertyType::Vector3: return "uniform vec3"; break;
         case PropertyType::Vector4: return "uniform vec4"; break;
         case PropertyType::Texture2D: return "uniform sampler2D"; break;
+        case PropertyType::TextureCube: return "uniform samplerCube"; break;
         case PropertyType::Range: return "uniform float"; break;
         }
     }
@@ -170,8 +172,9 @@ namespace Prism
            //Group 3: 类型名 ([\w\s\(\),\.-]+) -> 支持 Range(0, 1)
            //Group 4: 默认值 ("[^"]*"|\([^\)]*\)|[^\s{}]+) -> 支持 "white" {}, (1,1,1,1), 或 0.5
 
-        std::regex propLineRegex(R"prism((\w+)\s*\(\s*"([^"]*)"\s*,\s*([\w\s\(\),\.-]+)\)\s*=\s*("[^"]*"(?:\s*\{?\s*\}?)?|\([^\)]*\)|[^\s{}]+))prism");
-
+		std::regex propLineRegex(
+			R"prism((\w+)\s*\(\s*"([^"]*)"\s*,\s*([\w\s\(\),\.-]+)\)\s*=\s*(?:"[^"]*"(?:\s*\{\s*\})?|\{\s*\}|\([^\)]*\)|[^\s;]+))prism"
+		);
         auto words_begin = std::sregex_iterator(blockContent.begin(), blockContent.end(), propLineRegex);
         auto words_end = std::sregex_iterator();
 
@@ -187,6 +190,7 @@ namespace Prism
 
             outResult.Properties.push_back(desc);
         }
+        std::cout << outResult.Properties.size();
         return true;
     }
 

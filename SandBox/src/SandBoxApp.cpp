@@ -42,7 +42,11 @@ public:
 
 	virtual void OnAttach() override
 	{
-		m_SimplePBRShader.reset(Prism::Shader::Create("Assets/Shaders/simplepbr.glsl"));
+		Prism::GlobalUniforms::Init();
+
+		m_SimplePBRPrismShader = Prism::PrismShader::Create("Assets/Shaders/simplepbrPrism.glsl");
+		m_SimplePBRShader = m_SimplePBRPrismShader->GetOriginalShader();
+		//m_SimplePBRShader.reset(Prism::Shader::Create("Assets/Shaders/simplepbr.glsl"));
 		m_QuadShader.reset(Prism::Shader::Create("Assets/Shaders/quad.glsl"));
 		m_HDRShader.reset(Prism::Shader::Create("Assets/Shaders/hdr.glsl"));
 		m_Mesh.reset(new Prism::Mesh("Assets/meshes/cerberus.fbx"));
@@ -100,6 +104,7 @@ public:
 
 	virtual void OnUpdate() override
 	{
+		UpdateGlobalsUBO();
 		// THINGS TO LOOK AT:
 		// - BRDF LUT
 		// - Cubemap mips and filtering
@@ -124,9 +129,10 @@ public:
 		m_IndexBuffer->Bind();
 		Renderer::DrawIndexed(m_IndexBuffer->GetCount(), false);
 
-		Prism::UniformBufferDeclaration<sizeof(mat4) * 2 + sizeof(vec3) * 4 + sizeof(float) * 8, 14> simplePbrShaderUB;
+		Prism::UniformBufferDeclaration<sizeof(mat4) * 3 + sizeof(vec3) * 4 + sizeof(float) * 8, 15> simplePbrShaderUB;
 		simplePbrShaderUB.Push("u_ViewProjectionMatrix", viewProjection);
 		simplePbrShaderUB.Push("u_ModelMatrix", mat4(1.0f));
+		simplePbrShaderUB.Push("Prism_Model", mat4(1.0f));
 		simplePbrShaderUB.Push("u_AlbedoColor", m_AlbedoInput.Color);
 		simplePbrShaderUB.Push("u_Metalness", m_MetalnessInput.Value);
 		simplePbrShaderUB.Push("u_Roughness", m_RoughnessInput.Value);
@@ -163,6 +169,7 @@ public:
 			for (int i = 0; i < 8; i++)
 			{
 				m_SimplePBRShader->SetMat4("u_ModelMatrix", translate(mat4(1.0f), vec3(x, 0.0f, 0.0f)));
+				m_SimplePBRShader->SetMat4("Prism_Model", translate(mat4(1.0f), vec3(x, 0.0f, 0.0f)));
 				m_SimplePBRShader->SetFloat("u_Roughness", roughness);
 				m_SimplePBRShader->SetFloat("u_Metalness", 1.0f);
 				m_SphereMesh->Render();
@@ -177,6 +184,7 @@ public:
 			for (int i = 0; i < 8; i++)
 			{
 				m_SimplePBRShader->SetMat4("u_ModelMatrix", translate(mat4(1.0f), vec3(x, 22.0f, 0.0f)));
+				m_SimplePBRShader->SetMat4("Prism_Model", translate(mat4(1.0f), vec3(x, 22.0f, 0.0f)));
 				m_SimplePBRShader->SetFloat("u_Roughness", roughness);
 				m_SimplePBRShader->SetFloat("u_Metalness", 0.0f);
 				m_SphereMesh->Render();
@@ -577,10 +585,30 @@ public:
 	virtual void OnEvent(Prism::Event& event) override
 	{
 	}
+
 private:
+	void UpdateGlobalsUBO()
+	{
+		m_GlobalsUBO.AspectRatio = (float)m_Framebuffer->GetWidth() / (float)m_Framebuffer->GetHeight();
+		m_GlobalsUBO.CameraPosition = m_Camera.GetPosition();
+		m_GlobalsUBO.DeltaTime = Prism::Time::GetDeltaTime();
+		m_GlobalsUBO.Projection = m_Camera.GetProjectionMatrix();
+		m_GlobalsUBO.View = m_Camera.GetViewMatrix();
+		m_GlobalsUBO.ViewProjection = m_GlobalsUBO.Projection * m_GlobalsUBO.View;
+		float time = Prism::Time::GetTime();
+		m_GlobalsUBO.Time = glm::vec4(time * 0.2f, time, time * 2, time * 3);
+		PR_RENDER_S({
+			Prism::GlobalUniforms::UpdateGlobalUniform(self->m_GlobalsUBO);
+			});
+		
+
+	}
+private:
+	Prism::PrismGlobalsUBO m_GlobalsUBO;
+	Prism::Ref<Prism::PrismShader> m_SimplePBRPrismShader;
 	std::unique_ptr<Prism::Shader> m_Shader;
 	std::unique_ptr<Prism::Shader> m_PBRShader;
-	std::unique_ptr<Prism::Shader> m_SimplePBRShader;
+	Prism::Ref<Prism::Shader> m_SimplePBRShader;
 	std::unique_ptr<Prism::Shader> m_QuadShader;
 	std::unique_ptr<Prism::Shader> m_HDRShader;
 	std::unique_ptr<Prism::Mesh> m_Mesh;

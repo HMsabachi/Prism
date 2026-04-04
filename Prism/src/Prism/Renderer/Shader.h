@@ -121,6 +121,7 @@ namespace Prism
 		// Note: currently for simplicity this is simply a string filepath, however
 		//       in the future this will be an asset object + metadata
 		static Shader* Create(const std::string& filepath);
+		static Shader* Create(const std::string& name, const std::string& vertexShader, const std::string& fragmentShader);
 
 		static std::vector<Shader*> s_AllShaders;
 	};

@@ -16,6 +16,7 @@
 // ---Renderer-
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Shader/PrismShader.h"
+#include "Prism/Renderer/Shader/GlobalUniforms.h"
 
 #include "imgui/imgui.h"
 
@@ -28,6 +29,7 @@
 
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/Camera/Camera.h"
+
 // ---------------------------------------------------
 
 #include "Prism/Renderer/Camera/OrthographicCamera.h"
