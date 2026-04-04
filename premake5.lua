@@ -63,6 +63,7 @@ project "Prism"
 		"%{IncludeDir.glm}",
 		"%{IncludeDir.stb_image}",
 		"%{IncludeDir.PrismShaderParser}",
+		"%{prj.name}/vendor/assimp/include",
 
 	}
 
@@ -73,8 +74,10 @@ project "Prism"
 		"ImGui",
 		"PrismShaderParser",
 		"opengl32.lib",
-		"dwmapi.lib"
+		"dwmapi.lib",
+		"Prism/vendor/assimp/win64/assimp.lib"
 	}
+	linkoptions { "/WHOLEARCHIVE:ImGui" }
 
 	filter "system:windows"
 		cppdialect "C++17"
@@ -90,7 +93,8 @@ project "Prism"
 
 		postbuildcommands
 		{
-			("{COPY} %{cfg.buildtarget.relpath} \"../bin/" .. outputdir .. "/Sandbox/\"")
+			("{COPY} %{cfg.buildtarget.relpath} \"../bin/" .. outputdir .. "/Sandbox/\""),
+			("{COPY} %{prj.location}/vendor/assimp/win64/ \"../bin/" .. outputdir .. "/Sandbox/\"")
 		}
 	filter "configurations:Debug"
 		defines "PR_DEBUG"
@@ -121,7 +125,7 @@ project "Sandbox"
 
 	postbuildcommands
 	{
-    '{COPYDIR} "%{prj.location}/Assets" "%{cfg.targetdir}/Assets"'
+    '{COPYDIR} "%{prj.location}/Assets" "%{cfg.targetdir}/Assets"',
 	}
 	
 	files
@@ -142,7 +146,8 @@ project "Sandbox"
 
 	links
 	{
-		"Prism"
+		"Prism",
+        "Prism/vendor/assimp/win64/assimp.lib"
 	}
 
 	filter "system:windows"

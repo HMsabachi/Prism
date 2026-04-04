@@ -4,7 +4,20 @@
 #include "Log.h"
 #include "Input.h"
 #include "Time.h"
+
 #include "Prism/Renderer/Renderer.h"
+#include "Prism/Renderer/Framebuffer.h"
+
+
+#include <imgui.h>
+#include <GLFW/glfw3.h>
+#include "glad/glad.h"
+#include <commdlg.h>
+
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+#include <Windows.h>
+
 
 
 namespace Prism
@@ -24,6 +37,8 @@ namespace Prism
 
 		m_ImGuiLayer = new ImGuiLayer("ImGui");
 		PushOverlay(m_ImGuiLayer);
+
+		Renderer::Init();
 	}
 
 	Application::~Application()
@@ -84,10 +99,22 @@ namespace Prism
 	void Application::RenderImGui()
 	{
 		PR_PROFILE_FUNCTION();
-		m_ImGuiLayer->Begin();
+		ImGuiRenderer();
+
 		for (Layer* layer : m_LayerStack)
 			layer->OnImGuiRender();
 		m_ImGuiLayer->End();
+	}
+
+	void Application::ImGuiRenderer()
+	{
+		m_ImGuiLayer->Begin();
+		ImGui::Begin("Renderer");
+		auto& caps = RendererAPI::GetCapabilities();
+		ImGui::Text("Vendor: %s", caps.Vendor.c_str());
+		ImGui::Text("Renderer: %s", caps.Renderer.c_str());
+		ImGui::Text("Version: %s", caps.Version.c_str());
+		ImGui::End();
 	}
 
 	void Application::Initialize()
@@ -118,6 +145,15 @@ namespace Prism
 			PR_CORE_INFO("已暂停引擎 Engine Paused");
 			return false;
 		}
+		int width = e.GetWidth(), height = e.GetHeight();
+
+		//PR_RENDER_2(width, height, { RendererAPI::SetViewport(0, 0, width, height); });
+		PR_RENDER_2(width, height, { glViewport(0, 0, width, height); });
+
+		auto& fbs = FramebufferPool::GetGlobal()->GetAll();
+		for (auto& fb : fbs)
+			fb->Resize(width, height);
+
 		m_Minimized = false;
 
 		return false;
@@ -136,5 +172,34 @@ namespace Prism
 #pragma endregion
 
 #pragma endregion
+
+#pragma region Public Methods 公共方法
+	std::string Application::OpenFile(const std::string& filter) const
+	{
+		OPENFILENAMEA ofn;       // common dialog box structure
+		CHAR szFile[260] = { 0 };       // if using TCHAR macros
+
+		// Initialize OPENFILENAME
+		ZeroMemory(&ofn, sizeof(OPENFILENAME));
+		ofn.lStructSize = sizeof(OPENFILENAME);
+		ofn.hwndOwner = glfwGetWin32Window((GLFWwindow*)m_Window->GetNativeWindow());
+		ofn.lpstrFile = szFile;
+		ofn.nMaxFile = sizeof(szFile);
+		ofn.lpstrFilter = "All\0*.*\0";
+		ofn.nFilterIndex = 1;
+		ofn.lpstrFileTitle = NULL;
+		ofn.nMaxFileTitle = 0;
+		ofn.lpstrInitialDir = NULL;
+		ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+		if (GetOpenFileNameA(&ofn) == TRUE)
+		{
+			return ofn.lpstrFile;
+		}
+		return std::string();
+	}
+
+#pragma endregion
+
 }
 

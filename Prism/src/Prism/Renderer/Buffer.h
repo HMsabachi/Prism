@@ -26,6 +26,7 @@ namespace Prism {
 		virtual void Bind() const = 0;
 
 		virtual unsigned int GetSize() const = 0;
+		virtual uint32_t GetCount() const = 0;
 		virtual RendererID GetRendererID() const = 0;
 
 		static IndexBuffer* Create(unsigned int size = 0);

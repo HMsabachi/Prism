@@ -28,12 +28,18 @@ namespace Prism
 		void PushLayer(Layer* layer);
 		void PushOverlay(Layer* overlay);
 
+		std::string OpenFile(const std::string& filter) const;
+
 		inline static Application& Get() { return *s_Instance; }
 		inline Window& GetWindow() const { return *m_Window; }
 	private:
 		void OnInit() {}
 		void OnShutdown() {}
 		void RenderImGui();
+
+
+		void ImGuiRenderer();
+
 	private:
 		void Initialize();
 		// Update function for the application(frame update) 应用更新函数(帧更新)

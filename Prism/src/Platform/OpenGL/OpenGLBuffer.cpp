@@ -27,13 +27,11 @@ namespace Prism
 
 	void OpenGLVertexBuffer::SetData(void* buffer, unsigned int size, unsigned int offset)
 	{
+		m_Size = size;
 		PR_RENDER_S3(buffer, size, offset, {
 			glBindBuffer(GL_ARRAY_BUFFER, self->m_RendererID);
 			glBufferData(GL_ARRAY_BUFFER, size, buffer, GL_STATIC_DRAW);
-
-			glEnableVertexAttribArray(0);
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, 0);
-			});
+		});
 
 	}
 
@@ -41,6 +39,13 @@ namespace Prism
 	{
 		PR_RENDER_S({
 			glBindBuffer(GL_ARRAY_BUFFER, self->m_RendererID);
+
+		// TODO: 这只是临时的， 默认情况下提供位置和纹理坐标属性
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 5, 0);
+
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(float) * 5, (const void*)(3 * sizeof(float)));
 			});
 	}
 
@@ -65,6 +70,7 @@ namespace Prism
 
 	void OpenGLIndexBuffer::SetData(void* buffer, unsigned int size, unsigned int offset)
 	{
+		m_Size = size;
 		PR_RENDER_S3(buffer, size, offset, {
 			glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self->m_RendererID);
 			glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, buffer, GL_STATIC_DRAW);

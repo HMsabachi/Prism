@@ -34,10 +34,10 @@ namespace Prism
 		Clear(1, 0, 1);
 	}
 
-	void Renderer::DrawIndexed(unsigned int count)
+	void Renderer::DrawIndexed(unsigned int count, bool depthTest)
 	{
-		PR_RENDER_1(count, {
-			RendererAPI::DrawIndexed(count);
+		PR_RENDER_2(count, depthTest, {
+			RendererAPI::DrawIndexed(count, depthTest);
 			});
 	}
 

@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Event.h"
+#include "Prism/Core/KeyCodes.h"
 
 namespace Prism
 {

@@ -68,8 +68,7 @@ namespace Prism
 	}
 	void ImGuiLayer::OnImGuiRender()
 	{
-		//static bool show = true;
-		//ImGui::ShowDemoWindow(&show);
+		
 	}
 #pragma endregion
 
@@ -87,6 +86,10 @@ namespace Prism
 		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable docking  启用停靠
 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // Enable viewports  启用viewports
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable keyboard navigation  启用键盘导航
+
+		// TODO: 调整字体
+		ImFont* pFont = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\ARLRDBD.TTF", 23.0f);
+		io.FontDefault = io.Fonts->Fonts.back();
 		
 		//SetKeyMap(io); // Set disable 暂时禁用
 		// When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
@@ -97,6 +100,7 @@ namespace Prism
 			style.WindowRounding = 0.0f;
 			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 		}
+		style.Colors[ImGuiCol_WindowBg] = ImVec4(0.15f, 0.15f, 0.15f, style.Colors[ImGuiCol_WindowBg].w);
 
 		Application& app = Application::Get();
 		GLFWwindow* window = static_cast<GLFWwindow*>(app.GetWindow().GetNativeWindow());

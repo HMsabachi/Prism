@@ -25,6 +25,9 @@
 #include "Prism/Renderer/Buffer.h"
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Shader.h"
+
+#include "Prism/Renderer/Mesh.h"
+#include "Prism/Renderer/Camera/Camera.h"
 // ---------------------------------------------------
 
 #include "Prism/Renderer/Camera/OrthographicCamera.h"

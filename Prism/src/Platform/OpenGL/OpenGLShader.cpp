@@ -6,11 +6,28 @@
 
 namespace Prism 
 {
+#define UNIFORM_LOGGING 0
+#if UNIFORM_LOGGING 
+	#define PR_LOG_UNIFORM(...) PR_CORE_WARN(__VA_ARGS__)
+#else
+	#define PR_LOG_UNIFORM(...)
+#endif
 
 	OpenGLShader::OpenGLShader(const std::string& filepath)
+		:m_AssetsPath(filepath)
 	{
-		ReadShaderFromFile(filepath);
+		size_t found = filepath.find_last_of("/\\");
+		m_Name = found != std::string::npos ? filepath.substr(found + 1) : filepath;
+		Reload();
+		
+	}
+	void OpenGLShader::Reload()
+	{
+		ReadShaderFromFile(m_AssetsPath);
 		PR_RENDER_S({
+			if (self->m_RendererID)
+				glDeleteProgram(self->m_RendererID);
+
 			self->CompileAndUploadShader();
 			});
 	}
@@ -124,14 +141,16 @@ namespace Prism
 
 			// We don't need the program anymore.
 			glDeleteProgram(program);
-			// Don't leak shaders either.
+			// Don't leak Shaders either.
 			for (auto id : shaderRendererIDs)
 				glDeleteShader(id);
 		}
 
-		// Always detach shaders after a successful link.
+		// Always detach Shaders after a successful link.
 		for (auto id : shaderRendererIDs)
 			glDetachShader(program, id);
+
+		LoadTexture();
 
 		m_RendererID = program;
 	}
@@ -150,6 +169,16 @@ namespace Prism
 				PR_RENDER_S2(name, value, {
 					self->UploadUniformFloat(name, value);
 					});
+				break;
+			}
+			case UniformType::Float3:
+			{
+				const std::string& name = decl.Name;
+				glm::vec3& values = *(glm::vec3*)(uniformBuffer.GetBuffer() + decl.Offset);
+				PR_RENDER_S2(name, values, {
+					self->UploadUniformFloat3(name, values);
+					});
+				break;
 			}
 			case UniformType::Float4:
 			{
@@ -158,21 +187,107 @@ namespace Prism
 				PR_RENDER_S2(name, values, {
 					self->UploadUniformFloat4(name, values);
 					});
+				break;
+			}
+			case UniformType::Matrix4x4:
+			{
+				const std::string& name = decl.Name;
+				glm::mat4& values = *(glm::mat4*)(uniformBuffer.GetBuffer() + decl.Offset);
+				PR_RENDER_S2(name, values, {
+					self->UploadUniformMat4(name, values);
+					});
+				break;
 			}
 			}
 		}
+	}
+	void OpenGLShader::SetFloat(const std::string& name, float value)
+	{
+		PR_RENDER_S2(name, value, {
+			self->UploadUniformFloat(name, value);
+			});
+	}
+
+	void OpenGLShader::SetMat4(const std::string& name, const glm::mat4& value)
+	{
+		PR_RENDER_S2(name, value, {
+			self->UploadUniformMat4(name, value);
+			});
+	}
+
+	void OpenGLShader::UploadUniformInt(const std::string& name, int value)
+	{
+		glUseProgram(m_RendererID);
+		auto location = glGetUniformLocation(m_RendererID, name.c_str());
+		if (location != -1)
+			glUniform1i(location, value);
+		else
+			PR_LOG_UNIFORM("Uniform '{0}' not found!", name);
 	}
 
 	void OpenGLShader::UploadUniformFloat(const std::string& name, float value)
 	{
 		glUseProgram(m_RendererID);
-		glUniform1f(glGetUniformLocation(m_RendererID, name.c_str()), value);
+		auto location = glGetUniformLocation(m_RendererID, name.c_str());
+		if (location != -1)
+			glUniform1f(location, value);
+		else
+			PR_LOG_UNIFORM("Uniform '{0}' not found!", name);
+	}
+
+	void OpenGLShader::UploadUniformFloat3(const std::string& name, const glm::vec3& values)
+	{
+		glUseProgram(m_RendererID);
+		auto location = glGetUniformLocation(m_RendererID, name.c_str());
+		if (location != -1)
+			glUniform3f(location, values.x, values.y, values.z);
+		else
+			PR_LOG_UNIFORM("Uniform '{0}' not found!", name);
 	}
 
 	void OpenGLShader::UploadUniformFloat4(const std::string& name, const glm::vec4& values)
 	{
 		glUseProgram(m_RendererID);
-		glUniform4f(glGetUniformLocation(m_RendererID, name.c_str()), values.x, values.y, values.z, values.w);
+		auto location = glGetUniformLocation(m_RendererID, name.c_str());
+		if (location != -1)
+			glUniform4f(location, values.x, values.y, values.z, values.w);
+		else
+			PR_LOG_UNIFORM("Uniform '{0}' not found!", name);
 	}
 
+	void OpenGLShader::UploadUniformMat4(const std::string& name, const glm::mat4& values)
+	{
+		glUseProgram(m_RendererID);
+		auto location = glGetUniformLocation(m_RendererID, name.c_str());
+		if (location != -1)
+			glUniformMatrix4fv(location, 1, GL_FALSE, (const float*)&values);
+		else
+			PR_LOG_UNIFORM("Uniform '{0}' not found!", name);
+	}
+
+
+
+#pragma region Private Methods
+	void OpenGLShader::LoadTexture()
+	{
+		// Bind default texture unit
+		UploadUniformInt("u_Texture", 0);
+
+		// PBR shader Textures
+		UploadUniformInt("u_AlbedoTexture", 1);
+		UploadUniformInt("u_NormalTexture", 2);
+		UploadUniformInt("u_MetalnessTexture", 3);
+		UploadUniformInt("u_RoughnessTexture", 4);
+
+		UploadUniformInt("u_EnvRadianceTex", 10);
+		UploadUniformInt("u_EnvIrradianceTex", 11);
+
+		UploadUniformInt("u_BRDFLUTTexture", 15);
+	}
+
+#pragma endregion
+
+
 }
+
+
