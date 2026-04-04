@@ -68,9 +68,7 @@ namespace Prism
 		PR_PROFILE_FUNCTION();
 		OnInit();
 		while (m_Running)
-		{
 			OnUpdate();
-		}
 		OnShutdown();
 	}
 
@@ -86,12 +84,12 @@ namespace Prism
 			PR_PROFILE_SCOPE("Update LayerStack")
 			for (Layer* layer : m_LayerStack)
 				layer->OnUpdate();
+
+			Application* app = this;
+			PR_RENDER_1(app, { app->RenderImGui(); });
+
+			Renderer::WaitAndRender();
 		}
-		Application* app = this;
-		PR_RENDER_1(app, { app->RenderImGui(); });
-
-		Renderer::WaitAndRender();
-
 		m_Window->OnUpdate();
 	}
 #pragma region Private Methods 私有方法
