@@ -24,7 +24,8 @@ namespace Prism
 		None = 0,
 		Float, Float2, Float3, Float4,
 		Matrix3x3, Matrix4x4,
-		Int32, Uint32
+		Int32, Uint32,
+		Texture2D, TextureCube
 	};
 
 	struct PRISM_API UniformDecl
@@ -69,7 +70,13 @@ namespace Prism
 		void Push(const std::string& name, const T& data) {
 			PR_CORE_WARN("Uniform buffer declaration is not implemented for type {0} named {1}", typeid(T).name(), name);
 		}
-
+		template<>
+		void Push(const std::string& name, const int& data)
+		{
+			Uniforms[Index++] = { UniformType::Int32, Cursor, name };
+			memcpy(Buffer + Cursor, &data, sizeof(int));
+			Cursor += sizeof(int);
+		}
 		template<>
 		void Push(const std::string& name, const float& data)
 		{

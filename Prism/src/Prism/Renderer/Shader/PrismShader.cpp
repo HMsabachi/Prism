@@ -1,5 +1,6 @@
 ﻿#include "prpch.h"
 #include "PrismShader.h"
+#include "Prism/Utilities/Utilities.h"
 #if 1
 
 namespace Prism
@@ -24,125 +25,12 @@ namespace Prism
 		m_ParseResult = parser.Parse(source);
 
 		// 处理Property
-		//HandleProperty();
+		HandleProperty();
 
 		m_Shader.reset(Shader::Create(m_ParseResult.ShaderName, m_ParseResult.Passes[0].VertexShaderCode, m_ParseResult.Passes[0].FragmentShaderCode));
 
 	}
-	bool PrismShader::ConvertValue(const std::string& value, PropertyType type, glm::vec4& outValue)
-	{
-		if (value.empty())
-		{
-			outValue = glm::vec4(0.0f);
-			return true;
-		}
-		std::istringstream iss(value);
-		switch (type)
-		{
-		case PropertyType::Float:
-		case PropertyType::Range:
-		{
-			float val = 0.0f;
-			if (iss >> val)
-			{
-				outValue = glm::vec4(val);
-				return true;
-			}
-			else
-			{
-				outValue = glm::vec4(0.0f);
-				return false;
-			}
-			break;
-		}
-		case PropertyType::Color:
-		case PropertyType::Vector4:
-		{
-			glm::vec4 val(0.0f);
-			char c;
-			if (value[0] == '(' || value[0] == '{')
-			{
-				std::string clean = value;
-				clean.erase(std::remove_if(clean.begin(), clean.end(), [](char ch) {
-					return ch == '(' || ch == ')' || ch == '{' || ch == '}' || ch == ',';
-					}), clean.end());
-				std::istringstream vecIss(clean);
-				vecIss >> val.x >> val.y >> val.z >> val.w;
-				outValue = glm::vec4(val);
-				return true;
-			}
-			outValue = glm::vec4(0.0f);
-			return false;
-			break;
-		}
-		case PropertyType::Vector3:
-		{
-			glm::vec4 val(0.0f);
-			char c;
-			if (value[0] == '(' || value[0] == '{')
-			{
-				std::string clean = value;
-				clean.erase(std::remove_if(clean.begin(), clean.end(), [](char ch) {
-					return ch == '(' || ch == ')' || ch == '{' || ch == '}' || ch == ',';
-					}), clean.end());
-
-				std::istringstream vecIss(clean);
-				vecIss >> val.x >> val.y >> val.z;
-				outValue = glm::vec4(val);
-				return true;
-			}
-			outValue = glm::vec4(0.0f);
-			return false;
-			break;
-		}
-		case PropertyType::Vector2:
-		{
-			glm::vec4 val(0.0f);
-			char c;
-			if (value[0] == '(' || value[0] == '{')
-			{
-				std::string clean = value;
-				clean.erase(std::remove_if(clean.begin(), clean.end(), [](char ch) {
-					return ch == '(' || ch == ')' || ch == '{' || ch == '}' || ch == ',';
-					}), clean.end());
-
-				std::istringstream vecIss(clean);
-				vecIss >> val.x >> val.y;
-				outValue = glm::vec4(val);
-				return true;
-			}
-			break;
-		}
-			
-		}
-	}
-	bool PrismShader::ConvertValue(const std::string& value, PropertyType type, glm::ivec4& outValue)
-	{
-		if (value.empty())
-		{
-			outValue = glm::ivec4(0);
-			return true;
-		}
-		std::istringstream iss(value);
-		switch (type)
-		{
-		case PropertyType::Int:
-		{
-			float val = 0.0f;
-			if (iss >> val)
-			{
-				outValue = glm::vec4(val);
-				return true;
-			}
-			else
-			{
-				outValue = glm::vec4(0.0f);
-				return false;
-			}
-			break;
-		}
-		}
-	}
+	
 	std::string PrismShader::ReadFile(const std::string& filePath)
 	{
 		std::string result;
@@ -168,71 +56,88 @@ namespace Prism
 
 	void PrismShader::HandleProperty()
 	{
+		size_t TextureIndex = 0;
+		using namespace Prism::StrParse;
 		for (auto& property : m_ParseResult.Properties)
 		{
-			glm::vec4 fValue = glm::vec4(0.0f);
-			glm::ivec4 iValue = glm::ivec4(0);
+			ShaderData::PropertyElement element;
+			element.m_Name = property.Name;
+			element.m_DisplayName = property.DisplayName;
+			PropertyValue value;
 			switch (property.Type)
 			{
-			case Prism::PropertyType::Float:
-			{
-				ConvertValue(property.DefaultValue, property.Type, fValue);
-				Ref<ShaderData::FloatPropertyElement> floatProperty = std::make_shared<ShaderData::FloatPropertyElement>(property.Name, property.DisplayName, fValue.x);
-				m_Properties.Properties[property.Name] = floatProperty;
+			case PropertyType::Float:
+				element.m_Type = UniformType::Float;
+				value = Parse<float>(property.DefaultValue);
+				break;
+			case PropertyType::Int:
+				element.m_Type = UniformType::Int32;
+				value = Parse<int32_t>(property.DefaultValue);
+				break;
+			case PropertyType::Color:
+				element.m_Type = UniformType::Float4;
+				value = Parse<glm::vec4>(property.DefaultValue);
+				break;
+			case PropertyType::Vector2:
+				element.m_Type = UniformType::Float2;
+				value = Parse<glm::vec2>(property.DefaultValue);
+				break;
+			case PropertyType::Vector3:
+				element.m_Type = UniformType::Float3;
+				value = Parse<glm::vec3>(property.DefaultValue);
+				break;
+			case PropertyType::Vector4:
+				element.m_Type = UniformType::Float4;
+				value = Parse<glm::vec4>(property.DefaultValue);
+				break;
+			case PropertyType::Texture2D:
+				element.m_Type = UniformType::Texture2D;
+				Texture2DType tex2d;
+				tex2d.id = TextureIndex++;
+				value = tex2d;
+				break;
+			case PropertyType::TextureCube:
+				element.m_Type = UniformType::TextureCube;
+				TextureCubeType texcube;
+				texcube.id = TextureIndex++;
+				value = texcube;
+				break;
+			case PropertyType::Range: // TODO: 这里暂时将Range当作Float处理
+				element.m_Type = UniformType::Float;
+				value = Parse<float>(property.DefaultValue);
 				break;
 			}
-			case Prism::PropertyType::Range:
-			{
-				ConvertValue(property.DefaultValue, property.Type, fValue);
-				Ref<ShaderData::FloatPropertyElement> floatProperty = std::make_shared<ShaderData::FloatPropertyElement>(property.Name, property.DisplayName, fValue.x);
-				m_Properties.Properties[property.Name] = floatProperty;
-				break;
-			}
-			case Prism::PropertyType::Int:
-			{
-				ConvertValue(property.DefaultValue, property.Type, iValue);
-				Ref<ShaderData::IntPropertyElement> intProperty = std::make_shared<ShaderData::IntPropertyElement>(property.Name, property.DisplayName, iValue.x);
-				m_Properties.Properties[property.Name] = intProperty;
-				break;
-			}
-			case Prism::PropertyType::Color:
-			{
-				ConvertValue(property.DefaultValue, property.Type, fValue);
-				Ref<ShaderData::ColorPropertyElement> colorProperty = std::make_shared<ShaderData::ColorPropertyElement>(property.Name, property.DisplayName, fValue);
-				m_Properties.Properties[property.Name] = colorProperty;
-				break;
-			}
-			case Prism::PropertyType::Vector2:
-			{
-				ConvertValue(property.DefaultValue, property.Type, fValue);
-				Ref<ShaderData::Vec2PropertyElement> vec2Property = std::make_shared<ShaderData::Vec2PropertyElement>(property.Name, property.DisplayName, glm::vec2(fValue.x, fValue.y));
-				m_Properties.Properties[property.Name] = vec2Property;
-				break;
-			}
-			case Prism::PropertyType::Vector3:
-			{
-				ConvertValue(property.DefaultValue, property.Type, fValue);
-				Ref<ShaderData::Vec3PropertyElement> vec3Property = std::make_shared<ShaderData::Vec3PropertyElement>(property.Name, property.DisplayName, glm::vec3(fValue.x, fValue.y, fValue.z));
-				m_Properties.Properties[property.Name] = vec3Property;
-				break;
-			}
-			case Prism::PropertyType::Vector4:
-			{
-				ConvertValue(property.DefaultValue, property.Type, fValue);
-				Ref<ShaderData::Vec4PropertyElement> vec4Property = std::make_shared<ShaderData::Vec4PropertyElement>(property.Name, property.DisplayName, glm::vec4(fValue.x, fValue.y, fValue.z, fValue.w));
-				m_Properties.Properties[property.Name] = vec4Property;
-				break;
-			}
-			case Prism::PropertyType::Texture2D:
-			{
-				//TODO: Texture error
-				Ref<ShaderData::Texture2DPropertyElement> texture2DProperty = std::make_shared<ShaderData::Texture2DPropertyElement>(property.Name, property.DisplayName, "");
-				m_Properties.Properties[property.Name] = texture2DProperty;
-				break;
-			}
-			}
-
+			element.m_DefaultValue = value;
+			m_Properties.AddProperty(element);
 		}
+	}
+
+
+	std::string PrismShader::ToString() const
+	{
+		const PrismShader& shader = *this;
+		std::string result = fmt::format("PrismShader(Name: \"{}\", Path: \"{}\")\n",
+			shader.GetName(), shader.GetFilePath());
+
+		result += "Properties:\n";
+		const auto& props = shader.GetProperties();
+
+		if (props.empty()) {
+			result += "  <None>";
+			return result;
+		}
+		for (const auto& [name, element] : props)
+		{
+			std::string valStr = std::visit(Prism::Internal::ValueToString{}, element.GetValueVariant());
+
+			result += fmt::format("  - [{}] {}: {} (Value: {})\n",
+				(int)element.GetType(), 
+				element.GetDisplayName(),
+				element.GetName(),
+				valStr
+			);
+		}
+		return result;
 	}
 
 }

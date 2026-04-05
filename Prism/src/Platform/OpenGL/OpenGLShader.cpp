@@ -126,6 +126,7 @@ namespace Prism
 				glGetShaderInfoLog(shaderRendererID, maxLength, &maxLength, &infoLog[0]);
 
 				PR_CORE_ERROR("Shader compilation failed:\n{0}", &infoLog[0]);
+				PR_CORE_WARN("Shader Source:\n{0}", source);
 
 				// We don't need the shader anymore.
 				glDeleteShader(shaderRendererID);
@@ -176,6 +177,15 @@ namespace Prism
 			const UniformDecl& decl = uniformBuffer.GetUniforms()[i];
 			switch (decl.Type)
 			{
+			case UniformType::Int32:
+			{
+				const std::string& name = decl.Name;
+				int value = *(int*)(uniformBuffer.GetBuffer() + decl.Offset);
+				PR_RENDER_S2(name, value, {
+					self->UploadUniformInt(name, value);
+				});
+				break;
+			}
 			case UniformType::Float:
 			{
 				const std::string& name = decl.Name;

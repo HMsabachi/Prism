@@ -173,7 +173,7 @@ namespace Prism
            //Group 4: 默认值 ("[^"]*"|\([^\)]*\)|[^\s{}]+) -> 支持 "white" {}, (1,1,1,1), 或 0.5
 
 		std::regex propLineRegex(
-			R"prism((\w+)\s*\(\s*"([^"]*)"\s*,\s*([\w\s\(\),\.-]+)\)\s*=\s*(?:"[^"]*"(?:\s*\{\s*\})?|\{\s*\}|\([^\)]*\)|[^\s;]+))prism"
+            R"prism((\w+)\s*\(\s*"([^"]*)"\s*,\s*([\w\s\(\),\.-]+)\)\s*=\s*((?:"[^"]*"(?:\s*\{\s*\})?|\{\s*\}|\([^\)]*\)|[^\s;]+)))prism"
 		);
         auto words_begin = std::sregex_iterator(blockContent.begin(), blockContent.end(), propLineRegex);
         auto words_end = std::sregex_iterator();

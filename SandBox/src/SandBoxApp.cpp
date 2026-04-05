@@ -39,12 +39,35 @@ public:
 	virtual ~EditorLayer()
 	{
 	}
+	void LoadTexture(Prism::Ref<Prism::PrismShader> shader)
+	{
+		using tex = Prism::Texture2DType;
+		using texc = Prism::TextureCubeType;
+		Prism::UniformBufferDeclaration<sizeof(int) * 8, 8> decl;
+		// Bind default texture unit
+		auto& pro = shader->GetProperties();
+		decl.Push("u_Texture", pro["u_Texture"].GetDefaultValue<tex>().id);
 
+		// PBR shader Textures
+		decl.Push("u_AlbedoTexture", pro["u_AlbedoTexture"].GetDefaultValue<tex>().id);
+		decl.Push("u_NormalTexture", pro["u_NormalTexture"].GetDefaultValue<tex>().id);
+		decl.Push("u_MetalnessTexture", pro["u_MetalnessTexture"].GetDefaultValue<tex>().id);
+		decl.Push("u_RoughnessTexture", pro["u_RoughnessTexture"].GetDefaultValue<tex>().id);
+
+		decl.Push("u_EnvRadianceTex", pro["u_EnvRadianceTex"].GetDefaultValue<texc>().id);
+		decl.Push("u_EnvIrradianceTex", pro["u_EnvIrradianceTex"].GetDefaultValue<texc>().id);
+
+		decl.Push("u_BRDFLUTTexture", pro["u_BRDFLUTTexture"].GetDefaultValue<tex>().id);
+
+		shader->GetOriginalShader()->UploadUniformBuffer(decl);
+	}
 	virtual void OnAttach() override
 	{
 		Prism::GlobalUniforms::Init();
 
 		m_SimplePBRPrismShader = Prism::PrismShader::Create("Assets/Shaders/simplepbrPrism.glsl");
+		PR_TRACE(*m_SimplePBRPrismShader);
+		LoadTexture(m_SimplePBRPrismShader);
 		m_SimplePBRShader = m_SimplePBRPrismShader->GetOriginalShader();
 		//m_SimplePBRShader.reset(Prism::Shader::Create("Assets/Shaders/simplepbr.glsl"));
 		m_QuadShader.reset(Prism::Shader::Create("Assets/Shaders/quad.glsl"));

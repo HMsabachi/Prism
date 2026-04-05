@@ -23,6 +23,7 @@ namespace Prism {
 }
 
 
+
 // Core log macros 引擎核心日志
 #define PR_CORE_TRACE(...)   ::Prism::Log::GetCoreLogger()->trace(__VA_ARGS__)
 #define PR_CORE_INFO(...)    ::Prism::Log::GetCoreLogger()->info(__VA_ARGS__)

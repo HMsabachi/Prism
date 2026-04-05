@@ -14,6 +14,9 @@
 #include <array>
 #include <unordered_map>
 #include <unordered_set>
+#include <variant>
+
+#include <glm/glm.hpp>
 
 #include "Prism/Core/Log.h"
 #include "Prism/Core/Core.h"

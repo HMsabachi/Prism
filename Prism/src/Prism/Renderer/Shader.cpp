@@ -23,7 +23,6 @@ namespace Prism
 	{
 		Shader* result = nullptr;
 		std::string source = "#type vertex\n" + vertexShader + "#type fragment\n" + fragmentShader;
-		PR_CORE_WARN(source);
 		switch (RendererAPI::Current())
 		{
 		case RendererAPIType::None: return nullptr;
