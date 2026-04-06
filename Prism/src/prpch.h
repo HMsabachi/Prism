@@ -9,6 +9,7 @@
 #include <functional>
 
 #include <string>
+#include <limits>
 #include <sstream>
 #include <vector>
 #include <array>
@@ -17,6 +18,7 @@
 #include <variant>
 
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 #include "Prism/Core/Log.h"
 #include "Prism/Core/Core.h"

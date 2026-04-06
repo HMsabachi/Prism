@@ -1,8 +1,7 @@
 ﻿#include "prpch.h"
 #include "OpenGLShader.h"
 
-#include <sstream>
-#include <limits>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace Prism 
 {
@@ -239,55 +238,127 @@ namespace Prism
 			});
 	}
 
-	void OpenGLShader::UploadUniformInt(const std::string& name, int value)
+	
+
+#pragma region 设置uniform变量
+	void OpenGLShader::UploadUniformInt(uint32_t location, int32_t value)
 	{
-		glUseProgram(m_RendererID);
-		auto location = glGetUniformLocation(m_RendererID, name.c_str());
-		if (location != -1)
-			glUniform1i(location, value);
-		else
-			PR_LOG_UNIFORM("Uniform '{0}' not found!", name);
+		glUniform1i(location, value);
 	}
 
-	void OpenGLShader::UploadUniformFloat(const std::string& name, float value)
+	void OpenGLShader::UploadUniformIntArray(uint32_t location, int32_t* values, int32_t count)
 	{
-		glUseProgram(m_RendererID);
-		auto location = glGetUniformLocation(m_RendererID, name.c_str());
-		if (location != -1)
-			glUniform1f(location, value);
-		else
-			PR_LOG_UNIFORM("Uniform '{0}' not found!", name);
+		glUniform1iv(location, count, values);
 	}
 
-	void OpenGLShader::UploadUniformFloat3(const std::string& name, const glm::vec3& values)
+	void OpenGLShader::UploadUniformFloat(uint32_t location, float value)
 	{
-		glUseProgram(m_RendererID);
-		auto location = glGetUniformLocation(m_RendererID, name.c_str());
-		if (location != -1)
-			glUniform3f(location, values.x, values.y, values.z);
-		else
-			PR_LOG_UNIFORM("Uniform '{0}' not found!", name);
+		glUniform1f(location, value);
 	}
 
-	void OpenGLShader::UploadUniformFloat4(const std::string& name, const glm::vec4& values)
+	void OpenGLShader::UploadUniformFloat2(uint32_t location, const glm::vec2& value)
 	{
-		glUseProgram(m_RendererID);
-		auto location = glGetUniformLocation(m_RendererID, name.c_str());
-		if (location != -1)
-			glUniform4f(location, values.x, values.y, values.z, values.w);
-		else
-			PR_LOG_UNIFORM("Uniform '{0}' not found!", name);
+		glUniform2f(location, value.x, value.y);
 	}
 
-	void OpenGLShader::UploadUniformMat4(const std::string& name, const glm::mat4& values)
+	void OpenGLShader::UploadUniformFloat3(uint32_t location, const glm::vec3& value)
 	{
-		glUseProgram(m_RendererID);
-		auto location = glGetUniformLocation(m_RendererID, name.c_str());
-		if (location != -1)
-			glUniformMatrix4fv(location, 1, GL_FALSE, (const float*)&values);
-		else
-			PR_LOG_UNIFORM("Uniform '{0}' not found!", name);
+		glUniform3f(location, value.x, value.y, value.z);
 	}
+
+	void OpenGLShader::UploadUniformFloat4(uint32_t location, const glm::vec4& value)
+	{
+		glUniform4f(location, value.x, value.y, value.z, value.w);
+	}
+
+	void OpenGLShader::UploadUniformMat3(uint32_t location, const glm::mat3& value)
+	{
+		glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(value));
+	}
+
+	void OpenGLShader::UploadUniformMat4(uint32_t location, const glm::mat4& value)
+	{
+		glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
+	}
+
+	void OpenGLShader::UploadUniformMat4Array(uint32_t location, const glm::mat4& values, uint32_t count)
+	{
+		glUniformMatrix4fv(location, count, GL_FALSE, glm::value_ptr(values));
+	}
+
+	void OpenGLShader::UploadUniformInt(std::string name, int32_t value)
+	{
+		if (!UniformLocationCache(name))
+			return;
+		UploadUniformInt(m_UniformLocationCache[name], value);
+	}
+	void OpenGLShader::UploadUniformIntArray(std::string name, int32_t* values, int32_t count)
+	{
+		if (!UniformLocationCache(name))
+			return;
+		UploadUniformIntArray(m_UniformLocationCache[name], values, count);
+	}
+	void OpenGLShader::UploadUniformFloat(std::string name, float value)
+	{
+		if (!UniformLocationCache(name))
+			return;
+		UploadUniformFloat(m_UniformLocationCache[name], value);
+	}
+	void OpenGLShader::UploadUniformFloat2(std::string name, const glm::vec2& value)
+	{
+		if (!UniformLocationCache(name))
+			return;
+		UploadUniformFloat2(m_UniformLocationCache[name], value);
+	}
+	void OpenGLShader::UploadUniformFloat3(std::string name, const glm::vec3& value)
+	{
+		if (!UniformLocationCache(name))
+			return;
+		UploadUniformFloat3(m_UniformLocationCache[name], value);
+	}
+	void OpenGLShader::UploadUniformFloat4(std::string name, const glm::vec4& value)
+	{
+		if (!UniformLocationCache(name))
+			return;
+		UploadUniformFloat4(m_UniformLocationCache[name], value);
+	}
+	void OpenGLShader::UploadUniformMat3(std::string name, const glm::mat3& values)
+	{
+		if (!UniformLocationCache(name))
+			return;
+		UploadUniformMat3(m_UniformLocationCache[name], values);
+	}
+	void OpenGLShader::UploadUniformMat4(std::string name, const glm::mat4& values)
+	{
+		if (!UniformLocationCache(name))
+			return;
+		UploadUniformMat4(m_UniformLocationCache[name], values);
+	}
+	void OpenGLShader::UploadUniformMat4Array(std::string name, const glm::mat4& values, uint32_t count)
+	{
+		if (!UniformLocationCache(name))
+			return;
+		UploadUniformMat4Array(m_UniformLocationCache[name], values, count);
+	}
+
+	bool OpenGLShader::UniformLocationCache(std::string& name)
+	{
+		auto it = m_UniformLocationCache.find(name);
+		if (it == m_UniformLocationCache.end())
+		{
+			int location = glGetUniformLocation(m_RendererID, name.c_str());
+			if (location == -1)
+			{
+				PR_LOG_UNIFORM("{0}中没有找到{1}", m_Name, name);
+				return false;
+			}
+			m_UniformLocationCache[name] = location;
+		}
+		return true;
+	}
+
+
+#pragma endregion
 
 
 

@@ -32,20 +32,38 @@ namespace Prism {
 
 		static GLenum ShaderTypeFromString(const std::string& type);
 
-		void UploadUniformInt(const std::string& name, int value);
 
-		void UploadUniformFloat(const std::string& name, float value);
-		void UploadUniformFloat2(const std::string& name, float* values);
-		void UploadUniformFloat3(const std::string& name, const glm::vec3& values);
-		void UploadUniformFloat4(const std::string& name, const glm::vec4& values);
+		#pragma region 上传Uniform
+		void UploadUniformInt(uint32_t location, int32_t value);
+		void UploadUniformIntArray(uint32_t location, int32_t* values, int32_t count);
+		void UploadUniformFloat(uint32_t location, float value);
+		void UploadUniformFloat2(uint32_t location, const glm::vec2& value);
+		void UploadUniformFloat3(uint32_t location, const glm::vec3& value);
+		void UploadUniformFloat4(uint32_t location, const glm::vec4& value);
+		void UploadUniformMat3(uint32_t location, const glm::mat3& values);
+		void UploadUniformMat4(uint32_t location, const glm::mat4& values);
+		void UploadUniformMat4Array(uint32_t location, const glm::mat4& values, uint32_t count);
 
-		void UploadUniformMat3(const std::string& name, const glm::mat3& matrix);
-		void UploadUniformMat4(const std::string& name, const glm::mat4& matrix);
+		void UploadUniformInt(std::string name, int32_t value);
+		void UploadUniformIntArray(std::string name, int32_t* values, int32_t count);
+		void UploadUniformFloat(std::string name, float value);
+		void UploadUniformFloat2(std::string name, const glm::vec2& value);
+		void UploadUniformFloat3(std::string name, const glm::vec3& value);
+		void UploadUniformFloat4(std::string name, const glm::vec4& value);
+		void UploadUniformMat3(std::string name, const glm::mat3& values);
+		void UploadUniformMat4(std::string name, const glm::mat4& values);
+		void UploadUniformMat4Array(std::string name, const glm::mat4& values, uint32_t count);
+
+		bool UniformLocationCache(std::string& name);
+		#pragma endregion 上传Uniform
+
 	private:
 		RendererID m_RendererID;
 
 		std::string m_Name, m_AssetsPath;
 		std::string m_ShaderSource;
+
+		std::unordered_map<std::string, int> m_UniformLocationCache;
 	};
 
 }
