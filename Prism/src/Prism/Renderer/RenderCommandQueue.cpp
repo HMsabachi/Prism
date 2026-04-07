@@ -22,6 +22,8 @@ namespace Prism
 
 	void* RenderCommandQueue::Allocate(RenderCommandFn fn, unsigned int size)
 	{
+		if(m_IsExecuting) 
+			PR_CORE_WARN("RenderCommandQueue: 在执行命令队列时分配新了的命令!");
 		// TODO: 对齐 alignment
 		*(RenderCommandFn*)m_CommandBufferPtr = fn;
 		m_CommandBufferPtr += sizeof(RenderCommandFn);
@@ -39,6 +41,7 @@ namespace Prism
 	void RenderCommandQueue::Execute()
 	{
 		PR_PROFILE_FUNCTION();
+		m_IsExecuting = true;
 
 		//PR_RENDER_TRACE("RenderCommandQueue::Execute -- {0} commands, {1} bytes", m_CommandCount, (m_CommandBufferPtr - m_CommandBuffer));
 
@@ -57,6 +60,7 @@ namespace Prism
 
 		m_CommandBufferPtr = m_CommandBuffer;
 		m_CommandCount = 0;
+		m_IsExecuting = false;
 	}
 	
 

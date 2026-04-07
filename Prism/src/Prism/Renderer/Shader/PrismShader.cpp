@@ -160,7 +160,6 @@ namespace Prism
 		{
 			auto& element = m_Properties[decl->GetName()];
 			auto [dataPtr, dataSize] = element.GetDefaultValueAsUniform();
-			PR_CORE_INFO("{0} {1},{2},{3}", decl->GetName(),  (*(glm::vec3*)dataPtr).x, (*(glm::vec3*)dataPtr).y, (*(glm::vec3*)dataPtr).z);
 			if(dataSize != decl->GetSize())
 			{
 				PR_CORE_WARN("Property {} 大小不匹配! 声明: {}, 实际: {}", element.GetName(), decl->GetSize(), dataSize);

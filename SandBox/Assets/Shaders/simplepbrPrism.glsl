@@ -16,7 +16,7 @@ Shader "Custom/SimplePBR"
 
         // BRDF LUT
         u_BRDFLUTTexture("BRDF LUT", Texture2D) = {}
-        u_AlbedoColor("颜色", Vector3) = (0, 0, 1)
+        u_AlbedoColor("颜色", Vector3) = (1, 1, 1)
         u_Metalness("金属度", Range(0, 1)) = 0.5
         u_Roughness("粗糙度", Range(0, 1)) = 0.5
         u_EnvMapRotation("环境光旋转", Range(0, 360)) = 0
@@ -186,7 +186,7 @@ Shader "Custom/SimplePBR"
                     vec3 iblContribution = IBL(F0, Lr);
 
                     FragColor = vec4(lightContribution + iblContribution, 1.0);
-                    FragColor = vec4(u_AlbedoColor, 1.0);
+                    //FragColor = vec4(u_AlbedoColor, 1.0);
                 }
                 
             }

@@ -24,6 +24,7 @@
 #include "Prism/Core/Core.h"
 #include "Prism/Debug/Instrumentor.h"
 #include "Prism/Core/Buffer.h"
+#include "Prism/Utilities/Utilities.h"
 
 #ifdef PR_PLATFORM_WINDOWS
 	#include <Windows.h>

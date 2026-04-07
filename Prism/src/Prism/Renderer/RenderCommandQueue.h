@@ -20,5 +20,6 @@ namespace Prism
 		unsigned char* m_CommandBuffer;
 		unsigned char* m_CommandBufferPtr;
 		unsigned int m_CommandCount;
+		bool m_IsExecuting = false;
 	};
 }

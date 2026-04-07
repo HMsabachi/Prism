@@ -17,7 +17,20 @@ namespace Prism {
 			: Data(data), Size(size)
 		{
 		}
-
+		
+		void Free()
+		{
+			delete[] Data;
+			Data = nullptr;
+			Size = 0;
+		}
+		Buffer Copy() const
+		{
+			Buffer copy;
+			copy.Allocate(Size);
+			memcpy(copy.Data, Data, Size);
+			return copy;
+		}
 		void Allocate(uint32_t size)
 		{
 			delete[] Data;

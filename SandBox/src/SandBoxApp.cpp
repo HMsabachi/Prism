@@ -152,6 +152,8 @@ public:
 		m_IndexBuffer->Bind();
 		Renderer::DrawIndexed(m_IndexBuffer->GetCount(), false);
 
+
+		//m_SimplePBRPrismShader->bind();
 		Prism::UniformBufferDeclaration<sizeof(mat4) * 3 + sizeof(vec3) * 4 + sizeof(float) * 8, 15> simplePbrShaderUB;
 		simplePbrShaderUB.Push("u_ViewProjectionMatrix", viewProjection);
 		simplePbrShaderUB.Push("u_ModelMatrix", mat4(1.0f));
@@ -169,9 +171,11 @@ public:
 		simplePbrShaderUB.Push("u_RoughnessTexToggle", m_RoughnessInput.UseTexture ? 1.0f : 0.0f);
 		simplePbrShaderUB.Push("u_EnvMapRotation", m_EnvMapRotation);
 		m_SimplePBRShader->UploadUniformBuffer(simplePbrShaderUB);
+		m_EnvironmentCubeMap->Bind(m_SimplePBRPrismShader->GetProperties()["u_EnvRadianceTex"].GetDefaultValue<Prism::TextureCubeType>().id);
+		m_EnvironmentIrradiance->Bind(m_SimplePBRPrismShader->GetProperties()["u_EnvIrradianceTex"].GetDefaultValue<Prism::TextureCubeType>().id);
 
-		m_EnvironmentCubeMap->Bind(10);
-		m_EnvironmentIrradiance->Bind(11);
+		//m_EnvironmentCubeMap->Bind(10);
+		//m_EnvironmentIrradiance->Bind(11);
 		m_BRDFLUT->Bind(15);
 
 		m_SimplePBRShader->Bind();

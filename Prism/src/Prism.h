@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include "Prism/Core/Application.h"
+#include "Prism/Core/Core.h"
 #include "Prism/Core/Layer.h"
 #include "Prism/Core/Log.h"
 #include "Prism/Core/Time.h"

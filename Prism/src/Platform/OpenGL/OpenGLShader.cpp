@@ -171,6 +171,9 @@ namespace Prism
 
 	void OpenGLShader::UploadUniformBuffer(const UniformBufferBase& uniformBuffer)
 	{
+		PR_RENDER_S({
+			glUseProgram(self->m_RendererID);
+		});
 		for (unsigned int i = 0; i < uniformBuffer.GetUniformCount(); i++)
 		{
 			const UniformDecl& decl = uniformBuffer.GetUniforms()[i];
@@ -243,6 +246,7 @@ namespace Prism
 	{
 		const ShaderUniformList& uniforms = decl->GetUniformDeclarations();
 		PR_RENDER_S2(uniforms, buffer, {
+			glUseProgram(self->m_RendererID);
 			for (size_t i = 0; i < uniforms.size(); i++)
 			{
 				OpenGLShaderUniformDeclaration* uniform = (OpenGLShaderUniformDeclaration*)uniforms[i];
@@ -294,7 +298,7 @@ namespace Prism
 
 	void OpenGLShader::ResolveAndSetUniformArray(OpenGLShaderUniformDeclaration* uniform, Buffer buffer)
 	{
-		//HZ_CORE_ASSERT(uniform->GetName() != -1, "Uniform has invalid location!");
+		//PR_CORE_ASSERT(uniform->GetName() != -1, "Uniform has invalid location!");
 
 		uint32_t offset = uniform->GetOffset();
 		switch (uniform->GetType())
