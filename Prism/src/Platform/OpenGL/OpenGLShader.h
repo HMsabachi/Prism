@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Prism/Renderer/Shader.h"
+#include "Shader/OpenGLShaderUniform.h"
 #include <Glad/glad.h>
 
 namespace Prism {
@@ -32,6 +33,11 @@ namespace Prism {
 
 		static GLenum ShaderTypeFromString(const std::string& type);
 
+	public:
+		void ResolveAndSetUniforms(const Scope<OpenGLShaderUniformBufferDeclaration>& decl, Buffer buffer);
+	private:
+		void ResolveAndSetUniform(OpenGLShaderUniformDeclaration* uniform, Buffer buffer);
+		void ResolveAndSetUniformArray(OpenGLShaderUniformDeclaration* uniform, Buffer buffer);
 
 		#pragma region 上传Uniform
 		void UploadUniformInt(uint32_t location, int32_t value);

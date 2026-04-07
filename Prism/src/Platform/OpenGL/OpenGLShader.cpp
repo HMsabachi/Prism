@@ -238,6 +238,92 @@ namespace Prism
 			});
 	}
 
+
+	void OpenGLShader::ResolveAndSetUniforms(const Scope<OpenGLShaderUniformBufferDeclaration>& decl, Buffer buffer)
+	{
+		const ShaderUniformList& uniforms = decl->GetUniformDeclarations();
+		PR_RENDER_S2(uniforms, buffer, {
+			for (size_t i = 0; i < uniforms.size(); i++)
+			{
+				OpenGLShaderUniformDeclaration* uniform = (OpenGLShaderUniformDeclaration*)uniforms[i];
+				if (uniform->IsArray())
+					self->ResolveAndSetUniformArray(uniform, buffer);
+				else
+					self->ResolveAndSetUniform(uniform, buffer);
+			}
+		});
+		
+	}
+
+	void OpenGLShader::ResolveAndSetUniform(OpenGLShaderUniformDeclaration* uniform, Buffer buffer)
+	{
+		uint32_t offset = uniform->GetOffset();
+		switch (uniform->GetType())
+		{
+		case OpenGLShaderUniformDeclaration::Type::FLOAT32:
+			UploadUniformFloat(uniform->GetName(), *(float*)&buffer.Data[offset]);
+			break;
+		case OpenGLShaderUniformDeclaration::Type::INT32:
+			UploadUniformInt(uniform->GetName(), *(int32_t*)&buffer.Data[offset]);
+			break;
+		case OpenGLShaderUniformDeclaration::Type::VEC2:
+			UploadUniformFloat2(uniform->GetName(), *(glm::vec2*)&buffer.Data[offset]);
+			break;
+		case OpenGLShaderUniformDeclaration::Type::VEC3:
+			UploadUniformFloat3(uniform->GetName(), *(glm::vec3*)&buffer.Data[offset]);
+			break;
+		case OpenGLShaderUniformDeclaration::Type::VEC4:
+			UploadUniformFloat4(uniform->GetName(), *(glm::vec4*)&buffer.Data[offset]);
+			break;
+		case OpenGLShaderUniformDeclaration::Type::MAT3:
+			UploadUniformMat3(uniform->GetName(), *(glm::mat3*)&buffer.Data[offset]);
+			break;
+		case OpenGLShaderUniformDeclaration::Type::MAT4:
+			UploadUniformMat4(uniform->GetName(), *(glm::mat4*)&buffer.Data[offset]);
+			break;
+		case OpenGLShaderUniformDeclaration::Type::TEXTURE2D:
+			UploadUniformInt(uniform->GetName(), *(int32_t*)&buffer.Data[offset]);
+			break;
+		case OpenGLShaderUniformDeclaration::Type::TEXTURECUBE:
+			UploadUniformInt(uniform->GetName(), *(int32_t*)&buffer.Data[offset]);
+			break;
+		default:
+			PR_CORE_ASSERT(false, "Unknown uniform type!");
+		}
+	}
+
+	void OpenGLShader::ResolveAndSetUniformArray(OpenGLShaderUniformDeclaration* uniform, Buffer buffer)
+	{
+		//HZ_CORE_ASSERT(uniform->GetName() != -1, "Uniform has invalid location!");
+
+		uint32_t offset = uniform->GetOffset();
+		switch (uniform->GetType())
+		{
+		case OpenGLShaderUniformDeclaration::Type::FLOAT32:
+			UploadUniformFloat(uniform->GetName(), *(float*)&buffer.Data[offset]);
+			break;
+		case OpenGLShaderUniformDeclaration::Type::INT32:
+			UploadUniformInt(uniform->GetName(), *(int32_t*)&buffer.Data[offset]);
+			break;
+		case OpenGLShaderUniformDeclaration::Type::VEC2:
+			UploadUniformFloat2(uniform->GetName(), *(glm::vec2*)&buffer.Data[offset]);
+			break;
+		case OpenGLShaderUniformDeclaration::Type::VEC3:
+			UploadUniformFloat3(uniform->GetName(), *(glm::vec3*)&buffer.Data[offset]);
+			break;
+		case OpenGLShaderUniformDeclaration::Type::VEC4:
+			UploadUniformFloat4(uniform->GetName(), *(glm::vec4*)&buffer.Data[offset]);
+			break;
+		case OpenGLShaderUniformDeclaration::Type::MAT3:
+			UploadUniformMat3(uniform->GetName(), *(glm::mat3*)&buffer.Data[offset]);
+			break;
+		case OpenGLShaderUniformDeclaration::Type::MAT4:
+			UploadUniformMat4Array(uniform->GetName(), *(glm::mat4*)&buffer.Data[offset], uniform->GetCount());
+			break;
+		default:
+			PR_CORE_ASSERT(false, "Unknown uniform type!");
+		}
+	}
 	
 
 #pragma region 设置uniform变量

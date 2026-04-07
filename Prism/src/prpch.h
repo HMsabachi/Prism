@@ -23,6 +23,7 @@
 #include "Prism/Core/Log.h"
 #include "Prism/Core/Core.h"
 #include "Prism/Debug/Instrumentor.h"
+#include "Prism/Core/Buffer.h"
 
 #ifdef PR_PLATFORM_WINDOWS
 	#include <Windows.h>

@@ -67,7 +67,7 @@ public:
 
 		m_SimplePBRPrismShader = Prism::PrismShader::Create("Assets/Shaders/simplepbrPrism.glsl");
 		PR_TRACE(*m_SimplePBRPrismShader);
-		LoadTexture(m_SimplePBRPrismShader);
+		//LoadTexture(m_SimplePBRPrismShader);
 		m_SimplePBRShader = m_SimplePBRPrismShader->GetOriginalShader();
 		//m_SimplePBRShader.reset(Prism::Shader::Create("Assets/Shaders/simplepbr.glsl"));
 		m_QuadShader.reset(Prism::Shader::Create("Assets/Shaders/quad.glsl"));

@@ -38,4 +38,12 @@ namespace Prism
 			return v;
 		}
 	}
+	namespace EnumParse
+	{
+		template <typename T>
+		inline int32_t GetEnumValue(T value)
+		{
+			return static_cast<int32_t>(value);
+		}
+	}
 }
