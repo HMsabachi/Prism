@@ -1,8 +1,8 @@
 ﻿#pragma once
-#pragma once
 
 #include "Prism/Core/Core.h"
 #include "Prism/Renderer/Renderer.h"
+#include "Shader/ShaderProperty.h"
 
 #include <string>
 #include <glm/glm.hpp>
@@ -118,11 +118,15 @@ namespace Prism
 		virtual void Bind() = 0;
 		virtual void UploadUniformBuffer(const UniformBufferBase& uniformBuffer) = 0;
 
+
+
 		// Temporary while we don't have materials
 		virtual void SetFloat(const std::string& name, float value) = 0;
 		virtual void SetMat4(const std::string& name, const glm::mat4& value) = 0;
 
 		virtual const std::string& GetName() const = 0;
+
+		virtual void SetProperty(const PropertyBufferDeclaration& decl, const Buffer& buffer) = 0;
 
 		// Represents a complete shader program stored in a single file.
 		// Note: currently for simplicity this is simply a string filepath, however

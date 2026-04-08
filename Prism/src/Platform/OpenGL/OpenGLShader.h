@@ -18,10 +18,16 @@ namespace Prism {
 
 		virtual void UploadUniformBuffer(const UniformBufferBase& uniformBuffer) override;
 
+		virtual void SetProperty(const PropertyBufferDeclaration& decl, const Buffer& buffer) override;
+
+	private:
+		void SetPropertyImpt(const PropertyBufferDeclaration& decl, const Buffer& buffer);
+
 		void SetFloat(const std::string& name, float value) override;
 		void SetMat4(const std::string& name, const glm::mat4& value) override;
 
 		const std::string& GetName() const override { return m_Name; }
+
 
 
 	private:
@@ -33,13 +39,8 @@ namespace Prism {
 
 		static GLenum ShaderTypeFromString(const std::string& type);
 
-	public:
-		void ResolveAndSetUniforms(const Scope<OpenGLShaderUniformBufferDeclaration>& decl, Buffer buffer);
-	private:
-		void ResolveAndSetUniform(OpenGLShaderUniformDeclaration* uniform, Buffer buffer);
-		void ResolveAndSetUniformArray(OpenGLShaderUniformDeclaration* uniform, Buffer buffer);
-
 		#pragma region 上传Uniform
+	private:
 		void UploadUniformInt(uint32_t location, int32_t value);
 		void UploadUniformIntArray(uint32_t location, int32_t* values, int32_t count);
 		void UploadUniformFloat(uint32_t location, float value);

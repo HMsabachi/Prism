@@ -18,9 +18,9 @@ namespace Prism
     private:
     #pragma region 类型转换
         // 将字符串类型转换为枚举
-        static PropertyType StringToPropertyType(const std::string& typeStr, float& outMin, float& outMax);
+        static ParserPropertyType StringToPropertyType(const std::string& typeStr, float& outMin, float& outMax);
         // 将枚举类型转换为字符串
-        static std::string PropertyTypeToString(PropertyType type);
+        static std::string PropertyTypeToString(ParserPropertyType type);
         inline static int GetLocationBySemantic(const std::string& semantic, Prism::VertexSemantic& outSemantic) {
             if (semantic == "POSITION") { outSemantic = VertexSemantic::Position; return static_cast<int>(outSemantic); }
             if (semantic == "NORMAL") { outSemantic = VertexSemantic::Normal;   return static_cast<int>(outSemantic); }

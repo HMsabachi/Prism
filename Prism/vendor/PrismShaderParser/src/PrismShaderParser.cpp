@@ -10,39 +10,39 @@ namespace Prism
     std::string PrismShaderParser::s_FileHeader = R"PRISM(
 // 暂无
 )PRISM";
-    PropertyType PrismShaderParser::StringToPropertyType(const std::string& typeStr, float& outMin, float& outMax)
+    ParserPropertyType PrismShaderParser::StringToPropertyType(const std::string& typeStr, float& outMin, float& outMax)
     {
-        if (typeStr == "Color") return PropertyType::Color;
-        if (typeStr == "Float") return PropertyType::Float;
-        if (typeStr == "Int")   return PropertyType::Int;
-        if (typeStr == "Vector2") return PropertyType::Vector2;
-        if (typeStr == "Vector3") return PropertyType::Vector3;
-        if (typeStr == "Vector4") return PropertyType::Vector4;
-        if (typeStr == "Texture2D") return PropertyType::Texture2D;
-        if (typeStr == "TextureCube") return PropertyType::TextureCube;
+        if (typeStr == "Color") return ParserPropertyType::Color;
+        if (typeStr == "Float") return ParserPropertyType::Float;
+        if (typeStr == "Int")   return ParserPropertyType::Int;
+        if (typeStr == "Vector2") return ParserPropertyType::Vector2;
+        if (typeStr == "Vector3") return ParserPropertyType::Vector3;
+        if (typeStr == "Vector4") return ParserPropertyType::Vector4;
+        if (typeStr == "Texture2D") return ParserPropertyType::Texture2D;
+        if (typeStr == "TextureCube") return ParserPropertyType::TextureCube;
         std::regex rangeRegex(R"(Range\s*\(\s*([+-]?\d*\.?\d+)\s*,\s*([+-]?\d*\.?\d+)\s*\))");
         std::smatch rangeMatch;
         if (std::regex_match(typeStr, rangeMatch, rangeRegex)) {
             outMin = std::stof(rangeMatch[1].str());
             outMax = std::stof(rangeMatch[2].str());
-            return PropertyType::Range;
+            return ParserPropertyType::Range;
         }
 
-        return PropertyType::Float;
+        return ParserPropertyType::Float;
     }
-    std::string PrismShaderParser::PropertyTypeToString(PropertyType type)
+    std::string PrismShaderParser::PropertyTypeToString(ParserPropertyType type)
     {
         switch (type)
         {
-        case PropertyType::Color: return "uniform vec4"; break;
-        case PropertyType::Float: return "uniform float"; break;
-        case PropertyType::Int: return "uniform int"; break;
-        case PropertyType::Vector2: return "uniform vec2"; break;
-        case PropertyType::Vector3: return "uniform vec3"; break;
-        case PropertyType::Vector4: return "uniform vec4"; break;
-        case PropertyType::Texture2D: return "uniform sampler2D"; break;
-        case PropertyType::TextureCube: return "uniform samplerCube"; break;
-        case PropertyType::Range: return "uniform float"; break;
+        case ParserPropertyType::Color: return "uniform vec4"; break;
+        case ParserPropertyType::Float: return "uniform float"; break;
+        case ParserPropertyType::Int: return "uniform int"; break;
+        case ParserPropertyType::Vector2: return "uniform vec2"; break;
+        case ParserPropertyType::Vector3: return "uniform vec3"; break;
+        case ParserPropertyType::Vector4: return "uniform vec4"; break;
+        case ParserPropertyType::Texture2D: return "uniform sampler2D"; break;
+        case ParserPropertyType::TextureCube: return "uniform samplerCube"; break;
+        case ParserPropertyType::Range: return "uniform float"; break;
         }
     }
     ParseResult PrismShaderParser::Parse(const std::string& source)

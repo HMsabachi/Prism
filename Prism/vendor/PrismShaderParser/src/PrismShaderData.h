@@ -22,7 +22,7 @@
 namespace Prism
 {
     // 属性类型
-    enum class PRISM_API PropertyType
+    enum class PRISM_API ParserPropertyType
     {
         Float,
         Int,
@@ -40,7 +40,7 @@ namespace Prism
     {
         std::string Name;           // _MainColor
         std::string DisplayName;    // "主颜色"
-        PropertyType Type;
+        ParserPropertyType Type;
         std::string DefaultValue;   // "(1,1,1,1)" 或 "0.5" 或 "white"
         float Min = 0.0f;           // Range 用
         float Max = 1.0f;

@@ -3,6 +3,7 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
+
 namespace Prism 
 {
 #define UNIFORM_LOGGING 0
@@ -242,93 +243,56 @@ namespace Prism
 	}
 
 
-	void OpenGLShader::ResolveAndSetUniforms(const Scope<OpenGLShaderUniformBufferDeclaration>& decl, Buffer buffer)
+	void OpenGLShader::SetProperty(const PropertyBufferDeclaration& decl, const Buffer& buffer)
 	{
-		const ShaderUniformList& uniforms = decl->GetUniformDeclarations();
-		PR_RENDER_S2(uniforms, buffer, {
-			glUseProgram(self->m_RendererID);
-			for (size_t i = 0; i < uniforms.size(); i++)
-			{
-				OpenGLShaderUniformDeclaration* uniform = (OpenGLShaderUniformDeclaration*)uniforms[i];
-				if (uniform->IsArray())
-					self->ResolveAndSetUniformArray(uniform, buffer);
-				else
-					self->ResolveAndSetUniform(uniform, buffer);
-			}
+		PR_RENDER_S2(decl, buffer, {
+			self->SetPropertyImpt(decl, buffer);
 		});
-		
 	}
 
-	void OpenGLShader::ResolveAndSetUniform(OpenGLShaderUniformDeclaration* uniform, Buffer buffer)
+	void OpenGLShader::SetPropertyImpt(const PropertyBufferDeclaration& decl, const Buffer& buffer)
 	{
-		uint32_t offset = uniform->GetOffset();
-		switch (uniform->GetType())
+		glUseProgram(m_RendererID);
+		using namespace Prism::PropertyType;
+		for (const auto& property : decl)
 		{
-		case OpenGLShaderUniformDeclaration::Type::FLOAT32:
-			UploadUniformFloat(uniform->GetName(), *(float*)&buffer.Data[offset]);
-			break;
-		case OpenGLShaderUniformDeclaration::Type::INT32:
-			UploadUniformInt(uniform->GetName(), *(int32_t*)&buffer.Data[offset]);
-			break;
-		case OpenGLShaderUniformDeclaration::Type::VEC2:
-			UploadUniformFloat2(uniform->GetName(), *(glm::vec2*)&buffer.Data[offset]);
-			break;
-		case OpenGLShaderUniformDeclaration::Type::VEC3:
-			UploadUniformFloat3(uniform->GetName(), *(glm::vec3*)&buffer.Data[offset]);
-			break;
-		case OpenGLShaderUniformDeclaration::Type::VEC4:
-			UploadUniformFloat4(uniform->GetName(), *(glm::vec4*)&buffer.Data[offset]);
-			break;
-		case OpenGLShaderUniformDeclaration::Type::MAT3:
-			UploadUniformMat3(uniform->GetName(), *(glm::mat3*)&buffer.Data[offset]);
-			break;
-		case OpenGLShaderUniformDeclaration::Type::MAT4:
-			UploadUniformMat4(uniform->GetName(), *(glm::mat4*)&buffer.Data[offset]);
-			break;
-		case OpenGLShaderUniformDeclaration::Type::TEXTURE2D:
-			UploadUniformInt(uniform->GetName(), *(int32_t*)&buffer.Data[offset]);
-			break;
-		case OpenGLShaderUniformDeclaration::Type::TEXTURECUBE:
-			UploadUniformInt(uniform->GetName(), *(int32_t*)&buffer.Data[offset]);
-			break;
-		default:
-			PR_CORE_ASSERT(false, "Unknown uniform type!");
+			uint32_t offset = property->GetOffset();
+			switch (property->GetType())
+			{
+			case PropertyDeclaration::Type::Color:
+				UploadUniformFloat4(property->GetName(), *(Color*)&buffer.Data[offset]);
+				break;
+			case PropertyDeclaration::Type::Float:
+				UploadUniformFloat(property->GetName(), *(Float*)&buffer.Data[offset]);
+				break;
+			case PropertyDeclaration::Type::Int:
+				UploadUniformInt(property->GetName(), *(Int*)&buffer.Data[offset]);
+				break;
+			case PropertyDeclaration::Type::Vector2:
+				UploadUniformFloat2(property->GetName(), *(Vector2*)&buffer.Data[offset]);
+				break;
+			case PropertyDeclaration::Type::Vector3:
+				UploadUniformFloat3(property->GetName(), *(Vector3*)&buffer.Data[offset]);
+				break;
+			case PropertyDeclaration::Type::Vector4:
+				UploadUniformFloat4(property->GetName(), *(Vector4*)&buffer.Data[offset]);
+				break;
+			case PropertyDeclaration::Type::Range:
+				UploadUniformFloat(property->GetName(), *(Range*)&buffer.Data[offset]);
+				break;
+			case PropertyDeclaration::Type::Texture2D:
+				UploadUniformInt(property->GetName(), *(PropertyType::Texture2D*)&buffer.Data[offset]);
+				break;
+			case PropertyDeclaration::Type::TextureCube:
+				UploadUniformInt(property->GetName(), *(PropertyType::TextureCube*)&buffer.Data[offset]);
+				break;
+			default:
+				PR_LOG_UNIFORM("不支持的属性类型{0} 在Shader {1}中", property->GetName(), m_Name);
+				break;
+			}
 		}
 	}
 
-	void OpenGLShader::ResolveAndSetUniformArray(OpenGLShaderUniformDeclaration* uniform, Buffer buffer)
-	{
-		//PR_CORE_ASSERT(uniform->GetName() != -1, "Uniform has invalid location!");
-
-		uint32_t offset = uniform->GetOffset();
-		switch (uniform->GetType())
-		{
-		case OpenGLShaderUniformDeclaration::Type::FLOAT32:
-			UploadUniformFloat(uniform->GetName(), *(float*)&buffer.Data[offset]);
-			break;
-		case OpenGLShaderUniformDeclaration::Type::INT32:
-			UploadUniformInt(uniform->GetName(), *(int32_t*)&buffer.Data[offset]);
-			break;
-		case OpenGLShaderUniformDeclaration::Type::VEC2:
-			UploadUniformFloat2(uniform->GetName(), *(glm::vec2*)&buffer.Data[offset]);
-			break;
-		case OpenGLShaderUniformDeclaration::Type::VEC3:
-			UploadUniformFloat3(uniform->GetName(), *(glm::vec3*)&buffer.Data[offset]);
-			break;
-		case OpenGLShaderUniformDeclaration::Type::VEC4:
-			UploadUniformFloat4(uniform->GetName(), *(glm::vec4*)&buffer.Data[offset]);
-			break;
-		case OpenGLShaderUniformDeclaration::Type::MAT3:
-			UploadUniformMat3(uniform->GetName(), *(glm::mat3*)&buffer.Data[offset]);
-			break;
-		case OpenGLShaderUniformDeclaration::Type::MAT4:
-			UploadUniformMat4Array(uniform->GetName(), *(glm::mat4*)&buffer.Data[offset], uniform->GetCount());
-			break;
-		default:
-			PR_CORE_ASSERT(false, "Unknown uniform type!");
-		}
-	}
-	
 
 #pragma region 设置uniform变量
 	void OpenGLShader::UploadUniformInt(uint32_t location, int32_t value)

@@ -4,6 +4,14 @@ Shader "Custom/SimplePBR"
     // ==================== Properties（材质参数） ====================
     Properties
     {
+        u_Color("主色", Vector3) = (1, 0, 0)
+        // BRDF LUT
+        u_AlbedoColor("颜色", Vector3) = (1, 1, 1)
+        u_BRDFLUTTexture("BRDF LUT", Texture2D) = {}
+        u_Metalness("金属度", Range(0, 1)) = 0.5
+        u_Roughness("粗糙度", Range(0, 1)) = 0.5
+        u_EnvMapRotation("环境光旋转", Range(0, 360)) = 0
+
         // PBR texture inputs
         u_AlbedoTexture("颜色贴图", Texture2D) = {}
         u_NormalTexture("法线贴图", Texture2D) = {}
@@ -14,12 +22,6 @@ Shader "Custom/SimplePBR"
         u_EnvRadianceTex("环境光贴图", TextureCube) = {}
         u_EnvIrradianceTex("环境光辐射贴图", TextureCube) = {}
 
-        // BRDF LUT
-        u_BRDFLUTTexture("BRDF LUT", Texture2D) = {}
-        u_AlbedoColor("颜色", Vector3) = (1, 1, 1)
-        u_Metalness("金属度", Range(0, 1)) = 0.5
-        u_Roughness("粗糙度", Range(0, 1)) = 0.5
-        u_EnvMapRotation("环境光旋转", Range(0, 360)) = 0
 
         // Toggles
         u_RadiancePrefilter("环境光预过滤", Float) = 0.0
@@ -165,6 +167,7 @@ Shader "Custom/SimplePBR"
                     m_Params.Roughness = u_RoughnessTexToggle > 0.5 ?  texture(u_RoughnessTexture, vs_Output.TexCoord).r : u_Roughness;
                     m_Params.Roughness = max(m_Params.Roughness, 0.05); // Minimum roughness of 0.05 to keep specular highlight
 
+                    m_Params.Albedo = mix(m_Params.Albedo, u_Color, 0.2);
                     // Normals (either from vertex or map)
                     m_Params.Normal = normalize(vs_Output.Normal);
                     if (u_NormalTexToggle > 0.5)

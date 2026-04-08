@@ -1,7 +1,6 @@
 ﻿#include "prpch.h"
 #include "PrismShader.h"
 #include "Prism/Utilities/Utilities.h"
-#include "Platform/OpenGL/OpenGLShader.h"
 #if 1
 
 namespace Prism
@@ -22,17 +21,13 @@ namespace Prism
 
 	PrismShader::PrismShader(const std::string& source)
 	{
-		m_PropertiesDeclaration = CreateScope<OpenGLShaderUniformBufferDeclaration>("Properties");
-
 		PrismShaderParser parser;
 		m_ParseResult = parser.Parse(source);
 		m_Name = m_ParseResult.ShaderName;
-		// 处理Property
-		HandleProperty();
-		std::string src = "#type vertex\n" + m_ParseResult.Passes[0].VertexShaderCode + "#type fragment\n" + m_ParseResult.Passes[0].FragmentShaderCode;
-		m_Shader.reset(new OpenGLShader(m_Name, src));
-		
-		SetPropertiesToShader(m_PropertyBuffer);
+		m_Shader.reset(Shader::Create(m_Name, m_ParseResult.Passes[0].VertexShaderCode, m_ParseResult.Passes[0].FragmentShaderCode));
+		m_ShaderProperty.Init(m_ParseResult.Properties);
+
+		SetProperty(m_ShaderProperty.GetDefaultValueBuffer());
 	}
 	
 	void PrismShader::bind() const
@@ -40,9 +35,9 @@ namespace Prism
 		m_Shader->Bind();
 	}
 
-	void PrismShader::SetPropertiesToShader(Buffer buffer)
+	void PrismShader::SetProperty(const Buffer& buffer)
 	{
-		m_Shader->ResolveAndSetUniforms(m_PropertiesDeclaration, buffer);
+		m_Shader->SetProperty(m_ShaderProperty.GetDeclaration(), buffer);
 	}
 
 	std::string PrismShader::ReadFile(const std::string& filePath)
@@ -73,101 +68,7 @@ namespace Prism
 		return m_Shader;
 	}
 
-	void PrismShader::HandleProperty()
-	{
-		size_t TextureIndex = 0;
-		using namespace Prism::StrParse;
-		using namespace Prism::ShaderData;
-		for (auto& property : m_ParseResult.Properties)
-		{
-			ShaderData::PropertyElement element;
-			element.m_Name = property.Name;
-			element.m_DisplayName = property.DisplayName;
-			PropertyValue value;
-			switch (property.Type)
-			{
-			case PropertyType::Float:
-				element.m_Type = PropertyElement::Type::Float;
-				value = Parse<float>(property.DefaultValue);
-				break;
-			case PropertyType::Int:
-				element.m_Type = PropertyElement::Type::Int;
-				value = Parse<int32_t>(property.DefaultValue);
-				break;
-			case PropertyType::Color:
-				element.m_Type = PropertyElement::Type::Color;
-				value = Parse<glm::vec4>(property.DefaultValue);
-				break;
-			case PropertyType::Vector2:
-				element.m_Type = PropertyElement::Type::Vector2;
-				value = Parse<glm::vec2>(property.DefaultValue);
-				break;
-			case PropertyType::Vector3:
-				element.m_Type = PropertyElement::Type::Vector3;
-				value = Parse<glm::vec3>(property.DefaultValue);
-				break;
-			case PropertyType::Vector4:
-				element.m_Type = PropertyElement::Type::Vector4;
-				value = Parse<glm::vec4>(property.DefaultValue);
-				break;
-			case PropertyType::Texture2D:
-			{
-				element.m_Type = PropertyElement::Type::Texture2D;
-				Texture2DType tex2d{ 0 };
-				tex2d.id = TextureIndex++;
-				value = tex2d;
-				break;
-			}
-			case PropertyType::TextureCube:
-			{
-				element.m_Type = PropertyElement::Type::TextureCube;
-				TextureCubeType texcube{ 0 };
-				texcube.id = TextureIndex++;
-				value = texcube;
-				break;
-			}
-			case PropertyType::Range:
-			{
-				element.m_Type = PropertyElement::Type::Range;
-				Range range{0.0f, 1.0f, 0.0f};
-				range.min = property.Min;
-				range.max = property.Max;
-				range.value = Parse<float>(property.DefaultValue);
-				value = range;
-				break;
-			}
-			}
-			element.m_DefaultValue = value;
-			m_Properties.AddProperty(element);
-		}
-		HandlePropertyUniformBuffer();
-		InitPropertyBuffer();
-	}
-
-
-	void PrismShader::HandlePropertyUniformBuffer()
-	{
-		for(auto& [name, element] : m_Properties)
-		{
-			m_PropertiesDeclaration->PushUniform(new OpenGLShaderUniformDeclaration(element.ToUniformType(element.GetType()), name));
-		}
-	}
-
-	void PrismShader::InitPropertyBuffer()
-	{
-		m_PropertyBuffer.Allocate(m_PropertiesDeclaration->GetSize());
-		for (auto& decl : m_PropertiesDeclaration->GetUniformDeclarations())
-		{
-			auto& element = m_Properties[decl->GetName()];
-			auto [dataPtr, dataSize] = element.GetDefaultValueAsUniform();
-			if(dataSize != decl->GetSize())
-			{
-				PR_CORE_WARN("Property {} 大小不匹配! 声明: {}, 实际: {}", element.GetName(), decl->GetSize(), dataSize);
-				continue;
-			}
-			m_PropertyBuffer.Write(dataPtr, decl->GetSize(), decl->GetOffset());
-		}
-	}
+	
 
 	std::string PrismShader::ToString() const
 	{
@@ -176,23 +77,7 @@ namespace Prism
 			shader.GetName(), shader.GetFilePath());
 
 		result += "Properties:\n";
-		const auto& props = shader.GetProperties();
 
-		if (props.empty()) {
-			result += "  <None>";
-			return result;
-		}
-		for (const auto& [name, element] : props)
-		{
-			std::string valStr = std::visit(Prism::Internal::ValueToString{}, element.GetValueVariant());
-
-			result += fmt::format("  - [{}] {}: {} (Value: {})\n",
-				(int)element.GetType(), 
-				element.GetDisplayName(),
-				element.GetName(),
-				valStr
-			);
-		}
 		return result;
 	}
 

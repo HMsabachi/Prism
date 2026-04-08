@@ -41,25 +41,11 @@ public:
 	}
 	void LoadTexture(Prism::Ref<Prism::PrismShader> shader)
 	{
-		using tex = Prism::Texture2DType;
-		using texc = Prism::TextureCubeType;
-		Prism::UniformBufferDeclaration<sizeof(int) * 8, 8> decl;
-		// Bind default texture unit
-		auto& pro = shader->GetProperties();
-		decl.Push("u_Texture", pro["u_Texture"].GetDefaultValue<tex>().id);
-
-		// PBR shader Textures
-		decl.Push("u_AlbedoTexture", pro["u_AlbedoTexture"].GetDefaultValue<tex>().id);
-		decl.Push("u_NormalTexture", pro["u_NormalTexture"].GetDefaultValue<tex>().id);
-		decl.Push("u_MetalnessTexture", pro["u_MetalnessTexture"].GetDefaultValue<tex>().id);
-		decl.Push("u_RoughnessTexture", pro["u_RoughnessTexture"].GetDefaultValue<tex>().id);
-
-		decl.Push("u_EnvRadianceTex", pro["u_EnvRadianceTex"].GetDefaultValue<texc>().id);
-		decl.Push("u_EnvIrradianceTex", pro["u_EnvIrradianceTex"].GetDefaultValue<texc>().id);
-
-		decl.Push("u_BRDFLUTTexture", pro["u_BRDFLUTTexture"].GetDefaultValue<tex>().id);
-
-		shader->GetOriginalShader()->UploadUniformBuffer(decl);
+		using namespace Prism;
+		const auto& properties = shader->GetProperty();
+		const auto& decl = properties.GetDeclaration();
+		Buffer buffer = properties.GetDefaultValueBuffer().Copy();
+		auto offset = decl.FindUniform("u_AlbedoMap")->GetOffset();
 	}
 	virtual void OnAttach() override
 	{
@@ -171,8 +157,15 @@ public:
 		simplePbrShaderUB.Push("u_RoughnessTexToggle", m_RoughnessInput.UseTexture ? 1.0f : 0.0f);
 		simplePbrShaderUB.Push("u_EnvMapRotation", m_EnvMapRotation);
 		m_SimplePBRShader->UploadUniformBuffer(simplePbrShaderUB);
-		m_EnvironmentCubeMap->Bind(m_SimplePBRPrismShader->GetProperties()["u_EnvRadianceTex"].GetDefaultValue<Prism::TextureCubeType>().id);
-		m_EnvironmentIrradiance->Bind(m_SimplePBRPrismShader->GetProperties()["u_EnvIrradianceTex"].GetDefaultValue<Prism::TextureCubeType>().id);
+
+		using namespace Prism;
+		const auto& properties = m_SimplePBRPrismShader->GetProperty();
+		const auto& decl = properties.GetDeclaration();
+		const Buffer& buffer = properties.GetDefaultValueBuffer();
+		auto offset = decl.FindUniform("u_EnvRadianceTex")->GetOffset();
+
+		m_EnvironmentCubeMap->Bind(*(PropertyType::TextureCube*)&buffer.Data[offset]);
+		m_EnvironmentIrradiance->Bind(*(PropertyType::TextureCube*)&buffer.Data[decl.FindUniform("u_EnvIrradianceTex")->GetOffset()]);
 
 		//m_EnvironmentCubeMap->Bind(10);
 		//m_EnvironmentIrradiance->Bind(11);

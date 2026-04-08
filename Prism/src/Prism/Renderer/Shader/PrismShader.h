@@ -3,13 +3,12 @@
 #include "Prism/Core/Core.h"
 #include "Prism/Renderer/Shader.h"
 #include "PrismShaderParser.h"
-#include "PrismShaderProperty.h"
-#include "Platform/OpenGL/Shader/OpenGLShaderUniform.h"
+
+#include "ShaderProperty.h"
 
 
 namespace Prism
 {
-	class OpenGLShader;
 	
 	class PRISM_API PrismShader
 	{
@@ -23,31 +22,23 @@ namespace Prism
 
 	public:
 		void bind() const;
-		void SetPropertiesToShader(Buffer buffer);
+		void SetProperty(const Buffer& buffer);
 		const std::string& GetFilePath() const {return m_FilePath; };
 		const std::string& GetName() const { return m_ParseResult.ShaderName; }
+		const ShaderProperty& GetProperty() const { return m_ShaderProperty; }
 		
-		const ShaderData::propertyGroup& GetProperties() const { return m_Properties; }
-		ShaderData::propertyGroup& GetProperties() { return m_Properties; }
-	public:
-		
-
-	private:
-		void HandleProperty();
-		void HandlePropertyUniformBuffer();
-		void InitPropertyBuffer();
 	private:
 		static std::string ReadFile(const std::string& filePath);
 	private:
 		std::string m_Name;
-		ShaderData::propertyGroup m_Properties;
 		std::string m_FilePath;
-		Ref<OpenGLShader> m_Shader;
+		Ref<Shader> m_Shader;
+		ShaderProperty m_ShaderProperty;
+
 	private:
 		static std::vector<PrismShader> s_AllPrismShader;
 	private:
-		Buffer m_PropertyBuffer;
-		Scope<OpenGLShaderUniformBufferDeclaration> m_PropertiesDeclaration;
+
 
 #pragma region 调试用
 	public:
