@@ -145,6 +145,7 @@ namespace Prism
 		{
 			delete property;
 		}
+		m_Properties.clear();
 	}
 	void PropertyBufferDeclaration::PushUniform(PropertyDeclaration* property)
 	{
@@ -181,6 +182,7 @@ namespace Prism
 
 	void ShaderProperty::Init(const std::vector<PropertyDescriptor>& properties)
 	{
+		m_Declaration.Shutdown();
 		for (const auto& property : properties)
 		{
 			auto proPtr = new PropertyDeclaration(ParserTypeToPropertyType(property.Type), property.Name, property.DisplayName);

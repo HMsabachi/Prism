@@ -29,6 +29,13 @@ namespace Prism
 			self->CompileAndUploadShader();
 		});
 	}
+	OpenGLShader::~OpenGLShader()
+	{
+		PR_RENDER_S({
+			if (self->m_RendererID)
+				glDeleteProgram(self->m_RendererID);
+		});
+	}
 
 	void OpenGLShader::Reload()
 	{
@@ -163,7 +170,7 @@ namespace Prism
 
 		// Always detach Shaders after a successful link.
 		for (auto id : shaderRendererIDs)
-			glDetachShader(program, id);
+			glDeleteShader(id);
 
 		LoadTexture();
 
@@ -272,8 +279,12 @@ namespace Prism
 				UploadUniformFloat2(property->GetName(), *(Vector2*)&buffer.Data[offset]);
 				break;
 			case PropertyDeclaration::Type::Vector3:
+			{
 				UploadUniformFloat3(property->GetName(), *(Vector3*)&buffer.Data[offset]);
+				Vector3 color = *(Vector3*)&buffer.Data[offset];
+				PR_CORE_INFO("Upload Color {0} = ({1},{2},{3})", property->GetName(), color.x, color.y, color.z);
 				break;
+			}
 			case PropertyDeclaration::Type::Vector4:
 				UploadUniformFloat4(property->GetName(), *(Vector4*)&buffer.Data[offset]);
 				break;

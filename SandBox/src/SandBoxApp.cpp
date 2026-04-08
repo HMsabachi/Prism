@@ -120,6 +120,7 @@ public:
 		// - Tonemapping and proper HDR pipeline
 		using namespace Prism;
 		using namespace glm;
+		m_SimplePBRShader = m_SimplePBRPrismShader->GetOriginalShader();
 
 		m_Camera.Update();
 		auto viewProjection = m_Camera.GetProjectionMatrix() * m_Camera.GetViewMatrix();
@@ -138,6 +139,13 @@ public:
 		m_IndexBuffer->Bind();
 		Renderer::DrawIndexed(m_IndexBuffer->GetCount(), false);
 
+
+		using namespace Prism;
+		const auto& properties = m_SimplePBRPrismShader->GetProperty();
+		const auto& decl = properties.GetDeclaration();
+		Buffer buffer = properties.GetDefaultValueBuffer().Copy();
+		
+		#define LoadBuffer(name, value) buffer.Write((byte*)&value, sizeof(value), decl.FindUniform(name)->GetOffset())
 
 		//m_SimplePBRPrismShader->bind();
 		Prism::UniformBufferDeclaration<sizeof(mat4) * 3 + sizeof(vec3) * 4 + sizeof(float) * 8, 15> simplePbrShaderUB;
@@ -158,13 +166,8 @@ public:
 		simplePbrShaderUB.Push("u_EnvMapRotation", m_EnvMapRotation);
 		m_SimplePBRShader->UploadUniformBuffer(simplePbrShaderUB);
 
-		using namespace Prism;
-		const auto& properties = m_SimplePBRPrismShader->GetProperty();
-		const auto& decl = properties.GetDeclaration();
-		const Buffer& buffer = properties.GetDefaultValueBuffer();
-		auto offset = decl.FindUniform("u_EnvRadianceTex")->GetOffset();
-
-		m_EnvironmentCubeMap->Bind(*(PropertyType::TextureCube*)&buffer.Data[offset]);
+		
+		m_EnvironmentCubeMap->Bind(*(PropertyType::TextureCube*)&buffer.Data[decl.FindUniform("u_EnvRadianceTex")->GetOffset()]);
 		m_EnvironmentIrradiance->Bind(*(PropertyType::TextureCube*)&buffer.Data[decl.FindUniform("u_EnvIrradianceTex")->GetOffset()]);
 
 		//m_EnvironmentCubeMap->Bind(10);
@@ -532,7 +535,7 @@ public:
 
 		if (ImGui::TreeNode("Shaders"))
 		{
-			auto& shaders = Prism::Shader::s_AllShaders;
+			auto& shaders = Prism::PrismShader::s_AllShaders;
 			for (auto& shader : shaders)
 			{
 				if (ImGui::TreeNode(shader->GetName().c_str()))

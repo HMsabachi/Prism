@@ -5,7 +5,7 @@
 
 namespace Prism
 {
-	std::vector<PrismShader> PrismShader::s_AllPrismShader;
+	std::vector<PrismShader*> PrismShader::s_AllShaders;
 
 	Ref<PrismShader> PrismShader::Create(const std::string& source, const bool isFile)
 	{
@@ -26,10 +26,24 @@ namespace Prism
 		m_Name = m_ParseResult.ShaderName;
 		m_Shader.reset(Shader::Create(m_Name, m_ParseResult.Passes[0].VertexShaderCode, m_ParseResult.Passes[0].FragmentShaderCode));
 		m_ShaderProperty.Init(m_ParseResult.Properties);
-
 		SetProperty(m_ShaderProperty.GetDefaultValueBuffer());
+
+		s_AllShaders.push_back(this);
 	}
 	
+	void PrismShader::Reload()
+	{
+		auto source = ReadFile(m_FilePath);
+		PrismShaderParser parser;
+		m_ParseResult = parser.Parse(source);
+		m_Name = m_ParseResult.ShaderName;
+		m_Shader.reset(Shader::Create(m_Name, m_ParseResult.Passes[0].VertexShaderCode, m_ParseResult.Passes[0].FragmentShaderCode));
+		m_ShaderProperty.Init(m_ParseResult.Properties);
+		SetProperty(m_ShaderProperty.GetDefaultValueBuffer());
+		if (m_ReloadedCallback)
+			m_ReloadedCallback();
+	}
+
 	void PrismShader::bind() const
 	{
 		m_Shader->Bind();

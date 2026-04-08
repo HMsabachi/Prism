@@ -113,6 +113,7 @@ namespace Prism
 	class PRISM_API Shader
 	{
 	public:
+		virtual ~Shader() = default;
 		virtual void Reload() = 0;
 
 		virtual void Bind() = 0;

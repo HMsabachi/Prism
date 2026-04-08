@@ -9,7 +9,7 @@
 
 namespace Prism
 {
-	
+	using ShaderReloadedCallback = std::function<void()>;
 	class PRISM_API PrismShader
 	{
 	public:
@@ -19,10 +19,13 @@ namespace Prism
 		Ref<Shader> GetOriginalShader() const;
 	public:
 		PrismShader(const std::string& source);
+		void Reload();
 
 	public:
 		void bind() const;
 		void SetProperty(const Buffer& buffer);
+	public:
+		void SetReloadedCallback(const ShaderReloadedCallback& callback) { m_ReloadedCallback = callback; }
 		const std::string& GetFilePath() const {return m_FilePath; };
 		const std::string& GetName() const { return m_ParseResult.ShaderName; }
 		const ShaderProperty& GetProperty() const { return m_ShaderProperty; }
@@ -34,9 +37,10 @@ namespace Prism
 		std::string m_FilePath;
 		Ref<Shader> m_Shader;
 		ShaderProperty m_ShaderProperty;
+		ShaderReloadedCallback m_ReloadedCallback;
 
-	private:
-		static std::vector<PrismShader> s_AllPrismShader;
+	public:
+		static std::vector<PrismShader*> s_AllShaders;
 	private:
 
 

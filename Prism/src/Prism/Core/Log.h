@@ -22,7 +22,17 @@ namespace Prism {
 	};
 }
 
+inline std::string format_as(const glm::vec2& vec) {
+	return fmt::format("vec2({}, {})", vec.x, vec.y);
+}
 
+inline std::string format_as(const glm::vec3& vec) {
+	return fmt::format("vec3({}, {}, {})", vec.x, vec.y, vec.z);
+}
+
+inline std::string format_as(const glm::vec4& vec) {
+	return fmt::format("vec4({}, {}, {}, {})", vec.x, vec.y, vec.z, vec.w);
+}
 
 
 // Core log macros 引擎核心日志

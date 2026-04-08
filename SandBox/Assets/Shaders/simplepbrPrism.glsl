@@ -4,7 +4,7 @@ Shader "Custom/SimplePBR"
     // ==================== Properties（材质参数） ====================
     Properties
     {
-        u_Color("主色", Vector3) = (1, 0, 0)
+        u_Color("主色", Vector3) = (0.2, 0.5, 1)
         // BRDF LUT
         u_AlbedoColor("颜色", Vector3) = (1, 1, 1)
         u_BRDFLUTTexture("BRDF LUT", Texture2D) = {}
