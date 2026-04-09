@@ -241,7 +241,12 @@ namespace Prism
 			self->UploadUniformFloat(name, value);
 			});
 	}
-
+	void OpenGLShader::SetVec3(const std::string& name, const glm::vec3& value)
+	{
+		PR_RENDER_S2(name, value, {
+			self->UploadUniformFloat3(name, value);
+			});
+	}
 	void OpenGLShader::SetMat4(const std::string& name, const glm::mat4& value)
 	{
 		PR_RENDER_S2(name, value, {
@@ -281,8 +286,6 @@ namespace Prism
 			case PropertyDeclaration::Type::Vector3:
 			{
 				UploadUniformFloat3(property->GetName(), *(Vector3*)&buffer.Data[offset]);
-				Vector3 color = *(Vector3*)&buffer.Data[offset];
-				PR_CORE_INFO("Upload Color {0} = ({1},{2},{3})", property->GetName(), color.x, color.y, color.z);
 				break;
 			}
 			case PropertyDeclaration::Type::Vector4:
@@ -292,8 +295,11 @@ namespace Prism
 				UploadUniformFloat(property->GetName(), *(Range*)&buffer.Data[offset]);
 				break;
 			case PropertyDeclaration::Type::Texture2D:
-				UploadUniformInt(property->GetName(), *(PropertyType::Texture2D*)&buffer.Data[offset]);
+			{
+				auto& tex = *(PropertyType::Texture2D*)&buffer.Data[offset];
+				UploadUniformInt(property->GetName(), tex.slot);
 				break;
+			}
 			case PropertyDeclaration::Type::TextureCube:
 				UploadUniformInt(property->GetName(), *(PropertyType::TextureCube*)&buffer.Data[offset]);
 				break;

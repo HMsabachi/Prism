@@ -4,12 +4,13 @@ Shader "Custom/SimplePBR"
     // ==================== Properties（材质参数） ====================
     Properties
     {
+
         u_Color("主色", Vector3) = (0.2, 0.2, 1)
         // BRDF LUT
         u_AlbedoColor("颜色", Vector3) = (1, 1, 1)
         u_BRDFLUTTexture("BRDF LUT", Texture2D) = {}
-        u_Metalness("金属度", Range(0, 1)) = 0.5
-        u_Roughness("粗糙度", Range(0, 1)) = 0.5
+        u_Metalness("金属度", Range(0, 1)) = 1.0
+        u_Roughness("粗糙度", Range(0, 1)) = 0.0
         u_EnvMapRotation("环境光旋转", Range(0, 360)) = 0
 
         // PBR texture inputs
@@ -29,6 +30,10 @@ Shader "Custom/SimplePBR"
         u_NormalTexToggle("法线贴图开关", Float) = 0.0
         u_MetalnessTexToggle("金属度贴图开关", Float) = 0.0
         u_RoughnessTexToggle("粗糙度贴图开关", Float) = 0.0
+
+        // light
+        u_LightDirection("光照方向", Vector3) = (1, 1, 1)
+        u_LightRadiance("光照颜色", Vector3) = (1, 1, 1)
 
     }
     SubShader
@@ -111,8 +116,8 @@ Shader "Custom/SimplePBR"
                     vec3 result = vec3(0.0);
                     for(int i = 0; i < LightCount; i++)
                     {
-                        vec3 Li = -lights.Direction;
-                        vec3 Lradiance = lights.Radiance;
+                        vec3 Li = -u_LightDirection;
+                        vec3 Lradiance = u_LightRadiance;
                         vec3 Lh = normalize(Li + m_Params.View);
 
                         // Calculate angles between surface normal and various light vectors.
@@ -189,7 +194,7 @@ Shader "Custom/SimplePBR"
                     vec3 iblContribution = IBL(F0, Lr);
 
                     FragColor = vec4(lightContribution + iblContribution, 1.0);
-                    //FragColor = vec4(u_AlbedoColor, 1.0);
+                    //FragColor = vec4(u_Color, 1.0);
                 }
                 
             }

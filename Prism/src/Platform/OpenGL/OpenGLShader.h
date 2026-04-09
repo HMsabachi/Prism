@@ -25,6 +25,7 @@ namespace Prism {
 		void SetPropertyImpt(const PropertyBufferDeclaration& decl, const Buffer& buffer);
 
 		void SetFloat(const std::string& name, float value) override;
+		void SetVec3(const std::string& name, const glm::vec3& value) override;
 		void SetMat4(const std::string& name, const glm::mat4& value) override;
 
 		const std::string& GetName() const override { return m_Name; }

@@ -8,6 +8,7 @@
 #include "Prism/Core/Layer.h"
 #include "Prism/Core/Log.h"
 #include "Prism/Core/Time.h"
+#include "Prism/Utilities/Utilities.h"
 
 #include "Prism/Core/Input.h"
 #include "Prism/Core/KeyCodes.h"
@@ -26,7 +27,7 @@
 #include "Prism/Renderer/Framebuffer.h"
 #include "Prism/Renderer/Buffer.h"
 #include "Prism/Renderer/Texture.h"
-#include "Prism/Renderer/Shader.h"
+#include "Prism/Renderer/Material.h"
 
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/Camera/Camera.h"

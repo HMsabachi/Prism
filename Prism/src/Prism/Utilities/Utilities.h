@@ -3,6 +3,28 @@
 
 namespace Prism
 {
+	namespace Type
+	{
+		typedef glm::vec4 Color; // 暂时用vec4表示Color，后续可以改成专门的Color类型
+		typedef float Float;
+		typedef int Int;
+		typedef glm::vec2 Vector2;
+		typedef glm::vec3 Vector3;
+		typedef glm::vec4 Vector4;
+		struct PRISM_API Range
+		{
+			float value;
+			float min;
+			float max;
+			operator float() const;
+			Range() = default;
+			Range(float min, float max, float value);
+			void SetValue(float v);
+			void SetMin(float v);
+			void SetMax(float v);
+			std::string ToString() const;
+		};
+	}
 	namespace StrParse
 	{
 		std::string Sanitize(std::string str);

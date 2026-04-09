@@ -39,21 +39,16 @@ public:
 	virtual ~EditorLayer()
 	{
 	}
-	void LoadTexture(Prism::Ref<Prism::PrismShader> shader)
-	{
-		using namespace Prism;
-		const auto& properties = shader->GetProperty();
-		const auto& decl = properties.GetDeclaration();
-		Buffer buffer = properties.GetDefaultValueBuffer().Copy();
-		auto offset = decl.FindUniform("u_AlbedoMap")->GetOffset();
-	}
+
 	virtual void OnAttach() override
 	{
+		using namespace glm;
 		Prism::GlobalUniforms::Init();
 
 		m_SimplePBRPrismShader = Prism::PrismShader::Create("Assets/Shaders/simplepbrPrism.glsl");
+
 		PR_TRACE(*m_SimplePBRPrismShader);
-		//LoadTexture(m_SimplePBRPrismShader);
+
 		m_SimplePBRShader = m_SimplePBRPrismShader->GetOriginalShader();
 		//m_SimplePBRShader.reset(Prism::Shader::Create("Assets/Shaders/simplepbr.glsl"));
 		m_QuadShader.reset(Prism::Shader::Create("Assets/Shaders/quad.glsl"));
@@ -73,9 +68,37 @@ public:
 		m_Framebuffer.reset(Prism::Framebuffer::Create(1280, 720, Prism::FramebufferFormat::RGBA16F));
 		m_FinalPresentBuffer.reset(Prism::Framebuffer::Create(1280, 720, Prism::FramebufferFormat::RGBA8));
 
+		m_PBRMaterial.reset(new Prism::Material(m_SimplePBRPrismShader));
+		float x = -4.0f;
+		float roughness = 0.0f;
+		for (int i = 0; i < 8; i++)
+		{
+			Prism::Ref<Prism::MaterialInstance> mi(new Prism::MaterialInstance(m_PBRMaterial));
+			mi->Set("u_Metalness", 1.0f);
+			mi->Set("u_Roughness", roughness);
+			mi->Set("Prism_Model", translate(mat4(1.0f), vec3(x, 0.0f, 0.0f)));
+			x += 1.1f;
+			roughness += 0.15f;
+			m_MetalSphereMaterialInstances.push_back(mi);
+		}
+
+		x = -4.0f;
+		roughness = 0.0f;
+		for (int i = 0; i < 8; i++)
+		{
+			Prism::Ref<Prism::MaterialInstance> mi(new Prism::MaterialInstance(m_PBRMaterial));
+			mi->Set("u_Metalness", 0.0f);
+			mi->Set("u_Roughness", roughness);
+			mi->Set("Prism_Model", translate(mat4(1.0f), vec3(x, 1.2f, 0.0f)));
+			x += 1.1f;
+			roughness += 0.15f;
+			m_DielectricSphereMaterialInstances.push_back(mi);
+		}
+
 		// Create Quad
-		float x = -1, y = -1;
-		float width = 2, height = 2;
+		x = -1.0f;
+		float y = -1.0f;
+		float width = 2.0f, height = 2.0f;
 		struct QuadVertex
 		{
 			glm::vec3 Position;
@@ -140,49 +163,35 @@ public:
 		Renderer::DrawIndexed(m_IndexBuffer->GetCount(), false);
 
 
-		using namespace Prism;
-		const auto& properties = m_SimplePBRPrismShader->GetProperty();
-		const auto& decl = properties.GetDeclaration();
-		Buffer buffer = properties.GetDefaultValueBuffer().Copy();
+		m_PBRMaterial->Set("u_AlbedoColor", m_AlbedoInput.Color);
+		m_PBRMaterial->Set("u_Metalness", m_MetalnessInput.Value);
+		m_PBRMaterial->Set("u_Roughness", m_RoughnessInput.Value);
+
+		m_PBRMaterial->Set("u_LightDirection", m_Light.Direction);
+		m_PBRMaterial->Set("u_LightRadiance", m_Light.Radiance);
+		//m_PBRMaterial->Set("u_CameraPosition", m_Camera.GetPosition());
+		m_PBRMaterial->Set("u_RadiancePrefilter", m_RadiancePrefilter ? 1.0f : 0.0f);
+		m_PBRMaterial->Set("u_AlbedoTexToggle", m_AlbedoInput.UseTexture ? 1.0f : 0.0f);
+		m_PBRMaterial->Set("u_NormalTexToggle", m_NormalInput.UseTexture ? 1.0f : 0.0f);
+		m_PBRMaterial->Set("u_MetalnessTexToggle", m_MetalnessInput.UseTexture ? 1.0f : 0.0f);
+		m_PBRMaterial->Set("u_RoughnessTexToggle", m_RoughnessInput.UseTexture ? 1.0f : 0.0f);
+		m_PBRMaterial->Set("u_EnvMapRotation", m_EnvMapRotation);
+
+		m_PBRMaterial->Set("u_EnvRadianceTex", m_EnvironmentCubeMap);
+		m_PBRMaterial->Set("u_EnvIrradianceTex", m_EnvironmentIrradiance);
+		m_PBRMaterial->Set("u_BRDFLUTTexture", m_BRDFLUT);
+		//m_PBRMaterial->Set("u_Color", vec3(1, 1, 1));
 		
-		#define LoadBuffer(name, value) buffer.Write((byte*)&value, sizeof(value), decl.FindUniform(name)->GetOffset())
-
-		//m_SimplePBRPrismShader->bind();
-		Prism::UniformBufferDeclaration<sizeof(mat4) * 3 + sizeof(vec3) * 4 + sizeof(float) * 8, 15> simplePbrShaderUB;
-		simplePbrShaderUB.Push("u_ViewProjectionMatrix", viewProjection);
-		simplePbrShaderUB.Push("u_ModelMatrix", mat4(1.0f));
-		simplePbrShaderUB.Push("Prism_Model", mat4(1.0f));
-		simplePbrShaderUB.Push("u_AlbedoColor", m_AlbedoInput.Color);
-		simplePbrShaderUB.Push("u_Metalness", m_MetalnessInput.Value);
-		simplePbrShaderUB.Push("u_Roughness", m_RoughnessInput.Value);
-		simplePbrShaderUB.Push("lights.Direction", m_Light.Direction);
-		simplePbrShaderUB.Push("lights.Radiance", m_Light.Radiance * m_LightMultiplier);
-		simplePbrShaderUB.Push("u_CameraPosition", m_Camera.GetPosition());
-		simplePbrShaderUB.Push("u_RadiancePrefilter", m_RadiancePrefilter ? 1.0f : 0.0f);
-		simplePbrShaderUB.Push("u_AlbedoTexToggle", m_AlbedoInput.UseTexture ? 1.0f : 0.0f);
-		simplePbrShaderUB.Push("u_NormalTexToggle", m_NormalInput.UseTexture ? 1.0f : 0.0f);
-		simplePbrShaderUB.Push("u_MetalnessTexToggle", m_MetalnessInput.UseTexture ? 1.0f : 0.0f);
-		simplePbrShaderUB.Push("u_RoughnessTexToggle", m_RoughnessInput.UseTexture ? 1.0f : 0.0f);
-		simplePbrShaderUB.Push("u_EnvMapRotation", m_EnvMapRotation);
-		m_SimplePBRShader->UploadUniformBuffer(simplePbrShaderUB);
-
-		
-		m_EnvironmentCubeMap->Bind(*(PropertyType::TextureCube*)&buffer.Data[decl.FindUniform("u_EnvRadianceTex")->GetOffset()]);
-		m_EnvironmentIrradiance->Bind(*(PropertyType::TextureCube*)&buffer.Data[decl.FindUniform("u_EnvIrradianceTex")->GetOffset()]);
-
 		//m_EnvironmentCubeMap->Bind(10);
 		//m_EnvironmentIrradiance->Bind(11);
-		m_BRDFLUT->Bind(15);
-
-		m_SimplePBRShader->Bind();
 		if (m_AlbedoInput.TextureMap)
-			m_AlbedoInput.TextureMap->Bind(1);
+			m_PBRMaterial->Set("u_AlbedoTexture", m_AlbedoInput.TextureMap);
 		if (m_NormalInput.TextureMap)
-			m_NormalInput.TextureMap->Bind(2);
+			m_PBRMaterial->Set("u_NormalTexture", m_NormalInput.TextureMap);
 		if (m_MetalnessInput.TextureMap)
-			m_MetalnessInput.TextureMap->Bind(3);
+			m_PBRMaterial->Set("u_MetalnessTexture", m_MetalnessInput.TextureMap);
 		if (m_RoughnessInput.TextureMap)
-			m_RoughnessInput.TextureMap->Bind(4);
+			m_PBRMaterial->Set("u_RoughnessTexture", m_RoughnessInput.TextureMap);
 
 		if (m_Scene == Scene::Spheres)
 		{
@@ -191,27 +200,20 @@ public:
 			float x = -88.0f;
 			for (int i = 0; i < 8; i++)
 			{
-				m_SimplePBRShader->SetMat4("u_ModelMatrix", translate(mat4(1.0f), vec3(x, 0.0f, 0.0f)));
+				m_MetalSphereMaterialInstances[i]->Bind();
 				m_SimplePBRShader->SetMat4("Prism_Model", translate(mat4(1.0f), vec3(x, 0.0f, 0.0f)));
-				m_SimplePBRShader->SetFloat("u_Roughness", roughness);
-				m_SimplePBRShader->SetFloat("u_Metalness", 1.0f);
 				m_SphereMesh->Render();
-
 				roughness += 0.15f;
 				x += 22.0f;
 			}
-
 			// Dielectrics
 			roughness = 0.0f;
 			x = -88.0f;
 			for (int i = 0; i < 8; i++)
 			{
-				m_SimplePBRShader->SetMat4("u_ModelMatrix", translate(mat4(1.0f), vec3(x, 22.0f, 0.0f)));
+				m_DielectricSphereMaterialInstances[i]->Bind();
 				m_SimplePBRShader->SetMat4("Prism_Model", translate(mat4(1.0f), vec3(x, 22.0f, 0.0f)));
-				m_SimplePBRShader->SetFloat("u_Roughness", roughness);
-				m_SimplePBRShader->SetFloat("u_Metalness", 0.0f);
 				m_SphereMesh->Render();
-
 				roughness += 0.15f;
 				x += 22.0f;
 			}
@@ -219,19 +221,22 @@ public:
 		}
 		else if (m_Scene == Scene::Model)
 		{
+			m_PBRMaterial->Bind();
+			auto modelMat = translate(mat4(1.0f), vec3(0, 20.0f, 20.0f)) * rotate(mat4(1.0f), glm::radians(m_ModelRotation), vec3(0, 1, 0));
+			m_SimplePBRShader->SetMat4("Prism_Model", modelMat);
 			m_Mesh->Render();
 		}
 
 		m_Framebuffer->Unbind();
 
-		/*m_FinalPresentBuffer->Bind();
+		m_FinalPresentBuffer->Bind();
 		m_HDRShader->Bind();
 		m_HDRShader->SetFloat("u_Exposure", m_Exposure);
 		m_Framebuffer->BindTexture();
 		m_VertexBuffer->Bind();
 		m_IndexBuffer->Bind();
 		Renderer::DrawIndexed(m_IndexBuffer->GetCount(), false);
-		m_FinalPresentBuffer->Unbind();*/
+		m_FinalPresentBuffer->Unbind();
 	}
 
 	enum class PropertyFlag
@@ -378,6 +383,7 @@ public:
 
 		Property("Radiance Prefiltering", m_RadiancePrefilter);
 		Property("Env Map Rotation", m_EnvMapRotation, -360.0f, 360.0f);
+		Property("Model Rotation", m_ModelRotation, -360.0f, 360.0f);
 
 		ImGui::Columns(1);
 
@@ -557,7 +563,7 @@ public:
 		m_Framebuffer->Resize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
 		m_FinalPresentBuffer->Resize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
 		m_Camera.SetProjectionMatrix(glm::perspectiveFov(glm::radians(45.0f), viewportSize.x, viewportSize.y, 0.1f, 10000.0f));
-		ImGui::Image((void*)m_Framebuffer->GetColorAttachmentRendererID(), viewportSize, { 0, 1 }, { 1, 0 });
+		ImGui::Image((void*)m_FinalPresentBuffer->GetColorAttachmentRendererID(), viewportSize, { 0, 1 }, { 1, 0 });
 		//PR_TRACE("FrameBuffer {0}", m_FinalPresentBuffer->GetColorAttachmentRendererID());
 		ImGui::End();
 		ImGui::PopStyleVar();
@@ -627,6 +633,11 @@ private:
 
 	}
 private:
+	float m_ModelRotation = 0.0f;
+	Prism::Ref<Prism::Material> m_PBRMaterial;
+	std::vector<Prism::Ref<Prism::MaterialInstance>> m_MetalSphereMaterialInstances;
+	std::vector<Prism::Ref<Prism::MaterialInstance>> m_DielectricSphereMaterialInstances;
+private:
 	Prism::PrismGlobalsUBO m_GlobalsUBO;
 	Prism::Ref<Prism::PrismShader> m_SimplePBRPrismShader;
 	std::unique_ptr<Prism::Shader> m_Shader;
@@ -636,12 +647,12 @@ private:
 	std::unique_ptr<Prism::Shader> m_HDRShader;
 	std::unique_ptr<Prism::Mesh> m_Mesh;
 	std::unique_ptr<Prism::Mesh> m_SphereMesh;
-	std::unique_ptr<Prism::Texture2D> m_BRDFLUT;
+	Prism::Ref<Prism::Texture2D> m_BRDFLUT;
 
 	struct AlbedoInput
 	{
 		glm::vec3 Color = { 0.972f, 0.96f, 0.915f }; // Silver, from https://docs.unrealengine.com/en-us/Engine/Rendering/Materials/PhysicallyBased
-		std::unique_ptr<Prism::Texture2D> TextureMap;
+		Prism::Ref<Prism::Texture2D> TextureMap;
 		bool SRGB = true;
 		bool UseTexture = false;
 	};
@@ -649,7 +660,7 @@ private:
 
 	struct NormalInput
 	{
-		std::unique_ptr<Prism::Texture2D> TextureMap;
+		Prism::Ref<Prism::Texture2D> TextureMap;
 		bool UseTexture = false;
 	};
 	NormalInput m_NormalInput;
@@ -657,7 +668,7 @@ private:
 	struct MetalnessInput
 	{
 		float Value = 1.0f;
-		std::unique_ptr<Prism::Texture2D> TextureMap;
+		Prism::Ref<Prism::Texture2D> TextureMap;
 		bool UseTexture = false;
 	};
 	MetalnessInput m_MetalnessInput;
@@ -665,7 +676,7 @@ private:
 	struct RoughnessInput
 	{
 		float Value = 0.5f;
-		std::unique_ptr<Prism::Texture2D> TextureMap;
+		Prism::Ref<Prism::Texture2D> TextureMap;
 		bool UseTexture = false;
 	};
 	RoughnessInput m_RoughnessInput;
@@ -674,7 +685,7 @@ private:
 
 	std::unique_ptr<Prism::VertexBuffer> m_VertexBuffer;
 	std::unique_ptr<Prism::IndexBuffer> m_IndexBuffer;
-	std::unique_ptr<Prism::TextureCube> m_EnvironmentCubeMap, m_EnvironmentIrradiance;
+	Prism::Ref<Prism::TextureCube> m_EnvironmentCubeMap, m_EnvironmentIrradiance;
 
 	Prism::Camera m_Camera;
 

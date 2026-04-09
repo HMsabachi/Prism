@@ -30,6 +30,10 @@ namespace Prism
 
 		s_AllShaders.push_back(this);
 	}
+	PrismShader::~PrismShader()
+	{
+
+	}
 	
 	void PrismShader::Reload()
 	{
@@ -40,11 +44,11 @@ namespace Prism
 		m_Shader.reset(Shader::Create(m_Name, m_ParseResult.Passes[0].VertexShaderCode, m_ParseResult.Passes[0].FragmentShaderCode));
 		m_ShaderProperty.Init(m_ParseResult.Properties);
 		SetProperty(m_ShaderProperty.GetDefaultValueBuffer());
-		if (m_ReloadedCallback)
-			m_ReloadedCallback();
+		for (const auto& callback : m_ReloadedCallbacks)
+			callback();
 	}
 
-	void PrismShader::bind() const
+	void PrismShader::Bind() const
 	{
 		m_Shader->Bind();
 	}
@@ -52,6 +56,11 @@ namespace Prism
 	void PrismShader::SetProperty(const Buffer& buffer)
 	{
 		m_Shader->SetProperty(m_ShaderProperty.GetDeclaration(), buffer);
+	}
+
+	void PrismShader::AddShaderReloadedCallback(const ShaderReloadedCallback& callback)
+	{
+		m_ReloadedCallbacks.push_back(callback);
 	}
 
 	std::string PrismShader::ReadFile(const std::string& filePath)
@@ -71,10 +80,6 @@ namespace Prism
 			PR_CORE_WARN("Could not open file '{0}'", filePath);
 		}
 		return result;
-	}
-	PrismShader::~PrismShader()
-	{
-
 	}
 
 	Prism::Ref<Prism::Shader> PrismShader::GetOriginalShader() const

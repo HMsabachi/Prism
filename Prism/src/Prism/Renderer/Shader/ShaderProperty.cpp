@@ -36,31 +36,7 @@ namespace Prism
 #pragma region 属性类型
 	namespace PropertyType
 	{
-		// -----------------Range-----------------------
-		Range::operator float() const
-		{
-			return value;
-		}
-		Range::Range(float min, float max, float value) : min(min), max(max), value(value)
-		{
-		}
-		void Range::SetValue(float v)
-		{
-			value = std::clamp(v, min, max);
-		}
-		void Range::SetMin(float v)
-		{
-			min = v; if (value < min) value = min;
-		}
-		void Range::SetMax(float v)
-		{
-			max = v; if (value > max) value = max;
-		}
-		std::string Range::ToString() const
-		{
-			return fmt::format("Range(min: {:.2f}, max: {:.2f}, value: {:.2f})", min, max, value);
-		}
-		// -----------------Range-------------------------
+		
 		// -----------------Texture2D---------------------
 		Texture2D::operator bool() const
 		{

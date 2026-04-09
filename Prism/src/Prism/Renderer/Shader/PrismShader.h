@@ -22,10 +22,10 @@ namespace Prism
 		void Reload();
 
 	public:
-		void bind() const;
+		void Bind() const;
 		void SetProperty(const Buffer& buffer);
 	public:
-		void SetReloadedCallback(const ShaderReloadedCallback& callback) { m_ReloadedCallback = callback; }
+		void AddShaderReloadedCallback(const ShaderReloadedCallback& callback);
 		const std::string& GetFilePath() const {return m_FilePath; };
 		const std::string& GetName() const { return m_ParseResult.ShaderName; }
 		const ShaderProperty& GetProperty() const { return m_ShaderProperty; }
@@ -37,7 +37,7 @@ namespace Prism
 		std::string m_FilePath;
 		Ref<Shader> m_Shader;
 		ShaderProperty m_ShaderProperty;
-		ShaderReloadedCallback m_ReloadedCallback;
+		std::vector<ShaderReloadedCallback> m_ReloadedCallbacks;
 
 	public:
 		static std::vector<PrismShader*> s_AllShaders;
