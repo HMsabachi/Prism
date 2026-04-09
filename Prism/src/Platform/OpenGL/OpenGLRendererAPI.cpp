@@ -9,7 +9,14 @@ namespace Prism
 	static void OpenGLLogMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
 	{
 		if (severity != GL_DEBUG_SEVERITY_NOTIFICATION)
+		{
 			PR_CORE_ERROR("{0}", message);
+			PR_CORE_ASSERT(false, "");
+		}
+		else
+		{
+			PR_CORE_TRACE("{0}", message);
+		}
 	}
 
 	void RendererAPI::Init()
@@ -38,6 +45,13 @@ namespace Prism
 
 		glGetIntegerv(GL_MAX_SAMPLES, &caps.MaxSamples); // 获取最大采样数
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &caps.MaxAnisotropy); // 获取最大各向异性
+
+		GLenum error = glGetError();
+		while (error != GL_NO_ERROR)
+		{
+			PR_CORE_ERROR("OpenGL Error {0}", error);
+			error = glGetError();
+		}
 	}
 
 	void RendererAPI::Shutdown()
@@ -60,13 +74,13 @@ namespace Prism
 		glClearColor(r, g, b, a);
 	}
 
-	void RendererAPI::DrawIndexed(unsigned int count, bool depthTest)
+	void RendererAPI::DrawIndexed(unsigned int count, bool depthTest) // 默认启用深度测试
 	{
-		if (depthTest)
-			glEnable(GL_DEPTH_TEST);
-		else
+		if(!depthTest)
 			glDisable(GL_DEPTH_TEST);
 		glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, nullptr);
+		if (!depthTest)
+			glEnable(GL_DEPTH_TEST);
 	}
 
 }

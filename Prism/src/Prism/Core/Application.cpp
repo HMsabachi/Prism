@@ -112,6 +112,7 @@ namespace Prism
 		ImGui::Text("Vendor: %s", caps.Vendor.c_str());
 		ImGui::Text("Renderer: %s", caps.Renderer.c_str());
 		ImGui::Text("Version: %s", caps.Version.c_str());
+		ImGui::Text("Fps: %d", (int)(1.0f / Time::GetDeltaTime()));
 		ImGui::End();
 	}
 
@@ -120,6 +121,7 @@ namespace Prism
 		// 初始化窗口 Initialize Window
 		m_Window = std::unique_ptr<Window>(Window::Create());
 		m_Window->SetEventCallback(BIND_EVENT_FN(OnEvent));
+		m_Window->SetVSync(true);
 		// 初始化渲染器 Initialize Renderer
 
 		// 初始化时间管理器 Initialize Time Manager
