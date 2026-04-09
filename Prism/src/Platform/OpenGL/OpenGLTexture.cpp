@@ -249,8 +249,7 @@ namespace Prism {
 	void OpenGLTextureCube::Bind(unsigned int slot) const
 	{
 		PR_RENDER_S1(slot, {
-			glActiveTexture(GL_TEXTURE0 + slot);
-			glBindTexture(GL_TEXTURE_CUBE_MAP, self->m_RendererID);
+			glBindTextureUnit(slot, self->m_RendererID);
 			});
 	}
 

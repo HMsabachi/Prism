@@ -74,8 +74,7 @@ project "Prism"
 		"ImGui",
 		"PrismShaderParser",
 		"opengl32.lib",
-		"dwmapi.lib",
-		"Prism/vendor/assimp/win64/assimp.lib"
+		"dwmapi.lib"
 	}
 	linkoptions { "/WHOLEARCHIVE:ImGui" }
 
@@ -101,16 +100,41 @@ project "Prism"
 		optimize "Off"    
 		symbols "On"
 		runtime "Debug"
+		links
+		{
+			"Prism/vendor/assimp/bin/Debug/assimp-vc141-mtd.lib"
+		}
+		postbuildcommands
+		{
+			("{COPY} %{prj.location}/vendor/assimp/bin/Debug/ \"../bin/" .. outputdir .. "/Sandbox/\""),
+		}
 
 	filter "configurations:Release"
 		defines "PR_RELEASE"
 		optimize "On"
 		runtime "Release"
+		links
+		{
+			"Prism/vendor/assimp/bin/Release/assimp-vc141-mt.lib"
+		}
+		postbuildcommands
+		{
+			("{COPY} %{prj.location}/vendor/assimp/bin/Release/ \"../bin/" .. outputdir .. "/Sandbox/\""),
+		}
+
 
 	filter "configurations:Dist"
 		defines "PR_DIST"
 		optimize "On"
 		runtime "Release"
+		links
+		{
+			"Prism/vendor/assimp/bin/Release/assimp-vc141-mt.lib"
+		}
+		postbuildcommands
+		{
+			("{COPY} %{prj.location}/vendor/assimp/bin/Release/ \"../bin/" .. outputdir .. "/Sandbox/\""),
+		}
 
 project "Sandbox"
 	location "Sandbox"
@@ -146,8 +170,7 @@ project "Sandbox"
 
 	links
 	{
-		"Prism",
-        "Prism/vendor/assimp/win64/assimp.lib"
+		"Prism"
 	}
 
 	filter "system:windows"
@@ -165,13 +188,25 @@ project "Sandbox"
 		optimize "Off"    
 		symbols "On"
 		runtime "Debug"
+		links
+		{
+			"Prism/vendor/assimp/bin/Debug/assimp-vc141-mtd.lib"
+		}
 
 	filter "configurations:Release"
 		defines "PR_RELEASE"
 		optimize "On"
 		runtime "Release"
+		links
+		{
+			"Prism/vendor/assimp/bin/Release/assimp-vc141-mt.lib"
+		}
 
 	filter "configurations:Dist"
 		defines "PR_DIST"
 		optimize "On"
 		runtime  "Release"
+		links
+		{
+			"Prism/vendor/assimp/bin/Release/assimp-vc141-mt.lib"
+		}
