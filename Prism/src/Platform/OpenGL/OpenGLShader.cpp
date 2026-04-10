@@ -6,7 +6,7 @@
 
 namespace Prism 
 {
-#define UNIFORM_LOGGING 0
+#define UNIFORM_LOGGING 1
 #if UNIFORM_LOGGING 
 	#define PR_LOG_UNIFORM(...) PR_CORE_WARN(__VA_ARGS__)
 #else
@@ -254,6 +254,13 @@ namespace Prism
 			});
 	}
 
+	void OpenGLShader::SetMat4FromRenderThread(const std::string& name, const glm::mat4& value)
+	{
+		glUseProgram(m_RendererID);
+		UploadUniformMat4(name, value);
+	}
+
+
 
 	void OpenGLShader::SetProperty(const PropertyBufferDeclaration& decl, const Buffer& buffer)
 	{
@@ -402,7 +409,10 @@ namespace Prism
 	void OpenGLShader::UploadUniformMat4(std::string name, const glm::mat4& values)
 	{
 		if (!UniformLocationCache(name))
+		{
+			PR_LOG_UNIFORM("Uniform {0} 在Shader {1}中不存在", name, m_Name);
 			return;
+		}
 		UploadUniformMat4(m_UniformLocationCache[name], values);
 	}
 	void OpenGLShader::UploadUniformMat4Array(std::string name, const glm::mat4& values, uint32_t count)

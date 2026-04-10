@@ -24,6 +24,29 @@ namespace Prism
 			void SetMax(float v);
 			std::string ToString() const;
 		};
+
+		std::string PRISM_API ToString(const Color& value);
+		std::string PRISM_API ToString(const Vector2& value);
+		std::string PRISM_API ToString(const Vector3& value);
+		std::string PRISM_API ToString(const Vector4& value);
+		std::string PRISM_API ToString(const Range& value);
+
+		template <typename T>
+		inline std::string format_as(const T& value)
+		{
+			if constexpr (std::is_same_v<T, Color>)
+				return ToString(value);
+			else if constexpr (std::is_same_v<T, Vector2>)
+				return ToString(value);
+			else if constexpr (std::is_same_v<T, Vector3>)
+				return ToString(value);
+			else if constexpr (std::is_same_v<T, Vector4>)
+				return ToString(value);
+			else if constexpr (std::is_same_v<T, Range>)
+				return ToString(value);
+			else
+				return std::to_string(value);
+		}
 	}
 	namespace StrParse
 	{

@@ -53,6 +53,8 @@ namespace Prism
 		Tangent,
         Binormal,
 		TexCoord0,
+        BoneIndices,
+        BoneWeights,
 		Color,
         Unknown
     };

@@ -87,8 +87,6 @@ namespace Prism
 		return m_Shader;
 	}
 
-	
-
 	std::string PrismShader::ToString() const
 	{
 		const PrismShader& shader = *this;
@@ -96,8 +94,52 @@ namespace Prism
 			shader.GetName(), shader.GetFilePath());
 
 		result += "Properties:\n";
-
+		const auto& buffer = shader.GetProperty().GetDefaultValueBuffer();
+		for (const auto& decl : shader.GetProperty().GetDeclaration())
+		{
+			auto type = decl->GetType();
+			auto offset = decl->GetOffset();
+			switch (type)
+			{
+			case Prism::PropertyDeclaration::Type::None:
+				break;
+			case Prism::PropertyDeclaration::Type::Color:
+				result += fmt::format("  - {} (Color): {}\n", decl->GetName(), Type::ToString(*(PropertyType::Color*)&buffer.Data[offset]));
+				break;
+			case Prism::PropertyDeclaration::Type::Float:
+				result += fmt::format("  - {} (Float): {}\n", decl->GetName(), *(PropertyType::Float*)&buffer.Data[offset]);
+				break;
+			case Prism::PropertyDeclaration::Type::Int:
+				result += fmt::format("  - {} (Int): {}\n", decl->GetName(), *(PropertyType::Int*)&buffer.Data[offset]);
+				break;
+			case Prism::PropertyDeclaration::Type::Vector2:
+				result += fmt::format("  - {} (Vector2): {}\n", decl->GetName(), Type::ToString(*(PropertyType::Vector2*)&buffer.Data[offset]));
+				break;
+			case Prism::PropertyDeclaration::Type::Vector3:
+				result += fmt::format("  - {} (Vector3): {}\n", decl->GetName(), Type::ToString(*(PropertyType::Vector3*)&buffer.Data[offset]));
+				break;
+			case Prism::PropertyDeclaration::Type::Vector4:
+				result += fmt::format("  - {} (Vector4): {}\n", decl->GetName(), Type::ToString(*(PropertyType::Vector4*)&buffer.Data[offset]));
+				break;
+			case Prism::PropertyDeclaration::Type::Range:
+				result += fmt::format("  - {} (Range): {}\n", decl->GetName(), Type::ToString(*(PropertyType::Range*)&buffer.Data[offset]));
+				break;
+			case Prism::PropertyDeclaration::Type::Texture2D:
+				result += fmt::format("  - {} (Texture2D): Slot {}\n", decl->GetName(), ((PropertyType::Texture2D*)&buffer.Data[offset])->slot);
+				break;
+			case Prism::PropertyDeclaration::Type::TextureCube:
+				result += fmt::format("  - {} (TextureCube): Slot {}\n", decl->GetName(), ((PropertyType::TextureCube*)&buffer.Data[offset])->slot);
+				break;
+			default:
+				break;
+			}
+		}
 		return result;
+	}
+
+	void PrismShader::SetMat4FromRenderThread(const std::string& name, const glm::mat4& value)
+	{
+		m_Shader->SetMat4FromRenderThread(name, value);
 	}
 
 }

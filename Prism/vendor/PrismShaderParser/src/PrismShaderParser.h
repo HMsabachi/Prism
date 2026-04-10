@@ -28,7 +28,8 @@ namespace Prism
             if (semantic == "BINORMAL") { outSemantic = VertexSemantic::Binormal;  return static_cast<int>(outSemantic); }
             if (semantic == "TEXCOORD0") { outSemantic = VertexSemantic::TexCoord0; return static_cast<int>(outSemantic); }
             if (semantic == "COLOR") { outSemantic = VertexSemantic::Color;    return static_cast<int>(outSemantic); }
-
+			if (semantic == "BONEINDICES") { outSemantic = VertexSemantic::BoneIndices; return static_cast<int>(outSemantic); }
+			if (semantic == "BONEWEIGHTS") { outSemantic = VertexSemantic::BoneWeights; return static_cast<int>(outSemantic); }
             outSemantic = VertexSemantic::Unknown;
             return -1;
         }

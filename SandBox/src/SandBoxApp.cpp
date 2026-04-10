@@ -48,14 +48,18 @@ public:
 		m_SimplePBRPrismShader = Prism::PrismShader::Create("Assets/Shaders/simplepbrPrism.glsl");
 
 		PR_TRACE(*m_SimplePBRPrismShader);
+		PR_TRACE(m_SimplePBRPrismShader->GetSource());
 
 		m_SimplePBRShader = m_SimplePBRPrismShader->GetOriginalShader();
 		//m_SimplePBRShader.reset(Prism::Shader::Create("Assets/Shaders/simplepbr.glsl"));
 		m_QuadShader.reset(Prism::Shader::Create("Assets/Shaders/quad.glsl"));
 		m_HDRShader.reset(Prism::Shader::Create("Assets/Shaders/hdr.glsl"));
-		m_Mesh.reset(new Prism::Mesh("Assets/meshes/cerberus.fbx"));
-		m_SphereMesh.reset(new Prism::Mesh("Assets/models/Sphere.fbx"));
-
+		//m_Mesh.reset(new Prism::Mesh("Assets/meshes/cerberus.fbx"));
+		m_Mesh.reset(new Prism::Mesh("Assets/models/m1911/m1911.fbx"));
+		//m_Mesh->DumpVertexBuffer();
+		//m_SphereMesh.reset(new Prism::Mesh("Assets/models/Sphere.fbx"));
+		m_SphereMesh.reset(new Prism::Mesh("Assets/models/Sphere1m.fbx"));
+		m_PlaneMesh.reset(new Prism::Mesh("Assets/models/Plane1m.obj"));
 		// Editor
 		m_CheckerboardTex.reset(Prism::Texture2D::Create("Assets/editor/Checkerboard.tga"));
 
@@ -124,7 +128,7 @@ public:
 
 		uint32_t* indices = new uint32_t[6]{ 0, 1, 2, 2, 3, 0, };
 		m_IndexBuffer.reset(Prism::IndexBuffer::Create());
-		m_IndexBuffer->SetData(indices, 6 * sizeof(unsigned int));
+		m_IndexBuffer->SetData(indices, 6 * sizeof(uint32_t));
 
 		m_Light.Direction = { -0.5f, -0.5f, 1.0f };
 		m_Light.Radiance = { 1.0f, 1.0f, 1.0f };
@@ -152,11 +156,9 @@ public:
 		Renderer::Clear();
 
 		
-		Prism::UniformBufferDeclaration<sizeof(mat4), 1> quadShaderUB;
-		quadShaderUB.Push("u_InverseVP", inverse(viewProjection));
-		m_QuadShader->UploadUniformBuffer(quadShaderUB);
 
 		m_QuadShader->Bind();
+		m_QuadShader->SetMat4("u_InverseVP", inverse(viewProjection));
 		m_EnvironmentCubeMap->Bind(0);
 		m_VertexBuffer->Bind();
 		m_IndexBuffer->Bind();
@@ -202,7 +204,7 @@ public:
 			{
 				m_MetalSphereMaterialInstances[i]->Bind();
 				m_SimplePBRShader->SetMat4("Prism_Model", translate(mat4(1.0f), vec3(x, 0.0f, 0.0f)));
-				m_SphereMesh->Render();
+				m_SphereMesh->Render(Time::GetDeltaTime(), m_SimplePBRPrismShader.get());
 				roughness += 0.15f;
 				x += 22.0f;
 			}
@@ -213,7 +215,7 @@ public:
 			{
 				m_DielectricSphereMaterialInstances[i]->Bind();
 				m_SimplePBRShader->SetMat4("Prism_Model", translate(mat4(1.0f), vec3(x, 22.0f, 0.0f)));
-				m_SphereMesh->Render();
+				m_SphereMesh->Render(Time::GetDeltaTime(), m_SimplePBRPrismShader.get());
 				roughness += 0.15f;
 				x += 22.0f;
 			}
@@ -222,9 +224,10 @@ public:
 		else if (m_Scene == Scene::Model)
 		{
 			m_PBRMaterial->Bind();
-			auto modelMat = translate(mat4(1.0f), vec3(0, 20.0f, 20.0f)) * rotate(mat4(1.0f), glm::radians(m_ModelRotation), vec3(0, 1, 0));
+			auto modelMat = translate(mat4(1.0f), m_ModelPosition) * rotate(mat4(1.0f), glm::radians(m_ModelRotation), vec3(0, 1, 0))
+				* scale(mat4(1.0f), vec3(25.0f));
 			m_SimplePBRShader->SetMat4("Prism_Model", modelMat);
-			m_Mesh->Render();
+			m_Mesh->Render(Time::GetDeltaTime(), m_SimplePBRPrismShader.get());
 		}
 
 		m_Framebuffer->Unbind();
@@ -383,6 +386,8 @@ public:
 
 		Property("Radiance Prefiltering", m_RadiancePrefilter);
 		Property("Env Map Rotation", m_EnvMapRotation, -360.0f, 360.0f);
+
+		Property("Model Position", m_ModelPosition, -100, 100);
 		Property("Model Rotation", m_ModelRotation, -360.0f, 360.0f);
 
 		ImGui::Columns(1);
@@ -605,6 +610,8 @@ public:
 
 		ImGui::End();
 #endif
+		if (m_Mesh)
+			m_Mesh->OnImGuiRender();
 
 		static bool show_demo_window = true;
 		if (show_demo_window)
@@ -633,6 +640,7 @@ private:
 
 	}
 private:
+	glm::vec3 m_ModelPosition = { -42.0f, 53.0f, -25.0f };
 	float m_ModelRotation = 0.0f;
 	Prism::Ref<Prism::Material> m_PBRMaterial;
 	std::vector<Prism::Ref<Prism::MaterialInstance>> m_MetalSphereMaterialInstances;
@@ -647,6 +655,7 @@ private:
 	std::unique_ptr<Prism::Shader> m_HDRShader;
 	std::unique_ptr<Prism::Mesh> m_Mesh;
 	std::unique_ptr<Prism::Mesh> m_SphereMesh;
+	std::unique_ptr<Prism::Mesh> m_PlaneMesh;
 	Prism::Ref<Prism::Texture2D> m_BRDFLUT;
 
 	struct AlbedoInput

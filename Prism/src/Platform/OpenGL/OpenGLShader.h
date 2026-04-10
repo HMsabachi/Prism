@@ -27,6 +27,7 @@ namespace Prism {
 		void SetFloat(const std::string& name, float value) override;
 		void SetVec3(const std::string& name, const glm::vec3& value) override;
 		void SetMat4(const std::string& name, const glm::mat4& value) override;
+		void SetMat4FromRenderThread(const std::string& name, const glm::mat4& value) override;
 
 		const std::string& GetName() const override { return m_Name; }
 

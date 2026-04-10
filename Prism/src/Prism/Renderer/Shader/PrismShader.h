@@ -24,11 +24,16 @@ namespace Prism
 	public:
 		void Bind() const;
 		void SetProperty(const Buffer& buffer);
-	public:
+
 		void AddShaderReloadedCallback(const ShaderReloadedCallback& callback);
 		const std::string& GetFilePath() const {return m_FilePath; };
 		const std::string& GetName() const { return m_ParseResult.ShaderName; }
 		const ShaderProperty& GetProperty() const { return m_ShaderProperty; }
+	#pragma region 设置原生uniform
+	public:
+		void SetMat4FromRenderThread(const std::string& name, const glm::mat4& value);
+	#pragma endregion
+
 		
 	private:
 		static std::string ReadFile(const std::string& filePath);
@@ -46,7 +51,7 @@ namespace Prism
 
 #pragma region 调试用
 	public:
-		const std::string& GetSource() const { return m_ParseResult.Passes[0].VertexShaderCode + m_ParseResult.Passes[0].FragmentShaderCode; }
+		const std::string GetSource() const { return m_ParseResult.Passes[0].VertexShaderCode + m_ParseResult.Passes[0].FragmentShaderCode; }
 	private:
 		ParseResult m_ParseResult;
 	public:
