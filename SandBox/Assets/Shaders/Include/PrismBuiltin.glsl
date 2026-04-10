@@ -2,6 +2,7 @@
 layout(std140, binding = 0) uniform PrismGlobals
 {
     mat4 Prism_ViewProjection;   // VP 矩阵（View * Projection）
+    mat4 Prism_InverseViewProjection; // VP 矩阵的逆矩阵
     mat4 Prism_Model_legacy;            // 当前物体的 Model 矩阵（每个 DrawCall 更新）
     mat4 Prism_View;             // View 矩阵
     mat4 Prism_Projection;       // Projection 矩阵（可选）

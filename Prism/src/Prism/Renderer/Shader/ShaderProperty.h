@@ -18,6 +18,8 @@ namespace Prism
 		typedef Type::Vector3 Vector3;
 		typedef Type::Vector4 Vector4;
 		typedef Type::Range Range;
+		typedef Type::Matrix3 Matrix3;
+		typedef Type::Matrix4 Matrix4;
 		struct PRISM_API Texture2D
 		{
 			Ref<Prism::Texture2D> texture;
@@ -51,6 +53,7 @@ namespace Prism
 			Color, Float, Int,
 			Vector2, Vector3, Vector4,
 			Range,
+			Matrix3, Matrix4,
 			Texture2D, TextureCube
 		};
 	private:

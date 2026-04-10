@@ -1,50 +1,55 @@
-// Simple Texture Shader
-
-#type vertex
-#version 430
-
-layout(location = 0) in vec3 a_Position;
-layout(location = 4) in vec2 a_TexCoord;
-
-uniform mat4 u_MVP;
-
-out vec2 v_TexCoord;
-
-void main()
+// Prism Shader Language v1.0
+Shader "Custom/Grid"
 {
-	vec4 position = u_MVP * vec4(a_Position, 1.0);
-	gl_Position = position;
+    // ==================== Properties（材质参数） ====================
+    Properties
+    {
+        u_Scale("网格缩放", Float) = 8.0
+        u_Res("网格分辨率", Float) = 0.05
+    }
+    SubShader
+    {
+        Pass
+        {
+            Tags { "Queue" = "Geometry" "RenderType" = "Opaque" }
+            Name "ForwardBase"
+            GLSL
+            {
+                #include "PrismBuiltin.glsl"
 
-	v_TexCoord = a_TexCoord;
-}
+                attribute vec3 a_Position : POSITION;
+                attribute vec2 a_TexCoord : NORMAL; // 暂时这样需要修改
 
-#type fragment
-#version 430
+                VARYING VertexOutput
+                {
+                    vec2 TexCoord;
+                } vs_Output;
 
-layout(location = 0) out vec4 color;
+                void main()
+                {
+                    // 使用Prism内置矩阵（与PBR保持一致），不再依赖外部u_MVP
+                    mat4 u_MVP = Prism_ViewProjection * Prism_Model;
+                    vec4 position = u_MVP * vec4(a_Position, 1.0);
+                    gl_Position = position;
 
-uniform sampler2D u_Texture;
-uniform float u_Scale;
-uniform float u_Res;
+                    vs_Output.TexCoord = a_TexCoord;
+                }
 
-in vec2 v_TexCoord;
-
-/*void main()
-{
-	color = texture(u_Texture, v_TexCoord * 8.0);
-}*/
-
-float grid(vec2 st, float res)
-{
-	vec2 grid = fract(st);
-	return step(res, grid.x) * step(res, grid.y);
-}
+                float grid(vec2 st, float res)
+                {
+                    vec2 grid = fract(st);
+                    return step(res, grid.x) * step(res, grid.y);
+                }
  
-void main()
-{
-	float scale = u_Scale;
-	float resolution = u_Res;
+                void frag()
+                {
+                    float scale = u_Scale;
+                    float resolution = u_Res;
 
-	float x = grid(v_TexCoord * scale, resolution);
-	color = vec4(vec3(0.2), 0.5) * (1.0 - x);
+                    float x = grid(vs_Output.TexCoord * scale, resolution);
+                    FragColor = vec4(vec3(0.2), 0.5) * (1.0 - x);
+                }
+            }
+        }
+    }
 }

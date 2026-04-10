@@ -30,7 +30,7 @@ class EditorLayer : public Prism::Layer
 {
 public:
 	EditorLayer()
-		: m_Scene(Scene::Spheres),
+		: m_Scene(Scene::Model),
 		m_Camera(glm::perspectiveFov(glm::radians(45.0f), 1280.0f, 720.0f, 0.1f, 10000.0f))
 	{
 	}
@@ -46,17 +46,15 @@ public:
 		Prism::GlobalUniforms::Init();
 
 		m_SimplePBRPrismShader = Prism::PrismShader::Create("Assets/Shaders/simplepbrPrism.glsl");
-
+		m_QuadShader = Prism::PrismShader::Create("Assets/Shaders/quad.glsl");
+		m_HDRShader = Prism::PrismShader::Create("Assets/Shaders/hdr.glsl");
+		m_GridShader = Prism::PrismShader::Create("Assets/Shaders/Grid.glsl");
 		PR_TRACE(*m_SimplePBRPrismShader);
-		PR_TRACE(m_SimplePBRPrismShader->GetSource());
-
-		m_SimplePBRShader = m_SimplePBRPrismShader->GetOriginalShader();
-		//m_SimplePBRShader.reset(Prism::Shader::Create("Assets/Shaders/simplepbr.glsl"));
-		m_QuadShader.reset(Prism::Shader::Create("Assets/Shaders/quad.glsl"));
-		m_HDRShader.reset(Prism::Shader::Create("Assets/Shaders/hdr.glsl"));
+		PR_TRACE(*m_QuadShader);
+		PR_TRACE(*m_HDRShader);
+		PR_TRACE(*m_GridShader);
 		//m_Mesh.reset(new Prism::Mesh("Assets/meshes/cerberus.fbx"));
 		m_Mesh.reset(new Prism::Mesh("Assets/models/m1911/m1911.fbx"));
-		//m_Mesh->DumpVertexBuffer();
 		//m_SphereMesh.reset(new Prism::Mesh("Assets/models/Sphere.fbx"));
 		m_SphereMesh.reset(new Prism::Mesh("Assets/models/Sphere1m.fbx"));
 		m_PlaneMesh.reset(new Prism::Mesh("Assets/models/Plane1m.obj"));
@@ -147,7 +145,6 @@ public:
 		// - Tonemapping and proper HDR pipeline
 		using namespace Prism;
 		using namespace glm;
-		m_SimplePBRShader = m_SimplePBRPrismShader->GetOriginalShader();
 
 		m_Camera.Update();
 		auto viewProjection = m_Camera.GetProjectionMatrix() * m_Camera.GetViewMatrix();
@@ -158,7 +155,6 @@ public:
 		
 
 		m_QuadShader->Bind();
-		m_QuadShader->SetMat4("u_InverseVP", inverse(viewProjection));
 		m_EnvironmentCubeMap->Bind(0);
 		m_VertexBuffer->Bind();
 		m_IndexBuffer->Bind();
@@ -182,10 +178,7 @@ public:
 		m_PBRMaterial->Set("u_EnvRadianceTex", m_EnvironmentCubeMap);
 		m_PBRMaterial->Set("u_EnvIrradianceTex", m_EnvironmentIrradiance);
 		m_PBRMaterial->Set("u_BRDFLUTTexture", m_BRDFLUT);
-		//m_PBRMaterial->Set("u_Color", vec3(1, 1, 1));
-		
-		//m_EnvironmentCubeMap->Bind(10);
-		//m_EnvironmentIrradiance->Bind(11);
+
 		if (m_AlbedoInput.TextureMap)
 			m_PBRMaterial->Set("u_AlbedoTexture", m_AlbedoInput.TextureMap);
 		if (m_NormalInput.TextureMap)
@@ -203,7 +196,6 @@ public:
 			for (int i = 0; i < 8; i++)
 			{
 				m_MetalSphereMaterialInstances[i]->Bind();
-				m_SimplePBRShader->SetMat4("Prism_Model", translate(mat4(1.0f), vec3(x, 0.0f, 0.0f)));
 				m_SphereMesh->Render(Time::GetDeltaTime(), m_SimplePBRPrismShader.get());
 				roughness += 0.15f;
 				x += 22.0f;
@@ -214,7 +206,6 @@ public:
 			for (int i = 0; i < 8; i++)
 			{
 				m_DielectricSphereMaterialInstances[i]->Bind();
-				m_SimplePBRShader->SetMat4("Prism_Model", translate(mat4(1.0f), vec3(x, 22.0f, 0.0f)));
 				m_SphereMesh->Render(Time::GetDeltaTime(), m_SimplePBRPrismShader.get());
 				roughness += 0.15f;
 				x += 22.0f;
@@ -225,16 +216,21 @@ public:
 		{
 			m_PBRMaterial->Bind();
 			auto modelMat = translate(mat4(1.0f), m_ModelPosition) * rotate(mat4(1.0f), glm::radians(m_ModelRotation), vec3(0, 1, 0))
-				* scale(mat4(1.0f), vec3(25.0f));
-			m_SimplePBRShader->SetMat4("Prism_Model", modelMat);
+				* scale(mat4(1.0f), vec3(m_MeshScale));
+			m_SimplePBRPrismShader->GetOriginalShader()->SetMat4("Prism_Model", modelMat);
 			m_Mesh->Render(Time::GetDeltaTime(), m_SimplePBRPrismShader.get());
 		}
+		m_GridShader->Bind();
+		m_GridShader->GetOriginalShader()->SetMat4("Prism_Model",glm::scale(glm::mat4(1.0f), glm::vec3(16.0f)));
+		m_GridShader->GetOriginalShader()->SetFloat("u_Scale", m_GridScale);
+		m_GridShader->GetOriginalShader()->SetFloat("u_Res", m_GridSize);
+		m_PlaneMesh->Render(Time::GetDeltaTime(), m_GridShader.get());
 
 		m_Framebuffer->Unbind();
 
 		m_FinalPresentBuffer->Bind();
 		m_HDRShader->Bind();
-		m_HDRShader->SetFloat("u_Exposure", m_Exposure);
+		m_HDRShader->GetOriginalShader()->SetFloat("u_Exposure", m_Exposure);
 		m_Framebuffer->BindTexture();
 		m_VertexBuffer->Bind();
 		m_IndexBuffer->Bind();
@@ -387,8 +383,9 @@ public:
 		Property("Radiance Prefiltering", m_RadiancePrefilter);
 		Property("Env Map Rotation", m_EnvMapRotation, -360.0f, 360.0f);
 
-		Property("Model Position", m_ModelPosition, -100, 100);
+		Property("Model Position", m_ModelPosition, -5, 5);
 		Property("Model Rotation", m_ModelRotation, -360.0f, 360.0f);
+		Property("Model Scale", m_MeshScale, 0.0f, 3.0f);
 
 		ImGui::Columns(1);
 
@@ -631,6 +628,7 @@ private:
 		m_GlobalsUBO.Projection = m_Camera.GetProjectionMatrix();
 		m_GlobalsUBO.View = m_Camera.GetViewMatrix();
 		m_GlobalsUBO.ViewProjection = m_GlobalsUBO.Projection * m_GlobalsUBO.View;
+		m_GlobalsUBO.InverseViewProjection = inverse(m_GlobalsUBO.ViewProjection);
 		float time = Prism::Time::GetTime();
 		m_GlobalsUBO.Time = glm::vec4(time * 0.2f, time, time * 2, time * 3);
 		PR_RENDER_S({
@@ -640,19 +638,20 @@ private:
 
 	}
 private:
-	glm::vec3 m_ModelPosition = { -42.0f, 53.0f, -25.0f };
+	glm::vec3 m_ModelPosition = { 0.f, 0.0f, 0.0f };
 	float m_ModelRotation = 0.0f;
 	Prism::Ref<Prism::Material> m_PBRMaterial;
 	std::vector<Prism::Ref<Prism::MaterialInstance>> m_MetalSphereMaterialInstances;
 	std::vector<Prism::Ref<Prism::MaterialInstance>> m_DielectricSphereMaterialInstances;
+
+	float m_GridScale = 16.025f, m_GridSize = 0.025f;
+	float m_MeshScale = 1.0f;
 private:
 	Prism::PrismGlobalsUBO m_GlobalsUBO;
 	Prism::Ref<Prism::PrismShader> m_SimplePBRPrismShader;
-	std::unique_ptr<Prism::Shader> m_Shader;
-	std::unique_ptr<Prism::Shader> m_PBRShader;
-	Prism::Ref<Prism::Shader> m_SimplePBRShader;
-	std::unique_ptr<Prism::Shader> m_QuadShader;
-	std::unique_ptr<Prism::Shader> m_HDRShader;
+	Prism::Ref<Prism::PrismShader> m_QuadShader;
+	Prism::Ref<Prism::PrismShader> m_HDRShader;
+	Prism::Ref<Prism::PrismShader> m_GridShader;
 	std::unique_ptr<Prism::Mesh> m_Mesh;
 	std::unique_ptr<Prism::Mesh> m_SphereMesh;
 	std::unique_ptr<Prism::Mesh> m_PlaneMesh;
@@ -690,10 +689,10 @@ private:
 	};
 	RoughnessInput m_RoughnessInput;
 
-	std::unique_ptr<Prism::Framebuffer> m_Framebuffer, m_FinalPresentBuffer;
+	Prism::Ref<Prism::Framebuffer> m_Framebuffer, m_FinalPresentBuffer;
 
-	std::unique_ptr<Prism::VertexBuffer> m_VertexBuffer;
-	std::unique_ptr<Prism::IndexBuffer> m_IndexBuffer;
+	Prism::Ref<Prism::VertexBuffer> m_VertexBuffer;
+	Prism::Ref<Prism::IndexBuffer> m_IndexBuffer;
 	Prism::Ref<Prism::TextureCube> m_EnvironmentCubeMap, m_EnvironmentIrradiance;
 
 	Prism::Camera m_Camera;

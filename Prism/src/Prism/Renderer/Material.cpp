@@ -110,6 +110,5 @@ namespace Prism
 				texture->Bind(i);
 		}
 		m_Material->m_Shader->GetOriginalShader()->SetMat4("Prism_Model", m_Transform);
-		//PR_CORE_INFO("Bind MaterialInstance with Transform:\n({0},{1},{2})", m_Transform[3][0], m_Transform[3][1], m_Transform[3][2]);
 	}
 }

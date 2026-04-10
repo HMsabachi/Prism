@@ -32,7 +32,9 @@ namespace Prism
         Vector4,
         Texture2D,
         TextureCube,
-        Range       // Float + [min, max]
+        Range,       // Float + [min, max]
+        Matrix3, 
+		Matrix4
     };
 
     // 单个属性的完整信息

@@ -1,43 +1,54 @@
-#type vertex
-#version 430
-
-layout(location = 0) in vec3 a_Position;
-layout(location = 1) in vec2 a_TexCoord;
-
-out vec2 v_TexCoord;
-
-void main()
+// Prism Shader Language v1.0
+Shader "Custom/HDR"
 {
-	vec4 position = vec4(a_Position.xy, 1.0, 1.0);
-	v_TexCoord = a_TexCoord;
-	gl_Position = position;
-}
+    // ==================== Properties（材质参数） ====================
+    Properties
+    {
+        u_Texture("HDR输入纹理", Texture2D) = {}
+        u_Exposure("曝光度", Float) = 1.0
+    }
+    SubShader
+    {
+        Pass
+        {
+            Tags { "Queue" = "Overlay" "RenderType" = "Opaque" }
+            Name "ForwardBase"
+            GLSL
+            {
+                #include "PrismBuiltin.glsl"
 
-#type fragment
-#version 430
+                attribute vec3 a_Position : POSITION;
+                attribute vec2 a_TexCoord : NORMAL;
 
-in vec2 v_TexCoord;
+                VARYING VertexOutput
+                {
+                    vec2 TexCoord;
+                } vs_Output;
 
-uniform sampler2D u_Texture;
+                void main()
+                {
+                    vec4 position = vec4(a_Position.xy, 1.0, 1.0);
+                    gl_Position = position;
 
-layout(location=0) out vec4 outColor;
+                    vs_Output.TexCoord = a_TexCoord;
+                }
 
-uniform float u_Exposure;
+                void frag()
+                {
+                    const float gamma     = 2.2;
+                    const float pureWhite = 1.0;
 
-void main()
-{
-	const float gamma     = 2.2;
-	const float pureWhite = 1.0;
+                    vec3 color = texture(u_Texture, vs_Output.TexCoord).rgb * u_Exposure;
+                    // Reinhard tonemapping operator.
+                    float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
+                    float mappedLuminance = (luminance * (1.0 + luminance / (pureWhite * pureWhite))) / (1.0 + luminance);
 
-	vec3 color = texture(u_Texture, v_TexCoord).rgb * u_Exposure;
-	// Reinhard tonemapping operator.
-	// see: "Photographic Tone Reproduction for Digital Images", eq. 4
-	float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
-	float mappedLuminance = (luminance * (1.0 + luminance / (pureWhite * pureWhite))) / (1.0 + luminance);
+                    vec3 mappedColor = (mappedLuminance / luminance) * color;
 
-	// Scale color by ratio of average luminances.
-	vec3 mappedColor = (mappedLuminance / luminance) * color;
-
-	// Gamma correction.
-	outColor = vec4(pow(mappedColor, vec3(1.0/gamma)), 1.0);
+                    // Gamma correction.
+                    FragColor = vec4(pow(mappedColor, vec3(1.0/gamma)), 1.0);
+                }
+            }
+        }
+    }
 }

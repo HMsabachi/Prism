@@ -26,6 +26,8 @@ namespace Prism
 		case Prism::ParserPropertyType::Texture2D:		return PropertyDeclaration::Type::Texture2D;
 		case Prism::ParserPropertyType::TextureCube:	return PropertyDeclaration::Type::TextureCube;
 		case Prism::ParserPropertyType::Range:			return PropertyDeclaration::Type::Range;
+		case ParserPropertyType::Matrix3:				return PropertyDeclaration::Type::Matrix3;
+		case ParserPropertyType::Matrix4:				return PropertyDeclaration::Type::Matrix4;
 		default:										return PropertyDeclaration::Type::None;
 		}
 	}
@@ -104,6 +106,8 @@ namespace Prism
 		case Type::Range:			return sizeof(PropertyType::Range);
 		case Type::Texture2D:		return sizeof(PropertyType::Texture2D);
 		case Type::TextureCube:		return sizeof(PropertyType::TextureCube);
+		case Type::Matrix3:			return sizeof(PropertyType::Matrix3);
+		case Type::Matrix4:			return sizeof(PropertyType::Matrix4);
 		default:					return 0;
 		}
 	}
@@ -248,6 +252,20 @@ namespace Prism
 				m_DefaultValueBuffer.Write((byte*)&rangeValue, sizeof(Range), m_Declaration.GetUniformDeclarations()[i]->GetOffset());
 				break;
 			}
+			case ParserPropertyType::Matrix3:
+			{
+				Matrix3 mat3Value = Parse<Matrix3>(value);
+				m_DefaultValueBuffer.Write((byte*)&mat3Value, sizeof(Matrix3), m_Declaration.GetUniformDeclarations()[i]->GetOffset());
+				break;
+			}
+			case ParserPropertyType::Matrix4:
+			{
+				Matrix4 mat4Value = Parse<Matrix4>(value);
+				m_DefaultValueBuffer.Write((byte*)&mat4Value, sizeof(Matrix4), m_Declaration.GetUniformDeclarations()[i]->GetOffset());
+				break;
+			}
+			default:
+				break;
 			}
 		}
 	}

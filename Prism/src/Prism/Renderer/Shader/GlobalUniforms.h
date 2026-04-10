@@ -8,6 +8,7 @@ namespace Prism {
     struct PrismGlobalsUBO
     {
         glm::mat4 ViewProjection{ 1.0f };
+		glm::mat4 InverseViewProjection{ 1.0f };
         glm::mat4 Model{ 1.0f };
         glm::mat4 View{ 1.0f };
         glm::mat4 Projection{ 1.0f };

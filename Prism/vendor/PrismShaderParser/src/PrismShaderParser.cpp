@@ -20,6 +20,8 @@ namespace Prism
         if (typeStr == "Vector4") return ParserPropertyType::Vector4;
         if (typeStr == "Texture2D") return ParserPropertyType::Texture2D;
         if (typeStr == "TextureCube") return ParserPropertyType::TextureCube;
+		if (typeStr == "Matrix3X3" || typeStr == "Matrix3") return ParserPropertyType::Matrix3;
+		if (typeStr == "Matrix4x4" || typeStr == "Matrix4") return ParserPropertyType::Matrix4;
         std::regex rangeRegex(R"(Range\s*\(\s*([+-]?\d*\.?\d+)\s*,\s*([+-]?\d*\.?\d+)\s*\))");
         std::smatch rangeMatch;
         if (std::regex_match(typeStr, rangeMatch, rangeRegex)) {
@@ -43,6 +45,8 @@ namespace Prism
         case ParserPropertyType::Texture2D: return "uniform sampler2D"; break;
         case ParserPropertyType::TextureCube: return "uniform samplerCube"; break;
         case ParserPropertyType::Range: return "uniform float"; break;
+		case ParserPropertyType::Matrix3: return "uniform mat3"; break;
+		case ParserPropertyType::Matrix4: return "uniform mat4"; break;
         }
     }
     ParseResult PrismShaderParser::Parse(const std::string& source)

@@ -310,6 +310,12 @@ namespace Prism
 			case PropertyDeclaration::Type::TextureCube:
 				UploadUniformInt(property->GetName(), *(PropertyType::TextureCube*)&buffer.Data[offset]);
 				break;
+			case PropertyDeclaration::Type::Matrix3:
+				UploadUniformMat3(property->GetName(), *(glm::mat3*)&buffer.Data[offset]);
+				break;
+			case PropertyDeclaration::Type::Matrix4:
+				UploadUniformMat4(property->GetName(), *(glm::mat4*)&buffer.Data[offset]);
+				break;
 			default:
 				PR_LOG_UNIFORM("不支持的属性类型{0} 在Shader {1}中", property->GetName(), m_Name);
 				break;

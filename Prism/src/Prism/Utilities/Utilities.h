@@ -11,6 +11,8 @@ namespace Prism
 		typedef glm::vec2 Vector2;
 		typedef glm::vec3 Vector3;
 		typedef glm::vec4 Vector4;
+		typedef glm::mat3 Matrix3;
+		typedef glm::mat4 Matrix4;
 		struct PRISM_API Range
 		{
 			float value;
@@ -81,6 +83,22 @@ namespace Prism
 			glm::vec4 v(0.0f);
 			ss >> v.x >> v.y >> v.z >> v.w;
 			return v;
+		}
+		template <>
+		inline glm::mat3 Parse<glm::mat3>(const std::string& input) {
+			std::stringstream ss(Sanitize(input));
+			float values;
+			ss >> values;
+			glm::mat3 m(values);
+			return m;
+		}
+		template <>
+		inline glm::mat4 Parse<glm::mat4>(const std::string& input) {
+			std::stringstream ss(Sanitize(input));
+			float values;
+			ss >> values;
+			glm::mat4 m(values);
+			return m;
 		}
 	}
 	namespace EnumParse
