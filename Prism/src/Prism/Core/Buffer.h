@@ -33,6 +33,13 @@ namespace Prism {
 			memcpy(copy.Data, Data, Size);
 			return copy;
 		}
+		static Buffer Copy(void* data, uint32_t size)
+		{
+			Buffer buffer;
+			buffer.Allocate(size);
+			memcpy(buffer.Data, data, size);
+			return buffer;
+		}
 		void Allocate(uint32_t size)
 		{
 			PR_CORE_ASSERT(!ReadOnly, "Cannot allocate a read-only buffer! 无法分配只读缓冲区");
