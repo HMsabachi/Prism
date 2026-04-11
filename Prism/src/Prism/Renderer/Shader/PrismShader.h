@@ -27,7 +27,7 @@ namespace Prism
 
 		void AddShaderReloadedCallback(const ShaderReloadedCallback& callback);
 		const std::string& GetFilePath() const {return m_FilePath; };
-		const std::string& GetName() const { return m_ParseResult.ShaderName; }
+		const std::string& GetName() const { return m_Name; }
 		const ShaderProperty& GetProperty() const { return m_ShaderProperty; }
 	#pragma region 设置原生uniform
 	public:

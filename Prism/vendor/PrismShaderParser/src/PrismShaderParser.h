@@ -9,8 +9,6 @@ namespace Prism
 }
 namespace Prism
 {
-    
-    
     // Prism Shader 解析器（目前只处理字符串，不涉及文件IO）
     class PRISM_API PrismShaderParser
     {
@@ -36,6 +34,7 @@ namespace Prism
     #pragma endregion
 
     public:
+		static void Init();
         ParseResult Parse(const std::string& source);
     private:
         static void SetIncludeRoot(const std::string& root) { s_IncludeRoot = root; }

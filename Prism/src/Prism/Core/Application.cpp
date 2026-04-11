@@ -7,6 +7,7 @@
 
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Framebuffer.h"
+#include "PrismShaderParser.h"
 
 
 #include <imgui.h>
@@ -54,6 +55,8 @@ namespace Prism
 		// 初始化渲染器 Initialize Renderer
 		Renderer::Init();
 		Renderer::WaitAndRender();
+		// 初始化PrismShader解释器
+		PrismShaderParser::Init();
 	}
 
 	Application::~Application()

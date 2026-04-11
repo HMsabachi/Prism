@@ -10,6 +10,13 @@ namespace Prism
     std::string PrismShaderParser::s_FileHeader = R"PRISM(
 // 暂无
 )PRISM";
+
+	void PrismShaderParser::Init()
+	{
+		s_IncludeRoot = std::filesystem::absolute("Assets/Shaders/Include").string();
+	}
+
+
     ParserPropertyType PrismShaderParser::StringToPropertyType(const std::string& typeStr, float& outMin, float& outMax)
     {
         if (typeStr == "Color") return ParserPropertyType::Color;
@@ -52,19 +59,23 @@ namespace Prism
     ParseResult PrismShaderParser::Parse(const std::string& source)
     {
         ParseResult result;
+		result.Success = true;
         // 1. 去除注释
         std::string cleanCode = StripComments(source);
         // 2. 提取基础信息
         if (!ExtractShaderMetadata(cleanCode, result)) {
             std::cerr << "Error: Failed to parse Shader name." << std::endl;
+			result.Success = false;
         }
         // 3. 提取属性
         if (!ParsePropertiesBlock(cleanCode, result)) {
             std::cerr << "Error: Failed to parse Properties block." << std::endl;
+			result.Success = false;
         }
         // 执行 SubShader 和 Pass 的解析
         if (!ParseSubShader(cleanCode, result)) {
             std::cerr << "Error: Failed to parse SubShader block." << std::endl;
+			result.Success = false;
         }
         // 4. 处理 #include 指令
         std::filesystem::path rootPath = std::filesystem::path(s_IncludeRoot);

@@ -88,5 +88,6 @@ namespace Prism
         std::string ShaderName;
         std::vector<PropertyDescriptor> Properties;
         std::vector<PassDescriptor> Passes;
+		bool Success = false;
     };
 }

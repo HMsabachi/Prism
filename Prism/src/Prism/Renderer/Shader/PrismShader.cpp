@@ -19,7 +19,7 @@ namespace Prism
 
 	PrismShader::PrismShader(const std::string& path)
 	{
-		m_FilePath = path;
+		m_FilePath = std::filesystem::absolute(path).string();
 		Reload();
 	}
 	PrismShader::~PrismShader()
@@ -32,6 +32,12 @@ namespace Prism
 		auto source = ReadFile(m_FilePath);
 		PrismShaderParser parser;
 		m_ParseResult = parser.Parse(source);
+		if(!m_ParseResult.Success)
+		{
+			PR_CORE_ERROR("处理shader文件失败 '{0}'", m_FilePath);
+			return;
+		}
+
 		m_Name = m_ParseResult.ShaderName;
 		m_Shader.reset(Shader::Create(m_Name, m_ParseResult.Passes[0].VertexShaderCode, m_ParseResult.Passes[0].FragmentShaderCode));
 		m_ShaderProperty.Init(m_ParseResult.Properties);
