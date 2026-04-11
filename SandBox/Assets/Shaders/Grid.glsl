@@ -18,7 +18,7 @@ Shader "Custom/Grid"
                 #include "PrismBuiltin.glsl"
 
                 attribute vec3 a_Position : POSITION;
-                attribute vec2 a_TexCoord : NORMAL; // 暂时这样需要修改
+                attribute vec2 a_TexCoord : TEXCOORD0;
 
                 VARYING VertexOutput
                 {

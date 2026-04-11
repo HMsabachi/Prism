@@ -13,13 +13,16 @@ namespace Prism
 	class PRISM_API PrismShader
 	{
 	public:
-		static Ref<PrismShader> Create(const std::string& source, const bool isFile = true);
+		static Ref<PrismShader> Create(const std::string& path);
+		static Ref<PrismShader> CreateFromString(const std::string& source);
 
 		Ref<Shader> GetOriginalShader() const;
 	public:
 		PrismShader(const std::string& source);
+		PrismShader();
 		~PrismShader();
 		void Reload();
+		void Load(const std::string& source);
 
 	public:
 		void Bind() const;

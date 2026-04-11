@@ -26,7 +26,7 @@ namespace Prism
 
 		static void ClearMagenta();
 
-		static void DrawIndexed(unsigned int count, bool depthTest = true);
+		static void DrawIndexed(uint32_t count, bool depthTest = true);
 
 		static void Init();
 

@@ -60,6 +60,10 @@ namespace Prism
 		Color,
         Unknown
     };
+    inline uint32_t VertexSemanticToLocation(VertexSemantic semantic)
+    {
+		return static_cast<uint32_t>(semantic);
+	}
     // 单个顶点属性的描述
     struct PRISM_API VertexAttributeDescriptor
     {

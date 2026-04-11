@@ -18,7 +18,7 @@ Shader "Custom/HDR"
                 #include "PrismBuiltin.glsl"
 
                 attribute vec3 a_Position : POSITION;
-                attribute vec2 a_TexCoord : NORMAL;
+                attribute vec2 a_TexCoord : TEXCOORD0;
 
                 VARYING VertexOutput
                 {

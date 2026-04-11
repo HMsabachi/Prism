@@ -105,8 +105,7 @@ namespace Prism
 
 		Prism::Ref<Prism::Framebuffer> m_Framebuffer, m_FinalPresentBuffer;
 
-		Prism::Ref<Prism::VertexBuffer> m_VertexBuffer;
-		Prism::Ref<Prism::IndexBuffer> m_IndexBuffer;
+		Ref<VertexArray> m_FullscreenQuadVertexArray;
 		Prism::Ref<Prism::TextureCube> m_EnvironmentCubeMap, m_EnvironmentIrradiance;
 
 		Prism::Camera m_Camera;

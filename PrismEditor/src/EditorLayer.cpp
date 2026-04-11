@@ -86,7 +86,7 @@ namespace Prism
 			m_DielectricSphereMaterialInstances.push_back(mi);
 		}
 
-		// Create Quad
+		// Create fullscreen quad for final composite
 		x = -1.0f;
 		float y = -1.0f;
 		float width = 2.0f, height = 2.0f;
@@ -110,12 +110,18 @@ namespace Prism
 		data[3].Position = glm::vec3(x, y + height, 0);
 		data[3].TexCoord = glm::vec2(0, 1);
 
-		m_VertexBuffer.reset(Prism::VertexBuffer::Create());
-		m_VertexBuffer->SetData(data, 4 * sizeof(QuadVertex));
+		m_FullscreenQuadVertexArray = VertexArray::Create();
+		auto quadVB = VertexBuffer::Create(data, 4 * sizeof(QuadVertex));
+		quadVB->SetLayout({
+			{ ShaderDataType::Float3, "a_Position", VertexSemantic::Position },
+			{ ShaderDataType::Float2, "a_TexCoord", VertexSemantic::TexCoord0 }
+			});
 
-		uint32_t* indices = new uint32_t[6]{ 0, 1, 2, 2, 3, 0, };
-		m_IndexBuffer.reset(Prism::IndexBuffer::Create());
-		m_IndexBuffer->SetData(indices, 6 * sizeof(uint32_t));
+		uint32_t indices[6] = { 0, 1, 2, 2, 3, 0, };
+		auto quadIB = IndexBuffer::Create(indices, 6 * sizeof(uint32_t));
+
+		m_FullscreenQuadVertexArray->AddVertexBuffer(quadVB);
+		m_FullscreenQuadVertexArray->SetIndexBuffer(quadIB);
 
 		m_Light.Direction = { -0.5f, -0.5f, 1.0f };
 		m_Light.Radiance = { 1.0f, 1.0f, 1.0f };
@@ -146,9 +152,8 @@ namespace Prism
 
 		m_QuadShader->Bind();
 		m_EnvironmentCubeMap->Bind(0);
-		m_VertexBuffer->Bind();
-		m_IndexBuffer->Bind();
-		Renderer::DrawIndexed(m_IndexBuffer->GetCount(), false);
+		m_FullscreenQuadVertexArray->Bind();
+		Renderer::DrawIndexed(m_FullscreenQuadVertexArray->GetIndexBuffer()->GetCount(), false);
 
 
 		m_MeshMaterial->Set("u_AlbedoColor", m_AlbedoInput.Color);
@@ -231,9 +236,8 @@ namespace Prism
 		m_HDRShader->Bind();
 		m_HDRShader->GetOriginalShader()->SetFloat("u_Exposure", m_Exposure);
 		m_Framebuffer->BindTexture();
-		m_VertexBuffer->Bind();
-		m_IndexBuffer->Bind();
-		Renderer::DrawIndexed(m_IndexBuffer->GetCount(), false);
+		m_FullscreenQuadVertexArray->Bind();
+		Renderer::DrawIndexed(m_FullscreenQuadVertexArray->GetIndexBuffer()->GetCount(), false);
 		m_FinalPresentBuffer->Unbind();
 	}
 

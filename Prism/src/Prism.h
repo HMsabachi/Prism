@@ -26,6 +26,7 @@
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Framebuffer.h"
 #include "Prism/Renderer/Buffer.h"
+#include "Prism/Renderer/VertexArray.h"
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Material.h"
 

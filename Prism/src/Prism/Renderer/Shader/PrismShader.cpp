@@ -10,9 +10,17 @@ namespace Prism
 	// //////////////////////////////////////////////////
 	std::vector<Ref<PrismShader>> PrismShader::s_AllShaders;
 
-	Ref<PrismShader> PrismShader::Create(const std::string& path, const bool isFile)
+	Ref<PrismShader> PrismShader::Create(const std::string& path)
 	{
 		Ref<PrismShader> shader = CreateRef<PrismShader>(path);
+		s_AllShaders.push_back(shader);
+		return shader;
+	}
+
+	Ref<PrismShader> PrismShader::CreateFromString(const std::string& source)
+	{
+		Ref<PrismShader> shader = CreateRef<PrismShader>();
+		shader->Load(source);
 		s_AllShaders.push_back(shader);
 		return shader;
 	}
@@ -22,6 +30,12 @@ namespace Prism
 		m_FilePath = std::filesystem::absolute(path).string();
 		Reload();
 	}
+
+	PrismShader::PrismShader()
+	{
+
+	}
+
 	PrismShader::~PrismShader()
 	{
 
@@ -30,14 +44,18 @@ namespace Prism
 	void PrismShader::Reload()
 	{
 		auto source = ReadFile(m_FilePath);
+		Load(source);
+	}
+
+	void PrismShader::Load(const std::string& source)
+	{
 		PrismShaderParser parser;
 		m_ParseResult = parser.Parse(source);
-		if(!m_ParseResult.Success)
+		if (!m_ParseResult.Success)
 		{
 			PR_CORE_ERROR("处理shader文件失败 '{0}'", m_FilePath);
 			return;
 		}
-
 		m_Name = m_ParseResult.ShaderName;
 		m_Shader.reset(Shader::Create(m_Name, m_ParseResult.Passes[0].VertexShaderCode, m_ParseResult.Passes[0].FragmentShaderCode));
 		m_ShaderProperty.Init(m_ParseResult.Properties);
