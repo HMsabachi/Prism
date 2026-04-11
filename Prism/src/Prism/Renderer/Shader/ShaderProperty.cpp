@@ -13,7 +13,7 @@ namespace Prism
 {
 #pragma region 工具函数
 
-	PropertyDeclaration::Type ParserTypeToPropertyType(ParserPropertyType type)
+	static PropertyDeclaration::Type ParserTypeToPropertyType(ParserPropertyType type)
 	{
 		switch (type)
 		{
@@ -30,6 +30,31 @@ namespace Prism
 		case ParserPropertyType::Matrix4:				return PropertyDeclaration::Type::Matrix4;
 		default:										return PropertyDeclaration::Type::None;
 		}
+	}
+	uint32_t PropertyDeclaration::SizeOfType(Type type)
+	{
+		switch (type)
+		{
+		case Type::Color:			return sizeof(PropertyType::Color);
+		case Type::Float:			return sizeof(PropertyType::Float);
+		case Type::Int:				return sizeof(PropertyType::Int);
+		case Type::Vector2:			return sizeof(PropertyType::Vector2);
+		case Type::Vector3:			return sizeof(PropertyType::Vector3);
+		case Type::Vector4:			return sizeof(PropertyType::Vector4);
+		case Type::Range:			return sizeof(PropertyType::Range);
+		case Type::Texture2D:		return sizeof(PropertyType::Texture2D);
+		case Type::TextureCube:		return sizeof(PropertyType::TextureCube);
+		case Type::Matrix3:			return sizeof(PropertyType::Matrix3);
+		case Type::Matrix4:			return sizeof(PropertyType::Matrix4);
+		default:					return 0;
+		}
+	}
+	Type::BufferData GetDataFromPropertyType(const PropertyDeclaration& declaration, const Buffer& buffer)
+	{
+		Type::BufferData data;
+		data.second = declaration.GetSize();
+		data.first = buffer.Data + declaration.GetOffset();
+		return data;
 	}
 
 #pragma endregion
@@ -92,24 +117,6 @@ namespace Prism
 		: m_Name(name), m_DisplayName(displayName), m_Count(count), m_Type(type), m_Size(SizeOfType(type)* count), m_Offset(0)
 	{
 
-	}
-	uint32_t PropertyDeclaration::SizeOfType(Type type)
-	{
-		switch (type)
-		{
-		case Type::Color:			return sizeof(PropertyType::Color);
-		case Type::Float:			return sizeof(PropertyType::Float);
-		case Type::Int:				return sizeof(PropertyType::Int);
-		case Type::Vector2:			return sizeof(PropertyType::Vector2);
-		case Type::Vector3:			return sizeof(PropertyType::Vector3);
-		case Type::Vector4:			return sizeof(PropertyType::Vector4);
-		case Type::Range:			return sizeof(PropertyType::Range);
-		case Type::Texture2D:		return sizeof(PropertyType::Texture2D);
-		case Type::TextureCube:		return sizeof(PropertyType::TextureCube);
-		case Type::Matrix3:			return sizeof(PropertyType::Matrix3);
-		case Type::Matrix4:			return sizeof(PropertyType::Matrix4);
-		default:					return 0;
-		}
 	}
 	// ------------------------PropertyDeclaration-------------------------------------
 

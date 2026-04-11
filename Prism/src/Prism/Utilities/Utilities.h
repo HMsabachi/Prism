@@ -5,7 +5,9 @@ namespace Prism
 {
 	namespace Type
 	{
-		typedef glm::vec4 Color; // 暂时用vec4表示Color，后续可以改成专门的Color类型
+		typedef std::pair<byte*, size_t> BufferData; 
+
+		typedef glm::vec4 Color; 
 		typedef float Float;
 		typedef int Int;
 		typedef glm::vec2 Vector2;

@@ -13,10 +13,17 @@
 
 namespace Prism
 {
+	struct PRISM_API ApplicationProps
+	{
+		std::string Name;
+		uint32_t WindowWidth, WindowHeight;
+		bool VSync = true;
+	};
+
 	class PRISM_API Application
 	{
 	public:
-		Application();
+		Application(const ApplicationProps& props = { "Prism Engine", 1920, 1080, true});
 		virtual ~Application();
 
 		// The main loop of the application 启动应用主循环
@@ -33,9 +40,9 @@ namespace Prism
 		inline static Application& Get() { return *s_Instance; }
 		inline Window& GetWindow() const { return *m_Window; }
 	private:
-		void OnInit() {}
-		void OnShutdown() {}
-		void RenderImGui();
+		virtual void OnInit() {}
+		virtual void OnShutdown() {}
+		virtual void RenderImGui();
 
 
 		void ImGuiRenderer();
@@ -46,6 +53,8 @@ namespace Prism
 		void OnUpdate(); 
 		bool OnWindowClose(WindowCloseEvent& e);
 		bool OnWindowResize(WindowResizeEvent& e);
+	private:
+		ApplicationProps m_Props;
 	private:
 		std::unique_ptr<Window> m_Window;
 		bool m_Running = true;

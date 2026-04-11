@@ -27,7 +27,8 @@ namespace Prism
 
 	Application* Application::s_Instance = nullptr;
 
-	Application::Application()
+	Application::Application(const ApplicationProps& props)
+		: m_Props(props)
 	{
 		PR_PROFILE_FUNCTION();
 		PR_CORE_ASSERT(!s_Instance, "Application already exists! 应用已经存在");
@@ -35,9 +36,22 @@ namespace Prism
 
 		Initialize();
 
+		
+	}
+	void Application::Initialize()
+	{
+		// 初始化窗口 Initialize Window
+		m_Window = std::unique_ptr<Window>(Window::Create(WindowProps(m_Props.Name, m_Props.WindowWidth, m_Props.WindowHeight)));
+		m_Window->SetEventCallback(BIND_EVENT_FN(OnEvent));
+		m_Window->SetVSync(m_Props.VSync);
+		// 初始化渲染器 Initialize Renderer
+
+		// 初始化时间管理器 Initialize Time Manager
+		Time::Init();
+		// 初始化ImGui层 Initialize ImGui Layer
 		m_ImGuiLayer = new ImGuiLayer("ImGui");
 		PushOverlay(m_ImGuiLayer);
-
+		// 初始化渲染器 Initialize Renderer
 		Renderer::Init();
 		Renderer::WaitAndRender();
 	}
@@ -77,8 +91,6 @@ namespace Prism
 	{
 		PR_PROFILE_FUNCTION();
 		Time::Update();
-		//Renderer::SetClearColor( 0.1f, 0.1f, 0.1f, 0.1f );
-		//Renderer::Clear(0.1f, 0.1f, 0.1f, 0.1f);
 		
 		if (!m_Minimized)
 		{
@@ -116,19 +128,6 @@ namespace Prism
 		ImGui::Text("Fps: %d", (int)(1.0f / Time::GetDeltaTime()));
 		ImGui::End();
 	}
-
-	void Application::Initialize()
-	{
-		// 初始化窗口 Initialize Window
-		m_Window = std::unique_ptr<Window>(Window::Create());
-		m_Window->SetEventCallback(BIND_EVENT_FN(OnEvent));
-		m_Window->SetVSync(true);
-		// 初始化渲染器 Initialize Renderer
-
-		// 初始化时间管理器 Initialize Time Manager
-		Time::Init();
-	}
-
 
 #pragma region Event Handling 事件处理
 	bool Application::OnWindowClose(WindowCloseEvent& e)

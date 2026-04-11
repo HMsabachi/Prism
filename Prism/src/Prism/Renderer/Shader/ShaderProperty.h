@@ -5,10 +5,14 @@
 namespace Prism 
 {
 	struct PRISM_API PropertyDescriptor;
+	class PRISM_API PropertyDeclaration;
 }
 
 namespace Prism
 {
+	// 工具类函数
+	static Type::BufferData GetDataFromPropertyType(const PropertyDeclaration& declaration, const Buffer& buffer);
+
 	namespace PropertyType 
 	{
 		typedef Type::Color Color; // 暂时用vec4表示Color，后续可以改成专门的Color类型
@@ -22,8 +26,8 @@ namespace Prism
 		typedef Type::Matrix4 Matrix4;
 		struct PRISM_API Texture2D
 		{
+			uint32_t slot = 0;
 			Ref<Prism::Texture2D> texture;
-			uint32_t slot = -1;
 			explicit operator bool() const;
 			operator Ref<Prism::Texture2D>() const;
 			operator uint32_t() const;
@@ -32,8 +36,8 @@ namespace Prism
 		};
 		struct PRISM_API TextureCube
 		{
+			uint32_t slot = 0;
 			Ref<Prism::TextureCube> texture;
-			uint32_t slot = -1;
 			explicit operator bool() const;
 			operator Ref<Prism::TextureCube>() const;
 			operator uint32_t() const;
@@ -117,5 +121,14 @@ namespace Prism
 		bool m_IsLoaded = false;
 		Buffer m_DefaultValueBuffer;
 		PropertyBufferDeclaration m_Declaration;
+	public:
+		template<typename T>
+		const T& GetDefaultValue(const std::string& name) const
+		{
+			const PropertyDeclaration* declaration = m_Declaration.FindUniform(name);
+			PR_CORE_ASSERT(declaration, "Property {0} not found in ShaderProperty! 在ShaderProperty中未找到属性 {0}！", name);
+			auto data = GetDataFromPropertyType(*declaration, m_DefaultValueBuffer);
+			return *(const T*)(data.first);
+		}
 	};
 }

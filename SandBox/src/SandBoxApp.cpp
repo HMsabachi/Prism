@@ -2,7 +2,7 @@
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
-#include "Prism/Core/EntryPoint.h"
+//#include "Prism/Core/EntryPoint.h"
 #include "glm/gtc/type_ptr.inl"
 
 
