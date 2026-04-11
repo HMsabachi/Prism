@@ -15,13 +15,14 @@ namespace Prism
 		}
 		else
 		{
-			PR_CORE_TRACE("{0}", message);
+			//PR_CORE_TRACE("{0}", message);
 		}
 	}
 
 	void RendererAPI::Init()
 	{
 		glDebugMessageCallback(OpenGLLogMessage, nullptr); // 启用Debug输出
+		glEnable(GL_DEBUG_OUTPUT);
 		glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 
 		// TODO: 临时创建VAO
@@ -52,8 +53,15 @@ namespace Prism
 			PR_CORE_ERROR("OpenGL Error {0}", error);
 			error = glGetError();
 		}
+
+		LoadRequiredAssets();
 	}
 
+	void RendererAPI::LoadRequiredAssets()
+	{
+	}
+
+	
 	void RendererAPI::Shutdown()
 	{
 	}

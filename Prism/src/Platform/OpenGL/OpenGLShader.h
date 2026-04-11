@@ -68,7 +68,7 @@ namespace Prism {
 		#pragma endregion 上传Uniform
 
 	private:
-		RendererID m_RendererID;
+		RendererID m_RendererID = 0;
 
 		std::string m_Name, m_AssetsPath;
 		std::string m_ShaderSource;

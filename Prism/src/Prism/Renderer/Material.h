@@ -8,6 +8,9 @@ namespace Prism
 	class PRISM_API Material
 	{
 		friend class MaterialInstance;
+
+	public:
+		static Ref<Material> Create(const Ref<PrismShader>& shader);
 	public:
 		Material(const Ref<PrismShader>& shader);
 		virtual ~Material();
@@ -19,6 +22,8 @@ namespace Prism
 		void Set(const std::string& name, const T& value)
 		{
 			auto decl = FindPropertyDeclaration(name);
+			if (!decl)
+				return;
 			PR_CORE_ASSERT(decl, "Could not find uniform with name 'x'");
 			auto& buffer = m_PropertyBuffer;
 			buffer.Write((byte*)&value, decl->GetSize(), decl->GetOffset());
@@ -72,6 +77,8 @@ namespace Prism
 	class PRISM_API MaterialInstance
 	{
 		friend class Material;
+	public:
+		static Ref<MaterialInstance> Create(const Ref<Material>& material);
 	public:
 		MaterialInstance(const Ref<Material>& material);
 		virtual ~MaterialInstance();

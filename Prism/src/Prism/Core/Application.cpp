@@ -39,6 +39,7 @@ namespace Prism
 		PushOverlay(m_ImGuiLayer);
 
 		Renderer::Init();
+		Renderer::WaitAndRender();
 	}
 
 	Application::~Application()

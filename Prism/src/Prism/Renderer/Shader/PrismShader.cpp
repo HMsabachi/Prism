@@ -5,30 +5,22 @@
 
 namespace Prism
 {
-	std::vector<PrismShader*> PrismShader::s_AllShaders;
+	// //////////////////////////////////////////////////
+	// --- PrismShader  ---
+	// //////////////////////////////////////////////////
+	std::vector<Ref<PrismShader>> PrismShader::s_AllShaders;
 
-	Ref<PrismShader> PrismShader::Create(const std::string& source, const bool isFile)
+	Ref<PrismShader> PrismShader::Create(const std::string& path, const bool isFile)
 	{
-		std::string src;
-		if (isFile)
-			src = ReadFile(source);
-		else
-			src = source;
-		Ref<PrismShader> shader = CreateRef<PrismShader>(src);
-		if (isFile)	shader->m_FilePath = source;
+		Ref<PrismShader> shader = CreateRef<PrismShader>(path);
+		s_AllShaders.push_back(shader);
 		return shader;
 	}
 
-	PrismShader::PrismShader(const std::string& source)
+	PrismShader::PrismShader(const std::string& path)
 	{
-		PrismShaderParser parser;
-		m_ParseResult = parser.Parse(source);
-		m_Name = m_ParseResult.ShaderName;
-		m_Shader.reset(Shader::Create(m_Name, m_ParseResult.Passes[0].VertexShaderCode, m_ParseResult.Passes[0].FragmentShaderCode));
-		m_ShaderProperty.Init(m_ParseResult.Properties);
-		SetProperty(m_ShaderProperty.GetDefaultValueBuffer());
-
-		s_AllShaders.push_back(this);
+		m_FilePath = path;
+		Reload();
 	}
 	PrismShader::~PrismShader()
 	{
@@ -140,6 +132,45 @@ namespace Prism
 	void PrismShader::SetMat4FromRenderThread(const std::string& name, const glm::mat4& value)
 	{
 		m_Shader->SetMat4FromRenderThread(name, value);
+	}
+
+	// //////////////////////////////////////////////////
+	// --- ShaderLibrary  ---
+	// //////////////////////////////////////////////////
+
+	ShaderLibrary::ShaderLibrary()
+	{
+	}
+
+	ShaderLibrary::~ShaderLibrary()
+	{
+	}
+
+	void ShaderLibrary::Add(const Ref<PrismShader>& shader)
+	{
+		auto& name = shader->GetName();
+		PR_CORE_ASSERT(m_Shaders.find(name) == m_Shaders.end());
+		m_Shaders[name] = shader;
+	}
+
+	void ShaderLibrary::Load(const std::string& path)
+	{
+		auto shader = Ref<PrismShader>(PrismShader::Create(path));
+		auto& name = shader->GetName();
+		PR_CORE_ASSERT(m_Shaders.find(name) == m_Shaders.end());
+		m_Shaders[name] = shader;
+	}
+
+	void ShaderLibrary::Load(const std::string& name, const std::string& path)
+	{
+		PR_CORE_ASSERT(m_Shaders.find(name) == m_Shaders.end());
+		m_Shaders[name] = Ref<PrismShader>(PrismShader::Create(path));
+	}
+
+	Ref<PrismShader>& ShaderLibrary::Get(const std::string& name)
+	{
+		PR_CORE_ASSERT(m_Shaders.find(name) != m_Shaders.end());
+		return m_Shaders[name];
 	}
 
 }

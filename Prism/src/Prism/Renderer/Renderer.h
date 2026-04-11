@@ -4,7 +4,10 @@
 #include "RenderCommandQueue.h"
 #include "RendererAPI.h"
 
-
+namespace Prism
+{
+	class ShaderLibrary;
+}
 
 namespace Prism
 {
@@ -14,6 +17,8 @@ namespace Prism
 
 	public:
 		typedef void(*RenderCommandFn)(void*);
+		Renderer();
+		~Renderer();
 
 		static void Clear();
 		static void Clear(float r, float g, float b, float a = 1.0f);
@@ -24,6 +29,8 @@ namespace Prism
 		static void DrawIndexed(unsigned int count, bool depthTest = true);
 
 		static void Init();
+
+		static const Scope<ShaderLibrary>& GetShaderLibrary();
 
 		static void* Submit(RenderCommandFn fn, unsigned int size)
 		{
@@ -37,6 +44,8 @@ namespace Prism
 		static Renderer* s_Instance;
 
 		RenderCommandQueue m_CommandQueue;
+
+		Scope<ShaderLibrary> m_ShaderLibrary;
 	};
 }
 #define PR_RENDER_PASTE2(a, b) a ## b

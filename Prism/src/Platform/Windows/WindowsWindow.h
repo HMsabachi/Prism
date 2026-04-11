@@ -17,6 +17,7 @@ namespace Prism {
 
 		inline unsigned int GetWidth() const override { return m_Data.Width; }
 		inline unsigned int GetHeight() const override { return m_Data.Height; }
+		virtual std::pair<float, float> GetWindowPos() const override;
 
 		
 		/// <summary>

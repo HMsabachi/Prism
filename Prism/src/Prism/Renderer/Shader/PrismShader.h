@@ -14,11 +14,11 @@ namespace Prism
 	{
 	public:
 		static Ref<PrismShader> Create(const std::string& source, const bool isFile = true);
-		~PrismShader();
 
 		Ref<Shader> GetOriginalShader() const;
 	public:
 		PrismShader(const std::string& source);
+		~PrismShader();
 		void Reload();
 
 	public:
@@ -45,27 +45,39 @@ namespace Prism
 		std::vector<ShaderReloadedCallback> m_ReloadedCallbacks;
 
 	public:
-		static std::vector<PrismShader*> s_AllShaders;
-	private:
-
-
-#pragma region 调试用
+		static std::vector<Ref<PrismShader>> s_AllShaders;
+	#pragma region 调试用
 	public:
 		const std::string GetSource() const { return m_ParseResult.Passes[0].VertexShaderCode + m_ParseResult.Passes[0].FragmentShaderCode; }
 	private:
 		ParseResult m_ParseResult;
 	public:
 		std::string ToString() const;
+	
+#pragma endregion
 	};
-
-	inline std::string format_as(const PrismShader& shader)
+	inline std::string format_as(const Prism::PrismShader& shader)
 	{
 		return shader.ToString();
 	}
-#pragma endregion
+
+	// 目前这个类只是一个简单的容器，负责存储和管理所有的Shader实例，提供添加、加载和获取Shader的功能。未来可能会扩展为更复杂的资源管理系统。
+	class PRISM_API ShaderLibrary
+	{
+	public:
+		ShaderLibrary();
+		~ShaderLibrary();
+
+		void Add(const Ref<PrismShader>& shader);
+		void Load(const std::string& path);
+		void Load(const std::string& name, const std::string& path);
+
+		Ref<PrismShader>& Get(const std::string& name);
+	private:
+		std::unordered_map<std::string, Ref<PrismShader>> m_Shaders;
+	};
 
 }
-
-
+	
 
 #endif

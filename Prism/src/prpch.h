@@ -22,6 +22,7 @@
 
 #include "Prism/Core/Log.h"
 #include "Prism/Core/Core.h"
+#include "Prism/Core/Time.h"
 #include "Prism/Debug/Instrumentor.h"
 #include "Prism/Core/Buffer.h"
 #include "Prism/Utilities/Utilities.h"

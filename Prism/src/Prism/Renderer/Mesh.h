@@ -5,6 +5,7 @@
 
 #include "Prism/Renderer/Buffer.h"
 #include "Prism/Renderer/Shader/PrismShader.h"
+#include "Prism/Renderer/Material.h"
 
 struct aiNode;
 struct aiAnimation;
@@ -17,6 +18,15 @@ namespace Assimp {
 
 namespace Prism {
 	struct Vertex
+	{
+		glm::vec3 Position;
+		glm::vec3 Normal;
+		glm::vec3 Tangent;
+		glm::vec3 Binormal;
+		glm::vec2 Texcoord;
+	};
+
+	struct AnimatedVertex
 	{
 		glm::vec3 Position;
 		glm::vec3 Normal;
@@ -89,6 +99,8 @@ namespace Prism {
 		uint32_t BaseIndex;
 		uint32_t MaterialIndex;
 		uint32_t IndexCount;
+
+		glm::mat4 Transform;
 	};
 	class PRISM_API Mesh
 	{
@@ -97,14 +109,19 @@ namespace Prism {
 		Mesh(const std::string& filename);
 		~Mesh();
 
-		void Render(float ts, PrismShader* shader);
+		void Render(float ts, Ref<MaterialInstance> materialInstance = Ref<MaterialInstance>());
+		void Render(float ts, const glm::mat4& transform = glm::mat4(1.0f), Ref<MaterialInstance> materialInstance = Ref<MaterialInstance>());
 		void OnImGuiRender();
 		void DumpVertexBuffer();
+
+		inline Ref<PrismShader> GetMeshShader() { return m_MeshShader; }
+		inline Ref<Material> GetMaterial() { return m_Material; }
 
 		inline const std::string& GetFilePath() const { return m_FilePath; }
 	private:
 		void BoneTransform(float time);
 		void ReadNodeHierarchy(float AnimationTime, const aiNode* pNode, const glm::mat4& ParentTransform);
+		void TraverseNodes(aiNode* node, int level = 0);
 
 		const aiNodeAnim* FindNodeAnim(const aiAnimation* animation, const std::string& nodeName);
 		uint32_t FindPosition(float AnimationTime, const aiNodeAnim* pNodeAnim);
@@ -126,13 +143,19 @@ namespace Prism {
 		std::unique_ptr<VertexBuffer> m_VertexBuffer;
 		std::unique_ptr<IndexBuffer> m_IndexBuffer;
 
-		std::vector<Vertex> m_Vertices;
+		std::vector<Vertex> m_StaticVertices;
+		std::vector<AnimatedVertex> m_AnimatedVertices;
 		std::vector<Index> m_Indices;
 		std::unordered_map<std::string, uint32_t> m_BoneMapping;
 		std::vector<glm::mat4> m_BoneTransforms;
 		const aiScene* m_Scene;
 
+		// Materials
+		Ref<PrismShader> m_MeshShader;
+		Ref<Material> m_Material;
+
 		// Animation
+		bool m_IsAnimated = false;
 		float m_AnimationTime = 0.0f;
 		float m_WorldTime = 0.0f;
 		float m_TimeMultiplier = 1.0f;

@@ -1,6 +1,7 @@
 ﻿#include "prpch.h"
 #include "Renderer.h"
 #include "RenderCommand.h"
+#include "Shader/PrismShader.h"
 
 namespace Prism
 {
@@ -9,7 +10,21 @@ namespace Prism
 
 	void Renderer::Init()
 	{
+		s_Instance->m_ShaderLibrary = std::make_unique<ShaderLibrary>();
 		PR_RENDER({ RendererAPI::Init(); });
+
+		Renderer::GetShaderLibrary()->Load("Assets/shaders/PrismPBR_Static.glsl");
+		Renderer::GetShaderLibrary()->Load("Assets/shaders/PrismPBR_Anim.glsl");
+	}
+
+	Renderer::Renderer()
+	{
+
+	}
+
+	Renderer::~Renderer()
+	{
+
 	}
 
 	void Renderer::Clear()
@@ -47,6 +62,11 @@ namespace Prism
 	{
 		s_Instance->m_CommandQueue.Execute();
 	}
+	const Prism::Scope<Prism::ShaderLibrary>& Renderer::GetShaderLibrary()
+	{
+		return Get().m_ShaderLibrary;
+	}
+
 
 
 }

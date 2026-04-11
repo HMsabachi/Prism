@@ -1,6 +1,7 @@
 ﻿#include <Prism.h>
 
 #include "imgui/imgui.h"
+#include "imgui/imgui_internal.h"
 #include "Prism/Core/EntryPoint.h"
 #include "glm/gtc/type_ptr.inl"
 
@@ -45,19 +46,22 @@ public:
 		using namespace glm;
 		Prism::GlobalUniforms::Init();
 
-		m_SimplePBRPrismShader = Prism::PrismShader::Create("Assets/Shaders/simplepbrPrism.glsl");
 		m_QuadShader = Prism::PrismShader::Create("Assets/Shaders/quad.glsl");
 		m_HDRShader = Prism::PrismShader::Create("Assets/Shaders/hdr.glsl");
 		m_GridShader = Prism::PrismShader::Create("Assets/Shaders/Grid.glsl");
-		PR_TRACE(*m_SimplePBRPrismShader);
 		PR_TRACE(*m_QuadShader);
 		PR_TRACE(*m_HDRShader);
 		PR_TRACE(*m_GridShader);
 		//m_Mesh.reset(new Prism::Mesh("Assets/meshes/cerberus.fbx"));
 		m_Mesh.reset(new Prism::Mesh("Assets/models/m1911/m1911.fbx"));
+		m_MeshMaterial.reset(new Prism::MaterialInstance(m_Mesh->GetMaterial()));
 		//m_SphereMesh.reset(new Prism::Mesh("Assets/models/Sphere.fbx"));
 		m_SphereMesh.reset(new Prism::Mesh("Assets/models/Sphere1m.fbx"));
 		m_PlaneMesh.reset(new Prism::Mesh("Assets/models/Plane1m.obj"));
+
+		m_GridMaterial = Prism::MaterialInstance::Create(Prism::Material::Create(m_GridShader));
+		m_GridMaterial->Set("u_Scale", m_GridScale);
+		m_GridMaterial->Set("u_Res", m_GridSize);
 		// Editor
 		m_CheckerboardTex.reset(Prism::Texture2D::Create("Assets/editor/Checkerboard.tga"));
 
@@ -70,12 +74,11 @@ public:
 		m_Framebuffer.reset(Prism::Framebuffer::Create(1280, 720, Prism::FramebufferFormat::RGBA16F));
 		m_FinalPresentBuffer.reset(Prism::Framebuffer::Create(1280, 720, Prism::FramebufferFormat::RGBA8));
 
-		m_PBRMaterial.reset(new Prism::Material(m_SimplePBRPrismShader));
 		float x = -4.0f;
 		float roughness = 0.0f;
 		for (int i = 0; i < 8; i++)
 		{
-			Prism::Ref<Prism::MaterialInstance> mi(new Prism::MaterialInstance(m_PBRMaterial));
+			Prism::Ref<Prism::MaterialInstance> mi(new Prism::MaterialInstance(m_SphereMesh->GetMaterial()));
 			mi->Set("u_Metalness", 1.0f);
 			mi->Set("u_Roughness", roughness);
 			mi->Set("Prism_Model", translate(mat4(1.0f), vec3(x, 0.0f, 0.0f)));
@@ -88,7 +91,7 @@ public:
 		roughness = 0.0f;
 		for (int i = 0; i < 8; i++)
 		{
-			Prism::Ref<Prism::MaterialInstance> mi(new Prism::MaterialInstance(m_PBRMaterial));
+			Prism::Ref<Prism::MaterialInstance> mi(new Prism::MaterialInstance(m_SphereMesh->GetMaterial()));
 			mi->Set("u_Metalness", 0.0f);
 			mi->Set("u_Roughness", roughness);
 			mi->Set("Prism_Model", translate(mat4(1.0f), vec3(x, 1.2f, 0.0f)));
@@ -161,70 +164,79 @@ public:
 		Renderer::DrawIndexed(m_IndexBuffer->GetCount(), false);
 
 
-		m_PBRMaterial->Set("u_AlbedoColor", m_AlbedoInput.Color);
-		m_PBRMaterial->Set("u_Metalness", m_MetalnessInput.Value);
-		m_PBRMaterial->Set("u_Roughness", m_RoughnessInput.Value);
+		m_MeshMaterial->Set("u_AlbedoColor", m_AlbedoInput.Color);
+		m_MeshMaterial->Set("u_Metalness", m_MetalnessInput.Value);
+		m_MeshMaterial->Set("u_Roughness", m_RoughnessInput.Value);
 
-		m_PBRMaterial->Set("u_LightDirection", m_Light.Direction);
-		m_PBRMaterial->Set("u_LightRadiance", m_Light.Radiance);
-		//m_PBRMaterial->Set("u_CameraPosition", m_Camera.GetPosition());
-		m_PBRMaterial->Set("u_RadiancePrefilter", m_RadiancePrefilter ? 1.0f : 0.0f);
-		m_PBRMaterial->Set("u_AlbedoTexToggle", m_AlbedoInput.UseTexture ? 1.0f : 0.0f);
-		m_PBRMaterial->Set("u_NormalTexToggle", m_NormalInput.UseTexture ? 1.0f : 0.0f);
-		m_PBRMaterial->Set("u_MetalnessTexToggle", m_MetalnessInput.UseTexture ? 1.0f : 0.0f);
-		m_PBRMaterial->Set("u_RoughnessTexToggle", m_RoughnessInput.UseTexture ? 1.0f : 0.0f);
-		m_PBRMaterial->Set("u_EnvMapRotation", m_EnvMapRotation);
+		m_MeshMaterial->Set("u_LightDirection", m_Light.Direction);
+		m_MeshMaterial->Set("u_LightRadiance", m_Light.Radiance);
+		//m_MeshMaterial->Set("u_CameraPosition", m_Camera.GetPosition());
+		m_MeshMaterial->Set("u_RadiancePrefilter", m_RadiancePrefilter ? 1.0f : 0.0f);
+		m_MeshMaterial->Set("u_AlbedoTexToggle", m_AlbedoInput.UseTexture ? 1.0f : 0.0f);
+		m_MeshMaterial->Set("u_NormalTexToggle", m_NormalInput.UseTexture ? 1.0f : 0.0f);
+		m_MeshMaterial->Set("u_MetalnessTexToggle", m_MetalnessInput.UseTexture ? 1.0f : 0.0f);
+		m_MeshMaterial->Set("u_RoughnessTexToggle", m_RoughnessInput.UseTexture ? 1.0f : 0.0f);
+		m_MeshMaterial->Set("u_EnvMapRotation", m_EnvMapRotation);
 
-		m_PBRMaterial->Set("u_EnvRadianceTex", m_EnvironmentCubeMap);
-		m_PBRMaterial->Set("u_EnvIrradianceTex", m_EnvironmentIrradiance);
-		m_PBRMaterial->Set("u_BRDFLUTTexture", m_BRDFLUT);
+		m_MeshMaterial->Set("u_EnvRadianceTex", m_EnvironmentCubeMap);
+		m_MeshMaterial->Set("u_EnvIrradianceTex", m_EnvironmentIrradiance);
+		m_MeshMaterial->Set("u_BRDFLUTTexture", m_BRDFLUT);
 
 		if (m_AlbedoInput.TextureMap)
-			m_PBRMaterial->Set("u_AlbedoTexture", m_AlbedoInput.TextureMap);
+			m_MeshMaterial->Set("u_AlbedoTexture", m_AlbedoInput.TextureMap);
 		if (m_NormalInput.TextureMap)
-			m_PBRMaterial->Set("u_NormalTexture", m_NormalInput.TextureMap);
+			m_MeshMaterial->Set("u_NormalTexture", m_NormalInput.TextureMap);
 		if (m_MetalnessInput.TextureMap)
-			m_PBRMaterial->Set("u_MetalnessTexture", m_MetalnessInput.TextureMap);
+			m_MeshMaterial->Set("u_MetalnessTexture", m_MetalnessInput.TextureMap);
 		if (m_RoughnessInput.TextureMap)
-			m_PBRMaterial->Set("u_RoughnessTexture", m_RoughnessInput.TextureMap);
+			m_MeshMaterial->Set("u_RoughnessTexture", m_RoughnessInput.TextureMap);
+
+		m_SphereMesh->GetMaterial()->Set("u_AlbedoColor", m_AlbedoInput.Color);
+		m_SphereMesh->GetMaterial()->Set("u_Metalness", m_MetalnessInput.Value);
+		m_SphereMesh->GetMaterial()->Set("u_Roughness", m_RoughnessInput.Value);
+
+		m_SphereMesh->GetMaterial()->Set("u_LightDirection", m_Light.Direction);
+		m_SphereMesh->GetMaterial()->Set("u_LightRadiance", m_Light.Radiance);
+		//m_SphereMesh->GetMaterial()->Set("u_CameraPosition", m_Camera.GetPosition());
+		m_SphereMesh->GetMaterial()->Set("u_RadiancePrefilter", m_RadiancePrefilter ? 1.0f : 0.0f);
+		m_SphereMesh->GetMaterial()->Set("u_AlbedoTexToggle", m_AlbedoInput.UseTexture ? 1.0f : 0.0f);
+		m_SphereMesh->GetMaterial()->Set("u_NormalTexToggle", m_NormalInput.UseTexture ? 1.0f : 0.0f);
+		m_SphereMesh->GetMaterial()->Set("u_MetalnessTexToggle", m_MetalnessInput.UseTexture ? 1.0f : 0.0f);
+		m_SphereMesh->GetMaterial()->Set("u_RoughnessTexToggle", m_RoughnessInput.UseTexture ? 1.0f : 0.0f);
+		m_SphereMesh->GetMaterial()->Set("u_EnvMapRotation", m_EnvMapRotation);
+
+		m_SphereMesh->GetMaterial()->Set("u_EnvRadianceTex", m_EnvironmentCubeMap);
+		m_SphereMesh->GetMaterial()->Set("u_EnvIrradianceTex", m_EnvironmentIrradiance);
+		m_SphereMesh->GetMaterial()->Set("u_BRDFLUTTexture", m_BRDFLUT);
 
 		if (m_Scene == Scene::Spheres)
 		{
-			// Metals
-			float roughness = 0.0f;
-			float x = -88.0f;
 			for (int i = 0; i < 8; i++)
 			{
-				m_MetalSphereMaterialInstances[i]->Bind();
-				m_SphereMesh->Render(Time::GetDeltaTime(), m_SimplePBRPrismShader.get());
-				roughness += 0.15f;
-				x += 22.0f;
+				m_SphereMesh->Render(Time::GetDeltaTime(), glm::mat4(1.0f), m_MetalSphereMaterialInstances[i]);
 			}
-			// Dielectrics
-			roughness = 0.0f;
-			x = -88.0f;
 			for (int i = 0; i < 8; i++)
 			{
-				m_DielectricSphereMaterialInstances[i]->Bind();
-				m_SphereMesh->Render(Time::GetDeltaTime(), m_SimplePBRPrismShader.get());
-				roughness += 0.15f;
-				x += 22.0f;
+				m_SphereMesh->Render(Time::GetDeltaTime(), glm::mat4(1.0f), m_DielectricSphereMaterialInstances[i]);
 			}
 
 		}
 		else if (m_Scene == Scene::Model)
 		{
-			m_PBRMaterial->Bind();
-			auto modelMat = translate(mat4(1.0f), m_ModelPosition) * rotate(mat4(1.0f), glm::radians(m_ModelRotation), vec3(0, 1, 0))
-				* scale(mat4(1.0f), vec3(m_MeshScale));
-			m_SimplePBRPrismShader->GetOriginalShader()->SetMat4("Prism_Model", modelMat);
-			m_Mesh->Render(Time::GetDeltaTime(), m_SimplePBRPrismShader.get());
+			if (m_Mesh)
+			{
+				auto modelMat = translate(mat4(1.0f), m_ModelPosition) * rotate(mat4(1.0f), glm::radians(m_ModelRotation), vec3(0, 1, 0))
+					* scale(mat4(1.0f), vec3(m_MeshScale));
+				m_Mesh->Render(Time::GetDeltaTime(), modelMat, m_MeshMaterial);
+			}
+			
 		}
 		m_GridShader->Bind();
 		m_GridShader->GetOriginalShader()->SetMat4("Prism_Model",glm::scale(glm::mat4(1.0f), glm::vec3(16.0f)));
 		m_GridShader->GetOriginalShader()->SetFloat("u_Scale", m_GridScale);
 		m_GridShader->GetOriginalShader()->SetFloat("u_Res", m_GridSize);
-		m_PlaneMesh->Render(Time::GetDeltaTime(), m_GridShader.get());
+		m_GridMaterial->Set("Prism_Model", glm::scale(glm::mat4(1.0f), glm::vec3(16.0f)));
+		m_PlaneMesh->Render(Time::GetDeltaTime(), m_GridMaterial);
 
 		m_Framebuffer->Unbind();
 
@@ -565,6 +577,7 @@ public:
 		m_Framebuffer->Resize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
 		m_FinalPresentBuffer->Resize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
 		m_Camera.SetProjectionMatrix(glm::perspectiveFov(glm::radians(45.0f), viewportSize.x, viewportSize.y, 0.1f, 10000.0f));
+		m_Camera.SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
 		ImGui::Image((void*)m_FinalPresentBuffer->GetColorAttachmentRendererID(), viewportSize, { 0, 1 }, { 1, 0 });
 		//PR_TRACE("FrameBuffer {0}", m_FinalPresentBuffer->GetColorAttachmentRendererID());
 		ImGui::End();
@@ -640,7 +653,8 @@ private:
 private:
 	glm::vec3 m_ModelPosition = { 0.f, 0.0f, 0.0f };
 	float m_ModelRotation = 0.0f;
-	Prism::Ref<Prism::Material> m_PBRMaterial;
+	Prism::Ref<Prism::MaterialInstance> m_MeshMaterial;
+	Prism::Ref<Prism::MaterialInstance> m_GridMaterial;
 	std::vector<Prism::Ref<Prism::MaterialInstance>> m_MetalSphereMaterialInstances;
 	std::vector<Prism::Ref<Prism::MaterialInstance>> m_DielectricSphereMaterialInstances;
 
@@ -648,13 +662,11 @@ private:
 	float m_MeshScale = 1.0f;
 private:
 	Prism::PrismGlobalsUBO m_GlobalsUBO;
-	Prism::Ref<Prism::PrismShader> m_SimplePBRPrismShader;
 	Prism::Ref<Prism::PrismShader> m_QuadShader;
 	Prism::Ref<Prism::PrismShader> m_HDRShader;
 	Prism::Ref<Prism::PrismShader> m_GridShader;
-	std::unique_ptr<Prism::Mesh> m_Mesh;
-	std::unique_ptr<Prism::Mesh> m_SphereMesh;
-	std::unique_ptr<Prism::Mesh> m_PlaneMesh;
+	Prism::Ref<Prism::Mesh> m_Mesh;
+	Prism::Ref<Prism::Mesh> m_SphereMesh, m_PlaneMesh;
 	Prism::Ref<Prism::Texture2D> m_BRDFLUT;
 
 	struct AlbedoInput

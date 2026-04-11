@@ -4,7 +4,14 @@
 
 namespace Prism
 {
+
+	// //////////////////////////////////////////////////////
 	// -----------------------Material-----------------------
+	// ///////////////////////////////////////////////////////
+	Prism::Ref<Prism::Material> Material::Create(const Ref<PrismShader>& shader)
+	{
+		return CreateRef<Material>(shader);
+	}
 	Material::Material(const Ref<PrismShader>& shader)
 		: m_Shader(shader), m_ShaderProperty(shader->GetProperty())
 	{
@@ -65,9 +72,15 @@ namespace Prism
 	{
 		return m_ShaderProperty.GetDeclaration().FindUniform(name);
 	}
-	// -----------------------Material-------------------------------
-	// -----------------------MaterialInstance-----------------------
 
+
+	// //////////////////////////////////////////////////////////////
+	// -----------------------MaterialInstance-----------------------
+	// //////////////////////////////////////////////////////////////
+	Prism::Ref<Prism::MaterialInstance> MaterialInstance::Create(const Ref<Material>& material)
+	{
+		return CreateRef<MaterialInstance>(material);
+	}
 	MaterialInstance::MaterialInstance(const Ref<Material>& material)
 		: m_Material(material)
 	{
