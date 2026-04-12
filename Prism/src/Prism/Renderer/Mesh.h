@@ -110,8 +110,7 @@ namespace Prism {
 		Mesh(const std::string& filename);
 		~Mesh();
 
-		void Render(float ts, Ref<MaterialInstance> materialInstance = Ref<MaterialInstance>());
-		void Render(float ts, const glm::mat4& transform = glm::mat4(1.0f), Ref<MaterialInstance> materialInstance = Ref<MaterialInstance>());
+		void OnUpdate(float ts);
 		void OnImGuiRender();
 		void DumpVertexBuffer();
 

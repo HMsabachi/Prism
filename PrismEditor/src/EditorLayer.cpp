@@ -285,11 +285,11 @@ namespace Prism
 		{
 			for (int i = 0; i < 8; i++)
 			{
-				m_SphereMesh->Render(Time::GetDeltaTime(), glm::mat4(1.0f), m_MetalSphereMaterialInstances[i]);
+				Renderer::SubmitMesh(m_SphereMesh, glm::mat4(1.0f), m_MetalSphereMaterialInstances[i]);
 			}
 			for (int i = 0; i < 8; i++)
 			{
-				m_SphereMesh->Render(Time::GetDeltaTime(), glm::mat4(1.0f), m_DielectricSphereMaterialInstances[i]);
+				Renderer::SubmitMesh(m_SphereMesh, glm::mat4(1.0f), m_DielectricSphereMaterialInstances[i]);
 			}
 
 		}
@@ -300,7 +300,8 @@ namespace Prism
 				auto modelMat = translate(mat4(1.0f), m_ModelPosition) * rotate(mat4(1.0f), glm::radians(m_ModelRotation), vec3(0, 1, 0))
 					* scale(mat4(1.0f), vec3(m_MeshScale));
 				m_MeshMaterial->Set("Prism_Model", m_Transform);
-				m_Mesh->Render(Time::GetDeltaTime(), m_Transform, m_MeshMaterial);
+				m_Mesh->OnUpdate(Time::GetDeltaTime());
+				Renderer::SubmitMesh(m_Mesh, m_Transform, m_MeshMaterial);
 			}
 
 		}
@@ -309,7 +310,7 @@ namespace Prism
 		m_GridShader->GetOriginalShader()->SetFloat("u_Scale", m_GridScale);
 		m_GridShader->GetOriginalShader()->SetFloat("u_Res", m_GridSize);
 		m_GridMaterial->Set("Prism_Model", glm::scale(glm::mat4(1.0f), glm::vec3(16.0f)));
-		m_PlaneMesh->Render(Time::GetDeltaTime(), m_GridMaterial);
+		Renderer::SubmitMesh(m_PlaneMesh, glm::mat4(1.0f), m_GridMaterial);
 
 		Renderer::EndRenderPass();
 
