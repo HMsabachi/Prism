@@ -172,7 +172,7 @@ namespace Prism
 		for (auto id : shaderRendererIDs)
 			glDeleteShader(id);
 
-		LoadTexture();
+		//LoadTexture();
 
 		m_RendererID = program;
 	}

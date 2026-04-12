@@ -27,7 +27,6 @@ Shader "Custom/Grid"
 
                 void main()
                 {
-                    // 使用Prism内置矩阵（与PBR保持一致），不再依赖外部u_MVP
                     mat4 u_MVP = Prism_ViewProjection * Prism_Model;
                     vec4 position = u_MVP * vec4(a_Position, 1.0);
                     gl_Position = position;

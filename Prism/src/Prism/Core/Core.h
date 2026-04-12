@@ -44,21 +44,8 @@
 	#error Prism only supports Windows!
 #endif
 
-#ifdef PR_DEBUG
-	#define PR_ENABLE_ASSERTS
-#endif
-#ifdef PR_ENABLE_ASSERTS
-	#define PR_ASSERT_NO_MESSAGE(condition) { if(!(condition)) { PR_ERROR("Assertion Failed!"); __debugbreak(); } }
-	#define PR_ASSERT_MESSAGE(condition, ...) { if(!(condition)) { PR_ERROR("Assertion Failed: {0}", __VA_ARGS__); __debugbreak(); } }
-
-	#define PR_ASSERT_RESOLVE(arg1, arg2, macro, ...) macro
-
-	#define PR_ASSERT(...) PR_ASSERT_RESOLVE(__VA_ARGS__, PR_ASSERT_MESSAGE, PR_ASSERT_NO_MESSAGE)(__VA_ARGS__)
-	#define PR_CORE_ASSERT(...) PR_ASSERT_RESOLVE(__VA_ARGS__, PR_ASSERT_MESSAGE, PR_ASSERT_NO_MESSAGE)(__VA_ARGS__)
-#else
-	#define PR_ASSERT(...)
-	#define PR_CORE_ASSERT(...)
-#endif
+#define PR_EXPAND_VARGS(x) x
+#include "Assert.h"
 
 #define BIT(x) (1 << x)
 #define PR_BIND_EVENT_FN(fn) std::bind(&fn, this, std::placeholders::_1)

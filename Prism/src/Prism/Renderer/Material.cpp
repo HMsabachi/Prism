@@ -112,6 +112,7 @@ namespace Prism
 	}
 	void MaterialInstance::Bind() const
 	{
+		m_Material->m_Shader->Bind();
 		if (m_PropertyBuffer)
 			m_Material->m_Shader->SetProperty(m_PropertyBuffer);
 

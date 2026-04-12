@@ -52,11 +52,11 @@ namespace Prism
 		// 初始化ImGui层 Initialize ImGui Layer
 		m_ImGuiLayer = new ImGuiLayer("ImGui");
 		PushOverlay(m_ImGuiLayer);
+		// 初始化PrismShader解释器
+		PrismShaderParser::Init();
 		// 初始化渲染器 Initialize Renderer
 		Renderer::Init();
 		Renderer::WaitAndRender();
-		// 初始化PrismShader解释器
-		PrismShaderParser::Init();
 	}
 
 	Application::~Application()

@@ -34,21 +34,18 @@ namespace Prism
 			None = 0, ColorProperty = 1
 		};
 
-		void Property(const std::string& name, bool& value);
-
-		void Property(const std::string& name, float& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
-
-		void Property(const std::string& name, glm::vec3& value, PropertyFlag flags);
-
-		void Property(const std::string& name, glm::vec3& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
-
-		void Property(const std::string& name, glm::vec4& value, PropertyFlag flags);
-
-		void Property(const std::string& name, glm::vec4& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
-
 		virtual void OnImGuiRender() override;
 
 		virtual void OnEvent(Prism::Event& event) override;
+
+		bool OnKeyPressedEvent(KeyPressedEvent& e);
+
+		void Property(const std::string& name, bool& value);
+		void Property(const std::string& name, float& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
+		void Property(const std::string& name, glm::vec3& value, PropertyFlag flags);
+		void Property(const std::string& name, glm::vec3& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
+		void Property(const std::string& name, glm::vec4& value, PropertyFlag flags);
+		void Property(const std::string& name, glm::vec4& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
 
 	private:
 		void UpdateGlobalsUBO();
@@ -133,5 +130,8 @@ namespace Prism
 
 		// Editor resources
 		std::unique_ptr<Prism::Texture2D> m_CheckerboardTex;
+
+		int m_GizmoType = -1; // -1 = no gizmo
+		glm::mat4 m_Transform;
 	};
 }
