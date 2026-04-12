@@ -27,15 +27,15 @@ namespace Prism
 	OpenGLShader::OpenGLShader(const std::string& name, const std::string& source)
 		:m_Name(name), m_ShaderSource(source), m_RendererID(0), m_AssetsPath("")
 	{
-		PR_RENDER_S({
-			self->CompileAndUploadShader();
+		Renderer::Submit([this](){
+			CompileAndUploadShader();
 		});
 	}
 	OpenGLShader::~OpenGLShader()
 	{
-		PR_RENDER_S({
-			if (self->m_RendererID)
-				glDeleteProgram(self->m_RendererID);
+		Renderer::Submit([this](){
+			if (m_RendererID)
+				glDeleteProgram(m_RendererID);
 		});
 	}
 
@@ -47,18 +47,18 @@ namespace Prism
 			return;
 		}	
 		ReadShaderFromFile(m_AssetsPath);
-		PR_RENDER_S({
-			if (self->m_RendererID)
-				glDeleteProgram(self->m_RendererID);
+		Renderer::Submit([this]() {
+			if (m_RendererID)
+				glDeleteProgram(m_RendererID);
 		// TODO :这里加入Prismshader逻辑
-			self->CompileAndUploadShader();
+			CompileAndUploadShader();
 			});
 	}
 
 	void OpenGLShader::Bind()
 	{
-		PR_RENDER_S({
-			glUseProgram(self->m_RendererID);
+		Renderer::Submit([this]() {
+			glUseProgram(m_RendererID);
 			});
 	}
 
@@ -181,8 +181,8 @@ namespace Prism
 
 	void OpenGLShader::UploadUniformBuffer(const UniformBufferBase& uniformBuffer)
 	{
-		PR_RENDER_S({
-			glUseProgram(self->m_RendererID);
+		Renderer::Submit([this]() {
+			glUseProgram(m_RendererID);
 		});
 		for (unsigned int i = 0; i < uniformBuffer.GetUniformCount(); i++)
 		{
@@ -193,8 +193,8 @@ namespace Prism
 			{
 				const std::string& name = decl.Name;
 				int value = *(int*)(uniformBuffer.GetBuffer() + decl.Offset);
-				PR_RENDER_S2(name, value, {
-					self->UploadUniformInt(name, value);
+				Renderer::Submit([=]() {
+					UploadUniformInt(name, value);
 				});
 				break;
 			}
@@ -202,8 +202,8 @@ namespace Prism
 			{
 				const std::string& name = decl.Name;
 				float value = *(float*)(uniformBuffer.GetBuffer() + decl.Offset);
-				PR_RENDER_S2(name, value, {
-					self->UploadUniformFloat(name, value);
+				Renderer::Submit([=]() {
+					UploadUniformFloat(name, value);
 					});
 				break;
 			}
@@ -211,8 +211,8 @@ namespace Prism
 			{
 				const std::string& name = decl.Name;
 				glm::vec3& values = *(glm::vec3*)(uniformBuffer.GetBuffer() + decl.Offset);
-				PR_RENDER_S2(name, values, {
-					self->UploadUniformFloat3(name, values);
+				Renderer::Submit([=]() {
+					UploadUniformFloat3(name, values);
 					});
 				break;
 			}
@@ -220,8 +220,8 @@ namespace Prism
 			{
 				const std::string& name = decl.Name;
 				glm::vec4& values = *(glm::vec4*)(uniformBuffer.GetBuffer() + decl.Offset);
-				PR_RENDER_S2(name, values, {
-					self->UploadUniformFloat4(name, values);
+				Renderer::Submit([=](){
+					UploadUniformFloat4(name, values);
 					});
 				break;
 			}
@@ -229,8 +229,8 @@ namespace Prism
 			{
 				const std::string& name = decl.Name;
 				glm::mat4& values = *(glm::mat4*)(uniformBuffer.GetBuffer() + decl.Offset);
-				PR_RENDER_S2(name, values, {
-					self->UploadUniformMat4(name, values);
+				Renderer::Submit([=]() {
+					UploadUniformMat4(name, values);
 					});
 				break;
 			}
@@ -239,20 +239,20 @@ namespace Prism
 	}
 	void OpenGLShader::SetFloat(const std::string& name, float value)
 	{
-		PR_RENDER_S2(name, value, {
-			self->UploadUniformFloat(name, value);
+		Renderer::Submit([=]() {
+			UploadUniformFloat(name, value);
 			});
 	}
 	void OpenGLShader::SetVec3(const std::string& name, const glm::vec3& value)
 	{
-		PR_RENDER_S2(name, value, {
-			self->UploadUniformFloat3(name, value);
+		Renderer::Submit([=]() {
+			UploadUniformFloat3(name, value);
 			});
 	}
 	void OpenGLShader::SetMat4(const std::string& name, const glm::mat4& value)
 	{
-		PR_RENDER_S2(name, value, {
-			self->UploadUniformMat4(name, value);
+		Renderer::Submit([=]() {
+			UploadUniformMat4(name, value);
 			});
 	}
 
@@ -267,8 +267,8 @@ namespace Prism
 
 	void OpenGLShader::SetProperty(const PropertyBufferDeclaration& decl, const Buffer& buffer)
 	{
-		PR_RENDER_S2(decl, buffer, {
-			self->SetPropertyImpt(decl, buffer);
+		Renderer::Submit([this, decl, buffer]() {
+			SetPropertyImpt(decl, buffer);
 		});
 	}
 

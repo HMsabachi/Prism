@@ -29,28 +29,28 @@ namespace Prism {
 
 	OpenGLVertexArray::OpenGLVertexArray()
 	{
-		PR_RENDER_S({
-			glCreateVertexArrays(1, &self->m_RendererID);
+		Renderer::Submit([this]() {
+			glCreateVertexArrays(1, &m_RendererID);
 			});
 	}
 
 	OpenGLVertexArray::~OpenGLVertexArray()
 	{
-		PR_RENDER_S({
-			glDeleteVertexArrays(1, &self->m_RendererID);
+		Renderer::Submit([this]() {
+			glDeleteVertexArrays(1, &m_RendererID);
 			});
 	}
 
 	void OpenGLVertexArray::Bind() const
 	{
-		PR_RENDER_S({
-			glBindVertexArray(self->m_RendererID);
+		Renderer::Submit([this]() {
+			glBindVertexArray(m_RendererID);
 			});
 	}
 
 	void OpenGLVertexArray::Unbind() const
 	{
-		PR_RENDER_S({
+		Renderer::Submit([this]() {
 			glBindVertexArray(0);
 			});
 	}
@@ -62,7 +62,7 @@ namespace Prism {
 		this->Bind();
 		vertexBuffer->Bind();
 
-		PR_RENDER_S1(vertexBuffer, {
+		Renderer::Submit([this, vertexBuffer]() {
 			auto i = BufferElement::DEFAULT_VERTEX_SEMANTICS;
 			const auto& layout = vertexBuffer->GetLayout();
 			for (const auto& element : layout)
@@ -90,7 +90,7 @@ namespace Prism {
 				}
 				
 			}
-			self->m_VertexBufferIndex += i - BufferElement::DEFAULT_VERTEX_SEMANTICS;
+			m_VertexBufferIndex += i - BufferElement::DEFAULT_VERTEX_SEMANTICS;
 			});
 		m_VertexBuffers.push_back(vertexBuffer);
 	}

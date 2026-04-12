@@ -5,6 +5,8 @@
 
 #include "Camera/Camera.h"
 
+#include <glad/glad.h>
+
 namespace Prism
 {
 	Renderer* Renderer::s_Instance = new Renderer();
@@ -13,7 +15,7 @@ namespace Prism
 	void Renderer::Init()
 	{
 		s_Instance->m_ShaderLibrary = std::make_unique<ShaderLibrary>();
-		PR_RENDER({ RendererAPI::Init(); });
+		Renderer::Submit([]() { RendererAPI::Init(); });
 
 		Renderer::GetShaderLibrary()->Load("Assets/Shaders/PrismPBR_Static.glsl");
 		Renderer::GetShaderLibrary()->Load("Assets/Shaders/PrismPBR_Anim.glsl");
@@ -26,13 +28,13 @@ namespace Prism
 	}
 	void Renderer::Clear()
 	{
-		PR_RENDER({
+		Renderer::Submit([]() {
 			RendererAPI::Clear(0.0f, 0.0f, 0.0f, 1.0f);
 		});
 	}
 	void Renderer::Clear(float r, float g, float b, float a /*= 1.0f*/)
 	{
-		PR_RENDER_4(r, g, b, a, {
+		Renderer::Submit([=]() {
 			RendererAPI::Clear(r, g, b, a);
 		});
 	}
@@ -46,7 +48,7 @@ namespace Prism
 
 	void Renderer::DrawIndexed(uint32_t count, bool depthTest)
 	{
-		PR_RENDER_2(count, depthTest, {
+		Renderer::Submit([=]() {
 			RendererAPI::DrawIndexed(count, depthTest);
 		});
 	}
@@ -80,7 +82,10 @@ namespace Prism
 		m_ActiveRenderPass = renderPass;
 
 		renderPass->GetSpecification().TargetFramebuffer->Bind();
-
+		const glm::vec4& clearColor = renderPass->GetSpecification().TargetFramebuffer->GetSpecification().ClearColor;
+		Renderer::Submit([=]() {
+			RendererAPI::Clear(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
+			});
 		UpdateGlobalsUBO(*m_ActiveCamera);
 	}
 
@@ -93,9 +98,36 @@ namespace Prism
 
 	
 
-	void Renderer::SubmitMeshI(const Ref<Mesh>& mesh)
+	void Renderer::SubmitMeshI(const Ref<Mesh>& mesh, const glm::mat4& transform, const Ref<MaterialInstance>& overrideMaterial)
 	{
+		if (overrideMaterial)
+		{
+			overrideMaterial->Bind();
+		}
+		else
+		{
+			// Bind mesh material here
+		}
 
+		// TODO: 解决这个问题
+		mesh->m_VertexArray->Bind();
+		// TODO: 替换为渲染 API 调用
+		Renderer::Submit([=]()
+			{
+				for (Submesh& submesh : mesh->m_Submeshes)
+				{
+					if (mesh->m_IsAnimated)
+					{
+						for (size_t i = 0; i < mesh->m_BoneTransforms.size(); i++)
+						{
+							std::string uniformName = std::string("u_BoneTransforms[") + std::to_string(i) + std::string("]");
+							mesh->m_MeshShader->SetMat4FromRenderThread(uniformName, mesh->m_BoneTransforms[i]);
+						}
+					}
+
+					glDrawElementsBaseVertex(GL_TRIANGLES, submesh.IndexCount, GL_UNSIGNED_INT, (void*)(sizeof(uint32_t) * submesh.BaseIndex), submesh.BaseVertex);
+				}
+			});
 	}
 
 
@@ -111,8 +143,8 @@ namespace Prism
 		m_GlobalsUBO.InverseViewProjection = inverse(m_GlobalsUBO.ViewProjection);
 		float time = Prism::Time::GetTime();
 		m_GlobalsUBO.Time = glm::vec4(time * 0.2f, time, time * 2, time * 3);
-		PR_RENDER_S({
-			Prism::GlobalUniforms::UpdateGlobalUniform(self->m_GlobalsUBO);
+		Renderer::Submit([this](){
+			Prism::GlobalUniforms::UpdateGlobalUniform(m_GlobalsUBO);
 			});
 	}
 

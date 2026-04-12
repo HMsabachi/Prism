@@ -35,6 +35,7 @@ namespace Prism {
 		virtual void Resize(uint32_t width, uint32_t height) = 0;
 
 		virtual void BindTexture(uint32_t slot = 0) const = 0;
+		virtual void BindDepthTexture(uint32_t slot = 0) const = 0;
 
 		virtual RendererID GetRendererID() const = 0;
 		virtual RendererID GetColorAttachmentRendererID() const = 0;

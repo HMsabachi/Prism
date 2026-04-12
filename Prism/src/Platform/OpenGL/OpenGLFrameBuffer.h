@@ -15,6 +15,7 @@ namespace Prism {
 		virtual void Unbind() const override;
 
 		virtual void BindTexture(uint32_t slot = 0) const override;
+		virtual void BindDepthTexture(uint32_t slot = 0) const override;
 
 		virtual RendererID GetRendererID() const { return m_RendererID; }
 		virtual RendererID GetColorAttachmentRendererID() const { return m_ColorAttachment; }

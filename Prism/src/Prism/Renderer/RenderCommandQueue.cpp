@@ -5,12 +5,12 @@
 namespace Prism
 {
 
-	const unsigned int RenderCommandQueue::COMMAND_BUFFER_SIZE = 10 * 1024 * 1024;
+	const size_t RenderCommandQueue::COMMAND_BUFFER_SIZE = 10 * 1024 * 1024;
 
 	RenderCommandQueue::RenderCommandQueue()
 		:m_CommandCount(0)
 	{
-		m_CommandBuffer = new unsigned char[COMMAND_BUFFER_SIZE]; // 10MB buffer
+		m_CommandBuffer = new uint8_t[COMMAND_BUFFER_SIZE]; // 10MB buffer
 		m_CommandBufferPtr = m_CommandBuffer;
 		memset(m_CommandBuffer, 0, COMMAND_BUFFER_SIZE);
 	}
@@ -20,7 +20,7 @@ namespace Prism
 		delete[] m_CommandBuffer;
 	}
 
-	void* RenderCommandQueue::Allocate(RenderCommandFn fn, unsigned int size)
+	void* RenderCommandQueue::Allocate(RenderCommandFn fn, uint32_t size)
 	{
 		if(m_IsExecuting) 
 			PR_CORE_WARN("RenderCommandQueue: 在执行命令队列时分配新了的命令!");
@@ -28,8 +28,8 @@ namespace Prism
 		*(RenderCommandFn*)m_CommandBufferPtr = fn;
 		m_CommandBufferPtr += sizeof(RenderCommandFn);
 
-		*(int*)m_CommandBufferPtr = size;
-		m_CommandBufferPtr += sizeof(unsigned int);
+		*(uint32_t*)m_CommandBufferPtr = size;
+		m_CommandBufferPtr += sizeof(uint32_t);
 
 		void* memory = m_CommandBufferPtr;
 		m_CommandBufferPtr += size;
@@ -47,13 +47,13 @@ namespace Prism
 
 		byte* buffer = m_CommandBuffer;
 
-		for (unsigned int i = 0; i < m_CommandCount; i++)
+		for (uint32_t i = 0; i < m_CommandCount; i++)
 		{
 			RenderCommandFn function = *(RenderCommandFn*)buffer;
 			buffer += sizeof(RenderCommandFn);
 
-			unsigned int size = *(unsigned int*)buffer;
-			buffer += sizeof(unsigned int);
+			uint32_t size = *(uint32_t*)buffer;
+			buffer += sizeof(uint32_t);
 			function(buffer);
 			buffer += size;
 		}

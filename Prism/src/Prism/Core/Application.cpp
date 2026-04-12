@@ -102,7 +102,7 @@ namespace Prism
 				layer->OnUpdate();
 
 			Application* app = this;
-			PR_RENDER_1(app, { app->RenderImGui(); });
+			Renderer::Submit([app]() { app->RenderImGui(); });
 
 			Renderer::WaitAndRender();
 		}
@@ -151,7 +151,7 @@ namespace Prism
 		int width = e.GetWidth(), height = e.GetHeight();
 
 		//PR_RENDER_2(width, height, { RendererAPI::SetViewport(0, 0, width, height); });
-		PR_RENDER_2(width, height, { glViewport(0, 0, width, height); });
+		Renderer::Submit([=]() { glViewport(0, 0, width, height); });
 
 		auto& fbs = FramebufferPool::GetGlobal()->GetAll();
 		for (auto& fb : fbs)

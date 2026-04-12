@@ -230,8 +230,6 @@ namespace Prism
 		auto viewProjection = m_Camera.GetProjectionMatrix() * m_Camera.GetViewMatrix();
 
 		Renderer::BeginRenderPass(m_GeoPass);
-
-		Renderer::Clear();
 		m_QuadShader->Bind();
 		m_EnvironmentCubeMap->Bind(0);
 		m_FullscreenQuadVertexArray->Bind();
