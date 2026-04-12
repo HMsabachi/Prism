@@ -17,6 +17,8 @@
 
 #include "imgui.h"
 
+#include "Prism/Renderer/Renderer.h"
+
 namespace Prism {
 
 	static const uint32_t s_MeshImportFlags =
@@ -453,8 +455,8 @@ namespace Prism {
 					}
 				}
 
-				if (!materialOverride)
-					self->m_MeshShader->SetMat4FromRenderThread("Prism_Model", transform * submesh.Transform);
+				//if (!materialOverride)
+					//self->m_MeshShader->SetMat4FromRenderThread("Prism_Model", transform * submesh.Transform);
 				glDrawElementsBaseVertex(GL_TRIANGLES, submesh.IndexCount, GL_UNSIGNED_INT, (void*)(sizeof(uint32_t) * submesh.BaseIndex), submesh.BaseVertex);
 			}
 			});

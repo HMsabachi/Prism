@@ -32,7 +32,6 @@ namespace Prism
 	void EditorLayer::OnAttach()
 	{
 		#pragma region ImGui Color
-		// ImGui Colors
 		ImVec4* colors = ImGui::GetStyle().Colors;
 		colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
 		colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
@@ -67,9 +66,9 @@ namespace Prism
 		colors[ImGuiCol_ResizeGrip] = ImVec4(1.00f, 1.00f, 1.00f, 0.38f);
 		colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.98f, 0.26f, 0.26f, 0.67f);
 		colors[ImGuiCol_ResizeGripActive] = ImVec4(0.97f, 0.00f, 0.00f, 0.95f);
-		colors[ImGuiCol_Tab] = ImVec4(1.00f, 0.00f, 0.00f, 0.86f);
+		colors[ImGuiCol_Tab] = ImVec4(0.80f, 0.00f, 0.00f, 0.86f);
 		colors[ImGuiCol_TabHovered] = ImVec4(0.98f, 0.26f, 0.26f, 0.80f);
-		colors[ImGuiCol_TabActive] = ImVec4(0.68f, 0.20f, 0.20f, 1.00f);
+		colors[ImGuiCol_TabActive] = ImVec4(1.00f, 0.07f, 0.07f, 1.00f);
 		colors[ImGuiCol_TabUnfocused] = ImVec4(0.07f, 0.10f, 0.15f, 0.97f);
 		colors[ImGuiCol_TabUnfocusedActive] = ImVec4(1.00f, 0.00f, 0.00f, 1.00f);
 		colors[ImGuiCol_DockingPreview] = ImVec4(1.00f, 0.36f, 0.36f, 0.70f);
@@ -89,6 +88,8 @@ namespace Prism
 		colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
 		colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
 		colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.10f, 0.10f, 0.15f, 0.60f);
+
+
 
 		#pragma endregion
 
@@ -120,8 +121,26 @@ namespace Prism
 		m_EnvironmentIrradiance.reset(Prism::TextureCube::Create("Assets/Textures/environments/Arches_E_PineTree_Irradiance.tga"));
 		m_BRDFLUT.reset(Prism::Texture2D::Create("Assets/Textures/BRDF_LUT.tga"));
 
-		m_Framebuffer.reset(Prism::Framebuffer::Create(1280, 720, Prism::FramebufferFormat::RGBA16F));
-		m_FinalPresentBuffer.reset(Prism::Framebuffer::Create(1280, 720, Prism::FramebufferFormat::RGBA8));
+		// Render Passes
+		FramebufferSpecification geoFramebufferSpec;
+		geoFramebufferSpec.Width = 1280;
+		geoFramebufferSpec.Height = 720;
+		geoFramebufferSpec.Format = FramebufferFormat::RGBA16F;
+		geoFramebufferSpec.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
+
+		RenderPassSpecification geoRenderPassSpec;
+		geoRenderPassSpec.TargetFramebuffer = Prism::Framebuffer::Create(geoFramebufferSpec);
+		m_GeoPass = RenderPass::Create(geoRenderPassSpec);
+
+		FramebufferSpecification compFramebufferSpec;
+		compFramebufferSpec.Width = 1280;
+		compFramebufferSpec.Height = 720;
+		compFramebufferSpec.Format = FramebufferFormat::RGBA8;
+		compFramebufferSpec.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
+
+		RenderPassSpecification compRenderPassSpec;
+		compRenderPassSpec.TargetFramebuffer = Prism::Framebuffer::Create(compFramebufferSpec);
+		m_CompositePass = RenderPass::Create(compRenderPassSpec);
 
 		float x = -4.0f;
 		float roughness = 0.0f;
@@ -199,7 +218,7 @@ namespace Prism
 
 	void EditorLayer::OnUpdate()
 	{
-		UpdateGlobalsUBO();
+		Prism::Renderer::BeginScene(m_Camera);
 		// THINGS TO LOOK AT:
 		// - BRDF LUT
 		// - Cubemap mips and filtering
@@ -210,11 +229,9 @@ namespace Prism
 		m_Camera.Update();
 		auto viewProjection = m_Camera.GetProjectionMatrix() * m_Camera.GetViewMatrix();
 
-		m_Framebuffer->Bind();
+		Renderer::BeginRenderPass(m_GeoPass);
+
 		Renderer::Clear();
-
-
-
 		m_QuadShader->Bind();
 		m_EnvironmentCubeMap->Bind(0);
 		m_FullscreenQuadVertexArray->Bind();
@@ -296,15 +313,15 @@ namespace Prism
 		m_GridMaterial->Set("Prism_Model", glm::scale(glm::mat4(1.0f), glm::vec3(16.0f)));
 		m_PlaneMesh->Render(Time::GetDeltaTime(), m_GridMaterial);
 
-		m_Framebuffer->Unbind();
+		Renderer::EndRenderPass();
 
-		m_FinalPresentBuffer->Bind();
+		Renderer::BeginRenderPass(m_CompositePass);
 		m_HDRShader->Bind();
 		m_HDRShader->GetOriginalShader()->SetFloat("u_Exposure", m_Exposure);
-		m_Framebuffer->BindTexture();
+		m_GeoPass->GetSpecification().TargetFramebuffer->BindTexture();
 		m_FullscreenQuadVertexArray->Bind();
 		Renderer::DrawIndexed(m_FullscreenQuadVertexArray->GetIndexBuffer()->GetCount(), false);
-		m_FinalPresentBuffer->Unbind();
+		Renderer::EndRenderPass();
 	}
 
 	void EditorLayer::Property(const std::string& name, glm::vec4& value, float min /*= -1.0f*/, float max /*= 1.0f*/, PropertyFlag flags /*= PropertyFlag::None*/)
@@ -626,11 +643,12 @@ namespace Prism
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 		ImGui::Begin("Viewport");
 		auto viewportSize = ImGui::GetContentRegionAvail();
-		m_Framebuffer->Resize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
-		m_FinalPresentBuffer->Resize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
+		
+		m_GeoPass->GetSpecification().TargetFramebuffer->Resize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
+		m_CompositePass->GetSpecification().TargetFramebuffer->Resize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
 		m_Camera.SetProjectionMatrix(glm::perspectiveFov(glm::radians(45.0f), viewportSize.x, viewportSize.y, 0.1f, 10000.0f));
 		m_Camera.SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
-		ImGui::Image((void*)m_FinalPresentBuffer->GetColorAttachmentRendererID(), viewportSize, { 0, 1 }, { 1, 0 });
+		ImGui::Image((void*)m_CompositePass->GetSpecification().TargetFramebuffer->GetColorAttachmentRendererID(), viewportSize, { 0, 1 }, { 1, 0 });
 		//PR_TRACE("FrameBuffer {0}", m_FinalPresentBuffer->GetColorAttachmentRendererID());
 		// Gizmos
 		if (m_GizmoType != -1)
@@ -714,22 +732,6 @@ namespace Prism
 			break;
 		}
 		return false;
-	}
-
-	void EditorLayer::UpdateGlobalsUBO()
-	{
-		m_GlobalsUBO.AspectRatio = (float)m_Framebuffer->GetWidth() / (float)m_Framebuffer->GetHeight();
-		m_GlobalsUBO.CameraPosition = m_Camera.GetPosition();
-		m_GlobalsUBO.DeltaTime = Prism::Time::GetDeltaTime();
-		m_GlobalsUBO.Projection = m_Camera.GetProjectionMatrix();
-		m_GlobalsUBO.View = m_Camera.GetViewMatrix();
-		m_GlobalsUBO.ViewProjection = m_GlobalsUBO.Projection * m_GlobalsUBO.View;
-		m_GlobalsUBO.InverseViewProjection = inverse(m_GlobalsUBO.ViewProjection);
-		float time = Prism::Time::GetTime();
-		m_GlobalsUBO.Time = glm::vec4(time * 0.2f, time, time * 2, time * 3);
-		PR_RENDER_S({
-			Prism::GlobalUniforms::UpdateGlobalUniform(self->m_GlobalsUBO);
-			});
 	}
 
 }

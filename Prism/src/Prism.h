@@ -24,6 +24,7 @@
 
 // --- Prism Render API ------------------------------
 #include "Prism/Renderer/Renderer.h"
+#include "Prism/Renderer/RenderPass.h"
 #include "Prism/Renderer/Framebuffer.h"
 #include "Prism/Renderer/Buffer.h"
 #include "Prism/Renderer/VertexArray.h"

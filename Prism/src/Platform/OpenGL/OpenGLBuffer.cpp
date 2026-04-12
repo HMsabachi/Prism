@@ -3,6 +3,8 @@
 
 #include <Glad/glad.h>
 
+#include "Prism/Renderer/Renderer.h"
+
 namespace Prism
 {
 

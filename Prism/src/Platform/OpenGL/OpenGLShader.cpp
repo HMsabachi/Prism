@@ -3,6 +3,8 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
+#include "Prism/Renderer/Renderer.h"
+
 
 namespace Prism 
 {
@@ -254,9 +256,10 @@ namespace Prism
 			});
 	}
 
-	void OpenGLShader::SetMat4FromRenderThread(const std::string& name, const glm::mat4& value)
+	void OpenGLShader::SetMat4FromRenderThread(const std::string& name, const glm::mat4& value, bool bind)
 	{
-		glUseProgram(m_RendererID);
+		if (bind)
+			glUseProgram(m_RendererID);
 		UploadUniformMat4(name, value);
 	}
 

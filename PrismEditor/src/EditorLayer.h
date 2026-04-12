@@ -36,7 +36,7 @@ namespace Prism
 
 		virtual void OnImGuiRender() override;
 
-		virtual void OnEvent(Prism::Event& event) override;
+		virtual void OnEvent(Event& event) override;
 
 		bool OnKeyPressedEvent(KeyPressedEvent& e);
 
@@ -48,30 +48,28 @@ namespace Prism
 		void Property(const std::string& name, glm::vec4& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
 
 	private:
-		void UpdateGlobalsUBO();
-	private:
 		glm::vec3 m_ModelPosition = { 0.f, 0.0f, 0.0f };
 		float m_ModelRotation = 0.0f;
-		Prism::Ref<Prism::MaterialInstance> m_MeshMaterial;
-		Prism::Ref<Prism::MaterialInstance> m_GridMaterial;
-		std::vector<Prism::Ref<Prism::MaterialInstance>> m_MetalSphereMaterialInstances;
-		std::vector<Prism::Ref<Prism::MaterialInstance>> m_DielectricSphereMaterialInstances;
+		Ref<MaterialInstance> m_MeshMaterial;
+		Ref<MaterialInstance> m_GridMaterial;
+		std::vector<Ref<MaterialInstance>> m_MetalSphereMaterialInstances;
+		std::vector<Ref<MaterialInstance>> m_DielectricSphereMaterialInstances;
 
 		float m_GridScale = 16.025f, m_GridSize = 0.025f;
 		float m_MeshScale = 1.0f;
 	private:
-		Prism::PrismGlobalsUBO m_GlobalsUBO;
-		Prism::Ref<Prism::PrismShader> m_QuadShader;
-		Prism::Ref<Prism::PrismShader> m_HDRShader;
-		Prism::Ref<Prism::PrismShader> m_GridShader;
-		Prism::Ref<Prism::Mesh> m_Mesh;
-		Prism::Ref<Prism::Mesh> m_SphereMesh, m_PlaneMesh;
-		Prism::Ref<Prism::Texture2D> m_BRDFLUT;
+		Ref<PrismShader> m_QuadShader;
+		Ref<PrismShader> m_HDRShader;
+		Ref<PrismShader> m_GridShader;
+		Ref<Mesh> m_Mesh;
+		Ref<Mesh> m_SphereMesh, m_PlaneMesh;
+		Ref<Texture2D> m_BRDFLUT;
+		Ref<RenderPass> m_GeoPass, m_CompositePass;
 
 		struct AlbedoInput
 		{
 			glm::vec3 Color = { 0.972f, 0.96f, 0.915f }; // Silver, from https://docs.unrealengine.com/en-us/Engine/Rendering/Materials/PhysicallyBased
-			Prism::Ref<Prism::Texture2D> TextureMap;
+			Ref<Texture2D> TextureMap;
 			bool SRGB = true;
 			bool UseTexture = false;
 		};
@@ -79,7 +77,7 @@ namespace Prism
 
 		struct NormalInput
 		{
-			Prism::Ref<Prism::Texture2D> TextureMap;
+			Ref<Texture2D> TextureMap;
 			bool UseTexture = false;
 		};
 		NormalInput m_NormalInput;
@@ -87,7 +85,7 @@ namespace Prism
 		struct MetalnessInput
 		{
 			float Value = 1.0f;
-			Prism::Ref<Prism::Texture2D> TextureMap;
+			Ref<Texture2D> TextureMap;
 			bool UseTexture = false;
 		};
 		MetalnessInput m_MetalnessInput;
@@ -95,17 +93,15 @@ namespace Prism
 		struct RoughnessInput
 		{
 			float Value = 0.5f;
-			Prism::Ref<Prism::Texture2D> TextureMap;
+			Ref<Texture2D> TextureMap;
 			bool UseTexture = false;
 		};
 		RoughnessInput m_RoughnessInput;
 
-		Prism::Ref<Prism::Framebuffer> m_Framebuffer, m_FinalPresentBuffer;
-
 		Ref<VertexArray> m_FullscreenQuadVertexArray;
-		Prism::Ref<Prism::TextureCube> m_EnvironmentCubeMap, m_EnvironmentIrradiance;
+		Ref<TextureCube> m_EnvironmentCubeMap, m_EnvironmentIrradiance;
 
-		Prism::Camera m_Camera;
+		Camera m_Camera;
 
 		struct Light
 		{
@@ -129,7 +125,7 @@ namespace Prism
 		Scene m_Scene;
 
 		// Editor resources
-		std::unique_ptr<Prism::Texture2D> m_CheckerboardTex;
+		std::unique_ptr<Texture2D> m_CheckerboardTex;
 
 		int m_GizmoType = -1; // -1 = no gizmo
 		glm::mat4 m_Transform;

@@ -155,7 +155,10 @@ namespace Prism
 
 		auto& fbs = FramebufferPool::GetGlobal()->GetAll();
 		for (auto& fb : fbs)
-			fb->Resize(width, height);
+		{
+			if (auto fbp = fb.lock())
+				fbp->Resize(width, height);
+		}
 
 		m_Minimized = false;
 

@@ -1,5 +1,6 @@
 ﻿#include "prpch.h"
 #include "OpenGLVertexArray.h"
+#include "Prism/Renderer/Renderer.h"
 
 #include <glad/glad.h>
 

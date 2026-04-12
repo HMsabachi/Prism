@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "PrismShaderData.h"
-#include "Prism/Renderer/Renderer.h"
+
+#include "RendererAPI.h"
 
 namespace Prism {
 

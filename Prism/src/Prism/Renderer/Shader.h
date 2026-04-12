@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "Prism/Core/Core.h"
-#include "Prism/Renderer/Renderer.h"
+#include "Prism/Renderer/RendererAPI.h"
 #include "Shader/ShaderProperty.h"
 
 #include <string>
@@ -125,7 +125,7 @@ namespace Prism
 		virtual void SetFloat(const std::string& name, float value) = 0;
 		virtual void SetVec3(const std::string& name, const glm::vec3& value) = 0;
 		virtual void SetMat4(const std::string& name, const glm::mat4& value) = 0;
-		virtual void SetMat4FromRenderThread(const std::string& name, const glm::mat4& value) = 0;
+		virtual void SetMat4FromRenderThread(const std::string& name, const glm::mat4& value, bool bind = true) = 0;
 
 		virtual const std::string& GetName() const = 0;
 

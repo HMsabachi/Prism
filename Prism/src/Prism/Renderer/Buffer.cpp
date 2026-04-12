@@ -1,6 +1,7 @@
 ﻿#include "prpch.h"
 
 #include "Platform/OpenGL/OpenGLBuffer.h"
+#include "Renderer.h"
 
 namespace Prism {
 
