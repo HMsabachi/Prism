@@ -32,6 +32,9 @@
 #include "imgui_internal.h"
 #include "ImGuizmo.h"
 
+#include "Prism/Core/Input.h"
+#include "Prism/Core/KeyCodes.h"
+
 #if defined(_MSC_VER) || defined(__MINGW32__)
 #include <malloc.h>
 #endif
@@ -1650,6 +1653,10 @@ namespace IMGUIZMO_NAMESPACE
 
    static bool CanActivate()
    {
+	   // Check for modifiers
+	   if (Prism::Input::IsKeyPressed(PR_KEY_LEFT_ALT) || Prism::Input::IsKeyPressed(PR_KEY_LEFT_SHIFT) || Prism::Input::IsKeyPressed(PR_KEY_LEFT_CONTROL))
+		   return false;
+
       if (ImGui::IsMouseClicked(0) && !ImGui::IsAnyItemHovered() && !ImGui::IsAnyItemActive())
       {
          return true;

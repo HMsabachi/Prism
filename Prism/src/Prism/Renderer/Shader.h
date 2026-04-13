@@ -119,7 +119,7 @@ namespace Prism
 		virtual void Bind() = 0;
 		virtual void UploadUniformBuffer(const UniformBufferBase& uniformBuffer) = 0;
 
-
+		virtual RendererID GetRendererID() const = 0;
 
 		// Temporary while we don't have materials
 		virtual void SetFloat(const std::string& name, float value) = 0;

@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include "Prism/Renderer/Shader.h"
-#include "Shader/OpenGLShaderUniform.h"
 #include <Glad/glad.h>
 
 namespace Prism {
@@ -20,6 +19,9 @@ namespace Prism {
 		virtual void UploadUniformBuffer(const UniformBufferBase& uniformBuffer) override;
 
 		virtual void SetProperty(const PropertyBufferDeclaration& decl, const Buffer& buffer) override;
+
+
+		RendererID GetRendererID() const override;
 
 	private:
 		void SetPropertyImpt(const PropertyBufferDeclaration& decl, const Buffer& buffer);

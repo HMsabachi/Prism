@@ -57,10 +57,13 @@ namespace Prism
 
 	void OpenGLShader::Bind()
 	{
-		Renderer::Submit([this]() {
+		Renderer::Submit([=]() {
 			glUseProgram(m_RendererID);
 			});
 	}
+
+	Prism::RendererID OpenGLShader::GetRendererID() const { return m_RendererID; }
+
 
 	void OpenGLShader::ReadShaderFromFile(const std::string& filepath)
 	{
@@ -271,6 +274,7 @@ namespace Prism
 			SetPropertyImpt(decl, buffer);
 		});
 	}
+
 
 	void OpenGLShader::SetPropertyImpt(const PropertyBufferDeclaration& decl, const Buffer& buffer)
 	{

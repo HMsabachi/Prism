@@ -27,6 +27,8 @@ namespace Prism {
 		m_Pitch = M_PI / 4.0f;
 	}
 
+	Camera::Camera() = default;
+
 	void Camera::Focus()
 	{
 	}

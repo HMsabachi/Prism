@@ -8,6 +8,7 @@ namespace Prism {
 	class PRISM_API Camera
 	{
 	public:
+		Camera();
 		Camera(const glm::mat4& projectionMatrix);
 
 		void Focus();
@@ -21,6 +22,9 @@ namespace Prism {
 
 		const glm::mat4& GetProjectionMatrix() const { return m_ProjectionMatrix; }
 		const glm::mat4& GetViewMatrix() const { return m_ViewMatrix; }
+
+		float GetExposure() const { return m_Exposure; }
+		float& GetExposure() { return m_Exposure; }
 
 		glm::vec3 GetUpDirection();
 		glm::vec3 GetRightDirection();
@@ -46,8 +50,9 @@ namespace Prism {
 		glm::vec3 m_InitialFocalPoint, m_InitialRotation;
 
 		float m_Distance;
-
 		float m_Pitch, m_Yaw;
+		float m_Exposure = 0.8f; // 默认曝光度
+
 		uint32_t m_ViewportWidth = 1280, m_ViewportHeight = 720;
 	};
 

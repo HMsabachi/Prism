@@ -60,6 +60,8 @@ namespace Prism {
 		// 创建图形API上下文 Creat graphics API Context
 		CreatGraphicsApiContext();
 
+		glfwMaximizeWindow(m_Window); // 默认最大化窗口 Maximize window by default
+
 		glfwSetWindowUserPointer(m_Window, &m_Data);
 		SetVSync(true);
 
