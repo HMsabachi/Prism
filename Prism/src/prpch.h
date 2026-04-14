@@ -12,6 +12,7 @@
 #include <limits>
 #include <sstream>
 #include <vector>
+#include <queue>
 #include <array>
 #include <unordered_map>
 #include <unordered_set>
@@ -25,8 +26,10 @@
 #include "Prism/Core/Time.h"
 #include "Prism/Debug/Instrumentor.h"
 #include "Prism/Core/Buffer.h"
-#include "Prism/Utilities/Utilities.h"
 
+
+#include "Prism/Utilities/Utilities.h"
+#include "Prism/Utilities/BitFlags.h"
 #ifdef PR_PLATFORM_WINDOWS
 	#include <Windows.h>
 #endif

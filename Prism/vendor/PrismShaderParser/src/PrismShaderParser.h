@@ -79,6 +79,7 @@ namespace Prism
         static void FormatCodeInPlace(std::string& code);
     #pragma endregion
 
+        bool ParseRenderCommand(std::string& cleanCode, ParseResult& result);
     };
         
 }

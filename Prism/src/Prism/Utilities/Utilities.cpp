@@ -53,7 +53,6 @@ namespace Prism
 	{
 		std::string Sanitize(std::string str)
 		{
-			// 不要用 remove_if 删除，而是用 replace 替换为合法分隔符（空格）
 			for (char& c : str)
 			{
 				if (c == '{' || c == '}' || c == '(' || c == ')' ||
@@ -63,6 +62,41 @@ namespace Prism
 				}
 			}
 			return str;
+		}
+
+		void SplitToken(std::string str, std::vector<std::string>& tokens)
+		{
+			std::stringstream ss(Sanitize(str));
+			std::string token;
+			while (std::getline(ss, token, ' '))
+			{
+				if (!token.empty())
+					tokens.push_back(token);
+			}
+		}
+
+		void SplitToken(std::string str, Tokens& tokens)
+		{
+			std::stringstream ss(Sanitize(str));
+			std::string token;
+			while (std::getline(ss, token, ' '))
+			{
+				if (!token.empty())
+					tokens.push(token);
+			}
+		}
+
+		void SplitToken(std::string str, TokenLines& tokens)
+		{
+			std::stringstream ss(Sanitize(str));
+			std::string line;
+			while (std::getline(ss, line))
+			{
+				Tokens lineTokens;
+				SplitToken(line, lineTokens);
+				if (!lineTokens.empty())
+					tokens.push(lineTokens);
+			}
 		}
 
 	}

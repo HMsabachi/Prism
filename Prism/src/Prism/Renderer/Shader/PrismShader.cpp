@@ -59,6 +59,7 @@ namespace Prism
 		m_Name = m_ParseResult.ShaderName;
 		m_Shader.reset(Shader::Create(m_Name, m_ParseResult.Passes[0].VertexShaderCode, m_ParseResult.Passes[0].FragmentShaderCode));
 		m_ShaderProperty.Init(m_ParseResult.Properties);
+		m_ShaderCommand = ParseShaderCommand(m_ParseResult.RenderCommand);
 		SetProperty(m_ShaderProperty.GetDefaultValueBuffer());
 		for (const auto& callback : m_ReloadedCallbacks)
 			callback();

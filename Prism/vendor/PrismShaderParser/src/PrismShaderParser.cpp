@@ -72,6 +72,8 @@ namespace Prism
             std::cerr << "Error: Failed to parse Properties block." << std::endl;
 			result.Success = false;
         }
+        // 提取RenderCommand 
+		ParseRenderCommand(cleanCode, result);
         // 执行 SubShader 和 Pass 的解析
         if (!ParseSubShader(cleanCode, result)) {
             std::cerr << "Error: Failed to parse SubShader block." << std::endl;
@@ -151,7 +153,6 @@ namespace Prism
 
     bool PrismShaderParser::ExtractShaderMetadata(const std::string& source, ParseResult& outResult)
     {
-        // 修复：增加了对换行和多余空格的宽容度
         std::regex shaderRegex(R"prism(Shader\s+"([^"]+)")prism");
         std::smatch match;
         if (std::regex_search(source, match, shaderRegex)) {
@@ -160,6 +161,13 @@ namespace Prism
         }
         return false;
     }
+
+	bool PrismShaderParser::ParseRenderCommand(std::string& cleanCode, ParseResult& result)
+	{
+        size_t cmdEnd = 0;
+        result.RenderCommand = ExtractBlock(cleanCode, "RenderCommand", 0, cmdEnd);
+		return !result.RenderCommand.empty();
+	}
 
     bool PrismShaderParser::ParsePropertiesBlock(const std::string& source, ParseResult& outResult)
     {
@@ -519,6 +527,9 @@ namespace Prism
         }
         code = result;
     }
+
+	
+
 #pragma endregion
 
     // 辅助函数：去除首尾空格

@@ -5,6 +5,7 @@
 #include "PrismShaderParser.h"
 
 #include "ShaderProperty.h"
+#include "ShaderCommand.h"
 
 
 namespace Prism
@@ -45,6 +46,7 @@ namespace Prism
 		std::string m_FilePath;
 		Ref<Shader> m_Shader;
 		ShaderProperty m_ShaderProperty;
+		ShaderCommand m_ShaderCommand;
 		std::vector<ShaderReloadedCallback> m_ReloadedCallbacks;
 
 	public:

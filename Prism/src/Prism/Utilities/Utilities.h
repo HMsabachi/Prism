@@ -54,8 +54,13 @@ namespace Prism
 	}
 	namespace StrParse
 	{
-		std::string Sanitize(std::string str);
+		typedef std::queue<std::queue<std::string>> TokenLines;
+		typedef std::queue<std::string> Tokens;
 
+		std::string Sanitize(std::string str);
+		void SplitToken(std::string str, std::vector<std::string>& tokens);
+		void SplitToken(std::string str, Tokens& tokens);
+		void SplitToken(std::string str, TokenLines& tokens);
 
 		template <typename T>
 		inline T Parse(const std::string& input) {
