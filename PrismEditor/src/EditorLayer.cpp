@@ -96,9 +96,9 @@ namespace Prism
 		using namespace glm;
 		Prism::GlobalUniforms::Init();
 
-		m_QuadShader = Prism::PrismShader::Create("Assets/Shaders/quad.glsl");
-		m_HDRShader = Prism::PrismShader::Create("Assets/Shaders/hdr.glsl");
-		m_GridShader = Prism::PrismShader::Create("Assets/Shaders/Grid.glsl");
+		m_QuadShader = Prism::PrismShader::Create("Assets/Shaders/Skybox.Shader");
+		m_HDRShader = Prism::PrismShader::Create("Assets/Shaders/hdr.Shader");
+		m_GridShader = Prism::PrismShader::Create("Assets/Shaders/Grid.Shader");
 		PR_TRACE(*m_QuadShader);
 		PR_TRACE(*m_HDRShader);
 		PR_TRACE(*m_GridShader);
@@ -113,13 +113,13 @@ namespace Prism
 		m_GridMaterial->Set("u_Scale", m_GridScale);
 		m_GridMaterial->Set("u_Res", m_GridSize);
 		// Editor
-		m_CheckerboardTex.reset(Prism::Texture2D::Create("Assets/editor/Checkerboard.tga"));
+		m_CheckerboardTex = Prism::Texture2D::Create("Assets/editor/Checkerboard.tga");
 
 		// Environment
-		m_EnvironmentCubeMap.reset(Prism::TextureCube::Create("Assets/Textures/environments/Arches_E_PineTree_Radiance.tga"));
+		m_EnvironmentCubeMap = Prism::TextureCube::Create("Assets/Textures/environments/Arches_E_PineTree_Radiance.tga");
 		//m_EnvironmentCubeMap.reset(Prism::TextureCube::Create("Assets/Textures/environments/DebugCubeMap.tga"));
-		m_EnvironmentIrradiance.reset(Prism::TextureCube::Create("Assets/Textures/environments/Arches_E_PineTree_Irradiance.tga"));
-		m_BRDFLUT.reset(Prism::Texture2D::Create("Assets/Textures/BRDF_LUT.tga"));
+		m_EnvironmentIrradiance = Prism::TextureCube::Create("Assets/Textures/environments/Arches_E_PineTree_Irradiance.tga");
+		m_BRDFLUT = Prism::Texture2D::Create("Assets/Textures/BRDF_LUT.tga");
 
 		// Render Passes
 		FramebufferSpecification geoFramebufferSpec;
@@ -511,7 +511,7 @@ namespace Prism
 					{
 						std::string filename = Prism::Application::Get().OpenFile("");
 						if (filename != "")
-							m_AlbedoInput.TextureMap.reset(Prism::Texture2D::Create(filename, m_AlbedoInput.SRGB));
+							m_AlbedoInput.TextureMap = Prism::Texture2D::Create(filename, m_AlbedoInput.SRGB);
 					}
 				}
 				ImGui::SameLine();
@@ -520,7 +520,7 @@ namespace Prism
 				if (ImGui::Checkbox("sRGB##AlbedoMap", &m_AlbedoInput.SRGB))
 				{
 					if (m_AlbedoInput.TextureMap)
-						m_AlbedoInput.TextureMap.reset(Prism::Texture2D::Create(m_AlbedoInput.TextureMap->GetPath(), m_AlbedoInput.SRGB));
+						m_AlbedoInput.TextureMap = Prism::Texture2D::Create(m_AlbedoInput.TextureMap->GetPath(), m_AlbedoInput.SRGB);
 				}
 				ImGui::EndGroup();
 				ImGui::SameLine();
@@ -549,7 +549,7 @@ namespace Prism
 					{
 						std::string filename = Prism::Application::Get().OpenFile("");
 						if (filename != "")
-							m_NormalInput.TextureMap.reset(Prism::Texture2D::Create(filename));
+							m_NormalInput.TextureMap = Prism::Texture2D::Create(filename);
 					}
 				}
 				ImGui::SameLine();
@@ -578,7 +578,7 @@ namespace Prism
 					{
 						std::string filename = Prism::Application::Get().OpenFile("");
 						if (filename != "")
-							m_MetalnessInput.TextureMap.reset(Prism::Texture2D::Create(filename));
+							m_MetalnessInput.TextureMap = Prism::Texture2D::Create(filename);
 					}
 				}
 				ImGui::SameLine();
@@ -609,7 +609,7 @@ namespace Prism
 					{
 						std::string filename = Prism::Application::Get().OpenFile("");
 						if (filename != "")
-							m_RoughnessInput.TextureMap.reset(Prism::Texture2D::Create(filename));
+							m_RoughnessInput.TextureMap = Prism::Texture2D::Create(filename);
 					}
 				}
 				ImGui::SameLine();

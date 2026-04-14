@@ -13,7 +13,7 @@ namespace Prism
 		return CreateRef<Material>(shader);
 	}
 	Material::Material(const Ref<PrismShader>& shader)
-		: m_Shader(shader), m_ShaderProperty(shader->GetProperty())
+		: m_Shader(shader), m_ShaderProperty(shader->GetProperty()), m_ShaderCommand(shader->GetShaderCommand())
 	{
 		m_Shader->AddShaderReloadedCallback(std::bind(&Material::OnShaderReloaded, this));
 		AllocateStorage();

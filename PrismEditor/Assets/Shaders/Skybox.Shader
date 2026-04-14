@@ -1,5 +1,5 @@
 // Prism Shader Language v1.0
-Shader "Custom/Quad"
+Shader "Custom/Skybox"
 {
     // ==================== Properties（材质参数） ====================
     Properties

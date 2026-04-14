@@ -18,8 +18,13 @@ namespace Prism {
 		virtual TextureFormat GetFormat() const override { return m_Format; }
 		virtual uint32_t GetWidth() const override { return m_Width; }
 		virtual uint32_t GetHeight() const override { return m_Height; }
+		// This function currently returns the expected number of mips based on image size,
+		// not present mips in data
+		virtual uint32_t GetMipLevelCount() const override;
 
 		virtual const std::string& GetPath() const override { return m_FilePath; }
+
+		virtual bool Loaded() const override { return m_Loaded; }
 
 		virtual void Lock() override;
 		virtual void Unlock() override;
@@ -35,8 +40,10 @@ namespace Prism {
 		uint32_t m_Width, m_Height;
 
 		Buffer m_ImageData;
+		bool m_IsHDR = false;
 
 		bool m_Locked = false;
+		bool m_Loaded = false;
 
 		std::string m_FilePath;
 	};
@@ -44,6 +51,7 @@ namespace Prism {
 	class PRISM_API OpenGLTextureCube : public TextureCube
 	{
 	public:
+		OpenGLTextureCube(TextureFormat format, uint32_t width, uint32_t height);
 		OpenGLTextureCube(const std::string& path);
 		virtual ~OpenGLTextureCube();
 
@@ -52,6 +60,9 @@ namespace Prism {
 		virtual TextureFormat GetFormat() const { return m_Format; }
 		virtual uint32_t GetWidth() const { return m_Width; }
 		virtual uint32_t GetHeight() const { return m_Height; }
+		// This function currently returns the expected number of mips based on image size,
+		// not present mips in data
+		virtual uint32_t GetMipLevelCount() const override;
 
 		virtual const std::string& GetPath() const override { return m_FilePath; }
 
@@ -61,7 +72,7 @@ namespace Prism {
 		TextureFormat m_Format;
 		uint32_t m_Width, m_Height;
 
-		unsigned char* m_ImageData;
+		byte* m_ImageData;
 
 		std::string m_FilePath;
 	};

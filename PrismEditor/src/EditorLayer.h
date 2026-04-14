@@ -125,7 +125,7 @@ namespace Prism
 		Scene m_Scene;
 
 		// Editor resources
-		std::unique_ptr<Texture2D> m_CheckerboardTex;
+		Ref<Texture2D> m_CheckerboardTex;
 
 		int m_GizmoType = -1; // -1 = no gizmo
 		glm::mat4 m_Transform;

@@ -61,6 +61,7 @@ namespace Prism
 		void AllocateStorage();
 		void OnShaderReloaded();
 		void BindTextures() const;
+		const ShaderCommand& GetShaderCommand() { return m_ShaderCommand; }
 		void InitTextures();
 		Buffer& GetPropertyBuffer() { return m_PropertyBuffer; }
 	private:
@@ -68,10 +69,10 @@ namespace Prism
 		std::unordered_set<MaterialInstance*> m_MaterialInstances;
 		const ShaderProperty& m_ShaderProperty;
 		Buffer m_PropertyBuffer;
+		ShaderCommand m_ShaderCommand;
 
 		std::vector<Ref<Texture>> m_Textures;
 
-		int32_t m_RenderFlags = 0; 
 	};
 
 	class PRISM_API MaterialInstance

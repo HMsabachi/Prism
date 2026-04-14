@@ -63,7 +63,6 @@ Shader "Custom/SimplePBR_Static"
                 attribute vec2 a_TexCoord : TEXCOORD0;
 
 
-
                 VARYING VertexOutput
                 {
                     vec3 WorldPosition;
@@ -78,7 +77,7 @@ Shader "Custom/SimplePBR_Static"
                 {
                     mat4 u_ViewProjectionMatrix = Prism_ViewProjection;
                     mat4 u_ModelMatrix = Prism_Model;
-                   vs_Output.WorldPosition = vec3(u_ModelMatrix * vec4(a_Position, 1.0));
+                    vs_Output.WorldPosition = vec3(u_ModelMatrix * vec4(a_Position, 1.0));
                     vs_Output.Normal = a_Normal;
                     vs_Output.TexCoord = vec2(a_TexCoord.x, 1.0 - a_TexCoord.y);
                     vs_Output.WorldNormals = mat3(u_ModelMatrix) * mat3(a_Tangent, a_Binormal, a_Normal);

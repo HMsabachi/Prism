@@ -33,6 +33,7 @@ namespace Prism
 		const std::string& GetFilePath() const {return m_FilePath; };
 		const std::string& GetName() const { return m_Name; }
 		const ShaderProperty& GetProperty() const { return m_ShaderProperty; }
+		const ShaderCommand& GetShaderCommand() const { return m_ShaderCommand; }
 	#pragma region 设置原生uniform
 	public:
 		void SetMat4FromRenderThread(const std::string& name, const glm::mat4& value);

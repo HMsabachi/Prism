@@ -17,8 +17,8 @@ namespace Prism
 		s_Instance->m_ShaderLibrary = std::make_unique<ShaderLibrary>();
 		Renderer::Submit([]() { RendererAPI::Init(); });
 
-		Renderer::GetShaderLibrary()->Load("Assets/Shaders/PrismPBR_Static.glsl");
-		Renderer::GetShaderLibrary()->Load("Assets/Shaders/PrismPBR_Anim.glsl");
+		Renderer::GetShaderLibrary()->Load("Assets/Shaders/PrismPBR_Static.Shader");
+		Renderer::GetShaderLibrary()->Load("Assets/Shaders/PrismPBR_Anim.Shader");
 	}
 	Renderer::Renderer()
 	{
