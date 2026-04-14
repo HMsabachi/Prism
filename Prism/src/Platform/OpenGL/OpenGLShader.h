@@ -16,7 +16,6 @@ namespace Prism {
 
 		virtual void Bind() override;
 
-		virtual void UploadUniformBuffer(const UniformBufferBase& uniformBuffer) override;
 
 		virtual void SetProperty(const PropertyBufferDeclaration& decl, const Buffer& buffer) override;
 
