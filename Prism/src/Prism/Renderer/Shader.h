@@ -2,10 +2,15 @@
 
 #include "Prism/Core/Core.h"
 #include "Prism/Renderer/RendererAPI.h"
-#include "Shader/ShaderProperty.h"
 
 #include <string>
 #include <glm/glm.hpp>
+
+namespace Prism
+{
+	struct ShaderCommand;
+	class PropertyBufferDeclaration;
+}
 
 namespace Prism
 {
@@ -28,6 +33,7 @@ namespace Prism
 		virtual const std::string& GetName() const = 0;
 
 		virtual void SetProperty(const PropertyBufferDeclaration& decl, const Buffer& buffer) = 0;
+		virtual void ApplyCommand(const ShaderCommand& command) = 0;
 
 		// Represents a complete shader program stored in a single file.
 		// Note: currently for simplicity this is simply a string filepath, however

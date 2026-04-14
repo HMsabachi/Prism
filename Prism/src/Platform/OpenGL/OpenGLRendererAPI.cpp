@@ -1,6 +1,8 @@
 ﻿#include "prpch.h"
 #include "Prism/Renderer/RendererAPI.h"
 
+#include "OpenGLStateCache.h"
+
 #include <Glad/glad.h>
 
 namespace Prism
@@ -8,14 +10,21 @@ namespace Prism
 
 	static void OpenGLLogMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
 	{
-		if (severity != GL_DEBUG_SEVERITY_NOTIFICATION)
+		switch (severity)
 		{
-			PR_CORE_ERROR("{0}", message);
-			PR_CORE_ASSERT(false, "");
-		}
-		else
-		{
-			//PR_CORE_TRACE("{0}", message);
+		case GL_DEBUG_SEVERITY_HIGH:
+			PR_CORE_ERROR("[OpenGL Debug HIGH] {0}", message);
+			PR_CORE_ASSERT(false, "GL_DEBUG_SEVERITY_HIGH");
+			break;
+		case GL_DEBUG_SEVERITY_MEDIUM:
+			PR_CORE_WARN("[OpenGL Debug MEDIUM] {0}", message);
+			break;
+		case GL_DEBUG_SEVERITY_LOW:
+			PR_CORE_INFO("[OpenGL Debug LOW] {0}", message);
+			break;
+		case GL_DEBUG_SEVERITY_NOTIFICATION:
+			// PR_CORE_TRACE("[OpenGL Debug NOTIFICATION] {0}", message);
+			break;
 		}
 	}
 
@@ -53,6 +62,8 @@ namespace Prism
 			PR_CORE_ERROR("OpenGL Error {0}", error);
 			error = glGetError();
 		}
+
+		OpenGLStateCache::Init();
 
 		LoadRequiredAssets();
 	}

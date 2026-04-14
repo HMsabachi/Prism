@@ -191,6 +191,7 @@ namespace Prism
 	{
 		using namespace Prism::StrParse;
 		using namespace Prism::PropertyType;
+		m_DefaultValueBuffer.SetReadOnly(false);
 		m_DefaultValueBuffer.Allocate(m_Declaration.GetSize());
 
 		uint32_t texIndex = 0;

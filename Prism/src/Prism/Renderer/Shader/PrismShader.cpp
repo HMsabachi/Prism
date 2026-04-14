@@ -68,6 +68,7 @@ namespace Prism
 	void PrismShader::Bind() const
 	{
 		m_Shader->Bind();
+		m_Shader->ApplyCommand(m_ShaderCommand);
 	}
 
 	void PrismShader::SetProperty(const Buffer& buffer)

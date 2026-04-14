@@ -4,6 +4,9 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "Prism/Renderer/Renderer.h"
+#include "Prism/Renderer/Shader/ShaderProperty.h"
+
+#include "OpenGLStateCache.h"
 
 
 namespace Prism 
@@ -33,9 +36,10 @@ namespace Prism
 	}
 	OpenGLShader::~OpenGLShader()
 	{
-		Renderer::Submit([this](){
-			if (m_RendererID)
-				glDeleteProgram(m_RendererID);
+		uint32_t id = m_RendererID;
+		Renderer::Submit([id](){
+			if (id)
+				glDeleteProgram(id);
 		});
 	}
 
@@ -50,7 +54,6 @@ namespace Prism
 		Renderer::Submit([this]() {
 			if (m_RendererID)
 				glDeleteProgram(m_RendererID);
-		// TODO :这里加入Prismshader逻辑
 			CompileAndUploadShader();
 			});
 	}
@@ -64,6 +67,8 @@ namespace Prism
 
 	Prism::RendererID OpenGLShader::GetRendererID() const { return m_RendererID; }
 
+
+	
 
 	void OpenGLShader::ReadShaderFromFile(const std::string& filepath)
 	{
@@ -273,6 +278,14 @@ namespace Prism
 	}
 
 
+	void OpenGLShader::ApplyCommand(const ShaderCommand& command)
+	{
+		Renderer::Submit([=]()
+		{
+			OpenGLStateCache::Apply(command);
+		});
+	}
+
 #pragma region 设置uniform变量
 	void OpenGLShader::UploadUniformInt(uint32_t location, int32_t value)
 	{
@@ -398,25 +411,6 @@ namespace Prism
 
 
 
-#pragma region Private Methods
-	void OpenGLShader::LoadTexture()
-	{
-		// Bind default texture unit
-		UploadUniformInt("u_Texture", 0);
-
-		// PBR shader Textures
-		UploadUniformInt("u_AlbedoTexture", 1);
-		UploadUniformInt("u_NormalTexture", 2);
-		UploadUniformInt("u_MetalnessTexture", 3);
-		UploadUniformInt("u_RoughnessTexture", 4);
-
-		UploadUniformInt("u_EnvRadianceTex", 10);
-		UploadUniformInt("u_EnvIrradianceTex", 11);
-
-		UploadUniformInt("u_BRDFLUTTexture", 15);
-	}
-
-#pragma endregion
 
 
 }

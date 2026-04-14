@@ -71,6 +71,8 @@ namespace Prism
 			state.cullMode = StringToCullMode(tokens.front());
 			if(state.cullMode != CullMode::Off)
 				state.flags |= ShaderCommandFlag::Cull;
+			else
+				state.flags &= ~ShaderCommandFlag::Cull;
 			tokens.pop();
 		}
 	}

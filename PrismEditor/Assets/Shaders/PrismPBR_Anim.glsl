@@ -36,6 +36,15 @@ Shader "Custom/SimplePBR_Animated"
         u_LightRadiance("光照颜色", Vector3) = (1, 1, 1)
 
     }
+
+    RenderCommand
+    {
+        Cull Back
+        ZTest LEqual
+        ZWrite On
+        Blend One OneMinusSrcAlpha
+    }
+
     SubShader
     {
         

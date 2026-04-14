@@ -19,8 +19,10 @@ namespace Prism {
 
 		virtual void SetProperty(const PropertyBufferDeclaration& decl, const Buffer& buffer) override;
 
+		void ApplyCommand(const ShaderCommand& command) override;
 
 		RendererID GetRendererID() const override;
+
 
 	private:
 		void SetPropertyImpt(const PropertyBufferDeclaration& decl, const Buffer& buffer);
@@ -39,7 +41,6 @@ namespace Prism {
 		void CompileAndUploadShader();
 
 	private:
-		void LoadTexture();
 
 		static GLenum ShaderTypeFromString(const std::string& type);
 
