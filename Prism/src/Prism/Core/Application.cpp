@@ -6,7 +6,7 @@
 #include "Time.h"
 
 #include "Prism/Renderer/Renderer.h"
-#include "Prism/Renderer/Framebuffer.h"
+#include "Prism/Renderer/Buffer/Framebuffer.h"
 #include "PrismShaderParser.h"
 
 

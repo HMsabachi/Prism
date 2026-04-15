@@ -25,11 +25,12 @@
 // --- Prism Render API ------------------------------
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/RenderPass.h"
-#include "Prism/Renderer/Framebuffer.h"
-#include "Prism/Renderer/Buffer.h"
 #include "Prism/Renderer/VertexArray.h"
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Material.h"
+
+#include "Prism/Renderer/Buffer/Framebuffer.h"
+#include "Prism/Renderer/Buffer/Buffer.h"
 
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/Camera/Camera.h"

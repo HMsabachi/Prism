@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "Prism/Renderer/Framebuffer.h"
+#include "Prism/Renderer/Buffer/Framebuffer.h"
 
 namespace Prism {
 

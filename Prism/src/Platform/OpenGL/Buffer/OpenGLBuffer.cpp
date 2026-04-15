@@ -1,5 +1,6 @@
 ﻿#include "prpch.h"
 #include "OpenGLBuffer.h"
+#include "OpenGLBufferData.h"
 
 #include <Glad/glad.h>
 
@@ -12,18 +13,7 @@ namespace Prism
 	// VertexBuffer
 	//////////////////////////////////////////////////////////////////////////////////
 
-	static GLenum OpenGLUsage(VertexBufferUsage usage)
-	{
-		switch (usage)
-		{
-		case VertexBufferUsage::Static:    return GL_STATIC_DRAW;
-		case VertexBufferUsage::Dynamic:   return GL_DYNAMIC_DRAW;
-		}
-		PR_CORE_ASSERT(false, "Unknown vertex buffer usage");
-		return 0;
-	}
-
-	OpenGLVertexBuffer::OpenGLVertexBuffer(void* data, uint32_t size, VertexBufferUsage usage)
+	OpenGLVertexBuffer::OpenGLVertexBuffer(void* data, uint32_t size, BufferUsage usage)
 		: m_Size(size), m_Usage(usage)
 	{
 		m_LocalData = Buffer::Copy(data, size);
@@ -34,7 +24,7 @@ namespace Prism
 		});
 	}
 
-	OpenGLVertexBuffer::OpenGLVertexBuffer(uint32_t size, VertexBufferUsage usage)
+	OpenGLVertexBuffer::OpenGLVertexBuffer(uint32_t size, BufferUsage usage)
 		: m_Size(size), m_Usage(usage)
 	{
 		Renderer::Submit([this]() {

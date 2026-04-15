@@ -8,6 +8,22 @@
 namespace Prism
 {
 
+	static void HandleCapabilities()
+	{
+		auto& caps = RendererAPI::GetCapabilities();
+
+		caps.Vendor = reinterpret_cast<const char*>(glGetString(GL_VENDOR)); // 获取 vendor
+		caps.Renderer = reinterpret_cast<const char*>(glGetString(GL_RENDERER)); // 获取 renderer
+		caps.Version = reinterpret_cast<const char*>(glGetString(GL_VERSION)); // 获取版本
+
+		glGetIntegerv(GL_MAX_SAMPLES, &caps.MaxSamples); // 获取最大采样数
+		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &caps.MaxAnisotropy); // 获取最大各向异性
+
+		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &caps.MaxGroupCount[0]); // 获取最大工作组数量
+		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &caps.MaxGroupSize[0]); // 获取最大工作组大小
+		glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &caps.MaxInvocations); // 
+	}
+
 	static void OpenGLLogMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
 	{
 		switch (severity)
@@ -47,14 +63,7 @@ namespace Prism
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-		auto& caps = RendererAPI::GetCapabilities();
-
-		caps.Vendor = reinterpret_cast<const char*>(glGetString(GL_VENDOR));
-		caps.Renderer = reinterpret_cast<const char*>(glGetString(GL_RENDERER));
-		caps.Version = reinterpret_cast<const char*>(glGetString(GL_VERSION));
-
-		glGetIntegerv(GL_MAX_SAMPLES, &caps.MaxSamples); // 获取最大采样数
-		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &caps.MaxAnisotropy); // 获取最大各向异性
+		HandleCapabilities();
 
 		GLenum error = glGetError();
 		while (error != GL_NO_ERROR)

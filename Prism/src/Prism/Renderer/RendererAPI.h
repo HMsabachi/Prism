@@ -18,6 +18,8 @@ namespace Prism
 
 		int MaxSamples;
 		float MaxAnisotropy;
+
+		int MaxGroupCount[3], MaxGroupSize[3], MaxInvocations;
 	};
 
 	class PRISM_API RendererAPI

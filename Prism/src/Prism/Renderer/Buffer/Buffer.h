@@ -1,7 +1,8 @@
 ﻿#pragma once
 #include "PrismShaderData.h"
+#include "BufferData.h"
 
-#include "RendererAPI.h"
+#include "../RendererAPI.h"
 
 namespace Prism {
 
@@ -72,11 +73,6 @@ namespace Prism {
 
 #pragma endregion
 
-	enum class PRISM_API VertexBufferUsage
-	{
-		None = 0, Static = 1, Dynamic = 2
-	};
-
 	class PRISM_API VertexBuffer
 	{
 	public:
@@ -91,8 +87,8 @@ namespace Prism {
 		virtual uint32_t GetSize() const = 0;
 		virtual RendererID GetRendererID() const = 0;
 
-		static Ref<VertexBuffer> Create(void* data, uint32_t size = 0, VertexBufferUsage usage = VertexBufferUsage::Dynamic);
-		static Ref<VertexBuffer> Create(uint32_t size = 0, VertexBufferUsage usage = VertexBufferUsage::Dynamic);
+		static Ref<VertexBuffer> Create(void* data, uint32_t size = 0, BufferUsage usage = BufferUsage::Dynamic);
+		static Ref<VertexBuffer> Create(uint32_t size = 0, BufferUsage usage = BufferUsage::Dynamic);
 	};
 
 	class PRISM_API IndexBuffer

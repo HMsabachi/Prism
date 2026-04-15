@@ -2,7 +2,7 @@
 
 #include "Prism/Core/Core.h"
 
-#include "Framebuffer.h"
+#include "Buffer/Framebuffer.h"
 
 namespace Prism {
 

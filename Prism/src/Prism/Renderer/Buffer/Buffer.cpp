@@ -1,11 +1,11 @@
 ﻿#include "prpch.h"
 
-#include "Platform/OpenGL/OpenGLBuffer.h"
-#include "Renderer.h"
+#include "Platform/OpenGL/Buffer/OpenGLBuffer.h"
+#include "../Renderer.h"
 
 namespace Prism {
 
-	Prism::Ref<Prism::VertexBuffer> VertexBuffer::Create(void* data, uint32_t size /*= 0*/, VertexBufferUsage usage /*= VertexBufferUsage::Dynamic*/)
+	Prism::Ref<Prism::VertexBuffer> VertexBuffer::Create(void* data, uint32_t size /*= 0*/, BufferUsage usage /*= VertexBufferUsage::Dynamic*/)
 	{
 		switch (RendererAPI::Current())
 		{
@@ -14,7 +14,7 @@ namespace Prism {
 		}
 	}
 
-	Prism::Ref<Prism::VertexBuffer> VertexBuffer::Create(uint32_t size /*= 0*/, VertexBufferUsage usage /*= VertexBufferUsage::Dynamic*/)
+	Prism::Ref<Prism::VertexBuffer> VertexBuffer::Create(uint32_t size /*= 0*/, BufferUsage usage /*= VertexBufferUsage::Dynamic*/)
 	{
 		switch (RendererAPI::Current())
 		{

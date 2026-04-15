@@ -4,9 +4,18 @@ Shader "Custom/Grid"
     // ==================== Properties（材质参数） ====================
     Properties
     {
-        u_Scale("网格缩放", Float) = 8.0
-        u_Res("网格分辨率", Float) = 0.05
+        u_Scale("网格缩放", Float) = 16.025
+        u_Res("网格分辨率", Float) = 0.025
     }
+
+    RenderCommand
+    {
+        Cull Off
+        ZTest LEqual
+        ZWrite On
+        Blend SrcAlpha OneMinusSrcAlpha
+    }
+
     SubShader
     {
         Pass

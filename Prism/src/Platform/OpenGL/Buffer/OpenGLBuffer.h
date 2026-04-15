@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "Prism/Renderer/Buffer.h"
+#include "Prism/Renderer/Buffer/Buffer.h"
 #include "Prism/Core/Buffer.h"
 
 namespace Prism
@@ -12,8 +12,8 @@ namespace Prism
 	class PRISM_API OpenGLVertexBuffer : public VertexBuffer
 	{
 	public:
-		OpenGLVertexBuffer(void* data, uint32_t size, VertexBufferUsage usage = VertexBufferUsage::Static);
-		OpenGLVertexBuffer(uint32_t size, VertexBufferUsage usage = VertexBufferUsage::Dynamic);
+		OpenGLVertexBuffer(void* data, uint32_t size, BufferUsage usage = BufferUsage::Static);
+		OpenGLVertexBuffer(uint32_t size, BufferUsage usage = BufferUsage::Dynamic);
 		virtual ~OpenGLVertexBuffer();
 
 		virtual void SetData(void* data, uint32_t size, uint32_t offset = 0);
@@ -27,7 +27,7 @@ namespace Prism
 	private:
 		RendererID m_RendererID = 0;
 		uint32_t m_Size;
-		VertexBufferUsage m_Usage;
+		BufferUsage m_Usage;
 		BufferLayout m_Layout;
 
 		Buffer m_LocalData;
