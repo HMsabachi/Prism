@@ -1,220 +1,110 @@
-// Prism Shader Language v1.0
-Shader "Custom/SimplePBR"
-{
-    // ==================== Properties（材质参数） ====================
-    Properties
-    {
-
-        u_Color("主色", Vector3) = (0.2, 0.2, 1)
-        // BRDF LUT
-        u_AlbedoColor("颜色", Vector3) = (1, 1, 1)
-        u_BRDFLUTTexture("BRDF LUT", Texture2D) = {}
-        u_Metalness("金属度", Range(0, 1)) = 1.0
-        u_Roughness("粗糙度", Range(0, 1)) = 0.0
-        u_EnvMapRotation("环境光旋转", Range(0, 360)) = 0
-
-        // PBR texture inputs
-        u_AlbedoTexture("颜色贴图", Texture2D) = {}
-        u_NormalTexture("法线贴图", Texture2D) = {}
-        u_MetalnessTexture("金属度贴图", Texture2D) = {}
-        u_RoughnessTexture("粗糙度贴图", Texture2D) = {}
-
-        // Environment maps
-        u_EnvRadianceTex("环境光贴图", TextureCube) = {}
-        u_EnvIrradianceTex("环境光辐射贴图", TextureCube) = {}
+#version 450 core
+layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
 
 
-        // Toggles
-        u_RadiancePrefilter("环境光预过滤", Float) = 0.0
-        u_AlbedoTexToggle("颜色贴图开关", Float) = 0.0
-        u_NormalTexToggle("法线贴图开关", Float) = 0.0
-        u_MetalnessTexToggle("金属度贴图开关", Float) = 0.0
-        u_RoughnessTexToggle("粗糙度贴图开关", Float) = 0.0
 
-        // light
-        u_LightDirection("光照方向", Vector3) = (1, 1, 1)
-        u_LightRadiance("光照颜色", Vector3) = (1, 1, 1)
 
+const float PI = 3.141592;
+const float TwoPI = 2.0 * PI;
+const float Epsilon = 0.00001;
+layout(binding = 0) uniform sampler2D u_EquirectangularTex;;
+layout(binding = 1) uniform samplerCube u_InputCubeMap;;
+layout(rgba16f, binding = 2) restrict writeonly uniform imageCube o_OutputCube;
+uniform float u_Roughness;
+float radicalInverse_VdC(uint bits) {
+    bits = (bits << 16u) | (bits >> 16u);
+    bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
+    bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
+    bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
+    bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
+    return float(bits) * 2.3283064365386963e-10;
+}
+vec2 sampleHammersley(uint i, uint N) {
+    return vec2(float(i) / float(N), radicalInverse_VdC(i));
+}
+vec3 GetCubeMapDirection() {
+    vec2 size = vec2(imageSize(o_OutputCube));
+    vec2 st = vec2(gl_GlobalInvocationID.xy) / size;
+    vec2 uv = 2.0 * vec2(st.x, 1.0 - st.y) - vec2(1.0);
+    vec3 ret;
+    uint face = gl_GlobalInvocationID.z;
+    if      (face == 0) ret = vec3(  1.0, uv.y, -uv.x);
+    else if (face == 1) ret = vec3( -1.0, uv.y,  uv.x);
+    else if (face == 2) ret = vec3( uv.x,  1.0, -uv.y);
+    else if (face == 3) ret = vec3( uv.x, -1.0,  uv.y);
+    else if (face == 4) ret = vec3( uv.x, uv.y,   1.0);
+    else if (face == 5) ret = vec3(-uv.x, uv.y,  -1.0);
+    return normalize(ret);
+}
+void computeBasisVectors(const vec3 N, out vec3 S, out vec3 T) {
+    T = cross(N, vec3(0.0, 1.0, 0.0));
+    T = mix(cross(N, vec3(1.0, 0.0, 0.0)), T, step(Epsilon, dot(T, T)));
+    T = normalize(T);
+    S = normalize(cross(N, T));
+}
+vec3 tangentToWorld(const vec3 v, const vec3 N, const vec3 S, const vec3 T) {
+    return S * v.x + T * v.y + N * v.z;
+}
+vec3 sampleGGX(float u1, float u2, float roughness) {
+    float alpha = roughness * roughness;
+    float cosTheta = sqrt((1.0 - u2) / (1.0 + (alpha*alpha - 1.0) * u2));
+    float sinTheta = sqrt(1.0 - cosTheta*cosTheta);
+    float phi = TwoPI * u1;
+    return vec3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
+}
+
+void main() {
+    vec3 cubeTC = GetCubeMapDirection();
+    float phi = atan(cubeTC.z, cubeTC.x);
+    float theta = acos(cubeTC.y);
+    vec2 uv = vec2(phi / (TwoPI) + 0.5, theta / PI);
+    vec4 color = texture(u_EquirectangularTex, uv);
+    imageStore(o_OutputCube, ivec3(gl_GlobalInvocationID), color);
+}
+
+void CSEquirectToCube() {
+    vec3 N = GetCubeMapDirection();
+    vec3 S, T;
+    computeBasisVectors(N, S, T);
+    vec3 irradiance = vec3(0);
+    const uint numSamples = 64 * 1024;
+    for(uint i = 0; i < numSamples; i++) {
+        vec2 u = sampleHammersley(i, numSamples);
+        float u1p = sqrt(max(0.0, 1.0 - u.x * u.x));
+        vec3 Li = tangentToWorld(vec3(cos(TwoPI*u.y) * u1p, sin(TwoPI*u.y) * u1p, u.x), N, S, T);
+        float cosTheta = max(0.0, dot(Li, N));
+        irradiance += 2.0 * textureLod(u_InputCubeMap, Li, 0).rgb * cosTheta;
     }
-    SubShader
-    {
-        
-        Pass
-        {
-            Tags { "Queue" = "Geometry" "RenderType" = "Opaque" }
-            Name "ForwardBase"
-            GLSL
-            {
-                #include "PrismBuiltin.glsl"
-                #include "PrismUtility.glsl"
-                #include "PrismPBR.glsl"
-                attribute vec3 a_Position : POSITION;
-                attribute vec3 a_Normal : NORMAL;
-                attribute vec3 a_Tangent : TANGENT;
-                attribute vec3 a_Binormal : BINORMAL;
-                attribute vec2 a_TexCoord : TEXCOORD0;
-                attribute ivec4 a_BoneIndices : BONEINDICES;
-                attribute vec4 a_BoneWeights : BONEWEIGHTS;
+    imageStore(o_OutputCube, ivec3(gl_GlobalInvocationID), vec4(irradiance / float(numSamples), 1.0));
+}
 
-                const int MAX_BONES = 100;
-                uniform mat4 u_BoneTransforms[100];
-
-
-                VARYING VertexOutput
-                {
-                    vec3 WorldPosition;
-                    vec3 Normal;
-                    vec2 TexCoord;
-                    mat3 WorldNormals;
-                    vec3 Binormal;
-                } vs_Output;
-
-                void main()
-                {
-                    mat4 u_ViewProjectionMatrix = Prism_ViewProjection;
-                    mat4 u_ModelMatrix = Prism_Model;
-                    mat4 boneTransform = u_BoneTransforms[a_BoneIndices[0]] * a_BoneWeights[0];
-                    boneTransform += u_BoneTransforms[a_BoneIndices[1]] * a_BoneWeights[1];
-                    boneTransform += u_BoneTransforms[a_BoneIndices[2]] * a_BoneWeights[2];
-                    boneTransform += u_BoneTransforms[a_BoneIndices[3]] * a_BoneWeights[3];
-
-                    vec4 localPosition = boneTransform * vec4(a_Position, 1.0);
-
-                    vs_Output.WorldPosition = vec3(u_ModelMatrix * boneTransform * vec4(a_Position, 1.0));
-                    vs_Output.Normal = mat3(boneTransform) * a_Normal;
-                    
-
-                    vs_Output.TexCoord = vec2(a_TexCoord.x, 1.0 - a_TexCoord.y);
-                    vs_Output.WorldNormals = mat3(u_ModelMatrix) * mat3(a_Tangent, a_Binormal, a_Normal);
-                    vs_Output.Binormal = mat3(boneTransform) * a_Binormal;
-
-                    gl_Position = u_ViewProjectionMatrix * u_ModelMatrix * vec4(a_Position, 1.0);
-                    gl_Position = u_ViewProjectionMatrix * u_ModelMatrix * localPosition;
-                }
-
-
-                const int LightCount = 1;
-
-                // Constant normal incidence Fresnel factor for all dielectrics.
-                const vec3 Fdielectric = vec3(0.04);
-
-                struct Light {
-                    vec3 Direction;
-                    vec3 Radiance;
-                };
-                uniform Light lights;
-
-                struct PBRParameters
-                {
-                    vec3 Albedo;
-                    float Roughness;
-                    float Metalness;
-
-                    vec3 Normal;
-                    vec3 View;
-                    float NdotV;
-                };
-
-                PBRParameters m_Params;
-
-                // ---------------------------------------------------------------------------------------------------
-
-                vec3 RotateVectorAboutY(float angle, vec3 vec)
-                {
-                    angle = radians(angle);
-                    mat3x3 rotationMatrix ={vec3(cos(angle),0.0,sin(angle)),
-                                            vec3(0.0,1.0,0.0),
-                                            vec3(-sin(angle),0.0,cos(angle))};
-                    return rotationMatrix * vec;
-                }
-
-                vec3 Lighting(vec3 F0)
-                {
-                    vec3 result = vec3(0.0);
-                    for(int i = 0; i < LightCount; i++)
-                    {
-                        vec3 Li = -u_LightDirection;
-                        vec3 Lradiance = u_LightRadiance;
-                        vec3 Lh = normalize(Li + m_Params.View);
-
-                        // Calculate angles between surface normal and various light vectors.
-                        float cosLi = max(0.0, dot(m_Params.Normal, Li));
-                        float cosLh = max(0.0, dot(m_Params.Normal, Lh));
-
-                        vec3 F = fresnelSchlick(F0, max(0.0, dot(Lh, m_Params.View)));
-                        float D = ndfGGX(cosLh, m_Params.Roughness);
-                        float G = gaSchlickGGX(cosLi, m_Params.NdotV, m_Params.Roughness);
-
-                        vec3 kd = (1.0 - F) * (1.0 - m_Params.Metalness);
-                        vec3 diffuseBRDF = kd * m_Params.Albedo;
-
-                        // Cook-Torrance
-                        vec3 specularBRDF = (F * D * G) / max(Epsilon, 4.0 * cosLi * m_Params.NdotV);
-
-                        result += (diffuseBRDF + specularBRDF) * Lradiance * cosLi;
-                    }
-                    return result;
-                }
-
-                vec3 IBL(vec3 F0, vec3 Lr)
-                {
-                    vec3 irradiance = texture(u_EnvIrradianceTex, m_Params.Normal).rgb;
-                    vec3 F = fresnelSchlickRoughness(F0, m_Params.NdotV, m_Params.Roughness);
-                    vec3 kd = (1.0 - F) * (1.0 - m_Params.Metalness);
-                    vec3 diffuseIBL = m_Params.Albedo * irradiance;
-
-                    int u_EnvRadianceTexLevels = textureQueryLevels(u_EnvRadianceTex);
-                    float NoV = clamp(m_Params.NdotV, 0.0, 1.0);
-                    vec3 R = 2.0 * dot(m_Params.View, m_Params.Normal) * m_Params.Normal - m_Params.View;
-                    vec3 specularIrradiance = vec3(0.0);
-
-                    if (u_RadiancePrefilter > 0.5)
-                        specularIrradiance = PrefilterEnvMap(m_Params.Roughness * m_Params.Roughness, R) * u_RadiancePrefilter;
-                    else
-                        specularIrradiance = textureLod(u_EnvRadianceTex, RotateVectorAboutY(u_EnvMapRotation, Lr), sqrt(m_Params.Roughness) * u_EnvRadianceTexLevels).rgb * (1.0 - u_RadiancePrefilter);
-
-                    // Sample BRDF Lut, 1.0 - roughness for y-coord because texture was generated (in Sparky) for gloss model
-                    vec2 specularBRDF = texture(u_BRDFLUTTexture, vec2(m_Params.NdotV, 1.0 - m_Params.Roughness)).rg;
-                    vec3 specularIBL = specularIrradiance * (F * specularBRDF.x + specularBRDF.y);
-
-                    return kd * diffuseIBL + specularIBL;
-                }
-
-                void frag()
-                {
-                    vec3 u_CameraPosition = Prism_CameraPosition;
-                    // Standard PBR inputs
-                    m_Params.Albedo = u_AlbedoTexToggle > 0.5 ? texture(u_AlbedoTexture, vs_Output.TexCoord).rgb : u_AlbedoColor; 
-                    m_Params.Metalness = u_MetalnessTexToggle > 0.5 ? texture(u_MetalnessTexture, vs_Output.TexCoord).r : u_Metalness;
-                    m_Params.Roughness = u_RoughnessTexToggle > 0.5 ?  texture(u_RoughnessTexture, vs_Output.TexCoord).r : u_Roughness;
-                    m_Params.Roughness = max(m_Params.Roughness, 0.05); // Minimum roughness of 0.05 to keep specular highlight
-
-                    m_Params.Albedo = mix(m_Params.Albedo, u_Color, 0.2);
-                    // Normals (either from vertex or map)
-                    m_Params.Normal = normalize(vs_Output.Normal);
-                    if (u_NormalTexToggle > 0.5)
-                    {
-                        m_Params.Normal = normalize(2.0 * texture(u_NormalTexture, vs_Output.TexCoord).rgb - 1.0);
-                        m_Params.Normal = normalize(vs_Output.WorldNormals * m_Params.Normal);
-                    }
-
-                    m_Params.View = normalize(u_CameraPosition - vs_Output.WorldPosition);
-                    m_Params.NdotV = max(dot(m_Params.Normal, m_Params.View), 0.0);
-                        
-                    // Specular reflection vector
-                    vec3 Lr = 2.0 * m_Params.NdotV * m_Params.Normal - m_Params.View;
-
-                    // Fresnel reflectance, metals use albedo
-                    vec3 F0 = mix(Fdielectric, m_Params.Albedo, m_Params.Metalness);
-
-                    vec3 lightContribution = Lighting(F0);
-                    vec3 iblContribution = IBL(F0, Lr);
-
-                    FragColor = vec4(lightContribution + iblContribution, 1.0);
-                    //FragColor = vec4(u_Color, 1.0);
-                }
-                
-            }
+void CSEquirectToCube() {
+    ivec2 outputSize = imageSize(o_OutputCube);
+    if(gl_GlobalInvocationID.x >= outputSize.x || gl_GlobalInvocationID.y >= outputSize.y) return;
+    vec3 N = GetCubeMapDirection();
+    vec3 Lo = N;
+    vec3 S, T;
+    computeBasisVectors(N, S, T);
+    vec3 color = vec3(0);
+    float totalWeight = 0;
+    const uint numSamples = 1024;
+    vec2 inputSize = vec2(textureSize(u_InputCubeMap, 0));
+    float wt = 4.0 * PI / (6.0 * inputSize.x * inputSize.y);
+    for(uint i = 0; i < numSamples; i++) {
+        vec2 u = sampleHammersley(i, numSamples);
+        vec3 Lh = tangentToWorld(sampleGGX(u.x, u.y, u_Roughness), N, S, T);
+        vec3 Li = 2.0 * dot(Lo, Lh) * Lh - Lo;
+        float cosLi = dot(N, Li);
+        if(cosLi > 0.0) {
+            float cosLh = max(dot(N, Lh), 0.0);
+            float alphaSq = pow(u_Roughness, 4.0);
+            float denom = (cosLh * cosLh) * (alphaSq - 1.0) + 1.0;
+            float pdf = (alphaSq / (PI * denom * denom)) * 0.25;
+            float ws = 1.0 / (float(numSamples) * pdf);
+            float mipLevel = max(0.5 * log2(ws / wt) + 1.0, 0.0);
+            color += textureLod(u_InputCubeMap, Li, mipLevel).rgb * cosLi;
+            totalWeight += cosLi;
         }
     }
+    imageStore(o_OutputCube, ivec3(gl_GlobalInvocationID), vec4(color / max(totalWeight, 0.001), 1.0));
 }

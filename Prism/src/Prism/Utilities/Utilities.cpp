@@ -119,7 +119,9 @@ namespace Prism
 		void MergeLines(const Lines& lines, std::string& out)
 		{
 			out.clear();
-			for (const auto& l : lines) out += l + "\n";
+			for (const auto& l : lines)
+				if (!Trim(l).empty())
+					out += l + "\n";
 		}
 
 	}

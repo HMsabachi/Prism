@@ -84,11 +84,29 @@ namespace Prism
 		if (id == -1) return;
 		m_Resources[id].ssbo = ssbo;
 	}
-
-	void ComputeShader::SetTexture2D(int32_t kernel,const std::string& name, Ref<Texture2D>& ssbo)
+	void ComputeShader::SetImage2D(int32_t kernel,const std::string& name, Ref<Texture2D>& tex)
 	{
 		auto id = FindRes(name);
 		if (id == -1) return;
+		m_Resources[id].texture2D = tex;
+	}
+	void ComputeShader::SetImageCube(int32_t kernel, const std::string& name, Ref<TextureCube>& tex)
+	{
+		auto id = FindRes(name);
+		if (id == -1) return;
+		m_Resources[id].textureCube = tex;
+	}
+	void ComputeShader::SetTexture2D(int32_t kernel, const std::string& name, Ref<Texture2D>& tex)
+	{
+		auto id = FindRes(name);
+		if (id == -1) return;
+		m_Resources[id].texture2D = tex;
+	}
+	void ComputeShader::SetTextureCube(int32_t kernel, const std::string& name, Ref<TextureCube>& tex)
+	{
+		auto id = FindRes(name);
+		if (id == -1) return;
+		m_Resources[id].textureCube = tex;
 	}
 
 	void ComputeShader::SetInt(int32_t kernel, const std::string& name, int32_t value)
@@ -114,21 +132,12 @@ namespace Prism
 		k.shader->Bind();
 		for (auto& res : m_Resources)
 		{
-			if (res.type == ComputeShaderResourceType::RBuffer || res.type == ComputeShaderResourceType::WBuffer || res.type == ComputeShaderResourceType::RWBuffer)
-			{
-				
-					auto ssbo = res.ssbo.lock();
-					ssbo->Bind(res.binding);
-				
-			}
-			if (res.type == ComputeShaderResourceType::RWImage2D)
-			{
-				if (res.texture.expired())
-				{
-					auto texture = res.texture.lock();
-					texture->Bind(res.binding);
-				}
-			}
+			if (auto ssbo = res.ssbo.lock())
+				ssbo->Bind(res.binding);
+			if (auto texture = res.texture2D.lock())
+				texture->Bind(res.binding);
+			if (auto textureCube = res.textureCube.lock())
+				textureCube->Bind(res.binding);
 		}
 		k.shader->DispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
 	}

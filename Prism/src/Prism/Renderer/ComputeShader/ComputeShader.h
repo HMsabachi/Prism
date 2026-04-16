@@ -5,6 +5,7 @@ namespace Prism
 	class Shader;
 	class ShaderStorageBuffer;
 	class Texture2D;
+	class TextureCube;
 	enum class ComputeShaderResourceType;
 }
 
@@ -26,7 +27,8 @@ namespace Prism
 			ComputeShaderResourceType type;
 			std::string name;
 			uint32_t binding;
-			std::weak_ptr<Texture2D> texture;
+			std::weak_ptr<Texture2D> texture2D;
+			std::weak_ptr<TextureCube> textureCube;
 			std::weak_ptr<ShaderStorageBuffer> ssbo;
 		};
 #pragma endregion
@@ -40,7 +42,10 @@ namespace Prism
 	public:
 		int32_t FindKernel(const std::string& name);
 		void SetBuffer(int32_t kernel, const std::string& name, Ref<ShaderStorageBuffer>& ssbo);
-		void SetTexture2D(int32_t kernel, const std::string& name, Ref<Texture2D>& ssbo);
+		void SetImage2D(int32_t kernel, const std::string& name, Ref<Texture2D>& tex);
+		void SetImageCube(int32_t kernel, const std::string& name, Ref<TextureCube>& tex);
+		void SetTexture2D(int32_t kernel, const std::string& name, Ref<Texture2D>& tex);
+		void SetTextureCube(int32_t kernel, const std::string& name, Ref<TextureCube>& tex);
 
 		void SetInt(int32_t kernel, const std::string& name, int32_t value);
 

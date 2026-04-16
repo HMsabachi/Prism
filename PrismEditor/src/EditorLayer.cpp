@@ -97,41 +97,6 @@ namespace Prism
 		Prism::GlobalUniforms::Init();
 
 		m_ComShader = ComputeShader::Create("Assets/Shaders/Compute.comp");
-		struct Test
-		{
-			float value;
-		};
-		const uint32_t COUNT = 1024;   // 测试数量，可改小一点
-		auto inputSSBO = ShaderStorageBuffer::Create(COUNT * sizeof(Test));
-		auto outputSSBO = ShaderStorageBuffer::Create(COUNT * sizeof(Test));
-
-		// 3. 初始化输入数据（value = 0,1,2,3...）
-		std::vector<Test> cpuInput(COUNT);
-		for (uint32_t i = 0; i < COUNT; ++i)
-			cpuInput[i].value = static_cast<float>(i);
-
-		inputSSBO->SetData(cpuInput.data(), cpuInput.size() * sizeof(Test));
-
-		// 4. 绑定资源（按名字绑定）
-		int32_t kernel = m_ComShader->FindKernel("CSMain");
-		m_ComShader->SetBuffer(kernel, "InputBuffer", inputSSBO);
-		m_ComShader->SetBuffer(kernel, "OutputBuffer", outputSSBO);
-		m_ComShader->SetInt(kernel, "u_Count", COUNT);
-
-		// 5. Dispatch（256 线程一组）
-		uint32_t groups = (COUNT + 255) / 256;
-		m_ComShader->Dispatch(kernel, groups, 1, 1);
-		// 7. 读取结果并直接 log 输出
-		std::vector<Test> result(COUNT);
-		outputSSBO->GetData(result.data(), result.size() * sizeof(Test), 0, true);
-		// 输出前 10 个结果验证
-		PR_CORE_INFO("=== Compute Shader 测试结果 ===");
-		for (uint32_t i = 0; i < 10; ++i)
-		{
-			PR_CORE_INFO("idx {0} : input = {1:.1f}  ->  output = {2:.1f}",
-				i, cpuInput[i].value, result[i].value);
-		}
-		PR_CORE_INFO("测试完成！共处理 {0} 个元素", COUNT);
 
 
 

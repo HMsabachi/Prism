@@ -10,7 +10,15 @@ namespace Prism
 		RBuffer,
 		WBuffer,
 		RWBuffer,
-		RWImage2D
+		RImage2D,
+		WImage2D,
+		RWImage2D,
+		RImageCube,
+		WImageCube,
+		RWImageCube,
+		Texture2D,
+		TextureCube
+
 	};
 
 	struct PRISM_API ComputeShaderResource

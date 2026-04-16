@@ -82,22 +82,47 @@ namespace Prism
 		if (type == "RBuffer")
 		{
 			resType = ComputeShaderResourceType::RBuffer;
-			layout = "layout(std430, binding = " + std::to_string(bindingIndex) + ") readonly buffer " + name + "Buffer {\n    " + param + " " + name + "[];\n};";
+			layout = "layout(std430, binding = " + std::to_string(bindingIndex) + ") restrict readonly buffer " + name + "Buffer {\n    " + param + " " + name + "[];\n};";
 		}
 		else if (type == "WBuffer")
 		{
 			resType = ComputeShaderResourceType::WBuffer;
-			layout = "layout(std430, binding = " + std::to_string(bindingIndex) + ") writeonly buffer " + name + "Buffer {\n    " + param + " " + name + "[];\n};";
+			layout = "layout(std430, binding = " + std::to_string(bindingIndex) + ") restrict writeonly buffer " + name + "Buffer {\n    " + param + " " + name + "[];\n};";
 		}
 		else if (type == "RWBuffer")
 		{
 			resType = ComputeShaderResourceType::RWBuffer;
 			layout = "layout(std430, binding = " + std::to_string(bindingIndex) + ") buffer " + name + "Buffer {\n    " + param + " " + name + "[];\n};";
 		}
+		else if (type == "RImage2D")
+		{
+			resType = ComputeShaderResourceType::RImage2D;
+			layout = "layout(" + param + ", binding = " + std::to_string(bindingIndex) + ") restrict readonly uniform image2D " + name + ";";
+		}
+		else if (type == "WImage2D")
+		{
+			resType = ComputeShaderResourceType::WImage2D;
+			layout = "layout(" + param + ", binding = " + std::to_string(bindingIndex) + ") restrict writeonly uniform image2D " + name + ";";
+		}
 		else if (type == "RWImage2D")
 		{
 			resType = ComputeShaderResourceType::RWImage2D;
 			layout = "layout(" + param + ", binding = " + std::to_string(bindingIndex) + ") uniform image2D " + name + ";";
+		}
+		else if (type == "RImageCube")
+		{
+			resType = ComputeShaderResourceType::RImageCube;
+			layout = "layout(" + param + ", binding = " + std::to_string(bindingIndex) + ") restrict readonly uniform imageCube " + name + ";";
+		}
+		else if (type == "WImageCube")
+		{
+			resType = ComputeShaderResourceType::WImageCube;
+			layout = "layout(" + param + ", binding = " + std::to_string(bindingIndex) + ") restrict writeonly uniform imageCube " + name + ";";
+		}
+		else if (type == "RWImageCube")
+		{
+			resType = ComputeShaderResourceType::RWImageCube;
+			layout = "layout(" + param + ", binding = " + std::to_string(bindingIndex) + ") uniform imageCube " + name + ";";
 		}
 
 		if (!layout.empty())
@@ -113,7 +138,7 @@ namespace Prism
 		tokens.pop();
 		for (auto& kernel : data.kernels)
 		{
-			if (kernel.name == tokens.front() || kernel.name + "()" == tokens.front())
+			if (tokens.front().find(kernel.name) != std::string::npos)
 			{
 				auto [hasThread, x, y, z] = ParseNumThreads(*(it - 1));
 				if (hasThread)
@@ -122,10 +147,40 @@ namespace Prism
 					kernel.numThreads[1] = y;
 					kernel.numThreads[2] = z;
 					*(it - 1) = "";
-					*it = "void main()";
+					*it = "void " + kernel.name +"() {";
+					auto i = (*(it + 1)).find("{");
+					if (i != std::string::npos)
+						(*(it + 1))[i] = ' ';
+
 				}
-				break;
 			}
+		}
+	}
+	static void ProcessUnifrom(Tokens& tokens, ComputeShaderResult& data, Lines::iterator& it, uint32_t& bindingIndex)
+	{
+		tokens.pop();
+		if (tokens.empty()) return;
+		std::string type = tokens.front(); tokens.pop();
+		std::string name = tokens.front(); tokens.pop();
+		std::string layout;
+		ComputeShaderResourceType resType = ComputeShaderResourceType::None;
+		if (type == "sampler2D")
+		{
+			layout = "layout(binding = " + std::to_string(bindingIndex) + ") uniform sampler2D " + name + ";";
+			resType = ComputeShaderResourceType::Texture2D;
+		}
+		else if (type == "samplerCube")
+		{
+			layout =  "layout(binding = " + std::to_string(bindingIndex) + ") uniform samplerCube " + name + ";";
+			resType = ComputeShaderResourceType::TextureCube;
+		}
+
+		if (!layout.empty())
+		{
+			*it = layout;
+			ComputeShaderResource res{ resType, name, "", bindingIndex };
+			data.resources.push_back(res);
+			bindingIndex++;
 		}
 	}
 	static void ProcessLines(Lines& lines, ComputeShaderResult& result)
@@ -147,6 +202,8 @@ namespace Prism
 				ProcessPragma(tokens, it, result);
 			else if (tokens.front() == "void")
 				ProcessKernel(tokens, result, it);
+			else if (tokens.front() == "uniform")
+				ProcessUnifrom(tokens, result, it, bindingIndex);
 
 			auto [isBuffer, bufType, bufParam, bufName] = ParseBufferDeclaration(*it);
 			if (isBuffer)
@@ -157,18 +214,22 @@ namespace Prism
 	{
 		for (auto& kernel : result.kernels)
 		{
-			std::string header = "#version 450 core\nlayout(local_size_x = " +
+			std::string header = "#version 450 core\n";
+			std::string layout = "\nlayout(local_size_x = " +
 				std::to_string(kernel.numThreads[0]) + ", local_size_y = " +
 				std::to_string(kernel.numThreads[1]) + ", local_size_z = " +
-				std::to_string(kernel.numThreads[2]) + ") in;\n";
+				std::to_string(kernel.numThreads[2]) + ") in;";
 
 			Lines kernelLines = lines;
-			for (auto& l : kernelLines)
+			for (auto it = kernelLines.begin(); it != kernelLines.end(); ++it)
 			{
-				if (Trim(l) == "void main()")
-					l = "void main()";
+				if (Trim(*it) == "void " + kernel.name + "() {")
+				{
+					*(it - 1) = layout;
+					*it = "void main() {";
+					break;
+				}
 			}
-
 			kernelLines.insert(kernelLines.begin(), header);
 			MergeLines(kernelLines, kernel.source);
 		}
@@ -176,12 +237,18 @@ namespace Prism
 	ComputeShaderResult ComputeShaderParser::Parse(const std::string& shaderCode)
 	{
 		ComputeShaderResult result;
-		result.source = StripComments(shaderCode);
-		Lines lines;
-		SplitLines(result.source, lines);
-		ProcessLines(lines, result);
-		GenerateKernelSources(lines, result);
-
+		try 
+		{
+			result.source = StripComments(shaderCode);
+			Lines lines;
+			SplitLines(result.source, lines);
+			ProcessLines(lines, result);
+			GenerateKernelSources(lines, result);
+		}
+		catch (const std::exception& e)
+		{
+			PR_CORE_ERROR("Error parsing compute shader: {0}", e.what());
+		}
 		return result;
 	}
 
