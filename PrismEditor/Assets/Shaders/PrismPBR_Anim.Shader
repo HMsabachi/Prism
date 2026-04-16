@@ -74,6 +74,7 @@ Shader "Custom/SimplePBR_Animated"
                     vec3 Normal;
                     vec2 TexCoord;
                     mat3 WorldNormals;
+                    mat3 WorldTransform;
                     vec3 Binormal;
                 } vs_Output;
 
@@ -89,12 +90,13 @@ Shader "Custom/SimplePBR_Animated"
                     vec4 localPosition = boneTransform * vec4(a_Position, 1.0);
 
                     vs_Output.WorldPosition = vec3(u_ModelMatrix * boneTransform * vec4(a_Position, 1.0));
-                    vs_Output.Normal = mat3(boneTransform) * a_Normal;
+                    vs_Output.Normal = mat3(u_ModelMatrix) * mat3(boneTransform) * a_Normal;
                     
 
                     vs_Output.TexCoord = vec2(a_TexCoord.x, 1.0 - a_TexCoord.y);
                     vs_Output.WorldNormals = mat3(u_ModelMatrix) * mat3(a_Tangent, a_Binormal, a_Normal);
                     vs_Output.Binormal = mat3(boneTransform) * a_Binormal;
+                    vs_Output.WorldTransform = mat3(u_ModelMatrix);
 
                     gl_Position = u_ViewProjectionMatrix * u_ModelMatrix * vec4(a_Position, 1.0);
                     gl_Position = u_ViewProjectionMatrix * u_ModelMatrix * localPosition;

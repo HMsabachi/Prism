@@ -43,7 +43,7 @@ namespace Prism
 	
 	void PrismShader::Reload()
 	{
-		auto source = ReadFile(m_FilePath);
+		auto source = File::ReadFile(m_FilePath);
 		Load(source);
 	}
 
@@ -79,25 +79,6 @@ namespace Prism
 	void PrismShader::AddShaderReloadedCallback(const ShaderReloadedCallback& callback)
 	{
 		m_ReloadedCallbacks.push_back(callback);
-	}
-
-	std::string PrismShader::ReadFile(const std::string& filePath)
-	{
-		std::string result;
-		std::ifstream in(filePath, std::ios::in, std::ios::binary);
-		if (in)
-		{
-			in.seekg(0, std::ios::end);
-			result.resize(in.tellg());
-			in.seekg(0, std::ios::beg);
-			in.read(&result[0], result.size());
-			in.close();
-		}
-		else
-		{
-			PR_CORE_WARN("Could not open file '{0}'", filePath);
-		}
-		return result;
 	}
 
 	Prism::Ref<Prism::Shader> PrismShader::GetOriginalShader() const

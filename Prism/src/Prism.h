@@ -18,6 +18,7 @@
 // ---Renderer-
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Shader/PrismShader.h"
+#include "Prism/Renderer/ComputeShader/ComputeShader.h"
 #include "Prism/Renderer/Shader/GlobalUniforms.h"
 
 #include "imgui/imgui.h"
@@ -31,6 +32,7 @@
 
 #include "Prism/Renderer/Buffer/Framebuffer.h"
 #include "Prism/Renderer/Buffer/Buffer.h"
+#include "Prism/Renderer/Buffer/ShaderStorageBuffer.h"
 
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/Camera/Camera.h"

@@ -32,4 +32,18 @@ namespace Prism
 		return result;
 	}
 
+	Shader* Shader::Create(const std::string& name, const std::string& computeShader)
+	{
+		Shader* result = nullptr;
+		std::string source = "#type compute\n" + computeShader;
+		switch (RendererAPI::Current())
+		{
+		case RendererAPIType::None: return nullptr;
+		case RendererAPIType::OpenGL: result = new OpenGLShader(name, source);
+		}
+		s_AllShaders.push_back(result);
+		return result;
+	}
+
+
 }

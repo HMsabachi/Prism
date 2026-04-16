@@ -39,9 +39,6 @@ namespace Prism
 		void SetMat4FromRenderThread(const std::string& name, const glm::mat4& value);
 	#pragma endregion
 
-		
-	private:
-		static std::string ReadFile(const std::string& filePath);
 	private:
 		std::string m_Name;
 		std::string m_FilePath;

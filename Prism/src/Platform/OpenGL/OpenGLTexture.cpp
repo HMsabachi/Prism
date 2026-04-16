@@ -128,6 +128,7 @@ namespace Prism {
 	{
 		Renderer::Submit([this, slot]() 
 		{
+			m_BindSlot = slot;
 			glBindTextureUnit(slot, m_RendererID);
 		});
 	}
@@ -160,6 +161,7 @@ namespace Prism {
 		PR_CORE_ASSERT(m_Locked, "Texture must be locked!");
 		return m_ImageData;
 	}
+
 
 	uint32_t OpenGLTexture2D::GetMipLevelCount() const
 	{
@@ -294,6 +296,7 @@ namespace Prism {
 	void OpenGLTextureCube::Bind(unsigned int slot) const
 	{
 		Renderer::Submit([this, slot]() {
+			m_BindSlot = slot;
 			glBindTextureUnit(slot, m_RendererID);
 			});
 	}

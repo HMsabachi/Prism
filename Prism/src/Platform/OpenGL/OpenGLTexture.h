@@ -14,6 +14,7 @@ namespace Prism {
 		virtual ~OpenGLTexture2D();
 
 		virtual void Bind(uint32_t slot = 0) const override;
+		virtual uint32_t GetBinding() const override { return m_BindSlot; }
 
 		virtual TextureFormat GetFormat() const override { return m_Format; }
 		virtual uint32_t GetWidth() const override { return m_Width; }
@@ -33,8 +34,11 @@ namespace Prism {
 		virtual Buffer GetWriteableBuffer() override;
 
 		virtual RendererID GetRendererID() const override { return m_RendererID; }
+
+
 	private:
 		RendererID m_RendererID;
+		mutable uint32_t m_BindSlot = 0;
 		TextureFormat m_Format;
 		TextureWrap m_Wrap = TextureWrap::Clamp;
 		uint32_t m_Width, m_Height;
@@ -56,6 +60,7 @@ namespace Prism {
 		virtual ~OpenGLTextureCube();
 
 		virtual void Bind(uint32_t slot = 0) const;
+		virtual uint32_t GetBinding() const override { return m_BindSlot; }
 
 		virtual TextureFormat GetFormat() const { return m_Format; }
 		virtual uint32_t GetWidth() const { return m_Width; }
@@ -69,6 +74,7 @@ namespace Prism {
 		virtual RendererID GetRendererID() const override { return m_RendererID; }
 	private:
 		RendererID m_RendererID;
+		mutable uint32_t m_BindSlot = 0;
 		TextureFormat m_Format;
 		uint32_t m_Width, m_Height;
 

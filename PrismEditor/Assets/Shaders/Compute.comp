@@ -1,0 +1,22 @@
+#pragma kernel CSMain
+
+struct Test
+{
+    float value;
+};
+
+RBuffer<Test> InputBuffer;
+WBuffer<Test> OutputBuffer;
+
+uniform int u_Count;
+
+[numthreads(256, 1, 1)]
+void CSMain()
+{
+    uint idx = gl_GlobalInvocationID.x;
+    if (idx >= u_Count) return;
+
+    Test t = InputBuffer[idx];
+    t.value = t.value * 2.0; 
+    OutputBuffer[idx] = t;
+}

@@ -24,11 +24,18 @@ namespace Prism {
 		RendererID GetRendererID() const override;
 
 
+
+
+		void DispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ) override;
+
 	private:
 		void SetPropertyImpt(const PropertyBufferDeclaration& decl, const Buffer& buffer);
 
 		void SetFloat(const std::string& name, float value) override;
+		void SetInt(const std::string& name, int value) override;
+		void SetVec2(const std::string& name, const glm::vec2& value) override;
 		void SetVec3(const std::string& name, const glm::vec3& value) override;
+		void SetVec4(const std::string& name, const glm::vec4& value) override;
 		void SetMat4(const std::string& name, const glm::mat4& value) override;
 		void SetMat4FromRenderThread(const std::string& name, const glm::mat4& value, bool bind = true) override;
 
@@ -71,6 +78,7 @@ namespace Prism {
 
 	private:
 		RendererID m_RendererID = 0;
+		bool m_IsCompute = false;
 
 		std::string m_Name, m_AssetsPath;
 		std::string m_ShaderSource;

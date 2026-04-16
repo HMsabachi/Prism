@@ -61,6 +61,7 @@ namespace Prism
 		Ref<PrismShader> m_QuadShader;
 		Ref<PrismShader> m_HDRShader;
 		Ref<PrismShader> m_GridShader;
+		Ref<ComputeShader> m_ComShader;
 		Ref<Mesh> m_Mesh;
 		Ref<Mesh> m_SphereMesh, m_PlaneMesh;
 		Ref<Texture2D> m_BRDFLUT;

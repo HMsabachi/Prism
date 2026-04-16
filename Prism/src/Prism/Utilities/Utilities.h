@@ -54,13 +54,17 @@ namespace Prism
 	}
 	namespace StrParse
 	{
-		typedef std::queue<std::queue<std::string>> TokenLines;
 		typedef std::queue<std::string> Tokens;
+		typedef std::queue<Tokens> TokenLines;
+		typedef std::vector<std::string> Lines;
 
 		std::string Sanitize(std::string str);
+		std::string Trim(const std::string& s);
 		void SplitToken(std::string str, std::vector<std::string>& tokens);
 		void SplitToken(std::string str, Tokens& tokens);
 		void SplitToken(std::string str, TokenLines& tokens);
+		void SplitLines(const std::string& str, Lines& lines);
+		void MergeLines(const Lines& lines, std::string& out);
 
 		template <typename T>
 		inline T Parse(const std::string& input) {
@@ -115,5 +119,9 @@ namespace Prism
 		{
 			return static_cast<int32_t>(value);
 		}
+	}
+	namespace File
+	{
+		std::string ReadFile(const std::string& filePath);
 	}
 }

@@ -1,0 +1,135 @@
+﻿#include "prpch.h"
+#include "../Shader.h"
+#include "ComputeShader.h"
+#include "ComputeShaderParserData.h"
+#include "ComputeShaderParser.h"
+
+#include "../Buffer/ShaderStorageBuffer.h"
+#include "../Texture.h"
+
+
+namespace Prism
+{
+	std::vector<Ref<ComputeShader>> ComputeShader::s_AllComputeShader;
+
+	Ref<ComputeShader> ComputeShader::Create(const std::string& filePath)
+	{
+		auto shader = CreateRef<ComputeShader>(filePath);
+		s_AllComputeShader.push_back(shader);
+		return shader;
+	}
+
+	ComputeShader::ComputeShader(const std::string& filePath)
+		:m_FilePath(std::filesystem::absolute(filePath).string())
+	{
+		PR_PROFILE_FUNCTION();
+		Load();
+	}
+
+	ComputeShader::~ComputeShader()
+	{
+
+	}
+
+	void ComputeShader::Load()
+	{
+		auto source = File::ReadFile(m_FilePath);
+		auto result = ComputeShaderParser::Parse(source);
+		uint32_t index = 0;
+		for (auto& resource : result.resources)
+		{
+			Resource r;
+			r.name = resource.name;
+			r.type = resource.type;
+			r.binding = resource.binding;
+			m_ResourcesMap[r.name] = index++;
+			m_Resources.push_back(r);
+		}
+		for (auto& kernel : result.kernels)
+		{
+			Kernel k;
+			k.name = kernel.name;
+			k.groupSizeX = kernel.numThreads[0];
+			k.groupSizeY = kernel.numThreads[1];
+			k.groupSizeZ = kernel.numThreads[2];
+			k.shader.reset(Shader::Create(m_Name, kernel.source));
+			m_Kernels.push_back(k);
+		}
+	}
+
+	int32_t ComputeShader::FindKernel(const std::string& name)
+	{
+		for (int32_t i = 0; i < m_Kernels.size(); i++)
+			if (m_Kernels[i].name == name) return i;
+		return -1;
+	}
+	int32_t ComputeShader::FindRes(const std::string& name)
+	{
+		if (m_ResourcesMap.find(name) == m_ResourcesMap.end()) return -1;
+		return m_ResourcesMap[name];
+	}
+	bool ComputeShader::IsLegalID(int32_t kernel)
+	{
+		if (kernel < 0 || kernel >= m_Kernels.size())
+		{
+			PR_CORE_ERROR("不合法的 Kernel ID {0}", kernel);
+			return false;
+		}
+		return true;
+	}
+
+	void ComputeShader::SetBuffer(int32_t kernel,const std::string& name, Ref<ShaderStorageBuffer>& ssbo)
+	{
+		auto id = FindRes(name);
+		if (id == -1) return;
+		m_Resources[id].ssbo = ssbo;
+	}
+
+	void ComputeShader::SetTexture2D(int32_t kernel,const std::string& name, Ref<Texture2D>& ssbo)
+	{
+		auto id = FindRes(name);
+		if (id == -1) return;
+	}
+
+	void ComputeShader::SetInt(int32_t kernel, const std::string& name, int32_t value)
+	{
+		if(!IsLegalID(kernel)) return;
+		auto& k = m_Kernels[kernel];
+		k.shader->Bind();
+		k.shader->SetInt(name, value);
+	}
+
+	void ComputeShader::SetFloat(int32_t kernel, const std::string& name, float value)
+	{
+		if (!IsLegalID(kernel)) return;
+		auto& k = m_Kernels[kernel];
+		k.shader->Bind();
+		k.shader->SetFloat(name, value);
+	}
+
+	void ComputeShader::Dispatch(int32_t kernel, uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ)
+	{
+		if (!IsLegalID(kernel)) return;
+		auto& k = m_Kernels[kernel];
+		k.shader->Bind();
+		for (auto& res : m_Resources)
+		{
+			if (res.type == ComputeShaderResourceType::RBuffer || res.type == ComputeShaderResourceType::WBuffer || res.type == ComputeShaderResourceType::RWBuffer)
+			{
+				
+					auto ssbo = res.ssbo.lock();
+					ssbo->Bind(res.binding);
+				
+			}
+			if (res.type == ComputeShaderResourceType::RWImage2D)
+			{
+				if (res.texture.expired())
+				{
+					auto texture = res.texture.lock();
+					texture->Bind(res.binding);
+				}
+			}
+		}
+		k.shader->DispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
+	}
+}

@@ -29,6 +29,7 @@ namespace Prism
 	void OpenGLShaderStorageBuffer::Bind(uint32_t bindingPoint) const
 	{
 		Renderer::Submit([this, bindingPoint]() {
+			m_BindingPoint = bindingPoint;
 			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindingPoint, m_RendererID);
 		});
 	}
@@ -36,6 +37,7 @@ namespace Prism
 	void OpenGLShaderStorageBuffer::Unbind() const
 	{
 		Renderer::Submit([this]() {
+			m_BindingPoint = 0;
 			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
 		});
 	}
@@ -48,11 +50,17 @@ namespace Prism
 			glNamedBufferSubData(m_RendererID, static_cast<GLintptr>(offset), size, data);
 		});
 	}
+	void OpenGLShaderStorageBuffer::GetData(void* data, size_t size, size_t offset, bool sync) const
+	{
+		Renderer::Submit([=]() {
+			if (data == nullptr || size == 0) return;
+			glGetNamedBufferSubData(m_RendererID, static_cast<GLintptr>(offset), size, data);
+		});
 
-
-
-
-
+		// TODO: 会卡住渲染线程
+		if(sync)
+			Renderer::WaitAndRender();
+	}
 
 	RendererID OpenGLShaderStorageBuffer::GetRendererID() const
 	{
@@ -61,6 +69,10 @@ namespace Prism
 	uint32_t OpenGLShaderStorageBuffer::GetSize() const
 	{
 		return m_Size;
+	}
+	uint32_t OpenGLShaderStorageBuffer::GetBindingPoint() const
+	{
+		return m_BindingPoint;
 	}
 
 }

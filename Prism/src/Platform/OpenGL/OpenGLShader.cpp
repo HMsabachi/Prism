@@ -67,9 +67,6 @@ namespace Prism
 
 	Prism::RendererID OpenGLShader::GetRendererID() const { return m_RendererID; }
 
-
-	
-
 	void OpenGLShader::ReadShaderFromFile(const std::string& filepath)
 	{
 		std::ifstream in(filepath, std::ios::in | std::ios::binary);
@@ -93,6 +90,8 @@ namespace Prism
 			return GL_VERTEX_SHADER;
 		if (type == "fragment" || type == "pixel")
 			return GL_FRAGMENT_SHADER;
+		if (type == "compute")
+			return GL_COMPUTE_SHADER;
 
 		return GL_NONE;
 	}
@@ -110,11 +109,20 @@ namespace Prism
 			PR_CORE_ASSERT(eol != std::string::npos, "Syntax error");
 			size_t begin = pos + typeTokenLength + 1;
 			std::string type = m_ShaderSource.substr(begin, eol - begin);
-			PR_CORE_ASSERT(type == "vertex" || type == "fragment" || type == "pixel", "Invalid shader type specified");
+			PR_CORE_ASSERT(type == "vertex" || type == "fragment" || type == "pixel" || type == "compute", "Invalid shader type specified");
 
 			size_t nextLinePos = m_ShaderSource.find_first_not_of("\r\n", eol);
 			pos = m_ShaderSource.find(typeToken, nextLinePos);
-			shaderSources[ShaderTypeFromString(type)] = m_ShaderSource.substr(nextLinePos, pos - (nextLinePos == std::string::npos ? m_ShaderSource.size() - 1 : nextLinePos));
+
+			auto shaderType = ShaderTypeFromString(type);
+			shaderSources[shaderType] = m_ShaderSource.substr(nextLinePos, pos - (nextLinePos == std::string::npos ? m_ShaderSource.size() - 1 : nextLinePos));
+
+			
+			if (shaderType == GL_COMPUTE_SHADER)
+			{
+				m_IsCompute = true;
+				break;
+			}
 		}
 
 		std::vector<GLuint> shaderRendererIDs;
@@ -193,12 +201,35 @@ namespace Prism
 			UploadUniformFloat(name, value);
 			});
 	}
+
+	void OpenGLShader::SetInt(const std::string& name, int value)
+	{
+		Renderer::Submit([=]() {
+			UploadUniformInt(name, value);
+			});
+	}
+
+	void OpenGLShader::SetVec2(const std::string& name, const glm::vec2& value)
+	{
+		Renderer::Submit([=]() {
+			UploadUniformFloat2(name, value);
+			});
+	}
+
 	void OpenGLShader::SetVec3(const std::string& name, const glm::vec3& value)
 	{
 		Renderer::Submit([=]() {
 			UploadUniformFloat3(name, value);
 			});
 	}
+
+	void OpenGLShader::SetVec4(const std::string& name, const glm::vec4& value)
+	{
+		Renderer::Submit([=]() {
+			UploadUniformFloat4(name, value);
+			});
+	}
+
 	void OpenGLShader::SetMat4(const std::string& name, const glm::mat4& value)
 	{
 		Renderer::Submit([=]() {
@@ -275,6 +306,20 @@ namespace Prism
 				break;
 			}
 		}
+	}
+
+
+	void OpenGLShader::DispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ)
+	{
+		Renderer::Submit([=](){
+			if (!m_IsCompute)
+			{
+				PR_CORE_WARN("着色器 {0} 不是计算着色器", m_Name);
+				return;
+			}
+			glDispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
+			glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+		});
 	}
 
 

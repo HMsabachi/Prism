@@ -64,6 +64,13 @@ namespace Prism
 			return str;
 		}
 
+		std::string Trim(const std::string& s)
+		{
+			size_t start = s.find_first_not_of(" \t\n\r");
+			size_t end = s.find_last_not_of(" \t\n\r");
+			return (start == std::string::npos) ? "" : s.substr(start, end - start + 1);
+		}
+
 		void SplitToken(std::string str, std::vector<std::string>& tokens)
 		{
 			std::stringstream ss(Sanitize(str));
@@ -99,6 +106,47 @@ namespace Prism
 			}
 		}
 
+		void SplitLines(const std::string& str, Lines& lines)
+		{
+			std::stringstream ss(str);
+			std::string line;
+			while (std::getline(ss, line))
+			{
+				if (!Trim(line).empty()) lines.push_back(line);
+			}
+		}
+
+		void MergeLines(const Lines& lines, std::string& out)
+		{
+			out.clear();
+			for (const auto& l : lines) out += l + "\n";
+		}
+
+	}
+	namespace File
+	{
+		std::string ReadFile(const std::string& filePath)
+		{
+			std::string result;
+			std::ifstream in(filePath, std::ios::in, std::ios::binary);
+			if (in)
+			{
+				in.seekg(0, std::ios::end);
+				result.resize(in.tellg());
+				in.seekg(0, std::ios::beg);
+				in.read(&result[0], result.size());
+				in.close();
+			}
+			else
+			{
+				PR_CORE_WARN("Could not open file '{0}'", filePath);
+			}
+			return result;
+		}
+
 	}
 
 }
+
+
+

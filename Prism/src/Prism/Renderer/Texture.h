@@ -25,6 +25,7 @@ namespace Prism {
 		virtual ~Texture() {}
 
 		virtual void Bind(uint32_t slot = 0) const = 0;
+		virtual uint32_t GetBinding() const = 0;
 
 		virtual TextureFormat GetFormat() const = 0;
 
