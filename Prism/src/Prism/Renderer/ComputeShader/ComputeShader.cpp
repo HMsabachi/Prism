@@ -84,17 +84,21 @@ namespace Prism
 		if (id == -1) return;
 		m_Resources[id].ssbo = ssbo;
 	}
-	void ComputeShader::SetImage2D(int32_t kernel,const std::string& name, Ref<Texture2D>& tex)
+	void ComputeShader::SetImage2D(int32_t kernel,const std::string& name, Ref<Texture2D>& tex, uint32_t level, bool layered)
 	{
 		auto id = FindRes(name);
 		if (id == -1) return;
 		m_Resources[id].texture2D = tex;
+		m_Resources[id].level = level;
+		m_Resources[id].layered = layered;
 	}
-	void ComputeShader::SetImageCube(int32_t kernel, const std::string& name, Ref<TextureCube>& tex)
+	void ComputeShader::SetImageCube(int32_t kernel, const std::string& name, Ref<TextureCube>& tex, uint32_t level, bool layered)
 	{
 		auto id = FindRes(name);
 		if (id == -1) return;
 		m_Resources[id].textureCube = tex;
+		m_Resources[id].level = level;
+		m_Resources[id].layered = layered;
 	}
 	void ComputeShader::SetTexture2D(int32_t kernel, const std::string& name, Ref<Texture2D>& tex)
 	{
@@ -125,6 +129,42 @@ namespace Prism
 		k.shader->SetFloat(name, value);
 	}
 
+	static TextureAccess GetTextureAccess(ComputeShaderResourceType type)
+	{
+		switch (type)
+		{
+		case ComputeShaderResourceType::None: return TextureAccess::ReadOnly;
+		case ComputeShaderResourceType::RBuffer: return TextureAccess::ReadOnly;
+		case ComputeShaderResourceType::WBuffer: return TextureAccess::WriteOnly;
+		case ComputeShaderResourceType::RWBuffer: return TextureAccess::ReadWrite;
+		case ComputeShaderResourceType::RImage2D: return TextureAccess::ReadOnly;
+		case ComputeShaderResourceType::WImage2D: return TextureAccess::WriteOnly;
+		case ComputeShaderResourceType::RWImage2D: return TextureAccess::ReadWrite;
+		case ComputeShaderResourceType::RImageCube: return TextureAccess::ReadOnly;
+		case ComputeShaderResourceType::WImageCube: return TextureAccess::WriteOnly;
+		case ComputeShaderResourceType::RWImageCube: return TextureAccess::ReadWrite;
+		case ComputeShaderResourceType::Texture2D: return TextureAccess::ReadOnly;
+		case ComputeShaderResourceType::TextureCube: return TextureAccess::ReadOnly;
+		default: return TextureAccess::ReadOnly;
+		}
+	}
+
+	static bool IsImage(ComputeShaderResourceType type)
+	{
+		switch (type)
+		{
+		case ComputeShaderResourceType::RImage2D:
+		case ComputeShaderResourceType::WImage2D:
+		case ComputeShaderResourceType::RWImage2D:
+		case ComputeShaderResourceType::RImageCube:
+		case ComputeShaderResourceType::WImageCube:
+		case ComputeShaderResourceType::RWImageCube:
+			return true;
+		default:
+			return false;
+		}
+	}
+
 	void ComputeShader::Dispatch(int32_t kernel, uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ)
 	{
 		if (!IsLegalID(kernel)) return;
@@ -135,9 +175,19 @@ namespace Prism
 			if (auto ssbo = res.ssbo.lock())
 				ssbo->Bind(res.binding);
 			if (auto texture = res.texture2D.lock())
-				texture->Bind(res.binding);
+			{
+				if (IsImage(res.type))
+					texture->BindImage(res.binding, GetTextureAccess(res.type), res.layered, res.level);
+				else
+					texture->Bind(res.binding);
+			}
 			if (auto textureCube = res.textureCube.lock())
-				textureCube->Bind(res.binding);
+			{
+				if (IsImage(res.type))
+					textureCube->BindImage(res.binding, GetTextureAccess(res.type), res.layered, res.level);
+				else
+					textureCube->Bind(res.binding);
+			}
 		}
 		k.shader->DispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
 	}

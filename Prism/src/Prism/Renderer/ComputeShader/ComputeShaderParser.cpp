@@ -162,6 +162,7 @@ namespace Prism
 		if (tokens.empty()) return;
 		std::string type = tokens.front(); tokens.pop();
 		std::string name = tokens.front(); tokens.pop();
+		if (name.find(";") != std::string::npos) name = name.substr(0, name.find(";"));
 		std::string layout;
 		ComputeShaderResourceType resType = ComputeShaderResourceType::None;
 		if (type == "sampler2D")

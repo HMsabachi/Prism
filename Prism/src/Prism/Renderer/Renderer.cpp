@@ -53,6 +53,13 @@ namespace Prism
 		});
 	}
 
+	void Renderer::MemoryBarriers(RendererAPI::BarrierFlags flags)
+	{
+		Renderer::Submit([=]() {
+			RendererAPI::MemoryBarriers(flags);
+			});
+	}
+
 	void Renderer::WaitAndRender()
 	{
 		s_Instance->m_CommandQueue.Execute();

@@ -18,6 +18,12 @@ namespace Prism {
 		Clamp = 1,
 		Repeat = 2
 	};
+	enum class PRISM_API TextureAccess
+	{
+		ReadOnly = 0,
+		WriteOnly = 1,
+		ReadWrite = 2
+	};
 
 	class PRISM_API Texture
 	{
@@ -25,6 +31,7 @@ namespace Prism {
 		virtual ~Texture() {}
 
 		virtual void Bind(uint32_t slot = 0) const = 0;
+		virtual void BindImage(uint32_t slot, TextureAccess access, bool layered = true, uint32_t mipLevel = 0) const = 0;
 		virtual uint32_t GetBinding() const = 0;
 
 		virtual TextureFormat GetFormat() const = 0;
@@ -63,6 +70,10 @@ namespace Prism {
 		static Ref<TextureCube> Create(const std::string& path);
 
 		virtual const std::string& GetPath() const = 0;
+
+		virtual void GenerateMipMap() const = 0;
+
+		virtual void CopyTo(Ref<TextureCube> destination) const = 0;
 	};
 
 }

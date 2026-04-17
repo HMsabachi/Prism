@@ -24,6 +24,23 @@ namespace Prism
 
 	class PRISM_API RendererAPI
 	{
+	public:
+#pragma region 数据结构
+		enum class PRISM_API Barrier
+		{
+			None = 0,
+			ShaderStorage = BIT(0),
+			VertexAttribArray = BIT(1),
+			ElementArray = BIT(2),
+			ImageAccess = BIT(3),
+			TextureFetch = BIT(4),
+			TextureUpdate = BIT(5),
+			Framebuffer = BIT(6),
+			Command = BIT(7),
+			All = BIT(8)
+		}; 
+		typedef BitFlags<Barrier> BarrierFlags;
+#pragma endregion
 	private:
 
 	public:
@@ -33,6 +50,7 @@ namespace Prism
 		static void Clear(float r, float g, float b, float a);
 		static void SetClearColor(float r, float g, float b, float a);
 		static void DrawIndexed(unsigned int const, bool depthTest = true);
+		static void MemoryBarriers(BarrierFlags flags);
 
 		static RenderAPICapabilities& GetCapabilities()
 		{
@@ -46,4 +64,5 @@ namespace Prism
 	private:
 		static RendererAPIType s_CurrentRendererAPI;
 	};
+	using MBarrier = RendererAPI::Barrier;
 }

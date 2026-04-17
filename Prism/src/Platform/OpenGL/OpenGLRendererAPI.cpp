@@ -7,6 +7,20 @@
 
 namespace Prism
 {
+	static GLbitfield PrismToOpenGLMemoryBarrier(RendererAPI::BarrierFlags flags)
+	{
+		GLbitfield result = 0;
+		if (flags & RendererAPI::Barrier::ShaderStorage) result |= GL_SHADER_STORAGE_BARRIER_BIT;
+		if (flags & RendererAPI::Barrier::VertexAttribArray) result |= GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT;
+		if (flags & RendererAPI::Barrier::ElementArray) result |= GL_ELEMENT_ARRAY_BARRIER_BIT;
+		if (flags & RendererAPI::Barrier::ImageAccess) result |= GL_FRAMEBUFFER_BARRIER_BIT;
+		if (flags & RendererAPI::Barrier::TextureFetch) result |= GL_TEXTURE_FETCH_BARRIER_BIT;
+		if (flags & RendererAPI::Barrier::TextureUpdate) result |= GL_TEXTURE_UPDATE_BARRIER_BIT;
+		if (flags & RendererAPI::Barrier::Framebuffer) result |= GL_FRAMEBUFFER_BARRIER_BIT;
+		if (flags & RendererAPI::Barrier::Command) result |= GL_COMMAND_BARRIER_BIT;
+		if (flags & RendererAPI::Barrier::All) result |= GL_ALL_BARRIER_BITS;
+		return result;
+	}
 
 	static void HandleCapabilities()
 	{
@@ -109,6 +123,11 @@ namespace Prism
 		glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, nullptr);
 		if (!depthTest)
 			glEnable(GL_DEPTH_TEST);
+	}
+
+	void RendererAPI::MemoryBarriers(BarrierFlags flags)
+	{
+		glMemoryBarrier(PrismToOpenGLMemoryBarrier(flags));
 	}
 
 }

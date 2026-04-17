@@ -33,6 +33,7 @@ namespace Prism
 		static void ClearMagenta();
 
 		static void DrawIndexed(uint32_t count, bool depthTest = true);
+		static void MemoryBarriers(RendererAPI::BarrierFlags flags);
 
 		static const Scope<ShaderLibrary>& GetShaderLibrary();
 

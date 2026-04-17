@@ -27,6 +27,8 @@ namespace Prism
 			ComputeShaderResourceType type;
 			std::string name;
 			uint32_t binding;
+			bool layered = true;
+			uint32_t level = 0;
 			std::weak_ptr<Texture2D> texture2D;
 			std::weak_ptr<TextureCube> textureCube;
 			std::weak_ptr<ShaderStorageBuffer> ssbo;
@@ -42,8 +44,8 @@ namespace Prism
 	public:
 		int32_t FindKernel(const std::string& name);
 		void SetBuffer(int32_t kernel, const std::string& name, Ref<ShaderStorageBuffer>& ssbo);
-		void SetImage2D(int32_t kernel, const std::string& name, Ref<Texture2D>& tex);
-		void SetImageCube(int32_t kernel, const std::string& name, Ref<TextureCube>& tex);
+		void SetImage2D(int32_t kernel, const std::string& name, Ref<Texture2D>& tex, uint32_t level = 0, bool layered = true);
+		void SetImageCube(int32_t kernel, const std::string& name, Ref<TextureCube>& tex, uint32_t level = 0, bool layered = true);
 		void SetTexture2D(int32_t kernel, const std::string& name, Ref<Texture2D>& tex);
 		void SetTextureCube(int32_t kernel, const std::string& name, Ref<TextureCube>& tex);
 

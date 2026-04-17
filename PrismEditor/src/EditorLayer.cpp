@@ -96,9 +96,6 @@ namespace Prism
 		using namespace glm;
 		Prism::GlobalUniforms::Init();
 
-		m_ComShader = ComputeShader::Create("Assets/Shaders/Compute.comp");
-
-
 
 		m_QuadShader = Prism::PrismShader::Create("Assets/Shaders/Skybox.Shader");
 		m_HDRShader = Prism::PrismShader::Create("Assets/Shaders/hdr.Shader");
@@ -120,9 +117,14 @@ namespace Prism
 		m_CheckerboardTex = Prism::Texture2D::Create("Assets/editor/Checkerboard.tga");
 
 		// Environment
-		m_EnvironmentCubeMap = Prism::TextureCube::Create("Assets/Textures/environments/Arches_E_PineTree_Radiance.tga");
+		//m_EnvironmentCubeMap = Prism::TextureCube::Create("Assets/Textures/environments/Arches_E_PineTree_Radiance.tga");
 		//m_EnvironmentCubeMap.reset(Prism::TextureCube::Create("Assets/Textures/environments/DebugCubeMap.tga"));
+		Renderer::WaitAndRender();
 		m_EnvironmentIrradiance = Prism::TextureCube::Create("Assets/Textures/environments/Arches_E_PineTree_Irradiance.tga");
+		auto [radiance, irradiance] = SceneRenderer::CreateEnvironmentMap("Assets/env/birchwood_4k.hdr");
+		m_EnvironmentCubeMap = radiance;
+		m_EnvironmentIrradiance = irradiance;
+
 		m_BRDFLUT = Prism::Texture2D::Create("Assets/Textures/BRDF_LUT.tga");
 
 		// Render Passes
@@ -703,8 +705,6 @@ namespace Prism
 
 		ImGui::End();
 #endif
-		if (m_Mesh)
-			m_Mesh->OnImGuiRender();
 
 		static bool show_demo_window = true;
 		if (show_demo_window)

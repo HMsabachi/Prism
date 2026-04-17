@@ -20,6 +20,17 @@ namespace Prism {
 		PR_CORE_ASSERT(false, "Unknown texture format!");
 		return 0;
 	}
+	static GLenum PrismToOpenGLTextureAccess(TextureAccess access)
+	{
+		switch (access)
+		{
+		case Prism::TextureAccess::ReadOnly:  return GL_READ_ONLY;
+		case Prism::TextureAccess::WriteOnly: return GL_WRITE_ONLY;
+		case Prism::TextureAccess::ReadWrite: return GL_READ_WRITE;
+		}
+		PR_CORE_ASSERT(false, "Unknown texture format!");
+		return 0;
+	}
 
 	//////////////////////////////////////////////////////////////////////////////////
 	// Texture2D
@@ -132,6 +143,16 @@ namespace Prism {
 			glBindTextureUnit(slot, m_RendererID);
 		});
 	}
+
+	void OpenGLTexture2D::BindImage(uint32_t slot, TextureAccess access, bool layered, uint32_t mipLevel) const
+	{
+		Renderer::Submit([=]()
+		{
+			m_BindSlot = slot;
+			glBindImageTexture(slot, m_RendererID, mipLevel, layered, 0, PrismToOpenGLTextureAccess(access), PrismToOpenGLTextureFormat(m_Format));
+		});
+	}
+
 	void OpenGLTexture2D::Lock()
 	{
 		m_Locked = true;
@@ -173,14 +194,12 @@ namespace Prism {
 	//////////////////////////////////////////////////////////////////////////////////
 
 	OpenGLTextureCube::OpenGLTextureCube(TextureFormat format, uint32_t width, uint32_t height)
+		:m_Format(format), m_Width(width), m_Height(height), m_RendererID(0)
 	{
-		m_Width = width;
-		m_Height = height;
-		m_Format = format;
 
 		uint32_t levels = Texture::CalculateMipMapCount(width, height);
 
-		Renderer::Submit([=]() {
+		Renderer::Submit([this, levels, width, height]() {
 			glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &m_RendererID);
 			glTextureStorage2D(m_RendererID, levels, PrismToOpenGLTextureFormat(m_Format), width, height);
 			glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, levels > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
@@ -301,9 +320,35 @@ namespace Prism {
 			});
 	}
 
+	void OpenGLTextureCube::BindImage(uint32_t slot, TextureAccess access, bool layered /*= true*/, uint32_t mipLevel) const
+	{
+		Renderer::Submit([=]()
+		{
+			m_BindSlot = slot;
+			glBindImageTexture(slot, m_RendererID, mipLevel, layered, 0, PrismToOpenGLTextureAccess(access), PrismToOpenGLTextureFormat(m_Format));
+		});
+	}
+
 	uint32_t OpenGLTextureCube::GetMipLevelCount() const
 	{
 		return Texture::CalculateMipMapCount(m_Width, m_Height);
+	}
+
+	void OpenGLTextureCube::GenerateMipMap() const
+	{
+		Renderer::Submit([=]()
+		{
+			glBindTexture(GL_TEXTURE_CUBE_MAP, m_RendererID);
+			glGenerateTextureMipmap(m_RendererID);
+		});
+	}
+
+	void OpenGLTextureCube::CopyTo(Ref<TextureCube> destination) const
+	{
+		Renderer::Submit([=]()
+		{
+				glCopyImageSubData(m_RendererID, GL_TEXTURE_CUBE_MAP, 0, 0, 0, 0, destination->GetRendererID(), GL_TEXTURE_CUBE_MAP, 0, 0, 0, 0, m_Width, m_Height, 6);
+		});
 	}
 
 }

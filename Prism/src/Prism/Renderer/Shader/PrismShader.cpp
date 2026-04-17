@@ -136,10 +136,29 @@ namespace Prism
 		return result;
 	}
 
+#pragma region 设置原生uniform
 	void PrismShader::SetMat4FromRenderThread(const std::string& name, const glm::mat4& value)
 	{
 		m_Shader->SetMat4FromRenderThread(name, value);
 	}
+	void PrismShader::SetInt(const std::string& name, int value) const
+	{
+		m_Shader->SetInt(name, value);
+	}
+	void PrismShader::SetFloat(const std::string& name, float value) const
+	{
+		m_Shader->SetFloat(name, value);
+	}
+	void PrismShader::SetVec3(const std::string& name, const glm::vec3& value) const
+	{
+		m_Shader->SetVec3(name, value);
+	}
+	void PrismShader::SetVec4(const std::string& name, const glm::vec4& value) const
+	{
+		m_Shader->SetVec4(name, value);
+	}
+
+#pragma endregion
 
 	// //////////////////////////////////////////////////
 	// --- ShaderLibrary  ---

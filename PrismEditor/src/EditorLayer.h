@@ -130,5 +130,8 @@ namespace Prism
 
 		int m_GizmoType = -1; // -1 = no gizmo
 		glm::mat4 m_Transform;
+
+
+		Ref<Texture2D> envEquirect;
 	};
 }
