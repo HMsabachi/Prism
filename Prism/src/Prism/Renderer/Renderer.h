@@ -7,12 +7,13 @@
 #include "RenderPass.h"
 
 #include "Mesh.h"
-#include "Shader/GlobalUniforms.h"
 
 namespace Prism
 {
 	class ShaderLibrary;
 	class Camera;
+	class MaterialInstance;
+	class Mesh;
 }
 
 namespace Prism
@@ -25,6 +26,17 @@ namespace Prism
 		typedef void(*RenderCommandFn)(void*);
 		Renderer();
 		~Renderer();
+		template<typename FuncT>
+		static void Submit(FuncT&& func)
+		{
+			auto renderCmd = [](void* ptr) {
+				auto pFunc = (FuncT*)ptr;
+				(*pFunc)();
+				pFunc->~FuncT();
+				};
+			auto storageBuffer = GetRenderCommandQueue().Allocate(renderCmd, sizeof(func));
+			new (storageBuffer) FuncT(std::forward<FuncT>(func));
+		}
 		static void Init();
 
 		static void Clear();
@@ -37,54 +49,16 @@ namespace Prism
 
 		static const Scope<ShaderLibrary>& GetShaderLibrary();
 
-		template<typename FuncT>
-		static void Submit(FuncT&& func)
-		{
-			auto renderCmd = [](void* ptr) {
-				auto pFunc = (FuncT*)ptr;
-				(*pFunc)();
-				pFunc->~FuncT();
-				};
-			auto storageBuffer = s_Instance->m_CommandQueue.Allocate(renderCmd, sizeof(func));
-			new (storageBuffer) FuncT(std::forward<FuncT>(func));
-		}
-		/*static void* Submit(RenderCommandFn fn, unsigned int size)
-		{
-			return s_Instance->m_CommandQueue.Allocate(fn, size);
-		}*/
+		static void BeginRenderPass(const Ref<RenderPass>& renderPass);
+		static void EndRenderPass();
 
-		static void WaitAndRender();
+		static void WaitAndRender();	
 
-		inline static Renderer& Get() { return *s_Instance; }
-
-		static void BeginScene(Camera& camera) { s_Instance->IBeginScene(camera); }
-		static void EndScene() { s_Instance->IEndScene(); }
-
-		// ~Actual~ Renderer here... TODO: remove confusion later
-		static void BeginRenderPass(const Ref<RenderPass>& renderPass) { s_Instance->IBeginRenderPass(renderPass); }
-		static void EndRenderPass() { s_Instance->IEndRenderPass(); }
-
-		static void SubmitMesh(const Ref<Mesh>& mesh, const glm::mat4& transform, const Ref<MaterialInstance>& overrideMaterial = nullptr) { s_Instance->SubmitMeshI(mesh, transform, overrideMaterial); }
+		static void SubmitQuad(const Ref<MaterialInstance>& material, const glm::mat4& transform = glm::mat4(1.0f));
+		static void SubmitFullscreenQuad(const Ref<MaterialInstance>& material);
+		static void SubmitMesh(const Ref<Mesh>& mesh, const glm::mat4& transform, const Ref<MaterialInstance>& overrideMaterial = nullptr);
 
 	private:
-		void IBeginScene(const Camera& camera);
-		void IEndScene();
-		void IBeginRenderPass(const Ref<RenderPass>& renderPass);
-		void IEndRenderPass();
-
-		void SubmitMeshI(const Ref<Mesh>& mesh, const glm::mat4& transform, const Ref<MaterialInstance>& overrideMaterial);
-
-		void UpdateGlobalsUBO(const Camera& camera);
-	private:
-		static Renderer* s_Instance;
-
-	private:
-		PrismGlobalsUBO m_GlobalsUBO;
-		const Camera* m_ActiveCamera;
-
-		Ref<RenderPass> m_ActiveRenderPass;
-		RenderCommandQueue m_CommandQueue;
-
-		Scope<ShaderLibrary> m_ShaderLibrary;
+		static RenderCommandQueue& GetRenderCommandQueue();
 	};
 }

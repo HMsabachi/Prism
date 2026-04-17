@@ -17,13 +17,14 @@ namespace Prism
 
 	RenderCommandQueue::~RenderCommandQueue()
 	{
-		delete[] m_CommandBuffer;
+		// TODO: 渲染队列释放内存顺序有问题
+		//delete[] m_CommandBuffer;
 	}
 
 	void* RenderCommandQueue::Allocate(RenderCommandFn fn, uint32_t size)
 	{
-		if(m_IsExecuting) 
-			PR_CORE_WARN("RenderCommandQueue: 在执行命令队列时分配新了的命令!");
+		if (m_IsExecuting);
+			//PR_CORE_WARN("RenderCommandQueue: 在执行命令队列时分配新了的命令!");
 		// TODO: 对齐 alignment
 		*(RenderCommandFn*)m_CommandBufferPtr = fn;
 		m_CommandBufferPtr += sizeof(RenderCommandFn);

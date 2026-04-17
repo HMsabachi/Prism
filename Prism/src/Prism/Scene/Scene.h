@@ -42,7 +42,7 @@ namespace Prism
 		Ref<TextureCube> m_SkyboxTexture;
 		Ref<MaterialInstance> m_SkyboxMaterial;
 
-		float m_SkyboxLod = 1.0f;
+		float m_SkyboxLod = 0.0f;
 
 		friend class SceneRenderer;
 		friend class SceneHierarchyPanel;

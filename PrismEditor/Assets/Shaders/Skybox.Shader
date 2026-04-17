@@ -5,9 +5,19 @@ Shader "Custom/Skybox"
     Properties
     {
         u_Texture("立方体贴图", TextureCube) = {}
+        u_TextureLod("立方体贴图", Float) = 0.0
     }
     SubShader
     {
+
+    RenderCommand
+    {
+        Cull Back
+        ZTest Off
+        ZWrite Off
+        Blend One OneMinusSrcAlpha
+    }
+
         Pass
         {
             Tags { "Queue" = "Background" "RenderType" = "Opaque" }
@@ -17,7 +27,6 @@ Shader "Custom/Skybox"
                 #include "PrismBuiltin.glsl"
 
                 attribute vec3 a_Position : POSITION;
-                attribute vec2 a_TexCoord : TEXCOORD0;
 
                 VARYING VertexOutput
                 {
@@ -28,14 +37,12 @@ Shader "Custom/Skybox"
                 {
                     vec4 position = vec4(a_Position.xy, 1.0, 1.0);
                     gl_Position = position;
-
-                    // 使用Properties中声明的u_InverseVP（引擎会自动绑定）
                     vs_Output.Position = (Prism_InverseViewProjection * position).xyz;
                 }
 
                 void frag()
                 {
-                    FragColor = textureLod(u_Texture, vs_Output.Position, 0.0);
+                    FragColor = textureLod(u_Texture, vs_Output.Position, u_TextureLod);
                 }
             }
         }

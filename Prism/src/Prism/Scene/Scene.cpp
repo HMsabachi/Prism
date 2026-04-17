@@ -19,10 +19,9 @@ namespace Prism {
 
 	void Scene::Init()
 	{
-#if 0
-		auto skyboxShader = Shader::Create("assets/shaders/Skybox.glsl");
+#if 1
+		auto skyboxShader = PrismShader::Create("assets/shaders/Skybox.Shader");
 		m_SkyboxMaterial = MaterialInstance::Create(Material::Create(skyboxShader));
-		m_SkyboxMaterial->SetFlag(MaterialFlag::DepthTest, false);
 #endif
 	}
 

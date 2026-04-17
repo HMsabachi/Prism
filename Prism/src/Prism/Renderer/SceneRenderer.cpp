@@ -3,12 +3,15 @@
 
 #include "ComputeShader/ComputeShader.h"
 
+#include "Shader/GlobalUniforms.h"
 #include "Renderer.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
 namespace Prism
 {
+	static void UpdateGlobalsUBO();
+
 	struct SceneRendererData
 	{
 		const Scene* ActiveScene = nullptr;
@@ -19,6 +22,8 @@ namespace Prism
 			// Resources
 			Ref<MaterialInstance> SkyboxMaterial;
 			Environment SceneEnvironment;
+			PrismGlobalsUBO SceneUniforms;
+
 		} SceneData;
 
 		Ref<Texture2D> BRDFLUT;
@@ -89,6 +94,8 @@ namespace Prism
 		s_Data.SceneData.SceneCamera = scene->m_Camera;
 		s_Data.SceneData.SkyboxMaterial = scene->m_SkyboxMaterial;
 		s_Data.SceneData.SceneEnvironment = scene->m_Environment;
+
+		UpdateGlobalsUBO();
 	}
 
 	void SceneRenderer::EndScene()
@@ -138,8 +145,6 @@ namespace Prism
 		envUnfiltered->CopyTo(envFiltered);
 		//Renderer::MemoryBarriers(MBarrier::TextureUpdate | MBarrier::ImageAccess);
 
-
-
 		int mipFilter = environmentShader->FindKernel("CSMipFilter");
 		environmentShader->SetTextureCube(mipFilter, "u_InputCubeMap", envUnfiltered);
 		const float deltaRoughness = 1.0f / glm::max((float)(envFiltered->GetMipLevelCount() - 1.0f), 1.0f);
@@ -152,7 +157,6 @@ namespace Prism
 		}
 		//Renderer::MemoryBarriers(MBarrier::ImageAccess | MBarrier::TextureFetch);
 
-
 		Ref<TextureCube> irradianceMap = TextureCube::Create(TextureFormat::Float16, irradianceMapSize, irradianceMapSize);
 		int irradiance = environmentShader->FindKernel("CSIrradiance");
 		environmentShader->SetTextureCube(irradiance, "u_InputCubeMap", envFiltered);
@@ -161,13 +165,13 @@ namespace Prism
 
 
 		Renderer::WaitAndRender();
-		return { envUnfiltered, irradianceMap };
+		return { envFiltered, irradianceMap };
 	}
 
 
 	void SceneRenderer::GeometryPass()
 	{
-#if 0
+#if 1
 		PR_PROFILE_FUNCTION();
 		Renderer::BeginRenderPass(s_Data.GeoPass);
 
@@ -183,9 +187,6 @@ namespace Prism
 		for (auto& dc : s_Data.DrawList)
 		{
 			auto baseMaterial = dc.Mesh->GetMaterial();
-			baseMaterial->Set("u_ViewProjectionMatrix", viewProjection);
-			baseMaterial->Set("u_CameraPosition", s_Data.SceneData.SceneCamera.GetPosition());
-
 			// Environment
 			baseMaterial->Set("u_EnvRadianceTex", s_Data.SceneData.SceneEnvironment.RadianceMap);
 			baseMaterial->Set("u_EnvIrradianceTex", s_Data.SceneData.SceneEnvironment.IrradianceMap);
@@ -194,9 +195,6 @@ namespace Prism
 			auto overrideMaterial = nullptr; // dc.Material;
 			Renderer::SubmitMesh(dc.Mesh, dc.Transform, overrideMaterial);
 		}
-
-		// Grid
-		s_Data.GridMaterial->Set("u_ViewProjection", viewProjection);
 		Renderer::SubmitQuad(s_Data.GridMaterial, glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(16.0f)));
 
 		Renderer::EndRenderPass();
@@ -205,7 +203,7 @@ namespace Prism
 
 	void SceneRenderer::CompositePass()
 	{
-#if 0
+#if 1
 		PR_PROFILE_FUNCTION();
 		Renderer::BeginRenderPass(s_Data.CompositePass);
 		s_Data.CompositeShader->Bind();
@@ -237,6 +235,25 @@ namespace Prism
 	uint32_t SceneRenderer::GetFinalColorBufferRendererID()
 	{
 		return s_Data.CompositePass->GetSpecification().TargetFramebuffer->GetColorAttachmentRendererID();
+	}
+
+	static void UpdateGlobalsUBO()
+	{
+		auto& camera = s_Data.SceneData.SceneCamera;
+		auto& sceneUniforms = s_Data.SceneData.SceneUniforms;
+		const auto& framebufferSpec = s_Data.GeoPass->GetSpecification().TargetFramebuffer->GetSpecification();
+		sceneUniforms.AspectRatio = (float)framebufferSpec.Width / (float)framebufferSpec.Height;
+		sceneUniforms.CameraPosition = camera.GetPosition();
+		sceneUniforms.DeltaTime = Prism::Time::GetDeltaTime();
+		sceneUniforms.Projection = camera.GetProjectionMatrix();
+		sceneUniforms.View = camera.GetViewMatrix();
+		sceneUniforms.ViewProjection = sceneUniforms.Projection * sceneUniforms.View;
+		sceneUniforms.InverseViewProjection = glm::inverse(sceneUniforms.ViewProjection);
+		float time = Prism::Time::GetTime();
+		sceneUniforms.Time = glm::vec4(time * 0.2f, time, time * 2, time * 3);
+		Renderer::Submit([=]() {
+			Prism::GlobalUniforms::UpdateGlobalUniform(sceneUniforms);
+			});
 	}
 
 }

@@ -11,7 +11,7 @@
 
 namespace Prism 
 {
-#define UNIFORM_LOGGING 1
+#define UNIFORM_LOGGING 0
 #if UNIFORM_LOGGING 
 	#define PR_LOG_UNIFORM(...) PR_CORE_WARN(__VA_ARGS__)
 #else

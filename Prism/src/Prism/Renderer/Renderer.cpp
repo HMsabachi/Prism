@@ -2,6 +2,9 @@
 #include "Renderer.h"
 #include "RenderCommand.h"
 #include "Shader/PrismShader.h"
+#include "Shader/GlobalUniforms.h"
+
+#include "SceneRenderer.h"
 
 #include "Camera/Camera.h"
 
@@ -9,16 +12,70 @@
 
 namespace Prism
 {
-	Renderer* Renderer::s_Instance = new Renderer();
 	RendererAPIType RendererAPI::s_CurrentRendererAPI = RendererAPIType::OpenGL;
+
+	struct RendererData
+	{
+		Ref<RenderPass> m_ActiveRenderPass;
+		RenderCommandQueue m_CommandQueue;
+		Scope<ShaderLibrary> m_ShaderLibrary;
+		Ref<VertexArray> m_FullscreenQuadVertexArray;
+	};
+
+	static RendererData s_Data;
 
 	void Renderer::Init()
 	{
-		s_Instance->m_ShaderLibrary = std::make_unique<ShaderLibrary>();
+		s_Data.m_ShaderLibrary = std::make_unique<ShaderLibrary>();
 		Renderer::Submit([]() { RendererAPI::Init(); });
 
 		Renderer::GetShaderLibrary()->Load("Assets/Shaders/PrismPBR_Static.Shader");
 		Renderer::GetShaderLibrary()->Load("Assets/Shaders/PrismPBR_Anim.Shader");
+
+		GlobalUniforms::Init();
+		SceneRenderer::Init();
+
+		// Create fullscreen quad
+		float x = -1;
+		float y = -1;
+		float width = 2, height = 2;
+		struct QuadVertex
+		{
+			glm::vec3 Position;
+			glm::vec2 TexCoord;
+		};
+
+		QuadVertex* data = new QuadVertex[4];
+
+		data[0].Position = glm::vec3(x, y, 0);
+		data[0].TexCoord = glm::vec2(0, 0);
+
+		data[1].Position = glm::vec3(x + width, y, 0);
+		data[1].TexCoord = glm::vec2(1, 0);
+
+		data[2].Position = glm::vec3(x + width, y + height, 0);
+		data[2].TexCoord = glm::vec2(1, 1);
+
+		data[3].Position = glm::vec3(x, y + height, 0);
+		data[3].TexCoord = glm::vec2(0, 1);
+
+		s_Data.m_FullscreenQuadVertexArray = VertexArray::Create();
+		auto quadVB = VertexBuffer::Create(data, 4 * sizeof(QuadVertex));
+		quadVB->SetLayout({
+			{ ShaderDataType::Float3, "a_Position" , VertexSemantic::Position},
+			{ ShaderDataType::Float2, "a_TexCoord" , VertexSemantic::TexCoord0}
+			});
+
+		uint32_t indices[6] = { 0, 1, 2, 2, 3, 0, };
+		auto quadIB = IndexBuffer::Create(indices, 6 * sizeof(uint32_t));
+
+		s_Data.m_FullscreenQuadVertexArray->AddVertexBuffer(quadVB);
+		s_Data.m_FullscreenQuadVertexArray->SetIndexBuffer(quadIB);
+	}
+
+	const Scope<ShaderLibrary>& Renderer::GetShaderLibrary()
+	{
+		return s_Data.m_ShaderLibrary;
 	}
 	Renderer::Renderer()
 	{
@@ -62,97 +119,79 @@ namespace Prism
 
 	void Renderer::WaitAndRender()
 	{
-		s_Instance->m_CommandQueue.Execute();
-	}
-	const Prism::Scope<Prism::ShaderLibrary>& Renderer::GetShaderLibrary()
-	{
-		return Get().m_ShaderLibrary;
+		s_Data.m_CommandQueue.Execute();
 	}
 
-
-	// 渲染流程
-
-	void Renderer::IBeginScene(const Camera& camera)
+	void Renderer::BeginRenderPass(const Ref<RenderPass>& renderPass)
 	{
-		m_ActiveCamera = &camera;
-	}
-	void Renderer::IEndScene()
-	{
-
-	}
-
-
-
-	void Renderer::IBeginRenderPass(const Ref<RenderPass>& renderPass)
-	{
-		// TODO: 将所有这些转换为渲染命令缓冲区
-		m_ActiveRenderPass = renderPass;
+		PR_CORE_ASSERT(renderPass, "渲染通道不能为空！");
 
 		renderPass->GetSpecification().TargetFramebuffer->Bind();
 		const glm::vec4& clearColor = renderPass->GetSpecification().TargetFramebuffer->GetSpecification().ClearColor;
 		Renderer::Submit([=]() {
 			RendererAPI::Clear(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
 			});
-		UpdateGlobalsUBO(*m_ActiveCamera);
+		s_Data.m_ActiveRenderPass = renderPass;
 	}
 
-	void Renderer::IEndRenderPass()
+	void Renderer::EndRenderPass()
 	{
-		PR_CORE_ASSERT(m_ActiveRenderPass, "没有活动的渲染通道！您是否调用了两次 Renderer::EndRenderPass？");
-		m_ActiveRenderPass->GetSpecification().TargetFramebuffer->Unbind();
-		m_ActiveRenderPass = nullptr;
+		PR_CORE_ASSERT(s_Data.m_ActiveRenderPass, "没有活动的渲染通道！您是否调用了两次 Renderer::EndRenderPass？");
+		s_Data.m_ActiveRenderPass->GetSpecification().TargetFramebuffer->Unbind();
+		s_Data.m_ActiveRenderPass = nullptr;
 	}
 
 	
 
-	void Renderer::SubmitMeshI(const Ref<Mesh>& mesh, const glm::mat4& transform, const Ref<MaterialInstance>& overrideMaterial)
+	void Renderer::SubmitQuad(const Ref<MaterialInstance>& material, const glm::mat4& transform)
 	{
-		if (overrideMaterial)
+		bool depthTest = true;
+		if (material)
 		{
-			overrideMaterial->Bind();
+			material->Bind();
+			auto shader = material->GetShader();
+			shader->SetMat4("Prism_Model", transform);
 		}
-		else
-		{
-			// Bind mesh material here
-		}
-
-		// TODO: 解决这个问题
+		s_Data.m_FullscreenQuadVertexArray->Bind();
+		Renderer::DrawIndexed(6, depthTest);
+	}
+	void Renderer::SubmitFullscreenQuad(const Ref<MaterialInstance>&material)
+	{
+		bool depthTest = true;
+		if (material)
+			material->Bind();
+		s_Data.m_FullscreenQuadVertexArray->Bind();
+		Renderer::DrawIndexed(6, depthTest);
+	}
+	void Renderer::SubmitMesh(const Ref<Mesh>& mesh, const glm::mat4& transform, const Ref<MaterialInstance>& overrideMaterial)
+	{
+		// auto material = overrideMaterial ? overrideMaterial : mesh->GetMaterialInstance();
+		// auto shader = material->GetShader();
 		mesh->m_VertexArray->Bind();
-		// TODO: 替换为渲染 API 调用
-		Renderer::Submit([=]()
+		auto& materials = mesh->GetMaterials();
+		for (Submesh& submesh : mesh->m_Submeshes)
+		{
+			auto material = materials[submesh.MaterialIndex];
+			auto shader = material->GetShader();
+			material->Bind();
+			if (mesh->m_IsAnimated)
 			{
-				for (Submesh& submesh : mesh->m_Submeshes)
+				for (size_t i = 0; i < mesh->m_BoneTransforms.size(); i++)
 				{
-					if (mesh->m_IsAnimated)
-					{
-						for (size_t i = 0; i < mesh->m_BoneTransforms.size(); i++)
-						{
-							std::string uniformName = std::string("u_BoneTransforms[") + std::to_string(i) + std::string("]");
-							mesh->m_MeshShader->SetMat4FromRenderThread(uniformName, mesh->m_BoneTransforms[i]);
-						}
-					}
-
-					glDrawElementsBaseVertex(GL_TRIANGLES, submesh.IndexCount, GL_UNSIGNED_INT, (void*)(sizeof(uint32_t) * submesh.BaseIndex), submesh.BaseVertex);
+					std::string uniformName = std::string("u_BoneTransforms[") + std::to_string(i) + std::string("]");
+					mesh->m_MeshShader->SetMat4(uniformName, mesh->m_BoneTransforms[i]);
 				}
+			}
+			shader->SetMat4("Prism_Model", transform * submesh.Transform);
+			Renderer::Submit([submesh, material]() {
+				glDrawElementsBaseVertex(GL_TRIANGLES, submesh.IndexCount, GL_UNSIGNED_INT, (void*)(sizeof(uint32_t) * submesh.BaseIndex), submesh.BaseVertex);
 			});
+		}
 	}
 
-
-	void Renderer::UpdateGlobalsUBO(const Camera& camera)
+	RenderCommandQueue& Renderer::GetRenderCommandQueue()
 	{
-		const auto& framebufferSpec = m_ActiveRenderPass->GetSpecification().TargetFramebuffer->GetSpecification();
-		m_GlobalsUBO.AspectRatio = (float)framebufferSpec.Width / (float)framebufferSpec.Height;
-		m_GlobalsUBO.CameraPosition = camera.GetPosition();
-		m_GlobalsUBO.DeltaTime = Prism::Time::GetDeltaTime();
-		m_GlobalsUBO.Projection = camera.GetProjectionMatrix();
-		m_GlobalsUBO.View = camera.GetViewMatrix();
-		m_GlobalsUBO.ViewProjection = m_GlobalsUBO.Projection * m_GlobalsUBO.View;
-		m_GlobalsUBO.InverseViewProjection = inverse(m_GlobalsUBO.ViewProjection);
-		float time = Prism::Time::GetTime();
-		m_GlobalsUBO.Time = glm::vec4(time * 0.2f, time, time * 2, time * 3);
-		Renderer::Submit([this](){
-			Prism::GlobalUniforms::UpdateGlobalUniform(m_GlobalsUBO);
-			});
+		return s_Data.m_CommandQueue;
 	}
 
 }

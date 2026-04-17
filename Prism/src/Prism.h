@@ -39,6 +39,10 @@
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/Camera/Camera.h"
 
+// Scenes
+#include "Prism/Scene/Entity.h"
+#include "Prism/Scene/Scene.h"
+
 // ---------------------------------------------------
 
 #include "Prism/Renderer/Camera/OrthographicCamera.h"

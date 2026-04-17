@@ -158,6 +158,11 @@ namespace Prism
 		m_Shader->SetVec4(name, value);
 	}
 
+	void PrismShader::SetMat4(const std::string& name, const glm::mat4& value) const
+	{
+		m_Shader->SetMat4(name, value);
+	}
+
 #pragma endregion
 
 	// //////////////////////////////////////////////////

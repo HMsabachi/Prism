@@ -18,8 +18,7 @@ namespace Prism
 	}
 
 
-	EditorLayer::EditorLayer() : m_Scene(Scene::Model),
-		m_Camera(glm::perspectiveFov(glm::radians(45.0f), 1280.0f, 720.0f, 0.1f, 10000.0f))
+	EditorLayer::EditorLayer() : m_SceneType(SceneType::Model)
 	{
 
 	}
@@ -94,127 +93,70 @@ namespace Prism
 		#pragma endregion
 
 		using namespace glm;
-		Prism::GlobalUniforms::Init();
+		auto environment = Environment::Load("Assets/env/birchwood_4k.hdr");
+		// Model Scene
+		{
+			m_Scene = CreateRef<Scene>("Model Scene");
+			m_Scene->SetCamera(Camera(glm::perspectiveFov(glm::radians(45.0f), 1280.0f, 720.0f, 0.1f, 10000.0f)));
+			m_Scene->SetEnvironment(environment);
+			m_MeshEntity = m_Scene->CreateEntity();
+			auto mesh = CreateRef<Mesh>("assets/models/m1911/m1911.fbx");
+			//auto mesh = CreateRef<Mesh>("assets/meshes/cerberus/CerberusMaterials.fbx");
+			// auto mesh = CreateRef<Mesh>("assets/models/m1911/M1911Materials.fbx");
+			m_MeshEntity->SetMesh(mesh);
+			m_MeshMaterial = mesh->GetMaterial();
+		}
 
+		// Sphere Scene
+		{
+			m_SphereScene = CreateRef<Scene>("PBR Sphere Scene");
+			m_SphereScene->SetCamera(Camera(glm::perspectiveFov(glm::radians(45.0f), 1280.0f, 720.0f, 0.1f, 10000.0f)));
+			m_SphereScene->SetEnvironment(environment);
+			auto sphereMesh = CreateRef<Mesh>("assets/models/Sphere1m.fbx");
+			m_SphereBaseMaterial = sphereMesh->GetMaterial();
+			float x = -4.0f;
+			float roughness = 0.0f;
+			for (int i = 0; i < 8; i++)
+			{
+				auto sphereEntity = m_SphereScene->CreateEntity();
 
-		m_QuadShader = Prism::PrismShader::Create("Assets/Shaders/Skybox.Shader");
-		m_HDRShader = Prism::PrismShader::Create("Assets/Shaders/hdr.Shader");
-		m_GridShader = Prism::PrismShader::Create("Assets/Shaders/Grid.Shader");
-		PR_TRACE(*m_QuadShader);
-		PR_TRACE(*m_HDRShader);
-		PR_TRACE(*m_GridShader);
-		//m_Mesh.reset(new Prism::Mesh("Assets/meshes/cerberus.fbx"));
-		m_Mesh.reset(new Prism::Mesh("Assets/models/m1911/m1911.fbx"));
-		m_MeshMaterial.reset(new Prism::MaterialInstance(m_Mesh->GetMaterial()));
-		//m_SphereMesh.reset(new Prism::Mesh("Assets/models/Sphere.fbx"));
-		m_SphereMesh.reset(new Prism::Mesh("Assets/models/Sphere1m.fbx"));
-		m_PlaneMesh.reset(new Prism::Mesh("Assets/models/Plane1m.obj"));
+				Ref<MaterialInstance> mi = CreateRef<MaterialInstance>(m_SphereBaseMaterial);
+				mi->Set("u_Metalness", 1.0f);
+				mi->Set("u_Roughness", roughness);
+				x += 1.1f;
+				roughness += 0.15f;
+				m_MetalSphereMaterialInstances.push_back(mi);
 
-		m_GridMaterial = Prism::MaterialInstance::Create(Prism::Material::Create(m_GridShader));
-		m_GridMaterial->Set("u_Scale", m_GridScale);
-		m_GridMaterial->Set("u_Res", m_GridSize);
+				sphereEntity->SetMesh(sphereMesh);
+				sphereEntity->SetMaterial(mi);
+				sphereEntity->Transform() = translate(mat4(1.0f), vec3(x, 0.0f, 0.0f));
+				x = -4.0f;
+				roughness = 0.0f;
+				for (int i = 0; i < 8; i++)
+				{
+					auto sphereEntity = m_SphereScene->CreateEntity();
+
+					Ref<MaterialInstance> mi(new MaterialInstance(m_SphereBaseMaterial));
+					mi->Set("u_Metalness", 0.0f);
+					mi->Set("u_Roughness", roughness);
+					x += 1.1f;
+					roughness += 0.15f;
+					m_DielectricSphereMaterialInstances.push_back(mi);
+
+					sphereEntity->SetMesh(sphereMesh);
+					sphereEntity->SetMaterial(mi);
+					sphereEntity->Transform() = translate(mat4(1.0f), vec3(x, 1.2f, 0.0f));
+				}
+			}
+		}
+		m_ActiveScene = m_Scene;
+		//m_SceneHierarchyPanel = CreateScope<SceneHierarchyPanel>(m_ActiveScene);
+
+		m_PlaneMesh.reset(new Mesh("Assets/Models/Plane1m.obj"));
 		// Editor
-		m_CheckerboardTex = Prism::Texture2D::Create("Assets/editor/Checkerboard.tga");
-
-		// Environment
-		//m_EnvironmentCubeMap = Prism::TextureCube::Create("Assets/Textures/environments/Arches_E_PineTree_Radiance.tga");
-		//m_EnvironmentCubeMap.reset(Prism::TextureCube::Create("Assets/Textures/environments/DebugCubeMap.tga"));
-		Renderer::WaitAndRender();
-		m_EnvironmentIrradiance = Prism::TextureCube::Create("Assets/Textures/environments/Arches_E_PineTree_Irradiance.tga");
-		auto [radiance, irradiance] = SceneRenderer::CreateEnvironmentMap("Assets/env/birchwood_4k.hdr");
-		m_EnvironmentCubeMap = radiance;
-		m_EnvironmentIrradiance = irradiance;
-
-		m_BRDFLUT = Prism::Texture2D::Create("Assets/Textures/BRDF_LUT.tga");
-
-		// Render Passes
-		FramebufferSpecification geoFramebufferSpec;
-		geoFramebufferSpec.Width = 1280;
-		geoFramebufferSpec.Height = 720;
-		geoFramebufferSpec.Format = FramebufferFormat::RGBA16F;
-		geoFramebufferSpec.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
-
-		RenderPassSpecification geoRenderPassSpec;
-		geoRenderPassSpec.TargetFramebuffer = Prism::Framebuffer::Create(geoFramebufferSpec);
-		m_GeoPass = RenderPass::Create(geoRenderPassSpec);
-
-		FramebufferSpecification compFramebufferSpec;
-		compFramebufferSpec.Width = 1280;
-		compFramebufferSpec.Height = 720;
-		compFramebufferSpec.Format = FramebufferFormat::RGBA8;
-		compFramebufferSpec.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
-
-		RenderPassSpecification compRenderPassSpec;
-		compRenderPassSpec.TargetFramebuffer = Prism::Framebuffer::Create(compFramebufferSpec);
-		m_CompositePass = RenderPass::Create(compRenderPassSpec);
-
-		float x = -4.0f;
-		float roughness = 0.0f;
-		for (int i = 0; i < 8; i++)
-		{
-			Prism::Ref<Prism::MaterialInstance> mi(new Prism::MaterialInstance(m_SphereMesh->GetMaterial()));
-			mi->Set("u_Metalness", 1.0f);
-			mi->Set("u_Roughness", roughness);
-			mi->Set("Prism_Model", translate(mat4(1.0f), vec3(x, 0.0f, 0.0f)));
-			x += 1.1f;
-			roughness += 0.15f;
-			m_MetalSphereMaterialInstances.push_back(mi);
-		}
-
-		x = -4.0f;
-		roughness = 0.0f;
-		for (int i = 0; i < 8; i++)
-		{
-			Prism::Ref<Prism::MaterialInstance> mi(new Prism::MaterialInstance(m_SphereMesh->GetMaterial()));
-			mi->Set("u_Metalness", 0.0f);
-			mi->Set("u_Roughness", roughness);
-			mi->Set("Prism_Model", translate(mat4(1.0f), vec3(x, 1.2f, 0.0f)));
-			x += 1.1f;
-			roughness += 0.15f;
-			m_DielectricSphereMaterialInstances.push_back(mi);
-		}
-
-		// Create fullscreen quad for final composite
-		x = -1.0f;
-		float y = -1.0f;
-		float width = 2.0f, height = 2.0f;
-		struct QuadVertex
-		{
-			glm::vec3 Position;
-			glm::vec2 TexCoord;
-		};
-
-		QuadVertex* data = new QuadVertex[4];
-
-		data[0].Position = glm::vec3(x, y, 0);
-		data[0].TexCoord = glm::vec2(0, 0);
-
-		data[1].Position = glm::vec3(x + width, y, 0);
-		data[1].TexCoord = glm::vec2(1, 0);
-
-		data[2].Position = glm::vec3(x + width, y + height, 0);
-		data[2].TexCoord = glm::vec2(1, 1);
-
-		data[3].Position = glm::vec3(x, y + height, 0);
-		data[3].TexCoord = glm::vec2(0, 1);
-
-		m_FullscreenQuadVertexArray = VertexArray::Create();
-		auto quadVB = VertexBuffer::Create(data, 4 * sizeof(QuadVertex));
-		quadVB->SetLayout({
-			{ ShaderDataType::Float3, "a_Position", VertexSemantic::Position },
-			{ ShaderDataType::Float2, "a_TexCoord", VertexSemantic::TexCoord0 }
-			});
-
-		uint32_t indices[6] = { 0, 1, 2, 2, 3, 0, };
-		auto quadIB = IndexBuffer::Create(indices, 6 * sizeof(uint32_t));
-
-		m_FullscreenQuadVertexArray->AddVertexBuffer(quadVB);
-		m_FullscreenQuadVertexArray->SetIndexBuffer(quadIB);
-
+		m_CheckerboardTex = Texture2D::Create("assets/editor/Checkerboard.tga");
 		m_Light.Direction = { -0.5f, -0.5f, 1.0f };
 		m_Light.Radiance = { 1.0f, 1.0f, 1.0f };
-
-		m_Transform = glm::scale(glm::mat4(1.0f), glm::vec3(m_MeshScale));
 	}
 
 	void EditorLayer::OnDetach()
@@ -224,7 +166,6 @@ namespace Prism
 
 	void EditorLayer::OnUpdate()
 	{
-		Prism::Renderer::BeginScene(m_Camera);
 		// THINGS TO LOOK AT:
 		// - BRDF LUT
 		// - Cubemap mips and filtering
@@ -232,33 +173,18 @@ namespace Prism
 		using namespace Prism;
 		using namespace glm;
 
-		m_Camera.Update();
-		auto viewProjection = m_Camera.GetProjectionMatrix() * m_Camera.GetViewMatrix();
-
-		Renderer::BeginRenderPass(m_GeoPass);
-		m_QuadShader->Bind();
-		m_EnvironmentCubeMap->Bind(0);
-		m_FullscreenQuadVertexArray->Bind();
-		Renderer::DrawIndexed(m_FullscreenQuadVertexArray->GetIndexBuffer()->GetCount(), false);
-
-
 		m_MeshMaterial->Set("u_AlbedoColor", m_AlbedoInput.Color);
 		m_MeshMaterial->Set("u_Metalness", m_MetalnessInput.Value);
 		m_MeshMaterial->Set("u_Roughness", m_RoughnessInput.Value);
 
 		m_MeshMaterial->Set("u_LightDirection", m_Light.Direction);
 		m_MeshMaterial->Set("u_LightRadiance", m_Light.Radiance);
-		//m_MeshMaterial->Set("u_CameraPosition", m_Camera.GetPosition());
 		m_MeshMaterial->Set("u_RadiancePrefilter", m_RadiancePrefilter ? 1.0f : 0.0f);
 		m_MeshMaterial->Set("u_AlbedoTexToggle", m_AlbedoInput.UseTexture ? 1.0f : 0.0f);
 		m_MeshMaterial->Set("u_NormalTexToggle", m_NormalInput.UseTexture ? 1.0f : 0.0f);
 		m_MeshMaterial->Set("u_MetalnessTexToggle", m_MetalnessInput.UseTexture ? 1.0f : 0.0f);
 		m_MeshMaterial->Set("u_RoughnessTexToggle", m_RoughnessInput.UseTexture ? 1.0f : 0.0f);
 		m_MeshMaterial->Set("u_EnvMapRotation", m_EnvMapRotation);
-
-		m_MeshMaterial->Set("u_EnvRadianceTex", m_EnvironmentCubeMap);
-		m_MeshMaterial->Set("u_EnvIrradianceTex", m_EnvironmentIrradiance);
-		m_MeshMaterial->Set("u_BRDFLUTTexture", m_BRDFLUT);
 
 		if (m_AlbedoInput.TextureMap)
 			m_MeshMaterial->Set("u_AlbedoTexture", m_AlbedoInput.TextureMap);
@@ -269,64 +195,22 @@ namespace Prism
 		if (m_RoughnessInput.TextureMap)
 			m_MeshMaterial->Set("u_RoughnessTexture", m_RoughnessInput.TextureMap);
 
-		m_SphereMesh->GetMaterial()->Set("u_AlbedoColor", m_AlbedoInput.Color);
-		m_SphereMesh->GetMaterial()->Set("u_Metalness", m_MetalnessInput.Value);
-		m_SphereMesh->GetMaterial()->Set("u_Roughness", m_RoughnessInput.Value);
+		m_SphereBaseMaterial->Set("u_AlbedoColor", m_AlbedoInput.Color);
+		m_SphereBaseMaterial->Set("u_Metalness", m_MetalnessInput.Value);
+		m_SphereBaseMaterial->Set("u_Roughness", m_RoughnessInput.Value);
 
-		m_SphereMesh->GetMaterial()->Set("u_LightDirection", m_Light.Direction);
-		m_SphereMesh->GetMaterial()->Set("u_LightRadiance", m_Light.Radiance);
-		//m_SphereMesh->GetMaterial()->Set("u_CameraPosition", m_Camera.GetPosition());
-		m_SphereMesh->GetMaterial()->Set("u_RadiancePrefilter", m_RadiancePrefilter ? 1.0f : 0.0f);
-		m_SphereMesh->GetMaterial()->Set("u_AlbedoTexToggle", m_AlbedoInput.UseTexture ? 1.0f : 0.0f);
-		m_SphereMesh->GetMaterial()->Set("u_NormalTexToggle", m_NormalInput.UseTexture ? 1.0f : 0.0f);
-		m_SphereMesh->GetMaterial()->Set("u_MetalnessTexToggle", m_MetalnessInput.UseTexture ? 1.0f : 0.0f);
-		m_SphereMesh->GetMaterial()->Set("u_RoughnessTexToggle", m_RoughnessInput.UseTexture ? 1.0f : 0.0f);
-		m_SphereMesh->GetMaterial()->Set("u_EnvMapRotation", m_EnvMapRotation);
+		m_SphereBaseMaterial->Set("u_LightDirection", m_Light.Direction);
+		m_SphereBaseMaterial->Set("u_LightRadiance", m_Light.Radiance);
+		m_SphereBaseMaterial->Set("u_RadiancePrefilter", m_RadiancePrefilter ? 1.0f : 0.0f);
+		m_SphereBaseMaterial->Set("u_AlbedoTexToggle", m_AlbedoInput.UseTexture ? 1.0f : 0.0f);
+		m_SphereBaseMaterial->Set("u_NormalTexToggle", m_NormalInput.UseTexture ? 1.0f : 0.0f);
+		m_SphereBaseMaterial->Set("u_MetalnessTexToggle", m_MetalnessInput.UseTexture ? 1.0f : 0.0f);
+		m_SphereBaseMaterial->Set("u_RoughnessTexToggle", m_RoughnessInput.UseTexture ? 1.0f : 0.0f);
+		m_SphereBaseMaterial->Set("u_EnvMapRotation", m_EnvMapRotation);
 
-		m_SphereMesh->GetMaterial()->Set("u_EnvRadianceTex", m_EnvironmentCubeMap);
-		m_SphereMesh->GetMaterial()->Set("u_EnvIrradianceTex", m_EnvironmentIrradiance);
-		m_SphereMesh->GetMaterial()->Set("u_BRDFLUTTexture", m_BRDFLUT);
+		m_ActiveScene->OnUpdate();
 
-		if (m_Scene == Scene::Spheres)
-		{
-			for (int i = 0; i < 8; i++)
-			{
-				Renderer::SubmitMesh(m_SphereMesh, glm::mat4(1.0f), m_MetalSphereMaterialInstances[i]);
-			}
-			for (int i = 0; i < 8; i++)
-			{
-				Renderer::SubmitMesh(m_SphereMesh, glm::mat4(1.0f), m_DielectricSphereMaterialInstances[i]);
-			}
-
-		}
-		else if (m_Scene == Scene::Model)
-		{
-			if (m_Mesh)
-			{
-				auto modelMat = translate(mat4(1.0f), m_ModelPosition) * rotate(mat4(1.0f), glm::radians(m_ModelRotation), vec3(0, 1, 0))
-					* scale(mat4(1.0f), vec3(m_MeshScale));
-				m_MeshMaterial->Set("Prism_Model", m_Transform);
-				m_Mesh->OnUpdate(Time::GetDeltaTime());
-				Renderer::SubmitMesh(m_Mesh, m_Transform, m_MeshMaterial);
-			}
-
-		}
-		m_GridShader->Bind();
-		m_GridShader->GetOriginalShader()->SetMat4("Prism_Model", glm::scale(glm::mat4(1.0f), glm::vec3(16.0f)));
-		m_GridShader->GetOriginalShader()->SetFloat("u_Scale", m_GridScale);
-		m_GridShader->GetOriginalShader()->SetFloat("u_Res", m_GridSize);
-		m_GridMaterial->Set("Prism_Model", glm::scale(glm::mat4(1.0f), glm::vec3(16.0f)));
-		Renderer::SubmitMesh(m_PlaneMesh, glm::mat4(1.0f), m_GridMaterial);
-
-		Renderer::EndRenderPass();
-
-		Renderer::BeginRenderPass(m_CompositePass);
-		m_HDRShader->Bind();
-		m_HDRShader->GetOriginalShader()->SetFloat("u_Exposure", m_Exposure);
-		m_GeoPass->GetSpecification().TargetFramebuffer->BindTexture();
-		m_FullscreenQuadVertexArray->Bind();
-		Renderer::DrawIndexed(m_FullscreenQuadVertexArray->GetIndexBuffer()->GetCount(), false);
-		Renderer::EndRenderPass();
+		//Renderer::SubmitMesh(m_PlaneMesh, glm::scale(glm::mat4(1.0f), glm::vec3(16.0f)), m_GridMaterial);
 	}
 
 	void EditorLayer::Property(const std::string& name, glm::vec4& value, float min /*= -1.0f*/, float max /*= 1.0f*/, PropertyFlag flags /*= PropertyFlag::None*/)
@@ -340,6 +224,23 @@ namespace Prism
 			ImGui::ColorEdit4(id.c_str(), glm::value_ptr(value), ImGuiColorEditFlags_NoInputs);
 		else
 			ImGui::SliderFloat4(id.c_str(), glm::value_ptr(value), min, max);
+
+		ImGui::PopItemWidth();
+		ImGui::NextColumn();
+	}
+	void EditorLayer::Property(const std::string& name, glm::vec2& value, EditorLayer::PropertyFlag flags)
+	{
+		Property(name, value, -1.0f, 1.0f, flags);
+	}
+
+	void EditorLayer::Property(const std::string& name, glm::vec2& value, float min, float max, EditorLayer::PropertyFlag flags)
+	{
+		ImGui::Text(name.c_str());
+		ImGui::NextColumn();
+		ImGui::PushItemWidth(-1);
+
+		std::string id = "##" + name;
+		ImGui::SliderFloat2(id.c_str(), glm::value_ptr(value), min, max);
 
 		ImGui::PopItemWidth();
 		ImGui::NextColumn();
@@ -453,25 +354,31 @@ namespace Prism
 
 
 		ImGui::Begin("Model");
-		ImGui::RadioButton("Spheres", (int*)&m_Scene, (int)Scene::Spheres);
+		if (ImGui::RadioButton("Spheres", (int*)&m_SceneType, (int)SceneType::Spheres))
+			m_ActiveScene = m_SphereScene;
 		ImGui::SameLine();
-		ImGui::RadioButton("Model", (int*)&m_Scene, (int)Scene::Model);
+		if (ImGui::RadioButton("Model", (int*)&m_SceneType, (int)SceneType::Model))
+			m_ActiveScene = m_Scene;
 
 		ImGui::Begin("Environment");
+		if (ImGui::Button("Load Environment Map"))
+		{
+			std::string filename = Application::Get().OpenFile("*.hdr");
+			if (filename != "")
+				m_ActiveScene->SetEnvironment(Environment::Load(filename));
+		}
+
+		ImGui::SliderFloat("Skybox LOD", &m_Scene->GetSkyboxLod(), 0.0f, 11.0f);
 		ImGui::Columns(2);
 		ImGui::AlignTextToFramePadding();
 
 		Property("Light Direction", m_Light.Direction);
 		Property("Light Radiance", m_Light.Radiance, PropertyFlag::ColorProperty);
 		Property("Light Multiplier", m_LightMultiplier, 0.0f, 5.0f);
-		Property("Exposure", m_Exposure, 0.0f, 5.0f);
+		Property("Exposure", m_ActiveScene->GetCamera().GetExposure(), 0.0f, 5.0f);
 
 		Property("Radiance Prefiltering", m_RadiancePrefilter);
 		Property("Env Map Rotation", m_EnvMapRotation, -360.0f, 360.0f);
-
-		Property("Model Position", m_ModelPosition, -5, 5);
-		Property("Model Rotation", m_ModelRotation, -360.0f, 360.0f);
-		Property("Model Scale", m_MeshScale, 0.0f, 3.0f);
 
 		ImGui::Columns(1);
 
@@ -480,7 +387,8 @@ namespace Prism
 		ImGui::Separator();
 		{
 			ImGui::Text("Mesh");
-			std::string fullpath = m_Mesh ? m_Mesh->GetFilePath() : "None";
+			auto mesh = m_MeshEntity->GetMesh();
+			std::string fullpath = mesh ? mesh->GetFilePath() : "None";
 			size_t found = fullpath.find_last_of("/\\");
 			std::string path = found != std::string::npos ? fullpath.substr(found + 1) : fullpath;
 			ImGui::Text(path.c_str()); ImGui::SameLine();
@@ -488,7 +396,12 @@ namespace Prism
 			{
 				std::string filename = Prism::Application::Get().OpenFile("");
 				if (filename != "")
-					m_Mesh.reset(new Prism::Mesh(filename));
+				{
+					auto newMesh = CreateRef<Mesh>(filename);
+					// m_MeshMaterial.reset(new MaterialInstance(newMesh->GetMaterial()));
+					// m_MeshEntity->SetMaterial(m_MeshMaterial);
+					m_MeshEntity->SetMesh(newMesh);
+				}
 			}
 		}
 		ImGui::Separator();
@@ -649,11 +562,10 @@ namespace Prism
 		ImGui::Begin("Viewport");
 		auto viewportSize = ImGui::GetContentRegionAvail();
 		
-		m_GeoPass->GetSpecification().TargetFramebuffer->Resize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
-		m_CompositePass->GetSpecification().TargetFramebuffer->Resize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
-		m_Camera.SetProjectionMatrix(glm::perspectiveFov(glm::radians(45.0f), viewportSize.x, viewportSize.y, 0.1f, 10000.0f));
-		m_Camera.SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
-		ImGui::Image((void*)m_CompositePass->GetSpecification().TargetFramebuffer->GetColorAttachmentRendererID(), viewportSize, { 0, 1 }, { 1, 0 });
+		SceneRenderer::SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
+		m_ActiveScene->GetCamera().SetProjectionMatrix(glm::perspectiveFov(glm::radians(45.0f), viewportSize.x, viewportSize.y, 0.1f, 10000.0f));
+		m_ActiveScene->GetCamera().SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
+		ImGui::Image((void*)SceneRenderer::GetFinalColorBufferRendererID(), viewportSize, { 0, 1 }, { 1, 0 });
 		//PR_TRACE("FrameBuffer {0}", m_FinalPresentBuffer->GetColorAttachmentRendererID());
 		// Gizmos
 		if (m_GizmoType != -1)
@@ -663,7 +575,7 @@ namespace Prism
 			ImGuizmo::SetOrthographic(false);
 			ImGuizmo::SetDrawlist();
 			ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, rw, rh);
-			ImGuizmo::Manipulate(glm::value_ptr(m_Camera.GetViewMatrix()), glm::value_ptr(m_Camera.GetProjectionMatrix()), (ImGuizmo::OPERATION)m_GizmoType, ImGuizmo::LOCAL, glm::value_ptr(m_Transform));
+			ImGuizmo::Manipulate(glm::value_ptr(m_ActiveScene->GetCamera().GetViewMatrix()), glm::value_ptr(m_ActiveScene->GetCamera().GetProjectionMatrix()), (ImGuizmo::OPERATION)m_GizmoType, ImGuizmo::LOCAL, glm::value_ptr(m_MeshEntity->Transform()));
 		}
 		ImGui::End();
 		ImGui::PopStyleVar();
