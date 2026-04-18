@@ -6,6 +6,7 @@
 #include "Time.h"
 
 #include "Prism/Renderer/Renderer.h"
+#include "Prism/Renderer/Renderer2D.h"
 #include "Prism/Renderer/Buffer/Framebuffer.h"
 #include "PrismShaderParser.h"
 
@@ -125,9 +126,25 @@ namespace Prism
 		m_ImGuiLayer->Begin();
 		ImGui::Begin("Renderer");
 		auto& caps = RendererAPI::GetCapabilities();
-		ImGui::Text("Vendor: %s", caps.Vendor.c_str());
-		ImGui::Text("Renderer: %s", caps.Renderer.c_str());
-		ImGui::Text("Version: %s", caps.Version.c_str());
+		if (ImGui::TreeNode("Base Info"))
+		{
+			ImGui::Text("Vendor: %s", caps.Vendor.c_str());
+			ImGui::Text("Renderer: %s", caps.Renderer.c_str());
+			ImGui::Text("Version: %s", caps.Version.c_str());
+			ImGui::Text("MaxSamples: %d", caps.MaxSamples);
+			ImGui::Text("MaxTextureUnits: %d", caps.MaxTextureUnits);
+			ImGui::Text("MaxAnisotropy: %.0f", caps.MaxAnisotropy);
+			ImGui::TreePop();
+		}
+		if (ImGui::TreeNode("2D Renderer Info"))
+		{
+			auto stats = Renderer2D::GetStats();
+			ImGui::Text("DrawCalls: %d", stats.DrawCalls);
+			ImGui::Text("VertexCount: %d", stats.GetTotalVertexCount());
+			Renderer2D::ResetStats();
+			ImGui::TreePop();
+		}
+
 		ImGui::Text("Fps: %d", (int)(1.0f / Time::GetDeltaTime()));
 		ImGui::End();
 	}
