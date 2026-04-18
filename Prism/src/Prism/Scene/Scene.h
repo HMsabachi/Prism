@@ -1,7 +1,15 @@
 ﻿#pragma once
 #include "Prism/Renderer/Camera/Camera.h"
-
 #include "Entity.h"
+
+namespace Prism
+{
+	struct Event;
+	class MaterialInstance;
+	class TextureCube;
+	class Texture2D;
+}
+
 namespace Prism
 {
 
@@ -22,6 +30,7 @@ namespace Prism
 		void Init();
 
 		void OnUpdate();
+		void OnEvent(Event& e);
 
 		void SetCamera(const Camera& camera);
 		Camera& GetCamera() { return m_Camera; }
@@ -32,7 +41,7 @@ namespace Prism
 		float& GetSkyboxLod() { return m_SkyboxLod; }
 
 		void AddEntity(Entity* entity);
-		Entity* CreateEntity();
+		Entity* CreateEntity(const std::string& name = "");
 	private:
 		std::string m_DebugName;
 		std::vector<Entity*> m_Entities;

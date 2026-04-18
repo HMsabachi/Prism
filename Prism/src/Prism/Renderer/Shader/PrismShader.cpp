@@ -145,6 +145,12 @@ namespace Prism
 	{
 		m_Shader->SetInt(name, value);
 	}
+
+	void PrismShader::SetIntArray(const std::string& name, int* values, uint32_t size)
+	{
+		m_Shader->SetIntArray(name, values, size);
+	}
+
 	void PrismShader::SetFloat(const std::string& name, float value) const
 	{
 		m_Shader->SetFloat(name, value);

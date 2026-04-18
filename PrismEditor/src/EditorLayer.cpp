@@ -208,6 +208,10 @@ namespace Prism
 		m_SphereBaseMaterial->Set("u_RoughnessTexToggle", m_RoughnessInput.UseTexture ? 1.0f : 0.0f);
 		m_SphereBaseMaterial->Set("u_EnvMapRotation", m_EnvMapRotation);
 
+		if (m_AllowViewportCameraEvents)
+		{
+			m_ActiveScene->GetCamera().OnUpdate();
+		}
 		m_ActiveScene->OnUpdate();
 
 		//Renderer::SubmitMesh(m_PlaneMesh, glm::scale(glm::mat4(1.0f), glm::vec3(16.0f)), m_GridMaterial);
@@ -285,17 +289,24 @@ namespace Prism
 		ImGui::NextColumn();
 	}
 
-	void EditorLayer::Property(const std::string& name, bool& value)
+	bool EditorLayer::Property(const std::string& name, bool& value)
 	{
 		ImGui::Text(name.c_str());
 		ImGui::NextColumn();
 		ImGui::PushItemWidth(-1);
 
 		std::string id = "##" + name;
-		ImGui::Checkbox(id.c_str(), &value);
+		bool result = ImGui::Checkbox(id.c_str(), &value);
 
 		ImGui::PopItemWidth();
 		ImGui::NextColumn();
+		return result;
+	}
+
+	void EditorLayer::ShowBoundingBoxes(bool show, bool onTop /*= false*/)
+	{
+		SceneRenderer::GetOptions().ShowBoundingBoxes = show && !onTop;
+		m_DrawOnTopBoundingBoxes = show && onTop;
 	}
 
 	void EditorLayer::OnImGuiRender()
@@ -371,6 +382,10 @@ namespace Prism
 
 		Property("Radiance Prefiltering", m_RadiancePrefilter);
 		Property("Env Map Rotation", m_EnvMapRotation, -360.0f, 360.0f);
+		if (Property("Show Bounding Boxes", m_UIShowBoundingBoxes))
+			ShowBoundingBoxes(m_UIShowBoundingBoxes, m_UIShowBoundingBoxesOnTop);
+		if (m_UIShowBoundingBoxes && Property("On Top", m_UIShowBoundingBoxesOnTop))
+			ShowBoundingBoxes(m_UIShowBoundingBoxes, m_UIShowBoundingBoxesOnTop);
 
 		ImGui::Columns(1);
 
@@ -558,7 +573,12 @@ namespace Prism
 		m_ActiveScene->GetCamera().SetProjectionMatrix(glm::perspectiveFov(glm::radians(45.0f), viewportSize.x, viewportSize.y, 0.1f, 10000.0f));
 		m_ActiveScene->GetCamera().SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
 		ImGui::Image((void*)SceneRenderer::GetFinalColorBufferRendererID(), viewportSize, { 0, 1 }, { 1, 0 });
-		//PR_TRACE("FrameBuffer {0}", m_FinalPresentBuffer->GetColorAttachmentRendererID());
+		
+		static int counter = 0;
+		auto windowSize = ImGui::GetWindowSize();
+		ImVec2 minBound = ImGui::GetWindowPos();
+		ImVec2 maxBound = { minBound.x + windowSize.x, minBound.y + windowSize.y };
+		m_AllowViewportCameraEvents = ImGui::IsMouseHoveringRect(minBound, maxBound);
 		// Gizmos
 		if (m_GizmoType != -1)
 		{
@@ -616,9 +636,13 @@ namespace Prism
 		//ImGui::ShowStyleEditor();
 	}
 
-	void EditorLayer::OnEvent(Prism::Event& event)
+	void EditorLayer::OnEvent(Prism::Event& e)
 	{
-		EventDispatcher dispatcher(event);
+		if (m_AllowViewportCameraEvents)
+		{
+			m_ActiveScene->GetCamera().OnEvent(e);
+		}
+		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<KeyPressedEvent>(PR_BIND_EVENT_FN(EditorLayer::OnKeyPressedEvent));
 	}
 	bool EditorLayer::OnKeyPressedEvent(KeyPressedEvent& e)
@@ -636,6 +660,19 @@ namespace Prism
 			break;
 		case PR_KEY_R:
 			m_GizmoType = ImGuizmo::OPERATION::SCALE;
+			break;
+		case PR_KEY_G:
+			// Toggle grid
+			if (Prism::Input::IsKeyPressed(PR_KEY_LEFT_CONTROL))
+				SceneRenderer::GetOptions().ShowGrid = !SceneRenderer::GetOptions().ShowGrid;
+			break;
+		case PR_KEY_B:
+			// Toggle bounding boxes 
+			if (Prism::Input::IsKeyPressed(PR_KEY_LEFT_CONTROL))
+			{
+				m_UIShowBoundingBoxes = !m_UIShowBoundingBoxes;
+				ShowBoundingBoxes(m_UIShowBoundingBoxes, m_UIShowBoundingBoxesOnTop);
+			}
 			break;
 		}
 		return false;

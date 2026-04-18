@@ -209,6 +209,13 @@ namespace Prism
 			});
 	}
 
+	void OpenGLShader::SetIntArray(const std::string& name, int* values, uint32_t size)
+	{
+		Renderer::Submit([=]() {
+			UploadUniformIntArray(name, values, size);
+		});
+	}
+
 	void OpenGLShader::SetVec2(const std::string& name, const glm::vec2& value)
 	{
 		Renderer::Submit([=]() {
@@ -337,7 +344,7 @@ namespace Prism
 		glUniform1i(location, value);
 	}
 
-	void OpenGLShader::UploadUniformIntArray(uint32_t location, int32_t* values, int32_t count)
+	void OpenGLShader::UploadUniformIntArray(uint32_t location, int32_t* values, uint32_t count)
 	{
 		glUniform1iv(location, count, values);
 	}
@@ -383,7 +390,7 @@ namespace Prism
 			return;
 		UploadUniformInt(m_UniformLocationCache[name], value);
 	}
-	void OpenGLShader::UploadUniformIntArray(std::string name, int32_t* values, int32_t count)
+	void OpenGLShader::UploadUniformIntArray(std::string name, int32_t* values, uint32_t count)
 	{
 		if (!UniformLocationCache(name))
 			return;

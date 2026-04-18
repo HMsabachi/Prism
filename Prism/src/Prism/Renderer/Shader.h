@@ -37,6 +37,7 @@ namespace Prism
 		virtual void SetMat4(const std::string& name, const glm::mat4& value) = 0;
 		virtual void SetMat4FromRenderThread(const std::string& name, const glm::mat4& value, bool bind = true) = 0;
 
+		virtual void SetIntArray(const std::string& name, int* values, uint32_t size) = 0;
 
 		virtual void DispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ) = 0;
 	public:

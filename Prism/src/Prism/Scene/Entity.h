@@ -7,7 +7,6 @@ namespace Prism
 	class PRISM_API Entity
 	{
 	public:
-		Entity();
 		~Entity();
 
 		// TODO: 这里应该在Component中实现
@@ -19,12 +18,19 @@ namespace Prism
 
 		const glm::mat4& GetTransform() const { return m_Transform; }
 		glm::mat4& Transform() { return m_Transform; }
+	
+		const std::string& GetName() const { return m_Name; }
+	private:
+		Entity(const std::string& name);
 	private:
 		glm::mat4 m_Transform;
+		std::string m_Name;
 
 		// TODO: 临时
 		Ref<Mesh> m_Mesh;
 		Ref<MaterialInstance> m_Material;
+
+		friend class Scene;
 	};
 
 }

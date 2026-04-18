@@ -42,6 +42,8 @@ namespace Prism
 
 		// Grid
 		Ref<MaterialInstance> GridMaterial;
+
+		SceneRendererOptions Options;
 	};
 
 	static SceneRendererData s_Data;
@@ -163,6 +165,7 @@ namespace Prism
 		environmentShader->SetTextureCube(irradiance, "u_InputCubeMap", envFiltered);
 		environmentShader->SetImageCube(irradiance, "o_OutputCube", irradianceMap);
 		environmentShader->Dispatch(irradiance, irradianceMapSize / 32, irradianceMapSize / 32, 6);
+		irradianceMap->GenerateMipMap();
 
 		return { envFiltered, irradianceMap };
 	}
@@ -173,12 +176,8 @@ namespace Prism
 #if 1
 		PR_PROFILE_FUNCTION();
 		Renderer::BeginRenderPass(s_Data.GeoPass);
-
-		auto viewProjection = s_Data.SceneData.SceneCamera.GetProjectionMatrix() * s_Data.SceneData.SceneCamera.GetViewMatrix();
-
 		// Skybox
 		auto skyboxShader = s_Data.SceneData.SkyboxMaterial->GetShader();
-		s_Data.SceneData.SkyboxMaterial->Set("u_InverseVP", glm::inverse(viewProjection));
 		// s_Data.SceneInfo.EnvironmentIrradianceMap->Bind(0);
 		Renderer::SubmitFullscreenQuad(s_Data.SceneData.SkyboxMaterial);
 
@@ -194,7 +193,11 @@ namespace Prism
 			auto overrideMaterial = nullptr; // dc.Material;
 			Renderer::SubmitMesh(dc.Mesh, dc.Transform, overrideMaterial);
 		}
-		Renderer::SubmitQuad(s_Data.GridMaterial, glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(16.0f)));
+		// Grid
+		if (GetOptions().ShowGrid)
+		{
+			Renderer::SubmitQuad(s_Data.GridMaterial, glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(16.0f)));
+		}
 
 		Renderer::EndRenderPass();
 #endif
@@ -207,6 +210,7 @@ namespace Prism
 		Renderer::BeginRenderPass(s_Data.CompositePass);
 		s_Data.CompositeShader->Bind();
 		s_Data.CompositeShader->SetFloat("u_Exposure", s_Data.SceneData.SceneCamera.GetExposure());
+		s_Data.CompositeShader->SetInt("u_TextureSamples", s_Data.GeoPass->GetSpecification().TargetFramebuffer->GetSpecification().Samples);
 		s_Data.GeoPass->GetSpecification().TargetFramebuffer->BindTexture();
 		Renderer::SubmitFullscreenQuad(nullptr);
 		Renderer::EndRenderPass();
@@ -230,12 +234,19 @@ namespace Prism
 		PR_CORE_ASSERT(false, "Not implemented");
 		return nullptr;
 	}
+	Ref<RenderPass> SceneRenderer::GetFinalRenderPass()
+	{
+		return s_Data.CompositePass;
+	}
 
 	uint32_t SceneRenderer::GetFinalColorBufferRendererID()
 	{
 		return s_Data.CompositePass->GetSpecification().TargetFramebuffer->GetColorAttachmentRendererID();
 	}
-
+	SceneRendererOptions& SceneRenderer::GetOptions()
+	{
+		return s_Data.Options;
+	}
 	static void UpdateGlobalsUBO()
 	{
 		auto& camera = s_Data.SceneData.SceneCamera;
@@ -246,7 +257,7 @@ namespace Prism
 		sceneUniforms.DeltaTime = Prism::Time::GetDeltaTime();
 		sceneUniforms.Projection = camera.GetProjectionMatrix();
 		sceneUniforms.View = camera.GetViewMatrix();
-		sceneUniforms.ViewProjection = sceneUniforms.Projection * sceneUniforms.View;
+		sceneUniforms.ViewProjection = camera.GetViewProjection();
 		sceneUniforms.InverseViewProjection = glm::inverse(sceneUniforms.ViewProjection);
 		float time = Prism::Time::GetTime();
 		sceneUniforms.Time = glm::vec4(time * 0.2f, time, time * 2, time * 3);

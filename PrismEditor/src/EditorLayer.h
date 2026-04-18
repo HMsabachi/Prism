@@ -40,7 +40,7 @@ namespace Prism
 
 		bool OnKeyPressedEvent(KeyPressedEvent& e);
 
-		void Property(const std::string& name, bool& value);
+		bool Property(const std::string& name, bool& value);
 		void Property(const std::string& name, float& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
 		void Property(const std::string& name, glm::vec2& value, PropertyFlag flags);
 		void Property(const std::string& name, glm::vec2& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
@@ -49,6 +49,7 @@ namespace Prism
 		void Property(const std::string& name, glm::vec4& value, PropertyFlag flags);
 		void Property(const std::string& name, glm::vec4& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
 
+		void ShowBoundingBoxes(bool show, bool onTop = false);
 	private:
 		std::vector<Ref<MaterialInstance>> m_MetalSphereMaterialInstances;
 		std::vector<Ref<MaterialInstance>> m_DielectricSphereMaterialInstances;
@@ -122,6 +123,12 @@ namespace Prism
 		// Editor resources
 		Ref<Texture2D> m_CheckerboardTex;
 
-		int m_GizmoType = -1; // -1 = no gizmo
+		int m_GizmoType = -1; //  no gizmo
+
+		bool m_AllowViewportCameraEvents = true;
+		bool m_DrawOnTopBoundingBoxes = false;
+
+		bool m_UIShowBoundingBoxes = false;
+		bool m_UIShowBoundingBoxesOnTop = false;
 	};
 }

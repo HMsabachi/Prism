@@ -6,6 +6,11 @@
 
 namespace Prism 
 {
+	struct SceneRendererOptions
+	{
+		bool ShowGrid = true;
+		bool ShowBoundingBoxes = false;
+	};
 
 	class PRISM_API SceneRenderer
 	{
@@ -21,9 +26,13 @@ namespace Prism
 
 		static std::pair<Ref<TextureCube>, Ref<TextureCube>> CreateEnvironmentMap(const std::string& filepath);
 
+		static Ref<RenderPass> GetFinalRenderPass();
+
 		static Ref<Texture2D> GetFinalColorBuffer();
 
 		static uint32_t GetFinalColorBufferRendererID();
+
+		static SceneRendererOptions& GetOptions();
 	private:
 		static void FlushDrawList();
 		static void GeometryPass();

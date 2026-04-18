@@ -1,5 +1,5 @@
 ﻿#pragma once
-
+#include "RendererTypes.h"
 namespace Prism
 {
 	using RendererID = uint32_t;
@@ -16,8 +16,9 @@ namespace Prism
 		std::string Renderer;
 		std::string Version;
 
-		int MaxSamples;
-		float MaxAnisotropy;
+		int MaxSamples = 0;
+		float MaxAnisotropy = 0.0f;
+		int MaxTextureUnits = 0;
 
 		int MaxGroupCount[3], MaxGroupSize[3], MaxInvocations;
 	};
@@ -49,7 +50,8 @@ namespace Prism
 		static void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height);
 		static void Clear(float r, float g, float b, float a);
 		static void SetClearColor(float r, float g, float b, float a);
-		static void DrawIndexed(unsigned int const, bool depthTest = true);
+		static void DrawIndexed(uint32_t count, PrimitiveType type = PrimitiveType::Triangles, bool depthTest = true);
+		static void SetLineThickness(float thickness);
 		static void MemoryBarriers(BarrierFlags flags);
 
 		static RenderAPICapabilities& GetCapabilities()

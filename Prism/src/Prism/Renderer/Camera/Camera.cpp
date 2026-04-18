@@ -2,6 +2,7 @@
 #include "Camera.h"
 
 #include "Prism/Core/Input.h"
+#include "Prism/Events/MouseEvent.h"
 
 #include <glfw/glfw3.h>
 #include <glm/gtc/quaternion.hpp>
@@ -33,7 +34,7 @@ namespace Prism {
 	{
 	}
 
-	void Camera::Update()
+	void Camera::OnUpdate()
 	{
 		if (Input::IsKeyPressed(GLFW_KEY_LEFT_ALT))
 		{
@@ -55,6 +56,20 @@ namespace Prism {
 		glm::quat orientation = GetOrientation();
 		m_Rotation = glm::eulerAngles(orientation) * (180.0f / (float)M_PI);
 		m_ViewMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 1)) * glm::toMat4(glm::conjugate(orientation)) * glm::translate(glm::mat4(1.0f), -m_Position);
+	}
+
+	void Camera::OnEvent(Event& e)
+	{
+		EventDispatcher dispatcher(e);
+		dispatcher.Dispatch<MouseScrolledEvent>(PR_BIND_EVENT_FN(Camera::OnMouseScroll));
+	}
+
+	bool Camera::OnMouseScroll(MouseScrolledEvent& e)
+	{
+
+		float delta = e.GetYOffset() * 0.1f;
+		MouseZoom(delta);
+		return false;
 	}
 
 	void Camera::MousePan(const glm::vec2& delta)

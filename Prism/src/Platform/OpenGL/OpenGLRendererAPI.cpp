@@ -21,6 +21,17 @@ namespace Prism
 		if (flags & RendererAPI::Barrier::All) result |= GL_ALL_BARRIER_BITS;
 		return result;
 	}
+	static GLenum PrismToOpenGLPrimitiveType(PrimitiveType type)
+	{
+		switch (type)
+		{
+		case PrimitiveType::None:			PR_CORE_ASSERT(false, "Invalid PrimitiveType");
+		case PrimitiveType::Triangles:		return GL_TRIANGLES;
+		case PrimitiveType::Lines:			return GL_LINES;
+		}
+		PR_CORE_ASSERT(false, "Invalid PrimitiveType");
+		return 0;
+	}
 
 	static void HandleCapabilities()
 	{
@@ -32,10 +43,12 @@ namespace Prism
 
 		glGetIntegerv(GL_MAX_SAMPLES, &caps.MaxSamples); // 获取最大采样数
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &caps.MaxAnisotropy); // 获取最大各向异性
+		glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &caps.MaxTextureUnits);// 获取最大纹理单元数
 
 		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &caps.MaxGroupCount[0]); // 获取最大工作组数量
 		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &caps.MaxGroupSize[0]); // 获取最大工作组大小
-		glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &caps.MaxInvocations); // 
+		glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &caps.MaxInvocations); // 获取最大工作组调用次数
+
 	}
 
 	static void OpenGLLogMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
@@ -117,13 +130,18 @@ namespace Prism
 		glClearColor(r, g, b, a);
 	}
 
-	void RendererAPI::DrawIndexed(unsigned int count, bool depthTest) // 默认启用深度测试
+	void RendererAPI::DrawIndexed(uint32_t count, PrimitiveType type, bool depthTest)
 	{
 		if(!depthTest)
 			glDisable(GL_DEPTH_TEST);
-		glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, nullptr);
+		glDrawElements(PrismToOpenGLPrimitiveType(type), count, GL_UNSIGNED_INT, nullptr);
 		if (!depthTest)
 			glEnable(GL_DEPTH_TEST);
+	}
+
+	void RendererAPI::SetLineThickness(float thickness)
+	{
+		glLineWidth(thickness);
 	}
 
 	void RendererAPI::MemoryBarriers(BarrierFlags flags)

@@ -31,13 +31,14 @@ namespace Prism {
 	private:
 		void SetPropertyImpt(const PropertyBufferDeclaration& decl, const Buffer& buffer);
 
-		void SetFloat(const std::string& name, float value) override;
-		void SetInt(const std::string& name, int value) override;
-		void SetVec2(const std::string& name, const glm::vec2& value) override;
-		void SetVec3(const std::string& name, const glm::vec3& value) override;
-		void SetVec4(const std::string& name, const glm::vec4& value) override;
-		void SetMat4(const std::string& name, const glm::mat4& value) override;
-		void SetMat4FromRenderThread(const std::string& name, const glm::mat4& value, bool bind = true) override;
+		virtual void SetFloat(const std::string& name, float value) override;
+		virtual void SetInt(const std::string& name, int value) override;
+		virtual void SetIntArray(const std::string& name, int* values, uint32_t size) override;
+		virtual void SetVec2(const std::string& name, const glm::vec2& value) override;
+		virtual void SetVec3(const std::string& name, const glm::vec3& value) override;
+		virtual void SetVec4(const std::string& name, const glm::vec4& value) override;
+		virtual void SetMat4(const std::string& name, const glm::mat4& value) override;
+		virtual void SetMat4FromRenderThread(const std::string& name, const glm::mat4& value, bool bind = true) override;
 
 		const std::string& GetName() const override { return m_Name; }
 
@@ -54,7 +55,7 @@ namespace Prism {
 		#pragma region 上传Uniform
 	private:
 		void UploadUniformInt(uint32_t location, int32_t value);
-		void UploadUniformIntArray(uint32_t location, int32_t* values, int32_t count);
+		void UploadUniformIntArray(uint32_t location, int32_t* values, uint32_t count);
 		void UploadUniformFloat(uint32_t location, float value);
 		void UploadUniformFloat2(uint32_t location, const glm::vec2& value);
 		void UploadUniformFloat3(uint32_t location, const glm::vec3& value);
@@ -64,7 +65,7 @@ namespace Prism {
 		void UploadUniformMat4Array(uint32_t location, const glm::mat4& values, uint32_t count);
 
 		void UploadUniformInt(std::string name, int32_t value);
-		void UploadUniformIntArray(std::string name, int32_t* values, int32_t count);
+		void UploadUniformIntArray(std::string name, int32_t* values, uint32_t count);
 		void UploadUniformFloat(std::string name, float value);
 		void UploadUniformFloat2(std::string name, const glm::vec2& value);
 		void UploadUniformFloat3(std::string name, const glm::vec3& value);
