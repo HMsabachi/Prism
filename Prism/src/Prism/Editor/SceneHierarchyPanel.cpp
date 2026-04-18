@@ -41,7 +41,6 @@ namespace Prism
 			auto mesh = entity->GetMesh();
 			auto material = entity->GetMaterial();
 			const auto& transform = entity->GetTransform();
-
 			if (mesh)
 			{
 				DrawMeshNode(mesh);

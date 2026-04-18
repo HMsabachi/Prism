@@ -24,6 +24,7 @@ namespace Prism
 		case Prism::ParserPropertyType::Vector3:		return PropertyDeclaration::Type::Vector3;
 		case Prism::ParserPropertyType::Vector4:		return PropertyDeclaration::Type::Vector4;
 		case Prism::ParserPropertyType::Texture2D:		return PropertyDeclaration::Type::Texture2D;
+		case Prism::ParserPropertyType::Texture2DMS:	return PropertyDeclaration::Type::Texture2DMS;
 		case Prism::ParserPropertyType::TextureCube:	return PropertyDeclaration::Type::TextureCube;
 		case Prism::ParserPropertyType::Range:			return PropertyDeclaration::Type::Range;
 		case ParserPropertyType::Matrix3:				return PropertyDeclaration::Type::Matrix3;
@@ -43,6 +44,7 @@ namespace Prism
 		case Type::Vector4:			return sizeof(PropertyType::Vector4);
 		case Type::Range:			return sizeof(PropertyType::Range);
 		case Type::Texture2D:		return sizeof(PropertyType::Texture2D);
+		case Type::Texture2DMS:		return sizeof(PropertyType::Texture2D);
 		case Type::TextureCube:		return sizeof(PropertyType::TextureCube);
 		case Type::Matrix3:			return sizeof(PropertyType::Matrix3);
 		case Type::Matrix4:			return sizeof(PropertyType::Matrix4);
@@ -238,6 +240,13 @@ namespace Prism
 				break;
 			}
 			case Prism::ParserPropertyType::Texture2D:
+			{
+				PropertyType::Texture2D tex2d;
+				tex2d.slot = texIndex++;
+				m_DefaultValueBuffer.Write((byte*)&tex2d, sizeof(PropertyType::Texture2D), m_Declaration.GetUniformDeclarations()[i]->GetOffset());
+				break;
+			}
+			case Prism::ParserPropertyType::Texture2DMS:
 			{
 				PropertyType::Texture2D tex2d;
 				tex2d.slot = texIndex++;

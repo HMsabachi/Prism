@@ -287,6 +287,7 @@ namespace Prism
 				UploadUniformFloat(property->GetName(), *(Range*)&buffer.Data[offset]);
 				break;
 			case PropertyDeclaration::Type::Texture2D:
+			case PropertyDeclaration::Type::Texture2DMS:
 			{
 				auto& tex = *(PropertyType::Texture2D*)&buffer.Data[offset];
 				UploadUniformInt(property->GetName(), tex.slot);

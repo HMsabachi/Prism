@@ -52,6 +52,7 @@ namespace Prism
 		geoFramebufferSpec.Width = 1280;
 		geoFramebufferSpec.Height = 720;
 		geoFramebufferSpec.Format = FramebufferFormat::RGBA16F;
+		geoFramebufferSpec.Samples = 8;
 		geoFramebufferSpec.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
 
 		RenderPassSpecification geoRenderPassSpec;
@@ -68,7 +69,7 @@ namespace Prism
 		compRenderPassSpec.TargetFramebuffer = Prism::Framebuffer::Create(compFramebufferSpec);
 		s_Data.CompositePass = RenderPass::Create(compRenderPassSpec);
 
-		s_Data.CompositeShader = PrismShader::Create("Assets/Shaders/hdr.Shader");
+		s_Data.CompositeShader = PrismShader::Create("Assets/Shaders/SceneComposite.Shader");
 		s_Data.BRDFLUT = Texture2D::Create("Assets/Textures/BRDF_LUT.tga");
 
 		// Grid

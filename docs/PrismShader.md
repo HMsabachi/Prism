@@ -1,201 +1,231 @@
+**Prism Shadeing Language (PSL) 使用文档**
 
 ---
 
-### **PrismShader 技术文档 v1.0**
-
-#### **1. 概述**
-
-`PrismShader` 是 Prism 引擎的自定义材质着色器系统，采用类 Unity ShaderLab 的语法（Prism Shader Language v1.0），支持：
-
-- 属性（Properties）声明与运行时编辑
-- 多 Pass（当前仅支持单 Pass）
-- GLSL 代码嵌入
-- 材质参数自动解析与绑定（Float、Range、Int、Color、Vector2/3/4、Texture2D）
-- 引擎内置变量（`Prism_` 前缀）
-
-核心文件：
-- `PrismShader.cpp` / `PrismShader.h`
-- `PrismShaderParser.h/cpp`（解析器，仓库最新版为准）
-- `Shader.cpp`（底层 OpenGL Shader 封装）
-
----
-
-#### **2. Prism Shader Language 语法（v1.0）**
+### 1. 文件整体结构
 
 ```glsl
-// Prism Shader Language v1.0
-Shader "分类/Shader名称"
+Shader "您的Shader名称"   // 必须是第一个有效语句，名称用于 ShaderLibrary 查找
 {
-    // ==================== Properties（材质参数） ====================
     Properties
     {
-        _变量名("显示名称", 类型) = 默认值
-        // 支持类型：
-        // Float、Range(min, max)、Int、Color、Vector2、Vector3、Vector4、Texture2D
+        // 属性声明（见第2节）
+    }
+
+    RenderCommand
+    {
+        // 渲染状态命令（见第3节）
     }
 
     SubShader
     {
         Pass
         {
-            Tags { "Queue" = "Geometry" "RenderType" = "Opaque" }
-            Name "ForwardBase"
+            Name "ForwardBase"          // Pass 名称（可选，但推荐）
+            Tags { "Queue" = "Geometry" "LightMode" = "ForwardBase" }  // Tags（可选）
 
             GLSL
             {
-                #include "PrismBuiltin.glsl"   // 必须包含，获取引擎内置变量
-
-                // 输入属性（attribute）
-                attribute vec3 aPos : POSITION;
-                attribute vec2 aUV : TEXCOORD0;
-                attribute vec3 aNormal : NORMAL;
-
-                // 跨阶段变量（VARYING）
-                VARYING vec2 vUV;
-                VARYING vec3 vNormal;
-
-                void main()  // 顶点着色器
-                {
-                    gl_Position = Prism_ViewProjection * Prism_Model * vec4(aPos, 1.0);
-                    vUV = aUV;
-                }
-
-                void frag()  // 片元着色器（Prism 引擎会自动调用）
-                {
-                    // ... 你的着色逻辑
-                    FragColor = vec4(1.0);
-                }
+                // 统一 GLSL 代码（必须同时写 main 和 frag，见第4节）
             }
         }
+
+        // 可添加多个 Pass
     }
 }
 ```
 
----
-
-#### **3. 支持的 Property 类型**
-
-| 类型          | 默认值示例                  | C++ 中对应类                          | 说明                  |
-|---------------|-----------------------------|---------------------------------------|-----------------------|
-| Float         | 0.5                         | `FloatPropertyElement`                | 浮点数                |
-| Range(0,1)    | 0.5                         | `FloatPropertyElement`                | 带范围的浮点数        |
-| Int           | 1                           | `IntPropertyElement`                  | 整数                  |
-| Color         | (1,1,1,1)                   | `ColorPropertyElement`                | RGBA 颜色             |
-| Vector2       | (1,0)                       | `Vec2PropertyElement`                 | 二维向量              |
-| Vector3       | (1,1,0)                     | `Vec3PropertyElement`                 | 三维向量              |
-| Vector4       | (1,1,1,1)                   | `Vec4PropertyElement`                 | 四维向量              |
-| Texture2D     | "white" {}                  | `Texture2DPropertyElement`            | 2D纹理（目前默认ErrorTexture） |
-
-**注意**：目前 `ConvertValue` 对 Texture2D 的默认值解析尚不完整（仅创建 ErrorTexture），后续可扩展支持 "white"、"black"、"normal" 等内置纹理。
+- **注释**：支持 `//` 单行和 `/* */` 多行，解析器 `StripComments` 会自动移除。
+- **大小写敏感**：`Shader`、`Properties`、`RenderCommand`、`SubShader`、`Pass`、`GLSL` 必须完全匹配。
+- **缩进与换行**：无严格要求，解析器使用 `ExtractBlock` 按 `{}` 匹配。
 
 ---
 
-#### **4. C++ 使用方式**
+### 2. Properties 块（材质属性）
 
+**语法**（每行一个属性）：
+```glsl
+变量名 ("显示名称", 类型) = 默认值
+```
+
+**支持的所有类型**（`StringToPropertyType` + `ParserPropertyType` 完整映射）：
+
+| 类型写法                  | C++ 类型                  | GLSL Uniform 类型     | 默认值示例                  | 说明 |
+|---------------------------|---------------------------|-----------------------|-----------------------------|------|
+| `Color`                   | `Color` (vec4)            | `vec4`                | `(1,1,1,1)` 或 `white`     | 颜色 |
+| `Float`                   | `Float`                   | `float`               | `0.5`                       | 浮点 |
+| `Int`                     | `Int`                     | `int`                 | `1`                         | 整数 |
+| `Vector2`                 | `Vector2`                 | `vec2`                | `(1,0)`                     | 二维向量 |
+| `Vector3`                 | `Vector3`                 | `vec3`                | `(0,1,0)`                   | 三维向量 |
+| `Vector4`                 | `Vector4`                 | `vec4`                | `(1,1,1,1)`                 | 四维向量 |
+| `Texture2D`               | `Texture2D`               | `sampler2D`           | `white` 或任意字符串        | 2D纹理（slot自动分配） |
+| `Texture2DMS`             | `Texture2D` (MS)          | `sampler2DMS`         | `white`                     | 多采样纹理 |
+| `TextureCube`             | `TextureCube`             | `samplerCube`         | `white`                     | 立方体贴图 |
+| `Range(min, max)`         | `Range`                   | `float`               | `0.5`                       | 带滑块范围 |
+| `Matrix3` / `Matrix3X3`   | `Matrix3`                 | `mat3`                | `(1,0,0,0,1,0,0,0,1)`      | 3x3矩阵 |
+| `Matrix4` / `Matrix4x4`   | `Matrix4`                 | `mat4`                | 单位矩阵                    | 4x4矩阵 |
+
+**示例**：
+```glsl
+_MainColor ("主颜色", Color) = (1,1,1,1)
+_Gloss ("光泽度", Range(0,1)) = 0.8
+_MainTex ("基础贴图", Texture2D) = white
+_NormalMap ("法线贴图", Texture2D) = bump
+_Mat4 ("变换矩阵", Matrix4) = (1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1)
+```
+
+**引擎处理**：
+- `ShaderProperty::Init` + `HandlePropertyValue` 会把默认值打包进 `m_DefaultValueBuffer`（`Buffer` 类）。
+- 材质设置时调用 `PrismShader::SetProperty` 自动上传。
+- `GetDefaultValue<T>(name)` 可在运行时读取默认值。
+
+---
+
+### 3. RenderCommand 块（渲染状态）
+
+**语法**（`ParseShaderCommand` + `ShaderCommand.cpp` 逐 token 解析）：
+```glsl
+RenderCommand
+{
+    Blend Off                                      // 关闭混合（默认开启）
+    Blend SrcAlpha OneMinusSrcAlpha                // RGB 混合因子
+    Blend SrcAlpha OneMinusSrcAlpha One OneMinusSrcAlpha  // 分别指定 RGB/Alpha
+
+    Cull Back                                      // 背面剔除（默认）
+    Cull Front
+    Cull Off
+
+    ZTest LessEqual                                // 深度测试函数（默认 LessEqual）
+    ZTest Off                                      // 关闭深度测试
+
+    ZWrite On                                      // 开启深度写入（默认）
+    ZWrite Off
+}
+```
+
+**支持的所有命令**（完整枚举映射）：
+- **Blend**：`Off` / `SrcAlpha OneMinusSrcAlpha` / `Zero One` 等（`BlendFactor` 枚举）
+- **Cull**：`Back` / `Front` / `Off`（`CullMode`）
+- **ZTest**：`LessEqual` / `Less` / `Greater` / `Equal` / `Always` / `Never` / `Off`（`DepthCompareFunc`）
+- **ZWrite**：`On` / `Off`
+
+**默认值**（`ShaderCommand` 结构体初始化）：
 ```cpp
-// 加载 Shader（推荐从文件加载）
-Ref<PrismShader> shader = PrismShader::Create("Assets/Shaders/MyShader.prism", true);
-
-// 获取材质属性
-auto& props = shader->GetProperties();
-
-// 修改属性（支持运算符重载）
-props["_MainColor"] = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);     // Color
-props["_Gloss"] = 0.8f;                                       // Float
-props["_MainTex"] = someTexture;                              // Texture2D
-
-// 获取原始 Shader 用于渲染
-Ref<Shader> glShader = shader->GetOriginalShader();
+flags = Blend | Cull | ZTest | ZWrite
+cullMode = Back
+zTestFunc = LessEqual
+blendSrcRGB = SrcAlpha, blendDstRGB = OneMinusSrcAlpha
 ```
 
+**引擎处理**：`PrismShader::Bind()` 时调用 `m_Shader->ApplyCommand(m_ShaderCommand)`，最终翻译为 OpenGL `glEnable(GL_BLEND)`、`glBlendFunc`、`glCullFace`、`glDepthFunc`、`glDepthMask` 等新版 API。
+
 ---
 
-#### **5. 引擎内置变量（PrismBuiltin.glsl）**
+### 4. GLSL 块（核心着色器代码）
 
-必须在 GLSL 中包含：
+**一个 GLSL 块内必须同时写顶点和片元入口点**！
 
 ```glsl
-// PrismBuiltin.glsl（引擎提供）
-uniform mat4 Prism_Model;
-uniform mat4 Prism_ViewProjection;
-uniform vec4 Prism_Time;        // (Time, SinTime, CosTime, DeltaTime) 等，可自行扩展
-// ... 其他全局变量后续添加
+GLSL
+{
+    // 引擎自动注入：
+    // #version 450 core
+    // uniform vec4 _MainColor;   // 所有 Properties
+    // #ifdef PRISM_VERTEX_SHADER
+    //     #define VARYING out
+    // #else
+    //     #define VARYING in
+    //     layout(location = 0) out vec4 FragColor;
+    // #endif
+
+    // 您的属性声明（自动转为 layout(location = N) in）
+    attribute vec3 aPos : POSITION;
+    attribute vec3 aNormal : NORMAL;
+    attribute vec2 aUV : TEXCOORD0;
+
+    // 顶点着色器入口
+    void main()
+    {
+        // PRISM_VERTEX_SHADER 被定义
+        gl_Position = ...;
+        VARYING vUV = aUV;   // 使用 VARYING 宏
+    }
+
+    // 片元着色器入口（必须叫 frag）
+    void frag()
+    {
+        // PRISM_FRAGMENT_SHADER 被定义
+        FragColor = texture(_MainTex, vUV);
+    }
+}
 ```
 
+**引擎处理流程**（`ProcessAttributes` → `InjectHeader` → `SplitShader`）：
+1. `ProcessAttributes`：把 `attribute ... : SEMANTIC` 转为 `layout(location = X) in`（语义映射见 `GetLocationBySemantic`）。
+2. `InjectHeader`：注入版本、Properties Uniform、VARYING 宏。
+3. `SplitShader`：
+   - VS：保留 `main()`，删除 `frag()` 函数。
+   - FS：删除 `main()`，把 `frag()` 重命名为 `main()`，删除所有 `layout(location) in` 属性。
+4. 支持 `#include "Common.glsl"`（相对 `Assets/Shaders/Include` 目录，递归解析，防循环）。
+
+**支持的 Vertex Semantic**（完整列表）：
+`POSITION`、`NORMAL`、`TANGENT`、`BINORMAL`、`TEXCOORD0`、`TEXCOORD1`、`BONEINDICES`、`BONEWEIGHTS`、`INSTANCEID`、`COLOR`、`INDEX0`、`INDEX1`、`OTHER0`、`OTHER1`、`OTHER2`
+
 ---
 
-#### **6. 当前限制（v1.0）**
+### 5. 高级功能与注意事项
 
-- 仅支持单个 Pass（`m_ParseResult.Passes[0]`）
-- Texture2D 属性默认绑定 `Texture2D::ErrorTexture`
-- 属性默认值解析对复杂格式支持有限（Vector 使用 `(x,y,z,w)` 或 `{x,y,z,w}`）
-- 暂无多 Pass、LOD、Fallback、CustomEditor 等高级特性
-- `frag()` 函数为 Prism 引擎自定义入口（非标准 `main()`）
+- **#include**：支持相对路径，`ResolveIncludes` 递归处理，历史记录防循环。
+- **多 Pass**：`SubShader` 内可写多个 `Pass`，解析器会全部收集。
+- **Tags**：目前仅解析存储在 `PassDescriptor::Tags`
+- **Reload**：修改 .Shader 文件后调用 `PrismShader::Reload()` 会重新解析并触发所有 `ShaderReloadedCallback`。
+- **运行时设置 Uniform**：使用 `PrismShader::SetInt`、`SetFloat`、`SetVec3`、`SetMat4` 等（直接调用底层 `Shader`）。
+- **材质属性设置**：`material->SetProperty(shader.GetProperty().GetDefaultValueBuffer())` 或单独设置。
 
 ---
 
-### **样板 Shader（推荐模板）**
-
-**文件：`StandardLit.prism`**
+### 6. 完整最小示例
 
 ```glsl
-// Prism Shader Language v1.0
-Shader "Prism/StandardLit"
+Shader "Prism/Unlit"
 {
     Properties
     {
-        _MainColor("主颜色", Color) = (1, 1, 1, 1)
-        _MainTex("基础贴图 (Albedo)", Texture2D) = "white" {}
-        _NormalTex("法线贴图", Texture2D) = "normal" {}
-        _Metallic("金属度", Range(0, 1)) = 0.0
-        _Smoothness("光滑度", Range(0, 1)) = 0.5
-        _Cutoff("透明裁剪阈值", Range(0, 1)) = 0.5
+        _MainColor ("主颜色", Color) = (1,1,1,1)
+        _MainTex ("基础贴图", Texture2D) = white
+    }
+
+    RenderCommand
+    {
+        Blend SrcAlpha OneMinusSrcAlpha
+        Cull Back
+        ZTest LessEqual
+        ZWrite On
     }
 
     SubShader
     {
         Pass
         {
-            Tags { "Queue" = "Geometry" "RenderType" = "Opaque" }
             Name "ForwardBase"
+            Tags { "Queue" = "Geometry" }
 
             GLSL
             {
-                #include "PrismBuiltin.glsl"
-
                 attribute vec3 aPos : POSITION;
                 attribute vec2 aUV : TEXCOORD0;
-                attribute vec3 aNormal : NORMAL;
-                attribute vec3 aTangent : TANGENT;
 
                 VARYING vec2 vUV;
-                VARYING vec3 vNormal;
-                VARYING vec3 vWorldPos;
 
                 void main()
                 {
-                    gl_Position = Prism_ViewProjection * Prism_Model * vec4(aPos, 1.0);
-                    
+                    gl_Position = vec4(aPos, 1.0);
                     vUV = aUV;
-                    vNormal = mat3(Prism_Model) * aNormal;   // 法线转换到世界空间
-                    vWorldPos = (Prism_Model * vec4(aPos, 1.0)).xyz;
                 }
 
                 void frag()
                 {
-                    // 示例：简单颜色 + 时间闪烁（可替换为 PBR 计算）
-                    vec4 albedo = texture(_MainTex, vUV) * _MainColor;
-                    
-                    // 简单光照模拟
-                    vec3 lightDir = normalize(vec3(1.0, 1.0, -1.0));
-                    float ndotl = max(dot(normalize(vNormal), lightDir), 0.0);
-                    
-                    vec3 color = albedo.rgb * (ndotl * 0.8 + 0.2);
-                    
-                    // 时间动画示例
-                    color.r += sin(Prism_Time.x * 3.0) * 0.1;
-                    
-                    FragColor = vec4(color, albedo.a);
+                    FragColor = texture(_MainTex, vUV) * _MainColor;
                 }
             }
         }
@@ -204,3 +234,4 @@ Shader "Prism/StandardLit"
 ```
 
 ---
+

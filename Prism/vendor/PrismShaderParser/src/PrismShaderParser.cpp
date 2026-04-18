@@ -26,6 +26,7 @@ namespace Prism
         if (typeStr == "Vector3") return ParserPropertyType::Vector3;
         if (typeStr == "Vector4") return ParserPropertyType::Vector4;
         if (typeStr == "Texture2D") return ParserPropertyType::Texture2D;
+        if (typeStr == "Texture2DMS") return ParserPropertyType::Texture2DMS;
         if (typeStr == "TextureCube") return ParserPropertyType::TextureCube;
 		if (typeStr == "Matrix3X3" || typeStr == "Matrix3") return ParserPropertyType::Matrix3;
 		if (typeStr == "Matrix4x4" || typeStr == "Matrix4") return ParserPropertyType::Matrix4;
@@ -50,13 +51,37 @@ namespace Prism
         case ParserPropertyType::Vector3: return "uniform vec3"; break;
         case ParserPropertyType::Vector4: return "uniform vec4"; break;
         case ParserPropertyType::Texture2D: return "uniform sampler2D"; break;
+        case ParserPropertyType::Texture2DMS: return "uniform sampler2DMS"; break;
         case ParserPropertyType::TextureCube: return "uniform samplerCube"; break;
         case ParserPropertyType::Range: return "uniform float"; break;
 		case ParserPropertyType::Matrix3: return "uniform mat3"; break;
 		case ParserPropertyType::Matrix4: return "uniform mat4"; break;
         }
     }
-    ParseResult PrismShaderParser::Parse(const std::string& source)
+	int PrismShaderParser::GetLocationBySemantic(const std::string& semantic, Prism::VertexSemantic& outSemantic)
+	{
+		std::string upperCaseSemantic = semantic;
+		std::transform(semantic.begin(), semantic.end(), upperCaseSemantic.begin(), ::toupper);
+		if (upperCaseSemantic == "POSITION") { outSemantic = VertexSemantic::Position; return static_cast<int>(outSemantic); }
+		if (upperCaseSemantic == "NORMAL") { outSemantic = VertexSemantic::Normal;   return static_cast<int>(outSemantic); }
+		if (upperCaseSemantic == "TANGENT") { outSemantic = VertexSemantic::Tangent;  return static_cast<int>(outSemantic); }
+		if (upperCaseSemantic == "BINORMAL") { outSemantic = VertexSemantic::Binormal;  return static_cast<int>(outSemantic); }
+		if (upperCaseSemantic == "TEXCOORD0") { outSemantic = VertexSemantic::TexCoord0; return static_cast<int>(outSemantic); }
+		if (upperCaseSemantic == "TEXCOORD1") { outSemantic = VertexSemantic::TexCoord1; return static_cast<int>(outSemantic); }
+		if (upperCaseSemantic == "BONEINDICES") { outSemantic = VertexSemantic::BoneIndices; return static_cast<int>(outSemantic); }
+		if (upperCaseSemantic == "BONEWEIGHTS") { outSemantic = VertexSemantic::BoneWeights; return static_cast<int>(outSemantic); }
+		if (upperCaseSemantic == "INSTANCEID") { outSemantic = VertexSemantic::InstanceID; return static_cast<int>(outSemantic); }
+		if (upperCaseSemantic == "COLOR") { outSemantic = VertexSemantic::Color;    return static_cast<int>(outSemantic); }
+		if (upperCaseSemantic == "INDEX0") { outSemantic = VertexSemantic::Index0;    return static_cast<int>(outSemantic); }
+		if (upperCaseSemantic == "INDEX1") { outSemantic = VertexSemantic::Index1;    return static_cast<int>(outSemantic); }
+		if (upperCaseSemantic == "OTHER0") { outSemantic = VertexSemantic::Other0;    return static_cast<int>(outSemantic); }
+		if (upperCaseSemantic == "OTHER1") { outSemantic = VertexSemantic::Other1;    return static_cast<int>(outSemantic); }
+		if (upperCaseSemantic == "OTHER2") { outSemantic = VertexSemantic::Other2;    return static_cast<int>(outSemantic); }
+		outSemantic = VertexSemantic::Unknown;
+		return -1;
+	}
+
+	ParseResult PrismShaderParser::Parse(const std::string& source)
     {
         ParseResult result;
 		result.Success = true;

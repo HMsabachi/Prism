@@ -58,7 +58,7 @@ namespace Prism
 			Vector2, Vector3, Vector4,
 			Range,
 			Matrix3, Matrix4,
-			Texture2D, TextureCube
+			Texture2D, Texture2DMS, TextureCube
 		};
 	private:
 		std::string m_Name;

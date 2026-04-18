@@ -8,12 +8,14 @@
 #include "Prism/Core/Layer.h"
 #include "Prism/Core/Log.h"
 #include "Prism/Core/Time.h"
+#include "Prism/Core/Input.h"
 #include "Prism/Utilities/Utilities.h"
 
 #include "Prism/Core/Input.h"
 #include "Prism/Core/KeyCodes.h"
 #include "Prism/Core/MouseButtonCodes.h"
 
+#include "imgui/imgui.h"
 #include "Prism/ImGui/ImGuiLayer.h"
 // ---Renderer-
 #include "Prism/Renderer/Renderer.h"
@@ -21,10 +23,8 @@
 #include "Prism/Renderer/ComputeShader/ComputeShader.h"
 #include "Prism/Renderer/Shader/GlobalUniforms.h"
 
-#include "imgui/imgui.h"
 
 // --- Prism Render API ------------------------------
-#include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/RenderPass.h"
 #include "Prism/Renderer/VertexArray.h"
 #include "Prism/Renderer/Texture.h"

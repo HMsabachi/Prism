@@ -31,6 +31,7 @@ namespace Prism
         Vector3,
         Vector4,
         Texture2D,
+        Texture2DMS,
         TextureCube,
         Range,       // Float + [min, max]
         Matrix3, 
@@ -55,9 +56,16 @@ namespace Prism
 		Tangent,
         Binormal,
 		TexCoord0,
+		TexCoord1,
         BoneIndices,
         BoneWeights,
+        InstanceID,
 		Color,
+        Index0,
+        Index1,
+        Other0,
+        Other1,
+        Other2,
         Unknown
     };
     inline uint32_t VertexSemanticToLocation(VertexSemantic semantic)

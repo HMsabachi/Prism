@@ -15,22 +15,9 @@ namespace Prism
         friend class Prism::Application;
     private:
     #pragma region 类型转换
-        // 将字符串类型转换为枚举
         static ParserPropertyType StringToPropertyType(const std::string& typeStr, float& outMin, float& outMax);
-        // 将枚举类型转换为字符串
         static std::string PropertyTypeToString(ParserPropertyType type);
-        inline static int GetLocationBySemantic(const std::string& semantic, Prism::VertexSemantic& outSemantic) {
-            if (semantic == "POSITION") { outSemantic = VertexSemantic::Position; return static_cast<int>(outSemantic); }
-            if (semantic == "NORMAL") { outSemantic = VertexSemantic::Normal;   return static_cast<int>(outSemantic); }
-            if (semantic == "TANGENT") { outSemantic = VertexSemantic::Tangent;  return static_cast<int>(outSemantic); }
-            if (semantic == "BINORMAL") { outSemantic = VertexSemantic::Binormal;  return static_cast<int>(outSemantic); }
-            if (semantic == "TEXCOORD0") { outSemantic = VertexSemantic::TexCoord0; return static_cast<int>(outSemantic); }
-            if (semantic == "COLOR") { outSemantic = VertexSemantic::Color;    return static_cast<int>(outSemantic); }
-			if (semantic == "BONEINDICES") { outSemantic = VertexSemantic::BoneIndices; return static_cast<int>(outSemantic); }
-			if (semantic == "BONEWEIGHTS") { outSemantic = VertexSemantic::BoneWeights; return static_cast<int>(outSemantic); }
-            outSemantic = VertexSemantic::Unknown;
-            return -1;
-        }
+        static int GetLocationBySemantic(const std::string& semantic, Prism::VertexSemantic& outSemantic);
     #pragma endregion
 
     public:
