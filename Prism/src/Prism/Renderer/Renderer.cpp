@@ -6,6 +6,7 @@
 
 #include "SceneRenderer.h"
 #include "RendererAPI.h"
+#include "Renderer2D.h"
 
 #include "Camera/Camera.h"
 
@@ -72,6 +73,8 @@ namespace Prism
 
 		s_Data.m_FullscreenQuadVertexArray->AddVertexBuffer(quadVB);
 		s_Data.m_FullscreenQuadVertexArray->SetIndexBuffer(quadIB);
+
+		Renderer2D::Init();
 	}
 
 	const Scope<ShaderLibrary>& Renderer::GetShaderLibrary()
@@ -196,6 +199,38 @@ namespace Prism
 			Renderer::Submit([submesh, material]() {
 				glDrawElementsBaseVertex(GL_TRIANGLES, submesh.IndexCount, GL_UNSIGNED_INT, (void*)(sizeof(uint32_t) * submesh.BaseIndex), submesh.BaseVertex);
 			});
+		}
+	}
+
+	void Renderer::DrawAABB(const Ref<Mesh>& mesh, const glm::vec4& color /*= glm::vec4(1.0f)*/)
+	{
+		for (Submesh& submesh : mesh->m_Submeshes)
+		{
+			const auto& transform = submesh.Transform;
+			glm::vec4 min = { submesh.Min.x, submesh.Min.y, submesh.Min.z, 1.0f };
+			glm::vec4 max = { submesh.Max.x, submesh.Max.y, submesh.Max.z, 1.0f };
+
+			glm::vec4 corners[8] =
+			{
+				transform * glm::vec4 { submesh.Min.x, submesh.Min.y, submesh.Max.z, 1.0f },
+				transform * glm::vec4 { submesh.Min.x, submesh.Max.y, submesh.Max.z, 1.0f },
+				transform * glm::vec4 { submesh.Max.x, submesh.Max.y, submesh.Max.z, 1.0f },
+				transform * glm::vec4 { submesh.Max.x, submesh.Min.y, submesh.Max.z, 1.0f },
+
+				transform * glm::vec4 { submesh.Min.x, submesh.Min.y, submesh.Min.z, 1.0f },
+				transform * glm::vec4 { submesh.Min.x, submesh.Max.y, submesh.Min.z, 1.0f },
+				transform * glm::vec4 { submesh.Max.x, submesh.Max.y, submesh.Min.z, 1.0f },
+				transform * glm::vec4 { submesh.Max.x, submesh.Min.y, submesh.Min.z, 1.0f }
+			};
+
+			for (uint32_t i = 0; i < 4; i++)
+				Renderer2D::DrawLine(corners[i], corners[(i + 1) % 4], color);
+
+			for (uint32_t i = 0; i < 4; i++)
+				Renderer2D::DrawLine(corners[i + 4], corners[((i + 1) % 4) + 4], color);
+
+			for (uint32_t i = 0; i < 4; i++)
+				Renderer2D::DrawLine(corners[i], corners[i + 4], color);
 		}
 	}
 

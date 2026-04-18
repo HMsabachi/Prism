@@ -18,13 +18,14 @@
 #include "imgui/imgui.h"
 #include "Prism/ImGui/ImGuiLayer.h"
 // ---Renderer-
-#include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Shader/PrismShader.h"
 #include "Prism/Renderer/ComputeShader/ComputeShader.h"
 #include "Prism/Renderer/Shader/GlobalUniforms.h"
 
 
 // --- Prism Render API ------------------------------
+#include "Prism/Renderer/Renderer.h"
+#include "Prism/Renderer/Renderer2D.h"
 #include "Prism/Renderer/RenderPass.h"
 #include "Prism/Renderer/VertexArray.h"
 #include "Prism/Renderer/Texture.h"

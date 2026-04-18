@@ -3,13 +3,13 @@ Shader "Prism/Renderer2D"
     Properties
     {
     }
-    
+
     RenderCommand
     {
         Blend SrcAlpha OneMinusSrcAlpha
         Cull Off
         ZTest Off
-        ZWrite Off
+        ZWrite On
     }
 
     SubShader
@@ -26,8 +26,8 @@ Shader "Prism/Renderer2D"
                 attribute vec3 a_Position : POSITION;
                 attribute vec4 a_Color : COLOR;
                 attribute vec2 a_TexCoord : TEXCOORD0;
-                attribute float a_TexIndex : OTHER0;
-                attribute float a_TilingFactor : OTHER1;
+                attribute float a_TexIndex : INDEX0;
+                attribute float a_TilingFactor : OTHER0;
 
                 uniform sampler2D u_Textures[32];
 

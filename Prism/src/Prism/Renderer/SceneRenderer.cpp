@@ -5,6 +5,7 @@
 
 #include "Shader/GlobalUniforms.h"
 #include "Renderer.h"
+#include "Renderer2D.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -197,6 +198,13 @@ namespace Prism
 		if (GetOptions().ShowGrid)
 		{
 			Renderer::SubmitQuad(s_Data.GridMaterial, glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::mat4(1.0f), glm::vec3(16.0f)));
+		}
+		if (GetOptions().ShowBoundingBoxes)
+		{
+			Renderer2D::BeginScene(s_Data.SceneData.SceneCamera.GetViewProjection());
+			for (auto& dc : s_Data.DrawList)
+				Renderer::DrawAABB(dc.Mesh);
+			Renderer2D::EndScene();
 		}
 
 		Renderer::EndRenderPass();

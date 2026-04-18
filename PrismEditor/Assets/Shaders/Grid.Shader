@@ -6,6 +6,7 @@ Shader "Custom/Grid"
     {
         u_Scale("网格缩放", Float) = 16.025
         u_Res("网格分辨率", Float) = 0.025
+        u_CullAlpha("剔除透明度", Range(0.0, 1.0)) = 0.1
     }
 
     RenderCommand
@@ -55,6 +56,7 @@ Shader "Custom/Grid"
                     float resolution = u_Res;
 
                     float x = grid(vs_Output.TexCoord * scale, resolution);
+                    if (x > u_CullAlpha) discard;
                     FragColor = vec4(vec3(0.2), 0.5) * (1.0 - x);
                 }
             }

@@ -99,12 +99,17 @@ namespace Prism
 			m_Scene = CreateRef<Scene>("Model Scene");
 			m_Scene->SetCamera(Camera(glm::perspectiveFov(glm::radians(45.0f), 1280.0f, 720.0f, 0.1f, 10000.0f)));
 			m_Scene->SetEnvironment(environment);
-			m_MeshEntity = m_Scene->CreateEntity();
-			auto mesh = CreateRef<Mesh>("assets/models/m1911/m1911.fbx");
+			m_MeshEntity = m_Scene->CreateEntity("Test Entity");
+			auto mesh = CreateRef<Mesh>("assets/meshes/TestScene.fbx");
 			//auto mesh = CreateRef<Mesh>("assets/meshes/cerberus/CerberusMaterials.fbx");
 			// auto mesh = CreateRef<Mesh>("assets/models/m1911/M1911Materials.fbx");
 			m_MeshEntity->SetMesh(mesh);
 			m_MeshMaterial = mesh->GetMaterial();
+
+			auto secondEntity = m_Scene->CreateEntity("Gun Entity");
+			secondEntity->Transform() = glm::translate(glm::mat4(1.0f), { 5, 5, 5 }) * glm::scale(glm::mat4(1.0f), { 10, 10, 10 });
+			mesh = CreateRef<Mesh>("assets/models/m1911/m1911.fbx");
+			secondEntity->SetMesh(mesh);
 		}
 
 		// Sphere Scene
@@ -166,10 +171,6 @@ namespace Prism
 
 	void EditorLayer::OnUpdate()
 	{
-		// THINGS TO LOOK AT:
-		// - BRDF LUT
-		// - Cubemap mips and filtering
-		// - Tonemapping and proper HDR pipeline
 		using namespace Prism;
 		using namespace glm;
 
@@ -214,7 +215,16 @@ namespace Prism
 		}
 		m_ActiveScene->OnUpdate();
 
-		//Renderer::SubmitMesh(m_PlaneMesh, glm::scale(glm::mat4(1.0f), glm::vec3(16.0f)), m_GridMaterial);
+		if (m_DrawOnTopBoundingBoxes)
+		{
+			Prism::Renderer::BeginRenderPass(Prism::SceneRenderer::GetFinalRenderPass(), false);
+			auto viewProj = m_Scene->GetCamera().GetViewProjection();
+			Prism::Renderer2D::BeginScene(viewProj, false);
+			//Prism::Renderer2D::DrawQuad({ 0, 0, 0 }, { 4.0f, 5.0f }, { 1.0f, 1.0f, 0.5f, 1.0f });
+			Renderer::DrawAABB(m_MeshEntity->GetMesh());
+			Prism::Renderer2D::EndScene();
+			Prism::Renderer::EndRenderPass();
+		}
 	}
 
 	void EditorLayer::Property(const std::string& name, glm::vec4& value, float min /*= -1.0f*/, float max /*= 1.0f*/, PropertyFlag flags /*= PropertyFlag::None*/)

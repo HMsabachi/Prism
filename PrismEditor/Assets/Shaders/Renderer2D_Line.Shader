@@ -10,8 +10,8 @@ Shader "Prism/Renderer2D_Line"
     {
         Blend SrcAlpha OneMinusSrcAlpha
         Cull Off
-        ZTest Off
-        ZWrite Off
+        ZTest LEqual
+        ZWrite On
     }
 
     SubShader

@@ -96,7 +96,6 @@ namespace Prism {
 			submesh.BaseIndex = indexCount;
 			submesh.MaterialIndex = mesh->mMaterialIndex;
 			submesh.IndexCount = mesh->mNumFaces * 3;
-			m_Submeshes.push_back(submesh);
 
 			vertexCount += mesh->mNumVertices;
 			indexCount += submesh.IndexCount;
@@ -107,12 +106,19 @@ namespace Prism {
 			// Vertices
 			if (m_IsAnimated)
 			{
+				submesh.Min = { FLT_MAX, FLT_MAX, FLT_MAX };
+				submesh.Max = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
 				for (size_t i = 0; i < mesh->mNumVertices; i++)
 				{
 					AnimatedVertex vertex;
 					vertex.Position = { mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z };
 					vertex.Normal = { mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z };
-
+					submesh.Min.x = glm::min(vertex.Position.x, submesh.Min.x);
+					submesh.Min.y = glm::min(vertex.Position.y, submesh.Min.y);
+					submesh.Min.z = glm::min(vertex.Position.z, submesh.Min.z);
+					submesh.Max.x = glm::max(vertex.Position.x, submesh.Max.x);
+					submesh.Max.y = glm::max(vertex.Position.y, submesh.Max.y);
+					submesh.Max.z = glm::max(vertex.Position.z, submesh.Max.z);
 					if (mesh->HasTangentsAndBitangents())
 					{
 						vertex.Tangent = { mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z };
@@ -152,6 +158,7 @@ namespace Prism {
 					m_StaticVertices.push_back(vertex);
 				}
 			}
+			m_Submeshes.push_back(submesh);
 
 			// Indices
 			for (size_t i = 0; i < mesh->mNumFaces; i++)
