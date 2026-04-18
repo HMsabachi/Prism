@@ -163,8 +163,6 @@ namespace Prism
 		environmentShader->SetImageCube(irradiance, "o_OutputCube", irradianceMap);
 		environmentShader->Dispatch(irradiance, irradianceMapSize / 32, irradianceMapSize / 32, 6);
 
-
-		Renderer::WaitAndRender();
 		return { envFiltered, irradianceMap };
 	}
 

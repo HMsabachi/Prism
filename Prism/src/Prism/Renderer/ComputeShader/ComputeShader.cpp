@@ -6,10 +6,12 @@
 
 #include "../Buffer/ShaderStorageBuffer.h"
 #include "../Texture.h"
+#include "../Renderer.h"
 
 
 namespace Prism
 {
+
 	std::vector<Ref<ComputeShader>> ComputeShader::s_AllComputeShader;
 
 	Ref<ComputeShader> ComputeShader::Create(const std::string& filePath)
@@ -168,14 +170,20 @@ namespace Prism
 	void ComputeShader::Dispatch(int32_t kernel, uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ)
 	{
 		if (!IsLegalID(kernel)) return;
+		std::unordered_set<Ref<Texture>> usedTextures;
+		std::unordered_set<Ref<ShaderStorageBuffer>> usedBuffer;
 		auto& k = m_Kernels[kernel];
 		k.shader->Bind();
 		for (auto& res : m_Resources)
 		{
 			if (auto ssbo = res.ssbo.lock())
+			{
+				usedBuffer.insert(ssbo);
 				ssbo->Bind(res.binding);
+			}
 			if (auto texture = res.texture2D.lock())
 			{
+				usedTextures.insert(texture);
 				if (IsImage(res.type))
 					texture->BindImage(res.binding, GetTextureAccess(res.type), res.layered, res.level);
 				else
@@ -183,12 +191,17 @@ namespace Prism
 			}
 			if (auto textureCube = res.textureCube.lock())
 			{
+				usedTextures.insert(textureCube);
 				if (IsImage(res.type))
 					textureCube->BindImage(res.binding, GetTextureAccess(res.type), res.layered, res.level);
 				else
 					textureCube->Bind(res.binding);
 			}
 		}
+		Renderer::Submit([=]() {
+			auto used1 = usedTextures;
+			auto used2 = usedBuffer;
+		});
 		k.shader->DispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
 	}
 }

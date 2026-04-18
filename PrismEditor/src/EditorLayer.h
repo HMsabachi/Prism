@@ -55,7 +55,7 @@ namespace Prism
 
 		float m_GridScale = 16.025f, m_GridSize = 0.025f;
 	private:
-		//Scope<SceneHierarchyPanel> m_SceneHierarchyPanel;
+		Scope<SceneHierarchyPanel> m_SceneHierarchyPanel;
 
 		Ref<Scene> m_Scene;
 		Ref<Scene> m_SphereScene;
