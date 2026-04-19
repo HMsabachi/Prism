@@ -223,13 +223,24 @@ namespace Prism
 		}
 		m_ActiveScene->OnUpdate();
 
-		if (m_DrawOnTopBoundingBoxes)
+		if (m_DrawOnTopBoundingBoxes) 
 		{
 			Prism::Renderer::BeginRenderPass(Prism::SceneRenderer::GetFinalRenderPass(), false);
 			auto viewProj = m_Scene->GetCamera().GetViewProjection();
 			Prism::Renderer2D::BeginScene(viewProj, false);
 			//Prism::Renderer2D::DrawQuad({ 0, 0, 0 }, { 4.0f, 5.0f }, { 1.0f, 1.0f, 0.5f, 1.0f });
 			Renderer::DrawAABB(m_MeshEntity->GetMesh(), m_MeshEntity->GetTransform());
+			Prism::Renderer2D::EndScene();
+			Prism::Renderer::EndRenderPass();
+		}
+
+		if (m_SelectedSubmeshes.size())
+		{
+			Prism::Renderer::BeginRenderPass(Prism::SceneRenderer::GetFinalRenderPass(), false);
+			auto viewProj = m_Scene->GetCamera().GetViewProjection();
+			Prism::Renderer2D::BeginScene(viewProj, false);
+			auto& submesh = m_SelectedSubmeshes[0];
+			Renderer::DrawAABB(submesh.Mesh->BoundingBox, m_MeshEntity->GetTransform() * submesh.Mesh->Transform);
 			Prism::Renderer2D::EndScene();
 			Prism::Renderer::EndRenderPass();
 		}
@@ -586,8 +597,8 @@ namespace Prism
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 		ImGui::Begin("Viewport");
+		auto viewportOffset = ImGui::GetCursorPos();
 		auto viewportSize = ImGui::GetContentRegionAvail();
-		
 		SceneRenderer::SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
 		m_ActiveScene->GetCamera().SetProjectionMatrix(glm::perspectiveFov(glm::radians(45.0f), viewportSize.x, viewportSize.y, 0.1f, 10000.0f));
 		m_ActiveScene->GetCamera().SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
@@ -596,17 +607,29 @@ namespace Prism
 		static int counter = 0;
 		auto windowSize = ImGui::GetWindowSize();
 		ImVec2 minBound = ImGui::GetWindowPos();
+		minBound.x += viewportOffset.x;
+		minBound.y += viewportOffset.y;
 		ImVec2 maxBound = { minBound.x + windowSize.x, minBound.y + windowSize.y };
+		m_ViewportBounds[0] = { minBound.x, minBound.y };
+		m_ViewportBounds[1] = { maxBound.x, maxBound.y };
 		m_AllowViewportCameraEvents = ImGui::IsMouseHoveringRect(minBound, maxBound);
 		// Gizmos
-		if (m_GizmoType != -1)
+		if (m_GizmoType != -1 && m_CurrentlySelectedTransform)
 		{
 			float rw = (float)ImGui::GetWindowWidth();
 			float rh = (float)ImGui::GetWindowHeight();
 			ImGuizmo::SetOrthographic(false);
 			ImGuizmo::SetDrawlist();
 			ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, rw, rh);
-			ImGuizmo::Manipulate(glm::value_ptr(m_ActiveScene->GetCamera().GetViewMatrix()), glm::value_ptr(m_ActiveScene->GetCamera().GetProjectionMatrix()), (ImGuizmo::OPERATION)m_GizmoType, ImGuizmo::LOCAL, glm::value_ptr(m_MeshEntity->Transform()));
+			
+			bool snap = Input::IsKeyPressed(PR_KEY_LEFT_CONTROL);
+			ImGuizmo::Manipulate(glm::value_ptr(m_ActiveScene->GetCamera().GetViewMatrix()* m_MeshEntity->Transform()),
+				glm::value_ptr(m_ActiveScene->GetCamera().GetProjectionMatrix()),
+				(ImGuizmo::OPERATION)m_GizmoType,
+				ImGuizmo::LOCAL,
+				glm::value_ptr(*m_CurrentlySelectedTransform),
+				nullptr,
+				snap ? &m_SnapValue : nullptr);
 		}
 		ImGui::End();
 		ImGui::PopStyleVar();
@@ -663,6 +686,7 @@ namespace Prism
 		}
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<KeyPressedEvent>(PR_BIND_EVENT_FN(EditorLayer::OnKeyPressedEvent));
+		dispatcher.Dispatch<MouseButtonPressedEvent>(PR_BIND_EVENT_FN(EditorLayer::OnMouseButtonPressed));
 	}
 	bool EditorLayer::OnKeyPressedEvent(KeyPressedEvent& e)
 	{
@@ -695,6 +719,82 @@ namespace Prism
 			break;
 		}
 		return false;
+	}
+
+	bool EditorLayer::OnMouseButtonPressed(MouseButtonPressedEvent& e)
+	{
+		auto [mx, my] = Input::GetMousePosition();
+		if (e.GetMouseButton() == PR_MOUSE_BUTTON_LEFT && !Input::IsKeyPressed(PR_KEY_LEFT_ALT) &&
+			!ImGuizmo::IsOver())
+		{
+			auto [mouseX, mouseY] = GetMouseViewportSpace();
+			if (mouseX > -1.0f && mouseX < 1.0f && mouseY > -1.0f && mouseY < 1.0f)
+			{
+				auto [origin, direction] = CastRay(mouseX, mouseY);
+
+				m_SelectedSubmeshes.clear();
+				auto mesh = m_MeshEntity->GetMesh();
+				auto& submeshes = mesh->GetSubmeshes();
+				constexpr float lastT = std::numeric_limits<float>::max();
+				for (uint32_t i = 0; i < submeshes.size(); i++)
+				{
+					auto& submesh = submeshes[i];
+					Ray ray = {
+						glm::inverse(m_MeshEntity->GetTransform() * submesh.Transform) * glm::vec4(origin, 1.0f),
+						glm::inverse(glm::mat3(m_MeshEntity->GetTransform()) * glm::mat3(submesh.Transform)) * direction
+					};
+
+					float t;
+					bool intersects = ray.IntersectsAABB(submesh.BoundingBox, t);
+					if (intersects)
+					{
+						const auto& triangleCache = mesh->GetTriangleCache(i);
+						for (const auto& triangle : triangleCache)
+						{
+							if (ray.IntersectsTriangle(triangle.V0.Position, triangle.V1.Position, triangle.V2.Position, t))
+							{
+								PR_WARN("INTERSECTION: {0}, t={1}", submesh.NodeName, t);
+								m_SelectedSubmeshes.push_back({ &submesh, t });
+								break;
+							}
+						}
+					}
+				}
+				std::sort(m_SelectedSubmeshes.begin(), m_SelectedSubmeshes.end(), [](auto& a, auto& b) { return a.Distance < b.Distance; });
+
+				// TODO: Handle mesh being deleted, etc.
+				if (m_SelectedSubmeshes.size())
+					m_CurrentlySelectedTransform = &m_SelectedSubmeshes[0].Mesh->Transform;
+				else
+					m_CurrentlySelectedTransform = &m_MeshEntity->Transform();
+
+			}
+		}
+		return false;
+	}
+	std::pair<float, float> EditorLayer::GetMouseViewportSpace()
+	{
+		auto [mx, my] = ImGui::GetMousePos();
+		mx -= m_ViewportBounds[0].x;
+		my -= m_ViewportBounds[0].y;
+		auto viewportWidth = m_ViewportBounds[1].x - m_ViewportBounds[0].x;
+		auto viewportHeight = m_ViewportBounds[1].y - m_ViewportBounds[0].y;
+
+		return { (mx / viewportWidth) * 2.0f - 1.0f, ((my / viewportHeight) * 2.0f - 1.0f) * -1.0f };
+	}
+
+	std::pair<glm::vec3, glm::vec3> EditorLayer::CastRay(float mx, float my)
+	{
+		glm::vec4 mouseClipPos = { mx, my, -1.0f, 1.0f };
+
+		auto inverseProj = glm::inverse(m_Scene->GetCamera().GetProjectionMatrix());
+		auto inverseView = glm::inverse(glm::mat3(m_Scene->GetCamera().GetViewMatrix()));
+
+		glm::vec4 ray = inverseProj * mouseClipPos;
+		glm::vec3 rayPos = m_Scene->GetCamera().GetPosition();
+		glm::vec3 rayDir = inverseView * glm::vec3(ray);
+
+		return { rayPos, rayDir };
 	}
 
 }

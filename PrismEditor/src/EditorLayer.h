@@ -37,8 +37,8 @@ namespace Prism
 		virtual void OnImGuiRender() override;
 
 		virtual void OnEvent(Event& event) override;
-
 		bool OnKeyPressedEvent(KeyPressedEvent& e);
+		bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
 
 		bool Property(const std::string& name, bool& value);
 		void Property(const std::string& name, float& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
@@ -50,6 +50,9 @@ namespace Prism
 		void Property(const std::string& name, glm::vec4& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
 
 		void ShowBoundingBoxes(bool show, bool onTop = false);
+	private:
+		std::pair<float, float> GetMouseViewportSpace();
+		std::pair<glm::vec3, glm::vec3> CastRay(float mx, float my);
 	private:
 		std::vector<Ref<MaterialInstance>> m_MetalSphereMaterialInstances;
 		std::vector<Ref<MaterialInstance>> m_DielectricSphereMaterialInstances;
@@ -115,12 +118,22 @@ namespace Prism
 		// Editor resources
 		Ref<Texture2D> m_CheckerboardTex;
 
+		glm::vec2 m_ViewportBounds[2]; 
 		int m_GizmoType = -1; //  no gizmo
-
+		float m_SnapValue = 0.5f;
 		bool m_AllowViewportCameraEvents = true;
 		bool m_DrawOnTopBoundingBoxes = false;
 
 		bool m_UIShowBoundingBoxes = false;
 		bool m_UIShowBoundingBoxesOnTop = false;
+
+
+		struct SelectedSubmesh
+		{
+			Submesh* Mesh;
+			float Distance;
+		};
+		std::vector<SelectedSubmesh> m_SelectedSubmeshes;
+		glm::mat4* m_CurrentlySelectedTransform = nullptr;
 	};
 }
