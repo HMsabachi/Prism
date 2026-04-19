@@ -21,9 +21,9 @@ namespace Prism {
 			});
 	}
 
-	void OpenGLFramebuffer::Resize(uint32_t width, uint32_t height)
+	void OpenGLFramebuffer::Resize(uint32_t width, uint32_t height, bool forceRecreate)
 	{
-		if (m_Specification.Width == width && m_Specification.Height == height)
+		if ((m_Specification.Width == width && m_Specification.Height == height) && !forceRecreate)
 			return;
 
 		m_Specification.Width = width;
@@ -46,20 +46,15 @@ namespace Prism {
 					glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &m_ColorAttachment);
 					glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, m_ColorAttachment);
 
-					// TODO: Create Prism texture object based on format here
+					// TODO: 这里创建Prism Texture Object
 					if (m_Specification.Format == FramebufferFormat::RGBA16F)
 					{
 						glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, m_Specification.Samples, GL_RGBA16F, m_Specification.Width, m_Specification.Height, GL_FALSE);
-						//glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, m_Specification.Samples, GL_RGBA16F, m_Specification.Width, m_Specification.Height, GL_FALSE);
 					}
 					else if (m_Specification.Format == FramebufferFormat::RGBA8)
 					{
-						// glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 8, GL_RGBA8, m_Specification.Width, m_Specification.Height, GL_TRUE);
 						glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, m_Specification.Samples, GL_RGBA8, m_Specification.Width, m_Specification.Height, GL_FALSE);
-					}
-					// glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-					// glTexParameteri(GL_TEXTURE_2D_MULTISAMPLE, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-					// glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, m_ColorAttachment, 0);
+					}				
 					glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 				}
 				else
@@ -100,8 +95,6 @@ namespace Prism {
 					);
 					glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, m_DepthAttachment, 0);
 				}
-
-				// glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_ColorAttachment, 0);
 				if (multisample)
 					glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, m_ColorAttachment, 0);
 				else

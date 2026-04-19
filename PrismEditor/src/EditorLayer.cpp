@@ -91,6 +91,17 @@ namespace Prism
 
 
 		#pragma endregion
+		#pragma region ImGuizmo Style
+		ImGuizmo::Style& style = ImGuizmo::GetStyle();
+		style.TranslationLineThickness = 3.0f;
+		style.TranslationLineArrowSize = 9.0f;
+		style.RotationLineThickness = 2.0f;
+		style.RotationOuterLineThickness = 3.0f;
+		style.ScaleLineThickness = 3.0f;
+		style.ScaleLineCircleSize = 9.0f;
+		style.HatchedAxisLineThickness = 6.0f;
+		style.CenterCircleSize = 9.0f;
+		#pragma endregion
 
 		using namespace glm;
 		auto environment = Environment::Load("Assets/env/birchwood_4k.hdr");
@@ -108,7 +119,7 @@ namespace Prism
 
 			auto secondEntity = m_Scene->CreateEntity("Gun Entity");
 			secondEntity->Transform() = glm::translate(glm::mat4(1.0f), { 5, 5, 5 }) * glm::scale(glm::mat4(1.0f), { 10, 10, 10 });
-			mesh = CreateRef<Mesh>("assets/models/m1911/m1911.fbx");
+			mesh = CreateRef<Mesh>("assets/models/m1911/M1911Materials.fbx");
 			secondEntity->SetMesh(mesh);
 		}
 
@@ -160,8 +171,9 @@ namespace Prism
 		m_PlaneMesh.reset(new Mesh("Assets/Models/Plane1m.obj"));
 		// Editor
 		m_CheckerboardTex = Texture2D::Create("assets/editor/Checkerboard.tga");
-		m_Light.Direction = { -0.5f, -0.5f, 1.0f };
-		m_Light.Radiance = { 1.0f, 1.0f, 1.0f };
+		auto& light = m_Scene->GetLight();
+		light.Direction = { -0.5f, -0.5f, 1.0f };
+		light.Radiance = { 1.0f, 1.0f, 1.0f };
 	}
 
 	void EditorLayer::OnDetach()
@@ -178,8 +190,6 @@ namespace Prism
 		m_MeshMaterial->Set("u_Metalness", m_MetalnessInput.Value);
 		m_MeshMaterial->Set("u_Roughness", m_RoughnessInput.Value);
 
-		m_MeshMaterial->Set("u_LightDirection", m_Light.Direction);
-		m_MeshMaterial->Set("u_LightRadiance", m_Light.Radiance);
 		m_MeshMaterial->Set("u_RadiancePrefilter", m_RadiancePrefilter ? 1.0f : 0.0f);
 		m_MeshMaterial->Set("u_AlbedoTexToggle", m_AlbedoInput.UseTexture ? 1.0f : 0.0f);
 		m_MeshMaterial->Set("u_NormalTexToggle", m_NormalInput.UseTexture ? 1.0f : 0.0f);
@@ -200,8 +210,6 @@ namespace Prism
 		m_SphereBaseMaterial->Set("u_Metalness", m_MetalnessInput.Value);
 		m_SphereBaseMaterial->Set("u_Roughness", m_RoughnessInput.Value);
 
-		m_SphereBaseMaterial->Set("u_LightDirection", m_Light.Direction);
-		m_SphereBaseMaterial->Set("u_LightRadiance", m_Light.Radiance);
 		m_SphereBaseMaterial->Set("u_RadiancePrefilter", m_RadiancePrefilter ? 1.0f : 0.0f);
 		m_SphereBaseMaterial->Set("u_AlbedoTexToggle", m_AlbedoInput.UseTexture ? 1.0f : 0.0f);
 		m_SphereBaseMaterial->Set("u_NormalTexToggle", m_NormalInput.UseTexture ? 1.0f : 0.0f);
@@ -221,7 +229,7 @@ namespace Prism
 			auto viewProj = m_Scene->GetCamera().GetViewProjection();
 			Prism::Renderer2D::BeginScene(viewProj, false);
 			//Prism::Renderer2D::DrawQuad({ 0, 0, 0 }, { 4.0f, 5.0f }, { 1.0f, 1.0f, 0.5f, 1.0f });
-			Renderer::DrawAABB(m_MeshEntity->GetMesh());
+			Renderer::DrawAABB(m_MeshEntity->GetMesh(), m_MeshEntity->GetTransform());
 			Prism::Renderer2D::EndScene();
 			Prism::Renderer::EndRenderPass();
 		}
@@ -385,9 +393,10 @@ namespace Prism
 		ImGui::Columns(2);
 		ImGui::AlignTextToFramePadding();
 
-		Property("Light Direction", m_Light.Direction);
-		Property("Light Radiance", m_Light.Radiance, PropertyFlag::ColorProperty);
-		Property("Light Multiplier", m_LightMultiplier, 0.0f, 5.0f);
+		auto& light = m_Scene->GetLight();
+		Property("Light Direction", light.Direction);
+		Property("Light Radiance", light.Radiance, PropertyFlag::ColorProperty);
+		Property("Light Multiplier", light.Multiplier, 0.0f, 5.0f);
 		Property("Exposure", m_ActiveScene->GetCamera().GetExposure(), 0.0f, 5.0f);
 
 		Property("Radiance Prefiltering", m_RadiancePrefilter);

@@ -486,8 +486,4 @@ namespace Prism
 		return s_Data.Stats;
 	}
 
-	static void UpdateGlobalsUBO()
-	{
-		
-	}
 }

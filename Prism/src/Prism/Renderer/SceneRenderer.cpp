@@ -23,6 +23,7 @@ namespace Prism
 			// Resources
 			Ref<MaterialInstance> SkyboxMaterial;
 			Environment SceneEnvironment;
+			Light ActiveLight;
 			PrismGlobalsUBO SceneUniforms;
 
 		} SceneData;
@@ -98,7 +99,7 @@ namespace Prism
 		s_Data.SceneData.SceneCamera = scene->m_Camera;
 		s_Data.SceneData.SkyboxMaterial = scene->m_SkyboxMaterial;
 		s_Data.SceneData.SceneEnvironment = scene->m_Environment;
-
+		s_Data.SceneData.ActiveLight = scene->m_Light;
 		UpdateGlobalsUBO();
 	}
 
@@ -203,7 +204,7 @@ namespace Prism
 		{
 			Renderer2D::BeginScene(s_Data.SceneData.SceneCamera.GetViewProjection());
 			for (auto& dc : s_Data.DrawList)
-				Renderer::DrawAABB(dc.Mesh);
+				Renderer::DrawAABB(dc.Mesh, dc.Transform);
 			Renderer2D::EndScene();
 		}
 
@@ -269,9 +270,7 @@ namespace Prism
 		sceneUniforms.InverseViewProjection = glm::inverse(sceneUniforms.ViewProjection);
 		float time = Prism::Time::GetTime();
 		sceneUniforms.Time = glm::vec4(time * 0.2f, time, time * 2, time * 3);
-		Renderer::Submit([=]() {
-			Prism::GlobalUniforms::UpdateGlobalUniform(sceneUniforms);
-			});
+		sceneUniforms.Lights[0] = s_Data.SceneData.ActiveLight;
+		GlobalUniforms::UpdateGlobalUniform(sceneUniforms);
 	}
-
 }

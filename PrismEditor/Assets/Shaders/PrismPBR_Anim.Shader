@@ -98,21 +98,12 @@ Shader "Custom/SimplePBR_Animated"
                     vs_Output.Binormal = mat3(boneTransform) * a_Binormal;
                     vs_Output.WorldTransform = mat3(u_ModelMatrix);
 
-                    gl_Position = u_ViewProjectionMatrix * u_ModelMatrix * vec4(a_Position, 1.0);
+                    //gl_Position = u_ViewProjectionMatrix * u_ModelMatrix * vec4(a_Position, 1.0);
                     gl_Position = u_ViewProjectionMatrix * u_ModelMatrix * localPosition;
                 }
 
-
-                const int LightCount = 1;
-
                 // Constant normal incidence Fresnel factor for all dielectrics.
                 const vec3 Fdielectric = vec3(0.04);
-
-                struct Light {
-                    vec3 Direction;
-                    vec3 Radiance;
-                };
-                uniform Light lights;
 
                 struct PBRParameters
                 {
@@ -141,10 +132,10 @@ Shader "Custom/SimplePBR_Animated"
                 vec3 Lighting(vec3 F0)
                 {
                     vec3 result = vec3(0.0);
-                    for(int i = 0; i < LightCount; i++)
+                    for(int i = 0; i < PRISM_MAX_LIGHTS; i++)
                     {
-                        vec3 Li = -u_LightDirection;
-                        vec3 Lradiance = u_LightRadiance;
+                        vec3 Li = Prism_Lights[i].Direction;
+                        vec3 Lradiance = Prism_Lights[i].Radiance * Prism_Lights[i].Multiplier;
                         vec3 Lh = normalize(Li + m_Params.View);
 
                         // Calculate angles between surface normal and various light vectors.

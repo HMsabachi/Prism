@@ -38,6 +38,8 @@ namespace Prism {
 		glm::vec3 GetForwardDirection();
 		const glm::vec3& GetPosition() const { return m_Position; }
 	private:
+		void UpdateCameraView();
+
 		bool OnMouseScroll(MouseScrolledEvent& e);
 
 		void MousePan(const glm::vec2& delta);

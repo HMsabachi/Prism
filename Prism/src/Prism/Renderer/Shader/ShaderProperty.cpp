@@ -118,7 +118,6 @@ namespace Prism
 	PropertyDeclaration::PropertyDeclaration(Type type, const std::string& name, const std::string displayName, uint32_t count /*= 1*/) 
 		: m_Name(name), m_DisplayName(displayName), m_Count(count), m_Type(type), m_Size(SizeOfType(type)* count), m_Offset(0)
 	{
-
 	}
 	// ------------------------PropertyDeclaration-------------------------------------
 
@@ -126,7 +125,6 @@ namespace Prism
 	PropertyBufferDeclaration::PropertyBufferDeclaration()
 		:m_Size(0)
 	{
-
 	}
 	void PropertyBufferDeclaration::Shutdown()
 	{
@@ -188,6 +186,22 @@ namespace Prism
 	}
 
 	const Prism::PropertyBufferDeclaration& ShaderProperty::GetDeclaration() const { return m_Declaration; }
+
+	uint32_t ShaderProperty::GetTextureSlot(const std::string& name) const
+	{
+		const PropertyDeclaration* decl = GetDeclaration().FindUniform(name);
+		switch (decl->GetType())	
+		{
+		case PropertyDeclaration::Type::Texture2D:
+		case PropertyDeclaration::Type::Texture2DMS:
+		case PropertyDeclaration::Type::TextureCube:
+			break;
+		default:
+			PR_CORE_ERROR("Property {0} is not a texture type!", name);
+			PR_CORE_ASSERT(false, "");
+		}
+		return decl->GetValue<uint32_t>(m_DefaultValueBuffer);
+	}
 
 	void ShaderProperty::HandlePropertyValue(const std::vector<PropertyDescriptor>& properties)
 	{
@@ -287,5 +301,5 @@ namespace Prism
 		}
 	}
 
-#pragma endregion
+	#pragma endregion
 }

@@ -102,14 +102,6 @@ namespace Prism
 		};
 		RoughnessInput m_RoughnessInput;
 
-		struct Light
-		{
-			glm::vec3 Direction;
-			glm::vec3 Radiance;
-		};
-		Light m_Light;
-		float m_LightMultiplier = 0.3f;
-
 		bool m_RadiancePrefilter = false;
 
 		float m_EnvMapRotation = 0.0f;

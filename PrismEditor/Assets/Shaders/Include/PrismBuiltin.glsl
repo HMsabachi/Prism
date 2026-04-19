@@ -1,4 +1,12 @@
 // ==================== Prism 引擎全局 Uniform Block ====================
+
+struct Prism_Light
+{
+	vec3 Direction;
+	vec3 Radiance;
+	float Multiplier;
+};
+const int PRISM_MAX_LIGHTS = 1;
 layout(std140, binding = 0) uniform PrismGlobals
 {
     mat4 Prism_ViewProjection;   // VP 矩阵（View * Projection）
@@ -13,6 +21,7 @@ layout(std140, binding = 0) uniform PrismGlobals
     float Prism_DeltaTime;       // 帧间隔（秒）
     float Prism_AspectRatio;     // 屏幕宽高比
     vec2  Prism_Resolution;      // 屏幕分辨率 (width, height)
+    Prism_Light Prism_Lights[PRISM_MAX_LIGHTS];
     
 };
 uniform mat4 Prism_Model; // 当前物体的 Model 矩阵（每个 DrawCall 更新）

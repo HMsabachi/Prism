@@ -74,9 +74,10 @@ namespace Prism
 		uint32_t GetSize() const  { return m_Size; }
 		uint32_t GetCount() const  { return m_Count; }
 		uint32_t GetOffset() const  { return m_Offset; }
-
 		inline Type GetType() const { return m_Type; }
 		inline bool IsArray() const { return m_Count > 1; }
+		template<typename T>
+		T& GetValue(const Buffer& buffer) const { return *((T*)buffer.Data[m_Offset]); }
 	protected:
 		void SetOffset(uint32_t offset)  { m_Offset = offset; }
 	private:
@@ -130,5 +131,6 @@ namespace Prism
 			auto data = GetDataFromPropertyType(*declaration, m_DefaultValueBuffer);
 			return *(const T*)(data.first);
 		}
+		uint32_t GetTextureSlot(const std::string& name) const;
 	};
 }

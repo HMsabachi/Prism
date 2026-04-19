@@ -34,15 +34,11 @@ namespace Prism {
 		// Called when window refreshes 窗口刷新时调用
 		virtual void OnUpdate() = 0;
 
-		virtual unsigned int GetWidth() const = 0;
-		virtual unsigned int GetHeight() const = 0;
+		virtual uint32_t GetWidth() const = 0;
+		virtual uint32_t GetHeight() const = 0;
 		virtual std::pair<float, float> GetWindowPos() const = 0;
 
-		
-		/// <summary>
-		/// 设置事件回调函数
-		/// </summary>
-		/// <param name="callback">一个function指针 形如void func(Event& e)</param>
+
 		virtual void SetEventCallback(const EventCallbackFn& callback) = 0;
 
 		virtual void SetVSync(bool enabled) = 0;
