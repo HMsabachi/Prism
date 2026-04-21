@@ -36,6 +36,7 @@ namespace Prism
 			new (storageBuffer) FuncT(std::forward<FuncT>(func));
 		}
 		static void Init();
+		static Ref<ShaderLibrary> GetShaderLibrary();
 
 		static void Clear();
 		static void Clear(float r, float g, float b, float a = 1.0f);
@@ -48,20 +49,20 @@ namespace Prism
 		static void SetLineThickness(float thickness);
 		static void MemoryBarriers(RendererAPI::BarrierFlags flags);
 
-		static const Scope<ShaderLibrary>& GetShaderLibrary();
 
-		static void BeginRenderPass(const Ref<RenderPass>& renderPass, bool clear = true);
+		static void BeginRenderPass(Ref<RenderPass> renderPass, bool clear = true);
 		static void EndRenderPass();
 
 		static void WaitAndRender();	
 
-		static void SubmitQuad(const Ref<MaterialInstance>& material, const glm::mat4& transform = glm::mat4(1.0f));
-		static void SubmitFullscreenQuad(const Ref<MaterialInstance>& material);
-		static void SubmitMesh(const Ref<Mesh>& mesh, const glm::mat4& transform, const Ref<MaterialInstance>& overrideMaterial = nullptr);
+		static void SubmitQuad(Ref<MaterialInstance> material, const glm::mat4& transform = glm::mat4(1.0f));
+		static void SubmitFullscreenQuad(Ref<MaterialInstance> material);
+		static void SubmitMesh(Ref<Mesh> mesh, const glm::mat4& transform, Ref<MaterialInstance> overrideMaterial = nullptr);
 
 
 		static void DrawAABB(const AABB& aabb, const glm::mat4& transform, const glm::vec4& color = glm::vec4(1.0f,0.0f,0.0f,1.0f));
-		static void DrawAABB(const Ref<Mesh>& mesh, const glm::mat4& transform, const glm::vec4& color = glm::vec4(1.0f,0.0f,0.0f,1.0f));	private:
+	static void DrawAABB(Ref<Mesh> mesh, const glm::mat4& transform, const glm::vec4& color = glm::vec4(1.0f));
+	private:
 		static RenderCommandQueue& GetRenderCommandQueue();
 	};
 }

@@ -43,32 +43,34 @@ namespace Prism {
 
 	void OpenGLVertexArray::Bind() const
 	{
-		Renderer::Submit([this]() {
-			glBindVertexArray(m_RendererID);
+		Ref<const OpenGLVertexArray> instance = this;
+		Renderer::Submit([instance]() {
+			glBindVertexArray(instance->m_RendererID);
 			});
 	}
 
 	void OpenGLVertexArray::Unbind() const
 	{
-		Renderer::Submit([this]() {
+		Ref<const OpenGLVertexArray> instance = this;
+		Renderer::Submit([instance]() {
 			glBindVertexArray(0);
 			});
 	}
 
-	void OpenGLVertexArray::AddVertexBuffer(const std::shared_ptr<VertexBuffer>& vertexBuffer)
+	void OpenGLVertexArray::AddVertexBuffer(const Ref<VertexBuffer>& vertexBuffer)
 	{
 		PR_CORE_ASSERT(vertexBuffer->GetLayout().GetElements().size(), "Vertex Buffer has no layout!");
 
 		this->Bind();
 		vertexBuffer->Bind();
 
-		Renderer::Submit([this, vertexBuffer]() {
+		Ref<OpenGLVertexArray> instance = this;
+		Renderer::Submit([instance, vertexBuffer]() mutable {
 			auto i = BufferElement::DEFAULT_VERTEX_SEMANTICS;
 			const auto& layout = vertexBuffer->GetLayout();
 			for (const auto& element : layout)
 			{
 				int index = element.GetIndex() != BufferElement::DEFAULT_VERTEX_SEMANTICS ? element.GetIndex() : i++;
-				PR_CORE_INFO("Adding vertex buffer element with index {0} and name {1}", index, element.Name);
  				auto glBaseType = ShaderDataTypeToOpenGLBaseType(element.Type);
 				glEnableVertexAttribArray(index);
 				if (glBaseType == GL_INT)
@@ -90,12 +92,12 @@ namespace Prism {
 				}
 				
 			}
-			m_VertexBufferIndex += i - BufferElement::DEFAULT_VERTEX_SEMANTICS;
+			instance->m_VertexBufferIndex += i - BufferElement::DEFAULT_VERTEX_SEMANTICS;
 			});
 		m_VertexBuffers.push_back(vertexBuffer);
 	}
 
-	void OpenGLVertexArray::SetIndexBuffer(const std::shared_ptr<IndexBuffer>& indexBuffer)
+	void OpenGLVertexArray::SetIndexBuffer(const Ref<IndexBuffer>& indexBuffer)
 	{
 		Bind();
 		indexBuffer->Bind();

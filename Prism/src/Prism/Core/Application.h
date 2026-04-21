@@ -39,12 +39,11 @@ namespace Prism
 
 		inline static Application& Get() { return *s_Instance; }
 		inline Window& GetWindow() const { return *m_Window; }
-	private:
-		virtual void OnInit() {}
-		virtual void OnShutdown() {}
+	protected:
+		virtual void OnInit();
+		virtual void OnShutdown();
 		virtual void RenderImGui();
-
-
+	private:
 		void ImGuiRenderer();
 
 	private:

@@ -5,7 +5,7 @@
 namespace Prism
 {
 
-	class PRISM_API ShaderStorageBuffer
+	class PRISM_API ShaderStorageBuffer : public RefCounted
 	{
 	public:
 		static Ref<ShaderStorageBuffer> Create(uint32_t size, BufferUsage usage = BufferUsage::Dynamic);

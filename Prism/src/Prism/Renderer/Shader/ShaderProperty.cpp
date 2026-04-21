@@ -69,7 +69,7 @@ namespace Prism
 		// -----------------Texture2D---------------------
 		Texture2D::operator bool() const
 		{
-			return texture != nullptr;
+			return texture;
 		}
 		Texture2D::operator uint32_t() const
 		{
@@ -91,7 +91,7 @@ namespace Prism
 		// -----------------TextureCube---------------------
 		TextureCube::operator bool() const
 		{
-			return texture != nullptr;
+			return texture;
 		}
 		TextureCube::operator uint32_t() const
 		{

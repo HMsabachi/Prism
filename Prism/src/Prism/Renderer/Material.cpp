@@ -10,7 +10,7 @@ namespace Prism
 	// ///////////////////////////////////////////////////////
 	Prism::Ref<Prism::Material> Material::Create(const Ref<PrismShader>& shader)
 	{
-		return CreateRef<Material>(shader);
+		return Ref<Material>::Create(shader);
 	}
 	Material::Material(const Ref<PrismShader>& shader)
 		: m_Shader(shader), m_ShaderProperty(shader->GetProperty()), m_ShaderCommand(shader->GetShaderCommand())
@@ -48,14 +48,14 @@ namespace Prism
 		for (auto mi : m_MaterialInstances)
 			mi->OnShaderReloaded();
 	}
-	void Material::Bind() const
+	void Material::Bind()
 	{
 		m_Shader->Bind();
 		if (m_PropertyBuffer)
 			m_Shader->SetProperty(m_PropertyBuffer);
 		BindTextures();
 	}
-	void Material::BindTextures() const
+	void Material::BindTextures()
 	{
 		for (size_t i = 0; i < m_Textures.size(); i++)
 		{
@@ -79,7 +79,7 @@ namespace Prism
 	// //////////////////////////////////////////////////////////////
 	Prism::Ref<Prism::MaterialInstance> MaterialInstance::Create(const Ref<Material>& material)
 	{
-		return CreateRef<MaterialInstance>(material);
+		return Ref<MaterialInstance>::Create(material);
 	}
 	MaterialInstance::MaterialInstance(const Ref<Material>& material)
 		: m_Material(material)
@@ -110,7 +110,7 @@ namespace Prism
 			buffer.Write(materialBuffer.Data + decl->GetOffset(), decl->GetSize(), decl->GetOffset());
 		}
 	}
-	void MaterialInstance::Bind() const
+	void MaterialInstance::Bind()
 	{
 		m_Material->m_Shader->Bind();
 		if (m_PropertyBuffer)

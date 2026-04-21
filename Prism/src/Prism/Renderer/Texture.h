@@ -25,7 +25,7 @@ namespace Prism {
 		ReadWrite = 2
 	};
 
-	class PRISM_API Texture
+	class PRISM_API Texture : public RefCounted
 	{
 	public:
 		virtual ~Texture() {}

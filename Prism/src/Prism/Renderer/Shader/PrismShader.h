@@ -11,7 +11,7 @@
 namespace Prism
 {
 	using ShaderReloadedCallback = std::function<void()>;
-	class PRISM_API PrismShader
+	class PRISM_API PrismShader : public RefCounted
 	{
 	public:
 		static Ref<PrismShader> Create(const std::string& path);
@@ -26,7 +26,7 @@ namespace Prism
 		void Load(const std::string& source);
 
 	public:
-		void Bind() const;
+		void Bind();
 		void SetProperty(const Buffer& buffer);
 
 		void AddShaderReloadedCallback(const ShaderReloadedCallback& callback);
@@ -37,12 +37,12 @@ namespace Prism
 	#pragma region 设置原生uniform
 	public:
 		void SetMat4FromRenderThread(const std::string& name, const glm::mat4& value);
-		void SetInt(const std::string& name, int value) const;
+		void SetInt(const std::string& name, int value) ;
 		void SetIntArray(const std::string& name, int* values, uint32_t size);
-		void SetFloat(const std::string& name, float value) const;
-		void SetVec3(const std::string& name, const glm::vec3& value) const;
-		void SetVec4(const std::string& name, const glm::vec4& value) const;
-		void SetMat4(const std::string& name, const glm::mat4& value) const;
+		void SetFloat(const std::string& name, float value) ;
+		void SetVec3(const std::string& name, const glm::vec3& value) ;
+		void SetVec4(const std::string& name, const glm::vec4& value) ;
+		void SetMat4(const std::string& name, const glm::mat4& value) ;
 	#pragma endregion
 
 	private:
@@ -71,7 +71,7 @@ namespace Prism
 	}
 
 	// 目前这个类只是一个简单的容器，负责存储和管理所有的Shader实例，提供添加、加载和获取Shader的功能。未来可能会扩展为更复杂的资源管理系统。
-	class PRISM_API ShaderLibrary
+	class PRISM_API ShaderLibrary : public RefCounted
 	{
 	public:
 		ShaderLibrary();
@@ -81,7 +81,7 @@ namespace Prism
 		void Load(const std::string& path);
 		void Load(const std::string& name, const std::string& path);
 
-		Ref<PrismShader>& Get(const std::string& name);
+		const Ref<PrismShader>& Get(const std::string& name) const;
 	private:
 		std::unordered_map<std::string, Ref<PrismShader>> m_Shaders;
 	};

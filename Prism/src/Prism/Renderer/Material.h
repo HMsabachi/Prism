@@ -5,7 +5,7 @@
 
 namespace Prism
 {
-	class PRISM_API Material
+	class PRISM_API Material : public RefCounted
 	{
 		friend class MaterialInstance;
 
@@ -15,7 +15,7 @@ namespace Prism
 		Material(const Ref<PrismShader>& shader);
 		virtual ~Material();
 
-		void Bind() const;
+		void Bind();
 
 		#pragma region Set函数
 		template <typename T>
@@ -60,7 +60,7 @@ namespace Prism
 		const PropertyDeclaration* FindPropertyDeclaration(const std::string& name) const;
 		void AllocateStorage();
 		void OnShaderReloaded();
-		void BindTextures() const;
+		void BindTextures();
 		const ShaderCommand& GetShaderCommand() { return m_ShaderCommand; }
 		void InitTextures();
 		Buffer& GetPropertyBuffer() { return m_PropertyBuffer; }
@@ -75,7 +75,7 @@ namespace Prism
 
 	};
 
-	class PRISM_API MaterialInstance
+	class PRISM_API MaterialInstance : public RefCounted
 	{
 		friend class Material;
 	public:
@@ -124,7 +124,7 @@ namespace Prism
 #pragma endregion
 
 	public:
-		void Bind() const;
+		void Bind();
 		Ref<PrismShader> GetShader() const { return m_Material->m_Shader; }
 	private:
 		void AllocateStorage();

@@ -12,9 +12,10 @@ namespace Prism
 	OpenGLShaderStorageBuffer::OpenGLShaderStorageBuffer(size_t size, BufferUsage usage)
 		:m_Size(size), m_Usage(usage), m_RendererID(0)
 	{
-		Renderer::Submit([this]() {
-			glCreateBuffers(1, &m_RendererID);
-			glNamedBufferData(m_RendererID, m_Size, nullptr, OpenGLUsage(m_Usage));
+		Ref<OpenGLShaderStorageBuffer> instance = this;
+		Renderer::Submit([instance]() mutable {
+			glCreateBuffers(1, &instance->m_RendererID);
+			glNamedBufferData(instance->m_RendererID, instance->m_Size, nullptr, OpenGLUsage(instance->m_Usage));
 		});
 	}
 
@@ -28,33 +29,37 @@ namespace Prism
 
 	void OpenGLShaderStorageBuffer::Bind(uint32_t bindingPoint) const
 	{
-		Renderer::Submit([this, bindingPoint]() {
-			m_BindingPoint = bindingPoint;
-			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindingPoint, m_RendererID);
+		Ref<const OpenGLShaderStorageBuffer> instance = this;
+		Renderer::Submit([instance, bindingPoint]() {
+			instance->m_BindingPoint = bindingPoint;
+			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindingPoint, instance->m_RendererID);
 		});
 	}
 
 	void OpenGLShaderStorageBuffer::Unbind() const
 	{
-		Renderer::Submit([this]() {
-			m_BindingPoint = 0;
+		Ref<const OpenGLShaderStorageBuffer> instance = this;
+		Renderer::Submit([instance]() {
+			instance->m_BindingPoint = 0;
 			glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
 		});
 	}
 
 	void OpenGLShaderStorageBuffer::SetData(const void* data, size_t size, size_t offset /*= 0*/)
 	{
+		Ref<const OpenGLShaderStorageBuffer> instance = this;
 		Renderer::Submit([=]() {
 			if (data == nullptr || size == 0)
 				return;
-			glNamedBufferSubData(m_RendererID, static_cast<GLintptr>(offset), size, data);
+			glNamedBufferSubData(instance->m_RendererID, static_cast<GLintptr>(offset), size, data);
 		});
 	}
 	void OpenGLShaderStorageBuffer::GetData(void* data, size_t size, size_t offset, bool sync) const
 	{
+		Ref<const OpenGLShaderStorageBuffer> instance = this;
 		Renderer::Submit([=]() {
 			if (data == nullptr || size == 0) return;
-			glGetNamedBufferSubData(m_RendererID, static_cast<GLintptr>(offset), size, data);
+			glGetNamedBufferSubData(instance->m_RendererID, static_cast<GLintptr>(offset), size, data);
 		});
 
 		// TODO: 会卡住渲染线程

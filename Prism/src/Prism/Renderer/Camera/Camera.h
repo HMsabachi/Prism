@@ -28,7 +28,7 @@ namespace Prism {
 
 		const glm::mat4& GetProjectionMatrix() const { return m_ProjectionMatrix; }
 		const glm::mat4& GetViewMatrix() const { return m_ViewMatrix; }
-		const glm::mat4& GetViewProjection() const { return m_ProjectionMatrix * m_ViewMatrix; }
+		glm::mat4 GetViewProjection() const { return m_ProjectionMatrix * m_ViewMatrix; }
 
 		float GetExposure() const { return m_Exposure; }
 		float& GetExposure() { return m_Exposure; }
@@ -37,6 +37,11 @@ namespace Prism {
 		glm::vec3 GetRightDirection();
 		glm::vec3 GetForwardDirection();
 		const glm::vec3& GetPosition() const { return m_Position; }
+		glm::quat GetOrientation() const;
+		
+
+		float GetPitch() const { return m_Pitch; }
+		float GetYaw() const { return m_Yaw; }
 	private:
 		void UpdateCameraView();
 
@@ -47,7 +52,6 @@ namespace Prism {
 		void MouseZoom(float delta);
 
 		glm::vec3 CalculatePosition();
-		glm::quat GetOrientation();
 
 		std::pair<float, float> PanSpeed() const;
 		float RotationSpeed() const;

@@ -12,14 +12,14 @@ namespace Prism
 
 	Ref<PrismShader> PrismShader::Create(const std::string& path)
 	{
-		Ref<PrismShader> shader = CreateRef<PrismShader>(path);
+		Ref<PrismShader> shader = Ref<PrismShader>::Create(path);
 		s_AllShaders.push_back(shader);
 		return shader;
 	}
 
 	Ref<PrismShader> PrismShader::CreateFromString(const std::string& source)
 	{
-		Ref<PrismShader> shader = CreateRef<PrismShader>();
+		Ref<PrismShader> shader = Ref<PrismShader>::Create();
 		shader->Load(source);
 		s_AllShaders.push_back(shader);
 		return shader;
@@ -57,7 +57,7 @@ namespace Prism
 			return;
 		}
 		m_Name = m_ParseResult.ShaderName;
-		m_Shader.reset(Shader::Create(m_Name, m_ParseResult.Passes[0].VertexShaderCode, m_ParseResult.Passes[0].FragmentShaderCode));
+		m_Shader.Reset(Shader::Create(m_Name, m_ParseResult.Passes[0].VertexShaderCode, m_ParseResult.Passes[0].FragmentShaderCode));
 		m_ShaderProperty.Init(m_ParseResult.Properties);
 		m_ShaderCommand = ParseShaderCommand(m_ParseResult.RenderCommand);
 		SetProperty(m_ShaderProperty.GetDefaultValueBuffer());
@@ -65,7 +65,7 @@ namespace Prism
 			callback();
 	}
 
-	void PrismShader::Bind() const
+	void PrismShader::Bind()
 	{
 		m_Shader->Bind();
 		m_Shader->ApplyCommand(m_ShaderCommand);
@@ -141,7 +141,7 @@ namespace Prism
 	{
 		m_Shader->SetMat4FromRenderThread(name, value);
 	}
-	void PrismShader::SetInt(const std::string& name, int value) const
+	void PrismShader::SetInt(const std::string& name, int value) 
 	{
 		m_Shader->SetInt(name, value);
 	}
@@ -151,20 +151,20 @@ namespace Prism
 		m_Shader->SetIntArray(name, values, size);
 	}
 
-	void PrismShader::SetFloat(const std::string& name, float value) const
+	void PrismShader::SetFloat(const std::string& name, float value) 
 	{
 		m_Shader->SetFloat(name, value);
 	}
-	void PrismShader::SetVec3(const std::string& name, const glm::vec3& value) const
+	void PrismShader::SetVec3(const std::string& name, const glm::vec3& value) 
 	{
 		m_Shader->SetVec3(name, value);
 	}
-	void PrismShader::SetVec4(const std::string& name, const glm::vec4& value) const
+	void PrismShader::SetVec4(const std::string& name, const glm::vec4& value) 
 	{
 		m_Shader->SetVec4(name, value);
 	}
 
-	void PrismShader::SetMat4(const std::string& name, const glm::mat4& value) const
+	void PrismShader::SetMat4(const std::string& name, const glm::mat4& value) 
 	{
 		m_Shader->SetMat4(name, value);
 	}
@@ -204,10 +204,10 @@ namespace Prism
 		m_Shaders[name] = Ref<PrismShader>(PrismShader::Create(path));
 	}
 
-	Ref<PrismShader>& ShaderLibrary::Get(const std::string& name)
+	const Ref<PrismShader>& ShaderLibrary::Get(const std::string& name) const
 	{
 		PR_CORE_ASSERT(m_Shaders.find(name) != m_Shaders.end());
-		return m_Shaders[name];
+		return m_Shaders.at(name);
 	}
 
 }

@@ -10,7 +10,7 @@ namespace Prism
 		switch (RendererAPI::Current())
 		{
 		case RendererAPIType::None:   return nullptr;
-		case RendererAPIType::OpenGL:  return CreateRef<OpenGLShaderStorageBuffer>(size, usage);
+		case RendererAPIType::OpenGL:  return Ref<OpenGLShaderStorageBuffer>::Create(size, usage);
 		}
 	}
 

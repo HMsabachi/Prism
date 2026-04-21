@@ -23,7 +23,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "Prism/Core/Log.h"
-#include "Prism/Core/Core.h"
+#include "Prism/Core/Ref.h"
 #include "Prism/Core/Time.h"
 #include "Prism/Debug/Instrumentor.h"
 #include "Prism/Core/Buffer.h"

@@ -28,7 +28,7 @@ namespace Prism
 		alignas(4) float Multiplier = 1.0f;
 	};
 
-	class PRISM_API Scene
+	class PRISM_API Scene : public RefCounted
 	{
 	public:
 		Scene(const std::string& debugName = "Scene");

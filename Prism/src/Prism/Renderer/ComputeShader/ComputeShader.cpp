@@ -4,7 +4,6 @@
 #include "ComputeShaderParserData.h"
 #include "ComputeShaderParser.h"
 
-#include "../Buffer/ShaderStorageBuffer.h"
 #include "../Texture.h"
 #include "../Renderer.h"
 
@@ -16,7 +15,7 @@ namespace Prism
 
 	Ref<ComputeShader> ComputeShader::Create(const std::string& filePath)
 	{
-		auto shader = CreateRef<ComputeShader>(filePath);
+		auto shader = Ref<ComputeShader>::Create(filePath);
 		s_AllComputeShader.push_back(shader);
 		return shader;
 	}
@@ -54,7 +53,7 @@ namespace Prism
 			k.groupSizeX = kernel.numThreads[0];
 			k.groupSizeY = kernel.numThreads[1];
 			k.groupSizeZ = kernel.numThreads[2];
-			k.shader.reset(Shader::Create(m_Name, kernel.source));
+			k.shader.Reset(Shader::Create(m_Name, kernel.source));
 			m_Kernels.push_back(k);
 		}
 	}
@@ -176,12 +175,12 @@ namespace Prism
 		k.shader->Bind();
 		for (auto& res : m_Resources)
 		{
-			if (auto ssbo = res.ssbo.lock())
+			if (auto ssbo = res.ssbo)
 			{
 				usedBuffer.insert(ssbo);
 				ssbo->Bind(res.binding);
 			}
-			if (auto texture = res.texture2D.lock())
+			if (auto texture = res.texture2D)
 			{
 				usedTextures.insert(texture);
 				if (IsImage(res.type))
@@ -189,7 +188,7 @@ namespace Prism
 				else
 					texture->Bind(res.binding);
 			}
-			if (auto textureCube = res.textureCube.lock())
+			if (auto textureCube = res.textureCube)
 			{
 				usedTextures.insert(textureCube);
 				if (IsImage(res.type))
@@ -204,4 +203,5 @@ namespace Prism
 		});
 		k.shader->DispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
 	}
+
 }

@@ -10,6 +10,8 @@
 #include "Prism/Renderer/Buffer/Framebuffer.h"
 #include "PrismShaderParser.h"
 
+#include "Scripting/ScriptEngine.h"
+
 
 #include <imgui.h>
 #include <GLFW/glfw3.h>
@@ -111,6 +113,17 @@ namespace Prism
 	}
 #pragma region Private Methods 私有方法
 
+	void Application::OnInit()
+	{
+		// 初始化脚本引擎
+		Scripting::ScriptingHost::Initialize();
+	}
+
+	void Application::OnShutdown()
+	{
+		Scripting::ScriptingHost::Shutdown();
+	}
+
 	void Application::RenderImGui()
 	{
 		PR_PROFILE_FUNCTION();
@@ -172,8 +185,7 @@ namespace Prism
 		auto& fbs = FramebufferPool::GetGlobal()->GetAll();
 		for (auto& fb : fbs)
 		{
-			if (auto fbp = fb.lock())
-				fbp->Resize(width, height);
+			fb->Resize(width, height);
 		}
 
 		m_Minimized = false;

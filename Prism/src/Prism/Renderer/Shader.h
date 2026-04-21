@@ -14,7 +14,7 @@ namespace Prism
 
 namespace Prism
 {
-	class PRISM_API Shader
+	class PRISM_API Shader : public RefCounted
 	{
 	public:
 		virtual ~Shader() = default;

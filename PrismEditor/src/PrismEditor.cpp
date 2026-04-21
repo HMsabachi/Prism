@@ -13,6 +13,7 @@ public:
 
 	virtual void OnInit() override
 	{
+		Application::OnInit();
 		PushLayer(new Prism::EditorLayer());
 	}
 };

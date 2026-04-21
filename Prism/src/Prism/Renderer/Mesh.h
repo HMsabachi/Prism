@@ -120,7 +120,7 @@ namespace Prism {
 
 		std::string NodeName, MeshName;
 	};
-	class PRISM_API Mesh
+	class PRISM_API Mesh : public RefCounted
 	{
 	public:
 

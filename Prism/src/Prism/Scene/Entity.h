@@ -4,7 +4,7 @@
 namespace Prism 
 {
 
-	class PRISM_API Entity
+	class PRISM_API Entity : public RefCounted
 	{
 	public:
 		~Entity();

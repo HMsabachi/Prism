@@ -12,7 +12,7 @@ namespace Prism {
 		switch (RendererAPI::Current())
 		{
 		case RendererAPIType::None:    PR_CORE_ASSERT(false, "RendererAPI::None is currently not supported!"); return nullptr;
-		case RendererAPIType::OpenGL:  return std::make_shared<OpenGLRenderPass>(spec);
+		case RendererAPIType::OpenGL:  return Ref<OpenGLRenderPass>::Create(spec);
 		}
 
 		PR_CORE_ASSERT(false, "Unknown RendererAPI!");

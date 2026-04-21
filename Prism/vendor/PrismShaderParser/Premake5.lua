@@ -1,4 +1,4 @@
--- vendor/PrismShaderParser/premake5.lua
+﻿-- vendor/PrismShaderParser/premake5.lua
 -- PrismShaderParser 独立静态库
 -- 风格严格保持 Prism 引擎一致：中文注释、%{wks.location}、outputdir 等
 

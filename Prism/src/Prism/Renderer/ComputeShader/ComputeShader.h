@@ -1,9 +1,8 @@
 ﻿#pragma once
-
+#include "../Buffer/ShaderStorageBuffer.h"
 namespace Prism
 {
 	class Shader;
-	class ShaderStorageBuffer;
 	class Texture2D;
 	class TextureCube;
 	enum class ComputeShaderResourceType;
@@ -11,10 +10,10 @@ namespace Prism
 
 namespace Prism
 {
-	class PRISM_API ComputeShader
+	class PRISM_API ComputeShader : public RefCounted
 	{
 #pragma region 数据结构
-		struct PRISM_API Kernel
+		struct Kernel
 		{
 			Ref<Shader> shader;
 			std::string name;
@@ -22,16 +21,16 @@ namespace Prism
 			uint32_t groupSizeY;
 			uint32_t groupSizeZ;
 		};
-		struct PRISM_API Resource
+		struct Resource
 		{
 			ComputeShaderResourceType type;
 			std::string name;
 			uint32_t binding;
 			bool layered = true;
 			uint32_t level = 0;
-			std::weak_ptr<Texture2D> texture2D;
-			std::weak_ptr<TextureCube> textureCube;
-			std::weak_ptr<ShaderStorageBuffer> ssbo;
+			Ref<Texture2D> texture2D;
+			Ref<TextureCube> textureCube;
+			Ref<ShaderStorageBuffer> ssbo;
 		};
 #pragma endregion
 	public:

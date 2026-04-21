@@ -10,7 +10,7 @@ namespace Prism {
 		switch (RendererAPI::Current())
 		{
 		case RendererAPIType::None:   return nullptr;
-		case RendererAPIType::OpenGL:  return CreateRef<OpenGLVertexBuffer>(data, size, usage);
+		case RendererAPIType::OpenGL:  return Ref<OpenGLVertexBuffer>::Create(data, size, usage);
 		}
 	}
 
@@ -19,7 +19,7 @@ namespace Prism {
 		switch (RendererAPI::Current())
 		{
 		case RendererAPIType::None:    return nullptr;
-		case RendererAPIType::OpenGL:  return CreateRef<OpenGLVertexBuffer>(size, usage);
+		case RendererAPIType::OpenGL:  return Ref<OpenGLVertexBuffer>::Create(size, usage);
 		}
 		return nullptr;
 	}
@@ -29,10 +29,20 @@ namespace Prism {
 		switch (RendererAPI::Current())
 		{
 		case RendererAPIType::None:    return nullptr;
-		case RendererAPIType::OpenGL:  return CreateRef<OpenGLIndexBuffer>(data, size);
+		case RendererAPIType::OpenGL:  return Ref<OpenGLIndexBuffer>::Create(data, size);
 		}
 		return nullptr;
 
+	}
+	Ref<IndexBuffer> IndexBuffer::Create(uint32_t size)
+	{
+		switch (RendererAPI::Current())
+		{
+		case RendererAPIType::None:    return nullptr;
+		case RendererAPIType::OpenGL:  return Ref<OpenGLIndexBuffer>::Create(size);
+		}
+		PR_CORE_ASSERT(false, "Unknown RendererAPI");
+		return nullptr;
 	}
 
 #pragma region 布局相关

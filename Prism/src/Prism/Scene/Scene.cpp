@@ -44,13 +44,13 @@ namespace Prism {
 				mesh->OnUpdate(ts);
 		}
 
-		SceneRenderer::BeginScene(this);
+		SceneRenderer::BeginScene(this, m_Camera);
 
 		// Render entities
 		for (auto entity : m_Entities)
 		{
 			// TODO: Should we render (logically)
-			SceneRenderer::SubmitEntity(entity);
+			SceneRenderer::SubmitMesh(entity->GetMesh());
 		}
 
 		SceneRenderer::EndScene();

@@ -22,7 +22,7 @@
 
 namespace Prism {
 
-#define MESH_DEBUG_LOG 1
+#define MESH_DEBUG_LOG 0
 #if MESH_DEBUG_LOG
 #define PR_MESH_LOG(...) PR_CORE_TRACE(__VA_ARGS__)
 #else
@@ -84,8 +84,8 @@ namespace Prism {
 
 		m_IsAnimated = scene->mAnimations != nullptr;
 		m_MeshShader = m_IsAnimated ? Renderer::GetShaderLibrary()->Get("Custom/SimplePBR_Animated") : Renderer::GetShaderLibrary()->Get("Custom/SimplePBR_Static");
-		m_BaseMaterial = CreateRef<Material>(m_MeshShader);
-		// m_MaterialInstance = std::make_shared<MaterialInstance>(m_BaseMaterial);
+		m_BaseMaterial = Ref<Material>::Create(m_MeshShader);
+		// m_MaterialInstance = Ref<MaterialInstance>::Create(m_BaseMaterial);
 		m_InverseTransform = glm::inverse(Mat4FromAssimpMat4(scene->mRootNode->mTransformation));
 
 		uint32_t vertexCount = 0;
@@ -226,7 +226,7 @@ namespace Prism {
 				auto aiMaterial = scene->mMaterials[i];
 				auto aiMaterialName = aiMaterial->GetName();
 
-				auto mi = CreateRef<MaterialInstance>(m_BaseMaterial);
+				auto mi = Ref<MaterialInstance>::Create(m_BaseMaterial);
 				m_Materials[i] = mi;
 
 				PR_MESH_LOG("Material Name = {0}; Index = {1}", aiMaterialName.data, i);
@@ -280,7 +280,7 @@ namespace Prism {
 				mi->Set("u_NormalTexToggle", 0.0f);
 				if (aiMaterial->GetTexture(aiTextureType_NORMALS, 0, &aiTexPath) == AI_SUCCESS)
 				{
-					// TODO: Temp - this should be handled by Hazel's filesystem
+					// TODO: Temp - this should be handled by Prism's filesystem
 					std::filesystem::path path = filename;
 					auto parentPath = path.parent_path();
 					parentPath /= std::string(aiTexPath.data);
@@ -308,7 +308,7 @@ namespace Prism {
 				// mi->Set("u_RoughnessTexToggle", 0.0f);
 				if (aiMaterial->GetTexture(aiTextureType_SHININESS, 0, &aiTexPath) == AI_SUCCESS)
 				{
-					// TODO: Temp - this should be handled by Hazel's filesystem
+					// TODO: Temp - this should be handled by Prism's filesystem
 					std::filesystem::path path = filename;
 					auto parentPath = path.parent_path();
 					parentPath /= std::string(aiTexPath.data);
@@ -337,7 +337,7 @@ namespace Prism {
 #if 0	
 				if (aiMaterial->Get("$raw.ReflectionFactor|file", aiPTI_String, 0, aiTexPath) == AI_SUCCESS)
 				{
-					// TODO: Temp - this should be handled by Hazel's filesystem
+					// TODO: Temp - this should be handled by Prism's filesystem
 					std::filesystem::path path = filename;
 					auto parentPath = path.parent_path();
 					parentPath /= std::string(aiTexPath.data);

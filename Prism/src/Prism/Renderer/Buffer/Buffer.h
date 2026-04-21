@@ -73,7 +73,7 @@ namespace Prism {
 
 #pragma endregion
 
-	class PRISM_API VertexBuffer
+	class PRISM_API VertexBuffer : public RefCounted
 	{
 	public:
 		virtual ~VertexBuffer() {}
@@ -91,7 +91,7 @@ namespace Prism {
 		static Ref<VertexBuffer> Create(uint32_t size = 0, BufferUsage usage = BufferUsage::Dynamic);
 	};
 
-	class PRISM_API IndexBuffer
+	class PRISM_API IndexBuffer : public RefCounted
 	{
 	public:
 		virtual ~IndexBuffer() {}
@@ -103,6 +103,7 @@ namespace Prism {
 		virtual uint32_t GetCount() const = 0;
 		virtual RendererID GetRendererID() const = 0;
 
+		static Ref<IndexBuffer> Create(uint32_t size);
 		static Ref<IndexBuffer> Create(void* data, uint32_t size = 0);
 	};
 
