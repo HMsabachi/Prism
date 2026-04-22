@@ -4,6 +4,17 @@
 namespace Prism
 {
 
+	Ray::Ray(const glm::vec3& origin, const glm::vec3& direction)
+	{
+		Origin = origin;
+		Direction = direction;
+	}
+
+	Prism::Ray Ray::Zero()
+	{
+		return { {0.0f, 0.0f, 0.0f},{0.0f, 0.0f, 0.0f} };
+	}
+
 	bool Ray::IntersectsAABB(const AABB& aabb, float& t) const
 	{
 		glm::vec3 dirfrac = 1.0f / Direction;

@@ -4,17 +4,17 @@
 #include <hostfxr.h>
 #include <coreclr_delegates.h>
 
-namespace Prism::Scripting
+namespace Prism
 {
 	// 全局函数指针
 	static hostfxr_initialize_for_runtime_config_fn s_InitFn = nullptr;
 	static hostfxr_get_runtime_delegate_fn s_GetDelegateFn = nullptr;
 	static hostfxr_close_fn s_CloseFn = nullptr;
 
-	void* ScriptingHost::s_HostHandle = nullptr;
-	void* ScriptingHost::s_AssemblyLoadContext = nullptr;
+	void* ScriptEngine::s_HostHandle = nullptr;
+	void* ScriptEngine::s_AssemblyLoadContext = nullptr;
 
-	bool ScriptingHost::Initialize()
+	bool ScriptEngine::Initialize()
 	{
 		PR_CORE_INFO("=== 开始初始化 .NET 9 脚本运行时 ===");
 		char_t hostfxrPath[MAX_PATH];
@@ -42,7 +42,7 @@ namespace Prism::Scripting
 		PR_CORE_INFO(".NET 9 hostfxr 初始化成功！");
 		return true;
 	}
-	void ScriptingHost::Shutdown()
+	void ScriptEngine::Shutdown()
 	{
 		if (s_HostHandle && s_CloseFn)
 		{
@@ -52,22 +52,27 @@ namespace Prism::Scripting
 		PR_CORE_INFO(".NET 9 脚本运行时已关闭");
 	}
 
-	bool ScriptingHost::LoadAssembly(const std::string& assemblyPath)
+	bool ScriptEngine::LoadAssembly(const std::string& assemblyPath)
 	{
 		return false;
 	}
 
-	void ScriptingHost::OnUpdate(float deltaTime)
+	void ScriptEngine::OnCreateEntity(Entity entity)
 	{
 
 	}
 
-	void ScriptingHost::OnFixedUpdate(float fixedDeltaTime)
+	void ScriptEngine::OnUpdateEntity(uint32_t entityID, float ts)
 	{
 
 	}
 
-	void ScriptingHost::RegisterEngineFunctions()
+	void ScriptEngine::OnInitEntity(ScriptComponent& script, uint32_t entityID, uint32_t sceneID)
+	{
+
+	}
+
+	void ScriptEngine::RegisterEngineFunctions()
 	{
 
 	}

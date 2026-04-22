@@ -48,7 +48,6 @@
   <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Dist|x64' ">
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="src\" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Prism\Prism.vcxproj">

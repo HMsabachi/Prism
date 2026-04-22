@@ -1,36 +1,63 @@
 ﻿#pragma once
 #include "Prism/Renderer/Mesh.h"
 
+#include "Scene.h"
+#include "Components.h"
+
 namespace Prism 
 {
 
 	class PRISM_API Entity : public RefCounted
 	{
 	public:
-		~Entity();
+		Entity() = default;
+		Entity(entt::entity handle, Scene* scene)
+			: m_EntityHandle(handle), m_Scene(scene) {
+		}
 
-		// TODO: 这里应该在Component中实现
-		void SetMesh(const Ref<Mesh>& mesh) { m_Mesh = mesh; }
-		Ref<Mesh> GetMesh() { return m_Mesh; }
+		~Entity() {}
 
-		void SetMaterial(const Ref<MaterialInstance>& material) { m_Material = material; }
-		Ref<MaterialInstance> GetMaterial() { return m_Material; }
+		template<typename T, typename... Args>
+		T& AddComponent(Args&&... args)
+		{
+			return m_Scene->m_Registry.emplace<T>(m_EntityHandle, std::forward<Args>(args)...);
+		}
 
-		const glm::mat4& GetTransform() const { return m_Transform; }
-		glm::mat4& Transform() { return m_Transform; }
+		template<typename T>
+		T& GetComponent()
+		{
+			return m_Scene->m_Registry.get<T>(m_EntityHandle);
+		}
+
+		template<typename T>
+		bool HasComponent()
+		{
+			return m_Scene->m_Registry.any_of<T>(m_EntityHandle);
+		}
+
+		glm::mat4& Transform() { return m_Scene->m_Registry.get<TransformComponent>(m_EntityHandle); }
+		const glm::mat4& Transform() const { return m_Scene->m_Registry.get<TransformComponent>(m_EntityHandle); }
 	
-		const std::string& GetName() const { return m_Name; }
+		operator uint32_t () const { return (uint32_t)m_EntityHandle; }
+		operator bool() const { return (uint32_t)m_EntityHandle && m_Scene; }
+
+		bool operator==(const Entity& other) const
+		{
+			return m_EntityHandle == other.m_EntityHandle && m_Scene == other.m_Scene;
+		}
+
+		bool operator!=(const Entity& other) const
+		{
+			return !(*this == other);
+		}
 	private:
 		Entity(const std::string& name);
 	private:
-		glm::mat4 m_Transform;
-		std::string m_Name;
-
-		// TODO: 临时
-		Ref<Mesh> m_Mesh;
-		Ref<MaterialInstance> m_Material;
+		entt::entity m_EntityHandle;
+		Scene* m_Scene = nullptr;
 
 		friend class Scene;
+		friend class ScriptEngine;
 	};
 
 }

@@ -21,6 +21,7 @@ IncludeDir["glm"] = "Prism/vendor/glm"
 IncludeDir["stb_image"] = "Prism/vendor/stb_image"
 IncludeDir["PrismShaderParser"] = "Prism/vendor/PrismShaderParser/src"
 IncludeDir["nethost"] = "Prism/vendor/nethost"
+IncludeDir["entt"] = "Prism/vendor/entt/include"
 
 LibraryDir = {}
 LibraryDir["nethost"] = "Prism/vendor/nethost"
@@ -69,7 +70,8 @@ project "Prism"
 		"%{IncludeDir.stb_image}",
 		"%{IncludeDir.PrismShaderParser}",
 		"%{prj.name}/vendor/assimp/include",
-		"%{IncludeDir.nethost}"
+		"%{IncludeDir.nethost}",
+		"%{IncludeDir.entt}"
 	}
 
 	libdirs
@@ -209,7 +211,8 @@ project "PrismEditor"
 		"Prism/vendor",
 		"%{IncludeDir.glm}",
 		"%{IncludeDir.PrismShaderParser}",
-		"%{IncludeDir.nethost}"
+		"%{IncludeDir.nethost}",
+		"%{IncludeDir.entt}"
 
 	}
 
@@ -268,3 +271,23 @@ project "PrismEditor"
 		{
 			("{COPY} ../Prism/vendor/assimp/bin/Release/ \"../bin/" .. outputdir .. "/%{prj.name}/\""),
 		}
+
+group "Examples"
+project "ExampleApp"
+	location "ExampleApp"
+	kind "SharedLib"
+	language "C#"
+
+	targetdir ("PrismEditor/assets/scripts")
+	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+
+	files 
+	{
+		"%{prj.name}/src/**.cs", 
+	}
+
+	links
+	{
+		"Prism.Scripting"
+	}
+group ""

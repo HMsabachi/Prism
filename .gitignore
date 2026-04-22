@@ -7,8 +7,11 @@ Future/
 # Files
 *.json
 *.user
-*.vcxproj.user
 *.sln
+*.vcxproj.user
 *.vcxproj
 *.vcxproj.filters
 *.ini
+*.targets
+*.csproj
+*.cache

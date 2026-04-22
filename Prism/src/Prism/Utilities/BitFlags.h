@@ -76,7 +76,10 @@ public:
     constexpr BitFlags operator^(Enum flag) const { return BitFlags(*this) ^= flag; }
 
     constexpr BitFlags& operator|=(Enum flag) { Set(flag); return *this; }
-    constexpr BitFlags& operator&=(Enum flag) { Reset(~flag); return *this; }  // 注意：这里用 Reset(~flag) 实现 &= 
+    constexpr BitFlags& operator&=(Enum flag) { 
+		m_value &= static_cast<UnderlyingType>(flag);
+		return *this;
+    } 
     constexpr BitFlags& operator^=(Enum flag) { Flip(flag); return *this; }
 };
 
@@ -88,30 +91,3 @@ constexpr bool HasFlag(Enum flags, Enum flagToCheck)
     using UT = std::underlying_type_t<Enum>;
     return (static_cast<UT>(flags) & static_cast<UT>(flagToCheck)) != 0;
 }
-
-template<typename Enum>
-constexpr Enum operator|(Enum a, Enum b)
-{
-    using UT = std::underlying_type_t<Enum>;
-    return static_cast<Enum>(static_cast<UT>(a) | static_cast<UT>(b));
-}
-
-template<typename Enum>
-constexpr Enum operator&(Enum a, Enum b)
-{
-    using UT = std::underlying_type_t<Enum>;
-    return static_cast<Enum>(static_cast<UT>(a) & static_cast<UT>(b));
-}
-
-template<typename Enum>
-constexpr Enum operator~(Enum a)
-{
-    using UT = std::underlying_type_t<Enum>;
-    return static_cast<Enum>(~static_cast<UT>(a));
-}
-
-template<typename Enum>
-constexpr Enum& operator|=(Enum& a, Enum b) { a = a | b; return a; }
-
-template<typename Enum>
-constexpr Enum& operator&=(Enum& a, Enum b) { a = a & b; return a; }

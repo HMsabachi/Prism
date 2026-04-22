@@ -41,7 +41,7 @@ namespace Prism
 		std::string& value = tokens.front();
 		if(value == "Off")
 		{
-			state.flags &= ~ShaderCommandFlag::Blend;
+			state.flags.Reset(ShaderCommandFlag::Blend);
 			tokens.pop();
 			return;
 		}
@@ -72,7 +72,7 @@ namespace Prism
 			if(state.cullMode != CullMode::Off)
 				state.flags |= ShaderCommandFlag::Cull;
 			else
-				state.flags &= ~ShaderCommandFlag::Cull;
+				state.flags.Reset(ShaderCommandFlag::Cull);
 			tokens.pop();
 		}
 	}
@@ -81,7 +81,7 @@ namespace Prism
 		tokens.pop();
 		if (tokens.front() == "Off")
 		{
-			state.flags &= ~ShaderCommandFlag::ZTest;
+			state.flags.Reset(ShaderCommandFlag::ZTest);
 			tokens.pop();
 			return;
 		}
@@ -100,7 +100,7 @@ namespace Prism
 			if (value == "On")
 				state.flags |= ShaderCommandFlag::ZWrite;
 			else if (value == "Off")
-				state.flags &= ~ShaderCommandFlag::ZWrite;
+				state.flags.Reset(ShaderCommandFlag::ZWrite);
 			tokens.pop();
 		}
 	}

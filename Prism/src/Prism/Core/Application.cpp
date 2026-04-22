@@ -115,13 +115,12 @@ namespace Prism
 
 	void Application::OnInit()
 	{
-		// 初始化脚本引擎
-		Scripting::ScriptingHost::Initialize();
+		ScriptEngine::Initialize();
 	}
 
 	void Application::OnShutdown()
 	{
-		Scripting::ScriptingHost::Shutdown();
+		ScriptEngine::Shutdown();
 	}
 
 	void Application::RenderImGui()

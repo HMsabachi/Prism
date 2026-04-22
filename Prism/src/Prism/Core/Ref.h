@@ -66,13 +66,6 @@ namespace Prism
 		{
 			IncRef();
 		}
-
-		Ref<T>& operator=(T* instance)
-		{
-			DecRef();
-			m_Instance = instance;
-			return *this;
-		}
 		Ref& operator=(std::nullptr_t)
 		{
 			DecRef();
@@ -123,6 +116,7 @@ namespace Prism
 
 		void Reset(T* instance = nullptr)
 		{
+			if (m_Instance == instance) return;
 			DecRef();
 			m_Instance = instance;
 			IncRef();

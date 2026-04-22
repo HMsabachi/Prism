@@ -1,8 +1,10 @@
 ﻿#pragma once
+#include "Prism/Scene/Components.h"
+#include "Prism/Scene/Entity.h"
 
-namespace Prism::Scripting
+namespace Prism
 {
-	class PRISM_API ScriptingHost
+	class PRISM_API ScriptEngine
 	{
 	public:
 		static bool Initialize();
@@ -11,11 +13,12 @@ namespace Prism::Scripting
 
 		static bool LoadAssembly(const std::string& assemblyPath);
 
-		static void OnUpdate(float deltaTime);
-		static void OnFixedUpdate(float fixedDeltaTime);
-
-
 		static void RegisterEngineFunctions();
+
+		static void OnCreateEntity(Entity entity);
+		static void OnUpdateEntity(uint32_t entityID, float ts);
+
+		static void OnInitEntity(ScriptComponent& script, uint32_t entityID, uint32_t sceneID);
 
 	private:
 
