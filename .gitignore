@@ -1,9 +1,12 @@
-# Directories
+﻿# Directories
 .vs/
 bin/
 bin-int/
 Future/
-
+PrismEditor/Assets/scripts
+ExampleApp/obj/
+Prism.Scripting/obj/
+Prism.Scripting/Prism.Scripting.csproj
 # Files
 *.json
 *.user
@@ -15,3 +18,4 @@ Future/
 *.targets
 *.csproj
 *.cache
+

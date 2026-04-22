@@ -156,6 +156,7 @@ project "Prism.Scripting"
 	location "Prism.Scripting"
 	kind "SharedLib"
 	language "C#"
+	platforms "x64"
 	dotnetframework "net9.0"          -- 使用 .NET 9
 	namespace "Prism"
 
@@ -167,17 +168,10 @@ project "Prism.Scripting"
 		"%{prj.name}/src/**.cs",       
 	}
 
-	-- 让 C# 可以 P/Invoke 调用 Prism.dll
-	links { "Prism" }
-
 	-- 允许 unsafe 代码（后面绑定结构体时会用到）
 	clr "Unsafe"
 
-	-- 输出路径和 PrismEditor 保持一致
-	postbuildcommands
-	{
-		'{COPY} "%{cfg.buildtarget.relpath}" "../bin/' .. outputdir .. '/PrismEditor/"'
-	}
+
 
 group ""
 
@@ -218,7 +212,9 @@ project "PrismEditor"
 
 	links
 	{
-		"Prism"
+		"Prism",
+		"Prism.Scripting",   
+    	"ExampleApp"         
 	}
 
 	filter "system:windows"
@@ -275,10 +271,12 @@ project "PrismEditor"
 group "Examples"
 project "ExampleApp"
 	location "ExampleApp"
+	dotnetframework "net9.0"      
+	platforms "x64"
 	kind "SharedLib"
 	language "C#"
-
-	targetdir ("PrismEditor/assets/scripts")
+	clr "Unsafe"
+	targetdir ("PrismEditor/Assets/Scripts")
 	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
 
 	files 

@@ -12,6 +12,7 @@ namespace Prism
 		static void Shutdown();
 
 		static bool LoadAssembly(const std::string& assemblyPath);
+		static bool LoadFunction(const std::wstring& className, const std::wstring& funcName, void** func);
 
 		static void RegisterEngineFunctions();
 
