@@ -104,6 +104,9 @@ project "Prism"
 	includedirs { "%{prj.name}/src/Scripting" }
 	links { "nethost" }   -- .NET 9 嵌入运行时必需的库
 
+	filter "files:%{prj.name}/src/Scripting/Native/**.cpp"
+   		flags { "NoPCH" }
+
 	filter "system:windows"
 		cppdialect "C++17"
 		systemversion "latest"

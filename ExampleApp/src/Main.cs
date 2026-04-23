@@ -13,7 +13,7 @@ namespace ExampleApp
         public static void Init()
         {
             Prism.Core.Init();
-            Prism.Log.PR_CORE_TRACE("Hello World!");
+            Prism.Log.Trace("Hello World!");
         }
     }
 }
