@@ -1,14 +1,14 @@
 ﻿// NativeString.cpp
 #include "prpch.h"
-#include "NativeString.h"
+#include "String.h"
 #include <cstring>
 #include <cstdlib>
 
 namespace Prism::Native
 {
-	NativeString CreateNativeString(const char* cstr)
+	String CreateNativeString(const char* cstr)
 	{
-		NativeString str = { nullptr, 0, 0 };
+		String str = { nullptr, 0, 0 };
 
 		if (cstr == nullptr) {
 			return str;
@@ -25,7 +25,7 @@ namespace Prism::Native
 		return str;
 	}
 
-	const char* NativeStringToCString(const NativeString* str)
+	const char* NativeStringToCString(const String* str)
 	{
 		if (str == nullptr || str->data == nullptr) {
 			return "";
@@ -33,7 +33,7 @@ namespace Prism::Native
 		return str->data;
 	}
 
-	void FreeNativeString(NativeString* str)
+	void FreeNativeString(String* str)
 	{
 		if (str != nullptr && str->data != nullptr) {
 			free(str->data);
@@ -43,9 +43,9 @@ namespace Prism::Native
 		}
 	}
 
-	NativeString CopyNativeString(const NativeString* src)
+	String CopyNativeString(const String* src)
 	{
-		NativeString str = { nullptr, 0, 0 };
+		String str = { nullptr, 0, 0 };
 
 		if (src == nullptr || src->data == nullptr) {
 			return str;

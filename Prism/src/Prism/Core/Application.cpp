@@ -116,7 +116,8 @@ namespace Prism
 	void Application::OnInit()
 	{
 		ScriptEngine::Initialize();
-		ScriptEngine::LoadAssembly("Assets/scripts/net9.0/Prism.Scripting.dll");
+		ScriptEngine::LoadEngineAssembly("Assets/scripts/net9.0/Prism.Scripting.dll");
+		ScriptEngine::LoadAppAssembly("Assets/scripts/net9.0/ExampleApp.dll");
 	}
 
 	void Application::OnShutdown()

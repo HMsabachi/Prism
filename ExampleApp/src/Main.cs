@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ExampleApp
+﻿using Prism;
+using Prism.ScriptAttribute;
+namespace Example
 {
     public class Test
     {
-        [UnmanagedCallersOnly]
+        [ScriptEnterPoint]
         public static void Init()
         {
             Prism.Core.Init();

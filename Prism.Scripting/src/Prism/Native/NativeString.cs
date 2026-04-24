@@ -6,12 +6,11 @@ using System.Text;
 namespace Prism
 {
     [StructLayout(LayoutKind.Sequential)]
-    public unsafe struct NativeString
+    public unsafe struct NativeString : IDisposable
     {
         public byte* data;        // 指向C++分配的字符串数据
         public uint length;       // 字符串长度
         public uint capacity;     // 分配容量
-
         // 从C#字符串创建NativeString
         public static unsafe NativeString FromString(string managedString)
         {
@@ -30,7 +29,7 @@ namespace Prism
             fixed (byte* ptr = utf8Bytes)
             {
                 // 调用C++函数创建NativeString
-                nativeStr = InternalCall.Funcs.CreateNativeString_Native(ptr);
+                nativeStr = InternalCalls.Funcs.String_CreateNativeString_Native(ptr);
             }
 
             return nativeStr;
@@ -48,7 +47,7 @@ namespace Prism
             byte* cstrPtr;
             fixed (NativeString* self = &this)
             {
-                cstrPtr = InternalCall.Funcs.NativeStringToCString_Native(self);
+                cstrPtr = InternalCalls.Funcs.String_NativeStringToCString_Native(self);
             }
             if (cstrPtr == null)
             {
@@ -66,13 +65,13 @@ namespace Prism
         public unsafe void Free()
         {
             fixed (NativeString* self = &this)
-                InternalCall.Funcs.FreeNativeString_Native(self);
+                InternalCalls.Funcs.String_FreeNativeString_Native(self);
         }
 
         // 拷贝NativeString
         public unsafe NativeString Copy()
         {
-            return InternalCall.Funcs.CopyNativeString_Native(this);
+            return InternalCalls.Funcs.String_CopyNativeString_Native(this);
         }
 
         // 隐式转换：string -> NativeString
@@ -85,6 +84,11 @@ namespace Prism
         public static implicit operator string(NativeString nativeString)
         {
             return nativeString.ToString();
+        }
+
+        public void Dispose()
+        {
+            Free();
         }
     }
 }

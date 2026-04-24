@@ -14,17 +14,21 @@ namespace Prism
         internal delegate* unmanaged[Cdecl]<byte*, void> CoreFatal_Native;
 
         // NativeString
-        internal delegate* unmanaged[Cdecl]<byte*, NativeString> CreateNativeString_Native;
-        internal delegate* unmanaged[Cdecl]<NativeString*, byte*> NativeStringToCString_Native;
-        internal delegate* unmanaged[Cdecl]<NativeString*, void> FreeNativeString_Native;
-        internal delegate* unmanaged[Cdecl]<NativeString, NativeString> CopyNativeString_Native;
+        internal delegate* unmanaged[Cdecl]<byte*, NativeString> String_CreateNativeString_Native;
+        internal delegate* unmanaged[Cdecl]<NativeString*, byte*> String_NativeStringToCString_Native;
+        internal delegate* unmanaged[Cdecl]<NativeString*, void> String_FreeNativeString_Native;
+        internal delegate* unmanaged[Cdecl]<NativeString, NativeString> String_CopyNativeString_Native;
 
         // Log new
-        internal delegate* unmanaged<Log.LogLevel, NativeString, void> Log_LogMessage;
+        internal delegate* unmanaged[Cdecl]<Log.LogLevel, NativeString, void> Log_LogMessage_Native;
+
+        // Entity
+        internal delegate* unmanaged[Cdecl]<UInt32, UInt32, Matrix4*, void> Entity_GetTransform_Native;
+        internal delegate* unmanaged[Cdecl]<UInt32, UInt32, Matrix4*, void> Entity_SetTransform_Native;
     };
 
 
-    internal static unsafe class InternalCall
+    internal static unsafe class InternalCalls
     {
         internal static unsafe FunctionTable Funcs;
     }

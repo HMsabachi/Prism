@@ -1,6 +1,8 @@
 ﻿#include "prpch.h"
 #include "ScriptEngine.h"
 #include "ScriptEngineRegistry.h"
+#include "Native/String.h"
+#include <filesystem>
 #include <nethost.h>
 #include <hostfxr.h>
 #include <coreclr_delegates.h>
@@ -18,8 +20,31 @@ namespace Prism
 	void* ScriptEngine::s_HostHandle = nullptr;
 	void* ScriptEngine::s_AssemblyLoadContext = nullptr;
 
+	// 委托
+	static void(__cdecl* s_CallScriptEngineInit)(Native::String) = nullptr;
+	static void(__cdecl* s_CallScriptEngineOnCreateEntity)(Native::String, uint32_t, uint32_t) = nullptr;
+	static void(__cdecl* s_CallScriptEngineOnUpdateEntity)(uint32_t) = nullptr;
+	static void(__cdecl* s_CallScriptEngineOnDestroyEntity)(uint32_t) = nullptr;
+
+	static void ResetFunctionPointers()
+	{
+		s_CallScriptEngineInit = nullptr;
+		s_CallScriptEngineOnCreateEntity = nullptr;
+		s_CallScriptEngineOnUpdateEntity = nullptr;
+		s_CallScriptEngineOnDestroyEntity = nullptr;
+	}
+	void ScriptEngine::RegisterEngineFunctions()
+	{
+		ScriptEngine::LoadFunction(L"Prism.Core, Prism.Scripting", L"CallScriptEngineInit", (void**)&s_CallScriptEngineInit);
+		ScriptEngine::LoadFunction(L"Prism.Core, Prism.Scripting", L"CallScriptEngineOnCreateEntity", (void**)&s_CallScriptEngineOnCreateEntity);
+		ScriptEngine::LoadFunction(L"Prism.Core, Prism.Scripting", L"CallScriptEngineOnUpdateEntity", (void**)&s_CallScriptEngineOnUpdateEntity);
+		ScriptEngine::LoadFunction(L"Prism.Core, Prism.Scripting", L"CallScriptEngineOnUpdateEntity", (void**)&s_CallScriptEngineOnDestroyEntity);
+	}
 	bool ScriptEngine::Initialize()
 	{
+		PR_PROFILE_FUNCTION();
+
+		ResetFunctionPointers();
 		PR_CORE_INFO("=== 开始初始化 .NET 9 脚本运行时 ===");
 		char_t hostfxrPath[MAX_PATH];
 		size_t bufferSize = MAX_PATH;
@@ -56,12 +81,14 @@ namespace Prism
 		PR_CORE_INFO(".NET 9 脚本运行时已关闭");
 	}
 
-	bool ScriptEngine::LoadAssembly(const std::string& assemblyPath)
+	bool ScriptEngine::LoadEngineAssembly(const std::string& assemblyPath)
 	{
-		PR_CORE_INFO("正在加载程序集: {0}", assemblyPath);
-		std::wstring configPath = std::wstring(assemblyPath.begin(), assemblyPath.end());
-		configPath = configPath.substr(0, configPath.find_last_of(L".")) + L".runtimeconfig.json";
+		PR_PROFILE_FUNCTION();
 
+		std::string path = std::filesystem::absolute(assemblyPath).string();
+		PR_CORE_INFO("正在加载程序集: {0}", path);
+		std::wstring configPath = std::wstring(path.begin(), path.end());
+		configPath = configPath.substr(0, configPath.find_last_of(L".")) + L".runtimeconfig.json";
 		int rc = s_InitFn(configPath.c_str(), nullptr, &s_HostHandle);
 		if (rc != 0 || s_HostHandle == nullptr)
 		{
@@ -69,33 +96,22 @@ namespace Prism
 			s_CloseFn(s_HostHandle);
 			return false;
 		}
-
 		s_LoadFunction = nullptr;
 		rc = s_GetDelegateFn(
 			s_HostHandle,
 			hdt_load_assembly_and_get_function_pointer,
 			(void**)&s_LoadFunction
 		);
-
 		if (rc != 0 || s_LoadFunction == nullptr)
 		{
 			PR_CORE_ERROR("获取 load_assembly 委托失败: {0:x}", rc);
 			return false;
 		}
-
-		s_AssemblyPath = std::wstring(assemblyPath.begin(), assemblyPath.end());
-
+		s_AssemblyPath = std::wstring(path.begin(), path.end());
 		ScriptEngineRegistry::RegisterAll();
-
-		typedef void (CORECLR_DELEGATE_CALLTYPE* engine_init_fn)();
-		engine_init_fn initFunc = nullptr;
-		LoadFunction(L"ExampleApp.Test, ExampleApp", L"Init", (void**)&initFunc);
-		initFunc();
-
+		RegisterEngineFunctions();
 		return rc == 0;
-
 	}
-
 	bool ScriptEngine::LoadFunction(const std::wstring& className, const std::wstring& funcName, void** func)
 	{
 		auto path = s_AssemblyPath;
@@ -111,25 +127,31 @@ namespace Prism
 		return rc == 0;
 	}
 
+	bool ScriptEngine::LoadAppAssembly(const std::string& assemblyPath)
+	{
+		PR_PROFILE_FUNCTION();
+		auto path = std::filesystem::absolute(assemblyPath).string();
+		s_CallScriptEngineInit(Native::CreateNativeString(path.c_str()));
+		return true;
+	}
 	void ScriptEngine::OnCreateEntity(Entity entity)
 	{
-
 	}
 
 	void ScriptEngine::OnUpdateEntity(uint32_t entityID, float ts)
 	{
-
+		PR_PROFILE_FUNCTION();
+		s_CallScriptEngineOnUpdateEntity(entityID);
 	}
 
 	void ScriptEngine::OnInitEntity(ScriptComponent& script, uint32_t entityID, uint32_t sceneID)
 	{
-
+		PR_PROFILE_FUNCTION();
+		Native::String moduleName = Native::CreateNativeString(script.ModuleName.c_str());
+		s_CallScriptEngineOnCreateEntity(moduleName, entityID, sceneID);
 	}
 
-	void ScriptEngine::RegisterEngineFunctions()
-	{
-
-	}
+	
 }
 
 
