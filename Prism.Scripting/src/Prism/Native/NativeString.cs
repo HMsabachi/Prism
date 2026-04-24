@@ -42,8 +42,6 @@ namespace Prism
             {
                 return string.Empty;
             }
-
-            // 调用C++函数获取C风格字符串
             byte* cstrPtr;
             fixed (NativeString* self = &this)
             {
@@ -53,8 +51,6 @@ namespace Prism
             {
                 return string.Empty;
             }
-
-            // 计算字符串长度并转换为托管字符串
             int len = 0;
             while (cstrPtr[len] != 0) len++;
 

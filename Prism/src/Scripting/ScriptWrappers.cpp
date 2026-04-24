@@ -2,6 +2,7 @@
 #include "ScriptWrappers.h"
 #include "Native/String.h"
 
+#include "Prism/Core/Input.h"
 #include "Prism/Scene/Scene.h"
 #include "Prism/Scene/Entity.h"
 #include "Prism/Scene/Components.h"
@@ -40,7 +41,7 @@ namespace Prism {
 
 #pragma region Log
 
-		void Log_LogMessage(LogLevel level, Native::String inFormattedMessage)
+		void Prism_Log_LogMessage(LogLevel level, Native::String inFormattedMessage)
 		{
 			std::string message = NativeStringToCString(&inFormattedMessage);
 			message = "[Script]: " + message;
@@ -70,6 +71,41 @@ namespace Prism {
 
 #pragma endregion
 
+#pragma region Native
+		Prism::Native::String Prism_Native_CreateNativeString(const char* cstr){ return Native::CreateNativeString(cstr); }
+		const char* Prism_Native_NativeStringToCString(const Native::String* str){ return Native::NativeStringToCString(str); }
+		void Prism_Native_FreeNativeString(Native::String* str){ return Native::FreeNativeString(str); }
+		Prism::Native::String Prism_Native_CopyNativeString(const Native::String* src){ return Native::CopyNativeString(src); }
+#pragma endregion
+
+
+#pragma region Time
+		float Prism_Time_GetDeltaTime(){ return Time::GetDeltaTime(); }
+		float Prism_Time_GetUnscaledDeltaTime(){ return Time::GetUnscaledDeltaTime(); }
+		float Prism_Time_GetTime(){ return Time::GetTime(); }
+		float Prism_Time_GetUnscaledTime(){ return Time::GetUnscaledTime(); }
+		float Prism_Time_GetFixedDeltaTime(){ return Time::GetFixedDeltaTime(); }
+		int64_t Prism_Time_GetFrameCount(){ return (int64_t)Time::GetFrameCount(); }
+		void Prism_Time_SetTimeScale(float scale){ Time::SetTimeScale(scale);}
+		float Prism_Time_GetTimeScale(){ return Time::GetTimeScale();}
+#pragma endregion
+
+#pragma region Math
+		float Prism_Noise_PerlinNoise(float x, float y)
+		{
+			// TODO: Implement Perlin Noise
+			return x * y;
+		}
+#pragma endregion 
+
+#pragma region Input
+		bool Prism_Input_IsKeyPressed(KeyCode key)
+		{
+			return Input::IsKeyPressed(key);
+		}
+#pragma endregion 
+
+#pragma region Entity		
 		enum class ComponentID
 		{
 			None = 0,
@@ -78,35 +114,6 @@ namespace Prism {
 			Script = 3,
 			SpriteRenderer = 4
 		};
-
-
-
-		////////////////////////////////////////////////////////////////
-		// Math ////////////////////////////////////////////////////////
-		////////////////////////////////////////////////////////////////
-
-		/*float Prism_Noise_PerlinNoise(float x, float y)
-		{
-			return Noise::PerlinNoise(x, y);
-		}*/
-
-		////////////////////////////////////////////////////////////////
-
-		////////////////////////////////////////////////////////////////
-		// Input ///////////////////////////////////////////////////////
-		////////////////////////////////////////////////////////////////
-
-		/*bool Prism_Input_IsKeyPressed(KeyCode key)
-		{
-			return Input::IsKeyPressed(key);
-		}*/
-
-		////////////////////////////////////////////////////////////////
-
-		////////////////////////////////////////////////////////////////
-		// Entity //////////////////////////////////////////////////////
-		////////////////////////////////////////////////////////////////
-
 		void Prism_Entity_GetTransform(uint32_t sceneID, uint32_t entityID, glm::mat4* outTransform)
 		{
 			PR_CORE_ASSERT(s_ActiveScenes.find(sceneID) != s_ActiveScenes.end(), "Invalid Scene ID!");
@@ -126,5 +133,6 @@ namespace Prism {
 			auto& transformComponent = entity.GetComponent<TransformComponent>();
 			memcpy(glm::value_ptr(transformComponent.Transform), inTransform, sizeof(glm::mat4));
 		}
+#pragma endregion 
 	}
 }

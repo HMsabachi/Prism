@@ -10,10 +10,10 @@ namespace Prism
 	Input* Input::s_Instance = new WindowsInput();
 #endif
 
-	bool WindowsInput::IsKeyPressedImpl(int keycode)
+	bool WindowsInput::IsKeyPressedImpl(KeyCode keycode)
 	{
 		auto window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
-		auto state = glfwGetKey(window, keycode);
+		auto state = glfwGetKey(window, static_cast<int32_t>(keycode));
 		return state == GLFW_PRESS || state == GLFW_REPEAT;
 	}
 

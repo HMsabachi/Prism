@@ -54,12 +54,12 @@ namespace Prism
 
         public unsafe static void GetTransform_Native(uint sceneID, uint entityID, out Matrix4 result)
         {
-            fixed (Matrix4* ptr = &result) InternalCalls.Funcs.Entity_GetTransform_Native(sceneID, entityID, ptr);
+            fixed (Matrix4* ptr = &result) InternalCalls.Prism_Entity_GetTransform(sceneID, entityID, ptr);
         }
 
         public unsafe static void SetTransform_Native(uint sceneID, uint entityID, ref Matrix4 result)
         {
-            fixed (Matrix4* ptr = &result) InternalCalls.Funcs.Entity_SetTransform_Native(sceneID, entityID, ptr);
+            fixed (Matrix4* ptr = &result) InternalCalls.Prism_Entity_SetTransform(sceneID, entityID, ptr);
         }
 
     }

@@ -11,19 +11,22 @@ namespace Prism
 	class Texture2D;
 	class Material;
 	class MaterialInstance;
-
+	enum class KeyCode : uint16_t;
 }
 
 namespace Prism
 {
 	namespace Script
 	{
-		// Log
+		#pragma region Legacy
 		void Prism_Log_Core_Trace(const char* mes);
 		void Prism_Log_Core_Info(const char* mes);
 		void Prism_Log_Core_Warn(const char* mes);
 		void Prism_Log_Core_Error(const char* mes);
 		void Prism_Log_Core_Fatal(const char* mes);
+		#pragma endregion
+
+		#pragma region Log
 		enum class LogLevel : int32_t
 		{
 			Trace = BIT(0),
@@ -33,15 +36,29 @@ namespace Prism
 			Error = BIT(4),
 			Critical = BIT(5)
 		};
-		void Log_LogMessage(LogLevel level, Native::String inFormattedMessage);
+		void Prism_Log_LogMessage(LogLevel level, Native::String inFormattedMessage);
+		#pragma endregion
 
+		// Native
+		Native::String Prism_Native_CreateNativeString(const char* cstr);
+		const char* Prism_Native_NativeStringToCString(const Native::String* str);
+		void Prism_Native_FreeNativeString(Native::String* str);
+		Native::String Prism_Native_CopyNativeString(const Native::String* src);
+
+		// Time
+		float Prism_Time_GetDeltaTime();
+		float Prism_Time_GetUnscaledDeltaTime();
+		float Prism_Time_GetTime();
+		float Prism_Time_GetUnscaledTime();
+		float Prism_Time_GetFixedDeltaTime();
+		int64_t Prism_Time_GetFrameCount();
+		void Prism_Time_SetTimeScale(float scale);
+		float Prism_Time_GetTimeScale();
 
 		// Math
-		//float Prism_Noise_PerlinNoise(float x, float y);
-
+		float Prism_Noise_PerlinNoise(float x, float y);
 		// Input
-		//bool Prism_Input_IsKeyPressed(KeyCode key);
-
+		bool Prism_Input_IsKeyPressed(KeyCode key);
 		// Entity
 		void Prism_Entity_GetTransform(uint32_t sceneID, uint32_t entityID, glm::mat4* outTransform);
 		void Prism_Entity_SetTransform(uint32_t sceneID, uint32_t entityID, glm::mat4* inTransform);

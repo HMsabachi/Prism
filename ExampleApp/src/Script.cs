@@ -17,7 +17,8 @@ namespace Example
 
         public void OnUpdate()
         {
-            time += 0.01f;
+            if (!Input.IsKeyPressed(KeyCode.Space)) return;
+            time += Time.DeltaTime;
             Matrix4 transform = GetTransform();
             Vector3 translation = transform.Translation;
             translation.X = MathF.Sin(time) * Speed;

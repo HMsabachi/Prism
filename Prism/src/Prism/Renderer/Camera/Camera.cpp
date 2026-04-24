@@ -49,18 +49,18 @@ namespace Prism {
 
 	void Camera::OnUpdate()
 	{
-		if (Input::IsKeyPressed(GLFW_KEY_LEFT_ALT))
+		if (Input::IsKeyPressed(KeyCode::LeftAlt))
 		{
 			const glm::vec2& mouse{ Input::GetMouseX(), Input::GetMouseY() };
 			glm::vec2 delta = mouse - m_InitialMousePosition;
 			delta *= Time::GetDeltaTime();
 			m_InitialMousePosition = mouse;
 
-			if (Input::IsMouseButtonPressed(GLFW_MOUSE_BUTTON_MIDDLE))
+			if (Input::IsMouseButtonPressed(PR_MOUSE_BUTTON_MIDDLE))
 				MousePan(delta);
-			else if (Input::IsMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT))
+			else if (Input::IsMouseButtonPressed(PR_MOUSE_BUTTON_LEFT))
 				MouseRotate(delta);
-			else if (Input::IsMouseButtonPressed(GLFW_MOUSE_BUTTON_RIGHT))
+			else if (Input::IsMouseButtonPressed(PR_MOUSE_BUTTON_RIGHT))
 				MouseZoom(delta.y);
 		}
 
