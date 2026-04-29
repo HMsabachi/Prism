@@ -1,5 +1,5 @@
 ﻿workspace "Prism"
-	architecture "x64"
+	architecture "x86_64"
 	--startproject "Sandbox"
 	startproject "PrismEditor"
 
@@ -22,6 +22,7 @@ IncludeDir["stb_image"] = "Prism/vendor/stb_image"
 IncludeDir["PrismShaderParser"] = "Prism/vendor/PrismShaderParser/src"
 IncludeDir["nethost"] = "Prism/vendor/nethost"
 IncludeDir["entt"] = "Prism/vendor/entt/include"
+IncludeDir["Rolky"] = "Prism/vendor/Rolky/Rolky.Native/Include"
 
 LibraryDir = {}
 LibraryDir["nethost"] = "Prism/vendor/nethost"
@@ -30,6 +31,8 @@ group "Dependencies"
 	include "Prism/vendor/Glad"
 	include "Prism/vendor/imgui"
 	include "Prism/vendor/PrismShaderParser"
+	include "Prism/vendor/Rolky/Rolky.Native"
+	include "Prism/vendor/Rolky/Rolky.Managed"
 group ""
 
 group "Core"
@@ -71,7 +74,8 @@ project "Prism"
 		"%{IncludeDir.PrismShaderParser}",
 		"%{prj.name}/vendor/assimp/include",
 		"%{IncludeDir.nethost}",
-		"%{IncludeDir.entt}"
+		"%{IncludeDir.entt}",
+		"%{IncludeDir.Rolky}"
 	}
 
 	libdirs
@@ -85,6 +89,7 @@ project "Prism"
 		"GLFW",
 		"Glad",
 		"ImGui",
+		"Rolky.Native",
 		"PrismShaderParser",
 		"opengl32.lib",
 		"dwmapi.lib"
@@ -159,20 +164,32 @@ project "Prism.Scripting"
 	location "Prism.Scripting"
 	kind "SharedLib"
 	language "C#"
-	platforms "x64"
 	dotnetframework "net9.0"          -- 使用 .NET 9
-	namespace "Prism"
+
+	filter { "action:vs* or system:windows" }
+        language "C#"
+        clr "Unsafe"
+		vsprops {
+			AppendTargetFrameworkToOutputPath = "false",
+			Nullable = "enable",
+			CopyLocalLockFileAssemblies = "true",
+			EnableDynamicLoading = "true",
+		}
+	disablewarnings {
+            "CS8500"
+        }
 
 	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+
+	links {
+		"Rolky.Managed"
+	}
 
 	files
 	{
 		"%{prj.name}/src/**.cs",       
 	}
-
-	-- 允许 unsafe 代码（后面绑定结构体时会用到）
-	clr "Unsafe"
 
 
 
@@ -275,12 +292,23 @@ group "Examples"
 project "ExampleApp"
 	location "ExampleApp"
 	dotnetframework "net9.0"      
-	platforms "x64"
 	kind "SharedLib"
 	language "C#"
 	clr "Unsafe"
 	targetdir ("PrismEditor/Assets/Scripts")
 	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+	filter { "action:vs* or system:windows" }
+        language "C#"
+        clr "Unsafe"
+		vsprops {
+			AppendTargetFrameworkToOutputPath = "false",
+			Nullable = "enable",
+			CopyLocalLockFileAssemblies = "true",
+			EnableDynamicLoading = "true",
+		}
+	disablewarnings {
+            "CS8500"
+        }
 
 	files 
 	{

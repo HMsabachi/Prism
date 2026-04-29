@@ -6,6 +6,7 @@
 
 #include "../Texture.h"
 #include "../Renderer.h"
+#include "../Buffer/ShaderStorageBuffer.h"
 
 
 namespace Prism
@@ -197,10 +198,6 @@ namespace Prism
 					textureCube->Bind(res.binding);
 			}
 		}
-		Renderer::Submit([=]() {
-			auto used1 = usedTextures;
-			auto used2 = usedBuffer;
-		});
 		k.shader->DispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
 	}
 

@@ -6,6 +6,8 @@ using System.Text;
 using System.Threading.Tasks;
 using static Prism.Core;
 
+using Rolky.Managed.Interop;
+
 namespace Prism
 {
     public class Core
@@ -16,33 +18,31 @@ namespace Prism
             Log.Trace($"程序集限定名: {typeof(Prism.Core).AssemblyQualifiedName}");
         }
 
-        [UnmanagedCallersOnly]
-        internal unsafe static void PushFunctionTable(FunctionTable* table)
-        {
-            InternalCalls.Funcs = *table;
-        }
-
         #region 脚本引擎调用
-        [UnmanagedCallersOnly]
-        internal unsafe static void CallScriptEngineInit(NativeString nativeString)
+        
+        internal static void CallScriptEngineInit(NativeString nativeString)
         {
             ScriptEngine.Init(nativeString);
             nativeString.Dispose();
         }
-        [UnmanagedCallersOnly]
-        internal unsafe static void CallScriptEngineOnCreateEntity(NativeString className, UInt32 entityID, UInt32 sceneID)
+        
+        internal static void CallScriptEngineOnCreateEntity(NativeString className, UInt32 entityID, UInt32 sceneID)
         {
+            if (className == null) return;
+            //Console.WriteLine($"CallScriptEngineOnCreateEntity: {className} {entityID} {sceneID}");
             ScriptEngine.OnCreateEntity(className, entityID, sceneID);
             className.Dispose();
         }
-        [UnmanagedCallersOnly]
-        internal unsafe static void CallScriptEngineOnUpdateEntity(UInt32 entityID)
+        
+        internal static void CallScriptEngineOnUpdateEntity(UInt32 entityID)
         {
+            //Console.WriteLine($"CallScriptEngineOnUpdateEntity: {entityID}");
             ScriptEngine.OnUpdateEntity(entityID);
         }
-        [UnmanagedCallersOnly]
-        internal unsafe static void CallScriptEngineOnDestroyEntity(UInt32 entityID)
+        
+        internal static void CallScriptEngineOnDestroyEntity(UInt32 entityID)
         {
+            //Console.WriteLine($"CallScriptEngineOnDestroyEntity: {entityID}");
             ScriptEngine.OnDestroyEntity(entityID);
         }
         #endregion

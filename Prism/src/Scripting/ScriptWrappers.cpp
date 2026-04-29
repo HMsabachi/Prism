@@ -8,42 +8,25 @@
 #include "Prism/Scene/Components.h"
 #include <glm/gtc/type_ptr.hpp>
 
+#include <Rolky/String.hpp>
+#include <Rolky/Type.hpp>
+
 namespace Prism {
 	extern std::unordered_map<uint32_t, Scene*> s_ActiveScenes;
+	extern std::unordered_map<Rolky::TypeId, std::function<void(Entity&)>> s_CreateComponentFuncs;
+	extern std::unordered_map<Rolky::TypeId, std::function<bool(Entity&)>> s_HasComponentFuncs;
 }
 
 namespace Prism {
 	namespace Script
 	{
-#pragma region Legacy Functions
 
-		void Prism_Log_Core_Trace(const char* mes)
-		{
-			PR_CORE_TRACE("[Script]: {0}", mes);
-		}
-		void Prism_Log_Core_Info(const char* mes)
-		{
-			PR_CORE_INFO("[Script]: {0}", mes);
-		}
-		void Prism_Log_Core_Warn(const char* mes)
-		{
-			PR_CORE_WARN("[Script]: {0}", mes);
-		}
-		void Prism_Log_Core_Error(const char* mes)
-		{
-			PR_CORE_ERROR("[Script]: {0}", mes);
-		}
-		void Prism_Log_Core_Fatal(const char* mes)
-		{
-			PR_CORE_FATAL("[Script]: {0}", mes);
-		}
-#pragma endregion
 
 #pragma region Log
 
-		void Prism_Log_LogMessage(LogLevel level, Native::String inFormattedMessage)
+		void Prism_Log_LogMessage(LogLevel level, Rolky::String inFormattedMessage)
 		{
-			std::string message = NativeStringToCString(&inFormattedMessage);
+			std::string message = inFormattedMessage;
 			message = "[Script]: " + message;
 			switch (level)
 			{
@@ -66,17 +49,11 @@ namespace Prism {
 				PR_CORE_FATAL(message);
 				break;
 			}
-			Native::FreeNativeString(&inFormattedMessage);
+			Rolky::String::Free(inFormattedMessage);
 		}
 
 #pragma endregion
 
-#pragma region Native
-		Prism::Native::String Prism_Native_CreateNativeString(const char* cstr){ return Native::CreateNativeString(cstr); }
-		const char* Prism_Native_NativeStringToCString(const Native::String* str){ return Native::NativeStringToCString(str); }
-		void Prism_Native_FreeNativeString(Native::String* str){ return Native::FreeNativeString(str); }
-		Prism::Native::String Prism_Native_CopyNativeString(const Native::String* src){ return Native::CopyNativeString(src); }
-#pragma endregion
 
 
 #pragma region Time
@@ -133,6 +110,26 @@ namespace Prism {
 			auto& transformComponent = entity.GetComponent<TransformComponent>();
 			memcpy(glm::value_ptr(transformComponent.Transform), inTransform, sizeof(glm::mat4));
 		}
+
+		void Prism_Entity_CreateComponent(uint32_t sceneID, uint32_t entityID, Rolky::ReflectionType type)
+		{
+			PR_CORE_ASSERT(s_ActiveScenes.find(sceneID) != s_ActiveScenes.end(), "Invalid Scene ID!");
+			Rolky::Type mType = type;
+			Scene* scene = s_ActiveScenes[sceneID];
+			Entity entity((entt::entity)entityID, scene);
+			s_CreateComponentFuncs[mType.GetTypeId()](entity);
+		}
+
+		bool Prism_Entity_HasComponent(uint32_t sceneID, uint32_t entityID, Rolky::ReflectionType type)
+		{
+			PR_CORE_ASSERT(s_ActiveScenes.find(sceneID) != s_ActiveScenes.end(), "Invalid Scene ID!");
+			Rolky::Type mType = type;
+			Scene* scene = s_ActiveScenes[sceneID];
+			Entity entity((entt::entity)entityID, scene);
+			bool result = s_HasComponentFuncs[mType.GetTypeId()](entity);
+			return result;
+		}
+
 #pragma endregion 
 	}
 }

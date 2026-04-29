@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Prism.Scripting")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+363e6ae323df10496a7caa46b9e12d9778018a98")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1738123a98957acbf23e089205b4f9e86a487183")]
 [assembly: System.Reflection.AssemblyProductAttribute("Prism.Scripting")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Prism.Scripting")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

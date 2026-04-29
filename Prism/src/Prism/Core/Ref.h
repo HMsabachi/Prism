@@ -6,6 +6,7 @@ namespace Prism
 	class PRISM_API RefCounted
 	{
 	public:
+		~RefCounted() = default;
 		void IncRefCount() const
 		{
 			m_RefCount++;
@@ -19,7 +20,7 @@ namespace Prism
 	private:
 		mutable uint32_t m_RefCount = 0; // TODO: atomic
 	};
-
+	void PRISM_API Destroy(RefCounted* refCounted);
 	template<typename T>
 	class Ref
 	{
@@ -131,15 +132,15 @@ namespace Prism
 		void IncRef() const
 		{
 			if (m_Instance)
-				m_Instance->IncRefCount();
+				((RefCounted*)m_Instance)->IncRefCount();
 		}
 
 		void DecRef() const
 		{
 			if (m_Instance)
 			{
-				m_Instance->DecRefCount();
-				if (m_Instance->GetRefCount() == 0)
+				((RefCounted*)m_Instance)->DecRefCount();
+				if (((RefCounted*)m_Instance)->GetRefCount() == 0)
 				{
 					delete m_Instance;
 				}
@@ -150,8 +151,7 @@ namespace Prism
 		friend class Ref;
 		T* m_Instance;
 	};
-
-	// TODO: WeakRef
+// TODO: WeakRef
 }
 
 namespace std {

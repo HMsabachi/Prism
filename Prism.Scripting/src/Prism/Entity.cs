@@ -2,6 +2,7 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
+using Rolky.Managed.Interop;
 namespace Prism
 {
     public class Entity
@@ -33,17 +34,20 @@ namespace Prism
         {
             if (HasComponent<T>())
             {
+                CreateComponent_Native(SceneID, EntityID, typeof(T));
                 T component = new T();
                 component.Entity = this;
                 return component;
             }
             return null;
         }
-
+        private unsafe static void CreateComponent_Native(uint sceneID, uint entityID, Type type)
+        {
+            InternalCalls.Prism_Entity_CreateComponent(sceneID, entityID, type);
+        }
         private unsafe static bool HasComponent_Native(uint sceneID, uint entityID, Type type)
         {
-            // TODO: Implement this in native code
-            return true;
+            return InternalCalls.Prism_Entity_HasComponent(sceneID, entityID, type);
         }
     }
 }

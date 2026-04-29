@@ -1,10 +1,10 @@
 ﻿#pragma once
-#include "../Buffer/ShaderStorageBuffer.h"
 namespace Prism
 {
 	class Shader;
 	class Texture2D;
 	class TextureCube;
+	class ShaderStorageBuffer;
 	enum class ComputeShaderResourceType;
 }
 

@@ -3,66 +3,53 @@
 #include "ScriptEngine.h"
 #include "ScriptWrappers.h"
 #include <coreclr_delegates.h>
-
-#include "Reflection/Reflection.h"
+#include <Rolky/Assembly.hpp>
+#include <spdlog/fmt/fmt.h>
 
 #include "Native/String.h"
+#include "Prism/Utilities/TypeInfo.h"
 namespace Prism
 {
+	std::unordered_map<Rolky::TypeId, std::function<void(Entity&)>> s_CreateComponentFuncs;
+	std::unordered_map<Rolky::TypeId, std::function<bool(Entity&)>> s_HasComponentFuncs;
+
 	template<typename TComponent>
-	static void RegisterManagedComponent(Coral::ManagedAssembly& coreAssembly)
+	static void RegisterManagedComponent(Rolky::ManagedAssembly& coreAssembly)
 	{
-		// NOTE(Peter): Get the demangled type name of TComponent
 		const TypeNameString& componentTypeName = TypeInfo<TComponent, true>().Name();
-		std::string componentName = std::format("Hazel.{}", componentTypeName);
-
-		// Backwards compatibility: Submesh component is "Hazel.Mesh" for scripting.
-		if constexpr (std::is_same_v<TComponent, SubmeshComponent>)
-		{
-			componentName = "Hazel.MeshComponent";
-		}
-
+		std::string componentName = "Prism."; 
+		componentName += componentTypeName;
 		auto& type = coreAssembly.GetType(componentName);
-
 		if (type)
 		{
 			s_CreateComponentFuncs[type.GetTypeId()] = [](Entity& entity) { entity.AddComponent<TComponent>(); };
 			s_HasComponentFuncs[type.GetTypeId()] = [](Entity& entity) { return entity.HasComponent<TComponent>(); };
-			s_RemoveComponentFuncs[type.GetTypeId()] = [](Entity& entity) { entity.RemoveComponent<TComponent>(); };
 		}
 		else
 		{
-			HZ_CORE_VERIFY(false, "No C# component class found for {}!", componentName);
+			PR_CORE_ASSERT(false, "No C# component class found for {}!");
 		}
 	}
 
-	struct FunctionTable
+	static void InitComponentTypes()
 	{
-		// NativeString
-		Native::String(__cdecl* createNativeString)(const char*);
-		const char* (__cdecl* nativeStringToCString)(const Native::String*);
-		void(__cdecl* freeNativeString)(Native::String*);
-		Native::String(__cdecl* copyNativeString)(const Native::String*);
-	}functionTable;
+		auto& engineAssembly = ScriptEngine::GetEngineAssembly();
+		RegisterManagedComponent<TagComponent>(engineAssembly);
+		RegisterManagedComponent<TransformComponent>(engineAssembly);
+		RegisterManagedComponent<MeshComponent>(engineAssembly);
+		RegisterManagedComponent<ScriptComponent>(engineAssembly);
+		RegisterManagedComponent<CameraComponent>(engineAssembly);
+		RegisterManagedComponent<SpriteRendererComponent>(engineAssembly);
+	}
 
-#define PR_ADD_INTERNAL_CALL(func) Reflection::AddInternalCall("Prism.InternalCalls", #func, (void*)&func)
 	void ScriptEngineRegistry::RegisterAll()
 	{
-		void (CORECLR_DELEGATE_CALLTYPE *registerFunc)(FunctionTable*);
-		ScriptEngine::LoadFunction(L"Prism.Core, Prism.Scripting", L"PushFunctionTable", (void**)&registerFunc);
-		functionTable.createNativeString = Native::CreateNativeString;
-		functionTable.nativeStringToCString = Native::NativeStringToCString;
-		functionTable.freeNativeString = Native::FreeNativeString;
-		functionTable.copyNativeString = Native::CopyNativeString;
-		registerFunc(&functionTable);
+        InitComponentTypes();
+		auto& engineAssembly = ScriptEngine::GetEngineAssembly();
+#define PR_ADD_INTERNAL_CALL(func) engineAssembly.AddInternalCall("Prism.InternalCalls", #func, (void*)&func)
 		using namespace Script;
 		// Log
 		PR_ADD_INTERNAL_CALL(Prism_Log_LogMessage);
-		PR_ADD_INTERNAL_CALL(Prism_Log_Core_Trace);
-		PR_ADD_INTERNAL_CALL(Prism_Log_Core_Info);
-		PR_ADD_INTERNAL_CALL(Prism_Log_Core_Warn);
-		PR_ADD_INTERNAL_CALL(Prism_Log_Core_Error);
-		PR_ADD_INTERNAL_CALL(Prism_Log_Core_Fatal);
 		// Time
 		PR_ADD_INTERNAL_CALL(Prism_Time_GetDeltaTime);
 		PR_ADD_INTERNAL_CALL(Prism_Time_GetUnscaledDeltaTime);
@@ -79,6 +66,10 @@ namespace Prism
 		// Entity
 		PR_ADD_INTERNAL_CALL(Prism_Entity_GetTransform);
 		PR_ADD_INTERNAL_CALL(Prism_Entity_SetTransform);
+        PR_ADD_INTERNAL_CALL(Prism_Entity_CreateComponent);
+        PR_ADD_INTERNAL_CALL(Prism_Entity_HasComponent);
+
+		engineAssembly.UploadInternalCalls();
 
 	}
 }

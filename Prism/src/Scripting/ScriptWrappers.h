@@ -1,8 +1,9 @@
 ﻿#pragma once
 
-namespace Prism::Native
+namespace Rolky
 {
 	struct String;
+    struct ReflectionType;
 }
 
 namespace Prism
@@ -18,13 +19,6 @@ namespace Prism
 {
 	namespace Script
 	{
-		#pragma region Legacy
-		void Prism_Log_Core_Trace(const char* mes);
-		void Prism_Log_Core_Info(const char* mes);
-		void Prism_Log_Core_Warn(const char* mes);
-		void Prism_Log_Core_Error(const char* mes);
-		void Prism_Log_Core_Fatal(const char* mes);
-		#pragma endregion
 
 		#pragma region Log
 		enum class LogLevel : int32_t
@@ -36,15 +30,8 @@ namespace Prism
 			Error = BIT(4),
 			Critical = BIT(5)
 		};
-		void Prism_Log_LogMessage(LogLevel level, Native::String inFormattedMessage);
+		void Prism_Log_LogMessage(LogLevel level, Rolky::String inFormattedMessage);
 		#pragma endregion
-
-		// Native
-		Native::String Prism_Native_CreateNativeString(const char* cstr);
-		const char* Prism_Native_NativeStringToCString(const Native::String* str);
-		void Prism_Native_FreeNativeString(Native::String* str);
-		Native::String Prism_Native_CopyNativeString(const Native::String* src);
-
 		// Time
 		float Prism_Time_GetDeltaTime();
 		float Prism_Time_GetUnscaledDeltaTime();
@@ -62,8 +49,8 @@ namespace Prism
 		// Entity
 		void Prism_Entity_GetTransform(uint32_t sceneID, uint32_t entityID, glm::mat4* outTransform);
 		void Prism_Entity_SetTransform(uint32_t sceneID, uint32_t entityID, glm::mat4* inTransform);
-		void Prism_Entity_CreateComponent(uint32_t sceneID, uint32_t entityID, void* type);
-		bool Prism_Entity_HasComponent(uint32_t sceneID, uint32_t entityID, void* type);
+		void Prism_Entity_CreateComponent(uint32_t sceneID, uint32_t entityID, Rolky::ReflectionType type);
+		bool Prism_Entity_HasComponent(uint32_t sceneID, uint32_t entityID, Rolky::ReflectionType type);
 
 		void* Prism_MeshComponent_GetMesh(uint32_t sceneID, uint32_t entityID);
 		void Prism_MeshComponent_SetMesh(uint32_t sceneID, uint32_t entityID, Ref<Mesh>* inMesh);
@@ -76,16 +63,16 @@ namespace Prism
 
 		// Material
 		void Prism_Material_Destructor(Ref<Material>* _this);
-		void Prism_Material_SetFloat(Ref<Material>* _this, Native::String uniform, float value);
-		void Prism_Material_SetTexture(Ref<Material>* _this, Native::String uniform, Ref<Texture2D>* texture);
+		void Prism_Material_SetFloat(Ref<Material>* _this, Rolky::String uniform, float value);
+		void Prism_Material_SetTexture(Ref<Material>* _this, Rolky::String uniform, Ref<Texture2D>* texture);
 
 		void Prism_MaterialInstance_Destructor(Ref<MaterialInstance>* _this);
-		void Prism_MaterialInstance_SetFloat(Ref<MaterialInstance>* _this, Native::String uniform, float value);
-		void Prism_MaterialInstance_SetVector3(Ref<MaterialInstance>* _this, Native::String uniform, glm::vec3* value);
-		void Prism_MaterialInstance_SetTexture(Ref<MaterialInstance>* _this, Native::String uniform, Ref<Texture2D>* texture);
+		void Prism_MaterialInstance_SetFloat(Ref<MaterialInstance>* _this, Rolky::String uniform, float value);
+		void Prism_MaterialInstance_SetVector3(Ref<MaterialInstance>* _this, Rolky::String uniform, glm::vec3* value);
+		void Prism_MaterialInstance_SetTexture(Ref<MaterialInstance>* _this, Rolky::String uniform, Ref<Texture2D>* texture);
 
 		// Mesh
-		Ref<Mesh>* Prism_Mesh_Constructor(Native::String filepath);
+		Ref<Mesh>* Prism_Mesh_Constructor(Rolky::String filepath);
 		void Prism_Mesh_Destructor(Ref<Mesh>* _this);
 		Ref<Material>* Prism_Mesh_GetMaterial(Ref<Mesh>* inMesh);
 		Ref<MaterialInstance>* Prism_Mesh_GetMaterialByIndex(Ref<Mesh>* inMesh, int index);

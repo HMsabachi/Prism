@@ -19,12 +19,13 @@ namespace Example
         {
             if (!Input.IsKeyPressed(KeyCode.Space)) return;
             time += Time.DeltaTime;
+            if (time > 100.0f) time = 0.0f;
             Matrix4 transform = GetTransform();
             Vector3 translation = transform.Translation;
             translation.X = MathF.Sin(time) * Speed;
             transform.Translation = translation;
             SetTransform(transform);
-            //Log.Trace("transform.position: {0}", transform.Translation);
+            //Log.Trace("transform.position: {0}", HasComponent<TransformComponent>());
         }
 
     }

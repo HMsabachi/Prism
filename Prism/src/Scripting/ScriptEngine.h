@@ -2,6 +2,13 @@
 #include "Prism/Scene/Components.h"
 #include "Prism/Scene/Entity.h"
 
+namespace Rolky
+{
+	struct HostInstance;
+	struct AssemblyLoadContext;
+	struct ManagedAssembly;
+}
+
 namespace Prism
 {
 	class PRISM_API ScriptEngine
@@ -13,7 +20,6 @@ namespace Prism
 
 		static bool LoadEngineAssembly(const std::string& assemblyPath);
 		static bool LoadAppAssembly(const std::string& assemblyPath);
-		static bool LoadFunction(const std::wstring& className, const std::wstring& funcName, void** func);
 
 		static void RegisterEngineFunctions();
 
@@ -22,7 +28,11 @@ namespace Prism
 
 		static void OnInitEntity(ScriptComponent& script, uint32_t entityID, uint32_t sceneID);
 
+	public:
+		static Rolky::ManagedAssembly& GetEngineAssembly();
 	private:
+		static std::unique_ptr<Rolky::HostInstance> m_Host;
+		static std::unique_ptr<Rolky::AssemblyLoadContext> m_LoadContext;
 
 		static void* s_HostHandle;
 		static void* s_AssemblyLoadContext;   
