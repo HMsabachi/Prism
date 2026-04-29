@@ -30,11 +30,17 @@ namespace Prism
         {
             return HasComponent_Native(SceneID, EntityID, typeof(T));
         }
+        public T CreateComponent<T>() where T : Component, new()
+        {
+            CreateComponent_Native(SceneID, EntityID, typeof(T));
+            T component = new T();
+            component.Entity = this;
+            return component;
+        }
         public T GetComponent<T>() where T : Component, new()
         {
             if (HasComponent<T>())
             {
-                CreateComponent_Native(SceneID, EntityID, typeof(T));
                 T component = new T();
                 component.Entity = this;
                 return component;

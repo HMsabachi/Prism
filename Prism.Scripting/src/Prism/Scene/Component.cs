@@ -66,7 +66,27 @@ namespace Prism
 
     public class MeshComponent : Component
     {
-       // TODO
+        public Mesh Mesh
+        {
+            get
+            {
+                Mesh result = new Mesh(GetMesh_Native(Entity.SceneID, Entity.EntityID));
+                return result;
+            }
+            set
+            {
+                IntPtr ptr = value == null ? IntPtr.Zero : value.m_UnmanagedInstance;
+                SetMesh_Native(Entity.SceneID, Entity.EntityID, ptr);
+            }
+        }
+        public unsafe static IntPtr GetMesh_Native(uint sceneID, uint entityID)
+        {
+            return InternalCalls.Prism_MeshComponent_GetMesh(sceneID, entityID);
+        }
+        public unsafe static void SetMesh_Native(uint sceneID, uint entityID, IntPtr unmanagedInstance)
+        {
+            InternalCalls.Prism_MeshComponent_SetMesh(sceneID, entityID, unmanagedInstance);
+        }
 
     }
 

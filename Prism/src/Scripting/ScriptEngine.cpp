@@ -20,28 +20,39 @@ namespace Prism
 		PR_CORE_ERROR("[Rolky] {0}", message);
 	}
 
+	static std::unordered_map<std::string, FieldType> s_FieldTypeMap =
+	{
+		{"System.Single", FieldType::Float },
+		{"System.Int32", FieldType::Int },
+		{"System.UInt32", FieldType::UnsignedInt },
+		{"System.String", FieldType::String },
+		{"Prism.Vector2", FieldType::Vec2 },
+		{"Prism.Vector3", FieldType::Vec3 },
+		{"Prism.Vector4", FieldType::Vec4 },
+	};
+
+	static FieldType GetPrismFieldType(const Rolky::Type& type)
+	{ 
+		if (s_FieldTypeMap.find(type.GetFullName()) != s_FieldTypeMap.end())
+		{
+            return s_FieldTypeMap[type.GetFullName()];
+		}
+        return FieldType::None;
+	}
+
 	static std::unordered_map<std::string, Rolky::Type> s_EntityClassMap;
 	static std::unordered_map<uint32_t, Rolky::ManagedObject> s_EntityInstanceMap;
+	static ScriptModuleFieldMap s_PublicFields;
 
 	void* ScriptEngine::s_HostHandle = nullptr;
 	void* ScriptEngine::s_AssemblyLoadContext = nullptr;
 
-	// 委托
-	static Rolky::Type s_ScriptEngineClass;
-
+	
 	std::unique_ptr<Rolky::HostInstance> ScriptEngine::m_Host;
 	std::unique_ptr<Rolky::AssemblyLoadContext> ScriptEngine::m_LoadContext;
 	static Rolky::ManagedAssembly s_EngineAssembly;
 	static Rolky::ManagedAssembly s_AppAssembly;
 
-	static void ResetFunctionPointers()
-	{
-		s_ScriptEngineClass = Rolky::Type();
-	}
-	void ScriptEngine::RegisterEngineFunctions()
-	{
-		s_ScriptEngineClass = s_EngineAssembly.GetType("Prism.Core");
-	}
 	bool ScriptEngine::Initialize()
 	{
 		PR_PROFILE_FUNCTION();
@@ -53,7 +64,6 @@ namespace Prism
 		m_Host = std::make_unique<Rolky::HostInstance>();
 		m_Host->Initialize(setting);
 		m_LoadContext = std::make_unique<Rolky::AssemblyLoadContext>(std::move(m_Host->CreateAssemblyLoadContext("PrismLoadContext")));
-		ResetFunctionPointers();
 		return true;
 	}
 	void ScriptEngine::Shutdown()
@@ -71,7 +81,8 @@ namespace Prism
 		auto path = std::filesystem::absolute(assemblyPath).string();
 		s_EngineAssembly = m_LoadContext->LoadAssembly(path);
 		ScriptEngineRegistry::RegisterAll();
-		RegisterEngineFunctions();
+		auto initClass = s_EngineAssembly.GetType("Prism.Core");
+		initClass.InvokeStaticMethod("Init");
 		return true;
 	}
 
@@ -85,8 +96,7 @@ namespace Prism
 	void ScriptEngine::OnCreateEntity(Entity entity)
 	{
 		PR_PROFILE_FUNCTION();
-		uint32_t entityID = entity;
-		Rolky::ManagedObject& entityInstance = s_EntityInstanceMap[entityID];
+		Rolky::ManagedObject& entityInstance = s_EntityInstanceMap[entity];
 		if (entityInstance.IsValid())
 			entityInstance.InvokeMethod("OnCreate");
 	}
@@ -117,8 +127,25 @@ namespace Prism
 		entityInstance = scriptClass.CreateInstance();
 		entityInstance.SetPropertyValue("EntityID", entityID);
 		entityInstance.SetPropertyValue("SceneID", sceneID);
+
+		std::vector<PublicField>& publicFields = s_PublicFields[script.ModuleName];
+		if (publicFields.empty())
+		{
+			auto Fields = scriptClass.GetFields();
+			for (auto& field : Fields)
+			{
+				if (field.GetAccessibility() == Rolky::TypeAccessibility::Public)
+					publicFields.push_back({ field.GetName(), GetPrismFieldType(field.GetType()), &entityInstance });
+			}
+		}
 	}
 	
+
+	const Prism::ScriptModuleFieldMap& ScriptEngine::GetFieldMap()
+	{
+		return s_PublicFields;
+	}
+
 	Rolky::ManagedAssembly& ScriptEngine::GetEngineAssembly()
 	{
 		return s_EngineAssembly;

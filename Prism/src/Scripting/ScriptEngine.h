@@ -7,10 +7,25 @@ namespace Rolky
 	struct HostInstance;
 	struct AssemblyLoadContext;
 	struct ManagedAssembly;
+    class FieldInfo;
+	class ManagedObject;
 }
 
 namespace Prism
 {
+	enum class FieldType
+	{
+		None = 0, Float, Int, UnsignedInt, String, Vec2, Vec3, Vec4
+	};
+
+    struct PublicField
+    {
+        std::string Name;
+		FieldType Type;
+		Rolky::ManagedObject* m_Object;
+    };
+
+	using ScriptModuleFieldMap = std::unordered_map<std::string, std::vector<PublicField>>;
 	class PRISM_API ScriptEngine
 	{
 	public:
@@ -21,12 +36,12 @@ namespace Prism
 		static bool LoadEngineAssembly(const std::string& assemblyPath);
 		static bool LoadAppAssembly(const std::string& assemblyPath);
 
-		static void RegisterEngineFunctions();
-
 		static void OnCreateEntity(Entity entity);
 		static void OnUpdateEntity(uint32_t entityID, float ts);
 
 		static void OnInitEntity(ScriptComponent& script, uint32_t entityID, uint32_t sceneID);
+
+		static const ScriptModuleFieldMap& GetFieldMap();
 
 	public:
 		static Rolky::ManagedAssembly& GetEngineAssembly();

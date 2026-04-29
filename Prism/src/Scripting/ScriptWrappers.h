@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <Rolky/Array.hpp>
 
 namespace Rolky
 {
@@ -52,14 +53,20 @@ namespace Prism
 		void Prism_Entity_CreateComponent(uint32_t sceneID, uint32_t entityID, Rolky::ReflectionType type);
 		bool Prism_Entity_HasComponent(uint32_t sceneID, uint32_t entityID, Rolky::ReflectionType type);
 
+		// Mesh
 		void* Prism_MeshComponent_GetMesh(uint32_t sceneID, uint32_t entityID);
 		void Prism_MeshComponent_SetMesh(uint32_t sceneID, uint32_t entityID, Ref<Mesh>* inMesh);
-
+		Ref<Mesh>* Prism_Mesh_Constructor(Rolky::String filepath);
+		void Prism_Mesh_Destructor(Ref<Mesh>* _this);
+		Ref<Material>* Prism_Mesh_GetMaterial(Ref<Mesh>* inMesh);
+		Ref<MaterialInstance>* Prism_Mesh_GetMaterialByIndex(Ref<Mesh>* inMesh, int32_t index);
+		int32_t Prism_Mesh_GetMaterialCount(Ref<Mesh>* inMesh);
+		void* Prism_MeshFactory_CreatePlane(float width, float height);
 		// Renderer
 		// Texture2D
 		void* Prism_Texture2D_Constructor(uint32_t width, uint32_t height);
 		void Prism_Texture2D_Destructor(Ref<Texture2D>* _this);
-		void Prism_Texture2D_SetData(Ref<Texture2D>* _this, void* inData, int32_t count);
+		void Prism_Texture2D_SetData(Ref<Texture2D>* _this, Rolky::Array<glm::vec4> inData, int32_t count);
 
 		// Material
 		void Prism_Material_Destructor(Ref<Material>* _this);
@@ -70,14 +77,5 @@ namespace Prism
 		void Prism_MaterialInstance_SetFloat(Ref<MaterialInstance>* _this, Rolky::String uniform, float value);
 		void Prism_MaterialInstance_SetVector3(Ref<MaterialInstance>* _this, Rolky::String uniform, glm::vec3* value);
 		void Prism_MaterialInstance_SetTexture(Ref<MaterialInstance>* _this, Rolky::String uniform, Ref<Texture2D>* texture);
-
-		// Mesh
-		Ref<Mesh>* Prism_Mesh_Constructor(Rolky::String filepath);
-		void Prism_Mesh_Destructor(Ref<Mesh>* _this);
-		Ref<Material>* Prism_Mesh_GetMaterial(Ref<Mesh>* inMesh);
-		Ref<MaterialInstance>* Prism_Mesh_GetMaterialByIndex(Ref<Mesh>* inMesh, int index);
-		int Prism_Mesh_GetMaterialCount(Ref<Mesh>* inMesh);
-
-		void* Prism_MeshFactory_CreatePlane(float width, float height);
 	}
 }

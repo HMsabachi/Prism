@@ -9,7 +9,7 @@ namespace Prism
 
     internal static unsafe class InternalCalls
     {
-        internal static delegate* unmanaged[Cdecl]<Log.LogLevel, Rolky.Managed.Interop.NativeString, void> Prism_Log_LogMessage;
+        internal static delegate* unmanaged[Cdecl]<Log.LogLevel, NativeString, void> Prism_Log_LogMessage;
         // Time
         internal static delegate* unmanaged[Cdecl]<float> Prism_Time_GetDeltaTime;
         internal static delegate* unmanaged[Cdecl]<float> Prism_Time_GetUnscaledDeltaTime;
@@ -28,5 +28,28 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<UInt32, UInt32, Matrix4*, void> Prism_Entity_SetTransform;
         internal static delegate* unmanaged[Cdecl]<UInt32, UInt32, ReflectionType, void> Prism_Entity_CreateComponent;
         internal static delegate* unmanaged[Cdecl]<UInt32, UInt32, ReflectionType, bool> Prism_Entity_HasComponent;
+        // Mesh
+        internal static delegate* unmanaged[Cdecl]<UInt32, UInt32, IntPtr> Prism_MeshComponent_GetMesh;
+        internal static delegate* unmanaged[Cdecl]<UInt32, UInt32, IntPtr, void> Prism_MeshComponent_SetMesh;
+        internal static delegate* unmanaged[Cdecl]<NativeString, IntPtr> Prism_Mesh_Constructor;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, void> Prism_Mesh_Destructor;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr> Prism_Mesh_GetMaterial;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, Int32, IntPtr> Prism_Mesh_GetMaterialByIndex;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, Int32> Prism_Mesh_GetMaterialCount;
+        internal static delegate* unmanaged[Cdecl]<float, float, IntPtr> Prism_MeshFactory_CreatePlane;
+        // Texture2D
+        internal static delegate* unmanaged[Cdecl]<UInt32, UInt32, IntPtr> Prism_Texture2D_Constructor;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, void> Prism_Texture2D_Destructor;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeArray<Vector4>, Int32, void> Prism_Texture2D_SetData;
+        // Material
+        internal static delegate* unmanaged[Cdecl]<IntPtr, void> Prism_Material_Destructor;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, float, void> Prism_Material_SetFloat;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, IntPtr, void> Prism_Material_SetTexture;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, void> Prism_MaterialInstance_Destructor;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, float, void> Prism_MaterialInstance_SetFloat;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, IntPtr, void> Prism_MaterialInstance_SetVector3;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, IntPtr, void> Prism_MaterialInstance_SetTexture;
+
+
     }
 }

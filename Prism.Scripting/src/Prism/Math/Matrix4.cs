@@ -68,7 +68,31 @@ namespace Prism
             result.D22 = scale;
             return result;
         }
+        public static Matrix4 operator *(Matrix4 left, Matrix4 right)  
+        {
+            Matrix4 result = new Matrix4(0.0f);
+            result.D00 = left.D00 * right.D00 + left.D01 * right.D10 + left.D02 * right.D20 + left.D03 * right.D30;
+            result.D10 = left.D10 * right.D00 + left.D11 * right.D10 + left.D12 * right.D20 + left.D13 * right.D30;
+            result.D20 = left.D20 * right.D00 + left.D21 * right.D10 + left.D22 * right.D20 + left.D23 * right.D30;
+            result.D30 = left.D30 * right.D00 + left.D31 * right.D10 + left.D32 * right.D20 + left.D33 * right.D30;
 
+            result.D01 = left.D00 * right.D01 + left.D01 * right.D11 + left.D02 * right.D21 + left.D03 * right.D31;
+            result.D11 = left.D10 * right.D01 + left.D11 * right.D11 + left.D12 * right.D21 + left.D13 * right.D31;
+            result.D21 = left.D20 * right.D01 + left.D21 * right.D11 + left.D22 * right.D21 + left.D23 * right.D31;
+            result.D31 = left.D30 * right.D01 + left.D31 * right.D11 + left.D32 * right.D21 + left.D33 * right.D31;
+
+            result.D02 = left.D00 * right.D02 + left.D01 * right.D12 + left.D02 * right.D22 + left.D03 * right.D32;
+            result.D12 = left.D10 * right.D02 + left.D11 * right.D12 + left.D12 * right.D22 + left.D13 * right.D32;
+            result.D22 = left.D20 * right.D02 + left.D21 * right.D12 + left.D22 * right.D22 + left.D23 * right.D32;
+            result.D32 = left.D30 * right.D02 + left.D31 * right.D12 + left.D32 * right.D22 + left.D33 * right.D32;
+
+            result.D03 = left.D00 * right.D03 + left.D01 * right.D13 + left.D02 * right.D23 + left.D03 * right.D33;
+            result.D13 = left.D10 * right.D03 + left.D11 * right.D13 + left.D12 * right.D23 + left.D13 * right.D33;
+            result.D23 = left.D20 * right.D03 + left.D21 * right.D13 + left.D22 * right.D23 + left.D23 * right.D33;
+            result.D33 = left.D30 * right.D03 + left.D31 * right.D13 + left.D32 * right.D23 + left.D33 * right.D33;
+
+            return result;
+        }
         public void DebugPrint()
         {
             Log.Trace("Matrix4:");

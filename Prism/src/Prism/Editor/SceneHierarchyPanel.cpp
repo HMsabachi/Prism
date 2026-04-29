@@ -12,6 +12,8 @@
 #include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <Rolky/ManagedObject.hpp>
+
 // TODO:
 // - Eventually change imgui node IDs to be entity/asset GUID
 
@@ -422,63 +424,63 @@ namespace Prism {
 			ImGui::Separator();
 		}
 
-		//if (entity.HasComponent<ScriptComponent>())
-		//{
-		//	auto& sc = entity.GetComponent<ScriptComponent>();
-		//	if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(ScriptComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, "Script"))
-		//	{
-		//		BeginPropertyGrid();
-		//		Property("Module Name", sc.ModuleName.c_str());
+		if (entity.HasComponent<ScriptComponent>())
+		{
+			auto& sc = entity.GetComponent<ScriptComponent>();
+			if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(ScriptComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, "Script"))
+			{
+				BeginPropertyGrid();
+				Property("Module Name", sc.ModuleName.c_str());
 
-		//		// Public Fields
-		//		auto& fieldMap = ScriptEngine::GetFieldMap();
-		//		if (fieldMap.find(sc.ModuleName) != fieldMap.end())
-		//		{
-		//			auto& publicFields = fieldMap.at(sc.ModuleName);
-		//			for (auto& field : publicFields)
-		//			{
-		//				switch (field.Type)
-		//				{
-		//				case FieldType::Int:
-		//				{
-		//					int value = field.GetValue<int>();
-		//					if (Property(field.Name.c_str(), value))
-		//					{
-		//						field.SetValue(value);
-		//					}
-		//					break;
-		//				}
-		//				case FieldType::Float:
-		//				{
-		//					float value = field.GetValue<float>();
-		//					if (Property(field.Name.c_str(), value, 0.2f))
-		//					{
-		//						field.SetValue(value);
-		//					}
-		//					break;
-		//				}
-		//				case FieldType::Vec2:
-		//				{
-		//					glm::vec2 value = field.GetValue<glm::vec2>();
-		//					if (Property(field.Name.c_str(), value, 0.2f))
-		//					{
-		//						field.SetValue(value);
-		//					}
-		//					break;
-		//				}
-		//				}
-		//			}
-		//		}
+				// Public Fields
+				auto& fieldMap = ScriptEngine::GetFieldMap();
+				if (fieldMap.find(sc.ModuleName) != fieldMap.end())
+				{
+					auto& publicFields = fieldMap.at(sc.ModuleName);
+					for (auto& field : publicFields)
+					{
+						switch (field.Type)
+						{
+						case FieldType::Int:
+						{
+							int value = field.m_Object->GetFieldValue<int>(field.Name);
+							if (Property(field.Name.c_str(), value))
+							{
+								field.m_Object->SetFieldValue(field.Name, value);
+							}
+							break;
+						}
+						case FieldType::Float:
+						{
+							float value = field.m_Object->GetFieldValue<float>(field.Name);
+							if (Property(field.Name.c_str(), value, 0.2f))
+							{
+								field.m_Object->SetFieldValue(field.Name, value);
+							}
+							break;
+						}
+						case FieldType::Vec2:
+						{
+							glm::vec2 value = field.m_Object->GetFieldValue<glm::vec2>(field.Name);
+							if (Property(field.Name.c_str(), value, 0.2f))
+							{
+								field.m_Object->SetFieldValue(field.Name, value);
+							}
+							break;
+						}
+						}
+					}
+				}
 
-		//		EndPropertyGrid();
-		//		if (ImGui::Button("Run Script"))
-		//		{
-		//			ScriptEngine::OnCreateEntity(entity);
-		//		}
-		//		ImGui::TreePop();
-		//	}
-		//	ImGui::Separator();
-		//}
+				EndPropertyGrid();
+				if (ImGui::Button("Run Script"))
+				{
+					ScriptEngine::OnCreateEntity(entity);
+				}
+				ImGui::TreePop();
+			}
+			ImGui::Separator();
+		}
 
 	}
 

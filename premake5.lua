@@ -14,6 +14,7 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 -- Include directories relative to root folder (solution directory)
 IncludeDir = {}
+IncludeDir["AllVendor"] = "Prism/vendor"
 IncludeDir["GLFW"] = "Prism/vendor/GLFW/include"
 IncludeDir["Glad"] = "Prism/vendor/Glad/include"
 IncludeDir["ImGui"] = "Prism/vendor/imgui"
@@ -22,6 +23,7 @@ IncludeDir["stb_image"] = "Prism/vendor/stb_image"
 IncludeDir["PrismShaderParser"] = "Prism/vendor/PrismShaderParser/src"
 IncludeDir["nethost"] = "Prism/vendor/nethost"
 IncludeDir["entt"] = "Prism/vendor/entt/include"
+IncludeDir["FastNoise"] = "Prism/vendor/FastNoise"
 IncludeDir["Rolky"] = "Prism/vendor/Rolky/Rolky.Native/Include"
 
 LibraryDir = {}
@@ -32,7 +34,6 @@ group "Dependencies"
 	include "Prism/vendor/imgui"
 	include "Prism/vendor/PrismShaderParser"
 	include "Prism/vendor/Rolky/Rolky.Native"
-	include "Prism/vendor/Rolky/Rolky.Managed"
 group ""
 
 group "Core"
@@ -66,6 +67,7 @@ project "Prism"
 	{
 		"%{prj.name}/src",
 		"%{prj.name}/vendor/spdlog/include",
+        "%{IncludeDir.AllVendor}",
 		"%{IncludeDir.GLFW}",
 		"%{IncludeDir.Glad}",
 		"%{IncludeDir.ImGui}",
@@ -75,6 +77,7 @@ project "Prism"
 		"%{prj.name}/vendor/assimp/include",
 		"%{IncludeDir.nethost}",
 		"%{IncludeDir.entt}",
+        "%{IncludeDir.FastNoise}",
 		"%{IncludeDir.Rolky}"
 	}
 
@@ -95,12 +98,9 @@ project "Prism"
 		"dwmapi.lib"
 	}
 	linkoptions { "/WHOLEARCHIVE:ImGui" }
-
-	-- ==================== C# 脚本系统支持 ====================
-	-- 为 Prism C++ 项目添加 Scripting 目录，并链接 .NET 9 hostfxr
 	libdirs
 	{
-		"%{IncludeDir.nethost}"           -- 新增：告诉链接器去这里找 nethost.lib
+		"%{IncludeDir.nethost}"      
 	}
 	files {
 		"%{prj.name}/src/Scripting/**.h",
@@ -159,43 +159,6 @@ project "Prism"
 			"Prism/vendor/assimp/bin/Release/assimp-vc141-mt.lib"
 		}
 
--- ==================== Prism.Scripting C# 类库（.NET 9） ====================
-project "Prism.Scripting"
-	location "Prism.Scripting"
-	kind "SharedLib"
-	language "C#"
-	dotnetframework "net9.0"          -- 使用 .NET 9
-
-	filter { "action:vs* or system:windows" }
-        language "C#"
-        clr "Unsafe"
-		vsprops {
-			AppendTargetFrameworkToOutputPath = "false",
-			Nullable = "enable",
-			CopyLocalLockFileAssemblies = "true",
-			EnableDynamicLoading = "true",
-		}
-	disablewarnings {
-            "CS8500"
-        }
-
-	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
-	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
-
-	links {
-		"Rolky.Managed"
-	}
-
-	files
-	{
-		"%{prj.name}/src/**.cs",       
-	}
-
-
-
-group ""
-
--- PrismEditor 项目（保持你原来的配置）
 project "PrismEditor"
 	location "PrismEditor"
 	kind "ConsoleApp"
@@ -232,9 +195,7 @@ project "PrismEditor"
 
 	links
 	{
-		"Prism",
-		"Prism.Scripting",   
-    	"ExampleApp"         
+		"Prism"      
 	}
 
 	filter "system:windows"
@@ -287,6 +248,46 @@ project "PrismEditor"
 		{
 			("{COPY} ../Prism/vendor/assimp/bin/Release/ \"../bin/" .. outputdir .. "/%{prj.name}/\""),
 		}
+
+group ""
+workspace "PrismManaged"
+configurations
+{
+	"Debug",
+	"Release",
+	"Dist"
+}
+include "Prism/vendor/Rolky/Rolky.Managed"
+project "Prism.Scripting"
+	location "Prism.Scripting"
+	kind "SharedLib"
+	language "C#"
+	dotnetframework "net9.0"          -- 使用 .NET 9
+
+	filter { "action:vs* or system:windows" }
+        language "C#"
+        clr "Unsafe"
+		vsprops {
+			AppendTargetFrameworkToOutputPath = "false",
+			Nullable = "enable",
+			CopyLocalLockFileAssemblies = "true",
+			EnableDynamicLoading = "true",
+		}
+	disablewarnings {
+            "CS8500"
+        }
+
+	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
+	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
+
+	links {
+		"Rolky.Managed"
+	}
+
+	files
+	{
+		"%{prj.name}/src/**.cs",       
+	}
 
 group "Examples"
 project "ExampleApp"

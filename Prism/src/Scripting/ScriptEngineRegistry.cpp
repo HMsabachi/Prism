@@ -68,6 +68,28 @@ namespace Prism
 		PR_ADD_INTERNAL_CALL(Prism_Entity_SetTransform);
         PR_ADD_INTERNAL_CALL(Prism_Entity_CreateComponent);
         PR_ADD_INTERNAL_CALL(Prism_Entity_HasComponent);
+		// Mesh
+		PR_ADD_INTERNAL_CALL(Prism_MeshComponent_GetMesh);
+		PR_ADD_INTERNAL_CALL(Prism_MeshComponent_SetMesh);
+        PR_ADD_INTERNAL_CALL(Prism_Mesh_Constructor);
+        PR_ADD_INTERNAL_CALL(Prism_Mesh_Destructor);
+        PR_ADD_INTERNAL_CALL(Prism_Mesh_GetMaterial);
+        PR_ADD_INTERNAL_CALL(Prism_Mesh_GetMaterialByIndex);
+		PR_ADD_INTERNAL_CALL(Prism_Mesh_GetMaterialCount);
+        PR_ADD_INTERNAL_CALL(Prism_MeshFactory_CreatePlane);
+		// Texture2D
+        PR_ADD_INTERNAL_CALL(Prism_Texture2D_Constructor);
+        PR_ADD_INTERNAL_CALL(Prism_Texture2D_Destructor);
+        PR_ADD_INTERNAL_CALL(Prism_Texture2D_SetData);
+		// Material
+		PR_ADD_INTERNAL_CALL(Prism_Material_Destructor);
+		PR_ADD_INTERNAL_CALL(Prism_Material_SetFloat);
+		PR_ADD_INTERNAL_CALL(Prism_Material_SetTexture);
+		PR_ADD_INTERNAL_CALL(Prism_MaterialInstance_Destructor);
+		PR_ADD_INTERNAL_CALL(Prism_MaterialInstance_SetFloat);
+		PR_ADD_INTERNAL_CALL(Prism_MaterialInstance_SetVector3);
+		PR_ADD_INTERNAL_CALL(Prism_MaterialInstance_SetTexture);
+
 
 		engineAssembly.UploadInternalCalls();
 
