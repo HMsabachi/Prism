@@ -10,3 +10,6 @@
 [submodule "Prism/vendor/glm"]
 	path = Prism/vendor/glm
 	url = https://github.com/g-truc/glm
+[submodule "Prism/vendor/FastNoise"]
+	path = Prism/vendor/FastNoise
+	url = https://github.com/Auburn/FastNoiseLite.git
