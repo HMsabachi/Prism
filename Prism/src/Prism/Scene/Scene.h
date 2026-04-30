@@ -10,6 +10,7 @@ namespace Prism
 	class MaterialInstance;
 	class TextureCube;
 	class Texture2D;
+	class EditorCamera;
 }
 
 namespace Prism
@@ -39,7 +40,7 @@ namespace Prism
 
 		void Init();
 
-		void OnUpdate();
+		void OnUpdate(const EditorCamera& editorCamera);
 		void OnEvent(Event& e);
 
 		void SetEnvironment(const Environment& environment);

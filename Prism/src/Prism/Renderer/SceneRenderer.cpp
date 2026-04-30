@@ -18,7 +18,7 @@ namespace Prism
 		const Scene* ActiveScene = nullptr;
 		struct SceneInfo
 		{
-			Camera SceneCamera;
+			SceneRendererCamera SceneCamera;
 
 			// Resources
 			Ref<MaterialInstance> SkyboxMaterial;
@@ -90,7 +90,7 @@ namespace Prism
 		s_Data.CompositePass->GetSpecification().TargetFramebuffer->Resize(width, height);
 	}
 
-	void SceneRenderer::BeginScene(const Scene* scene, const Camera& camera)
+	void SceneRenderer::BeginScene(const Scene* scene, const SceneRendererCamera& camera)
 	{
 		PR_CORE_ASSERT(!s_Data.ActiveScene, "");
 
@@ -198,7 +198,8 @@ namespace Prism
 		}
 		if (GetOptions().ShowBoundingBoxes)
 		{
-			Renderer2D::BeginScene(s_Data.SceneData.SceneCamera.GetViewProjection());
+			auto viewProjection = s_Data.SceneData.SceneCamera.Camera.GetProjectionMatrix() * s_Data.SceneData.SceneCamera.ViewMatrix;
+			Renderer2D::BeginScene(viewProjection);
 			for (auto& dc : s_Data.DrawList)
 				Renderer::DrawAABB(dc.Mesh, dc.Transform);
 			Renderer2D::EndScene();
@@ -214,7 +215,7 @@ namespace Prism
 		PR_PROFILE_FUNCTION();
 		Renderer::BeginRenderPass(s_Data.CompositePass);
 		s_Data.CompositeShader->Bind();
-		s_Data.CompositeShader->SetFloat("u_Exposure", s_Data.SceneData.SceneCamera.GetExposure());
+		s_Data.CompositeShader->SetFloat("u_Exposure", s_Data.SceneData.SceneCamera.Camera.GetExposure());
 		s_Data.CompositeShader->SetInt("u_TextureSamples", s_Data.GeoPass->GetSpecification().TargetFramebuffer->GetSpecification().Samples);
 		s_Data.GeoPass->GetSpecification().TargetFramebuffer->BindTexture();
 		Renderer::SubmitFullscreenQuad(nullptr);
@@ -257,12 +258,14 @@ namespace Prism
 		auto& camera = s_Data.SceneData.SceneCamera;
 		auto& sceneUniforms = s_Data.SceneData.SceneUniforms;
 		const auto& framebufferSpec = s_Data.GeoPass->GetSpecification().TargetFramebuffer->GetSpecification();
+		glm::vec3 cameraPosition = glm::inverse(s_Data.SceneData.SceneCamera.ViewMatrix)[3];
+		auto viewProjection = s_Data.SceneData.SceneCamera.Camera.GetProjectionMatrix() * s_Data.SceneData.SceneCamera.ViewMatrix;
 		sceneUniforms.AspectRatio = (float)framebufferSpec.Width / (float)framebufferSpec.Height;
-		sceneUniforms.CameraPosition = camera.GetPosition();
+		sceneUniforms.CameraPosition = cameraPosition;
 		sceneUniforms.DeltaTime = Prism::Time::GetDeltaTime();
-		sceneUniforms.Projection = camera.GetProjectionMatrix();
-		sceneUniforms.View = camera.GetViewMatrix();
-		sceneUniforms.ViewProjection = camera.GetViewProjection();
+		sceneUniforms.Projection = camera.Camera.GetProjectionMatrix();
+		sceneUniforms.View = camera.ViewMatrix;
+		sceneUniforms.ViewProjection = viewProjection;
 		sceneUniforms.InverseViewProjection = glm::inverse(sceneUniforms.ViewProjection);
 		float time = Prism::Time::GetTime();
 		sceneUniforms.Time = glm::vec4(time * 0.2f, time, time * 2, time * 3);

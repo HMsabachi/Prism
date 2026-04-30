@@ -10,6 +10,8 @@
 #include "Prism/Renderer/Renderer2D.h"
 #include "Prism/Renderer/SceneRenderer.h"
 
+#include "Prism/Editor/EditorCamera.h"
+
 namespace Prism 
 {
 
@@ -70,22 +72,9 @@ namespace Prism
 #endif
 	}
 
-	void Scene::OnUpdate()
+	void Scene::OnUpdate(const EditorCamera& editorCamera)
 	{
 		float ts = Time::GetDeltaTime();
-
-		Camera* camera = nullptr;
-		{
-			auto view = m_Registry.view<CameraComponent>();
-			for (auto entity : view)
-			{
-				auto& comp = view.get<CameraComponent>(entity);
-				camera = &comp.Camera;
-				break;
-			}
-		}
-		PR_CORE_ASSERT(camera, "场景中没有任何相机");
-		camera->OnUpdate();
 
 		m_SkyboxMaterial->Set("u_TextureLod", m_SkyboxLod);
 
@@ -120,7 +109,7 @@ namespace Prism
 			auto& meshComponent = m_Registry.get<MeshComponent>(entity);
 		}
 		auto group = m_Registry.group<MeshComponent>(entt::get<TransformComponent>);
-		SceneRenderer::BeginScene(this, *camera);
+		SceneRenderer::BeginScene(this, { editorCamera, editorCamera.GetViewMatrix() });
 		for (auto entity : group)
 		{
 			auto [transformComponent, meshComponent] = group.get<TransformComponent, MeshComponent>(entity);
@@ -138,13 +127,6 @@ namespace Prism
 
 	void Scene::OnEvent(Event& e)
 	{
-		auto view = m_Registry.view<CameraComponent>();
-		for (auto entity : view)
-		{
-			auto& comp = view.get<CameraComponent>(entity);
-			comp.Camera.OnEvent(e);
-			break;
-		}
 	}
 
 	void Scene::SetEnvironment(const Environment& environment)

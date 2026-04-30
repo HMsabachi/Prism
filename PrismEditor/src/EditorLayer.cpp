@@ -18,7 +18,8 @@ namespace Prism
 	}
 
 
-	EditorLayer::EditorLayer() : m_SceneType(SceneType::Model)
+	EditorLayer::EditorLayer() 
+		: m_SceneType(SceneType::Model), m_EditorCamera(glm::perspectiveFov(glm::radians(45.0f), 1280.0f, 720.0f, 0.1f, 10000.0f))
 	{
 
 	}
@@ -108,8 +109,6 @@ namespace Prism
 		// Model Scene
 		{
 			m_Scene = Ref<Scene>::Create("Model Scene");
-			m_CameraEntity = m_Scene->CreateEntity("Camera");
-			m_CameraEntity.AddComponent<CameraComponent>(Camera(glm::perspectiveFov(glm::radians(45.0f), 1280.0f, 720.0f, 0.1f, 10000.0f)));
 
 			m_Scene->SetEnvironment(environment);
 			m_MeshEntity = m_Scene->CreateEntity("Test Entity");
@@ -132,8 +131,6 @@ namespace Prism
 		// Sphere Scene
 		{
 			m_SphereScene = Ref<Scene>::Create("PBR Sphere Scene");
-			auto cameraEntity = m_SphereScene->CreateEntity("Camera");
-			cameraEntity.AddComponent<CameraComponent>(Camera(glm::perspectiveFov(glm::radians(45.0f), 1280.0f, 720.0f, 0.1f, 10000.0f)));
 			auto sphereMesh = Ref<Mesh>::Create("assets/models/Sphere1m.fbx");
 			m_SphereBaseMaterial = sphereMesh->GetMaterial();
 			float x = -4.0f;
@@ -192,6 +189,7 @@ namespace Prism
 	{
 		using namespace Prism;
 		using namespace glm;
+		m_EditorCamera.OnUpdate(Time::GetDeltaTime());
 
 		m_MeshMaterial->Set("u_AlbedoColor", m_AlbedoInput.Color);
 		m_MeshMaterial->Set("u_Metalness", m_MetalnessInput.Value);
@@ -228,13 +226,12 @@ namespace Prism
 		{
 			m_ActiveScene->GetCamera().OnUpdate();
 		}*/
-		m_ActiveScene->OnUpdate();
+		m_ActiveScene->OnUpdate(m_EditorCamera);
 
 		if (m_DrawOnTopBoundingBoxes) 
 		{
 			Prism::Renderer::BeginRenderPass(Prism::SceneRenderer::GetFinalRenderPass(), false);
-			auto viewProj = m_CameraEntity.GetComponent<CameraComponent>().Camera.GetViewProjection();
-			Prism::Renderer2D::BeginScene(viewProj, false);
+			Prism::Renderer2D::BeginScene(m_EditorCamera.GetViewProjection(), false);
 			//Prism::Renderer2D::DrawQuad({ 0, 0, 0 }, { 4.0f, 5.0f }, { 1.0f, 1.0f, 0.5f, 1.0f });
 			Renderer::DrawAABB(m_MeshEntity.GetComponent<MeshComponent>(), m_MeshEntity.GetComponent<TransformComponent>());
 			Prism::Renderer2D::EndScene();
@@ -245,8 +242,7 @@ namespace Prism
 		{
 			auto& selection = m_SelectionContext[0];
 			Prism::Renderer::BeginRenderPass(Prism::SceneRenderer::GetFinalRenderPass(), false);
-			auto viewProj = m_CameraEntity.GetComponent<CameraComponent>().Camera.GetViewProjection();
-			Prism::Renderer2D::BeginScene(viewProj, false);
+			Prism::Renderer2D::BeginScene(m_EditorCamera.GetViewProjection(), false);
 			glm::vec4 color = (m_SelectionMode == SelectionMode::Entity) ? glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f } : glm::vec4{ 0.2f, 0.9f, 0.2f, 1.0f };
 			Renderer::DrawAABB(selection.Mesh->BoundingBox, selection.Entity.GetComponent<TransformComponent>().Transform * selection.Mesh->Transform, color);
 			Prism::Renderer2D::EndScene();
@@ -416,7 +412,7 @@ namespace Prism
 		Property("Light Direction", light.Direction);
 		Property("Light Radiance", light.Radiance, PropertyFlag::ColorProperty);
 		Property("Light Multiplier", light.Multiplier, 0.0f, 5.0f);
-		Property("Exposure", m_CameraEntity.GetComponent<CameraComponent>().Camera.GetExposure(), 0.0f, 5.0f);
+		Property("Exposure", m_EditorCamera.GetExposure(), 0.0f, 5.0f);
 
 		Property("Radiance Prefiltering", m_RadiancePrefilter);
 		Property("Env Map Rotation", m_EnvMapRotation, -360.0f, 360.0f);
@@ -613,8 +609,8 @@ namespace Prism
 		auto viewportOffset = ImGui::GetCursorPos();
 		auto viewportSize = ImGui::GetContentRegionAvail();
 		SceneRenderer::SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
-		m_CameraEntity.GetComponent<CameraComponent>().Camera.SetProjectionMatrix(glm::perspectiveFov(glm::radians(45.0f), viewportSize.x, viewportSize.y, 0.1f, 10000.0f));
-		m_CameraEntity.GetComponent<CameraComponent>().Camera.SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
+		m_EditorCamera.SetProjectionMatrix(glm::perspectiveFov(glm::radians(45.0f), viewportSize.x, viewportSize.y, 0.1f, 10000.0f));
+		m_EditorCamera.SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
 		ImGui::Image((void*)SceneRenderer::GetFinalColorBufferRendererID(), viewportSize, { 0, 1 }, { 1, 0 });
 		
 		static int counter = 0;
@@ -636,7 +632,7 @@ namespace Prism
 			ImGuizmo::SetDrawlist();
 			ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, rw, rh);
 			
-			auto& camera = m_CameraEntity.GetComponent<CameraComponent>().Camera;
+			auto& camera = m_EditorCamera;
 			bool snap = Input::IsKeyPressed(PR_KEY_LEFT_CONTROL);
 			auto& entityTransform = selection.Entity.Transform();
 			float snapValue[3] = { m_SnapValue, m_SnapValue, m_SnapValue };
@@ -714,6 +710,7 @@ namespace Prism
 	void EditorLayer::OnEvent(Prism::Event& e)
 	{
 		m_Scene->OnEvent(e);
+		m_EditorCamera.OnEvent(e);
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<KeyPressedEvent>(PR_BIND_EVENT_FN(EditorLayer::OnKeyPressedEvent));
 		dispatcher.Dispatch<MouseButtonPressedEvent>(PR_BIND_EVENT_FN(EditorLayer::OnMouseButtonPressed));
@@ -821,11 +818,11 @@ namespace Prism
 	{
 		glm::vec4 mouseClipPos = { mx, my, -1.0f, 1.0f };
 
-		auto inverseProj = glm::inverse(m_CameraEntity.GetComponent<CameraComponent>().Camera.GetProjectionMatrix());
-		auto inverseView = glm::inverse(glm::mat3(m_CameraEntity.GetComponent<CameraComponent>().Camera.GetViewMatrix()));
+		auto inverseProj = glm::inverse(m_EditorCamera.GetProjectionMatrix());
+		auto inverseView = glm::inverse(glm::mat3(m_EditorCamera.GetViewMatrix()));
 
 		glm::vec4 ray = inverseProj * mouseClipPos;
-		glm::vec3 rayPos = m_CameraEntity.GetComponent<CameraComponent>().Camera.GetPosition();
+		glm::vec3 rayPos = m_EditorCamera.GetPosition();
 		glm::vec3 rayDir = inverseView * glm::vec3(ray);
 
 		return { rayPos, rayDir };

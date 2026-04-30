@@ -73,7 +73,7 @@ namespace Prism
 		Ref<Scene> m_ActiveScene;
 
 		Entity m_MeshEntity;
-		Entity m_CameraEntity;
+		EditorCamera m_EditorCamera;
 
 		Ref<Material> m_SphereBaseMaterial;
 

@@ -46,9 +46,11 @@
 // Scenes
 #include "Prism/Scene/Entity.h"
 #include "Prism/Scene/Scene.h"
+#include "Prism/Scene/SceneCamera.h"
 
 // Editor
 #include "Prism/Editor/SceneHierarchyPanel.h"
+#include "Prism/Editor/EditorCamera.h"
 
 // ---------------------------------------------------
 

@@ -4,7 +4,7 @@
 
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Mesh.h"
-#include "Prism/Renderer/Camera/Camera.h"
+#include "Prism/Scene/SceneCamera.h"
 
 namespace Prism {
 
@@ -40,11 +40,16 @@ namespace Prism {
 	struct CameraComponent
 	{
 		//OrthographicCamera Camera;
-		Prism::Camera Camera;
+		SceneCamera Camera;
 		bool Primary = true;
 
-		operator Prism::Camera& () { return Camera; }
-		operator const Prism::Camera& () const { return Camera; }
+		CameraComponent() = default;
+		CameraComponent(const CameraComponent& other)
+			: Camera(other.Camera), Primary(other.Primary) {
+		}
+
+		operator SceneCamera& () { return Camera; }
+		operator const SceneCamera& () const { return Camera; }
 	};
 
 	struct SpriteRendererComponent
