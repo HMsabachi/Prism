@@ -25,6 +25,7 @@ IncludeDir["nethost"] = "Prism/vendor/nethost"
 IncludeDir["entt"] = "Prism/vendor/entt/include"
 IncludeDir["FastNoise"] = "Prism/vendor/FastNoise"
 IncludeDir["Rolky"] = "Prism/vendor/Rolky/Rolky.Native/Include"
+IncludeDir["yaml"] = "Prism/vendor/yaml-cpp/include"
 
 LibraryDir = {}
 LibraryDir["nethost"] = "Prism/vendor/nethost"
@@ -44,7 +45,7 @@ project "Prism"
 	language "C++"
 	staticruntime "off"
 
-	defines { "PR_DYNAMIC_LINK" , "_CRT_SECURE_NO_WARNINGS" }
+	defines { "PR_DYNAMIC_LINK" , "_CRT_SECURE_NO_WARNINGS", "yaml_cpp_EXPORTS"}
 
 	targetdir ("bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
@@ -52,7 +53,7 @@ project "Prism"
 	pchheader "prpch.h"
 	pchsource "Prism/src/prpch.cpp"
 
-	files
+	files 
 	{
 		"%{prj.name}/src/**.h",
 		"%{prj.name}/src/**.cpp",
@@ -60,7 +61,10 @@ project "Prism"
 		"%{prj.name}/vendor/stb_image/**.cpp",
 		"%{prj.name}/vendor/glm/glm/**.h",
 		"%{prj.name}/vendor/glm/glm/**.hpp",
-		"%{prj.name}/vendor/glm/glm/**.inl"
+		"%{prj.name}/vendor/glm/glm/**.inl",
+        "%{prj.name}/vendor/yaml-cpp/src/**.cpp",
+		"%{prj.name}/vendor/yaml-cpp/src/**.h",
+		"%{prj.name}/vendor/yaml-cpp/include/**.h"
 	}
 
 	includedirs
@@ -78,7 +82,8 @@ project "Prism"
 		"%{IncludeDir.nethost}",
 		"%{IncludeDir.entt}",
         "%{IncludeDir.FastNoise}",
-		"%{IncludeDir.Rolky}"
+		"%{IncludeDir.Rolky}",
+        "%{IncludeDir.yaml}"
 	}
 
 	libdirs
@@ -102,14 +107,10 @@ project "Prism"
 	{
 		"%{IncludeDir.nethost}"      
 	}
-	files {
-		"%{prj.name}/src/Scripting/**.h",
-		"%{prj.name}/src/Scripting/**.cpp"
-	}
 	includedirs { "%{prj.name}/src/Scripting" }
-	links { "nethost" }   -- .NET 9 嵌入运行时必需的库
+	links { "nethost" }   
 
-	filter "files:%{prj.name}/src/Scripting/Native/**.cpp"
+	filter "files:%{prj.name}/src/Scripting/Native/**.cpp or files:Prism/vendor/yaml-cpp/src/**.cpp"
    		flags { "NoPCH" }
 
 	filter "system:windows"

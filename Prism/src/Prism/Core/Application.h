@@ -35,7 +35,8 @@ namespace Prism
 		void PushLayer(Layer* layer);
 		void PushOverlay(Layer* overlay);
 
-		std::string OpenFile(const std::string& filter) const;
+		std::string OpenFile(const char* filter = "All\0*.*\0") const;
+		std::string SaveFile(const char* filter = "All\0*.*\0") const;
 
 		inline static Application& Get() { return *s_Instance; }
 		inline Window& GetWindow() const { return *m_Window; }

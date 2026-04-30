@@ -38,19 +38,19 @@ namespace Example
 
             texture.SetData(colorMap);
 
-            Console.WriteLine("HasComponent - TransformComponent = {0}", HasComponent<TransformComponent>());
-            Console.WriteLine("HasComponent - ScriptComponent = {0}", HasComponent<ScriptComponent>());
-            Console.WriteLine("HasComponent - MeshComponent = {0}", HasComponent<MeshComponent>());
+            Log.Trace("HasComponent - TransformComponent = {0}", HasComponent<TransformComponent>());
+            Log.Trace("HasComponent - ScriptComponent = {0}", HasComponent<ScriptComponent>());
+            Log.Trace("HasComponent - MeshComponent = {0}", HasComponent<MeshComponent>());
 
             MeshComponent meshComponent = GetComponent<MeshComponent>();
             if (meshComponent == null)
             {
-                Console.WriteLine("MeshComponent is null!");
+                Log.Trace("MeshComponent is null!");
                 meshComponent = CreateComponent<MeshComponent>();
             }
             meshComponent.Mesh = MeshFactory.CreatePlane(1.0f, 1.0f);
 
-            Console.WriteLine("Mesh has {0} materials!", meshComponent.Mesh.GetMaterialCount());
+            Log.Trace("Mesh has {0} materials!", meshComponent.Mesh.GetMaterialCount());
 
             MaterialInstance material = meshComponent.Mesh.GetMaterial(1);
             material.Set("u_AlbedoTexToggle", 1.0f);

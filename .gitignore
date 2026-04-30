@@ -1,5 +1,6 @@
 ﻿# Directories
 .vs/
+.vscode/
 bin/
 bin-int/
 Future/
@@ -12,10 +13,10 @@ Prism.Scripting/Prism.Scripting.csproj
 # Files
 *.json
 *.user
-*.sln
-*.vcxproj.user
-*.vcxproj
-*.vcxproj.filters
+**.sln
+**.vcxproj.user
+**.vcxproj
+**.vcxproj.filters
 *.ini
 *.targets
 *.csproj
