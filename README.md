@@ -1,22 +1,23 @@
 
+
 # Prism Engine
 
 ![Prism Engine Logo](https://github.com/HMsabachi/Prism/blob/main/Prism/assets/logo/WhiteLogo.png?raw=true "Prism Engine")
 
-**Prism** 是一个轻量级、模块化、用 C++ 开发的跨平台游戏引擎，渲染后端使用 **OpenGL**（目前采用现代 OpenGL API，如 glCreateBuffer、glCreateVertexArrays 等）。
+**Prism** 是一个轻量级、模块化、用 C++ 开发的跨平台游戏引擎，渲染后端使用 **OpenGL**（采用现代 OpenGL API，如 `glCreateBuffer`、`glCreateVertexArrays` 等）。
 
 **注意：最新开发进度请切换到 `Prism3D` 分支**（`git checkout Prism3D`），所有最新提交均在此分支。
 
-目前处于早期开发阶段，已实现基础渲染管线、Shader 管理、Vertex Array 封装、日志系统、Scene 系统、Renderer2D、Compute Shader 支持等。目标是打造一个清晰、易扩展、高性能的引擎，适合学习和小型游戏开发。
+目前已实现现代渲染管线、Scene 系统、C# 脚本系统、ECS 架构、编辑器基础框架等功能。目标是打造一个清晰、易扩展、高性能的引擎，适合学习和中小型游戏开发。
 
 ## 🛠 快速开始
 
-### 1. 克隆仓库（包含子模块）
+### 1. 克隆仓库并切换分支
 
 ```bash
 git clone --recursive https://github.com/HMsabachi/Prism.git
 cd Prism
-git checkout Prism3D   # 切换到最新开发分支
+git checkout Prism3D          # 切换到最新开发分支（必须）
 ```
 
 ### 2. 生成项目文件
@@ -32,78 +33,72 @@ premake5 xcode4        # macOS Xcode
 
 ### 3. 编译并运行
 
-打开生成的解决方案（或 Makefile），编译 `SandBox` 项目并运行，即可看到最新渲染结果（包含 Scene、Renderer2D、Compute Shader 等演示）。
+编译 `SandBox`（或 `ExampleApp`）项目并运行，即可看到最新的 Scene、Renderer2D、C# 脚本组件、编辑器界面等演示效果。
 
 ## 📸 截图 / 演示
-![Prism Engine UI](docs/Screenshot/Editor3.png "Prism Engine UI")
 
 ![Prism Engine UI](docs/Screenshot/Editor2.png "Prism Engine UI")
 
+![Prism Engine UI](docs/Screenshot/Editor3.png "Prism Engine UI")
+
 ## ⚙️ 规划与实现
 
-- [ ] 资源管理系统
-- [ ] 场景图与实体组件系统（ECS）（Scene 系统已初步实现）
+- [ ] 完整资源管理系统（Texture、Mesh、Material 序列化）
 - [ ] 物理系统集成
+- [x] **C# 脚本系统**（已基本完善，支持组件化开发）
+- [x] **实体组件系统（ECS）**（基于 entt，已初步实现）
 - [x] 编辑器界面 (正在进行)
   - [x] PrismEditor 项目
-  - [x] 基础组件 + 场景层级面板 + ImGuizmo
+  - [x] 场景层级面板 + 属性面板 + ImGuizmo
+  - [x] 子网格拾取与高亮
 - [x] 3D 渲染管线 (正在进行)
   - [x] 材质系统（Material/Instance）
-  - [x] 重构Shader以支持**PSL**(*Prism Shader Language*) 并完成全部着色器转换
-  - [x] Shader Property 系统
-  - [x] Transform
   - [x] RenderPass 系统
-  - [x] Compute Shader（支持多纹理与 PBR 预处理）
-  - [x] SSBO（Shader Storage Buffer Object）
-  - [x] HDR 渲染
-  - [x] MSAA（多重采样帧缓冲）
-- [x] 相机系统
-  - [x] 正交相机
-  - [x] 透视相机
+  - [x] Compute Shader（多纹理与 PBR 预处理）
+  - [x] SSBO 支持
+  - [x] HDR 渲染 + MSAA 多重采样
+  - [x] Prism Shader Language (PSL) 完整支持
+- [x] 相机系统（已重构）
 - [x] Renderer2D 模块（含 AABB 可视化调试）
-- [x] Scene 系统（场景管理核心）
-- [x] Time 系统
-- [x] Shader 管理
-- [x] Vertex Array 封装
-- [x] 日志系统
-- [x] 跨平台构建支持
+- [x] Scene 系统（场景管理与对象生命周期）
+- [x] 输入系统（已重构）
+- [x] Time 系统与 YAML + UUID 支持
+- [x] 日志系统（多级别、格式化、跨语言支持）
 
 ## ✨ 特性（当前已实现）
 
-- **OpenGL 现代渲染管线**  
-  - OpenGL 上下文封装（使用新版 API）  
-  - OpenGLShader 类（完整支持 PSL）  
-  - Vertex Array / Vertex Buffer / Index Buffer 抽象  
-  - Compute Shader 原生支持  
-  - SSBO 支持  
-  - HDR 渲染  
-  - MSAA 多重采样帧缓冲  
+- **C# 脚本系统**（核心新特性）
+  - C++/C# 互操作与反射（基于 Rolky）
+  - .NET 运行时集成
+  - 组件化脚本开发（ScriptComponent）
+  - InternalCall 自动绑定机制
 
-- **Renderer2D 模块**  
-  - 2D 渲染管线  
-  - AABB 可视化调试支持  
+- **实体组件系统（ECS）**
+  - 引入 **entt** 库
+  - Entity-Component 架构初步完成
 
-- **Scene 系统**  
-  - 场景管理与对象生命周期  
-  - 场景层级面板（编辑器）  
+- **OpenGL 现代渲染管线**
+  - 使用新版 OpenGL API
+  - OpenGLShader（完整 PSL 支持）
+  - RenderPass 系统
+  - Compute Shader、SSBO、HDR、MSAA
+  - OpenGLStateCache 渲染状态统一管理
+  - Renderer2D + AABB 可视化
 
-- **材质与渲染架构**  
-  - Material / MaterialInstance 系统  
-  - RenderPass 系统  
-  - 智能指针资源管理  
+- **编辑器功能**
+  - ImGui 深度集成 + ImGuizmo 变换工具
+  - 场景层级面板 + 属性信息面板
+  - 子网格拾取与高亮支持
 
-- **编辑器功能**  
-  - ImGui 深度集成  
-  - ImGuizmo 变换工具  
-  - 场景层级面板  
+- **基础系统**
+  - 日志系统（重构后支持多级别、格式化、NativeString 跨语言）
+  - 相机系统（已重构）
+  - 输入系统（已重构）
+  - YAML 配置支持 + UUID 生成类
+  - 侵入式 Ref 智能指针
 
-- **数学库**：集成 GLM 数学库
-
-- **日志系统**：底层使用 spdlog 统一日志输出，便于调试
-
-- **构建系统**：使用 Premake 5，支持 Windows / Linux / macOS 快速生成项目文件（目前仅 Windows 完整支持）
-
-- **Prism Shader Language (PSL)**：完整支持与扩展，所有着色器已转换为 PSL
+- **数学库**：集成 GLM
+- **构建系统**：Premake 5（目前 Windows 支持最好）
 
 ## 🧩 技术文档
 - 中文版
@@ -115,32 +110,29 @@ premake5 xcode4        # macOS Xcode
 
 ## 📁 项目结构
 
-```
+```bash
 Prism/
-├── Prism/                  # 引擎核心源码（Renderer/ 为核心渲染模块）
-├── SandBox/                # 示例应用功能
-│   └── src/                # Sandbox 主程序源码
-├── vendor/                 # 第三方依赖
-│   └── premake/            # Premake 5 构建工具
-├── .gitignore
-├── .gitmodules             # 子模块（当前主要包含 GLM）
-├── GenerateProjects.bat    # Windows 一键生成项目文件
-├── LICENSE
-├── premake5.lua            # Premake 构建配置文件
+├── Prism/                  # 引擎核心（Renderer、Scene 等）
+├── Prism.Scripting/        # C# 脚本系统模块（最新）
+├── PrismEditor/            # 编辑器模块（ImGui + ImGuizmo）
+├── SandBox/                # 示例应用
+├── ExampleApp/             # 另一个示例应用
+├── vendor/                 # 第三方库（entt、Rolky、stb_image 等）
+├── docs/
+├── premake5.lua
+├── GenerateProjects.bat
 └── README.md
 ```
 
-> **具体代码实现建议直接查看仓库 `Prism3D` 分支最新提交**，核心渲染模块集中在 `Prism/Renderer/` 下，编辑器相关代码在 `Prism/Editor/` 下。
+
 
 ## 🎯 开发路线图（Roadmap）
 
-- [ ] 跨平台窗口抽象
-- [ ] 输入系统（键盘、鼠标）
-- [ ] 2D 渲染管线（Sprite、Batch Rendering）（Renderer2D 已初步完成）
-- [ ] 资源管理系统（Texture、Mesh、Material）
-- [ ] 场景图与实体组件系统（ECS）（Scene 已实现基础）
+- [ ] 完善 C# 脚本系统（热重载、编辑器脚本属性面板）
+- [ ] 完整资源管理系统与序列化
 - [ ] 物理系统集成
-- [ ] 编辑器界面（ImGui 进一步扩展）
+- [ ] 输入系统进一步完善（跨平台）
+- [ ] 跨平台窗口与渲染抽象
 - [ ] Vulkan 后端支持（长期目标）
 
 欢迎参与贡献，一起完善 Prism！
@@ -153,12 +145,11 @@ Prism/
 4. 推送分支 (`git push origin feature/AmazingFeature`)
 5. 开启 Pull Request
 
-欢迎任何形式的 Issue 和 PR！
+欢迎任何 Issue 和 PR！
 
 ## 📄 许可证
 
-本项目采用 **Apache License 2.0** 许可证。  
-详见 [LICENSE](LICENSE) 文件。
+本项目采用 **Apache License 2.0** 许可证。详见 [LICENSE](LICENSE) 文件。
 
 ---
 
@@ -167,10 +158,11 @@ Prism/
 ## 参考资料
 - [Hazel Engine](https://github.com/TheCherno/Hazel)
 - [LearnOpenGL CN](https://learnopengl-cn.github.io/)
-- [spdlog](https://github.com/gabime/spdlog)    
-- [Premake 5](https://premake.github.io/)
-- [GLM](https://github.com/g-truc/glm)
-- [ImGui](https://github.com/ocornut/imgui) 
+- [entt](https://github.com/skypjack/entt)
+- [ImGui](https://github.com/ocornut/imgui)
+- [spdlog](https://github.com/gabime/spdlog)
+
+
 
 ---
 
