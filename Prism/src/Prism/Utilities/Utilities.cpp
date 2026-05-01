@@ -137,12 +137,12 @@ namespace Prism
 				result.resize(in.tellg());
 				in.seekg(0, std::ios::beg);
 				in.read(&result[0], result.size());
-				in.close();
 			}
 			else
 			{
 				PR_CORE_WARN("Could not open file '{0}'", filePath);
 			}
+			in.close();
 			return result;
 		}
 

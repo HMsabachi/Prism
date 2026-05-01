@@ -62,7 +62,7 @@ namespace Prism
 
 		static void DrawAABB(const AABB& aabb, const glm::mat4& transform, const glm::vec4& color = glm::vec4(1.0f,0.0f,0.0f,1.0f));
 	static void DrawAABB(Ref<Mesh> mesh, const glm::mat4& transform, const glm::vec4& color = glm::vec4(1.0f));
-	private:
+	public:
 		static RenderCommandQueue& GetRenderCommandQueue();
 	};
 }

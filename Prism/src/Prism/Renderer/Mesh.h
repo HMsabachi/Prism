@@ -135,6 +135,8 @@ namespace Prism {
 
 		Ref<PrismShader> GetMeshShader() { return m_MeshShader; }
 		Ref<Material> GetMaterial() { return m_BaseMaterial; }
+		void SetOverrideMaterial(const Ref<MaterialInstance>& material) { m_OverrideMaterial = material; }
+        Ref<MaterialInstance> GetOverrideMaterial() { return m_OverrideMaterial; }
 		std::vector<Ref<MaterialInstance>> GetMaterials() { return m_Materials; }
 		const std::vector<Ref<Texture2D>>& GetTextures() const { return m_Textures; }
 		const std::string& GetFilePath() const { return m_FilePath; }
@@ -174,6 +176,7 @@ namespace Prism {
 		// Materials
 		Ref<PrismShader> m_MeshShader;
 		Ref<Material> m_BaseMaterial;
+		Ref<MaterialInstance> m_OverrideMaterial;
 		std::vector<Ref<Texture2D>> m_Textures;
 		std::vector<Ref<Texture2D>> m_NormalMaps;
 		std::vector<Ref<MaterialInstance>> m_Materials;

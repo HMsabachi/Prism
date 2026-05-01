@@ -23,6 +23,7 @@ namespace Prism
 
 	void* RenderCommandQueue::Allocate(RenderCommandFn fn, uint32_t size)
 	{
+		m_SubmitCount++;
 		if (m_IsExecuting);
 			//PR_CORE_WARN("RenderCommandQueue: 在执行命令队列时分配新了的命令!");
 		// TODO: 对齐 alignment

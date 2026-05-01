@@ -514,13 +514,13 @@ internal static class ManagedObject
 				return;
 			}
 
-			if (propertyInfo.SetMethod == null)
-			{
-				LogMessage($"Cannot set value of property '{InPropertyName}'. No setter was found.", MessageLevel.Error);
-				return;
-			}
+            if (propertyInfo.GetSetMethod(true) == null)
+            {
+                LogMessage($"Cannot set value of property '{InPropertyName}'. No setter was found.", MessageLevel.Error);
+                return;
+            }
 
-			object? value = Marshalling.MarshalPointer(InValue, propertyInfo.PropertyType);
+            object? value = Marshalling.MarshalPointer(InValue, propertyInfo.PropertyType);
 			propertyInfo.SetValue(target, value);
 		}
 		catch (Exception ex)

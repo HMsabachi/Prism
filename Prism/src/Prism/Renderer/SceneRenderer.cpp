@@ -6,6 +6,7 @@
 #include "Shader/GlobalUniforms.h"
 #include "Renderer.h"
 #include "Renderer2D.h"
+#include "Prism/Renderer/Camera/Camera.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -41,9 +42,11 @@ namespace Prism
 			glm::mat4 Transform;
 		};
 		std::vector<DrawCommand> DrawList;
+		std::vector<DrawCommand> SelectedMeshDrawList;
 
 		// Grid
 		Ref<MaterialInstance> GridMaterial;
+		Ref<MaterialInstance> OutlineMaterial;
 
 		SceneRendererOptions Options;
 	};
@@ -82,6 +85,9 @@ namespace Prism
 		float gridScale = 16.025f, gridSize = 0.025f;
 		s_Data.GridMaterial->Set("u_Scale", gridScale);
 		s_Data.GridMaterial->Set("u_Res", gridSize);
+		// Outline
+		auto outlineShader = PrismShader::Create("assets/shaders/Outline.Shader");
+		s_Data.OutlineMaterial = MaterialInstance::Create(Material::Create(outlineShader));
 	}
 
 	void SceneRenderer::SetViewportSize(uint32_t width, uint32_t height)
@@ -117,6 +123,11 @@ namespace Prism
 		// TODO: Culling, sorting, etc.
 
 		s_Data.DrawList.push_back({ mesh, overrideMaterial, transform });
+	}
+
+	void SceneRenderer::SubmitSelectedMesh(Ref<Mesh> mesh, const glm::mat4& transform)
+	{
+		s_Data.SelectedMeshDrawList.push_back({ mesh, nullptr, transform });
 	}
 
 	static Ref<ComputeShader> environmentShader;
@@ -168,12 +179,35 @@ namespace Prism
 		return { envFiltered, irradianceMap };
 	}
 
+	// TODO: 移除这些
+#include <glad/glad.h>
 
 	void SceneRenderer::GeometryPass()
 	{
 #if 1
 		PR_PROFILE_FUNCTION();
+		//Renderer::GetRenderCommandQueue().ResetSubmitCount();
+		// 描边相关
+		bool outline = s_Data.SelectedMeshDrawList.size() > 0;
+		//outline = false;
+		if (outline)
+		{
+			Renderer::Submit([]()
+			{
+				glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+			});
+		}
+
 		Renderer::BeginRenderPass(s_Data.GeoPass);
+
+		if (outline)
+		{
+			Renderer::Submit([]()
+				{
+					glStencilMask(0);
+				});
+		}
+
 		// Skybox
 		auto skyboxShader = s_Data.SceneData.SkyboxMaterial->GetShader();
 		// s_Data.SceneInfo.EnvironmentIrradianceMap->Bind(0);
@@ -188,9 +222,68 @@ namespace Prism
 			baseMaterial->Set("u_EnvIrradianceTex", s_Data.SceneData.SceneEnvironment.IrradianceMap);
 			baseMaterial->Set("u_BRDFLUTTexture", s_Data.BRDFLUT);
 
+			auto overrideMaterial = dc.Mesh->GetOverrideMaterial(); // dc.Material;
+			Renderer::SubmitMesh(dc.Mesh, dc.Transform, overrideMaterial);
+		}
+		// 被选择实体描边
+		if (outline)
+		{
+			Renderer::Submit([]()
+				{
+					glStencilFunc(GL_ALWAYS, 1, 0xff);
+					glStencilMask(0xff);
+				});
+		}
+		for (auto& dc : s_Data.SelectedMeshDrawList)
+		{
+			auto baseMaterial = dc.Mesh->GetMaterial();
+			// Environment (TODO: don't do this per mesh)
+			baseMaterial->Set("u_EnvRadianceTex", s_Data.SceneData.SceneEnvironment.RadianceMap);
+			baseMaterial->Set("u_EnvIrradianceTex", s_Data.SceneData.SceneEnvironment.IrradianceMap);
+			baseMaterial->Set("u_BRDFLUTTexture", s_Data.BRDFLUT);
 			auto overrideMaterial = nullptr; // dc.Material;
 			Renderer::SubmitMesh(dc.Mesh, dc.Transform, overrideMaterial);
 		}
+
+		if (outline)
+		{
+			Renderer::Submit([]()
+				{
+					glStencilFunc(GL_NOTEQUAL, 1, 0xff);
+					glStencilMask(0);
+
+					glLineWidth(10);
+					glEnable(GL_LINE_SMOOTH);
+					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+					//glDisable(GL_DEPTH_TEST);
+				});
+
+			// Draw outline here
+			for (auto& dc : s_Data.SelectedMeshDrawList)
+			{
+				Renderer::SubmitMesh(dc.Mesh, dc.Transform, s_Data.OutlineMaterial);
+			}
+
+			Renderer::Submit([]()
+				{
+					glPointSize(10);
+					glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+				});
+			for (auto& dc : s_Data.SelectedMeshDrawList)
+			{
+				Renderer::SubmitMesh(dc.Mesh, dc.Transform, s_Data.OutlineMaterial);
+			}
+
+			Renderer::Submit([]()
+				{
+					glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+					glStencilMask(0xff);
+					glStencilFunc(GL_ALWAYS, 1, 0xff);
+					//glEnable(GL_DEPTH_TEST);
+				});
+		}
+
+
 		// Grid
 		if (GetOptions().ShowGrid)
 		{
@@ -206,6 +299,8 @@ namespace Prism
 		}
 
 		Renderer::EndRenderPass();
+		uint32_t count = Renderer::GetRenderCommandQueue().GetSubmitCount();
+		//PR_CORE_INFO("Submitted {0} commands", count);
 #endif
 	}
 
@@ -231,6 +326,7 @@ namespace Prism
 		CompositePass();
 
 		s_Data.DrawList.clear();
+		s_Data.SelectedMeshDrawList.clear();
 		s_Data.SceneData = {};
 	}
 

@@ -48,14 +48,14 @@ namespace Prism
 		// Input
 		bool Prism_Input_IsKeyPressed(KeyCode key);
 		// Entity
-		void Prism_Entity_GetTransform(uint32_t sceneID, uint32_t entityID, glm::mat4* outTransform);
-		void Prism_Entity_SetTransform(uint32_t sceneID, uint32_t entityID, glm::mat4* inTransform);
-		void Prism_Entity_CreateComponent(uint32_t sceneID, uint32_t entityID, Rolky::ReflectionType type);
-		bool Prism_Entity_HasComponent(uint32_t sceneID, uint32_t entityID, Rolky::ReflectionType type);
+		void Prism_Entity_GetTransform(uint64_t entityID, glm::mat4* outTransform);
+		void Prism_Entity_SetTransform(uint64_t entityID, glm::mat4* inTransform);
+		void Prism_Entity_CreateComponent(uint64_t entityID, Rolky::ReflectionType type);
+		bool Prism_Entity_HasComponent(uint64_t entityID, Rolky::ReflectionType type);
 
 		// Mesh
-		void* Prism_MeshComponent_GetMesh(uint32_t sceneID, uint32_t entityID);
-		void Prism_MeshComponent_SetMesh(uint32_t sceneID, uint32_t entityID, Ref<Mesh>* inMesh);
+		void* Prism_MeshComponent_GetMesh(uint64_t entityID);
+		void Prism_MeshComponent_SetMesh(uint64_t entityID, Ref<Mesh>* inMesh);
 		Ref<Mesh>* Prism_Mesh_Constructor(Rolky::String filepath);
 		void Prism_Mesh_Destructor(Ref<Mesh>* _this);
 		Ref<Material>* Prism_Mesh_GetMaterial(Ref<Mesh>* inMesh);

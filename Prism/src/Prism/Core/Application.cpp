@@ -158,7 +158,8 @@ namespace Prism
 			Renderer2D::ResetStats();
 			ImGui::TreePop();
 		}
-
+        ImGui::Text("RenderCommandQueue: %d", Renderer::GetRenderCommandQueue().GetSubmitCount());
+		Renderer::GetRenderCommandQueue().ResetSubmitCount();
 		ImGui::Text("Fps: %d", (int)(1.0f / Time::GetDeltaTime()));
 		ImGui::End();
 	}

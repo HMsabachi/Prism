@@ -25,7 +25,6 @@
 #include "Prism/Renderer/ComputeShader/ComputeShader.h"
 #include "Prism/Renderer/Shader/GlobalUniforms.h"
 
-
 // --- Prism Render API ------------------------------
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Renderer2D.h"
@@ -47,10 +46,14 @@
 #include "Prism/Scene/Entity.h"
 #include "Prism/Scene/Scene.h"
 #include "Prism/Scene/SceneCamera.h"
+#include "Prism/Scene/SceneSerializer.h"
 
 // Editor
 #include "Prism/Editor/SceneHierarchyPanel.h"
 #include "Prism/Editor/EditorCamera.h"
+
+// Scripting
+#include "Scripting/ScriptEngine.h"
 
 // ---------------------------------------------------
 

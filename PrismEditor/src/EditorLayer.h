@@ -50,6 +50,7 @@ namespace Prism
 		void Property(const std::string& name, glm::vec4& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
 
 		void ShowBoundingBoxes(bool show, bool onTop = false);
+		void SelectEntity(Entity entity);
 	private:
 		std::pair<float, float> GetMouseViewportSpace();
 		std::pair<glm::vec3, glm::vec3> CastRay(float mx, float my);
@@ -57,22 +58,25 @@ namespace Prism
 		struct SelectedSubmesh
 		{
 			Prism::Entity Entity;
-			Submesh* Mesh;
-			float Distance;
+			Submesh* Mesh = nullptr;
+			float Distance = 0.0f;
 		};
+
 		void OnSelected(const SelectedSubmesh& selectionContext);
+		void OnEntityDeleted(Entity e);
 		Ray CastMouseRay();
+
+		void OnScenePlay();
+		void OnSceneStop();
 	private:
 		std::vector<Ref<MaterialInstance>> m_MetalSphereMaterialInstances;
 		std::vector<Ref<MaterialInstance>> m_DielectricSphereMaterialInstances;
 	private:
 		Scope<SceneHierarchyPanel> m_SceneHierarchyPanel;
 
-		Ref<Scene> m_Scene;
-		Ref<Scene> m_SphereScene;
 		Ref<Scene> m_ActiveScene;
+		Ref<Scene> m_RuntimeScene, m_EditorScene;
 
-		Entity m_MeshEntity;
 		EditorCamera m_EditorCamera;
 
 		Ref<Material> m_SphereBaseMaterial;
@@ -123,6 +127,7 @@ namespace Prism
 
 		// Editor resources
 		Ref<Texture2D> m_CheckerboardTex;
+		Ref<Texture2D> m_PlayButtonTex;
 
 		glm::vec2 m_ViewportBounds[2]; 
 		int m_GizmoType = -1; //  no gizmo
@@ -132,6 +137,15 @@ namespace Prism
 
 		bool m_UIShowBoundingBoxes = false;
 		bool m_UIShowBoundingBoxesOnTop = false;
+
+		bool m_ViewportPanelMouseOver = false;
+		bool m_ViewportPanelFocused = false;
+
+		enum class SceneState
+		{
+			Edit = 0, Play = 1, Pause = 2
+		};
+		SceneState m_SceneState = SceneState::Edit;
 
 
 		enum class SelectionMode

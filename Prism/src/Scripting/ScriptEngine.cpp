@@ -3,6 +3,7 @@
 #include "ScriptEngineRegistry.h"
 #include "Native/String.h"
 #include <filesystem>
+#include <imgui.h>
 
 #include <Rolky/HostInstance.hpp>
 
@@ -20,6 +21,21 @@ namespace Prism
 		PR_CORE_ERROR("[Rolky] {0}", message);
 	}
 
+	static std::vector<Rolky::ManagedObject> AllObjects;
+	static std::unordered_map<std::string, Rolky::Type> s_EntityClassMap;
+	static EntityInstanceMap s_EntityInstanceMap;
+	static Ref<Scene> s_SceneContext;
+
+	void* ScriptEngine::s_HostHandle = nullptr;
+	void* ScriptEngine::s_AssemblyLoadContext = nullptr;
+
+	
+	std::unique_ptr<Rolky::HostInstance> ScriptEngine::m_Host;
+	std::unique_ptr<Rolky::AssemblyLoadContext> ScriptEngine::m_LoadContext;
+	static Rolky::ManagedAssembly s_EngineAssembly;
+	static Rolky::ManagedAssembly s_AppAssembly;
+
+#pragma region PublicField
 	static std::unordered_map<std::string, FieldType> s_FieldTypeMap =
 	{
 		{"System.Single", FieldType::Float },
@@ -30,28 +46,150 @@ namespace Prism
 		{"Prism.Vector3", FieldType::Vec3 },
 		{"Prism.Vector4", FieldType::Vec4 },
 	};
-
 	static FieldType GetPrismFieldType(const Rolky::Type& type)
-	{ 
+	{
 		if (s_FieldTypeMap.find(type.GetFullName()) != s_FieldTypeMap.end())
 		{
-            return s_FieldTypeMap[type.GetFullName()];
+			return s_FieldTypeMap[type.GetFullName()];
 		}
-        return FieldType::None;
+		return FieldType::None;
+	}
+	static uint32_t GetFieldSize(FieldType type)
+	{
+		switch (type)
+		{
+		case FieldType::Float:       return 4;
+		case FieldType::Int:         return 4;
+		case FieldType::UnsignedInt: return 4;
+		case FieldType::String:   return 8; // TODO
+		case FieldType::Vec2:        return 4 * 2;
+		case FieldType::Vec3:        return 4 * 3;
+		case FieldType::Vec4:        return 4 * 4;
+		}
+		PR_CORE_ASSERT(false, "Unknown field type!");
+		return 0;
+	}
+	const char* FieldTypeToString(FieldType type)
+	{
+		switch (type)
+		{
+		case FieldType::Float:       return "Float";
+		case FieldType::Int:         return "Int";
+		case FieldType::UnsignedInt: return "UnsignedInt";
+		case FieldType::String:      return "String";
+		case FieldType::Vec2:        return "Vec2";
+		case FieldType::Vec3:        return "Vec3";
+		case FieldType::Vec4:        return "Vec4";
+		}
+		return "Unknown";
+	}
+	PublicField::PublicField(const std::string& name, FieldType type)
+		: Name(name), Type(type)
+	{
+		m_StoredValueBuffer = AllocateBuffer(type);
+	}
+	PublicField::PublicField(PublicField&& other)
+	{
+		Name = std::move(other.Name);
+		Type = other.Type;
+		m_EntityInstance = other.m_EntityInstance;
+		m_StoredValueBuffer = other.m_StoredValueBuffer;
+
+		other.m_EntityInstance = nullptr;
+		other.m_StoredValueBuffer = nullptr;
+	}
+	PublicField::~PublicField()
+	{
+		delete[] m_StoredValueBuffer;
+	}
+	void PublicField::CopyStoredValueToRuntime()
+	{
+		PR_CORE_ASSERT(m_EntityInstance->Object->IsValid());
+		m_EntityInstance->Object->SetFieldValueRaw(Name, m_StoredValueBuffer);
+	}
+	bool PublicField::IsRuntimeAvailable() const
+	{
+		return m_EntityInstance->Object->IsValid();
+	}
+	void PublicField::SetStoredValueRaw(void* src)
+	{
+		uint32_t size = GetFieldSize(Type);
+		memcpy(m_StoredValueBuffer, src, size);
+	}
+	uint8_t* PublicField::AllocateBuffer(FieldType type)
+	{
+		uint32_t size = GetFieldSize(type);
+		uint8_t* buffer = new uint8_t[size];
+		memset(buffer, 0, size);
+		return buffer;
+	}
+	void PublicField::SetStoredValue_Internal(void* value) const
+	{
+		uint32_t size = GetFieldSize(Type);
+		memcpy(m_StoredValueBuffer, value, size);
+	}
+	void PublicField::GetStoredValue_Internal(void* outValue) const
+	{
+		uint32_t size = GetFieldSize(Type);
+		memcpy(outValue, m_StoredValueBuffer, size);
+	}
+	void PublicField::SetRuntimeValue_Internal(void* value) const
+	{
+		PR_CORE_ASSERT(m_EntityInstance->Object->IsValid());
+		m_EntityInstance->Object->SetFieldValueRaw(Name, value);
+	}
+	void PublicField::GetRuntimeValue_Internal(void* outValue) const
+	{
+		PR_CORE_ASSERT(m_EntityInstance->Object->IsValid());
+		m_EntityInstance->Object->GetFieldValueRaw(Name, outValue);
 	}
 
-	static std::unordered_map<std::string, Rolky::Type> s_EntityClassMap;
-	static std::unordered_map<uint32_t, Rolky::ManagedObject> s_EntityInstanceMap;
-	static ScriptModuleFieldMap s_PublicFields;
+	// Debug
+	void ScriptEngine::OnImGuiRender()
+	{
+		ImGui::Begin("Script Engine Debug");
+		for (auto& [sceneID, entityMap] : s_EntityInstanceMap)
+		{
+			bool opened = ImGui::TreeNode((void*)(uint64_t)sceneID, "Scene (%llx)", sceneID);
+			if (opened)
+			{
+				Ref<Scene> scene = Scene::GetScene(sceneID);
+				for (auto& [entityID, entityInstanceData] : entityMap)
+				{
+					Entity entity = scene->GetScene(sceneID)->GetEntityMap().at(entityID);
+					std::string entityName = "Unnamed Entity";
+					if (entity.HasComponent<TagComponent>())
+						entityName = entity.GetComponent<TagComponent>().Tag;
+					opened = ImGui::TreeNode((void*)(uint64_t)entityID, "%s (%llx)", entityName.c_str(), entityID);
+					if (opened)
+					{
+						for (auto& [moduleName, fieldMap] : entityInstanceData.ModuleFieldMap)
+						{
+							opened = ImGui::TreeNode(moduleName.c_str());
+							if (opened)
+							{
+								for (auto& [fieldName, field] : fieldMap)
+								{
 
-	void* ScriptEngine::s_HostHandle = nullptr;
-	void* ScriptEngine::s_AssemblyLoadContext = nullptr;
+									opened = ImGui::TreeNodeEx((void*)&field, ImGuiTreeNodeFlags_Leaf, fieldName.c_str());
+									if (opened)
+									{
 
-	
-	std::unique_ptr<Rolky::HostInstance> ScriptEngine::m_Host;
-	std::unique_ptr<Rolky::AssemblyLoadContext> ScriptEngine::m_LoadContext;
-	static Rolky::ManagedAssembly s_EngineAssembly;
-	static Rolky::ManagedAssembly s_AppAssembly;
+										ImGui::TreePop();
+									}
+								}
+								ImGui::TreePop();
+							}
+						}
+						ImGui::TreePop();
+					}
+				}
+				ImGui::TreePop();
+			}
+		}
+		ImGui::End();
+	}
+#pragma endregion
 
 	bool ScriptEngine::Initialize()
 	{
@@ -68,13 +206,11 @@ namespace Prism
 	}
 	void ScriptEngine::Shutdown()
 	{
-		for (auto& pair : s_EntityInstanceMap)
-            pair.second.Destroy();
-		
 		m_Host->UnloadAssemblyLoadContext(*m_LoadContext);
 		m_Host->Shutdown();
+		s_SceneContext = nullptr;
+		s_EntityInstanceMap.clear();
 	}
-
 	bool ScriptEngine::LoadEngineAssembly(const std::string& assemblyPath)
 	{
 		PR_PROFILE_FUNCTION();
@@ -85,7 +221,6 @@ namespace Prism
 		initClass.InvokeStaticMethod("Init");
 		return true;
 	}
-
 	bool ScriptEngine::LoadAppAssembly(const std::string& assemblyPath)
 	{
 		PR_PROFILE_FUNCTION();
@@ -93,58 +228,203 @@ namespace Prism
 		s_AppAssembly = m_LoadContext->LoadAssembly(path);
 		return true;
 	}
+
+	void ScriptEngine::ReloadAssembly(const std::string& assemblyPath)
+	{
+		auto path = std::filesystem::absolute(assemblyPath).string();
+		s_AppAssembly = m_LoadContext->LoadAssembly(path);
+		if (s_EntityInstanceMap.size())
+		{
+			Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
+			PR_CORE_ASSERT(scene, "No active scene!");
+			if (s_EntityInstanceMap.find(scene->GetUUID()) != s_EntityInstanceMap.end())
+			{
+				auto& entityMap = s_EntityInstanceMap.at(scene->GetUUID());
+				for (auto& [entityID, entityInstanceData] : entityMap)
+				{
+					const auto& entityMap = scene->GetEntityMap();
+					PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
+					InitScriptEntity(entityMap.at(entityID));
+				}
+			}
+		}
+	}
+
+	void ScriptEngine::OnSceneDestruct(UUID sceneID)
+	{
+		if (s_EntityInstanceMap.find(sceneID) != s_EntityInstanceMap.end())
+		{
+            for (auto& [entityID, entityInstanceData] : s_EntityInstanceMap.at(sceneID))
+			{
+				//entityInstanceData.Instance.Object->InvokeMethod("OnDestroy");
+				entityInstanceData.Instance.Object->Destroy();
+			}
+			s_EntityInstanceMap.at(sceneID).clear();
+			s_EntityInstanceMap.erase(sceneID);
+		}
+	}
+	void ScriptEngine::SetSceneContext(const Ref<Scene>& scene)
+	{
+		s_SceneContext = scene;
+	}
+	const Ref<Scene>& ScriptEngine::GetCurrentSceneContext()
+	{
+		return s_SceneContext;
+	}
+
+	void ScriptEngine::CopyEntityScriptData(UUID dst, UUID src)
+	{
+		PR_CORE_ASSERT(s_EntityInstanceMap.find(dst) != s_EntityInstanceMap.end());
+		PR_CORE_ASSERT(s_EntityInstanceMap.find(src) != s_EntityInstanceMap.end());
+
+		auto& dstEntityMap = s_EntityInstanceMap.at(dst);
+		auto& srcEntityMap = s_EntityInstanceMap.at(src);
+
+		for (auto& [entityID, entityInstanceData] : srcEntityMap)
+		{
+			for (auto& [moduleName, srcFieldMap] : srcEntityMap[entityID].ModuleFieldMap)
+			{
+				auto& dstModuleFieldMap = dstEntityMap[entityID].ModuleFieldMap;
+				for (auto& [fieldName, field] : srcFieldMap)
+				{
+					PR_CORE_ASSERT(dstModuleFieldMap.find(moduleName) != dstModuleFieldMap.end());
+					auto& fieldMap = dstModuleFieldMap.at(moduleName);
+					PR_CORE_ASSERT(fieldMap.find(fieldName) != fieldMap.end());
+					fieldMap.at(fieldName).SetStoredValueRaw(field.m_StoredValueBuffer);
+				}
+			}
+		}
+	}
+
 	void ScriptEngine::OnCreateEntity(Entity entity)
 	{
-		PR_PROFILE_FUNCTION();
-		Rolky::ManagedObject& entityInstance = s_EntityInstanceMap[entity];
-		if (entityInstance.IsValid())
-			entityInstance.InvokeMethod("OnCreate");
+		OnCreateEntity(entity.m_Scene->GetUUID(), entity.GetComponent<IDComponent>().ID);
+	}
+	void ScriptEngine::OnCreateEntity(UUID sceneID, UUID entityID)
+	{
+		EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
+		entityInstance.Object->InvokeMethod("OnCreate");
+	}
+	void ScriptEngine::OnUpdateEntity(UUID sceneID, UUID entityID, float ts)
+	{
+		EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
+		entityInstance.Object->InvokeMethod("OnUpdate");
+	}
+	void ScriptEngine::OnScriptComponentDestroyed(UUID sceneID, UUID entityID)
+	{
+		PR_CORE_ASSERT(s_EntityInstanceMap.find(sceneID) != s_EntityInstanceMap.end());
+		auto& entityMap = s_EntityInstanceMap.at(sceneID);
+		PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end());
+		entityMap.erase(entityID);
+	}
+	bool ScriptEngine::ModuleExists(const std::string& moduleName)
+	{
+        return s_AppAssembly.GetType(moduleName);
 	}
 
-	void ScriptEngine::OnUpdateEntity(uint32_t entityID, float ts)
+	void ScriptEngine::InitScriptEntity(Entity entity)
 	{
 		PR_PROFILE_FUNCTION();
-		if (s_EntityInstanceMap.find(entityID) == s_EntityInstanceMap.end())
+		Scene* scene = entity.m_Scene;
+		UUID id = entity.GetComponent<IDComponent>().ID;
+		auto& moduleName = entity.GetComponent<ScriptComponent>().ModuleName;
+		if (moduleName.empty())
 			return;
-		Rolky::ManagedObject& entityInstance = s_EntityInstanceMap[entityID];
-		if (entityInstance.IsValid())
-			entityInstance.InvokeMethod("OnUpdate");
 
-	}
-
-	void ScriptEngine::OnInitEntity(ScriptComponent& script, uint32_t entityID, uint32_t sceneID)
-	{
-		PR_PROFILE_FUNCTION();
-		std::string_view moduleName = script.ModuleName;
-		Rolky::Type& scriptClass = s_EntityClassMap[script.ModuleName];
-		scriptClass = s_AppAssembly.GetType(moduleName);
-		if (!scriptClass)
+		if (!ModuleExists(moduleName))
 		{
-			PR_CORE_ERROR("Failed to load script class {0}", moduleName);
+			PR_CORE_ERROR("Entity references non-existent script module '{0}'", moduleName);
 			return;
 		}
-		Rolky::ManagedObject& entityInstance = s_EntityInstanceMap[entityID];
-		entityInstance = scriptClass.CreateInstance();
-		entityInstance.SetPropertyValue("EntityID", entityID);
-		entityInstance.SetPropertyValue("SceneID", sceneID);
 
-		std::vector<PublicField>& publicFields = s_PublicFields[script.ModuleName];
-		if (publicFields.empty())
+		Rolky::Type& scriptClass = s_EntityClassMap[moduleName];
+		scriptClass = s_AppAssembly.GetType(moduleName);
+
+		EntityInstanceData& entityInstanceData = s_EntityInstanceMap[scene->GetUUID()][id];
+		EntityInstance& entityInstance = entityInstanceData.Instance;
+		entityInstance.ScriptClass = &scriptClass;
+		ScriptModuleFieldMap& moduleFieldMap = entityInstanceData.ModuleFieldMap;
+		auto& fieldMap = moduleFieldMap[moduleName];
+
+		// 保存旧字段
+		std::unordered_map<std::string, PublicField> oldFields;
+		oldFields.reserve(fieldMap.size());
+		for (auto& [fieldName, field] : fieldMap)
+			oldFields.emplace(fieldName, std::move(field));
+		fieldMap.clear();
+
+		// 获取公共字段
+		// TODO：如果模块被多次使用，则缓存这些字段
 		{
 			auto Fields = scriptClass.GetFields();
 			for (auto& field : Fields)
 			{
 				if (field.GetAccessibility() == Rolky::TypeAccessibility::Public)
-					publicFields.push_back({ field.GetName(), GetPrismFieldType(field.GetType()), &entityInstance });
+				{
+					FieldType prismFieldType = GetPrismFieldType(field.GetType());
+					if (oldFields.find(field.GetName()) != oldFields.end())
+					{
+						fieldMap.emplace(field.GetName(), std::move(oldFields.at(field.GetName())));
+					}
+					else
+					{
+						PublicField prismField = { field.GetName(), prismFieldType };
+						prismField.m_EntityInstance = &entityInstance;
+						fieldMap.emplace(field.GetName(), std::move(prismField));
+					}
+				}
 			}
 		}
 	}
-	
-
-	const Prism::ScriptModuleFieldMap& ScriptEngine::GetFieldMap()
+	void ScriptEngine::ShutdownScriptEntity(Entity entity, const std::string& moduleName)
 	{
-		return s_PublicFields;
+		EntityInstanceData& entityInstanceData = GetEntityInstanceData(entity.GetSceneUUID(), entity.GetUUID());
+		ScriptModuleFieldMap& moduleFieldMap = entityInstanceData.ModuleFieldMap;
+		if (moduleFieldMap.find(moduleName) != moduleFieldMap.end())
+			moduleFieldMap.erase(moduleName);
 	}
+	void ScriptEngine::InstantiateEntityClass(Entity entity)
+	{
+		PR_PROFILE_FUNCTION();
+		Scene* scene = entity.m_Scene;
+		UUID id = entity.GetComponent<IDComponent>().ID;
+		auto& moduleName = entity.GetComponent<ScriptComponent>().ModuleName;
+
+		EntityInstanceData& entityInstanceData = GetEntityInstanceData(scene->GetUUID(), id);
+		EntityInstance& entityInstance = entityInstanceData.Instance;
+		PR_CORE_ASSERT(entityInstance.ScriptClass);
+		
+		entityInstance.Object = std::make_unique<Rolky::ManagedObject>();
+        *entityInstance.Object = entityInstance.ScriptClass->CreateInstance();
+		entityInstance.Object->SetPropertyValue("ID", id);
+
+		// 将所有公共字段设置为适当的值
+		ScriptModuleFieldMap& moduleFieldMap = entityInstanceData.ModuleFieldMap;
+		if (moduleFieldMap.find(moduleName) != moduleFieldMap.end())
+		{
+			auto& publicFields = moduleFieldMap.at(moduleName);
+			for (auto& [name, field] : publicFields)
+				field.CopyStoredValueToRuntime();
+		}
+
+		
+		OnCreateEntity(entity);
+	}
+
+
+	EntityInstanceData& ScriptEngine::GetEntityInstanceData(UUID sceneID, UUID entityID)
+	{
+		PR_CORE_ASSERT(s_EntityInstanceMap.find(sceneID) != s_EntityInstanceMap.end(), "Invalid scene ID!");
+		auto& entityIDMap = s_EntityInstanceMap.at(sceneID);
+		PR_CORE_ASSERT(entityIDMap.find(entityID) != entityIDMap.end(), "Invalid entity ID!");
+		return entityIDMap.at(entityID);
+	}
+
+	EntityInstanceMap& ScriptEngine::GetEntityInstanceMap()
+	{
+		return s_EntityInstanceMap;
+	}
+	
 
 	Rolky::ManagedAssembly& ScriptEngine::GetEngineAssembly()
 	{

@@ -7,32 +7,31 @@ namespace Prism
 {
     public class Entity
     {
-        public uint SceneID { get; internal set; }
-        public uint EntityID { get; internal set; }
+        public ulong ID { get; internal set; }
 
         ~Entity()
         {
-            Console.WriteLine("Destroyed Entity {0}:{1}", SceneID, EntityID);
+            Console.WriteLine("Destroyed Entity {0}", ID);
         }
 
         public Matrix4 GetTransform()
         {
             Matrix4 mat4Instance;
-            TransformComponent.GetTransform_Native(SceneID, EntityID, out mat4Instance);
+            TransformComponent.GetTransform_Native(ID, out mat4Instance);
             return mat4Instance;
         }
 
         public void SetTransform(Matrix4 transform)
         {
-            TransformComponent.SetTransform_Native(SceneID, EntityID, ref transform);
+            TransformComponent.SetTransform_Native(ID, ref transform);
         }
         public bool HasComponent<T>() where T : Component, new()
         {
-            return HasComponent_Native(SceneID, EntityID, typeof(T));
+            return HasComponent_Native(ID, typeof(T));
         }
         public T CreateComponent<T>() where T : Component, new()
         {
-            CreateComponent_Native(SceneID, EntityID, typeof(T));
+            CreateComponent_Native(ID, typeof(T));
             T component = new T();
             component.Entity = this;
             return component;
@@ -47,13 +46,13 @@ namespace Prism
             }
             return null;
         }
-        private unsafe static void CreateComponent_Native(uint sceneID, uint entityID, Type type)
+        private unsafe static void CreateComponent_Native(ulong id, Type type)
         {
-            InternalCalls.Prism_Entity_CreateComponent(sceneID, entityID, type);
+            InternalCalls.Prism_Entity_CreateComponent(id, type);
         }
-        private unsafe static bool HasComponent_Native(uint sceneID, uint entityID, Type type)
+        private unsafe static bool HasComponent_Native(ulong id, Type type)
         {
-            return InternalCalls.Prism_Entity_HasComponent(sceneID, entityID, type);
+            return InternalCalls.Prism_Entity_HasComponent(id, type);
         }
     }
 }

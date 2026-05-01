@@ -6,6 +6,8 @@
 #include "Prism/Scene/Scene.h"
 #include "Prism/Scene/Entity.h"
 #include "Prism/Scene/Components.h"
+
+#include "ScriptEngine.h"
 #include <glm/gtc/type_ptr.hpp>
 
 #include <Rolky/String.hpp>
@@ -13,7 +15,6 @@
 #include <Rolky/Array.hpp>
 
 namespace Prism {
-	extern std::unordered_map<uint32_t, Scene*> s_ActiveScenes;
 	extern std::unordered_map<Rolky::TypeId, std::function<void(Entity&)>> s_CreateComponentFuncs;
 	extern std::unordered_map<Rolky::TypeId, std::function<bool(Entity&)>> s_HasComponentFuncs;
 }
@@ -89,41 +90,47 @@ namespace Prism {
 			Script = 3,
 			SpriteRenderer = 4
 		};
-		void Prism_Entity_GetTransform(uint32_t sceneID, uint32_t entityID, glm::mat4* outTransform)
+		void Prism_Entity_GetTransform(uint64_t entityID, glm::mat4* outTransform)
 		{
-			PR_CORE_ASSERT(s_ActiveScenes.find(sceneID) != s_ActiveScenes.end(), "Invalid Scene ID!");
-
-			Scene* scene = s_ActiveScenes[sceneID];
-			Entity entity((entt::entity)entityID, scene);
+			Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
+			PR_CORE_ASSERT(scene, "No active scene!");
+			const auto& entityMap = scene->GetEntityMap();
+			PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
+			Entity entity = entityMap.at(entityID);
 			auto& transformComponent = entity.GetComponent<TransformComponent>();
 			memcpy(outTransform, glm::value_ptr(transformComponent.Transform), sizeof(glm::mat4));
 		}
 
-		void Prism_Entity_SetTransform(uint32_t sceneID, uint32_t entityID, glm::mat4* inTransform)
+		void Prism_Entity_SetTransform(uint64_t entityID, glm::mat4* inTransform)
 		{
-			PR_CORE_ASSERT(s_ActiveScenes.find(sceneID) != s_ActiveScenes.end(), "Invalid Scene ID!");
-
-			Scene* scene = s_ActiveScenes[sceneID];
-			Entity entity((entt::entity)entityID, scene);
+			Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
+			PR_CORE_ASSERT(scene, "No active scene!");
+			const auto& entityMap = scene->GetEntityMap();
+			PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
+			Entity entity = entityMap.at(entityID);
 			auto& transformComponent = entity.GetComponent<TransformComponent>();
 			memcpy(glm::value_ptr(transformComponent.Transform), inTransform, sizeof(glm::mat4));
 		}
 
-		void Prism_Entity_CreateComponent(uint32_t sceneID, uint32_t entityID, Rolky::ReflectionType type)
+		void Prism_Entity_CreateComponent(uint64_t entityID, Rolky::ReflectionType type)
 		{
-			PR_CORE_ASSERT(s_ActiveScenes.find(sceneID) != s_ActiveScenes.end(), "Invalid Scene ID!");
+			Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
+			PR_CORE_ASSERT(scene, "No active scene!");
+			const auto& entityMap = scene->GetEntityMap();
+			PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
+			Entity entity = entityMap.at(entityID);
 			Rolky::Type mType = type;
-			Scene* scene = s_ActiveScenes[sceneID];
-			Entity entity((entt::entity)entityID, scene);
 			s_CreateComponentFuncs[mType.GetTypeId()](entity);
 		}
 
-		bool Prism_Entity_HasComponent(uint32_t sceneID, uint32_t entityID, Rolky::ReflectionType type)
+		bool Prism_Entity_HasComponent(uint64_t entityID, Rolky::ReflectionType type)
 		{
-			PR_CORE_ASSERT(s_ActiveScenes.find(sceneID) != s_ActiveScenes.end(), "Invalid Scene ID!");
+			Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
+			PR_CORE_ASSERT(scene, "No active scene!");
+			const auto& entityMap = scene->GetEntityMap();
+			PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
+			Entity entity = entityMap.at(entityID);
 			Rolky::Type mType = type;
-			Scene* scene = s_ActiveScenes[sceneID];
-			Entity entity((entt::entity)entityID, scene);
 			bool result = s_HasComponentFuncs[mType.GetTypeId()](entity);
 			return result;
 		}
@@ -132,22 +139,24 @@ namespace Prism {
 #pragma endregion 
 
 #pragma region Mesh
-		void* Prism_MeshComponent_GetMesh(uint32_t sceneID, uint32_t entityID)
+		void* Prism_MeshComponent_GetMesh(uint64_t entityID)
 		{
-			PR_CORE_ASSERT(s_ActiveScenes.find(sceneID) != s_ActiveScenes.end(), "Invalid Scene ID!");
-
-			Scene* scene = s_ActiveScenes[sceneID];
-			Entity entity((entt::entity)entityID, scene);
+			Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
+			PR_CORE_ASSERT(scene, "No active scene!");
+			const auto& entityMap = scene->GetEntityMap();
+			PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
+			Entity entity = entityMap.at(entityID);
 			auto& meshComponent = entity.GetComponent<MeshComponent>();
 			return new Ref<Mesh>(meshComponent.Mesh);
 		}
 
-		void Prism_MeshComponent_SetMesh(uint32_t sceneID, uint32_t entityID, Ref<Mesh>* inMesh)
+		void Prism_MeshComponent_SetMesh(uint64_t entityID, Ref<Mesh>* inMesh)
 		{
-			PR_CORE_ASSERT(s_ActiveScenes.find(sceneID) != s_ActiveScenes.end(), "Invalid Scene ID!");
-
-			Scene* scene = s_ActiveScenes[sceneID];
-			Entity entity((entt::entity)entityID, scene);
+			Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
+			PR_CORE_ASSERT(scene, "No active scene!");
+			const auto& entityMap = scene->GetEntityMap();
+			PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
+			Entity entity = entityMap.at(entityID);
 			auto& meshComponent = entity.GetComponent<MeshComponent>();
 			meshComponent.Mesh = inMesh ? *inMesh : nullptr;
 		}

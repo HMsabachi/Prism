@@ -105,148 +105,108 @@ namespace Prism
 		#pragma endregion
 
 		using namespace glm;
-		auto environment = Environment::Load("Assets/env/birchwood_4k.hdr");
-		// Model Scene
-		{
-			m_Scene = Ref<Scene>::Create("Model Scene");
-
-			m_Scene->SetEnvironment(environment);
-			m_MeshEntity = m_Scene->CreateEntity("Test Entity");
-			auto mesh = Ref<Mesh>::Create("assets/meshes/TestScene.fbx");
-			m_MeshEntity.AddComponent<MeshComponent>(mesh);
-			m_MeshMaterial = mesh->GetMaterial();
-
-			m_MeshEntity.AddComponent<ScriptComponent>("Example.Script");
-
-			// Test Sandbox
-			auto mapGenerator = m_Scene->CreateEntity("Map Generator");
-			mapGenerator.AddComponent<ScriptComponent>("Example.MapGenerator");
-
-			//auto secondEntity = m_Scene->CreateEntity("Gun Entity");
-			//secondEntity->Transform() = glm::translate(glm::mat4(1.0f), { 5, 5, 5 }) * glm::scale(glm::mat4(1.0f), {10, 10, 10});
-			//mesh = CreateRef<Mesh>("assets/models/m1911/M1911Materials.fbx");
-			//secondEntity->SetMesh(mesh);
-		}
-
-		// Sphere Scene
-		{
-			m_SphereScene = Ref<Scene>::Create("PBR Sphere Scene");
-			auto sphereMesh = Ref<Mesh>::Create("assets/models/Sphere1m.fbx");
-			m_SphereBaseMaterial = sphereMesh->GetMaterial();
-			float x = -4.0f;
-			float roughness = 0.0f;
-			for (int i = 0; i < 8; i++)
-			{
-				auto sphereEntity = m_SphereScene->CreateEntity();
-
-				Ref<MaterialInstance> mi = Ref<MaterialInstance>::Create(m_SphereBaseMaterial);
-				mi->Set("u_Metalness", 1.0f);
-				mi->Set("u_Roughness", roughness);
-				x += 1.1f;
-				roughness += 0.15f;
-				m_MetalSphereMaterialInstances.push_back(mi);
-
-				/*sphereEntity->SetMesh(sphereMesh);
-				sphereEntity->SetMaterial(mi);
-				sphereEntity->Transform() = translate(mat4(1.0f), vec3(x, 0.0f, 0.0f));*/
-				x = -4.0f;
-				roughness = 0.0f;
-				for (int i = 0; i < 8; i++)
-				{
-					auto sphereEntity = m_SphereScene->CreateEntity();
-
-					Ref<MaterialInstance> mi(new MaterialInstance(m_SphereBaseMaterial));
-					mi->Set("u_Metalness", 0.0f);
-					mi->Set("u_Roughness", roughness);
-					x += 1.1f;
-					roughness += 0.15f;
-					m_DielectricSphereMaterialInstances.push_back(mi);
-
-					/*sphereEntity->SetMesh(sphereMesh);
-					sphereEntity->SetMaterial(mi);
-					sphereEntity->Transform() = translate(mat4(1.0f), vec3(x, 1.2f, 0.0f));*/
-				}
-			}
-		}
-		m_ActiveScene = m_Scene;
-		m_SceneHierarchyPanel = CreateScope<SceneHierarchyPanel>(m_ActiveScene);
-
+		
 		// Editor
 		m_CheckerboardTex = Texture2D::Create("assets/editor/Checkerboard.tga");
-		auto& light = m_Scene->GetLight();
-		light.Direction = { -0.5f, -0.5f, 1.0f };
-		light.Radiance = { 1.0f, 1.0f, 1.0f };
+		m_PlayButtonTex = Texture2D::Create("assets/editor/PlayButton.png");
 
-		m_CurrentlySelectedTransform = &m_MeshEntity.Transform();
+		m_EditorScene = Ref<Scene>::Create();
+		ScriptEngine::SetSceneContext(m_EditorScene);
+		m_SceneHierarchyPanel = CreateScope<SceneHierarchyPanel>(m_EditorScene);
+		m_SceneHierarchyPanel->SetSelectionChangedCallback(std::bind(&EditorLayer::SelectEntity, this, std::placeholders::_1));
+		m_SceneHierarchyPanel->SetEntityDeletedCallback(std::bind(&EditorLayer::OnEntityDeleted, this, std::placeholders::_1));
+		// SceneSerializer serializer(m_ActiveScene);
+		// serializer.Deserialize("Scene.yaml");
 	}
 
 	void EditorLayer::OnDetach()
 	{
-
 	}
+
+	void EditorLayer::OnScenePlay()
+	{
+		m_SelectionContext.clear();
+
+		m_SceneState = SceneState::Play;
+
+		m_RuntimeScene = Ref<Scene>::Create();
+		m_EditorScene->CopyTo(m_RuntimeScene);
+
+		m_RuntimeScene->OnRuntimeStart();
+		m_SceneHierarchyPanel->SetContext(m_RuntimeScene);
+	}
+
+	void EditorLayer::OnSceneStop()
+	{
+		m_RuntimeScene->OnRuntimeStop();
+		m_SceneState = SceneState::Edit;
+
+		// Unload runtime scene
+		m_RuntimeScene = nullptr;
+
+		m_SelectionContext.clear();
+		ScriptEngine::SetSceneContext(m_EditorScene);
+		m_SceneHierarchyPanel->SetContext(m_EditorScene);
+	}
+
 
 	void EditorLayer::OnUpdate()
 	{
-		using namespace Prism;
-		using namespace glm;
-		m_EditorCamera.OnUpdate(Time::GetDeltaTime());
+		float ts = Time::GetDeltaTime();
 
-		m_MeshMaterial->Set("u_AlbedoColor", m_AlbedoInput.Color);
-		m_MeshMaterial->Set("u_Metalness", m_MetalnessInput.Value);
-		m_MeshMaterial->Set("u_Roughness", m_RoughnessInput.Value);
-
-		m_MeshMaterial->Set("u_RadiancePrefilter", m_RadiancePrefilter ? 1.0f : 0.0f);
-		m_MeshMaterial->Set("u_AlbedoTexToggle", m_AlbedoInput.UseTexture ? 1.0f : 0.0f);
-		m_MeshMaterial->Set("u_NormalTexToggle", m_NormalInput.UseTexture ? 1.0f : 0.0f);
-		m_MeshMaterial->Set("u_MetalnessTexToggle", m_MetalnessInput.UseTexture ? 1.0f : 0.0f);
-		m_MeshMaterial->Set("u_RoughnessTexToggle", m_RoughnessInput.UseTexture ? 1.0f : 0.0f);
-		m_MeshMaterial->Set("u_EnvMapRotation", m_EnvMapRotation);
-
-		if (m_AlbedoInput.TextureMap)
-			m_MeshMaterial->Set("u_AlbedoTexture", m_AlbedoInput.TextureMap);
-		if (m_NormalInput.TextureMap)
-			m_MeshMaterial->Set("u_NormalTexture", m_NormalInput.TextureMap);
-		if (m_MetalnessInput.TextureMap)
-			m_MeshMaterial->Set("u_MetalnessTexture", m_MetalnessInput.TextureMap);
-		if (m_RoughnessInput.TextureMap)
-			m_MeshMaterial->Set("u_RoughnessTexture", m_RoughnessInput.TextureMap);
-
-		m_SphereBaseMaterial->Set("u_AlbedoColor", m_AlbedoInput.Color);
-		m_SphereBaseMaterial->Set("u_Metalness", m_MetalnessInput.Value);
-		m_SphereBaseMaterial->Set("u_Roughness", m_RoughnessInput.Value);
-
-		m_SphereBaseMaterial->Set("u_RadiancePrefilter", m_RadiancePrefilter ? 1.0f : 0.0f);
-		m_SphereBaseMaterial->Set("u_AlbedoTexToggle", m_AlbedoInput.UseTexture ? 1.0f : 0.0f);
-		m_SphereBaseMaterial->Set("u_NormalTexToggle", m_NormalInput.UseTexture ? 1.0f : 0.0f);
-		m_SphereBaseMaterial->Set("u_MetalnessTexToggle", m_MetalnessInput.UseTexture ? 1.0f : 0.0f);
-		m_SphereBaseMaterial->Set("u_RoughnessTexToggle", m_RoughnessInput.UseTexture ? 1.0f : 0.0f);
-		m_SphereBaseMaterial->Set("u_EnvMapRotation", m_EnvMapRotation);
-
-		/*if (m_AllowViewportCameraEvents)
+		switch (m_SceneState)
 		{
-			m_ActiveScene->GetCamera().OnUpdate();
-		}*/
-		m_ActiveScene->OnUpdate(m_EditorCamera);
-
-		if (m_DrawOnTopBoundingBoxes) 
+		case SceneState::Edit:
 		{
-			Prism::Renderer::BeginRenderPass(Prism::SceneRenderer::GetFinalRenderPass(), false);
-			Prism::Renderer2D::BeginScene(m_EditorCamera.GetViewProjection(), false);
-			//Prism::Renderer2D::DrawQuad({ 0, 0, 0 }, { 4.0f, 5.0f }, { 1.0f, 1.0f, 0.5f, 1.0f });
-			Renderer::DrawAABB(m_MeshEntity.GetComponent<MeshComponent>(), m_MeshEntity.GetComponent<TransformComponent>());
-			Prism::Renderer2D::EndScene();
-			Prism::Renderer::EndRenderPass();
+			if (m_ViewportPanelFocused)
+				m_EditorCamera.OnUpdate(ts);
+
+			m_EditorScene->OnRenderEditor(m_EditorCamera);
+
+			if (m_DrawOnTopBoundingBoxes)
+			{
+				Renderer::BeginRenderPass(SceneRenderer::GetFinalRenderPass(), false);
+				auto viewProj = m_EditorCamera.GetViewProjection();
+				Renderer2D::BeginScene(viewProj, false);
+				// TODO: Renderer::DrawAABB(m_MeshEntity.GetComponent<MeshComponent>(), m_MeshEntity.GetComponent<TransformComponent>());
+				Renderer2D::EndScene();
+				Renderer::EndRenderPass();
+			}
+
+			if (m_SelectionContext.size() && false)
+			{
+				auto& selection = m_SelectionContext[0];
+
+				if (selection.Mesh && selection.Entity.HasComponent<MeshComponent>())
+				{
+					Renderer::BeginRenderPass(SceneRenderer::GetFinalRenderPass(), false);
+					auto viewProj = m_EditorCamera.GetViewProjection();
+					Renderer2D::BeginScene(viewProj, false);
+					glm::vec4 color = (m_SelectionMode == SelectionMode::Entity) ? glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f } : glm::vec4{ 0.2f, 0.9f, 0.2f, 1.0f };
+					Renderer::DrawAABB(selection.Mesh->BoundingBox, selection.Entity.GetComponent<TransformComponent>().Transform * selection.Mesh->Transform, color);
+					Renderer2D::EndScene();
+					Renderer::EndRenderPass();
+				}
+			}
+			break;
 		}
-
-		if (m_SelectionContext.size())
+		case SceneState::Play:
 		{
-			auto& selection = m_SelectionContext[0];
-			Prism::Renderer::BeginRenderPass(Prism::SceneRenderer::GetFinalRenderPass(), false);
-			Prism::Renderer2D::BeginScene(m_EditorCamera.GetViewProjection(), false);
-			glm::vec4 color = (m_SelectionMode == SelectionMode::Entity) ? glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f } : glm::vec4{ 0.2f, 0.9f, 0.2f, 1.0f };
-			Renderer::DrawAABB(selection.Mesh->BoundingBox, selection.Entity.GetComponent<TransformComponent>().Transform * selection.Mesh->Transform, color);
-			Prism::Renderer2D::EndScene();
-			Prism::Renderer::EndRenderPass();
+			if (m_ViewportPanelFocused)
+				m_EditorCamera.OnUpdate(ts);
+
+			m_RuntimeScene->OnUpdate();
+			m_RuntimeScene->OnRenderRuntime();
+			break;
+		}
+		case SceneState::Pause:
+		{
+			if (m_ViewportPanelFocused)
+				m_EditorCamera.OnUpdate(ts);
+
+			m_RuntimeScene->OnRenderRuntime();
+			break;
+		}
 		}
 	}
 
@@ -342,6 +302,20 @@ namespace Prism
 		m_DrawOnTopBoundingBoxes = show && onTop;
 	}
 
+	void EditorLayer::SelectEntity(Entity entity)
+	{
+		SelectedSubmesh selection;
+		if (entity.HasComponent<MeshComponent>())
+		{
+			selection.Mesh = &entity.GetComponent<MeshComponent>().Mesh->GetSubmeshes()[0];
+		}
+		selection.Entity = entity;
+		m_SelectionContext.clear();
+		m_SelectionContext.push_back(selection);
+
+		m_EditorScene->SetSelectedEntity(entity);
+	}
+
 	void EditorLayer::OnImGuiRender()
 	{
 #define ENABLE_DOCKSPACE 1
@@ -390,25 +364,20 @@ namespace Prism
 
 
 		ImGui::Begin("Model");
-		if (ImGui::RadioButton("Spheres", (int*)&m_SceneType, (int)SceneType::Spheres))
-			m_ActiveScene = m_SphereScene;
-		ImGui::SameLine();
-		if (ImGui::RadioButton("Model", (int*)&m_SceneType, (int)SceneType::Model))
-			m_ActiveScene = m_Scene;
 
 		ImGui::Begin("Environment");
 		if (ImGui::Button("Load Environment Map"))
 		{
 			std::string filename = Application::Get().OpenFile("*.hdr");
 			if (filename != "")
-				m_ActiveScene->SetEnvironment(Environment::Load(filename));
+				m_EditorScene->SetEnvironment(Environment::Load(filename));
 		}
 
-		ImGui::SliderFloat("Skybox LOD", &m_Scene->GetSkyboxLod(), 0.0f, 11.0f);
+		ImGui::SliderFloat("Skybox LOD", &m_EditorScene->GetSkyboxLod(), 0.0f, 11.0f);
 		ImGui::Columns(2);
 		ImGui::AlignTextToFramePadding();
 
-		auto& light = m_Scene->GetLight();
+		auto& light = m_EditorScene->GetLight();
 		Property("Light Direction", light.Direction);
 		Property("Light Radiance", light.Radiance, PropertyFlag::ColorProperty);
 		Property("Light Multiplier", light.Multiplier, 0.0f, 5.0f);
@@ -433,22 +402,22 @@ namespace Prism
 		ImGui::Separator();
 		{
 			ImGui::Text("Mesh");
-			auto meshComponent = m_MeshEntity.GetComponent<MeshComponent>();
-			std::string fullpath = meshComponent.Mesh ? meshComponent.Mesh->GetFilePath() : "None";
-			size_t found = fullpath.find_last_of("/\\");
-			std::string path = found != std::string::npos ? fullpath.substr(found + 1) : fullpath;
-			ImGui::Text(path.c_str()); ImGui::SameLine();
-			if (ImGui::Button("...##Mesh"))
-			{
-				std::string filename = Prism::Application::Get().OpenFile("");
-				if (filename != "")
-				{
-					auto newMesh = Ref<Mesh>::Create(filename);
-					// m_MeshMaterial.reset(new MaterialInstance(newMesh->GetMaterial()));
-					// m_MeshEntity->SetMaterial(m_MeshMaterial);
-					meshComponent.Mesh = newMesh;
-				}
-			}
+			//auto meshComponent = m_MeshEntity.GetComponent<MeshComponent>();
+			//std::string fullpath = meshComponent.Mesh ? meshComponent.Mesh->GetFilePath() : "None";
+			//size_t found = fullpath.find_last_of("/\\");
+			//std::string path = found != std::string::npos ? fullpath.substr(found + 1) : fullpath;
+			//ImGui::Text(path.c_str()); ImGui::SameLine();
+			//if (ImGui::Button("...##Mesh"))
+			//{
+			//	std::string filename = Prism::Application::Get().OpenFile("");
+			//	if (filename != "")
+			//	{
+			//		auto newMesh = Ref<Mesh>::Create(filename);
+			//		// m_MeshMaterial.reset(new MaterialInstance(newMesh->GetMaterial()));
+			//		// m_MeshEntity->SetMaterial(m_MeshMaterial);
+			//		meshComponent.Mesh = newMesh;
+			//	}
+			//}
 		}
 		ImGui::Separator();
 
@@ -601,14 +570,55 @@ namespace Prism
 			}
 			ImGui::TreePop();
 		}
-
 		ImGui::End();
+
+		// ImGui::ShowDemoWindow();
+
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(12, 0));
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(12, 4));
+		ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0, 0));
+		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.8f, 0.8f, 0.8f, 0.0f));
+		ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
+		ImGui::Begin("Toolbar");
+		if (m_SceneState == SceneState::Edit)
+		{
+			if (ImGui::ImageButton((ImTextureID)(m_PlayButtonTex->GetRendererID()), ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), -1, ImVec4(0, 0, 0, 0), ImVec4(0.9f, 0.9f, 0.9f, 1.0f)))
+			{
+				OnScenePlay();
+			}
+		}
+		else if (m_SceneState == SceneState::Play)
+		{
+			if (ImGui::ImageButton((ImTextureID)(m_PlayButtonTex->GetRendererID()), ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), -1, ImVec4(1.0f, 1.0f, 1.0f, 0.2f)))
+			{
+				OnSceneStop();
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::ImageButton((ImTextureID)(m_PlayButtonTex->GetRendererID()), ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), -1, ImVec4(0, 0, 0, 0), ImVec4(1.0f, 1.0f, 1.0f, 0.6f)))
+		{
+			PR_CORE_INFO("PLAY!");
+		}
+		ImGui::End();
+		ImGui::PopStyleColor();
+		ImGui::PopStyleColor();
+		ImGui::PopStyleColor();
+		ImGui::PopStyleVar();
+		ImGui::PopStyleVar();
+		ImGui::PopStyleVar();
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
 		ImGui::Begin("Viewport");
+
+		m_ViewportPanelMouseOver = ImGui::IsWindowHovered();
+		m_ViewportPanelFocused = ImGui::IsWindowFocused();
 		auto viewportOffset = ImGui::GetCursorPos();
 		auto viewportSize = ImGui::GetContentRegionAvail();
 		SceneRenderer::SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
+		m_EditorScene->SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
+		if (m_RuntimeScene)
+			m_RuntimeScene->SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
 		m_EditorCamera.SetProjectionMatrix(glm::perspectiveFov(glm::radians(45.0f), viewportSize.x, viewportSize.y, 0.1f, 10000.0f));
 		m_EditorCamera.SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
 		ImGui::Image((void*)SceneRenderer::GetFinalColorBufferRendererID(), viewportSize, { 0, 1 }, { 1, 0 });
@@ -632,14 +642,13 @@ namespace Prism
 			ImGuizmo::SetDrawlist();
 			ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, rw, rh);
 			
-			auto& camera = m_EditorCamera;
 			bool snap = Input::IsKeyPressed(PR_KEY_LEFT_CONTROL);
 			auto& entityTransform = selection.Entity.Transform();
 			float snapValue[3] = { m_SnapValue, m_SnapValue, m_SnapValue };
 			if (m_SelectionMode == SelectionMode::Entity)
 			{
-				ImGuizmo::Manipulate(glm::value_ptr(camera.GetViewMatrix()),
-					glm::value_ptr(camera.GetProjectionMatrix()),
+				ImGuizmo::Manipulate(glm::value_ptr(m_EditorCamera.GetViewMatrix()),
+					glm::value_ptr(m_EditorCamera.GetProjectionMatrix()),
 					(ImGuizmo::OPERATION)m_GizmoType,
 					ImGuizmo::LOCAL,
 					glm::value_ptr(entityTransform),
@@ -649,8 +658,8 @@ namespace Prism
 			else
 			{
 				glm::mat4 transformBase = entityTransform * selection.Mesh->Transform;
-				ImGuizmo::Manipulate(glm::value_ptr(camera.GetViewMatrix()),
-					glm::value_ptr(camera.GetProjectionMatrix()),
+				ImGuizmo::Manipulate(glm::value_ptr(m_EditorCamera.GetViewMatrix()),
+					glm::value_ptr(m_EditorCamera.GetProjectionMatrix()),
 					(ImGuizmo::OPERATION)m_GizmoType,
 					ImGuizmo::LOCAL,
 					glm::value_ptr(transformBase),
@@ -666,38 +675,52 @@ namespace Prism
 
 		if (ImGui::BeginMenuBar())
 		{
-			if (ImGui::BeginMenu("Options"))
+			if (ImGui::BeginMenu("File"))
 			{
-				// Disabling fullscreen would allow the window to be moved to the front of other windows,
-				// which we can't undo at the moment without finer window depth/z control.
-				ImGui::MenuItem("Fullscreen", NULL, &opt_fullscreen);
-				ImGui::MenuItem("Padding", NULL, &opt_padding);
+				if (ImGui::MenuItem("New Scene"))
+				{
+
+				}
+				if (ImGui::MenuItem("Open Scene..."))
+				{
+					auto& app = Application::Get();
+					std::string filepath = app.OpenFile("Prism Scene (*.psc)\0*.psc\0");
+					if (!filepath.empty())
+					{
+						Ref<Scene> newScene = Ref<Scene>::Create();
+						SceneSerializer serializer(newScene);
+						serializer.Deserialize(filepath);
+						m_EditorScene = newScene;
+						m_SceneHierarchyPanel->SetContext(m_EditorScene);
+						ScriptEngine::SetSceneContext(m_EditorScene);
+
+						m_EditorScene->SetSelectedEntity({});
+						m_SelectionContext.clear();
+					}
+				}
+				if (ImGui::MenuItem("Save Scene..."))
+				{
+					auto& app = Application::Get();
+					std::string filepath = app.SaveFile("Prism Scene (*.psc)\0*.psc\0");
+					SceneSerializer serializer(m_EditorScene);
+					serializer.Serialize(filepath);
+				}
+				ImGui::Separator();
+				if (ImGui::MenuItem("Reload C# Assembly"))
+					ScriptEngine::ReloadAssembly("assets/scripts/ExampleApp.dll");
 				ImGui::Separator();
 
-				if (ImGui::MenuItem("Flag: NoSplit", "", (dockspace_flags & ImGuiDockNodeFlags_NoSplit) != 0)) { dockspace_flags ^= ImGuiDockNodeFlags_NoSplit; }
-				if (ImGui::MenuItem("Flag: NoResize", "", (dockspace_flags & ImGuiDockNodeFlags_NoResize) != 0)) { dockspace_flags ^= ImGuiDockNodeFlags_NoResize; }
-				if (ImGui::MenuItem("Flag: NoDockingInCentralNode", "", (dockspace_flags & ImGuiDockNodeFlags_NoDockingInCentralNode) != 0)) { dockspace_flags ^= ImGuiDockNodeFlags_NoDockingInCentralNode; }
-				if (ImGui::MenuItem("Flag: AutoHideTabBar", "", (dockspace_flags & ImGuiDockNodeFlags_AutoHideTabBar) != 0)) { dockspace_flags ^= ImGuiDockNodeFlags_AutoHideTabBar; }
-				//if (ImGui::MenuItem("Flag: PassthruCentralNode", "", (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode) != 0, opt_fullscreen)) { dockspace_flags ^= ImGuiDockNodeFlags_PassthruCentralNode; }
-				ImGui::Separator();
-
-				if (ImGui::MenuItem("Close", NULL, false, p_open != NULL))
+				if (ImGui::MenuItem("Exit"))
 					p_open = false;
 				ImGui::EndMenu();
 			}
-			ImGuiShowHelpMarker(
-				"When docking is enabled, you can ALWAYS dock MOST window into another! Try it now!" "\n"
-				"- Drag from window title bar or their tab to dock/undock." "\n"
-				"- Drag from window menu button (upper-left button) to undock an entire node (all windows)." "\n"
-				"- Hold SHIFT to disable docking (if io.ConfigDockingWithShift == false, default)" "\n"
-				"- Hold SHIFT to enable docking (if io.ConfigDockingWithShift == true)" "\n"
-				"This demo app has nothing to do with enabling docking!" "\n\n"
-				"This demo app only demonstrate the use of ImGui::DockSpace() which allows you to manually create a docking node _within_ another window." "\n\n"
-				"Read comments in ShowExampleAppDockSpace() for more details.");
 
 			ImGui::EndMenuBar();
 		}
 		m_SceneHierarchyPanel->OnImGuiRender();
+
+		ScriptEngine::OnImGuiRender();
+
 		ImGui::End();
 #endif
 
@@ -709,42 +732,74 @@ namespace Prism
 
 	void EditorLayer::OnEvent(Prism::Event& e)
 	{
-		m_Scene->OnEvent(e);
-		m_EditorCamera.OnEvent(e);
+		if (m_SceneState == SceneState::Edit)
+		{
+			if (m_ViewportPanelMouseOver)
+				m_EditorScene->OnEvent(e);
+		}
+		else if (m_SceneState == SceneState::Play)
+		{
+			m_RuntimeScene->OnEvent(e);
+		}
+				m_EditorCamera.OnEvent(e);
 		EventDispatcher dispatcher(e);
 		dispatcher.Dispatch<KeyPressedEvent>(PR_BIND_EVENT_FN(EditorLayer::OnKeyPressedEvent));
 		dispatcher.Dispatch<MouseButtonPressedEvent>(PR_BIND_EVENT_FN(EditorLayer::OnMouseButtonPressed));
 	}
 	bool EditorLayer::OnKeyPressedEvent(KeyPressedEvent& e)
 	{
-		switch (e.GetKeyCode())
+		if (m_ViewportPanelFocused)
 		{
-		case PR_KEY_Q:
-			m_GizmoType = -1;
-			break;
-		case PR_KEY_W:
-			m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
-			break;
-		case PR_KEY_E:
-			m_GizmoType = ImGuizmo::OPERATION::ROTATE;
-			break;
-		case PR_KEY_R:
-			m_GizmoType = ImGuizmo::OPERATION::SCALE;
-			break;
-		case PR_KEY_G:
-			// Toggle grid
-			if (Prism::Input::IsKeyPressed(PR_KEY_LEFT_CONTROL))
-				SceneRenderer::GetOptions().ShowGrid = !SceneRenderer::GetOptions().ShowGrid;
-			break;
-		case PR_KEY_B:
-			// Toggle bounding boxes 
-			if (Prism::Input::IsKeyPressed(PR_KEY_LEFT_CONTROL))
+			switch (e.GetKeyCode())
 			{
+			case KeyCode::Q:
+				m_GizmoType = -1;
+				break;
+			case KeyCode::W:
+				m_GizmoType = ImGuizmo::OPERATION::TRANSLATE;
+				break;
+			case KeyCode::E:
+				m_GizmoType = ImGuizmo::OPERATION::ROTATE;
+				break;
+			case KeyCode::R:
+				m_GizmoType = ImGuizmo::OPERATION::SCALE;
+				break;
+			case KeyCode::Delete:
+				if (m_SelectionContext.size())
+				{
+					Entity selectedEntity = m_SelectionContext[0].Entity;
+					m_EditorScene->DestroyEntity(selectedEntity);
+					m_SelectionContext.clear();
+					m_EditorScene->SetSelectedEntity({});
+					m_SceneHierarchyPanel->SetSelected({});
+				}
+				break;
+			}
+		}
+
+		if (Input::IsKeyPressed(PR_KEY_LEFT_CONTROL))
+		{
+			switch (e.GetKeyCode())
+			{
+			case KeyCode::G:
+				// Toggle grid
+				SceneRenderer::GetOptions().ShowGrid = !SceneRenderer::GetOptions().ShowGrid;
+				break;
+			case KeyCode::B:
+				// Toggle bounding boxes 
 				m_UIShowBoundingBoxes = !m_UIShowBoundingBoxes;
 				ShowBoundingBoxes(m_UIShowBoundingBoxes, m_UIShowBoundingBoxesOnTop);
+				break;
+			case KeyCode::D:
+				if (m_SelectionContext.size())
+				{
+					Entity selectedEntity = m_SelectionContext[0].Entity;
+					m_EditorScene->DuplicateEntity(selectedEntity);
+				}
+				break;
 			}
-			break;
 		}
+
 		return false;
 	}
 
@@ -760,10 +815,11 @@ namespace Prism
 				auto [origin, direction] = CastRay(mouseX, mouseY);
 
 				m_SelectionContext.clear();
-				auto meshEntities = m_Scene->GetAllEntitiesWith<MeshComponent>();
+				m_EditorScene->SetSelectedEntity({});
+				auto meshEntities = m_EditorScene->GetAllEntitiesWith<MeshComponent>();
 				for (auto e : meshEntities)
 				{
-					Entity entity = { e, m_Scene.Raw() };
+					Entity entity = { e, m_EditorScene.Raw() };
 					auto mesh = entity.GetComponent<MeshComponent>().Mesh;
 					if (!mesh)
 						continue;
@@ -830,7 +886,17 @@ namespace Prism
 
 	void EditorLayer::OnSelected(const SelectedSubmesh& selectionContext)
 	{
-		//m_SceneHierarchyPanel->SetSelected(selectionContext.Entity);
+		m_SceneHierarchyPanel->SetSelected(selectionContext.Entity);
+		m_EditorScene->SetSelectedEntity(selectionContext.Entity);
+	}
+
+	void EditorLayer::OnEntityDeleted(Entity e)
+	{
+		if (m_SelectionContext[0].Entity == e)
+		{
+			m_SelectionContext.clear();
+			m_EditorScene->SetSelectedEntity({});
+		}
 	}
 
 	Ray EditorLayer::CastMouseRay()

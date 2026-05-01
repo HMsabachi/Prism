@@ -29,15 +29,17 @@ namespace Prism {
 
 	OpenGLVertexArray::OpenGLVertexArray()
 	{
-		Renderer::Submit([this]() {
-			glCreateVertexArrays(1, &m_RendererID);
+		Ref<OpenGLVertexArray> instance = this;
+		Renderer::Submit([instance]() mutable {
+			glCreateVertexArrays(1, &instance->m_RendererID);
 			});
 	}
 
 	OpenGLVertexArray::~OpenGLVertexArray()
 	{
-		Renderer::Submit([this]() {
-			glDeleteVertexArrays(1, &m_RendererID);
+		GLuint id = m_RendererID;
+		Renderer::Submit([id]() {
+			glDeleteVertexArrays(1, &id);
 			});
 	}
 

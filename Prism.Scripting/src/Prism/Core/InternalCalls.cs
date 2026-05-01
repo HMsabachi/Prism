@@ -24,13 +24,13 @@ namespace Prism
         // Input
         internal static delegate* unmanaged[Cdecl]<KeyCode, bool> Prism_Input_IsKeyPressed;
         // Entity
-        internal static delegate* unmanaged[Cdecl]<UInt32, UInt32, Matrix4*, void> Prism_Entity_GetTransform;
-        internal static delegate* unmanaged[Cdecl]<UInt32, UInt32, Matrix4*, void> Prism_Entity_SetTransform;
-        internal static delegate* unmanaged[Cdecl]<UInt32, UInt32, ReflectionType, void> Prism_Entity_CreateComponent;
-        internal static delegate* unmanaged[Cdecl]<UInt32, UInt32, ReflectionType, bool> Prism_Entity_HasComponent;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Matrix4*, void> Prism_Entity_GetTransform;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Matrix4*, void> Prism_Entity_SetTransform;
+        internal static delegate* unmanaged[Cdecl]<UInt64, ReflectionType, void> Prism_Entity_CreateComponent;
+        internal static delegate* unmanaged[Cdecl]<UInt64, ReflectionType, bool> Prism_Entity_HasComponent;
         // Mesh
-        internal static delegate* unmanaged[Cdecl]<UInt32, UInt32, IntPtr> Prism_MeshComponent_GetMesh;
-        internal static delegate* unmanaged[Cdecl]<UInt32, UInt32, IntPtr, void> Prism_MeshComponent_SetMesh;
+        internal static delegate* unmanaged[Cdecl]<UInt64, IntPtr> Prism_MeshComponent_GetMesh;
+        internal static delegate* unmanaged[Cdecl]<UInt64, IntPtr, void> Prism_MeshComponent_SetMesh;
         internal static delegate* unmanaged[Cdecl]<NativeString, IntPtr> Prism_Mesh_Constructor;
         internal static delegate* unmanaged[Cdecl]<IntPtr, void> Prism_Mesh_Destructor;
         internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr> Prism_Mesh_GetMaterial;

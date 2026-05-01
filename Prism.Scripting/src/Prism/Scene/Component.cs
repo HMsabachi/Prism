@@ -19,7 +19,7 @@ namespace Prism
         {
             get
             {
-                return GetTag_Native(Entity.SceneID, Entity.EntityID);
+                return GetTag_Native(Entity.ID);
             }
             set
             {
@@ -28,7 +28,7 @@ namespace Prism
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern string GetTag_Native(uint sceneID, uint entityID);
+        public static extern string GetTag_Native(ulong entityID);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void SetTag_Native(string tag);
@@ -42,24 +42,24 @@ namespace Prism
         {
             get
             {
-                GetTransform_Native(Entity.SceneID, Entity.EntityID, out _value);
+                GetTransform_Native(Entity.ID, out _value);
                 return _value;
             }
             set
             {
                 _value = value;
-                SetTransform_Native(Entity.SceneID, Entity.EntityID, ref _value);
+                SetTransform_Native(Entity.ID, ref _value);
             }
         }
 
-        public unsafe static void GetTransform_Native(uint sceneID, uint entityID, out Matrix4 result)
+        public unsafe static void GetTransform_Native(ulong id, out Matrix4 result)
         {
-            fixed (Matrix4* ptr = &result) InternalCalls.Prism_Entity_GetTransform(sceneID, entityID, ptr);
+            fixed (Matrix4* ptr = &result) InternalCalls.Prism_Entity_GetTransform(id, ptr);
         }
 
-        public unsafe static void SetTransform_Native(uint sceneID, uint entityID, ref Matrix4 result)
+        public unsafe static void SetTransform_Native(ulong id, ref Matrix4 result)
         {
-            fixed (Matrix4* ptr = &result) InternalCalls.Prism_Entity_SetTransform(sceneID, entityID, ptr);
+            fixed (Matrix4* ptr = &result) InternalCalls.Prism_Entity_SetTransform(id, ptr);
         }
 
     }
@@ -70,22 +70,22 @@ namespace Prism
         {
             get
             {
-                Mesh result = new Mesh(GetMesh_Native(Entity.SceneID, Entity.EntityID));
+                Mesh result = new Mesh(GetMesh_Native(Entity.ID));
                 return result;
             }
             set
             {
                 IntPtr ptr = value == null ? IntPtr.Zero : value.m_UnmanagedInstance;
-                SetMesh_Native(Entity.SceneID, Entity.EntityID, ptr);
+                SetMesh_Native(Entity.ID, ptr);
             }
         }
-        public unsafe static IntPtr GetMesh_Native(uint sceneID, uint entityID)
+        public unsafe static IntPtr GetMesh_Native(ulong id)
         {
-            return InternalCalls.Prism_MeshComponent_GetMesh(sceneID, entityID);
+            return InternalCalls.Prism_MeshComponent_GetMesh(id);
         }
-        public unsafe static void SetMesh_Native(uint sceneID, uint entityID, IntPtr unmanagedInstance)
+        public unsafe static void SetMesh_Native(ulong id, IntPtr unmanagedInstance)
         {
-            InternalCalls.Prism_MeshComponent_SetMesh(sceneID, entityID, unmanagedInstance);
+            InternalCalls.Prism_MeshComponent_SetMesh(id, unmanagedInstance);
         }
 
     }
