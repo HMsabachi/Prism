@@ -72,6 +72,23 @@ namespace Prism
         }
 
 
+        public void Set(string uniform, Vector4 value)
+        {
+            unsafe
+            {
+                IntPtr valuePtr = Marshal.AllocHGlobal(Marshal.SizeOf<Vector4>());
+                try
+                {
+                    Marshal.StructureToPtr(value, valuePtr, false);
+                    InternalCalls.Prism_MaterialInstance_SetVector4(m_UnmanagedInstance, uniform, valuePtr);
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(valuePtr);
+                }
+            }
+        }
+
         public void SetTexture(string uniform, Texture2D texture)
         {
             unsafe { InternalCalls.Prism_MaterialInstance_SetTexture(m_UnmanagedInstance, uniform, texture.m_UnmanagedInstance);}

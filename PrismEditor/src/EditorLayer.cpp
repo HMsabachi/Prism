@@ -2,6 +2,8 @@
 
 #include "Prism/ImGui/ImGuizmo.h"
 
+#include <filesystem>
+
 namespace Prism
 {
 	static void ImGuiShowHelpMarker(const char* desc)
@@ -113,6 +115,7 @@ namespace Prism
 		m_PlayButtonTex = Texture2D::Create("assets/editor/PlayButton.png");
 
 		m_EditorScene = Ref<Scene>::Create();
+		UpdateWindowTitle("Untitled Scene");
 		ScriptEngine::SetSceneContext(m_EditorScene);
 		m_SceneHierarchyPanel = CreateScope<SceneHierarchyPanel>(m_EditorScene);
 		m_SceneHierarchyPanel->SetSelectionChangedCallback(std::bind(&EditorLayer::SelectEntity, this, std::placeholders::_1));
@@ -131,11 +134,15 @@ namespace Prism
 
 		m_SceneState = SceneState::Play;
 
+		if (m_ReloadScriptOnPlay)
+			ScriptEngine::ReloadAssembly("assets/scripts/ExampleApp.dll");
+
 		m_RuntimeScene = Ref<Scene>::Create();
 		m_EditorScene->CopyTo(m_RuntimeScene);
 
 		m_RuntimeScene->OnRuntimeStart();
 		m_SceneHierarchyPanel->SetContext(m_RuntimeScene);
+		UpdateWindowTitle("Runtime Scene");
 	}
 
 	void EditorLayer::OnSceneStop()
@@ -149,6 +156,13 @@ namespace Prism
 		m_SelectionContext.clear();
 		ScriptEngine::SetSceneContext(m_EditorScene);
 		m_SceneHierarchyPanel->SetContext(m_EditorScene);
+		UpdateWindowTitle("Untitled Scene");
+	}
+
+	void EditorLayer::UpdateWindowTitle(const std::string& sceneName)
+	{
+		std::string title = sceneName + " - Prism Engine - " + Application::GetPlatformName() + " (" + Application::GetConfigurationName() + ")";
+		Application::Get().GetWindow().SetTitle(title);
 	}
 
 
@@ -199,6 +213,39 @@ namespace Prism
 
 			m_RuntimeScene->OnUpdate();
 			m_RuntimeScene->OnRenderRuntime();
+
+			// Box2D collider debug drawing
+			{
+				Renderer::BeginRenderPass(SceneRenderer::GetFinalRenderPass(), false);
+				auto viewProj = m_EditorCamera.GetViewProjection();
+				Renderer2D::BeginScene(viewProj, false);
+				{
+					auto boxColliderView = m_RuntimeScene->GetAllEntitiesWith<BoxCollider2DComponent>();
+					for (auto e : boxColliderView)
+					{
+						Entity entity = { e, m_RuntimeScene.Raw() };
+						if (!entity.HasComponent<TransformComponent>())
+							continue;
+
+						auto& transform = entity.Transform();
+						auto& boxCollider = entity.GetComponent<BoxCollider2DComponent>();
+
+						glm::vec3 translation, skew;
+						glm::vec4 perspective;
+						glm::quat rotation;
+						glm::vec3 scale;
+						glm::decompose(transform, scale, rotation, translation, skew, perspective);
+
+						glm::vec3 position = translation + glm::vec3(boxCollider.Offset, 0.0f);
+						float angle = glm::eulerAngles(rotation).z;
+						glm::vec2 size = boxCollider.Size * 2.0f;
+
+						Renderer2D::DrawRotatedQuad(position, size, angle, glm::vec4(0.5f, 0.0f, 0.5f, 0.3f));
+					}
+				}
+				Renderer2D::EndScene();
+				Renderer::EndRenderPass();
+			}
 			break;
 		}
 		case SceneState::Pause:
@@ -212,8 +259,9 @@ namespace Prism
 		}
 	}
 
-	void EditorLayer::Property(const std::string& name, glm::vec4& value, float min /*= -1.0f*/, float max /*= 1.0f*/, PropertyFlag flags /*= PropertyFlag::None*/)
+	bool EditorLayer::Property(const std::string& name, glm::vec4& value, float min /*= -1.0f*/, float max /*= 1.0f*/, PropertyFlag flags /*= PropertyFlag::None*/)
 	{
+		bool modified = false;
 		ImGui::Text(name.c_str());
 		ImGui::NextColumn();
 		ImGui::PushItemWidth(-1);
@@ -221,37 +269,46 @@ namespace Prism
 		std::string id = "##" + name;
 		if ((int)flags & (int)PropertyFlag::ColorProperty)
 			ImGui::ColorEdit4(id.c_str(), glm::value_ptr(value), ImGuiColorEditFlags_NoInputs);
-		else
+		else if ((int)flags & (int)PropertyFlag::SliderProperty)
 			ImGui::SliderFloat4(id.c_str(), glm::value_ptr(value), min, max);
+		else
+			modified = ImGui::DragFloat4(id.c_str(), glm::value_ptr(value));
 
 		ImGui::PopItemWidth();
 		ImGui::NextColumn();
+		return modified;
 	}
-	void EditorLayer::Property(const std::string& name, glm::vec2& value, EditorLayer::PropertyFlag flags)
+	bool EditorLayer::Property(const std::string& name, glm::vec2& value, EditorLayer::PropertyFlag flags)
 	{
-		Property(name, value, -1.0f, 1.0f, flags);
+		return Property(name, value, -1.0f, 1.0f, flags);
 	}
 
-	void EditorLayer::Property(const std::string& name, glm::vec2& value, float min, float max, EditorLayer::PropertyFlag flags)
+	bool EditorLayer::Property(const std::string& name, glm::vec2& value, float min, float max, EditorLayer::PropertyFlag flags)
 	{
+		bool modified = false;
 		ImGui::Text(name.c_str());
 		ImGui::NextColumn();
 		ImGui::PushItemWidth(-1);
 
 		std::string id = "##" + name;
-		ImGui::SliderFloat2(id.c_str(), glm::value_ptr(value), min, max);
+		if ((int)flags & (int)PropertyFlag::SliderProperty)
+			ImGui::SliderFloat2(id.c_str(), glm::value_ptr(value), min, max);
+		else
+			modified = ImGui::DragFloat2(id.c_str(), glm::value_ptr(value));
 
 		ImGui::PopItemWidth();
 		ImGui::NextColumn();
+		return modified;
 	}
 
-	void EditorLayer::Property(const std::string& name, glm::vec4& value, PropertyFlag flags)
+	bool EditorLayer::Property(const std::string& name, glm::vec4& value, PropertyFlag flags)
 	{
-		Property(name, value, -1.0f, 1.0f, flags);
+		return Property(name, value, -1.0f, 1.0f, flags);
 	}
 
-	void EditorLayer::Property(const std::string& name, glm::vec3& value, float min /*= -1.0f*/, float max /*= 1.0f*/, PropertyFlag flags /*= PropertyFlag::None*/)
+	bool EditorLayer::Property(const std::string& name, glm::vec3& value, float min /*= -1.0f*/, float max /*= 1.0f*/, PropertyFlag flags /*= PropertyFlag::None*/)
 	{
+		bool modified = false;
 		ImGui::Text(name.c_str());
 		ImGui::NextColumn();
 		ImGui::PushItemWidth(-1);
@@ -259,29 +316,37 @@ namespace Prism
 		std::string id = "##" + name;
 		if ((int)flags & (int)PropertyFlag::ColorProperty)
 			ImGui::ColorEdit3(id.c_str(), glm::value_ptr(value), ImGuiColorEditFlags_NoInputs);
-		else
+		else if ((int)flags & (int)PropertyFlag::SliderProperty)
 			ImGui::SliderFloat3(id.c_str(), glm::value_ptr(value), min, max);
+		else
+			modified = ImGui::DragFloat3(id.c_str(), glm::value_ptr(value));
 
 		ImGui::PopItemWidth();
 		ImGui::NextColumn();
+		return modified;
 	}
 
-	void EditorLayer::Property(const std::string& name, glm::vec3& value, PropertyFlag flags)
+	bool EditorLayer::Property(const std::string& name, glm::vec3& value, PropertyFlag flags)
 	{
-		Property(name, value, -1.0f, 1.0f, flags);
+		return Property(name, value, -1.0f, 1.0f, flags);
 	}
 
-	void EditorLayer::Property(const std::string& name, float& value, float min /*= -1.0f*/, float max /*= 1.0f*/, PropertyFlag flags /*= PropertyFlag::None*/)
+	bool EditorLayer::Property(const std::string& name, float& value, float min /*= -1.0f*/, float max /*= 1.0f*/, PropertyFlag flags /*= PropertyFlag::None*/)
 	{
+		bool modified = false;
 		ImGui::Text(name.c_str());
 		ImGui::NextColumn();
 		ImGui::PushItemWidth(-1);
 
 		std::string id = "##" + name;
-		ImGui::SliderFloat(id.c_str(), &value, min, max);
+		if ((int)flags & (int)PropertyFlag::SliderProperty)
+			ImGui::SliderFloat(id.c_str(), &value, min, max);
+		else
+			modified = ImGui::DragFloat(id.c_str(), &value);
 
 		ImGui::PopItemWidth();
 		ImGui::NextColumn();
+		return modified;
 	}
 
 	bool EditorLayer::Property(const std::string& name, bool& value)
@@ -380,13 +445,23 @@ namespace Prism
 		ImGui::AlignTextToFramePadding();
 
 		auto& light = m_EditorScene->GetLight();
-		Property("Light Direction", light.Direction);
+		Property("Light Direction", light.Direction, PropertyFlag::SliderProperty);
 		Property("Light Radiance", light.Radiance, PropertyFlag::ColorProperty);
-		Property("Light Multiplier", light.Multiplier, 0.0f, 5.0f);
-		Property("Exposure", m_EditorCamera.GetExposure(), 0.0f, 5.0f);
+		Property("Light Multiplier", light.Multiplier, 0.0f, 5.0f, PropertyFlag::SliderProperty);
+		{
+			float physics2DGravity = m_SceneState == SceneState::Edit ? m_EditorScene->GetPhysics2DGravity() : m_RuntimeScene->GetPhysics2DGravity();
+			if (Property("Gravity", physics2DGravity, -10000.0f, 10000.0f, PropertyFlag::DragProperty))
+			{
+				if (m_SceneState == SceneState::Edit)
+					m_EditorScene->SetPhysics2DGravity(physics2DGravity);
+				else if (m_RuntimeScene)
+					m_RuntimeScene->SetPhysics2DGravity(physics2DGravity);
+			}
+		}
+		Property("Exposure", m_EditorCamera.GetExposure(), 0.0f, 5.0f, PropertyFlag::SliderProperty);
 
 		Property("Radiance Prefiltering", m_RadiancePrefilter);
-		Property("Env Map Rotation", m_EnvMapRotation, -360.0f, 360.0f);
+		Property("Env Map Rotation", m_EnvMapRotation, -360.0f, 360.0f, PropertyFlag::SliderProperty);
 		if (Property("Show Bounding Boxes", m_UIShowBoundingBoxes))
 			ShowBoundingBoxes(m_UIShowBoundingBoxes, m_UIShowBoundingBoxesOnTop);
 		if (m_UIShowBoundingBoxes && Property("On Top", m_UIShowBoundingBoxesOnTop))
@@ -693,6 +768,8 @@ namespace Prism
 						SceneSerializer serializer(newScene);
 						serializer.Deserialize(filepath);
 						m_EditorScene = newScene;
+						std::filesystem::path path = filepath;
+						UpdateWindowTitle(path.filename().string());
 						m_SceneHierarchyPanel->SetContext(m_EditorScene);
 						ScriptEngine::SetSceneContext(m_EditorScene);
 
@@ -706,14 +783,20 @@ namespace Prism
 					std::string filepath = app.SaveFile("Prism Scene (*.psc)\0*.psc\0");
 					SceneSerializer serializer(m_EditorScene);
 					serializer.Serialize(filepath);
+					std::filesystem::path path = filepath;
+					UpdateWindowTitle(path.filename().string());
 				}
 				ImGui::Separator();
-				if (ImGui::MenuItem("Reload C# Assembly"))
-					ScriptEngine::ReloadAssembly("assets/scripts/ExampleApp.dll");
-				ImGui::Separator();
-
 				if (ImGui::MenuItem("Exit"))
 					p_open = false;
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("Script"))
+			{
+				if (ImGui::MenuItem("Reload C# Assembly"))
+					ScriptEngine::ReloadAssembly("assets/scripts/ExampleApp.dll");
+				ImGui::MenuItem("Reload assembly on play", nullptr, &m_ReloadScriptOnPlay);
 				ImGui::EndMenu();
 			}
 
@@ -721,6 +804,43 @@ namespace Prism
 		}
 		m_SceneHierarchyPanel->OnImGuiRender();
 
+		ImGui::Begin("Materials");
+
+		if (m_SelectionContext.size())
+		{
+			Entity selectedEntity = m_SelectionContext.front().Entity;
+			if (selectedEntity.HasComponent<MeshComponent>())
+			{
+				Ref<Mesh> mesh = selectedEntity.GetComponent<MeshComponent>().Mesh;
+				if (mesh)
+				{
+					auto& materials = mesh->GetMaterials();
+					static uint32_t selectedMaterialIndex = 0;
+					for (uint32_t i = 0; i < materials.size(); i++)
+					{
+						auto& materialInstance = materials[i];
+
+						ImGuiTreeNodeFlags node_flags = (selectedMaterialIndex == i ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_Leaf;
+						bool opened = ImGui::TreeNodeEx((void*)(&materialInstance), node_flags, materialInstance->GetName().c_str());
+						if (ImGui::IsItemClicked())
+						{
+							selectedMaterialIndex = i;
+						}
+						if (opened)
+							ImGui::TreePop();
+					}
+
+					ImGui::Separator();
+
+					if (selectedMaterialIndex < materials.size())
+					{
+						ImGui::Text("Shader: %s", materials[selectedMaterialIndex]->GetShader()->GetName().c_str());
+					}
+				}
+			}
+		}
+
+		ImGui::End();
 		ScriptEngine::OnImGuiRender();
 
 		ImGui::End();
@@ -809,7 +929,7 @@ namespace Prism
 	{
 		auto [mx, my] = Input::GetMousePosition();
 		if (e.GetMouseButton() == PR_MOUSE_BUTTON_LEFT && !Input::IsKeyPressed(PR_KEY_LEFT_ALT) &&
-			!ImGuizmo::IsOver())
+			!ImGuizmo::IsOver() && m_SceneState == SceneState::Edit)
 		{
 			auto [mouseX, mouseY] = GetMouseViewportSpace();
 			if (mouseX > -1.0f && mouseX < 1.0f && mouseY > -1.0f && mouseY < 1.0f)

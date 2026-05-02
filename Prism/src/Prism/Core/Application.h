@@ -40,6 +40,9 @@ namespace Prism
 
 		inline static Application& Get() { return *s_Instance; }
 		inline Window& GetWindow() const { return *m_Window; }
+
+		static const char* GetConfigurationName();
+		static const char* GetPlatformName();
 	protected:
 		virtual void OnInit();
 		virtual void OnShutdown();

@@ -113,4 +113,41 @@ namespace Prism {
 		operator Ref<Prism::MaterialInstance>() { return Material; }
 	};
 
+	struct RigidBody2DComponent
+	{
+		enum class Type { Static = 0, Dynamic, Kinematic };
+		Type BodyType = Type::Static;
+		float Mass = 1.0f;
+		void* RuntimeBody = nullptr;
+
+		RigidBody2DComponent() = default;
+		RigidBody2DComponent(const RigidBody2DComponent& other)
+			: BodyType(other.BodyType), Mass(other.Mass), RuntimeBody(nullptr) {
+		}
+	};
+
+	struct BoxCollider2DComponent
+	{
+		glm::vec2 Offset = { 0.0f, 0.0f };
+		glm::vec2 Size = { 1.0f, 1.0f };
+		void* RuntimeFixture = nullptr;
+
+		BoxCollider2DComponent() = default;
+		BoxCollider2DComponent(const BoxCollider2DComponent& other)
+			: Offset(other.Offset), Size(other.Size), RuntimeFixture(nullptr) {
+		}
+	};
+
+	struct CircleCollider2DComponent
+	{
+		glm::vec2 Offset = { 0.0f, 0.0f };
+		float Radius = 1.0f;
+		void* RuntimeFixture = nullptr;
+
+		CircleCollider2DComponent() = default;
+		CircleCollider2DComponent(const CircleCollider2DComponent& other)
+			: Offset(other.Offset), Radius(other.Radius), RuntimeFixture(nullptr) {
+		}
+	};
+
 }

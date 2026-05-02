@@ -27,7 +27,7 @@ namespace Prism
         }
         else
         {
-            PR_CORE_ASSERT(false, "No C# component class found for {}!");
+            PR_CORE_ERROR("No C# component class found for {0}!", componentName);
         }
     }
 
@@ -41,6 +41,9 @@ namespace Prism
         RegisterManagedComponent<CameraComponent>(engineAssembly);
         RegisterManagedComponent<SpriteRendererComponent>(engineAssembly);
         RegisterManagedComponent<MaterialComponent>(engineAssembly);
+        RegisterManagedComponent<RigidBody2DComponent>(engineAssembly);
+        RegisterManagedComponent<BoxCollider2DComponent>(engineAssembly);
+        RegisterManagedComponent<CircleCollider2DComponent>(engineAssembly);
     }
 
     void ScriptEngineRegistry::RegisterAll()
@@ -81,6 +84,8 @@ namespace Prism
         // MaterialComponent
         PR_ADD_INTERNAL_CALL(Prism_MaterialComponent_GetMaterial);
         PR_ADD_INTERNAL_CALL(Prism_MaterialComponent_SetMaterial);
+        // RigidBody2DComponent
+        PR_ADD_INTERNAL_CALL(Prism_RigidBody2DComponent_ApplyLinearImpulse);
         // Texture2D
         PR_ADD_INTERNAL_CALL(Prism_Texture2D_Constructor);
         PR_ADD_INTERNAL_CALL(Prism_Texture2D_Destructor);
@@ -94,6 +99,7 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_MaterialInstance_Destructor);
         PR_ADD_INTERNAL_CALL(Prism_MaterialInstance_SetFloat);
         PR_ADD_INTERNAL_CALL(Prism_MaterialInstance_SetVector3);
+        PR_ADD_INTERNAL_CALL(Prism_MaterialInstance_SetVector4);
         PR_ADD_INTERNAL_CALL(Prism_MaterialInstance_SetTexture);
 
 

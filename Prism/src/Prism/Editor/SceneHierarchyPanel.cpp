@@ -113,6 +113,30 @@ namespace Prism {
 							ImGui::CloseCurrentPopup();
 						}
 					}
+					if (!m_SelectionContext.HasComponent<RigidBody2DComponent>())
+					{
+						if (ImGui::Button("Rigidbody 2D"))
+						{
+							m_SelectionContext.AddComponent<RigidBody2DComponent>();
+							ImGui::CloseCurrentPopup();
+						}
+					}
+					if (!m_SelectionContext.HasComponent<BoxCollider2DComponent>())
+					{
+						if (ImGui::Button("Box Collider 2D"))
+						{
+							m_SelectionContext.AddComponent<BoxCollider2DComponent>();
+							ImGui::CloseCurrentPopup();
+						}
+					}
+					if (!m_SelectionContext.HasComponent<CircleCollider2DComponent>())
+					{
+						if (ImGui::Button("Circle Collider 2D"))
+						{
+							m_SelectionContext.AddComponent<CircleCollider2DComponent>();
+							ImGui::CloseCurrentPopup();
+						}
+					}
 					ImGui::EndPopup();
 				}
 			}
@@ -418,6 +442,23 @@ namespace Prism {
 		PopID();
 	}
 
+	template<typename T, typename UIFunction>
+	static void DrawComponent(const std::string& name, Entity entity, UIFunction uiFunction)
+	{
+		if (entity.HasComponent<T>())
+		{
+			auto& component = entity.GetComponent<T>();
+			const ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
+			bool open = ImGui::TreeNodeEx((void*)((uint32_t)entity | (uint32_t)typeid(T).hash_code()), flags, "%s", name.c_str());
+			if (open)
+			{
+				uiFunction(component);
+				ImGui::TreePop();
+			}
+			ImGui::Separator();
+		}
+	}
+
 	void SceneHierarchyPanel::DrawComponents(Entity entity)
 	{
 		ImGui::AlignTextToFramePadding();
@@ -610,6 +651,45 @@ namespace Prism {
 			}
 			ImGui::Separator();
 		}
+
+		DrawComponent<RigidBody2DComponent>("Rigidbody 2D", entity, [](auto& component)
+		{
+			const char* bodyTypeStrings[] = { "Static", "Dynamic", "Kinematic" };
+			const char* currentType = bodyTypeStrings[(int)component.BodyType];
+			if (ImGui::BeginCombo("Type", currentType))
+			{
+				for (int i = 0; i < 3; i++)
+				{
+					bool is_selected = (currentType == bodyTypeStrings[i]);
+					if (ImGui::Selectable(bodyTypeStrings[i], is_selected))
+					{
+						component.BodyType = (RigidBody2DComponent::Type)i;
+					}
+					if (is_selected)
+						ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
+			}
+
+			if (component.BodyType == RigidBody2DComponent::Type::Dynamic)
+			{
+				BeginPropertyGrid();
+				Property("Mass", component.Mass);
+				EndPropertyGrid();
+			}
+		});
+
+		DrawComponent<BoxCollider2DComponent>("Box Collider 2D", entity, [](auto& component)
+		{
+			Property("Offset", component.Offset);
+			Property("Size", component.Size);
+		});
+
+		DrawComponent<CircleCollider2DComponent>("Circle Collider 2D", entity, [](auto& component)
+		{
+			Property("Offset", component.Offset);
+			Property("Radius", component.Radius);
+		});
 
 		if (entity.HasComponent<ScriptComponent>())
 		{

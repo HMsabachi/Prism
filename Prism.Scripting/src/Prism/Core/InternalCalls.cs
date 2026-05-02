@@ -53,7 +53,11 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<IntPtr, void> Prism_MaterialInstance_Destructor;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, float, void> Prism_MaterialInstance_SetFloat;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, IntPtr, void> Prism_MaterialInstance_SetVector3;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, IntPtr, void> Prism_MaterialInstance_SetVector4;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, IntPtr, void> Prism_MaterialInstance_SetTexture;
+
+        // RigidBody2DComponent
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector2*, Vector2*, bool, void> Prism_RigidBody2DComponent_ApplyLinearImpulse;
 
 
     }

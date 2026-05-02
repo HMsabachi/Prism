@@ -258,7 +258,8 @@ namespace Prism
             for (auto& [entityID, entityInstanceData] : s_EntityInstanceMap.at(sceneID))
 			{
 				//entityInstanceData.Instance.Object->InvokeMethod("OnDestroy");
-				entityInstanceData.Instance.Object->Destroy();
+				if (entityInstanceData.Instance.Object)
+					entityInstanceData.Instance.Object->Destroy();
 			}
 			s_EntityInstanceMap.at(sceneID).clear();
 			s_EntityInstanceMap.erase(sceneID);

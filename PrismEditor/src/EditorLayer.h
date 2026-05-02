@@ -31,7 +31,7 @@ namespace Prism
 
 		enum class PropertyFlag
 		{
-			None = 0, ColorProperty = 1
+			None = 0, ColorProperty = 1, DragProperty = 2, SliderProperty = 4
 		};
 
 		virtual void OnImGuiRender() override;
@@ -41,15 +41,16 @@ namespace Prism
 		bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
 
 		bool Property(const std::string& name, bool& value);
-		void Property(const std::string& name, float& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
-		void Property(const std::string& name, glm::vec2& value, PropertyFlag flags);
-		void Property(const std::string& name, glm::vec2& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
-		void Property(const std::string& name, glm::vec3& value, PropertyFlag flags);
-		void Property(const std::string& name, glm::vec3& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
-		void Property(const std::string& name, glm::vec4& value, PropertyFlag flags);
-		void Property(const std::string& name, glm::vec4& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
+		bool Property(const std::string& name, float& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
+		bool Property(const std::string& name, glm::vec2& value, PropertyFlag flags);
+		bool Property(const std::string& name, glm::vec2& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
+		bool Property(const std::string& name, glm::vec3& value, PropertyFlag flags);
+		bool Property(const std::string& name, glm::vec3& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
+		bool Property(const std::string& name, glm::vec4& value, PropertyFlag flags);
+		bool Property(const std::string& name, glm::vec4& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
 
 		void ShowBoundingBoxes(bool show, bool onTop = false);
+		void UpdateWindowTitle(const std::string& sceneName);
 		void SelectEntity(Entity entity);
 	private:
 		std::pair<float, float> GetMouseViewportSpace();
@@ -140,6 +141,7 @@ namespace Prism
 
 		bool m_ViewportPanelMouseOver = false;
 		bool m_ViewportPanelFocused = false;
+		bool m_ReloadScriptOnPlay = false;
 
 		enum class SceneState
 		{

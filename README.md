@@ -46,12 +46,14 @@ premake5 xcode4        # macOS Xcode
 - .NET 9 运行时集成
 - 组件化脚本开发（`OnCreate` / `OnUpdate` 生命周期）
 - InternalCall 自动绑定机制
+- 编辑器运行时脚本热重载（支持 Play 时自动重载）
 - C# 端完整 API：Input、Time、Log、Math（Vector2/3/4、Matrix4）、Renderer（Material、Mesh、Texture2D）
-- 示例：程序化地形生成（MapGenerator.cs）
+- C# 端物理 API：`RigidBody2DComponent.ApplyLinearImpulse`
+- 示例脚本：MapGenerator（程序化地形）、PlayerCube（物理控制）、BasicController（相机移动）、Sink（下沉平台）、RandomColor（随机颜色）
 
 ### 实体组件系统（ECS）
 - 基于 **entt** 库
-- 组件：`IDComponent`、`TagComponent`、`TransformComponent`、`MeshComponent`、`ScriptComponent`、`CameraComponent`、`SpriteRendererComponent`
+- 组件：`IDComponent`、`TagComponent`、`TransformComponent`、`MeshComponent`、`ScriptComponent`、`CameraComponent`、`SpriteRendererComponent`、`RigidBody2DComponent`、`BoxCollider2DComponent`、`CircleCollider2DComponent`
 
 ### 现代 OpenGL 渲染管线
 - PBR 金属/粗糙度工作流
@@ -71,6 +73,11 @@ premake5 xcode4        # macOS Xcode
 - 运行时场景克隆与 Play/Pause 模式
 - PBR 材质参数实时调节（反照率、法线、金属度、粗糙度）
 - 包围盒可视化开关
+- 2D 物理组件面板（RigidBody2D、BoxCollider2D、CircleCollider2D）
+- 物理碰撞体调试绘制（Play 模式下渲染碰撞体边框）
+- 材质面板（显示网格材质层级与着色器信息）
+- Physics2D 重力参数实时调节
+- ImGui Property 系统支持 Slider/Drag/Color 三种控件模式
 
 ### 基础系统
 - 日志系统（spdlog，多级别、格式化、NativeString 跨语言）
@@ -113,7 +120,7 @@ Prism/
 │   └── src/                # PrismEditor.cpp、EditorLayer
 │
 ├── ExampleApp/             # C# 示例脚本项目
-│   └── src/                # Script.cs、MapGenerator.cs
+│   └── src/                # Script.cs、MapGenerator.cs、PlayerCube.cs、BasicController.cs、Sink.cs、RandomColor.cs
 ├── SandBox/                # 旧版 C++ 示例（逐步淘汰）
 ├── vendor/                 # 第三方库
 ├── docs/                   # 技术文档（PSL、Time、Renderer）
@@ -153,9 +160,9 @@ Prism/
 
 ## 开发路线图
 
-- [ ] C# 脚本系统完善（热重载、编辑器脚本属性面板）
+- [x] C# 脚本系统完善（热重载、编辑器脚本属性面板、物理 API）
+- [x] 2D 物理系统集成（Box2D：刚体、碰撞体、重力）
 - [ ] 完整资源管理系统与序列化
-- [ ] 物理系统集成
 - [ ] 跨平台窗口与渲染抽象
 - [ ] Vulkan 后端支持（长期目标）
 

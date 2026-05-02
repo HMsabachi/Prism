@@ -15,6 +15,8 @@
 #include <Rolky/Type.hpp>
 #include <Rolky/Array.hpp>
 
+#include <box2d/box2d.h>
+
 namespace Prism {
 	extern std::unordered_map<Rolky::TypeId, std::function<void(Entity&)>> s_CreateComponentFuncs;
 	extern std::unordered_map<Rolky::TypeId, std::function<bool(Entity&)>> s_HasComponentFuncs;
@@ -261,6 +263,23 @@ namespace Prism {
 		auto& materialComponent = entity.GetComponent<MaterialComponent>();
 		materialComponent.Material = materialInstance ? *materialInstance : nullptr;
 	}
+
+#pragma endregion
+
+#pragma region RigidBody2DComponent
+	void Prism_RigidBody2DComponent_ApplyLinearImpulse(uint64_t entityID, glm::vec2* impulse, glm::vec2* offset, bool wake)
+	{
+		Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
+		PR_CORE_ASSERT(scene, "No active scene!");
+		const auto& entityMap = scene->GetEntityMap();
+		PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
+		Entity entity = entityMap.at(entityID);
+		auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
+		b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
+		b2Vec2 b2Impulse(impulse->x, impulse->y);
+		b2Vec2 b2Point(offset->x, offset->y);
+		body->ApplyLinearImpulse(b2Impulse, b2Point, wake);
+	}
 #pragma endregion
 
 #pragma region Material
@@ -312,6 +331,13 @@ namespace Prism {
 		}
 
 		void Prism_MaterialInstance_SetVector3(Ref<MaterialInstance>* _this, Rolky::String uniform, glm::vec3* value)
+		{
+			Ref<MaterialInstance>& instance = *(Ref<MaterialInstance>*)_this;
+			instance->Set(uniform, *value);
+			uniform.Free(uniform);
+		}
+
+		void Prism_MaterialInstance_SetVector4(Ref<MaterialInstance>* _this, Rolky::String uniform, glm::vec4* value)
 		{
 			Ref<MaterialInstance>& instance = *(Ref<MaterialInstance>*)_this;
 			instance->Set(uniform, *value);

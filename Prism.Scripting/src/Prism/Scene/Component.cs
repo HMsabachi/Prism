@@ -125,4 +125,22 @@ namespace Prism
     {
         // TODO
     }
+
+    public class RigidBody2DComponent : Component
+    {
+        public void ApplyLinearImpulse(Vector2 impulse, Vector2 offset, bool wake)
+        {
+            unsafe { InternalCalls.Prism_RigidBody2DComponent_ApplyLinearImpulse(Entity.ID, &impulse, &offset, wake); }
+        }
+    }
+
+    public class BoxCollider2DComponent : Component
+    {
+        // TODO
+    }
+
+    public class CircleCollider2DComponent : Component
+    {
+        // TODO
+    }
 }

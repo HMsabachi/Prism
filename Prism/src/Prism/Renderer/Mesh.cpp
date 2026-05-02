@@ -1,4 +1,4 @@
-﻿#include "prpch.h" 
+﻿#include "prpch.h"
 #include "Mesh.h"
 #include "Prism/Renderer/Renderer.h"
 
@@ -65,7 +65,7 @@ namespace Prism {
 		}
 	};
 
-	
+
 
 	Mesh::Mesh(const std::string& filename)
 		: m_FilePath(filename)
@@ -226,7 +226,7 @@ namespace Prism {
 				auto aiMaterial = scene->mMaterials[i];
 				auto aiMaterialName = aiMaterial->GetName();
 
-				auto mi = Ref<MaterialInstance>::Create(m_BaseMaterial);
+				auto mi = Ref<MaterialInstance>::Create(m_BaseMaterial, aiMaterialName.C_Str());
 				m_Materials[i] = mi;
 
 				PR_MESH_LOG("Material Name = {0}; Index = {1}", aiMaterialName.data, i);
@@ -334,7 +334,7 @@ namespace Prism {
 				}
 
 
-#if 0	
+#if 0
 				if (aiMaterial->Get("$raw.ReflectionFactor|file", aiPTI_String, 0, aiTexPath) == AI_SUCCESS)
 				{
 					// TODO: Temp - this should be handled by Prism's filesystem
@@ -572,10 +572,7 @@ namespace Prism {
 		uint32_t NextPositionIndex = (PositionIndex + 1);
 		PR_CORE_ASSERT(NextPositionIndex < nodeAnim->mNumPositionKeys);
 		float DeltaTime = (float)(nodeAnim->mPositionKeys[NextPositionIndex].mTime - nodeAnim->mPositionKeys[PositionIndex].mTime);
-		float Factor = (animationTime - (float)nodeAnim->mPositionKeys[PositionIndex].mTime) / DeltaTime;
-		if (Factor < 0.0f)
-			Factor = 0.0f;
-		PR_CORE_ASSERT(Factor <= 1.0f, "Factor must be below 1.0f");
+		float Factor = glm::clamp((animationTime - (float)nodeAnim->mPositionKeys[PositionIndex].mTime) / DeltaTime, 0.0f, 1.0f);
 		const aiVector3D& Start = nodeAnim->mPositionKeys[PositionIndex].mValue;
 		const aiVector3D& End = nodeAnim->mPositionKeys[NextPositionIndex].mValue;
 		aiVector3D Delta = End - Start;
@@ -597,10 +594,7 @@ namespace Prism {
 		uint32_t NextRotationIndex = (RotationIndex + 1);
 		PR_CORE_ASSERT(NextRotationIndex < nodeAnim->mNumRotationKeys);
 		float DeltaTime = (float)(nodeAnim->mRotationKeys[NextRotationIndex].mTime - nodeAnim->mRotationKeys[RotationIndex].mTime);
-		float Factor = (animationTime - (float)nodeAnim->mRotationKeys[RotationIndex].mTime) / DeltaTime;
-		if (Factor < 0.0f)
-			Factor = 0.0f;
-		PR_CORE_ASSERT(Factor <= 1.0f, "Factor must be below 1.0f");
+		float Factor = glm::clamp((animationTime - (float)nodeAnim->mRotationKeys[RotationIndex].mTime) / DeltaTime, 0.0f, 1.0f);
 		const aiQuaternion& StartRotationQ = nodeAnim->mRotationKeys[RotationIndex].mValue;
 		const aiQuaternion& EndRotationQ = nodeAnim->mRotationKeys[NextRotationIndex].mValue;
 		auto q = aiQuaternion();
@@ -623,10 +617,7 @@ namespace Prism {
 		uint32_t nextIndex = (index + 1);
 		PR_CORE_ASSERT(nextIndex < nodeAnim->mNumScalingKeys);
 		float deltaTime = (float)(nodeAnim->mScalingKeys[nextIndex].mTime - nodeAnim->mScalingKeys[index].mTime);
-		float factor = (animationTime - (float)nodeAnim->mScalingKeys[index].mTime) / deltaTime;
-		if (factor < 0.0f)
-			factor = 0.0f;
-		PR_CORE_ASSERT(factor <= 1.0f, "Factor must be below 1.0f");
+		float factor = glm::clamp((animationTime - (float)nodeAnim->mScalingKeys[index].mTime) / deltaTime, 0.0f, 1.0f);
 		const auto& start = nodeAnim->mScalingKeys[index].mValue;
 		const auto& end = nodeAnim->mScalingKeys[nextIndex].mValue;
 		auto delta = end - start;

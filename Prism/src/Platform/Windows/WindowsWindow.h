@@ -29,6 +29,9 @@ namespace Prism {
 		bool IsVSync() const override;
 
 		// Get the native Windows 获取底层窗口句柄
+		virtual const std::string& GetTitle() const override { return m_Data.Title; }
+		virtual void SetTitle(const std::string& title) override;
+
 		inline virtual void* GetNativeWindow() const { return m_Window; }
 	private:
 		virtual void Init(const WindowProps& props);

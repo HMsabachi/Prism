@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Shader/PrismShader.h"
 #include <unordered_set>
@@ -54,7 +54,7 @@ namespace Prism
 				m_Textures.resize((size_t)slot + 1);
 			m_Textures[slot] = texture;
 		}
-		
+
 		#pragma endregion
 	private:
 		const PropertyDeclaration* FindPropertyDeclaration(const std::string& name) const;
@@ -79,10 +79,12 @@ namespace Prism
 	{
 		friend class Material;
 	public:
-		static Ref<MaterialInstance> Create(const Ref<Material>& material);
+		static Ref<MaterialInstance> Create(const Ref<Material>& material, const std::string& name = "");
 	public:
-		MaterialInstance(const Ref<Material>& material);
+		MaterialInstance(const Ref<Material>& material, const std::string& name = "");
 		virtual ~MaterialInstance();
+
+		const std::string& GetName() const { return m_Name; }
 
 #pragma region Set函数
 		template <typename T>
@@ -135,6 +137,7 @@ namespace Prism
 
 		Buffer m_PropertyBuffer;
 		std::vector<Ref<Texture>> m_Textures;
+		std::string m_Name;
 
 		// TODO: 这只是临时的 我需要一个更好的系统来处理材质实例覆盖的属性
 		std::unordered_set<std::string> m_OverriddenValues;

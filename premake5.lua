@@ -26,6 +26,7 @@ IncludeDir["entt"] = "Prism/vendor/entt/include"
 IncludeDir["FastNoise"] = "Prism/vendor/FastNoise"
 IncludeDir["Rolky"] = "Prism/vendor/Rolky/Rolky.Native/Include"
 IncludeDir["yaml"] = "Prism/vendor/yaml-cpp/include"
+IncludeDir["Box2D"] = "Prism/vendor/box2d/include"
 
 LibraryDir = {}
 LibraryDir["nethost"] = "Prism/vendor/nethost"
@@ -35,6 +36,7 @@ group "Dependencies"
 	include "Prism/vendor/imgui"
 	include "Prism/vendor/PrismShaderParser"
 	include "Prism/vendor/Rolky/Rolky.Native"
+	include "Prism/vendor/box2d"
 group ""
 
 group "Core"
@@ -83,7 +85,8 @@ project "Prism"
 		"%{IncludeDir.entt}",
         "%{IncludeDir.FastNoise}",
 		"%{IncludeDir.Rolky}",
-        "%{IncludeDir.yaml}"
+        "%{IncludeDir.yaml}",
+        "%{IncludeDir.Box2D}"
 	}
 
 	libdirs
@@ -92,13 +95,14 @@ project "Prism"
 		"C:/Program Files/dotnet/packs/Microsoft.NETCore.App.Host.win-x64/9.0.*/build/native"
 	}
 
-	links 
-	{ 
+	links
+	{
 		"GLFW",
 		"Glad",
 		"ImGui",
 		"Rolky.Native",
 		"PrismShaderParser",
+		"Box2D",
 		"opengl32.lib",
 		"dwmapi.lib"
 	}

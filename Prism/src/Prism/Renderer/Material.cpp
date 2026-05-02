@@ -77,12 +77,12 @@ namespace Prism
 	// //////////////////////////////////////////////////////////////
 	// -----------------------MaterialInstance-----------------------
 	// //////////////////////////////////////////////////////////////
-	Prism::Ref<Prism::MaterialInstance> MaterialInstance::Create(const Ref<Material>& material)
+	Prism::Ref<Prism::MaterialInstance> MaterialInstance::Create(const Ref<Material>& material, const std::string& name)
 	{
-		return Ref<MaterialInstance>::Create(material);
+		return Ref<MaterialInstance>::Create(material, name);
 	}
-	MaterialInstance::MaterialInstance(const Ref<Material>& material)
-		: m_Material(material)
+	MaterialInstance::MaterialInstance(const Ref<Material>& material, const std::string& name)
+		: m_Material(material), m_Name(name)
 	{
 		m_Material->m_MaterialInstances.insert(this);
 		AllocateStorage();

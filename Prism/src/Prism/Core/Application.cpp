@@ -253,6 +253,28 @@ namespace Prism
 		return std::string();
 	}
 
+	const char* Application::GetConfigurationName()
+	{
+#if defined(PR_DEBUG)
+		return "Debug";
+#elif defined(PR_RELEASE)
+		return "Release";
+#elif defined(PR_DIST)
+		return "Dist";
+#else
+		return "Unknown";
+#endif
+	}
+
+	const char* Application::GetPlatformName()
+	{
+#if defined(PR_PLATFORM_WINDOWS)
+		return "Windows";
+#else
+		return "Unknown";
+#endif
+	}
+
 #pragma endregion
 
 }

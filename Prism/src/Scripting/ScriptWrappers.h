@@ -73,6 +73,9 @@ namespace Prism
         void Prism_Texture2D_Destructor(Ref<Texture2D>* _this);
         void Prism_Texture2D_SetData(Ref<Texture2D>* _this, Rolky::Array<glm::vec4> inData, int32_t count);
 
+        // RigidBody2DComponent
+        void Prism_RigidBody2DComponent_ApplyLinearImpulse(uint64_t entityID, glm::vec2* impulse, glm::vec2* offset, bool wake);
+
         // Material
         Ref<Material>* Prism_Material_Constructor(Rolky::String shaderName);
         void Prism_Material_Destructor(Ref<Material>* _this);
@@ -83,6 +86,7 @@ namespace Prism
         void Prism_MaterialInstance_Destructor(Ref<MaterialInstance>* _this);
         void Prism_MaterialInstance_SetFloat(Ref<MaterialInstance>* _this, Rolky::String uniform, float value);
         void Prism_MaterialInstance_SetVector3(Ref<MaterialInstance>* _this, Rolky::String uniform, glm::vec3* value);
+        void Prism_MaterialInstance_SetVector4(Ref<MaterialInstance>* _this, Rolky::String uniform, glm::vec4* value);
         void Prism_MaterialInstance_SetTexture(Ref<MaterialInstance>* _this, Rolky::String uniform, Ref<Texture2D>* texture);
     }
 }
