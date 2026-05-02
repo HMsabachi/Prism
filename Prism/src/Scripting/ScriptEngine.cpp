@@ -84,7 +84,7 @@ namespace Prism
 		return "Unknown";
 	}
 	PublicField::PublicField(const std::string& name, FieldType type)
-		: Name(name), Type(type)
+		: Name(name), Type(type), m_EntityInstance(nullptr)
 	{
 		m_StoredValueBuffer = AllocateBuffer(type);
 	}
@@ -104,12 +104,12 @@ namespace Prism
 	}
 	void PublicField::CopyStoredValueToRuntime()
 	{
-		PR_CORE_ASSERT(m_EntityInstance->Object->IsValid());
+		PR_CORE_ASSERT(m_EntityInstance && m_EntityInstance->Object && m_EntityInstance->Object->IsValid());
 		m_EntityInstance->Object->SetFieldValueRaw(Name, m_StoredValueBuffer);
 	}
 	bool PublicField::IsRuntimeAvailable() const
 	{
-		return m_EntityInstance->Object->IsValid();
+		return m_EntityInstance && m_EntityInstance->Object && m_EntityInstance->Object->IsValid();
 	}
 	void PublicField::SetStoredValueRaw(void* src)
 	{
@@ -135,12 +135,12 @@ namespace Prism
 	}
 	void PublicField::SetRuntimeValue_Internal(void* value) const
 	{
-		PR_CORE_ASSERT(m_EntityInstance->Object->IsValid());
+		PR_CORE_ASSERT(m_EntityInstance && m_EntityInstance->Object && m_EntityInstance->Object->IsValid());
 		m_EntityInstance->Object->SetFieldValueRaw(Name, value);
 	}
 	void PublicField::GetRuntimeValue_Internal(void* outValue) const
 	{
-		PR_CORE_ASSERT(m_EntityInstance->Object->IsValid());
+		PR_CORE_ASSERT(m_EntityInstance && m_EntityInstance->Object && m_EntityInstance->Object->IsValid());
 		m_EntityInstance->Object->GetFieldValueRaw(Name, outValue);
 	}
 
@@ -290,7 +290,8 @@ namespace Prism
 				{
 					PR_CORE_ASSERT(dstModuleFieldMap.find(moduleName) != dstModuleFieldMap.end());
 					auto& fieldMap = dstModuleFieldMap.at(moduleName);
-					PR_CORE_ASSERT(fieldMap.find(fieldName) != fieldMap.end());
+					if(fieldMap.find(fieldName) == fieldMap.end())
+						continue;
 					fieldMap.at(fieldName).SetStoredValueRaw(field.m_StoredValueBuffer);
 				}
 			}

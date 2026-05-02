@@ -9,6 +9,7 @@ namespace Example
 {
     public class MapGenerator : Entity
     {
+        // [EditorSlider("MapWidth Custom Name", 2, 0, 1024)]
         public int MapWidth = 128;
         public int MapHeight = 128;
         public int Octaves = 4;
@@ -18,6 +19,7 @@ namespace Example
         public Vector2 Offset = new Vector2(13.4f, 6.26f);
         public float NoiseScale = 0.5f;
 
+        public float Speed = 0.0f;
         public void GenerateMap()
         {
             //float[,] noiseMap = Noise.GenerateNoiseMap(mapWidth, mapHeight, noiseScale);
@@ -68,7 +70,16 @@ namespace Example
 
         private void OnUpdate()
         {
-
+            float ts = Time.DeltaTime;
+            Matrix4 transform = GetTransform();
+            Vector3 translation = transform.Translation;
+            translation.Y += ts * Speed;
+            if (Input.IsKeyPressed(KeyCode.Space))
+            {
+                translation.Y -= 10.0f;
+            }
+            transform.Translation = translation;
+            SetTransform(transform);
         }
     }
 }
