@@ -231,6 +231,7 @@ namespace Prism
 
 	void ScriptEngine::ReloadAssembly(const std::string& assemblyPath)
 	{
+		PR_PROFILE_FUNCTION();
 		auto path = std::filesystem::absolute(assemblyPath).string();
 		s_AppAssembly = m_LoadContext->LoadAssembly(path);
 		if (s_EntityInstanceMap.size())
@@ -356,6 +357,8 @@ namespace Prism
 		// 获取公共字段
 		// TODO：如果模块被多次使用，则缓存这些字段
 		{
+			Rolky::ManagedObject temp = scriptClass.CreateInstance();
+			byte defaultValue[32];
 			auto Fields = scriptClass.GetFields();
 			for (auto& field : Fields)
 			{
@@ -369,11 +372,15 @@ namespace Prism
 					else
 					{
 						PublicField prismField = { field.GetName(), prismFieldType };
+						
+						temp.GetFieldValueRaw((std::string)field.GetName(), defaultValue);
+                        prismField.SetStoredValueRaw(defaultValue);
 						prismField.m_EntityInstance = &entityInstance;
 						fieldMap.emplace(field.GetName(), std::move(prismField));
-					}
+					} // Example.MapGenerator
 				}
 			}
+            temp.Destroy();
 		}
 	}
 	void ScriptEngine::ShutdownScriptEntity(Entity entity, const std::string& moduleName)

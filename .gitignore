@@ -1,4 +1,5 @@
 ﻿# Directories
+.claude/
 .vs/
 .vscode/
 bin/
@@ -11,6 +12,7 @@ Prism.Scripting/Prism.Scripting.csproj
 
 
 # Files
+CLAUDE.md
 *.json
 *.user
 **.sln

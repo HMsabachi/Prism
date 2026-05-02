@@ -460,11 +460,6 @@ namespace Prism
 
 
 #pragma endregion
-
-
-
-
-
 }
 
 

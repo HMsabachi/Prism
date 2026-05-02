@@ -26,15 +26,21 @@ Entities:
       Position: [0, 0, 0]
       Rotation: [1, 0, 0, 0]
       Scale: [1, 1, 1]
+    ScriptComponent:
+      ModuleName: Example.Script
+      StoredFields:
+        - Name: Speed
+          Type: 1
+          Data: 5
     MeshComponent:
       AssetPath: E:\PrismEngine\Prism\PrismEditor\Assets\meshes\TestScene.fbx
   - Entity: 13982802161734492964
     TagComponent:
       Tag: Camera
     TransformComponent:
-      Position: [26.25, 13.5, 0]
-      Rotation: [0.6794104, -0.1920591, 0.68147516, 0.19263016]
-      Scale: [0.9999976, 0.9999893, 0.9999899]
+      Position: [26.25, 15.75, 0]
+      Rotation: [0.67942274, -0.19206703, 0.68146056, 0.19263059]
+      Scale: [0.9999982, 0.9999893, 0.9999905]
     CameraComponent:
       Camera: some camera data...
       Primary: true
@@ -50,25 +56,25 @@ Entities:
       StoredFields:
         - Name: MapWidth
           Type: 2
-          Data: 105
+          Data: 128
         - Name: MapHeight
           Type: 2
-          Data: 116
+          Data: 128
         - Name: Offset
           Type: 5
-          Data: [7.8, 7.2]
+          Data: [13.4, 6.26]
         - Name: Octaves
           Type: 2
-          Data: 3
+          Data: 4
         - Name: Seed
           Type: 2
-          Data: 24
+          Data: 21
         - Name: Persistance
           Type: 1
-          Data: 6.2
+          Data: 0.74
         - Name: NoiseScale
           Type: 1
-          Data: 4.2
+          Data: 0.5
         - Name: Lacunarity
           Type: 1
-          Data: 5.2
+          Data: 3

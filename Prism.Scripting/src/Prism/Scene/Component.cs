@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -10,7 +11,8 @@ namespace Prism
 {
     public abstract class Component
     {
-        public Entity Entity { get; set; }
+        public required Entity Entity { get; set; }
+        
     }
 
     public class TagComponent : Component
@@ -42,24 +44,20 @@ namespace Prism
         {
             get
             {
-                GetTransform_Native(Entity.ID, out _value);
+                unsafe
+                {
+                    fixed (Matrix4* ptr = &_value) InternalCalls.Prism_Entity_GetTransform(Entity.ID, ptr);
+                }
                 return _value;
             }
             set
             {
                 _value = value;
-                SetTransform_Native(Entity.ID, ref _value);
+                unsafe
+                {
+                    fixed (Matrix4* ptr = &_value) InternalCalls.Prism_Entity_SetTransform(Entity.ID, ptr);
+                }
             }
-        }
-
-        public unsafe static void GetTransform_Native(ulong id, out Matrix4 result)
-        {
-            fixed (Matrix4* ptr = &result) InternalCalls.Prism_Entity_GetTransform(id, ptr);
-        }
-
-        public unsafe static void SetTransform_Native(ulong id, ref Matrix4 result)
-        {
-            fixed (Matrix4* ptr = &result) InternalCalls.Prism_Entity_SetTransform(id, ptr);
         }
 
     }
