@@ -11,7 +11,7 @@ namespace Prism
 {
     public abstract class Component
     {
-        public required Entity Entity { get; set; }
+        public Entity Entity { get; set; }
         
     }
 
@@ -39,27 +39,25 @@ namespace Prism
 
     public class TransformComponent : Component
     {
-        private Matrix4 _value;
         public Matrix4 Transform
         {
             get
             {
+                Matrix4 matrix;
                 unsafe
                 {
-                    fixed (Matrix4* ptr = &_value) InternalCalls.Prism_Entity_GetTransform(Entity.ID, ptr);
+                    InternalCalls.Prism_Entity_GetTransform(Entity.ID, &matrix);
                 }
-                return _value;
+                return matrix;
             }
             set
             {
-                _value = value;
                 unsafe
                 {
-                    fixed (Matrix4* ptr = &_value) InternalCalls.Prism_Entity_SetTransform(Entity.ID, ptr);
+                    InternalCalls.Prism_Entity_SetTransform(Entity.ID, &value);
                 }
             }
         }
-
     }
 
     public class MeshComponent : Component
@@ -91,6 +89,31 @@ namespace Prism
     public class CameraComponent : Component
     {
         // TODO
+    }
+
+    public class MaterialComponent : Component
+    {
+        public MaterialInstance Material
+        {
+            get
+            {
+                IntPtr ptr;
+                unsafe
+                {
+                    ptr = InternalCalls.Prism_MaterialComponent_GetMaterial(Entity.ID);
+                }
+                if (ptr == IntPtr.Zero)
+                    return null;
+                return new MaterialInstance(ptr);
+            }
+            set
+            {
+                unsafe
+                {
+                    InternalCalls.Prism_MaterialComponent_SetMaterial(Entity.ID, value == null ? IntPtr.Zero : value.m_UnmanagedInstance);
+                }
+            }
+        }
     }
 
     public class ScriptComponent : Component

@@ -255,6 +255,12 @@ namespace Prism {
 
 			out << YAML::EndMap; // MeshComponent
 		}
+		if (entity.HasComponent<MaterialComponent>())
+		{
+			out << YAML::Key << "MaterialComponent";
+			out << YAML::BeginMap; // MaterialComponent
+			out << YAML::EndMap; // MaterialComponent
+		}
 
 		if (entity.HasComponent<CameraComponent>())
 		{
@@ -471,6 +477,13 @@ namespace Prism {
 						deserializedEntity.AddComponent<MeshComponent>(Ref<Mesh>::Create(meshPath));
 
 					PR_CORE_INFO("  Mesh Asset Path: {0}", meshPath);
+				}
+
+				auto materialComponent = entity["MaterialComponent"];
+				if (materialComponent)
+				{
+					deserializedEntity.AddComponent<MaterialComponent>();
+					PR_CORE_INFO("  MaterialComponent present.");
 				}
 
 				auto cameraComponent = entity["CameraComponent"];

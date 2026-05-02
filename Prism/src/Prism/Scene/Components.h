@@ -98,5 +98,19 @@ namespace Prism {
 		}
 	};
 
+	struct MaterialComponent
+	{
+		Ref<MaterialInstance> Material;
+
+		MaterialComponent() = default;
+		MaterialComponent(const MaterialComponent& other)
+			: Material(other.Material) {
+		}
+		MaterialComponent(const Ref<MaterialInstance>& material)
+			: Material(material) {
+		}
+
+		operator Ref<Prism::MaterialInstance>() { return Material; }
+	};
 
 }

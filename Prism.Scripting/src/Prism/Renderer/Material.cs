@@ -22,6 +22,11 @@ namespace Prism
             unsafe { InternalCalls.Prism_Material_SetTexture(m_UnmanagedInstance, uniform, texture.m_UnmanagedInstance); }
         }
 
+        public Material(string shaderName)
+        {
+            unsafe { m_UnmanagedInstance = InternalCalls.Prism_Material_Constructor(shaderName); }
+        }
+
         internal Material(IntPtr unmanagedInstance)
         {
             m_UnmanagedInstance = unmanagedInstance;
@@ -70,6 +75,11 @@ namespace Prism
         public void SetTexture(string uniform, Texture2D texture)
         {
             unsafe { InternalCalls.Prism_MaterialInstance_SetTexture(m_UnmanagedInstance, uniform, texture.m_UnmanagedInstance);}
+        }
+
+        public MaterialInstance(Material parent)
+        {
+            unsafe { m_UnmanagedInstance = InternalCalls.Prism_MaterialInstance_Constructor(parent.m_UnmanagedInstance); }
         }
 
         internal MaterialInstance(IntPtr unmanagedInstance)

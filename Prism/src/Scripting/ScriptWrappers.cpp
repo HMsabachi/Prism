@@ -7,6 +7,7 @@
 #include "Prism/Scene/Entity.h"
 #include "Prism/Scene/Components.h"
 
+#include "Prism/Renderer/Renderer.h"
 #include "ScriptEngine.h"
 #include <glm/gtc/type_ptr.hpp>
 
@@ -238,7 +239,40 @@ namespace Prism {
 
 #pragma endregion
 
+#pragma region MaterialComponent
+	Ref<MaterialInstance>* Prism_MaterialComponent_GetMaterial(uint64_t entityID)
+	{
+		Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
+		PR_CORE_ASSERT(scene, "No active scene!");
+		const auto& entityMap = scene->GetEntityMap();
+		PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
+		Entity entity = entityMap.at(entityID);
+		auto& materialComponent = entity.GetComponent<MaterialComponent>();
+		return new Ref<MaterialInstance>(materialComponent.Material);
+	}
+
+	void Prism_MaterialComponent_SetMaterial(uint64_t entityID, Ref<MaterialInstance>* materialInstance)
+	{
+		Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
+		PR_CORE_ASSERT(scene, "No active scene!");
+		const auto& entityMap = scene->GetEntityMap();
+		PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
+		Entity entity = entityMap.at(entityID);
+		auto& materialComponent = entity.GetComponent<MaterialComponent>();
+		materialComponent.Material = materialInstance ? *materialInstance : nullptr;
+	}
+#pragma endregion
+
 #pragma region Material
+		Ref<Material>* Prism_Material_Constructor(Rolky::String shaderName)
+		{
+			std::string name = shaderName;
+			Rolky::String::Free(shaderName);
+			const auto& shader = Renderer::GetShaderLibrary()->Get(name);
+			//PR_CORE_ASSERT(shader, "Shader '{0}' not found!", name);
+			return new Ref<Material>(Material::Create(shader));
+		}
+
 		void Prism_Material_Destructor(Ref<Material>* _this)
 		{
 			delete _this;
@@ -257,6 +291,12 @@ namespace Prism {
 			Ref<Material>& instance = *(Ref<Material>*)_this;
 			instance->Set(uniform, *texture);
 			uniform.Free(uniform);
+		}
+
+		Ref<MaterialInstance>* Prism_MaterialInstance_Constructor(Ref<Material>* parent)
+		{
+			Ref<Material>& material = *(Ref<Material>*)parent;
+			return new Ref<MaterialInstance>(MaterialInstance::Create(material));
 		}
 
 		void Prism_MaterialInstance_Destructor(Ref<MaterialInstance>* _this)

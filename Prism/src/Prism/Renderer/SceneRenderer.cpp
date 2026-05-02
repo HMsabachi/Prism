@@ -222,7 +222,7 @@ namespace Prism
 			baseMaterial->Set("u_EnvIrradianceTex", s_Data.SceneData.SceneEnvironment.IrradianceMap);
 			baseMaterial->Set("u_BRDFLUTTexture", s_Data.BRDFLUT);
 
-			auto overrideMaterial = dc.Mesh->GetOverrideMaterial(); // dc.Material;
+			auto overrideMaterial = dc.Material ? dc.Material : dc.Mesh->GetOverrideMaterial();
 			Renderer::SubmitMesh(dc.Mesh, dc.Transform, overrideMaterial);
 		}
 		// 被选择实体描边
