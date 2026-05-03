@@ -1,4 +1,4 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "PrismShader.h"
 #include "Prism/Renderer/Shader/Parser/ShaderParser.h"
 #include "Prism/Utilities/Utilities.h"
@@ -60,6 +60,25 @@ namespace Prism
 		// Reset keyword/variant state (important for Reload)
 		m_Keywords.clear();
 		m_Variants.clear();
+
+		// Populate keywords from parser result
+		uint8_t kwIdx = 0;
+		for (const auto& kw : result.Keywords)
+		{
+			m_Keywords.push_back({ kw, kwIdx });
+			kwIdx++;
+		}
+		if (kwIdx > MAX_KEYWORDS_PER_SHADER)
+			PR_CORE_WARN("Shader '{0}' has {1} keywords (max {2})", m_Name, kwIdx, MAX_KEYWORDS_PER_SHADER);
+
+		// Register base variant (mask = 0)
+		{
+			ShaderVariant baseVariant;
+			baseVariant.Mask = 0;
+			baseVariant.DebugName = "(default)";
+			baseVariant.ShaderProgram = m_Shader;
+			m_Variants[0] = baseVariant;
+		}
 
 		m_Declaration = PropertyBufferDeclaration();
 		for (const auto& prop : result.Properties)

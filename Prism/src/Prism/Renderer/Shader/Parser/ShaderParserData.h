@@ -67,6 +67,7 @@ namespace Prism
 		std::vector<PropertyDescriptor> Properties;
 		std::vector<PassDescriptor> Passes;
 		std::string RenderCommand;
+		std::vector<std::string> Keywords;
 		bool Success = false;
 	};
 }

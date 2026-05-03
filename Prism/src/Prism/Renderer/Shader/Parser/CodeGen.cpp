@@ -22,9 +22,11 @@ void CodeGen::ProcessPass(PassDescriptor& pass, const std::vector<PropertyDescri
     std::set<std::filesystem::path> history;
     std::string resolved = ResolveIncludes(pass.RawGLSL, history);
 
-    // Step 2: Strip attribute declarations from resolved source
+    // Step 2: Strip attribute and #pragma declarations from resolved source
     static const std::regex attrStripRegex(R"prism(attribute\s+\w[\w\d]*\s+\w[\w\d]*\s*:\s*\w[\w\d]*\s*;)prism");
     resolved = std::regex_replace(resolved, attrStripRegex, "");
+    static const std::regex pragmaLineRegex(R"prism(#pragma\s+.+)prism");
+    resolved = std::regex_replace(resolved, pragmaLineRegex, "");
 
     // Step 3: Generate attribute layout declarations from GLSLParser data
     pass.Attributes.clear();

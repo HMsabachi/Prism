@@ -3,6 +3,7 @@
 #include "Lexer.h"
 #include "Parser.h"
 #include "CodeGen.h"
+#include <unordered_set>
 
 namespace Prism
 {
@@ -44,6 +45,21 @@ namespace Prism
 			for (auto& pass : result.Passes)
 				codegen.ProcessPass(pass, result.Properties);
 		}
+
+		// Aggregate unique keywords from all passes (Phase 7)
+		std::unordered_set<std::string> uniqueKeywords;
+		for (const auto& pass : result.Passes)
+		{
+			for (const auto& pragma : pass.GLSL.Pragmas)
+			{
+				for (const auto& kw : pragma.Keywords)
+				{
+					if (kw != "_")
+						uniqueKeywords.insert(kw);
+				}
+			}
+		}
+		result.Keywords.assign(uniqueKeywords.begin(), uniqueKeywords.end());
 
 		return result;
 	}
