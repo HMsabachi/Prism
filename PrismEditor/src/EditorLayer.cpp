@@ -108,8 +108,7 @@ namespace Prism
 
 		using namespace glm;
 
-		Prism::Renderer::GetShaderLibrary()->Load("Assets/Shaders/NoiseTest.Shader");
-		
+
 		// Editor
 		m_CheckerboardTex = Texture2D::Create("assets/editor/Checkerboard.tga");
 		m_PlayButtonTex = Texture2D::Create("assets/editor/PlayButton.png");

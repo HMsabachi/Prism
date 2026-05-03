@@ -115,7 +115,7 @@ namespace Prism
 		s_Data.WhiteTexture->GetWriteableBuffer().Write(&whiteTextureData, sizeof(uint32_t));
 		s_Data.WhiteTexture->Unlock();
 
-		s_Data.TextureShader = PrismShader::Create("Assets/Shaders/Renderer2D.Shader");
+		s_Data.TextureShader = Renderer::GetShaderLibrary()->Get("Prism/Renderer2D");
 
 		// Set all texture slots to 0
 		s_Data.TextureSlots[0] = s_Data.WhiteTexture;
@@ -126,7 +126,7 @@ namespace Prism
 		s_Data.QuadVertexPositions[3] = { -0.5f,  0.5f, 0.0f, 1.0f };
 
 		// Lines
-		s_Data.LineShader = PrismShader::Create("Assets/Shaders/Renderer2D_Line.Shader");
+		s_Data.LineShader = Renderer::GetShaderLibrary()->Get("Prism/Renderer2D_Line");
 		s_Data.LineVertexArray = VertexArray::Create();
 
 		s_Data.LineVertexBuffer = VertexBuffer::Create(s_Data.MaxLineVertices * sizeof(LineVertex));

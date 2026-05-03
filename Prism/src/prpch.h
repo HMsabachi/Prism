@@ -29,8 +29,6 @@
 #include "Prism/Core/Buffer.h"
 
 
-#include "Prism/Utilities/Utilities.h"
-#include "Prism/Utilities/BitFlags.h"
 #ifdef PR_PLATFORM_WINDOWS
 	#include <Windows.h>
 #endif

@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "Prism/Utilities/BitFlags.h"
 namespace Prism
 {
 	enum class ShaderCommandFlag

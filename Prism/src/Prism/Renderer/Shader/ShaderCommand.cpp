@@ -1,5 +1,6 @@
 ﻿#include "prpch.h"
 #include "ShaderCommand.h"
+#include "Prism/Utilities/Utilities.h"
 
 namespace Prism
 {

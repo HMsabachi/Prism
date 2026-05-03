@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "PrismShader.h"
 #include "Prism/Renderer/Shader/Parser/ShaderParser.h"
 #include "Prism/Utilities/Utilities.h"
@@ -272,6 +272,37 @@ namespace Prism
 	{
 		PR_CORE_ASSERT(m_Shaders.find(name) == m_Shaders.end());
 		m_Shaders[name] = Ref<PrismShader>(PrismShader::Create(path));
+	}
+
+	void ShaderLibrary::LoadAll(const std::string& directory)
+	{
+		PR_CORE_INFO("正在扫描 '{0}' 中的 .Shader 文件...", directory);
+		uint32_t success = 0, failed = 0;
+		for (const auto& entry : std::filesystem::recursive_directory_iterator(directory))
+		{
+			if (entry.path().extension() != ".Shader")
+				continue;
+
+			std::string path = entry.path().string();
+			auto shader = Ref<PrismShader>(PrismShader::Create(path));
+
+			if (shader->GetName().empty())
+			{
+				PR_CORE_ERROR("解析失败，跳过: {0}", path);
+				failed++;
+				continue;
+			}
+
+			auto& name = shader->GetName();
+			if (m_Shaders.find(name) != m_Shaders.end())
+			{
+				PR_CORE_WARN("重复的Shader名称 '{0}'，来自: {1}", name, path);
+				continue;
+			}
+			m_Shaders[name] = shader;
+			success++;
+		}
+		PR_CORE_INFO("Shader加载完成: {0} 个成功, {1} 个失败", success, failed);
 	}
 
 	const Ref<PrismShader>& ShaderLibrary::Get(const std::string& name) const

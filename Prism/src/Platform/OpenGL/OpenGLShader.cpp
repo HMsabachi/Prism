@@ -61,6 +61,7 @@ namespace Prism
 	void OpenGLShader::Bind()
 	{
 		Renderer::Submit([=]() {
+			//PR_CORE_ASSERT(m_RendererID, "尝试绑定编译失败的Shader!");
 			glUseProgram(m_RendererID);
 			});
 	}
@@ -118,7 +119,7 @@ namespace Prism
 			auto shaderType = ShaderTypeFromString(type);
 			shaderSources[shaderType] = m_ShaderSource.substr(nextLinePos, pos - (nextLinePos == std::string::npos ? m_ShaderSource.size() - 1 : nextLinePos));
 
-			
+
 			if (shaderType == GL_COMPUTE_SHADER)
 			{
 				m_IsCompute = true;
@@ -151,13 +152,14 @@ namespace Prism
 				std::vector<GLchar> infoLog(maxLength);
 				glGetShaderInfoLog(shaderRendererID, maxLength, &maxLength, &infoLog[0]);
 
-				PR_CORE_ERROR("Shader compilation failed:\n{0}", &infoLog[0]);
-				PR_CORE_WARN("Shader Source:\n{0}", source);
+				PR_CORE_ERROR("Shader '{0}' 编译失败:\n{1}", m_Name, &infoLog[0]);
 
-				// We don't need the shader anymore.
 				glDeleteShader(shaderRendererID);
-
-				PR_CORE_ASSERT(false, "Failed");
+				glDeleteProgram(program);
+				for (auto id : shaderRendererIDs)
+					glDeleteShader(id);
+				m_RendererID = 0;
+				return;
 			}
 
 			shaderRendererIDs.push_back(shaderRendererID);
@@ -178,20 +180,18 @@ namespace Prism
 			// The maxLength includes the NULL character
 			std::vector<GLchar> infoLog(maxLength);
 			glGetProgramInfoLog(program, maxLength, &maxLength, &infoLog[0]);
-			PR_CORE_ERROR("Shader compilation failed:\n{0}", &infoLog[0]);
+			PR_CORE_ERROR("Shader '{0}' 链接失败:\n{1}", m_Name, &infoLog[0]);
 
-			// We don't need the program anymore.
 			glDeleteProgram(program);
-			// Don't leak Shaders either.
 			for (auto id : shaderRendererIDs)
 				glDeleteShader(id);
+			m_RendererID = 0;
+			return;
 		}
 
 		// Always detach Shaders after a successful link.
 		for (auto id : shaderRendererIDs)
 			glDeleteShader(id);
-
-		//LoadTexture();
 
 		m_RendererID = program;
 	}
@@ -264,8 +264,10 @@ namespace Prism
 
 	void OpenGLShader::SetPropertyImpt(const PropertyBufferDeclaration& decl, const Buffer& buffer)
 	{
+		if (!m_RendererID)
+			return;
 		glUseProgram(m_RendererID);
-			for (const auto& property : decl)
+		for (const auto& property : decl)
 		{
 			uint32_t offset = property.GetOffset();
 			switch (property.GetType())

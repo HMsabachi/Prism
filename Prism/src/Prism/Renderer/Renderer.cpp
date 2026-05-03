@@ -31,8 +31,7 @@ namespace Prism
 		s_Data.m_ShaderLibrary = Ref<ShaderLibrary>::Create();
 		Renderer::Submit([]() { RendererAPI::Init(); });
 
-		Renderer::GetShaderLibrary()->Load("Assets/Shaders/PrismPBR_Static.Shader");
-		Renderer::GetShaderLibrary()->Load("Assets/Shaders/PrismPBR_Anim.Shader");
+		Renderer::GetShaderLibrary()->LoadAll("Assets/Shaders");
 
 		GlobalUniforms::Init();
 		SceneRenderer::Init();

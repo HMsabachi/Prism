@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "RendererTypes.h"
+#include "Prism/Utilities/BitFlags.h"
 namespace Prism
 {
 	using RendererID = uint32_t;

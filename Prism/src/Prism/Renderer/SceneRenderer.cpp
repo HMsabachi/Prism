@@ -76,17 +76,17 @@ namespace Prism
 		compRenderPassSpec.TargetFramebuffer = Prism::Framebuffer::Create(compFramebufferSpec);
 		s_Data.CompositePass = RenderPass::Create(compRenderPassSpec);
 
-		s_Data.CompositeShader = PrismShader::Create("Assets/Shaders/SceneComposite.Shader");
+		s_Data.CompositeShader = Renderer::GetShaderLibrary()->Get("Custom/SceneComposite");
 		s_Data.BRDFLUT = Texture2D::Create("Assets/Textures/BRDF_LUT.tga");
 
 		// Grid
-		auto gridShader = PrismShader::Create("Assets/shaders/Grid.Shader");
+		auto gridShader = Renderer::GetShaderLibrary()->Get("Custom/Grid");
 		s_Data.GridMaterial = MaterialInstance::Create(Material::Create(gridShader));
 		float gridScale = 16.025f, gridSize = 0.025f;
 		s_Data.GridMaterial->Set("u_Scale", gridScale);
 		s_Data.GridMaterial->Set("u_Res", gridSize);
 		// Outline
-		auto outlineShader = PrismShader::Create("assets/shaders/Outline.Shader");
+		auto outlineShader = Renderer::GetShaderLibrary()->Get("Standard/Outline");
 		s_Data.OutlineMaterial = MaterialInstance::Create(Material::Create(outlineShader));
 	}
 

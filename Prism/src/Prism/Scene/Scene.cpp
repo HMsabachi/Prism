@@ -9,6 +9,7 @@
 
 #include "Prism/Renderer/Renderer2D.h"
 #include "Prism/Renderer/SceneRenderer.h"
+#include "Prism/Renderer/Renderer.h"
 
 #include "Prism/Editor/EditorCamera.h"
 
@@ -74,7 +75,7 @@ namespace Prism
 	void Scene::Init()
 	{
 #if 1
-		auto skyboxShader = PrismShader::Create("assets/shaders/Skybox.Shader");
+		auto skyboxShader = Renderer::GetShaderLibrary()->Get("Custom/Skybox");
 		m_SkyboxMaterial = MaterialInstance::Create(Material::Create(skyboxShader));
 #endif
 	}

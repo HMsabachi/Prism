@@ -85,6 +85,7 @@ namespace Prism
 		void Add(const Ref<PrismShader>& shader);
 		void Load(const std::string& path);
 		void Load(const std::string& name, const std::string& path);
+	void LoadAll(const std::string& directory);
 
 		const Ref<PrismShader>& Get(const std::string& name) const;
 
