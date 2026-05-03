@@ -90,8 +90,9 @@ namespace Prism
 
 	OpenGLIndexBuffer::~OpenGLIndexBuffer()
 	{
-		Renderer::Submit([this]() {
-			glDeleteBuffers(1, &m_RendererID);
+		GLuint id = m_RendererID;
+		Renderer::Submit([id]() {
+			glDeleteBuffers(1, &id);
 		});
 	}
 

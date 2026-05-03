@@ -313,6 +313,24 @@ namespace Prism
 		EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
 		entityInstance.Object->InvokeMethod("OnUpdate");
 	}
+	void ScriptEngine::OnCollision2DBegin(Entity entity)
+	{
+		OnCollision2DBegin(entity.m_Scene->GetUUID(), entity.GetComponent<IDComponent>().ID);
+	}
+	void ScriptEngine::OnCollision2DBegin(UUID sceneID, UUID entityID)
+	{
+		EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
+		entityInstance.Object->InvokeMethod("OnCollision2DBegin", 5.0f);
+	}
+	void ScriptEngine::OnCollision2DEnd(Entity entity)
+	{
+		OnCollision2DEnd(entity.m_Scene->GetUUID(), entity.GetComponent<IDComponent>().ID);
+	}
+	void ScriptEngine::OnCollision2DEnd(UUID sceneID, UUID entityID)
+	{
+		EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
+		entityInstance.Object->InvokeMethod("OnCollision2DEnd", 5.0f);
+	}
 	void ScriptEngine::OnScriptComponentDestroyed(UUID sceneID, UUID entityID)
 	{
 		PR_CORE_ASSERT(s_EntityInstanceMap.find(sceneID) != s_EntityInstanceMap.end());

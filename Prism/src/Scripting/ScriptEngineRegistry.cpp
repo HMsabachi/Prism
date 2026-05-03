@@ -1,4 +1,4 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "ScriptEngineRegistry.h"
 #include "ScriptEngine.h"
 #include "ScriptWrappers.h"
@@ -86,6 +86,11 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_MaterialComponent_SetMaterial);
         // RigidBody2DComponent
         PR_ADD_INTERNAL_CALL(Prism_RigidBody2DComponent_ApplyLinearImpulse);
+        PR_ADD_INTERNAL_CALL(Prism_RigidBody2DComponent_GetLinearVelocity);
+        PR_ADD_INTERNAL_CALL(Prism_RigidBody2DComponent_SetLinearVelocity);
+
+        // Entity
+        PR_ADD_INTERNAL_CALL(Prism_Entity_FindEntityByTag);
         // Texture2D
         PR_ADD_INTERNAL_CALL(Prism_Texture2D_Constructor);
         PR_ADD_INTERNAL_CALL(Prism_Texture2D_Destructor);

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Prism/Core/Core.h"
 
 namespace Prism {
@@ -19,7 +19,7 @@ namespace Prism {
 		{
 		}
 		void SetReadOnly(bool readOnly) const { ReadOnly = readOnly; }
-		
+
 		void Free()
 		{
 			delete[] Data;
@@ -58,6 +58,12 @@ namespace Prism {
 			PR_CORE_ASSERT(!ReadOnly, "Cannot zero initialize a read-only buffer! 无法对只读缓冲区进行零初始化");
 			if (Data)
 				memset(Data, 0, Size);
+		}
+
+		template<typename T>
+		T& Read(uint32_t offset = 0)
+		{
+			return *(T*)(Data + offset);
 		}
 
 		void Write(void* data, uint32_t size, uint32_t offset = 0)

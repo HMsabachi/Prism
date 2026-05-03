@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Prism/Core/UUID.h"
 
 
@@ -77,7 +77,10 @@ namespace Prism
 			return m_Registry.view<T>();
 		}
 
+		Entity FindEntityByTag(const std::string& tag);
+
 		const EntityMap& GetEntityMap() const { return m_EntityIDMap; }
+
 		void CopyTo(Ref<Scene>& target);
 
 		UUID GetUUID() const { return m_SceneID; }
@@ -110,13 +113,16 @@ namespace Prism
 
 		float m_SkyboxLod = 0.0f;
 		bool m_IsPlaying = false;
+		Entity* m_PhysicsBodyEntityBuffer = nullptr;
 
 		friend class Entity;
 		friend class SceneRenderer;
 		friend class SceneHierarchyPanel;
 		friend class SceneSerializer;
+		friend class ContactListener;
 
 		friend void OnScriptComponentConstruct(entt::registry& registry, entt::entity entity);
+		friend void OnScriptComponentDestroy(entt::registry& registry, entt::entity entity);
 	};
 
 }

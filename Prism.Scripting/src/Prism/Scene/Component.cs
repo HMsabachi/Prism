@@ -1,4 +1,4 @@
-﻿using Prism;
+using Prism;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +12,7 @@ namespace Prism
     public abstract class Component
     {
         public Entity Entity { get; set; }
-        
+
     }
 
     public class TagComponent : Component
@@ -132,15 +132,25 @@ namespace Prism
         {
             unsafe { InternalCalls.Prism_RigidBody2DComponent_ApplyLinearImpulse(Entity.ID, &impulse, &offset, wake); }
         }
+
+        public Vector2 GetLinearVelocity()
+        {
+            Vector2 velocity;
+            unsafe { InternalCalls.Prism_RigidBody2DComponent_GetLinearVelocity(Entity.ID, &velocity); }
+            return velocity;
+        }
+
+        public void SetLinearVelocity(Vector2 velocity)
+        {
+            unsafe { InternalCalls.Prism_RigidBody2DComponent_SetLinearVelocity(Entity.ID, &velocity); }
+        }
     }
 
     public class BoxCollider2DComponent : Component
     {
-        // TODO
     }
 
     public class CircleCollider2DComponent : Component
     {
-        // TODO
     }
 }

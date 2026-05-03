@@ -38,8 +38,41 @@ namespace Prism
 		std::unique_ptr<b2World> World;
 	};
 
+	class ContactListener : public b2ContactListener
+	{
+	public:
+		virtual void BeginContact(b2Contact* contact) override
+		{
+			Entity& a = *(Entity*)contact->GetFixtureA()->GetBody()->GetUserData().pointer;
+			Entity& b = *(Entity*)contact->GetFixtureB()->GetBody()->GetUserData().pointer;
 
-	void OnScriptComponentConstruct(entt::registry& registry, entt::entity entity)
+			// TODO: improve these if checks
+			if (a.HasComponent<ScriptComponent>() && ScriptEngine::ModuleExists(a.GetComponent<ScriptComponent>().ModuleName))
+				ScriptEngine::OnCollision2DBegin(a);
+
+			if (b.HasComponent<ScriptComponent>() && ScriptEngine::ModuleExists(b.GetComponent<ScriptComponent>().ModuleName))
+				ScriptEngine::OnCollision2DBegin(b);
+		}
+
+		/// Called when two fixtures cease to touch.
+		virtual void EndContact(b2Contact* contact) override
+		{
+			Entity& a = *(Entity*)contact->GetFixtureA()->GetBody()->GetUserData().pointer;
+			Entity& b = *(Entity*)contact->GetFixtureB()->GetBody()->GetUserData().pointer;
+
+			// TODO: improve these if checks
+			if (a.HasComponent<ScriptComponent>() && ScriptEngine::ModuleExists(a.GetComponent<ScriptComponent>().ModuleName))
+				ScriptEngine::OnCollision2DEnd(a);
+
+			if (b.HasComponent<ScriptComponent>() && ScriptEngine::ModuleExists(b.GetComponent<ScriptComponent>().ModuleName))
+				ScriptEngine::OnCollision2DEnd(b);
+		}
+	};
+
+	static ContactListener s_Box2DContactListener;
+
+
+	static void OnScriptComponentConstruct(entt::registry& registry, entt::entity entity)
 	{
 		auto sceneView = registry.view<SceneComponent>();
 		UUID sceneID = registry.get<SceneComponent>(sceneView.front()).SceneID;
@@ -50,16 +83,29 @@ namespace Prism
 		ScriptEngine::InitScriptEntity(scene->m_EntityIDMap.at(entityID));
 	}
 
+	static void OnScriptComponentDestroy(entt::registry& registry, entt::entity entity)
+	{
+		auto sceneView = registry.view<SceneComponent>();
+		UUID sceneID = registry.get<SceneComponent>(sceneView.front()).SceneID;
+
+		Scene* scene = s_ActiveScenes[sceneID];
+
+		auto entityID = registry.get<IDComponent>(entity).ID;
+		ScriptEngine::OnScriptComponentDestroyed(sceneID, entityID);
+	}
+
 	Scene::Scene(const std::string& debugName)
 		: m_DebugName(debugName)
 	{
 		m_Registry.on_construct<ScriptComponent>().connect<&OnScriptComponentConstruct>();
+		m_Registry.on_destroy<ScriptComponent>().connect<&OnScriptComponentDestroy>();
 
 		m_SceneEntity = m_Registry.create();
 		m_Registry.emplace<SceneComponent>(m_SceneEntity, m_SceneID);
 
-		// TODO: 并非所有场景都需要物理世界
+		// TODO: Obviously not necessary in all cases
 		m_Registry.emplace<Box2DWorldComponent>(m_SceneEntity, std::make_unique<b2World>(b2Vec2{ 0.0f, -9.8f }));
+		m_Registry.get<Box2DWorldComponent>(m_SceneEntity).World->SetContactListener(&s_Box2DContactListener);
 
 		s_ActiveScenes[m_SceneID] = this;
 		Init();
@@ -67,6 +113,10 @@ namespace Prism
 
 	Scene::~Scene()
 	{
+		m_Registry.on_destroy<ScriptComponent>().disconnect();
+		m_Registry.on_construct<ScriptComponent>().disconnect<&OnScriptComponentConstruct>();
+		delete[] m_PhysicsBodyEntityBuffer;
+		m_PhysicsBodyEntityBuffer = nullptr;
 		m_Registry.clear();
 		s_ActiveScenes.erase(m_SceneID);
 		ScriptEngine::OnSceneDestruct(m_SceneID);
@@ -105,7 +155,7 @@ namespace Prism
 			}
 		}
 
-		// Box2D 物理步进
+		// Box2D physics step
 		float ts = Time::GetDeltaTime();
 		{
 			auto view = m_Registry.view<Box2DWorldComponent>();
@@ -252,9 +302,11 @@ namespace Prism
 			}
 		}
 
-		// Box2D 物理
+		// Box2D physics
 		{
 			auto view = m_Registry.view<RigidBody2DComponent>();
+			m_PhysicsBodyEntityBuffer = new Entity[view.size()];
+			uint32_t physicsBodyEntityBufferIndex = 0;
 			for (auto entity : view)
 			{
 				Entity e = { entity, this };
@@ -273,7 +325,13 @@ namespace Prism
 				auto [translation, rotationQuat, scale] = GetTransformDecomposition(transform);
 				glm::vec3 rotation = glm::eulerAngles(rotationQuat);
 				bodyDef.angle = rotation.z;
-				rigidBody2D.RuntimeBody = m_Registry.get<Box2DWorldComponent>(m_SceneEntity).World->CreateBody(&bodyDef);
+
+				b2Body* body = m_Registry.get<Box2DWorldComponent>(m_SceneEntity).World->CreateBody(&bodyDef);
+				body->SetFixedRotation(rigidBody2D.FixedRotation);
+				Entity* entityStorage = &m_PhysicsBodyEntityBuffer[physicsBodyEntityBufferIndex++];
+				*entityStorage = e;
+				body->GetUserData().pointer = (uintptr_t)entityStorage;
+				rigidBody2D.RuntimeBody = body;
 			}
 		}
 
@@ -296,8 +354,8 @@ namespace Prism
 
 					b2FixtureDef fixtureDef;
 					fixtureDef.shape = &polygonShape;
-					fixtureDef.density = 1.0f;
-					fixtureDef.friction = 1.0f;
+					fixtureDef.density = boxCollider2D.Density;
+					fixtureDef.friction = boxCollider2D.Friction;
 					body->CreateFixture(&fixtureDef);
 				}
 			}
@@ -322,8 +380,8 @@ namespace Prism
 
 					b2FixtureDef fixtureDef;
 					fixtureDef.shape = &circleShape;
-					fixtureDef.density = 1.0f;
-					fixtureDef.friction = 1.0f;
+					fixtureDef.density = circleCollider2D.Density;
+					fixtureDef.friction = circleCollider2D.Friction;
 					body->CreateFixture(&fixtureDef);
 				}
 			}
@@ -334,6 +392,8 @@ namespace Prism
 
 	void Scene::OnRuntimeStop()
 	{
+		delete[] m_PhysicsBodyEntityBuffer;
+		m_PhysicsBodyEntityBuffer = nullptr;
 		m_IsPlaying = false;
 	}
 
@@ -443,6 +503,20 @@ namespace Prism
 		CopyComponentIfExists<RigidBody2DComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
 		CopyComponentIfExists<BoxCollider2DComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
 		CopyComponentIfExists<CircleCollider2DComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+	}
+
+	Entity Scene::FindEntityByTag(const std::string& tag)
+	{
+		// TODO: If this becomes used often, consider indexing by tag
+		auto view = m_Registry.view<TagComponent>();
+		for (auto entity : view)
+		{
+			const auto& candidate = view.get<TagComponent>(entity).Tag;
+			if (candidate == tag)
+				return Entity(entity, this);
+		}
+
+		return Entity{};
 	}
 
 	// Copy to runtime

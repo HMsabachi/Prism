@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 
 using Rolky.Managed.Interop;
@@ -58,6 +58,11 @@ namespace Prism
 
         // RigidBody2DComponent
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector2*, Vector2*, bool, void> Prism_RigidBody2DComponent_ApplyLinearImpulse;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector2*, void> Prism_RigidBody2DComponent_GetLinearVelocity;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector2*, void> Prism_RigidBody2DComponent_SetLinearVelocity;
+
+        // Entity
+        internal static delegate* unmanaged[Cdecl]<NativeString, UInt64> Prism_Entity_FindEntityByTag;
 
 
     }

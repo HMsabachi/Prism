@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -22,6 +22,20 @@ namespace Prism
         {
             X = x;
             Y = y;
+        }
+
+        public Vector2(Vector3 vector)
+        {
+            X = vector.X;
+            Y = vector.Y;
+        }
+
+        public static Vector2 operator -(Vector2 v) => new Vector2(-v.X, -v.Y);
+
+        public void Clamp(Vector2 min, Vector2 max)
+        {
+            X = MathF.Max(MathF.Min(X, max.X), min.X);
+            Y = MathF.Max(MathF.Min(Y, max.Y), min.Y);
         }
     }
 }

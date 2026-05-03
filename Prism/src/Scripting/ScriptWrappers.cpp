@@ -1,4 +1,4 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "ScriptWrappers.h"
 #include "Prism/Core/Math/Noise.h"
 
@@ -75,16 +75,16 @@ namespace Prism {
 		{
 			return Noise::PerlinNoise(x, y);
 		}
-#pragma endregion 
+#pragma endregion
 
 #pragma region Input
 		bool Prism_Input_IsKeyPressed(KeyCode key)
 		{
 			return Input::IsKeyPressed(key);
 		}
-#pragma endregion 
+#pragma endregion
 
-#pragma region Entity		
+#pragma region Entity
 		enum class ComponentID
 		{
 			None = 0,
@@ -137,9 +137,24 @@ namespace Prism {
 			bool result = s_HasComponentFuncs[mType.GetTypeId()](entity);
 			return result;
 		}
+		uint64_t Prism_Entity_FindEntityByTag(Rolky::String tag)
+		{
+			Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
+			PR_CORE_ASSERT(scene, "No active scene!");
+			std::string tagStr = tag;
+			Rolky::String::Free(tag);
+
+			const auto& entityMap = scene->GetEntityMap();
+			for (const auto& [id, entity] : entityMap)
+			{
+				if (entity.HasComponent<TagComponent>() && entity.GetComponent<TagComponent>().Tag == tagStr)
+					return id;
+			}
+			return 0;
+		}
 
 
-#pragma endregion 
+#pragma endregion
 
 #pragma region Mesh
 		void* Prism_MeshComponent_GetMesh(uint64_t entityID)
@@ -267,19 +282,45 @@ namespace Prism {
 #pragma endregion
 
 #pragma region RigidBody2DComponent
-	void Prism_RigidBody2DComponent_ApplyLinearImpulse(uint64_t entityID, glm::vec2* impulse, glm::vec2* offset, bool wake)
-	{
-		Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
-		PR_CORE_ASSERT(scene, "No active scene!");
-		const auto& entityMap = scene->GetEntityMap();
-		PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
-		Entity entity = entityMap.at(entityID);
-		auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
-		b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
-		b2Vec2 b2Impulse(impulse->x, impulse->y);
-		b2Vec2 b2Point(offset->x, offset->y);
-		body->ApplyLinearImpulse(b2Impulse, b2Point, wake);
-	}
+		void Prism_RigidBody2DComponent_ApplyLinearImpulse(uint64_t entityID, glm::vec2* impulse, glm::vec2* offset, bool wake)
+		{
+			Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
+			PR_CORE_ASSERT(scene, "No active scene!");
+			const auto& entityMap = scene->GetEntityMap();
+			PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
+			Entity entity = entityMap.at(entityID);
+			auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
+			b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
+			b2Vec2 b2Impulse(impulse->x, impulse->y);
+			b2Vec2 b2Point(offset->x, offset->y);
+			body->ApplyLinearImpulse(b2Impulse, b2Point, wake);
+		}
+
+		void Prism_RigidBody2DComponent_GetLinearVelocity(uint64_t entityID, glm::vec2* outVelocity)
+		{
+			Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
+			PR_CORE_ASSERT(scene, "No active scene!");
+			const auto& entityMap = scene->GetEntityMap();
+			PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
+			Entity entity = entityMap.at(entityID);
+			auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
+			b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
+			const b2Vec2& velocity = body->GetLinearVelocity();
+			*outVelocity = glm::vec2(velocity.x, velocity.y);
+		}
+
+		void Prism_RigidBody2DComponent_SetLinearVelocity(uint64_t entityID, glm::vec2* velocity)
+		{
+			Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
+			PR_CORE_ASSERT(scene, "No active scene!");
+			const auto& entityMap = scene->GetEntityMap();
+			PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
+			Entity entity = entityMap.at(entityID);
+			auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
+			b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
+			body->SetLinearVelocity(b2Vec2(velocity->x, velocity->y));
+		}
+
 #pragma endregion
 
 #pragma region Material

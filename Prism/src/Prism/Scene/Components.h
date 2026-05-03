@@ -115,14 +115,16 @@ namespace Prism {
 
 	struct RigidBody2DComponent
 	{
-		enum class Type { Static = 0, Dynamic, Kinematic };
+		enum class Type { Static, Dynamic, Kinematic };
 		Type BodyType = Type::Static;
-		float Mass = 1.0f;
+		bool FixedRotation = false;
+
+		// Storage for runtime
 		void* RuntimeBody = nullptr;
 
 		RigidBody2DComponent() = default;
 		RigidBody2DComponent(const RigidBody2DComponent& other)
-			: BodyType(other.BodyType), Mass(other.Mass), RuntimeBody(nullptr) {
+			: BodyType(other.BodyType), FixedRotation(other.FixedRotation), RuntimeBody(nullptr) {
 		}
 	};
 
@@ -130,11 +132,16 @@ namespace Prism {
 	{
 		glm::vec2 Offset = { 0.0f, 0.0f };
 		glm::vec2 Size = { 1.0f, 1.0f };
+
+		float Density = 1.0f;
+		float Friction = 1.0f;
+
+		// Storage for runtime
 		void* RuntimeFixture = nullptr;
 
 		BoxCollider2DComponent() = default;
 		BoxCollider2DComponent(const BoxCollider2DComponent& other)
-			: Offset(other.Offset), Size(other.Size), RuntimeFixture(nullptr) {
+			: Offset(other.Offset), Size(other.Size), Density(other.Density), Friction(other.Friction), RuntimeFixture(nullptr) {
 		}
 	};
 
@@ -142,11 +149,16 @@ namespace Prism {
 	{
 		glm::vec2 Offset = { 0.0f, 0.0f };
 		float Radius = 1.0f;
+
+		float Density = 1.0f;
+		float Friction = 1.0f;
+
+		// Storage for runtime
 		void* RuntimeFixture = nullptr;
 
 		CircleCollider2DComponent() = default;
 		CircleCollider2DComponent(const CircleCollider2DComponent& other)
-			: Offset(other.Offset), Radius(other.Radius), RuntimeFixture(nullptr) {
+			: Offset(other.Offset), Radius(other.Radius), Density(other.Density), Friction(other.Friction), RuntimeFixture(nullptr) {
 		}
 	};
 

@@ -75,6 +75,11 @@ namespace Prism
 
         // RigidBody2DComponent
         void Prism_RigidBody2DComponent_ApplyLinearImpulse(uint64_t entityID, glm::vec2* impulse, glm::vec2* offset, bool wake);
+        void Prism_RigidBody2DComponent_GetLinearVelocity(uint64_t entityID, glm::vec2* outVelocity);
+        void Prism_RigidBody2DComponent_SetLinearVelocity(uint64_t entityID, glm::vec2* velocity);
+
+        // Entity
+        uint64_t Prism_Entity_FindEntityByTag(Rolky::String tag);
 
         // Material
         Ref<Material>* Prism_Material_Constructor(Rolky::String shaderName);

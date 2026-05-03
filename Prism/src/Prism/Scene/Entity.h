@@ -20,12 +20,21 @@ namespace Prism
 		template<typename T, typename... Args>
 		T& AddComponent(Args&&... args)
 		{
+			PR_CORE_ASSERT(!HasComponent<T>(), "Entity already has component!");
 			return m_Scene->m_Registry.emplace<T>(m_EntityHandle, std::forward<Args>(args)...);
 		}
 
 		template<typename T>
 		T& GetComponent()
 		{
+			PR_CORE_ASSERT(HasComponent<T>(), "Entity doesn't have component!");
+			return m_Scene->m_Registry.get<T>(m_EntityHandle);
+		}
+
+		template<typename T>
+		const T& GetComponent() const
+		{
+			PR_CORE_ASSERT(HasComponent<T>(), "Entity doesn't have component!");
 			return m_Scene->m_Registry.get<T>(m_EntityHandle);
 		}
 
@@ -36,8 +45,15 @@ namespace Prism
 		}
 
 		template<typename T>
+		bool HasComponent() const
+		{
+			return m_Scene->m_Registry.any_of<T>(m_EntityHandle);
+		}
+
+		template<typename T>
 		void RemoveComponent()
 		{
+			PR_CORE_ASSERT(HasComponent<T>(), "Entity doesn't have component!");
 			m_Scene->m_Registry.remove<T>(m_EntityHandle);
 		}
 

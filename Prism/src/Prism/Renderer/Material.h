@@ -54,6 +54,27 @@ namespace Prism
 		}
 #pragma endregion
 
+		template<typename T>
+		T& Get(const std::string& name)
+		{
+			auto decl = FindPropertyDeclaration(name);
+			PR_CORE_ASSERT(decl, "Could not find uniform with name 'x'");
+			auto& buffer = m_PropertyBuffer;
+			return buffer.Read<T>(decl->GetOffset());
+		}
+
+		template<typename T>
+		Ref<T> GetResource(const std::string& name)
+		{
+			auto decl = FindPropertyDeclaration(name);
+			PR_CORE_ASSERT(decl, "Could not find uniform with name 'x'");
+			auto& buffer = m_PropertyBuffer;
+			auto& tex = *(PropertyType::Texture2D*)&buffer[decl->GetOffset()];
+			uint32_t slot = tex.slot;
+			PR_CORE_ASSERT(slot < m_Textures.size(), "Texture slot is invalid!");
+			return m_Textures[slot];
+		}
+
 	private:
 		const PropertyDeclaration* FindPropertyDeclaration(const std::string& name) const;
 		void AllocateStorage();
@@ -115,6 +136,41 @@ namespace Prism
 			m_Transform = value;
 		}
 #pragma endregion
+
+		template<typename T>
+		T& Get(const std::string& name)
+		{
+			auto decl = m_Material->FindPropertyDeclaration(name);
+			PR_CORE_ASSERT(decl, "Could not find uniform with name 'x'");
+			auto& buffer = m_PropertyBuffer;
+			return buffer.Read<T>(decl->GetOffset());
+		}
+
+		template<typename T>
+		Ref<T> GetResource(const std::string& name)
+		{
+			auto decl = m_Material->FindPropertyDeclaration(name);
+			PR_CORE_ASSERT(decl, "Could not find uniform with name 'x'");
+			auto& buffer = m_PropertyBuffer;
+			auto& tex = *(PropertyType::Texture2D*)&buffer[decl->GetOffset()];
+			uint32_t slot = tex.slot;
+			PR_CORE_ASSERT(slot < m_Textures.size(), "Texture slot is invalid!");
+			return m_Textures[slot];
+		}
+
+		template<typename T>
+		Ref<T> TryGetResource(const std::string& name)
+		{
+			auto decl = m_Material->FindPropertyDeclaration(name);
+			if (!decl)
+				return nullptr;
+			auto& buffer = m_PropertyBuffer;
+			auto& tex = *(PropertyType::Texture2D*)&buffer[decl->GetOffset()];
+			uint32_t slot = tex.slot;
+			if (slot >= m_Textures.size())
+				return nullptr;
+			return m_Textures[slot];
+		}
 
 	public:
 		void Bind();

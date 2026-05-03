@@ -295,7 +295,7 @@ namespace Prism {
 
 			auto& rb2dComponent = entity.GetComponent<RigidBody2DComponent>();
 			out << YAML::Key << "BodyType" << YAML::Value << (int)rb2dComponent.BodyType;
-			out << YAML::Key << "Mass" << YAML::Value << rb2dComponent.Mass;
+			out << YAML::Key << "FixedRotation" << YAML::Value << rb2dComponent.FixedRotation;
 
 			out << YAML::EndMap; // RigidBody2DComponent
 		}
@@ -308,6 +308,8 @@ namespace Prism {
 			auto& bc2dComponent = entity.GetComponent<BoxCollider2DComponent>();
 			out << YAML::Key << "Offset" << YAML::Value << bc2dComponent.Offset;
 			out << YAML::Key << "Size" << YAML::Value << bc2dComponent.Size;
+			out << YAML::Key << "Density" << YAML::Value << bc2dComponent.Density;
+			out << YAML::Key << "Friction" << YAML::Value << bc2dComponent.Friction;
 
 			out << YAML::EndMap; // BoxCollider2DComponent
 		}
@@ -320,6 +322,8 @@ namespace Prism {
 			auto& cc2dComponent = entity.GetComponent<CircleCollider2DComponent>();
 			out << YAML::Key << "Offset" << YAML::Value << cc2dComponent.Offset;
 			out << YAML::Key << "Radius" << YAML::Value << cc2dComponent.Radius;
+			out << YAML::Key << "Density" << YAML::Value << cc2dComponent.Density;
+			out << YAML::Key << "Friction" << YAML::Value << cc2dComponent.Friction;
 
 			out << YAML::EndMap; // CircleCollider2DComponent
 		}
@@ -547,9 +551,9 @@ namespace Prism {
 				{
 					auto& component = deserializedEntity.AddComponent<RigidBody2DComponent>();
 					component.BodyType = (RigidBody2DComponent::Type)rigidBody2DComponent["BodyType"].as<int>();
-					component.Mass = rigidBody2DComponent["Mass"].as<float>();
+					component.FixedRotation = rigidBody2DComponent["FixedRotation"] ? rigidBody2DComponent["FixedRotation"].as<bool>() : false;
 
-					PR_CORE_INFO("  RigidBody2DComponent: Type={0}, Mass={1}", (int)component.BodyType, component.Mass);
+					PR_CORE_INFO("  RigidBody2DComponent: Type={0}, FixedRotation={1}", (int)component.BodyType, component.FixedRotation);
 				}
 
 				auto boxCollider2DComponent = entity["BoxCollider2DComponent"];
@@ -558,8 +562,10 @@ namespace Prism {
 					auto& component = deserializedEntity.AddComponent<BoxCollider2DComponent>();
 					component.Offset = boxCollider2DComponent["Offset"].as<glm::vec2>();
 					component.Size = boxCollider2DComponent["Size"].as<glm::vec2>();
+					component.Density = boxCollider2DComponent["Density"] ? boxCollider2DComponent["Density"].as<float>() : 1.0f;
+					component.Friction = boxCollider2DComponent["Friction"] ? boxCollider2DComponent["Friction"].as<float>() : 1.0f;
 
-					PR_CORE_INFO("  BoxCollider2DComponent: Offset={0},{1}, Size={2},{3}", component.Offset.x, component.Offset.y, component.Size.x, component.Size.y);
+					PR_CORE_INFO("  BoxCollider2DComponent: Offset={0},{1}, Size={2},{3}, Density={4}, Friction={5}", component.Offset.x, component.Offset.y, component.Size.x, component.Size.y, component.Density, component.Friction);
 				}
 
 				auto circleCollider2DComponent = entity["CircleCollider2DComponent"];
@@ -568,8 +574,10 @@ namespace Prism {
 					auto& component = deserializedEntity.AddComponent<CircleCollider2DComponent>();
 					component.Offset = circleCollider2DComponent["Offset"].as<glm::vec2>();
 					component.Radius = circleCollider2DComponent["Radius"].as<float>();
+					component.Density = circleCollider2DComponent["Density"] ? circleCollider2DComponent["Density"].as<float>() : 1.0f;
+					component.Friction = circleCollider2DComponent["Friction"] ? circleCollider2DComponent["Friction"].as<float>() : 1.0f;
 
-					PR_CORE_INFO("  CircleCollider2DComponent: Offset={0},{1}, Radius={2}", component.Offset.x, component.Offset.y, component.Radius);
+					PR_CORE_INFO("  CircleCollider2DComponent: Offset={0},{1}, Radius={2}, Density={3}, Friction={4}", component.Offset.x, component.Offset.y, component.Radius, component.Density, component.Friction);
 				}
 			}
 		}

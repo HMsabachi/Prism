@@ -331,6 +331,27 @@ namespace Prism {
 		ImGui::NextColumn();
 	}
 
+	static bool Property(const char* label, bool& value)
+	{
+		bool modified = false;
+
+		ImGui::Text(label);
+		ImGui::NextColumn();
+		ImGui::PushItemWidth(-1);
+
+		s_IDBuffer[0] = '#';
+		s_IDBuffer[1] = '#';
+		memset(s_IDBuffer + 2, 0, 14);
+		itoa(s_Counter++, s_IDBuffer + 2, 16);
+		if (ImGui::Checkbox(s_IDBuffer, &value))
+			modified = true;
+
+		ImGui::PopItemWidth();
+		ImGui::NextColumn();
+
+		return modified;
+	}
+
 	static bool Property(const char* label, int& value)
 	{
 		bool modified = false;
@@ -674,7 +695,7 @@ namespace Prism {
 			if (component.BodyType == RigidBody2DComponent::Type::Dynamic)
 			{
 				BeginPropertyGrid();
-				Property("Mass", component.Mass);
+				Property("Fixed Rotation", component.FixedRotation);
 				EndPropertyGrid();
 			}
 		});
@@ -683,12 +704,16 @@ namespace Prism {
 		{
 			Property("Offset", component.Offset);
 			Property("Size", component.Size);
+			Property("Density", component.Density);
+			Property("Friction", component.Friction);
 		});
 
 		DrawComponent<CircleCollider2DComponent>("Circle Collider 2D", entity, [](auto& component)
 		{
 			Property("Offset", component.Offset);
 			Property("Radius", component.Radius);
+			Property("Density", component.Density);
+			Property("Friction", component.Friction);
 		});
 
 		if (entity.HasComponent<ScriptComponent>())
