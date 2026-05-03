@@ -4,7 +4,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "Prism/Renderer/Renderer.h"
-#include "Prism/Renderer/Shader/ShaderProperty.h"
+#include "Prism/Renderer/Shader/ShaderPropertyDeclaration.h"
 
 #include "OpenGLStateCache.h"
 
@@ -98,6 +98,7 @@ namespace Prism
 
 	void OpenGLShader::CompileAndUploadShader()
 	{
+		m_UniformLocationCache.clear();
 		std::unordered_map<GLenum, std::string> shaderSources;
 
 		const char* typeToken = "#type";
@@ -264,53 +265,58 @@ namespace Prism
 	void OpenGLShader::SetPropertyImpt(const PropertyBufferDeclaration& decl, const Buffer& buffer)
 	{
 		glUseProgram(m_RendererID);
-		using namespace Prism::PropertyType;
-		for (const auto& property : decl)
+			for (const auto& property : decl)
 		{
-			uint32_t offset = property->GetOffset();
-			switch (property->GetType())
+			uint32_t offset = property.GetOffset();
+			switch (property.GetType())
 			{
-			case PropertyDeclaration::Type::Color:
-				UploadUniformFloat4(property->GetName(), *(Color*)&buffer.Data[offset]);
+			case PropertyDeclarationType::Bool:
+				UploadUniformInt(property.GetName(), *(bool*)&buffer.Data[offset]);
 				break;
-			case PropertyDeclaration::Type::Float:
-				UploadUniformFloat(property->GetName(), *(Float*)&buffer.Data[offset]);
+			case PropertyDeclarationType::Color:
+				UploadUniformFloat4(property.GetName(), *(glm::vec4*)&buffer.Data[offset]);
 				break;
-			case PropertyDeclaration::Type::Int:
-				UploadUniformInt(property->GetName(), *(Int*)&buffer.Data[offset]);
+			case PropertyDeclarationType::Float:
+				UploadUniformFloat(property.GetName(), *(float*)&buffer.Data[offset]);
 				break;
-			case PropertyDeclaration::Type::Vector2:
-				UploadUniformFloat2(property->GetName(), *(Vector2*)&buffer.Data[offset]);
+			case PropertyDeclarationType::Int:
+				UploadUniformInt(property.GetName(), *(int32_t*)&buffer.Data[offset]);
 				break;
-			case PropertyDeclaration::Type::Vector3:
+			case PropertyDeclarationType::Vector2:
+				UploadUniformFloat2(property.GetName(), *(glm::vec2*)&buffer.Data[offset]);
+				break;
+			case PropertyDeclarationType::Vector3:
 			{
-				UploadUniformFloat3(property->GetName(), *(Vector3*)&buffer.Data[offset]);
+				UploadUniformFloat3(property.GetName(), *(glm::vec3*)&buffer.Data[offset]);
 				break;
 			}
-			case PropertyDeclaration::Type::Vector4:
-				UploadUniformFloat4(property->GetName(), *(Vector4*)&buffer.Data[offset]);
+			case PropertyDeclarationType::Vector4:
+				UploadUniformFloat4(property.GetName(), *(glm::vec4*)&buffer.Data[offset]);
 				break;
-			case PropertyDeclaration::Type::Range:
-				UploadUniformFloat(property->GetName(), *(Range*)&buffer.Data[offset]);
+			case PropertyDeclarationType::Range:
+				UploadUniformFloat(property.GetName(), *(Prism::Type::Range*)&buffer.Data[offset]);
 				break;
-			case PropertyDeclaration::Type::Texture2D:
-			case PropertyDeclaration::Type::Texture2DMS:
+			case PropertyDeclarationType::Texture2D:
+			case PropertyDeclarationType::Texture2DMS:
 			{
 				auto& tex = *(PropertyType::Texture2D*)&buffer.Data[offset];
-				UploadUniformInt(property->GetName(), tex.slot);
+				UploadUniformInt(property.GetName(), tex.slot);
 				break;
 			}
-			case PropertyDeclaration::Type::TextureCube:
-				UploadUniformInt(property->GetName(), *(PropertyType::TextureCube*)&buffer.Data[offset]);
+			case PropertyDeclarationType::TextureCube:
+				UploadUniformInt(property.GetName(), *(PropertyType::TextureCube*)&buffer.Data[offset]);
 				break;
-			case PropertyDeclaration::Type::Matrix3:
-				UploadUniformMat3(property->GetName(), *(glm::mat3*)&buffer.Data[offset]);
+			case PropertyDeclarationType::Matrix3:
+				UploadUniformMat3(property.GetName(), *(glm::mat3*)&buffer.Data[offset]);
 				break;
-			case PropertyDeclaration::Type::Matrix4:
-				UploadUniformMat4(property->GetName(), *(glm::mat4*)&buffer.Data[offset]);
+			case PropertyDeclarationType::Matrix4:
+				UploadUniformMat4(property.GetName(), *(glm::mat4*)&buffer.Data[offset]);
+				break;
+			case PropertyDeclarationType::Enum:
+				UploadUniformInt(property.GetName(), *(int32_t*)&buffer.Data[offset]);
 				break;
 			default:
-				PR_LOG_UNIFORM("不支持的属性类型{0} 在Shader {1}中", property->GetName(), m_Name);
+				PR_LOG_UNIFORM("不支持的属性类型{0} 在Shader {1}中", property.GetName(), m_Name);
 				break;
 			}
 		}

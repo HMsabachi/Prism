@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "PrismShaderData.h"
+#include "Prism/Renderer/Shader/Parser/ShaderParserData.h"
 #include "BufferData.h"
 
 #include "../RendererAPI.h"

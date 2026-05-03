@@ -8,7 +8,7 @@
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Renderer2D.h"
 #include "Prism/Renderer/Buffer/Framebuffer.h"
-#include "PrismShaderParser.h"
+#include "Prism/Renderer/Shader/Parser/ShaderParser.h"
 
 #include "Scripting/ScriptEngine.h"
 
@@ -56,7 +56,7 @@ namespace Prism
 		m_ImGuiLayer = new ImGuiLayer("ImGui");
 		PushOverlay(m_ImGuiLayer);
 		// 初始化PrismShader解释器
-		PrismShaderParser::Init();
+		ShaderParser::Init("Assets/Shaders/Include");
 		// 初始化渲染器 Initialize Renderer
 		Renderer::Init();
 		Renderer::WaitAndRender();

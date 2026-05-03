@@ -20,7 +20,6 @@ IncludeDir["Glad"] = "Prism/vendor/Glad/include"
 IncludeDir["ImGui"] = "Prism/vendor/imgui"
 IncludeDir["glm"] = "Prism/vendor/glm"
 IncludeDir["stb_image"] = "Prism/vendor/stb_image"
-IncludeDir["PrismShaderParser"] = "Prism/vendor/PrismShaderParser/src"
 IncludeDir["nethost"] = "Prism/vendor/nethost"
 IncludeDir["entt"] = "Prism/vendor/entt/include"
 IncludeDir["FastNoise"] = "Prism/vendor/FastNoise"
@@ -34,7 +33,6 @@ group "Dependencies"
 	include "Prism/vendor/GLFW"
 	include "Prism/vendor/Glad"
 	include "Prism/vendor/imgui"
-	include "Prism/vendor/PrismShaderParser"
 	include "Prism/vendor/Rolky/Rolky.Native"
 	include "Prism/vendor/box2d"
 group ""
@@ -79,8 +77,7 @@ project "Prism"
 		"%{IncludeDir.ImGui}",
 		"%{IncludeDir.glm}",
 		"%{IncludeDir.stb_image}",
-		"%{IncludeDir.PrismShaderParser}",
-		"%{prj.name}/vendor/assimp/include",
+			"%{prj.name}/vendor/assimp/include",
 		"%{IncludeDir.nethost}",
 		"%{IncludeDir.entt}",
         "%{IncludeDir.FastNoise}",
@@ -101,7 +98,6 @@ project "Prism"
 		"Glad",
 		"ImGui",
 		"Rolky.Native",
-		"PrismShaderParser",
 		"Box2D",
 		"opengl32.lib",
 		"dwmapi.lib"
@@ -192,8 +188,7 @@ project "PrismEditor"
 		"Prism/src",
 		"Prism/vendor",
 		"%{IncludeDir.glm}",
-		"%{IncludeDir.PrismShaderParser}",
-		"%{IncludeDir.nethost}",
+			"%{IncludeDir.nethost}",
 		"%{IncludeDir.entt}"
 
 	}

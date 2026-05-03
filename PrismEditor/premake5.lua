@@ -25,8 +25,7 @@
 		"../Prism/vendor/spdlog/include",
 		"../Prism/src",
 		"../Prism/vendor",
-		"%{IncludeDir.glm}",
-		"%{IncludeDir.PrismShaderParser}"
+		"%{IncludeDir.glm}"
 
 	}
 

@@ -8,6 +8,7 @@ namespace Prism
 		typedef std::pair<byte*, size_t> BufferData; 
 
 		typedef glm::vec4 Color; 
+		typedef bool Bool;
 		typedef float Float;
 		typedef int Int;
 		typedef glm::vec2 Vector2;
