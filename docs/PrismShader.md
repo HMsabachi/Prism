@@ -52,6 +52,7 @@ Shader "您的Shader名称"   // 必须是第一个有效语句，名称用于 S
 
 | 类型写法                  | C++ 类型                  | GLSL Uniform 类型     | 默认值示例                  | 说明 |
 |---------------------------|---------------------------|-----------------------|-----------------------------|------|
+| `Bool`                    | `Bool` (bool)             | `bool`                | `true` 或 `false`           | 布尔勾选框 |
 | `Color`                   | `Color` (vec4)            | `vec4`                | `(1,1,1,1)` 或 `white`     | 颜色 |
 | `Float`                   | `Float`                   | `float`               | `0.5`                       | 浮点 |
 | `Int`                     | `Int`                     | `int`                 | `1`                         | 整数 |
@@ -62,6 +63,7 @@ Shader "您的Shader名称"   // 必须是第一个有效语句，名称用于 S
 | `Texture2DMS`             | `Texture2D` (MS)          | `sampler2DMS`         | `white`                     | 多采样纹理 |
 | `TextureCube`             | `TextureCube`             | `samplerCube`         | `white`                     | 立方体贴图 |
 | `Range(min, max)`         | `Range`                   | `float`               | `0.5`                       | 带滑块范围 |
+| `Enum(选项1,选项2,...)`    | `Int`                     | `int`                 | `0`                         | 下拉选择器 |
 | `Matrix3` / `Matrix3X3`   | `Matrix3`                 | `mat3`                | `(1,0,0,0,1,0,0,0,1)`      | 3x3矩阵 |
 | `Matrix4` / `Matrix4x4`   | `Matrix4`                 | `mat4`                | 单位矩阵                    | 4x4矩阵 |
 
@@ -72,10 +74,12 @@ _Gloss ("光泽度", Range(0,1)) = 0.8
 _MainTex ("基础贴图", Texture2D) = white
 _NormalMap ("法线贴图", Texture2D) = bump
 _Mat4 ("变换矩阵", Matrix4) = (1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1)
+_Enable ("启用", Bool) = true
+_Mode ("渲染模式", Enum(Opaque,Transparent,Cutout)) = 0
 ```
 
 **引擎处理**：
-- `ShaderProperty::Init` + `HandlePropertyValue` 会把默认值打包进 `m_DefaultValueBuffer`（`Buffer` 类）。
+- `PrismShader::Load` 中的 `PackDefaultValues` 会把默认值打包进 `m_DefaultValueBuffer`。
 - 材质设置时调用 `PrismShader::SetProperty` 自动上传。
 - `GetDefaultValue<T>(name)` 可在运行时读取默认值。
 

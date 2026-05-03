@@ -21,5 +21,9 @@ namespace Example
             material.Set("u_AlbedoColor", new Vector3(r, g, b));
         }
 
+        void OnUpdate()
+        {
+
+        }
     }
 }
