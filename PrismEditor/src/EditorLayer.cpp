@@ -1,4 +1,4 @@
-#include "EditorLayer.h"
+﻿#include "EditorLayer.h"
 
 #include "Prism/ImGui/ImGuizmo.h"
 
@@ -119,8 +119,8 @@ namespace Prism
 			m_SceneHierarchyPanel = CreateScope<SceneHierarchyPanel>(m_EditorScene);
 			m_SceneHierarchyPanel->SetSelectionChangedCallback(std::bind(&EditorLayer::SelectEntity, this, std::placeholders::_1));
 			m_SceneHierarchyPanel->SetEntityDeletedCallback(std::bind(&EditorLayer::OnEntityDeleted, this, std::placeholders::_1));
-			// SceneSerializer serializer(m_ActiveScene);
-			// serializer.Deserialize("Scene.yaml");
+			SceneSerializer serializer(m_EditorScene);
+			serializer.Deserialize("Assets/Scenes/Physics2D-Game.psc");
 		}
 
 		void EditorLayer::OnDetach()
@@ -412,6 +412,12 @@ namespace Prism
 				break;
 			}
 			case PropertyDeclarationType::Color:
+			{
+				auto& color = materialInstance.Get<glm::vec3>(name);
+				ImGui::ColorEdit3(displayName.c_str(), glm::value_ptr(color), ImGuiColorEditFlags_NoInputs);
+				break;
+			}
+			case PropertyDeclarationType::Color3:
 			{
 				auto& color = materialInstance.Get<glm::vec3>(name);
 				ImGui::ColorEdit3(displayName.c_str(), glm::value_ptr(color), ImGuiColorEditFlags_NoInputs);

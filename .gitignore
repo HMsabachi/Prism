@@ -23,6 +23,8 @@ CLAUDE.md
 *.targets
 *.csproj
 *.cache
+.gitattributes
+.editorconfig
 
 /Prism/vendor/Rolky/Example/Example.Native/x64/Debug
 /Prism/vendor/Rolky/Rolky.Native/x64/Debug

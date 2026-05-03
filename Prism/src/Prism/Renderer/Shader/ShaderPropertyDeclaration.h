@@ -10,7 +10,7 @@ namespace Prism
 	{
 		None,
 		Bool,
-		Color, Float, Int,
+		Color, Color3, Float, Int,
 		Vector2, Vector3, Vector4,
 		Range,
 		Matrix3, Matrix4,
@@ -22,6 +22,7 @@ namespace Prism
 	{
 		typedef Type::Bool Bool;
 	typedef Type::Color Color;
+	typedef Type::Vector3 Color3;
 		typedef Type::Float Float;
 		typedef Type::Int Int;
 		typedef Type::Vector2 Vector2;

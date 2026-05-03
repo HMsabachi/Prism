@@ -5,9 +5,9 @@ Shader "Custom/SimplePBR_Static"
     Properties
     {
 
-        u_Color("主色", Vector3) = (0.2, 0.2, 1)
+        u_Color("主色", Color3) = (0.2, 0.2, 1)
         // BRDF LUT
-        u_AlbedoColor("颜色", Vector3) = (1, 1, 1)
+        u_AlbedoColor("颜色", Color3) = (1, 1, 1)
         u_BRDFLUTTexture("BRDF LUT", Texture2D) = {}
         u_Metalness("金属度", Range(0, 1)) = 1.0
         u_Roughness("粗糙度", Range(0, 1)) = 0.0
@@ -26,10 +26,10 @@ Shader "Custom/SimplePBR_Static"
 
         // Toggles
         u_RadiancePrefilter("环境光预过滤", Float) = 0.0
-        u_AlbedoTexToggle("颜色贴图开关", Float) = 0.0
-        u_NormalTexToggle("法线贴图开关", Float) = 0.0
-        u_MetalnessTexToggle("金属度贴图开关", Float) = 0.0
-        u_RoughnessTexToggle("粗糙度贴图开关", Float) = 0.0
+        u_AlbedoTexToggle("颜色贴图开关", Bool) = false
+        u_NormalTexToggle("法线贴图开关", Bool) = false
+        u_MetalnessTexToggle("金属度贴图开关", Bool) = false
+        u_RoughnessTexToggle("粗糙度贴图开关", Bool) = false
 
         // light
         u_LightDirection("光照方向", Vector3) = (1, 1, 1)
@@ -165,15 +165,15 @@ Shader "Custom/SimplePBR_Static"
                 {
                     vec3 u_CameraPosition = Prism_CameraPosition;
                     // Standard PBR inputs
-                    m_Params.Albedo = u_AlbedoTexToggle > 0.5 ? texture(u_AlbedoTexture, vs_Output.TexCoord).rgb : u_AlbedoColor; 
-                    m_Params.Metalness = u_MetalnessTexToggle > 0.5 ? texture(u_MetalnessTexture, vs_Output.TexCoord).r : u_Metalness;
-                    m_Params.Roughness = u_RoughnessTexToggle > 0.5 ?  texture(u_RoughnessTexture, vs_Output.TexCoord).r : u_Roughness;
+                    m_Params.Albedo = u_AlbedoTexToggle ? texture(u_AlbedoTexture, vs_Output.TexCoord).rgb : u_AlbedoColor; 
+                    m_Params.Metalness = u_MetalnessTexToggle ? texture(u_MetalnessTexture, vs_Output.TexCoord).r : u_Metalness;
+                    m_Params.Roughness = u_RoughnessTexToggle ?  texture(u_RoughnessTexture, vs_Output.TexCoord).r : u_Roughness;
                     m_Params.Roughness = max(m_Params.Roughness, 0.05); // Minimum roughness of 0.05 to keep specular highlight
 
                     m_Params.Albedo = mix(m_Params.Albedo, u_Color, 0.2);
                     // Normals (either from vertex or map)
                     m_Params.Normal = normalize(vs_Output.Normal);
-                    if (u_NormalTexToggle > 0.5)
+                    if (u_NormalTexToggle)
                     {
                         m_Params.Normal = normalize(2.0 * texture(u_NormalTexture, vs_Output.TexCoord).rgb - 1.0);
                         m_Params.Normal = normalize(vs_Output.WorldNormals * m_Params.Normal);

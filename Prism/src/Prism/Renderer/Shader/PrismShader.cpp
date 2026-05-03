@@ -57,6 +57,10 @@ namespace Prism
 		m_Shader.Reset(Shader::Create(m_Name, result.Passes[0].VertexShaderCode, result.Passes[0].FragmentShaderCode));
 		m_ShaderCommand = ParseShaderCommand(result.RenderCommand);
 
+		// Reset keyword/variant state (important for Reload)
+		m_Keywords.clear();
+		m_Variants.clear();
+
 		m_Declaration = PropertyBufferDeclaration();
 		for (const auto& prop : result.Properties)
 		{
@@ -99,6 +103,12 @@ namespace Prism
 			{
 				Color val = Parse<Color>(prop.DefaultValue);
 				m_DefaultValueBuffer.Write((byte*)&val, sizeof(Color), offset);
+				break;
+			}
+			case PropertyDeclarationType::Color3:
+			{
+				Vector3 val = Parse<Vector3>(prop.DefaultValue);
+				m_DefaultValueBuffer.Write((byte*)&val, sizeof(Vector3), offset);
 				break;
 			}
 			case PropertyDeclarationType::Float:
@@ -215,6 +225,43 @@ namespace Prism
 	{
 		return m_Shader;
 	}
+
+#pragma region Keyword / Variant
+
+	uint8_t PrismShader::GetKeywordIndex(const std::string& name) const
+	{
+		for (const auto& kw : m_Keywords)
+		{
+			if (kw.Name == name)
+				return kw.Index;
+		}
+		PR_CORE_ERROR("Keyword '{0}' is not defined in shader '{1}'", name, m_Name);
+		PR_CORE_ASSERT(false);
+		return 0xFF;
+	}
+
+	bool PrismShader::IsKeywordDefined(const std::string& name) const
+	{
+		for (const auto& kw : m_Keywords)
+		{
+			if (kw.Name == name)
+				return true;
+		}
+		return false;
+	}
+
+	Ref<Shader> PrismShader::GetVariant(KeywordMask mask) const
+	{
+		auto it = m_Variants.find(mask);
+		if (it != m_Variants.end())
+			return it->second.ShaderProgram;
+
+		if (mask != 0)
+			PR_CORE_WARN("Variant mask {0} not compiled for shader '{1}', falling back to base", mask, m_Name);
+		return m_Shader;
+	}
+
+#pragma endregion
 
 #pragma region Native uniforms
 

@@ -69,6 +69,28 @@ namespace Prism
 		}
 	}
 
+	void Material::SetKeyword(const std::string& name, bool enabled)
+	{
+		if (!m_Shader->IsKeywordDefined(name))
+		{
+			PR_CORE_WARN("Keyword '{0}' is not defined in shader '{1}'", name, m_Shader->GetName());
+			return;
+		}
+		uint8_t index = m_Shader->GetKeywordIndex(name);
+		if (enabled)
+			m_KeywordMask |= (KeywordMask(1) << index);
+		else
+			m_KeywordMask &= ~(KeywordMask(1) << index);
+	}
+
+	bool Material::IsKeywordEnabled(const std::string& name) const
+	{
+		if (!m_Shader->IsKeywordDefined(name))
+			return false;
+		uint8_t index = m_Shader->GetKeywordIndex(name);
+		return (m_KeywordMask & (KeywordMask(1) << index)) != 0;
+	}
+
 	const PropertyDeclaration* Material::FindPropertyDeclaration(const std::string& name) const
 	{
 		return m_Shader->GetDeclaration().FindProperty(name);
@@ -87,6 +109,7 @@ namespace Prism
 		: m_Material(material), m_Name(name)
 	{
 		m_Material->m_MaterialInstances.insert(this);
+		m_KeywordMask = m_Material->m_KeywordMask; // Inherit keyword state
 		AllocateStorage();
 	}
 
@@ -115,6 +138,30 @@ namespace Prism
 			auto& materialBuffer = m_Material->GetPropertyBuffer();
 			buffer.Write(materialBuffer.Data + decl->GetOffset(), decl->GetSize(), decl->GetOffset());
 		}
+	}
+
+	void MaterialInstance::SetKeyword(const std::string& name, bool enabled)
+	{
+		auto shader = m_Material->m_Shader;
+		if (!shader->IsKeywordDefined(name))
+		{
+			PR_CORE_WARN("Keyword '{0}' is not defined in shader '{1}'", name, shader->GetName());
+			return;
+		}
+		uint8_t index = shader->GetKeywordIndex(name);
+		if (enabled)
+			m_KeywordMask |= (KeywordMask(1) << index);
+		else
+			m_KeywordMask &= ~(KeywordMask(1) << index);
+	}
+
+	bool MaterialInstance::IsKeywordEnabled(const std::string& name) const
+	{
+		auto shader = m_Material->m_Shader;
+		if (!shader->IsKeywordDefined(name))
+			return false;
+		uint8_t index = shader->GetKeywordIndex(name);
+		return (m_KeywordMask & (KeywordMask(1) << index)) != 0;
 	}
 
 	void MaterialInstance::Bind()

@@ -3,6 +3,7 @@
 #include "Prism/Renderer/Shader.h"
 #include "ShaderPropertyDeclaration.h"
 #include "ShaderCommand.h"
+#include "ShaderVariant.h"
 #include "Prism/Renderer/Shader/Parser/ShaderParserData.h"
 #include <functional>
 #include <unordered_map>
@@ -48,6 +49,12 @@ namespace Prism
 		}
 		uint32_t GetTextureSlot(const std::string& name) const;
 
+	public: // Keyword / Variant API
+		const std::vector<ShaderKeyword>& GetKeywords() const { return m_Keywords; }
+		uint8_t GetKeywordIndex(const std::string& name) const;
+		bool IsKeywordDefined(const std::string& name) const;
+		Ref<Shader> GetVariant(KeywordMask mask) const;
+
 	public:
 		void SetMat4FromRenderThread(const std::string& name, const glm::mat4& value);
 		void SetInt(const std::string& name, int value);
@@ -63,7 +70,7 @@ namespace Prism
 	private:
 		std::string m_Name;
 		std::string m_FilePath;
-		Ref<Shader> m_Shader;
+		Ref<Shader> m_Shader; // Base shader (keyword mask = 0)
 
 		PropertyBufferDeclaration m_Declaration;
 		Buffer m_DefaultValueBuffer;
@@ -71,6 +78,10 @@ namespace Prism
 		ShaderCommand m_ShaderCommand;
 
 		std::vector<ShaderReloadedCallback> m_ReloadedCallbacks;
+
+		// Keyword / Variant data
+		std::vector<ShaderKeyword> m_Keywords;
+		std::unordered_map<KeywordMask, ShaderVariant> m_Variants;
 
 	public:
 		static std::vector<Ref<PrismShader>> s_AllShaders;

@@ -278,6 +278,9 @@ namespace Prism
 			case PropertyDeclarationType::Color:
 				UploadUniformFloat4(property.GetName(), *(glm::vec4*)&buffer.Data[offset]);
 				break;
+			case PropertyDeclarationType::Color3:
+				UploadUniformFloat3(property.GetName(), *(glm::vec3*)&buffer.Data[offset]);
+				break;
 			case PropertyDeclarationType::Float:
 				UploadUniformFloat(property.GetName(), *(float*)&buffer.Data[offset]);
 				break;

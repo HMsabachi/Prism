@@ -33,6 +33,7 @@ namespace Prism
 		{
 		case PropertyDeclarationType::Bool:		return sizeof(PropertyType::Bool);
 		case PropertyDeclarationType::Color:		return sizeof(PropertyType::Color);
+		case PropertyDeclarationType::Color3:	return sizeof(PropertyType::Vector3);
 		case PropertyDeclarationType::Enum:		return sizeof(PropertyType::Int);
 		case PropertyDeclarationType::Float:		return sizeof(PropertyType::Float);
 		case PropertyDeclarationType::Int:			return sizeof(PropertyType::Int);

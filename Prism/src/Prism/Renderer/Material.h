@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Shader/PrismShader.h"
+#include "Shader/ShaderVariant.h"
 #include <unordered_set>
 
 namespace Prism
@@ -16,6 +17,11 @@ namespace Prism
 		virtual ~Material();
 
 		void Bind();
+
+	// Keyword API
+	void SetKeyword(const std::string& name, bool enabled);
+	bool IsKeywordEnabled(const std::string& name) const;
+	KeywordMask GetKeywordMask() const { return m_KeywordMask; }
 
 #pragma region Set函数
 		template <typename T>
@@ -90,6 +96,7 @@ namespace Prism
 		Buffer m_PropertyBuffer;
 		ShaderCommand m_ShaderCommand;
 		std::vector<Ref<Texture>> m_Textures;
+		KeywordMask m_KeywordMask = 0;
 	};
 
 	class PRISM_API MaterialInstance : public RefCounted
@@ -102,6 +109,11 @@ namespace Prism
 		virtual ~MaterialInstance();
 
 		const std::string& GetName() const { return m_Name; }
+
+		// Keyword API
+		void SetKeyword(const std::string& name, bool enabled);
+		bool IsKeywordEnabled(const std::string& name) const;
+		KeywordMask GetKeywordMask() const { return m_KeywordMask; }
 
 #pragma region Set函数
 		template <typename T>
@@ -189,6 +201,7 @@ namespace Prism
 		std::string m_Name;
 
 		std::unordered_set<std::string> m_OverriddenValues;
+		KeywordMask m_KeywordMask = 0;
 	private:
 		glm::mat4 m_Transform{ 1.0f };
 	};

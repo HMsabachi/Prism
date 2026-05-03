@@ -20,6 +20,7 @@ namespace Prism
 	{
 		if (typeStr == "Bool") return PropertyDeclarationType::Bool;
 		if (typeStr == "Color") return PropertyDeclarationType::Color;
+		if (typeStr == "Color3") return PropertyDeclarationType::Color3;
 		if (typeStr == "Float") return PropertyDeclarationType::Float;
 		if (typeStr == "Int")   return PropertyDeclarationType::Int;
 		if (typeStr == "Vector2") return PropertyDeclarationType::Vector2;
@@ -51,6 +52,7 @@ namespace Prism
 		{
 		case PropertyDeclarationType::Bool:		return "uniform bool";
 		case PropertyDeclarationType::Color:		return "uniform vec4";
+		case PropertyDeclarationType::Color3:	return "uniform vec3";
 		case PropertyDeclarationType::Enum:		return "uniform int";
 		case PropertyDeclarationType::Float:		return "uniform float";
 		case PropertyDeclarationType::Int:			return "uniform int";
