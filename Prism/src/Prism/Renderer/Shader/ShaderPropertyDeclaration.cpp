@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "ShaderPropertyDeclaration.h"
 #include "Prism/Renderer/Renderer.h"
 

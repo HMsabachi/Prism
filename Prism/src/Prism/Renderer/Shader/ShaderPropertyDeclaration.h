@@ -21,8 +21,8 @@ namespace Prism
 	namespace PropertyType
 	{
 		typedef Type::Bool Bool;
-	typedef Type::Color Color;
-	typedef Type::Vector3 Color3;
+		typedef Type::Color Color;
+		typedef Type::Vector3 Color3;
 		typedef Type::Float Float;
 		typedef Type::Int Int;
 		typedef Type::Vector2 Vector2;

@@ -1,7 +1,8 @@
-﻿#pragma once
+#pragma once
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include "GLSLParser.h"
 
 namespace Prism
 {
@@ -52,9 +53,12 @@ namespace Prism
 		std::unordered_map<std::string, std::string> Tags;
 		std::vector<VertexAttributeDescriptor> Attributes;
 		std::string RawGLSL;
-		std::string ProcessedGLSL;
 		std::string VertexShaderCode;
 		std::string FragmentShaderCode;
+		size_t GLSLSourceLine = 0;
+
+		// Phase 3: GLSL 结构化解析结果
+		GLSLParseResult GLSL;
 	};
 
 	struct ParseResult
