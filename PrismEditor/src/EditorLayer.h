@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <Prism.h>
 
 #include "imgui/imgui.h"
@@ -52,6 +52,11 @@ namespace Prism
 		void ShowBoundingBoxes(bool show, bool onTop = false);
 		void UpdateWindowTitle(const std::string& sceneName);
 		void SelectEntity(Entity entity);
+		void DrawMaterialProperty(const PropertyDeclaration& prop, MaterialInstance& materialInstance);
+
+		void OpenScene();
+		void SaveScene();
+		void SaveSceneAs();
 	private:
 		std::pair<float, float> GetMouseViewportSpace();
 		std::pair<glm::vec3, glm::vec3> CastRay(float mx, float my);
@@ -69,6 +74,8 @@ namespace Prism
 
 		void OnScenePlay();
 		void OnSceneStop();
+
+		float GetSnapValue();
 	private:
 		std::vector<Ref<MaterialInstance>> m_MetalSphereMaterialInstances;
 		std::vector<Ref<MaterialInstance>> m_DielectricSphereMaterialInstances;
@@ -84,38 +91,6 @@ namespace Prism
 
 		Ref<Material> m_MeshMaterial;
 
-		struct AlbedoInput
-		{
-			glm::vec3 Color = { 0.972f, 0.96f, 0.915f }; // Silver, from https://docs.unrealengine.com/en-us/Engine/Rendering/Materials/PhysicallyBased
-			Ref<Texture2D> TextureMap;
-			bool SRGB = true;
-			bool UseTexture = false;
-		};
-		AlbedoInput m_AlbedoInput;
-
-		struct NormalInput
-		{
-			Ref<Texture2D> TextureMap;
-			bool UseTexture = false;
-		};
-		NormalInput m_NormalInput;
-
-		struct MetalnessInput
-		{
-			float Value = 1.0f;
-			Ref<Texture2D> TextureMap;
-			bool UseTexture = false;
-		};
-		MetalnessInput m_MetalnessInput;
-
-		struct RoughnessInput
-		{
-			float Value = 0.2f;
-			Ref<Texture2D> TextureMap;
-			bool UseTexture = false;
-		};
-		RoughnessInput m_RoughnessInput;
-
 		bool m_RadiancePrefilter = false;
 
 		float m_EnvMapRotation = 0.0f;
@@ -130,9 +105,10 @@ namespace Prism
 		Ref<Texture2D> m_CheckerboardTex;
 		Ref<Texture2D> m_PlayButtonTex;
 
-		glm::vec2 m_ViewportBounds[2]; 
+		glm::vec2 m_ViewportBounds[2];
 		int m_GizmoType = -1; //  no gizmo
 		float m_SnapValue = 0.5f;
+		float m_RotationSnapValue = 45.0f;
 		bool m_AllowViewportCameraEvents = true;
 		bool m_DrawOnTopBoundingBoxes = false;
 
@@ -142,6 +118,7 @@ namespace Prism
 		bool m_ViewportPanelMouseOver = false;
 		bool m_ViewportPanelFocused = false;
 		bool m_ReloadScriptOnPlay = false;
+		std::string m_SceneFilePath;
 
 		enum class SceneState
 		{

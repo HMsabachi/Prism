@@ -1,11 +1,15 @@
 ﻿#pragma once
 
 #include <glm/glm.hpp>
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 #include "Prism/Core/UUID.h"
 
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Scene/SceneCamera.h"
+#include "glm/gtx/quaternion.hpp"
 
 namespace Prism {
 
@@ -30,18 +34,31 @@ namespace Prism {
 
 	struct TransformComponent
 	{
-		glm::mat4 Transform;
+		glm::vec3 Position = { 0.0f, 0.0f, 0.0f };
+		glm::quat Rotation = { 1.0f, 0.0f, 0.0f, 0.0f }; // identity quaternion
+		glm::vec3 Scale    = { 1.0f, 1.0f, 1.0f };
 
 		TransformComponent() = default;
-		TransformComponent(const TransformComponent& other)
-			: Transform(other.Transform) {
-		}
-		TransformComponent(const glm::mat4& transform)
-			: Transform(transform) {
+		TransformComponent(const TransformComponent& other) = default;
+
+		explicit TransformComponent(const glm::mat4& transform)
+		{
+			SetTransform(transform);
 		}
 
-		operator glm::mat4& () { return Transform; }
-		operator const glm::mat4& () const { return Transform; }
+		glm::mat4 GetTransform() const
+		{
+			return glm::translate(glm::mat4(1.0f), Position)
+				 * glm::toMat4(Rotation)
+				 * glm::scale(glm::mat4(1.0f), Scale);
+		}
+
+		void SetTransform(const glm::mat4& mat)
+		{
+			glm::vec3 skew;
+			glm::vec4 perspective;
+			glm::decompose(mat, Scale, Rotation, Position, skew, perspective);
+		}
 	};
 
 	struct MeshComponent

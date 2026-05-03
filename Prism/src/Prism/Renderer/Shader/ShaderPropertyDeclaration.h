@@ -60,6 +60,7 @@ namespace Prism
 		PropertyDeclaration(PropertyDeclarationType type, const std::string& name, const std::string displayName, uint32_t count = 1);
 
 		const std::string& GetName() const { return m_Name; }
+		const std::string& GetDisplayName() const { return m_DisplayName; }
 		uint32_t GetSize() const { return m_Size; }
 		uint32_t GetCount() const { return m_Count; }
 		uint32_t GetOffset() const { return m_Offset; }

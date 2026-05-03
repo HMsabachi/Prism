@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "ScriptWrappers.h"
 #include "Prism/Core/Math/Noise.h"
 
@@ -101,7 +101,7 @@ namespace Prism {
 			PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
 			Entity entity = entityMap.at(entityID);
 			auto& transformComponent = entity.GetComponent<TransformComponent>();
-			memcpy(outTransform, glm::value_ptr(transformComponent.Transform), sizeof(glm::mat4));
+			memcpy(outTransform, glm::value_ptr(transformComponent.GetTransform()), sizeof(glm::mat4));
 		}
 
 		void Prism_Entity_SetTransform(uint64_t entityID, glm::mat4* inTransform)
@@ -112,7 +112,7 @@ namespace Prism {
 			PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
 			Entity entity = entityMap.at(entityID);
 			auto& transformComponent = entity.GetComponent<TransformComponent>();
-			memcpy(glm::value_ptr(transformComponent.Transform), inTransform, sizeof(glm::mat4));
+			transformComponent.SetTransform(*inTransform);
 		}
 
 		void Prism_Entity_CreateComponent(uint64_t entityID, Rolky::ReflectionType type)

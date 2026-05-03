@@ -11,6 +11,7 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
 
+#include <filesystem>
 #include <GLFW/glfw3.h>
 
 namespace Prism
@@ -42,7 +43,7 @@ namespace Prism
 	}
 	void ImGuiLayer::OnEvent(Event& event)
 	{
-		
+
 	}
 	void ImGuiLayer::Begin()
 	{
@@ -70,11 +71,11 @@ namespace Prism
 	}
 	void ImGuiLayer::OnImGuiRender()
 	{
-		
+
 	}
 #pragma endregion
 
-	
+
 #pragma region Private Methods 私有方法
 	void ImGuiLayer::InitializeImGui()
 	{
@@ -89,10 +90,9 @@ namespace Prism
 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // Enable viewports  启用viewports
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable keyboard navigation  启用键盘导航
 
-		// TODO: 调整字体
-		ImFont* pFont = io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\ARLRDBD.TTF", 23.0f);
+		ImFont* pFont = io.Fonts->AddFontFromFileTTF("Assets\\Fonts\\TTF\\LXGWWenKai-Medium.ttf", 25.0f, nullptr, io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
 		io.FontDefault = io.Fonts->Fonts.back();
-		
+
 		//SetKeyMap(io); // Set disable 暂时禁用
 		// When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
 		// 当 viewports 启用时，我们调整 WindowRounding/WindowBg 以使平台窗口看起来与常规窗口相同。
@@ -119,7 +119,5 @@ namespace Prism
 	}
 #pragma endregion
 
-	
+
 }
-
-

@@ -152,17 +152,7 @@ namespace Prism {
 	{
 	}
 
-	static std::tuple<glm::vec3, glm::quat, glm::vec3> GetTransformDecomposition(const glm::mat4& transform)
-	{
-		glm::vec3 scale, translation, skew;
-		glm::vec4 perspective;
-		glm::quat orientation;
-		glm::decompose(transform, scale, orientation, translation, skew, perspective);
-
-		return { translation, orientation, scale };
-	}
-
-	static void SerializeEntity(YAML::Emitter& out, Entity entity)
+		static void SerializeEntity(YAML::Emitter& out, Entity entity)
 	{
 		UUID uuid = entity.GetComponent<IDComponent>().ID;
 		out << YAML::BeginMap; // Entity
@@ -185,11 +175,10 @@ namespace Prism {
 			out << YAML::Key << "TransformComponent";
 			out << YAML::BeginMap; // TransformComponent
 
-			auto& transform = entity.GetComponent<TransformComponent>().Transform;
-			auto [pos, rot, scale] = GetTransformDecomposition(transform);
-			out << YAML::Key << "Position" << YAML::Value << pos;
-			out << YAML::Key << "Rotation" << YAML::Value << rot;
-			out << YAML::Key << "Scale" << YAML::Value << scale;
+			auto& tc = entity.GetComponent<TransformComponent>();
+			out << YAML::Key << "Position" << YAML::Value << tc.Position;
+			out << YAML::Key << "Rotation" << YAML::Value << tc.Rotation;
+			out << YAML::Key << "Scale" << YAML::Value << tc.Scale;
 
 			out << YAML::EndMap; // TransformComponent
 		}
@@ -425,13 +414,14 @@ namespace Prism {
 				if (transformComponent)
 				{
 					// Entities always have transforms
-					auto& transform = deserializedEntity.GetComponent<TransformComponent>().Transform;
+					auto& tc = deserializedEntity.GetComponent<TransformComponent>();
 					glm::vec3 translation = transformComponent["Position"].as<glm::vec3>();
 					glm::quat rotation = transformComponent["Rotation"].as<glm::quat>();
 					glm::vec3 scale = transformComponent["Scale"].as<glm::vec3>();
 
-					transform = glm::translate(glm::mat4(1.0f), translation) *
-						glm::toMat4(rotation) * glm::scale(glm::mat4(1.0f), scale);
+					tc.Position = translation;
+					tc.Rotation = rotation;
+					tc.Scale = scale;
 
 					PR_CORE_INFO("  Entity Transform:");
 					PR_CORE_INFO("    Translation: {0}, {1}, {2}", translation.x, translation.y, translation.z);
@@ -592,3 +582,4 @@ namespace Prism {
 	}
 
 }
+

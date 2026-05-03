@@ -130,16 +130,6 @@ namespace Prism
 #endif
 	}
 
-	static std::tuple<glm::vec3, glm::quat, glm::vec3> GetTransformDecomposition(const glm::mat4& transform)
-	{
-		glm::vec3 scale, translation, skew;
-		glm::vec4 perspective;
-		glm::quat orientation;
-		glm::decompose(transform, scale, orientation, translation, skew, perspective);
-
-		return { translation, orientation, scale };
-	}
-
 	void Scene::OnUpdate()
 	{
 		// Update all entities
@@ -165,22 +155,20 @@ namespace Prism
 			box2DWorld->Step(ts, velocityIterations, positionIterations);
 		}
 
+		// Sync Box2D positions back to entity transforms
 		{
 			auto view = m_Registry.view<RigidBody2DComponent>();
 			for (auto entity : view)
 			{
 				Entity e = { entity, this };
-				auto& transform = e.Transform();
+				auto& tc = e.Transform();
 				auto& rb2d = e.GetComponent<RigidBody2DComponent>();
 				b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
 
 				auto& position = body->GetPosition();
-				auto [translation, rotationQuat, scale] = GetTransformDecomposition(transform);
-				glm::vec3 rotation = glm::eulerAngles(rotationQuat);
-
-				transform = glm::translate(glm::mat4(1.0f), { position.x, position.y, transform[3].z }) *
-					glm::toMat4(glm::quat({ rotation.x, rotation.y, body->GetAngle() })) *
-					glm::scale(glm::mat4(1.0f), scale);
+				tc.Position.x = position.x;
+				tc.Position.y = position.y;
+				tc.Rotation = glm::quat({ 0.0f, 0.0f, body->GetAngle() });
 			}
 		}
 	}
@@ -190,11 +178,11 @@ namespace Prism
 		/////////////////////////////////////////////////////////////////////
 		// RENDER 3D SCENE
 		/////////////////////////////////////////////////////////////////////
-        float ts = Time::GetDeltaTime();
+		float ts = Time::GetDeltaTime();
 		Entity cameraEntity = GetMainCameraEntity();
 		if (!cameraEntity)
 			return;
-		glm::mat4 cameraViewMatrix = glm::inverse(cameraEntity.GetComponent<TransformComponent>().Transform);
+		glm::mat4 cameraViewMatrix = glm::inverse(cameraEntity.GetComponent<TransformComponent>().GetTransform());
 		PR_CORE_ASSERT(cameraEntity, "Scene does not contain any cameras!");
 		SceneCamera& camera = cameraEntity.GetComponent<CameraComponent>();
 		camera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
@@ -212,7 +200,7 @@ namespace Prism
 
 				// TODO: Should we render (logically)
 				Ref<MaterialInstance> overrideMaterial = m_Registry.any_of<MaterialComponent>(entity) ? m_Registry.get<MaterialComponent>(entity).Material : nullptr;
-					SceneRenderer::SubmitMesh(meshComponent, transformComponent, overrideMaterial);
+				SceneRenderer::SubmitMesh(meshComponent, transformComponent.GetTransform(), overrideMaterial);
 			}
 		}
 		SceneRenderer::EndScene();
@@ -227,9 +215,9 @@ namespace Prism
 			{
 				auto [transformComponent, spriteRendererComponent] = group.get<TransformComponent, SpriteRenderer>(entity);
 				if (spriteRendererComponent.Texture)
-					Renderer2D::DrawQuad(transformComponent.Transform, spriteRendererComponent.Texture, spriteRendererComponent.TilingFactor);
+					Renderer2D::DrawQuad(transformComponent.GetTransform(), spriteRendererComponent.Texture, spriteRendererComponent.TilingFactor);
 				else
-					Renderer2D::DrawQuad(transformComponent.Transform, spriteRendererComponent.Color);
+					Renderer2D::DrawQuad(transformComponent.GetTransform(), spriteRendererComponent.Color);
 			}
 		}
 
@@ -242,7 +230,7 @@ namespace Prism
 		/////////////////////////////////////////////////////////////////////
 		// RENDER 3D SCENE
 		/////////////////////////////////////////////////////////////////////
-        float ts = Time::GetDeltaTime();
+		float ts = Time::GetDeltaTime();
 		m_SkyboxMaterial->Set("u_TextureLod", m_SkyboxLod);
 
 		auto group = m_Registry.group<MeshComponent>(entt::get<TransformComponent>);
@@ -258,9 +246,9 @@ namespace Prism
 
 				Ref<MaterialInstance> overrideMaterial = m_Registry.any_of<MaterialComponent>(entity) ? m_Registry.get<MaterialComponent>(entity).Material : nullptr;
 				if (m_SelectedEntity == entity)
-					SceneRenderer::SubmitSelectedMesh(meshComponent, transformComponent);
+					SceneRenderer::SubmitSelectedMesh(meshComponent, transformComponent.GetTransform());
 				else
-					SceneRenderer::SubmitMesh(meshComponent, transformComponent, overrideMaterial);
+					SceneRenderer::SubmitMesh(meshComponent, transformComponent.GetTransform(), overrideMaterial);
 			}
 		}
 		SceneRenderer::EndScene();
@@ -275,9 +263,9 @@ namespace Prism
 			{
 				auto [transformComponent, spriteRendererComponent] = group.get<TransformComponent, SpriteRenderer>(entity);
 				if (spriteRendererComponent.Texture)
-					Renderer2D::DrawQuad(transformComponent.Transform, spriteRendererComponent.Texture, spriteRendererComponent.TilingFactor);
+					Renderer2D::DrawQuad(transformComponent.GetTransform(), spriteRendererComponent.Texture, spriteRendererComponent.TilingFactor);
 				else
-					Renderer2D::DrawQuad(transformComponent.Transform, spriteRendererComponent.Color);
+					Renderer2D::DrawQuad(transformComponent.GetTransform(), spriteRendererComponent.Color);
 			}
 		}
 
@@ -310,7 +298,7 @@ namespace Prism
 			for (auto entity : view)
 			{
 				Entity e = { entity, this };
-				auto& transform = e.Transform();
+				auto& tc = e.Transform();
 				auto& rigidBody2D = m_Registry.get<RigidBody2DComponent>(entity);
 
 				b2BodyDef bodyDef;
@@ -320,11 +308,8 @@ namespace Prism
 					bodyDef.type = b2_dynamicBody;
 				else if (rigidBody2D.BodyType == RigidBody2DComponent::Type::Kinematic)
 					bodyDef.type = b2_kinematicBody;
-				bodyDef.position.Set(transform[3].x, transform[3].y);
-
-				auto [translation, rotationQuat, scale] = GetTransformDecomposition(transform);
-				glm::vec3 rotation = glm::eulerAngles(rotationQuat);
-				bodyDef.angle = rotation.z;
+				bodyDef.position.Set(tc.Position.x, tc.Position.y);
+				bodyDef.angle = glm::eulerAngles(tc.Rotation).z;
 
 				b2Body* body = m_Registry.get<Box2DWorldComponent>(m_SceneEntity).World->CreateBody(&bodyDef);
 				body->SetFixedRotation(rigidBody2D.FixedRotation);
@@ -340,7 +325,6 @@ namespace Prism
 			for (auto entity : view)
 			{
 				Entity e = { entity, this };
-				auto& transform = e.Transform();
 
 				auto& boxCollider2D = m_Registry.get<BoxCollider2DComponent>(entity);
 				if (e.HasComponent<RigidBody2DComponent>())
@@ -366,7 +350,6 @@ namespace Prism
 			for (auto entity : view)
 			{
 				Entity e = { entity, this };
-				auto& transform = e.Transform();
 
 				auto& circleCollider2D = m_Registry.get<CircleCollider2DComponent>(entity);
 				if (e.HasComponent<RigidBody2DComponent>())
@@ -433,7 +416,7 @@ namespace Prism
 		auto& idComponent = entity.AddComponent<IDComponent>();
 		idComponent.ID = {};
 
-		entity.AddComponent<TransformComponent>(glm::mat4(1.0f));
+		entity.AddComponent<TransformComponent>();
 		if (!name.empty())
 			entity.AddComponent<TagComponent>(name);
 
@@ -446,7 +429,7 @@ namespace Prism
 		auto& idComponent = entity.AddComponent<IDComponent>();
 		idComponent.ID = uuid;
 
-		entity.AddComponent<TransformComponent>(glm::mat4(1.0f));
+		entity.AddComponent<TransformComponent>();
 		if (!name.empty())
 			entity.AddComponent<TagComponent>(name);
 

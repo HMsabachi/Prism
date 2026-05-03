@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Shader/PrismShader.h"
 #include <unordered_set>
