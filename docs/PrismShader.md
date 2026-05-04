@@ -177,7 +177,69 @@ GLSL
 
 ---
 
-### 5. 高级功能与注意事项
+### 5. 关键字与 Shader 变体系统
+
+**`#pragma shader_feature`** 允许在 GLSL 块中声明关键字，引擎会自动为每个关键字组合编译独立的 shader 变体。
+
+**语法**：
+```glsl
+GLSL
+{
+    #pragma shader_feature KEYWORD_A KEYWORD_B
+    // 每个关键字用空格分隔
+}
+```
+
+**引擎处理流程**：
+1. `GLSLParser::ParsePragmas()` 提取所有 `#pragma shader_feature` 行
+2. `PrismShader::Load()` 遍历所有 `2^N` 种关键字组合，分别注入 `#define KEYWORD` 后编译
+3. 通过 `Material::SetKeyword(name, enabled)` / `MaterialInstance::SetKeyword(name, enabled)` 运行时切换
+4. `Material::Bind()` 根据当前 `KeywordMask` 通过 `PrismShader::GetVariant(mask)` 选择对应变体
+
+**示例**（来自 PrismPBR_Static.Shader）：
+```glsl
+#pragma shader_feature ALBEDO_MAP NORMAL_MAP METALNESS_MAP ROUGHNESS_MAP
+```
+
+```glsl
+void frag()
+{
+#ifdef ALBEDO_MAP
+    m_Params.Albedo = texture(u_AlbedoTexture, vs_Output.TexCoord).rgb;
+#else
+    m_Params.Albedo = u_AlbedoColor;
+#endif
+    // ... 其他关键字分支 ...
+}
+```
+
+**Material 用法**（C++）：
+```cpp
+materialInstance->SetKeyword("ALBEDO_MAP", true);    // 启用
+materialInstance->SetKeyword("NORMAL_MAP", false);    // 禁用
+bool enabled = materialInstance->IsKeywordEnabled("ALBEDO_MAP");
+```
+
+**C# 用法**：
+```csharp
+materialInstance.SetKeyword("ALBEDO_MAP", true);
+bool enabled = materialInstance.IsKeywordEnabled("ALBEDO_MAP");
+material.SetKeyword("ALBEDO_MAP", false);
+```
+
+**编辑器支持**：Material 面板自动列出所有关键字，显示为 Checkbox：
+
+![Keyword UI](Screenshot/EditorKeywordUI.png)
+
+**注意事项**：
+- 关键字数量上限为 **64**（`KeywordMask = uint64_t`）
+- 超过 **10 个关键字**会跳过变体编译（`2^10 = 1024` 已接近上限），并打印警告
+- 每个变体是独立的 GL 程序，编译开销为 `O(2^N)`，不要滥用
+- 推荐的使用场景：纹理开关、渲染模式切换、调试可视化
+
+---
+
+### 6. 高级功能与注意事项
 
 - **#include**：支持相对路径，`ResolveIncludes` 递归处理，历史记录防循环。
 - **多 Pass**：`SubShader` 内可写多个 `Pass`，解析器会全部收集。
@@ -188,7 +250,7 @@ GLSL
 
 ---
 
-### 6. 完整最小示例
+### 7. 完整最小示例
 
 ```glsl
 Shader "Prism/Unlit"

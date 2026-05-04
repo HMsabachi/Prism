@@ -48,6 +48,7 @@ premake5 xcode4        # macOS Xcode
 - InternalCall 自动绑定机制
 - 编辑器运行时脚本热重载（支持 Play 时自动重载）
 - C# 端完整 API：Input、Time、Log、Math（Vector2/3/4、Matrix4）、Renderer（Material、Mesh、Texture2D）
+- C# 材质 API：`MaterialInstance.Set/GetMaterial`、`SetOverrideMaterial`、`SetKeyword/IsKeywordEnabled`
 - C# 端物理 API：`RigidBody2DComponent.ApplyLinearImpulse`
 - 示例脚本：MapGenerator（程序化地形）、PlayerCube（物理控制）、BasicController（相机移动）、Sink（下沉平台）、RandomColor（随机颜色）
 
@@ -60,6 +61,7 @@ premake5 xcode4        # macOS Xcode
 - 计算着色器（Compute Shader）与 SSBO
 - HDR 渲染 + MSAA 多重采样
 - Prism Shader Language (PSL) — 自定义着色器语言，支持 Properties、RenderCommand、多 Pass
+- **Shader 变体系统** — `#pragma shader_feature` + 自动编译 2^N 变体，`KeywordMask` 位掩码切换
 - 模板测试封装与 Stencil Buffer 物体描边（Outline）
 - OpenGLStateCache 渲染状态统一管理
 - RenderPass 系统与多线程命令队列
@@ -75,7 +77,8 @@ premake5 xcode4        # macOS Xcode
 - 包围盒可视化开关
 - 2D 物理组件面板（RigidBody2D、BoxCollider2D、CircleCollider2D）
 - 物理碰撞体调试绘制（Play 模式下渲染碰撞体边框）
-- 材质面板（显示网格材质层级与着色器信息）
+- 材质面板（显示网格材质层级、着色器切换下拉框、关键字 Checkbox、属性实时编辑）
+- Shader 关键字可视化开关（Material 面板自动列出所有 `#pragma shader_feature`）
 - Physics2D 重力参数实时调节
 - ImGui Property 系统支持 Slider/Drag/Color 三种控件模式
 

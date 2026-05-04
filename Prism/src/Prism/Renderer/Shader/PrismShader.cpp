@@ -1,4 +1,4 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "PrismShader.h"
 #include "Prism/Renderer/Shader/Parser/ShaderParser.h"
 #include "Prism/Utilities/Utilities.h"
