@@ -29,7 +29,8 @@
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Renderer2D.h"
 #include "Prism/Renderer/RenderPass.h"
-#include "Prism/Renderer/VertexArray.h"
+#include "Prism/Renderer/Pipeline.h"
+#include "Prism/Renderer/Buffer/IndexBuffer.h"
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Material.h"
 

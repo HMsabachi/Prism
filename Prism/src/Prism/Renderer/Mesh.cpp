@@ -462,11 +462,11 @@ namespace Prism {
 			PR_MESH_LOG("------------------------------");
 		}
 
-		m_VertexArray = VertexArray::Create();
+		VertexBufferLayout vertexLayout;
 		if (m_IsAnimated)
 		{
-			auto vb = VertexBuffer::Create(m_AnimatedVertices.data(), m_AnimatedVertices.size() * sizeof(AnimatedVertex));
-			vb->SetLayout({
+			m_VertexBuffer = VertexBuffer::Create(m_AnimatedVertices.data(), m_AnimatedVertices.size() * sizeof(AnimatedVertex));
+			vertexLayout = {
 				{ ShaderDataType::Float3, "a_Position" , VertexSemantic::Position},
 				{ ShaderDataType::Float3, "a_Normal" , VertexSemantic::Normal},
 				{ ShaderDataType::Float3, "a_Tangent", VertexSemantic::Tangent },
@@ -474,24 +474,27 @@ namespace Prism {
 				{ ShaderDataType::Float2, "a_TexCoord", VertexSemantic::TexCoord0 },
 				{ ShaderDataType::Int4, "a_BoneIDs", VertexSemantic::BoneIndices },
 				{ ShaderDataType::Float4, "a_BoneWeights", VertexSemantic::BoneWeights },
-				});
-			m_VertexArray->AddVertexBuffer(vb);
+			};
+			m_VertexBuffer->SetLayout(vertexLayout);
 		}
 		else
 		{
-			auto vb = VertexBuffer::Create(m_StaticVertices.data(), m_StaticVertices.size() * sizeof(Vertex));
-			vb->SetLayout({
+			m_VertexBuffer = VertexBuffer::Create(m_StaticVertices.data(), m_StaticVertices.size() * sizeof(Vertex));
+			vertexLayout = {
 				{ ShaderDataType::Float3, "a_Position" , VertexSemantic::Position},
 				{ ShaderDataType::Float3, "a_Normal" , VertexSemantic::Normal},
 				{ ShaderDataType::Float3, "a_Tangent", VertexSemantic::Tangent },
 				{ ShaderDataType::Float3, "a_Binormal", VertexSemantic::Binormal },
 				{ ShaderDataType::Float2, "a_TexCoord", VertexSemantic::TexCoord0 },
-				});
-			m_VertexArray->AddVertexBuffer(vb);
+			};
+			m_VertexBuffer->SetLayout(vertexLayout);
 		}
 
-		auto ib = IndexBuffer::Create(m_Indices.data(), m_Indices.size() * sizeof(Index));
-		m_VertexArray->SetIndexBuffer(ib);
+		m_IndexBuffer = IndexBuffer::Create(m_Indices.data(), m_Indices.size() * sizeof(Index));
+
+		PipelineSpecification pipelineSpec;
+		pipelineSpec.Layout = vertexLayout;
+		m_Pipeline = Pipeline::Create(pipelineSpec);
 	}
 
 	Mesh::~Mesh()

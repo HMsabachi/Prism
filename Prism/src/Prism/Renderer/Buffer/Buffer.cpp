@@ -1,6 +1,6 @@
 ﻿#include "prpch.h"
 
-#include "Platform/OpenGL/Buffer/OpenGLBuffer.h"
+#include "Platform/OpenGL/Buffer/OpenGLVertexBuffer.h"
 #include "../Renderer.h"
 
 namespace Prism {
@@ -21,27 +21,6 @@ namespace Prism {
 		case RendererAPIType::None:    return nullptr;
 		case RendererAPIType::OpenGL:  return Ref<OpenGLVertexBuffer>::Create(size, usage);
 		}
-		return nullptr;
-	}
-
-	Ref<IndexBuffer> IndexBuffer::Create(void* data, uint32_t size)
-	{
-		switch (RendererAPI::Current())
-		{
-		case RendererAPIType::None:    return nullptr;
-		case RendererAPIType::OpenGL:  return Ref<OpenGLIndexBuffer>::Create(data, size);
-		}
-		return nullptr;
-
-	}
-	Ref<IndexBuffer> IndexBuffer::Create(uint32_t size)
-	{
-		switch (RendererAPI::Current())
-		{
-		case RendererAPIType::None:    return nullptr;
-		case RendererAPIType::OpenGL:  return Ref<OpenGLIndexBuffer>::Create(size);
-		}
-		PR_CORE_ASSERT(false, "Unknown RendererAPI");
 		return nullptr;
 	}
 
@@ -67,7 +46,7 @@ namespace Prism {
 		PR_CORE_ASSERT(false, "Unknown ShaderDataType!");
 		return 0;
 	}
-	uint32_t BufferElement::GetComponentCount() const
+	uint32_t VertexBufferElement::GetComponentCount() const
 	{
 		switch (Type)
 		{
