@@ -7,7 +7,8 @@ namespace Prism
 	float Time::s_DeltaTime = 0.0f;
 	float Time::s_UnscaledDeltaTime = 0.0f;
 	float Time::s_Time = 0.0f;
-	float Time::s_FixedDeltaTime = 0.0f;
+	float Time::s_FixedDeltaTime = 1.0f / 60.0f; // Default 50Hz
+	float Time::s_ActualFixedDeltaTime = 0.0f;
 	float Time::s_UnscaledTime = 0.0f;
 	float Time::s_TimeScale = 1.0f;
 	long long Time::s_FrameCount = 0;
@@ -55,7 +56,8 @@ namespace Prism
 
         if (accumulated >= s_FixedDeltaTime)
         {
-            s_LastFixedTime = now;   // 简单实现：直接重置（更精确的可累积剩余时间）
+            s_ActualFixedDeltaTime = accumulated; // 记录实际经过的时间
+            s_LastFixedTime = now;
             return true;
         }
         return false;
@@ -65,6 +67,12 @@ namespace Prism
     {
         Init();  // 重新初始化所有时间
     }
+
+	void Time::SetFixedDeltaTime(float fixedDeltaTime) noexcept
+	{
+		PR_CORE_ASSERT(fixedDeltaTime > 0.0f, "FixedDeltaTime must be positive!");
+		s_FixedDeltaTime = fixedDeltaTime;
+	}
 
 	void Time::SetTimeScale(float scale) noexcept
 	{

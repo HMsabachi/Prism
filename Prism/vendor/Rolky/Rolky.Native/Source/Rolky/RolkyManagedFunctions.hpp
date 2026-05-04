@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Rolky/Core.hpp"
 #include "Rolky/String.hpp"
@@ -43,6 +43,7 @@ namespace Rolky {
 	using GetTypeFieldsFn = void (*)(TypeId, ManagedHandle*, int32_t*);
 	using GetTypePropertiesFn = void (*)(TypeId, ManagedHandle*, int32_t*);
 	using HasTypeAttributeFn = Bool32 (*)(TypeId, TypeId);
+	using HasTypeMethodFn = Bool32 (*)(TypeId, String);
 	using GetTypeAttributesFn = void (*)(ManagedHandle, TypeId*, int32_t*);
 	using GetTypeManagedTypeFn = ManagedType (*)(TypeId);
 
@@ -121,6 +122,7 @@ namespace Rolky {
 		GetTypeFieldsFn GetTypeFieldsFptr = nullptr;
 		GetTypePropertiesFn GetTypePropertiesFptr = nullptr;
 		HasTypeAttributeFn HasTypeAttributeFptr = nullptr;
+		HasTypeMethodFn HasTypeMethodFptr = nullptr;
 		GetTypeAttributesFn GetTypeAttributesFptr = nullptr;
 		GetTypeManagedTypeFn GetTypeManagedTypeFptr = nullptr;
 

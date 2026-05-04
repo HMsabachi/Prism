@@ -22,6 +22,14 @@ namespace Prism
 		PR_CORE_ERROR("[Rolky] {0}", message);
 	}
 
+    static enum ScriptMethods
+    {
+        Script_None = 0,
+        Script_OnCreate = BIT(0),
+        Script_OnUpdate = BIT(1),
+        Script_OnFixedUpdate = BIT(2),
+    };
+
 	static std::vector<Rolky::ManagedObject> AllObjects;
 	static std::unordered_map<std::string, Rolky::Type> s_EntityClassMap;
 	static EntityInstanceMap s_EntityInstanceMap;
@@ -306,18 +314,24 @@ namespace Prism
 	}
 	void ScriptEngine::OnCreateEntity(UUID sceneID, UUID entityID)
 	{
+        PR_PROFILE_FUNCTION();
 		EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
-		entityInstance.Object->InvokeMethod("OnCreate");
+        if (entityInstance.ScriptClass->HasMethod("OnCreate"))
+            entityInstance.Object->InvokeMethod("OnCreate");
 	}
 	void ScriptEngine::OnUpdateEntity(UUID sceneID, UUID entityID, float ts)
 	{
-		EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
-		entityInstance.Object->InvokeMethod("OnUpdate");
+        PR_PROFILE_FUNCTION();
+        EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
+        if (entityInstance.ScriptClass->HasMethod("OnUpdate"))
+            entityInstance.Object->InvokeMethod("OnUpdate");
 	}
 	void ScriptEngine::OnFixedUpdateEntity(UUID sceneID, UUID entityID)
 	{
-		EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
-		//entityInstance.Object->InvokeMethod("OnFixedUpdate");
+        PR_PROFILE_FUNCTION();
+        EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
+        if (entityInstance.ScriptClass->HasMethod("OnFixedUpdate"))
+		    entityInstance.Object->InvokeMethod("OnFixedUpdate");
 	}
 	void ScriptEngine::OnCollision2DBegin(Entity entity)
 	{
@@ -325,7 +339,8 @@ namespace Prism
 	}
 	void ScriptEngine::OnCollision2DBegin(UUID sceneID, UUID entityID)
 	{
-		EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
+        PR_PROFILE_FUNCTION();
+        EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
 		entityInstance.Object->InvokeMethod("OnCollision2DBegin", 5.0f);
 	}
 	void ScriptEngine::OnCollision2DEnd(Entity entity)
@@ -334,7 +349,8 @@ namespace Prism
 	}
 	void ScriptEngine::OnCollision2DEnd(UUID sceneID, UUID entityID)
 	{
-		EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
+        PR_PROFILE_FUNCTION();
+        EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
 		entityInstance.Object->InvokeMethod("OnCollision2DEnd", 5.0f);
 	}
 	void ScriptEngine::OnScriptComponentDestroyed(UUID sceneID, UUID entityID)
@@ -430,6 +446,7 @@ namespace Prism
 		entityInstance.Object = std::make_unique<Rolky::ManagedObject>();
         *entityInstance.Object = entityInstance.ScriptClass->CreateInstance();
 		entityInstance.Object->SetPropertyValue("ID", id);
+        
 
 		// 将所有公共字段设置为适当的值
 		ScriptModuleFieldMap& moduleFieldMap = entityInstanceData.ModuleFieldMap;

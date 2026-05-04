@@ -167,6 +167,9 @@ namespace Prism
         public static Vector3 operator *(Vector3 a, float d)
             => new(a.X * d, a.Y * d, a.Z * d);
 
+        public static Vector3 operator *(Vector3 a, Vector3 b)
+            => new(a.X * b.X, a.Y * b.Y, a.Z * b.Z);
+
         public static Vector3 operator *(float d, Vector3 a)
             => new(a.X * d, a.Y * d, a.Z * d);
 

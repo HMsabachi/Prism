@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Prism/Core/Core.h"
 
 #include <string>
@@ -58,7 +58,7 @@ namespace Prism {
 	};
 }
 
-#define PR_PROFILE 0
+#define PR_PROFILE 1
 #if PR_PROFILE
 #define PR_PROFILE_BEGIN_SESSION(name, filepath) ::Prism::Instrumentor::Get().BeginSession(name, filepath)
 #define PR_PROFILE_END_SESSION() ::Prism::Instrumentor::Get().EndSession()

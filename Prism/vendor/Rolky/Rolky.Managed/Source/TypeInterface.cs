@@ -483,6 +483,27 @@ internal static class TypeInterface
 	}
 
 	[UnmanagedCallersOnly]
+	internal static unsafe Bool32 HasTypeMethod(int InType, NativeString InMethodName)
+	{
+		try
+		{
+			if (!s_CachedTypes.TryGetValue(InType, out var type) || type == null)
+				return false;
+
+			string? methodName = InMethodName;
+			if (methodName == null)
+				return false;
+
+			return type.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static) != null;
+		}
+		catch (Exception ex)
+		{
+			HandleException(ex);
+			return false;
+		}
+	}
+
+	[UnmanagedCallersOnly]
 	internal static unsafe void GetTypeAttributes(int InType, int* OutAttributes, int* OutAttributesCount)
 	{
 		try

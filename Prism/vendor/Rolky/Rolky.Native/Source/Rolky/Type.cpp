@@ -115,6 +115,12 @@ namespace Rolky {
 		return properties;
 	}
 
+	bool Type::HasMethod(std::string_view InMethodName) const
+	{
+		ScopedString methodName = String::New(InMethodName);
+		return s_ManagedFunctions.HasTypeMethodFptr(m_Id, methodName);
+	}
+
 	bool Type::HasAttribute(const Type& InAttributeType) const
 	{
 		return s_ManagedFunctions.HasTypeAttributeFptr(m_Id, InAttributeType.m_Id);

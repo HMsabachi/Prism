@@ -183,6 +183,8 @@ namespace Prism
 		if (!Time::ShouldFixedUpdate())
 			return;
 
+        float ts = Time::GetFixedDeltaTime();
+
 		// Box2D physics step
 		{
 			auto view = m_Registry.view<Box2DWorldComponent>();
@@ -191,7 +193,7 @@ namespace Prism
 				auto& box2DWorld = m_Registry.get<Box2DWorldComponent>(view.front()).World;
 				int32_t velocityIterations = 6;
 				int32_t positionIterations = 2;
-				box2DWorld->Step(Time::GetFixedDeltaTime(), velocityIterations, positionIterations);
+				box2DWorld->Step(ts, velocityIterations, positionIterations);
 			}
 		}
 
@@ -218,7 +220,7 @@ namespace Prism
 			if (!physxView.empty())
 			{
 				physx::PxScene* physxScene = m_Registry.get<PhysXSceneComponent>(physxView.front()).World;
-				physxScene->simulate(Time::GetFixedDeltaTime());
+				physxScene->simulate(ts);
 				physxScene->fetchResults(true);
 			}
 		}

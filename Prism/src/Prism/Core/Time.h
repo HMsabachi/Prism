@@ -17,11 +17,12 @@ namespace Prism
 		static float GetUnscaledDeltaTime() noexcept { return s_UnscaledDeltaTime; }
 		static float GetTime() noexcept { return s_Time; }
 		static float GetUnscaledTime() noexcept { return s_UnscaledTime; }
-		static float GetFixedDeltaTime() noexcept { return s_FixedDeltaTime; }
+		static float GetFixedDeltaTime() noexcept { return s_ActualFixedDeltaTime; }
 		static long long GetFrameCount() noexcept { return s_FrameCount; }
 		static bool ShouldFixedUpdate();
 	public:
 		static void SetTimeScale(float scale) noexcept;
+		static void SetFixedDeltaTime(float fixedDeltaTime) noexcept;
 		static float GetTimeScale() noexcept { return s_TimeScale; }
 	private:
 		static void Init();
@@ -33,6 +34,7 @@ namespace Prism
 		static float s_Time;
 		static float s_UnscaledTime;
 		static float s_FixedDeltaTime;
+		static float s_ActualFixedDeltaTime;
 		static float s_TimeScale;
 		static long long s_FrameCount;
 

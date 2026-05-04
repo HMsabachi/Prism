@@ -31,6 +31,7 @@ namespace Rolky {
 		std::vector<PropertyInfo> GetProperties() const;
 
 		bool HasAttribute(const Type& InAttributeType) const;
+		bool HasMethod(std::string_view InMethodName) const;
 		std::vector<Attribute> GetAttributes() const;
 
 		ManagedType GetManagedType() const;

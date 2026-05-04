@@ -1,4 +1,4 @@
-﻿#include "Rolky/HostInstance.hpp"
+#include "Rolky/HostInstance.hpp"
 #include "Rolky/StringHelper.hpp"
 #include "Rolky/TypeCache.hpp"
 
@@ -326,6 +326,7 @@ namespace Rolky {
 		s_ManagedFunctions.GetTypeFieldsFptr = LoadRolkyManagedFunctionPtr<GetTypeFieldsFn>(ROLKY_STR("Rolky.Managed.TypeInterface, Rolky.Managed"), ROLKY_STR("GetTypeFields"));
 		s_ManagedFunctions.GetTypePropertiesFptr = LoadRolkyManagedFunctionPtr<GetTypePropertiesFn>(ROLKY_STR("Rolky.Managed.TypeInterface, Rolky.Managed"), ROLKY_STR("GetTypeProperties"));
 		s_ManagedFunctions.HasTypeAttributeFptr = LoadRolkyManagedFunctionPtr<HasTypeAttributeFn>(ROLKY_STR("Rolky.Managed.TypeInterface, Rolky.Managed"), ROLKY_STR("HasTypeAttribute"));
+		s_ManagedFunctions.HasTypeMethodFptr = LoadRolkyManagedFunctionPtr<HasTypeMethodFn>(ROLKY_STR("Rolky.Managed.TypeInterface, Rolky.Managed"), ROLKY_STR("HasTypeMethod"));
 		s_ManagedFunctions.GetTypeAttributesFptr = LoadRolkyManagedFunctionPtr<GetTypeAttributesFn>(ROLKY_STR("Rolky.Managed.TypeInterface, Rolky.Managed"), ROLKY_STR("GetTypeAttributes"));
 		s_ManagedFunctions.GetTypeManagedTypeFptr = LoadRolkyManagedFunctionPtr<GetTypeManagedTypeFn>(ROLKY_STR("Rolky.Managed.TypeInterface, Rolky.Managed"), ROLKY_STR("GetTypeManagedType"));
 		s_ManagedFunctions.InvokeStaticMethodFptr = LoadRolkyManagedFunctionPtr<InvokeStaticMethodFn>(ROLKY_STR("Rolky.Managed.ManagedObject, Rolky.Managed"), ROLKY_STR("InvokeStaticMethod"));
