@@ -72,6 +72,7 @@ namespace Prism
 		PR_ADD_INTERNAL_CALL(Prism_Entity_SetTransform);
 		PR_ADD_INTERNAL_CALL(Prism_Entity_CreateComponent);
 		PR_ADD_INTERNAL_CALL(Prism_Entity_HasComponent);
+		PR_ADD_INTERNAL_CALL(Prism_Entity_FindEntityByTag);
 		// Mesh
 		PR_ADD_INTERNAL_CALL(Prism_MeshComponent_GetMesh);
 		PR_ADD_INTERNAL_CALL(Prism_MeshComponent_SetMesh);
@@ -91,9 +92,6 @@ namespace Prism
 		PR_ADD_INTERNAL_CALL(Prism_RigidBody2DComponent_ApplyLinearImpulse);
 		PR_ADD_INTERNAL_CALL(Prism_RigidBody2DComponent_GetLinearVelocity);
 		PR_ADD_INTERNAL_CALL(Prism_RigidBody2DComponent_SetLinearVelocity);
-
-		// Entity
-		PR_ADD_INTERNAL_CALL(Prism_Entity_FindEntityByTag);
 		// TransformComponent
 		PR_ADD_INTERNAL_CALL(Prism_TransformComponent_GetTransform);
 		PR_ADD_INTERNAL_CALL(Prism_TransformComponent_GetPosition);

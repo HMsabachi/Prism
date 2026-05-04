@@ -1,4 +1,4 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "RenderPass.h"
 
 #include "Renderer.h"
@@ -7,16 +7,16 @@
 
 namespace Prism {
 
-	Ref<RenderPass> RenderPass::Create(const RenderPassSpecification& spec)
-	{
-		switch (RendererAPI::Current())
-		{
-		case RendererAPIType::None:    PR_CORE_ASSERT(false, "RendererAPI::None is currently not supported!"); return nullptr;
-		case RendererAPIType::OpenGL:  return Ref<OpenGLRenderPass>::Create(spec);
-		}
+    Ref<RenderPass> RenderPass::Create(const RenderPassSpecification& spec)
+    {
+        switch (RendererAPI::Current())
+        {
+        case RendererAPIType::None:    PR_CORE_ASSERT(false, "RendererAPI::None is currently not supported!"); return nullptr;
+        case RendererAPIType::OpenGL:  return Ref<OpenGLRenderPass>::Create(spec);
+        }
 
-		PR_CORE_ASSERT(false, "Unknown RendererAPI!");
-		return nullptr;
-	}
+        PR_CORE_ASSERT(false, "Unknown RendererAPI!");
+        return nullptr;
+    }
 
 }

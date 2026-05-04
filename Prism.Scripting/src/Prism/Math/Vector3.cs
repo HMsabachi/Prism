@@ -148,6 +148,13 @@ namespace Prism
             return vector;
         }
 
+        // Component-wise math — used by Quaternion euler constructor
+        public static Vector3 Cos(Vector3 v)
+            => new(MathF.Cos(v.X), MathF.Cos(v.Y), MathF.Cos(v.Z));
+
+        public static Vector3 Sin(Vector3 v)
+            => new(MathF.Sin(v.X), MathF.Sin(v.Y), MathF.Sin(v.Z));
+
         public static Vector3 operator +(Vector3 a, Vector3 b)
             => new(a.X + b.X, a.Y + b.Y, a.Z + b.Z);
 

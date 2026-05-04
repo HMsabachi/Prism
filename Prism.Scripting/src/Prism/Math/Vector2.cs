@@ -103,6 +103,9 @@ namespace Prism
             Y = Math.Clamp(Y, min.Y, max.Y);
         }
 
+        public static bool EpsilonEquals(Vector2 a, Vector2 b)
+            => MathF.Abs(a.X - b.X) < 1e-6f && MathF.Abs(a.Y - b.Y) < 1e-6f;
+
         public static Vector2 operator +(Vector2 a, Vector2 b)
             => new(a.X + b.X, a.Y + b.Y);
 
