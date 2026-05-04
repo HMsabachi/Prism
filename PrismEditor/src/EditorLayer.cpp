@@ -121,6 +121,7 @@ namespace Prism
 			m_SceneHierarchyPanel->SetEntityDeletedCallback(std::bind(&EditorLayer::OnEntityDeleted, this, std::placeholders::_1));
 			SceneSerializer serializer(m_EditorScene);
 			serializer.Deserialize("Assets/Scenes/Physics2D-Game.psc");
+			m_SceneFilePath = "Assets/Scenes/Physics2D-Game.psc";
 		}
 
 		void EditorLayer::OnDetach()

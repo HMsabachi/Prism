@@ -1,4 +1,4 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "ScriptWrappers.h"
 #include "Prism/Core/Math/Noise.h"
 
@@ -25,6 +25,15 @@ namespace Prism {
 namespace Prism {
 	namespace Script
 	{
+
+		static Entity GetEntityFromEntityID(uint64_t entityID)
+		{
+			Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
+			PR_CORE_ASSERT(scene, "No active scene!");
+			const auto& entityMap = scene->GetEntityMap();
+			PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
+			return entityMap.at(entityID);
+		}
 
 
 #pragma region Log
@@ -95,48 +104,33 @@ namespace Prism {
 		};
 		void Prism_Entity_GetTransform(uint64_t entityID, glm::mat4* outTransform)
 		{
-			Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
-			PR_CORE_ASSERT(scene, "No active scene!");
-			const auto& entityMap = scene->GetEntityMap();
-			PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
-			Entity entity = entityMap.at(entityID);
+			Entity entity = GetEntityFromEntityID(entityID);
 			auto& transformComponent = entity.GetComponent<TransformComponent>();
 			memcpy(outTransform, glm::value_ptr(transformComponent.GetTransform()), sizeof(glm::mat4));
 		}
 
 		void Prism_Entity_SetTransform(uint64_t entityID, glm::mat4* inTransform)
 		{
-			Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
-			PR_CORE_ASSERT(scene, "No active scene!");
-			const auto& entityMap = scene->GetEntityMap();
-			PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
-			Entity entity = entityMap.at(entityID);
+			Entity entity = GetEntityFromEntityID(entityID);
 			auto& transformComponent = entity.GetComponent<TransformComponent>();
 			transformComponent.SetTransform(*inTransform);
 		}
 
 		void Prism_Entity_CreateComponent(uint64_t entityID, Rolky::ReflectionType type)
 		{
-			Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
-			PR_CORE_ASSERT(scene, "No active scene!");
-			const auto& entityMap = scene->GetEntityMap();
-			PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
-			Entity entity = entityMap.at(entityID);
+			Entity entity = GetEntityFromEntityID(entityID);
 			Rolky::Type mType = type;
 			s_CreateComponentFuncs[mType.GetTypeId()](entity);
 		}
 
 		bool Prism_Entity_HasComponent(uint64_t entityID, Rolky::ReflectionType type)
 		{
-			Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
-			PR_CORE_ASSERT(scene, "No active scene!");
-			const auto& entityMap = scene->GetEntityMap();
-			PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
-			Entity entity = entityMap.at(entityID);
+			Entity entity = GetEntityFromEntityID(entityID);
 			Rolky::Type mType = type;
 			bool result = s_HasComponentFuncs[mType.GetTypeId()](entity);
 			return result;
 		}
+
 		uint64_t Prism_Entity_FindEntityByTag(Rolky::String tag)
 		{
 			Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
@@ -156,25 +150,77 @@ namespace Prism {
 
 #pragma endregion
 
+#pragma region TransformComponent
+		void Prism_TransformComponent_GetTransform(uint64_t entityID, glm::mat4* outTransform)
+		{
+			Entity entity = GetEntityFromEntityID(entityID);
+			auto& transformComponent = entity.GetComponent<TransformComponent>();
+			memcpy(outTransform, glm::value_ptr(transformComponent.GetTransform()), sizeof(glm::mat4));
+		}
+
+		void Prism_TransformComponent_GetPosition(uint64_t entityID, glm::vec3* outPosition)
+		{
+			Entity entity = GetEntityFromEntityID(entityID);
+			auto& transformComponent = entity.GetComponent<TransformComponent>();
+			memcpy(outPosition, &transformComponent.Position, sizeof(glm::vec3));
+		}
+		void Prism_TransformComponent_GetRotation(uint64_t entityID, glm::vec3* outRotation)
+		{
+			Entity entity = GetEntityFromEntityID(entityID);
+			auto& transformComponent = entity.GetComponent<TransformComponent>();
+			glm::vec3 euler = glm::eulerAngles(transformComponent.Rotation);
+			memcpy(outRotation, &euler, sizeof(glm::vec3));
+		}
+		
+		void Prism_TransformComponent_GetScale(uint64_t entityID, glm::vec3* outScale)
+		{
+			Entity entity = GetEntityFromEntityID(entityID);
+			auto& transformComponent = entity.GetComponent<TransformComponent>();
+			memcpy(outScale, &transformComponent.Scale, sizeof(glm::vec3));
+		}
+		
+		void Prism_TransformComponent_SetTransform(uint64_t entityID, glm::mat4 inTransform)
+		{
+			Entity entity = GetEntityFromEntityID(entityID);
+			auto& transformComponent = entity.GetComponent<TransformComponent>();
+			transformComponent.SetTransform(inTransform);
+		}
+		
+		void Prism_TransformComponent_SetPosition(uint64_t entityID, glm::vec3 inPosition)
+		{
+			Entity entity = GetEntityFromEntityID(entityID);
+			auto& transformComponent = entity.GetComponent<TransformComponent>();
+			transformComponent.Position = inPosition;
+		}
+		
+		void Prism_TransformComponent_SetRotation(uint64_t entityID, glm::vec3 inRotation)
+		{
+			Entity entity = GetEntityFromEntityID(entityID);
+			auto& transformComponent = entity.GetComponent<TransformComponent>();
+			transformComponent.Rotation = glm::quat(glm::radians(inRotation));
+		}
+		
+		void Prism_TransformComponent_SetScale(uint64_t entityID, glm::vec3 inScale)
+		{
+			Entity entity = GetEntityFromEntityID(entityID);
+			auto& transformComponent = entity.GetComponent<TransformComponent>();
+			transformComponent.Scale = inScale;
+		}
+
+#pragma endregion
+
+
 #pragma region Mesh
 		void* Prism_MeshComponent_GetMesh(uint64_t entityID)
 		{
-			Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
-			PR_CORE_ASSERT(scene, "No active scene!");
-			const auto& entityMap = scene->GetEntityMap();
-			PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
-			Entity entity = entityMap.at(entityID);
+			Entity entity = GetEntityFromEntityID(entityID);
 			auto& meshComponent = entity.GetComponent<MeshComponent>();
 			return new Ref<Mesh>(meshComponent.Mesh);
 		}
 
 		void Prism_MeshComponent_SetMesh(uint64_t entityID, Ref<Mesh>* inMesh)
 		{
-			Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
-			PR_CORE_ASSERT(scene, "No active scene!");
-			const auto& entityMap = scene->GetEntityMap();
-			PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
-			Entity entity = entityMap.at(entityID);
+			Entity entity = GetEntityFromEntityID(entityID);
 			auto& meshComponent = entity.GetComponent<MeshComponent>();
 			meshComponent.Mesh = inMesh ? *inMesh : nullptr;
 		}
@@ -183,7 +229,7 @@ namespace Prism {
 		{
 			std::string path = filepath;
 			Rolky::String::Free(filepath);
-            return new Ref<Mesh>(new Mesh(path));
+			return new Ref<Mesh>(new Mesh(path));
 		}
 
 		void Prism_Mesh_Destructor(Ref<Mesh>* _this)
@@ -244,7 +290,7 @@ namespace Prism {
 		void* Prism_Texture2D_Constructor(uint32_t width, uint32_t height)
 		{
 			auto result = Texture2D::Create(TextureFormat::RGBA, width, height);
-            return new Ref<Texture2D>(result);
+			return new Ref<Texture2D>(result);
 		}
 
 		void Prism_Texture2D_Destructor(Ref<Texture2D>* _this)
@@ -303,11 +349,7 @@ namespace Prism {
 #pragma region RigidBody2DComponent
 		void Prism_RigidBody2DComponent_ApplyLinearImpulse(uint64_t entityID, glm::vec2* impulse, glm::vec2* offset, bool wake)
 		{
-			Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
-			PR_CORE_ASSERT(scene, "No active scene!");
-			const auto& entityMap = scene->GetEntityMap();
-			PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
-			Entity entity = entityMap.at(entityID);
+			Entity entity = GetEntityFromEntityID(entityID);
 			auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
 			b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
 			b2Vec2 b2Impulse(impulse->x, impulse->y);
@@ -317,11 +359,7 @@ namespace Prism {
 
 		void Prism_RigidBody2DComponent_GetLinearVelocity(uint64_t entityID, glm::vec2* outVelocity)
 		{
-			Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
-			PR_CORE_ASSERT(scene, "No active scene!");
-			const auto& entityMap = scene->GetEntityMap();
-			PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
-			Entity entity = entityMap.at(entityID);
+			Entity entity = GetEntityFromEntityID(entityID);
 			auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
 			b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
 			const b2Vec2& velocity = body->GetLinearVelocity();
@@ -330,11 +368,7 @@ namespace Prism {
 
 		void Prism_RigidBody2DComponent_SetLinearVelocity(uint64_t entityID, glm::vec2* velocity)
 		{
-			Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
-			PR_CORE_ASSERT(scene, "No active scene!");
-			const auto& entityMap = scene->GetEntityMap();
-			PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
-			Entity entity = entityMap.at(entityID);
+			Entity entity = GetEntityFromEntityID(entityID);
 			auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
 			b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
 			body->SetLinearVelocity(b2Vec2(velocity->x, velocity->y));

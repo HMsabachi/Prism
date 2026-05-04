@@ -1,4 +1,4 @@
-﻿using Prism;
+using Prism;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,29 +37,6 @@ namespace Prism
 
     }
 
-    public class TransformComponent : Component
-    {
-        public Matrix4 Transform
-        {
-            get
-            {
-                Matrix4 matrix;
-                unsafe
-                {
-                    InternalCalls.Prism_Entity_GetTransform(Entity.ID, &matrix);
-                }
-                return matrix;
-            }
-            set
-            {
-                unsafe
-                {
-                    InternalCalls.Prism_Entity_SetTransform(Entity.ID, &value);
-                }
-            }
-        }
-    }
-
     public class MeshComponent : Component
     {
         public Mesh Mesh
@@ -86,7 +63,7 @@ namespace Prism
 
         public MaterialInstance GetMaterial(int index)
         {
-            return Mesh?.GetMaterial(index);
+            return Mesh.GetMaterial(index);
         }
 
         public void SetMaterial(int index, MaterialInstance material)
@@ -108,7 +85,7 @@ namespace Prism
 
         public MaterialInstance GetOverrideMaterial()
         {
-            return Mesh?.GetOverrideMaterial();
+            return Mesh.GetOverrideMaterial();
         }
 
     }
@@ -130,7 +107,7 @@ namespace Prism
                     ptr = InternalCalls.Prism_MaterialComponent_GetMaterial(Entity.ID);
                 }
                 if (ptr == IntPtr.Zero)
-                    return null;
+                    throw new NullReferenceException("MaterialInstance Not Exists");
                 return new MaterialInstance(ptr);
             }
             set

@@ -2,33 +2,33 @@ Scene: Scene Name
 Environment:
   AssetPath: assets\env\pink_sunrise_4k.hdr
   Light:
-    Direction: [-0.787, -0.73299998, 1]
+    Direction: [-0.787, -0.733, 1]
     Radiance: [1, 1, 1]
-    Multiplier: 0.514999986
+    Multiplier: 0.515
 Entities:
   - Entity: 12498244675852797835
     TagComponent:
       Tag: Box
     TransformComponent:
-      Position: [-12.0348625, 6.59647179, 9.60061925e-07]
+      Position: [-12.0348625, 6.596472, 9.600619e-07]
       Rotation: [1, 0, 0, 0]
-      Scale: [3.00000024, 0.300000012, 1]
+      Scale: [3.0000002, 0.3, 1]
     MeshComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBody2DComponent:
       BodyType: 0
-      Mass: 1
+      FixedRotation: false
     BoxCollider2DComponent:
       Offset: [0, 0]
-      Size: [1.5, 0.150000006]
+      Size: [1.5, 0.15]
       Density: 1
       Friction: 1
   - Entity: 5178862374589434728
     TagComponent:
       Tag: Camera
     TransformComponent:
-      Position: [-21.7406311, 9.70659542, 15]
-      Rotation: [0.999910355, -0.0133911213, 0, 0]
+      Position: [-21.740631, 9.706595, 15]
+      Rotation: [0.99991035, -0.013391121, 0, 0]
       Scale: [1, 1, 1]
     ScriptComponent:
       ModuleName: Example.BasicController
@@ -50,7 +50,7 @@ Entities:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBody2DComponent:
       BodyType: 0
-      Mass: 1
+      FixedRotation: false
     BoxCollider2DComponent:
       Offset: [0, 0]
       Size: [600, 0.5]
@@ -60,7 +60,7 @@ Entities:
     TagComponent:
       Tag: Player
     TransformComponent:
-      Position: [-23.6932545, 1.59184527, -1.96369365e-06]
+      Position: [-23.693254, 1.5918453, -1.9636936e-06]
       Rotation: [1, 0, 0, 0]
       Scale: [1, 1, 1]
     ScriptComponent:
@@ -75,11 +75,14 @@ Entities:
         - Name: JumpForce
           Type: 1
           Data: 3
+        - Name: Velocity
+          Type: 5
+          Data: [0, 0]
     MeshComponent:
       AssetPath: assets\meshes\Sphere1m.fbx
     RigidBody2DComponent:
       BodyType: 1
-      Mass: 29.2000008
+      FixedRotation: false
     CircleCollider2DComponent:
       Offset: [0, 0]
       Radius: 0.5
@@ -89,67 +92,67 @@ Entities:
     TagComponent:
       Tag: Box
     TransformComponent:
-      Position: [-29.6808929, 29.7597198, 0]
-      Rotation: [0.707106769, 0, 0, 0.707106769]
-      Scale: [58.4179001, 4.47999144, 4.48000002]
+      Position: [-29.680893, 29.75972, 0]
+      Rotation: [0.70710677, 0, 0, 0.70710677]
+      Scale: [58.4179, 4.4799914, 4.48]
     MeshComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBody2DComponent:
       BodyType: 0
-      Mass: 3
+      FixedRotation: false
     BoxCollider2DComponent:
       Offset: [0, 0]
-      Size: [29.7000008, 2.24000001]
+      Size: [29.7, 2.24]
       Density: 1
       Friction: 1
   - Entity: 15223077898852293773
     TagComponent:
       Tag: Box
     TransformComponent:
-      Position: [6.12674046, 45.5617676, 0]
-      Rotation: [0.977883637, 0, 0, -0.209149584]
-      Scale: [4.47999668, 4.47999668, 4.48000002]
+      Position: [6.1267405, 45.561768, 0]
+      Rotation: [0.97788364, 0, 0, -0.20914958]
+      Scale: [4.4799967, 4.4799967, 4.48]
     MeshComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBody2DComponent:
       BodyType: 1
-      Mass: 1
+      FixedRotation: false
     BoxCollider2DComponent:
       Offset: [0, 0]
-      Size: [2.24000001, 2.24000001]
+      Size: [2.24, 2.24]
       Density: 1
       Friction: 1
   - Entity: 5421735812495444456
     TagComponent:
       Tag: Box
     TransformComponent:
-      Position: [-20.766222, 2.29431438, 0]
+      Position: [-20.766222, 2.2943144, 0]
       Rotation: [1, 0, 0, 0]
-      Scale: [3.00000024, 0.300000012, 1]
+      Scale: [3.0000002, 0.3, 1]
     MeshComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBody2DComponent:
       BodyType: 0
-      Mass: 1
+      FixedRotation: false
     BoxCollider2DComponent:
       Offset: [0, 0]
-      Size: [1.5, 0.150000006]
+      Size: [1.5, 0.15]
       Density: 1
       Friction: 1
   - Entity: 2842299641876190180
     TagComponent:
       Tag: Box
     TransformComponent:
-      Position: [-16.6143265, 4.39151001, 6.43359499e-09]
+      Position: [-16.614326, 4.39151, 6.433595e-09]
       Rotation: [1, 0, 0, 0]
-      Scale: [3.00000024, 0.300000012, 1]
+      Scale: [3.0000002, 0.3, 1]
     MeshComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBody2DComponent:
       BodyType: 0
-      Mass: 1
+      FixedRotation: false
     BoxCollider2DComponent:
       Offset: [0, 0]
-      Size: [1.5, 0.150000006]
+      Size: [1.5, 0.15]
       Density: 1
       Friction: 1

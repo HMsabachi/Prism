@@ -1,4 +1,4 @@
-﻿using Prism;
+using Prism;
 
 namespace Example
 {
@@ -9,7 +9,7 @@ namespace Example
             var material = new Material("Custom/NoiseTest");
             var materialInstance = new MaterialInstance(material);
             var meshComponent = GetComponent<MeshComponent>();
-            var meshMaterial = meshComponent.Mesh.GetMaterial(0);
+            meshComponent.SetMaterial(0, materialInstance);
             Log.Trace("创建 MateruakComponent");
         }
         private void OnUpdate()

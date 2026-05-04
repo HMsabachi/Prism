@@ -50,10 +50,7 @@ Shader "Custom/SimplePBR_Static"
             Name "ForwardBase"
             GLSL
             {
-                #pragma shader_feature ALBEDO_MAP
-                #pragma shader_feature NORMAL_MAP
-                #pragma shader_feature METALNESS_MAP
-                #pragma shader_feature ROUGHNESS_MAP
+                #pragma shader_feature ALBEDO_MAP NORMAL_MAP METALNESS_MAP ROUGHNESS_MAP
                 #include "PrismBuiltin.glsl"
                 #include "PrismPBR.glsl"
                 attribute vec3 a_Position : POSITION;

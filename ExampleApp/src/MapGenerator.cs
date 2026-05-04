@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -55,7 +55,7 @@ namespace Example
             Log.Trace("Mesh has {0} materials!", meshComponent.Mesh.GetMaterialCount());
 
             MaterialInstance material = meshComponent.Mesh.GetMaterial(1);
-            material.Set("u_AlbedoTexToggle", 1.0f);
+            material.SetKeyword("ALBEDO_MAP", true);
             material.Set("u_AlbedoTexture", texture);
 
             TransformComponent transformComponent = GetComponent<TransformComponent>();

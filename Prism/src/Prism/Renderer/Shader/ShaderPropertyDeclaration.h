@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Prism/Core/Core.h"
 #include "Prism/Utilities/Utilities.h"
 #include "Prism/Renderer/Texture.h"

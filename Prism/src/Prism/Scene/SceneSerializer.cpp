@@ -1,4 +1,4 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "SceneSerializer.h"
 
 #include "Entity.h"

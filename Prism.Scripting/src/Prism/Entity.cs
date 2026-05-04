@@ -25,6 +25,8 @@ namespace Prism
             Console.WriteLine("Destroyed Entity {0}", ID);
         }
 
+        public TransformComponent Transform => GetComponent<TransformComponent>();
+
         public Matrix4 GetTransform()
         {
             var transform = GetComponent<TransformComponent>();
