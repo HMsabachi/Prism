@@ -179,4 +179,12 @@ namespace Prism {
 		}
 	};
 
+	struct SphereColliderComponent
+	{
+		float Radius = 0.5f;
+
+		SphereColliderComponent() = default;
+		SphereColliderComponent(const SphereColliderComponent& other) = default;
+	};
+
 }

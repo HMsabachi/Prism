@@ -43,8 +43,10 @@ namespace Prism
 		~Scene();
 
 		void Init();
+		void OnShutdown();
 
 		void OnUpdate();
+		void OnFixedUpdate();
 		void OnRenderRuntime();
 		void OnRenderEditor(const EditorCamera& editorCamera);
 		void OnEvent(Event& e);

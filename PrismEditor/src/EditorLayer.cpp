@@ -212,6 +212,7 @@ namespace Prism
 					m_EditorCamera.OnUpdate(ts);
 
 				m_RuntimeScene->OnUpdate();
+				m_RuntimeScene->OnFixedUpdate();
 				m_RuntimeScene->OnRenderRuntime();
 
 				// Box2D collider debug drawing

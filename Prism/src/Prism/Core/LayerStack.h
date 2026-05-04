@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Core.h"
 #include "Layer.h"
@@ -23,6 +23,7 @@ namespace Prism
 		LayerStack();
 		~LayerStack();
 
+        void Shutdown();
 		void PushLayer(Layer* layer);
 		void PushOverlay(Layer* overlay);
 		void PopLayer(Layer* layer);

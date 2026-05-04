@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <chrono>
 #include "Core.h"
 
@@ -19,13 +19,13 @@ namespace Prism
 		static float GetUnscaledTime() noexcept { return s_UnscaledTime; }
 		static float GetFixedDeltaTime() noexcept { return s_FixedDeltaTime; }
 		static long long GetFrameCount() noexcept { return s_FrameCount; }
+		static bool ShouldFixedUpdate();
 	public:
 		static void SetTimeScale(float scale) noexcept;
 		static float GetTimeScale() noexcept { return s_TimeScale; }
 	private:
 		static void Init();
 		static void Update();
-		static bool ShouldFixedUpdate();
 		static void Reset();
 	private:
 		static float s_DeltaTime;

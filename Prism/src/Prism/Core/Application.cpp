@@ -1,4 +1,4 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "Application.h"
 
 #include "Log.h"
@@ -11,6 +11,7 @@
 #include "Prism/Renderer/Shader/Parser/ShaderParser.h"
 
 #include "Scripting/ScriptEngine.h"
+#include "Prism/Physics/PhysXManager.h"
 
 
 #include <imgui.h>
@@ -57,6 +58,8 @@ namespace Prism
 		PushOverlay(m_ImGuiLayer);
 		// 初始化PrismShader解释器
 		ShaderParser::Init("Assets/Shaders/Include");
+		// 初始化 PhysX 物理引擎
+		PhysXManager::Init();
 		// 初始化渲染器 Initialize Renderer
 		Renderer::Init();
 		Renderer::WaitAndRender();
@@ -122,7 +125,9 @@ namespace Prism
 
 	void Application::OnShutdown()
 	{
+        m_LayerStack.Shutdown();
 		ScriptEngine::Shutdown();
+		PhysXManager::Shutdown();
 	}
 
 	void Application::RenderImGui()

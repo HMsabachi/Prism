@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Prism/Scene/Components.h"
 #include "Prism/Scene/Entity.h"
 
@@ -24,6 +24,7 @@ namespace Prism
 		Rolky::Type* ScriptClass = nullptr;
 		std::unique_ptr<Rolky::ManagedObject> Object;
 		Scene* SceneInstance = nullptr;
+        uint32_t HasMethods;
 	};
 
     struct PublicField
@@ -110,6 +111,7 @@ namespace Prism
 		static void OnCreateEntity(Entity entity);
 		static void OnCreateEntity(UUID sceneID, UUID entityID);
 		static void OnUpdateEntity(UUID sceneID, UUID entityID, float ts);
+		static void OnFixedUpdateEntity(UUID sceneID, UUID entityID);
 
 		static void OnCollision2DBegin(Entity entity);
 		static void OnCollision2DBegin(UUID sceneID, UUID entityID);

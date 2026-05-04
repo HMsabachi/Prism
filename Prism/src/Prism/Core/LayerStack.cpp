@@ -1,4 +1,4 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "LayerStack.h"
 
 namespace Prism 
@@ -11,8 +11,14 @@ namespace Prism
 
 	LayerStack::~LayerStack()
 	{
-		for (Layer* layer : m_Layers)
-			delete layer;
+        Shutdown();
+	}
+
+	void LayerStack::Shutdown()
+	{
+        for (Layer* layer : m_Layers)
+            delete layer;
+        m_Layers.clear();
 	}
 
 	// Push a new layer to the top of the stack 将一个新的 layer 压入栈顶

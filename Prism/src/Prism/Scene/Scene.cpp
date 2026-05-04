@@ -21,6 +21,10 @@
 // Box2D
 #include <box2d/box2d.h>
 
+// PhysX
+#include "Prism/Physics/PhysXManager.h"
+#include <PhysX/extensions/PxDefaultCpuDispatcher.h>
+
 namespace Prism
 {
 
@@ -36,6 +40,12 @@ namespace Prism
 	struct Box2DWorldComponent
 	{
 		std::unique_ptr<b2World> World;
+	};
+
+	struct PhysXSceneComponent
+	{
+		physx::PxScene* World;
+		physx::PxDefaultCpuDispatcher* CpuDispatcher;
 	};
 
 	class ContactListener : public b2ContactListener
@@ -70,6 +80,15 @@ namespace Prism
 	};
 
 	static ContactListener s_Box2DContactListener;
+
+	static physx::PxFilterFlags SimpleFilterShader(
+		physx::PxFilterObjectAttributes attributes0, physx::PxFilterData filterData0,
+		physx::PxFilterObjectAttributes attributes1, physx::PxFilterData filterData1,
+		physx::PxPairFlags& pairFlags, const void* constantBlock, physx::PxU32 constantBlockSize)
+	{
+		pairFlags = physx::PxPairFlag::eCONTACT_DEFAULT;
+		return physx::PxFilterFlag::eDEFAULT;
+	}
 
 
 	static void OnScriptComponentConstruct(entt::registry& registry, entt::entity entity)
@@ -107,6 +126,18 @@ namespace Prism
 		m_Registry.emplace<Box2DWorldComponent>(m_SceneEntity, std::make_unique<b2World>(b2Vec2{ 0.0f, -9.8f }));
 		m_Registry.get<Box2DWorldComponent>(m_SceneEntity).World->SetContactListener(&s_Box2DContactListener);
 
+		// PhysX
+		{
+			physx::PxSceneDesc sceneDesc = PhysXManager::CreateSceneDesc();
+			sceneDesc.gravity = physx::PxVec3(0.0F, -9.8F, 0.0F);
+			sceneDesc.filterShader = SimpleFilterShader;
+			physx::PxDefaultCpuDispatcher* cpuDispatcher = physx::PxDefaultCpuDispatcherCreate(0);
+			PR_CORE_ASSERT(cpuDispatcher, "Failed to create PhysX CPU dispatcher!");
+			sceneDesc.cpuDispatcher = cpuDispatcher;
+			PhysXSceneComponent& physxWorld = m_Registry.emplace<PhysXSceneComponent>(m_SceneEntity, PhysXManager::CreateScene(sceneDesc), cpuDispatcher);
+			PR_CORE_ASSERT(physxWorld.World);
+		}
+
 		s_ActiveScenes[m_SceneID] = this;
 		Init();
 	}
@@ -115,6 +146,7 @@ namespace Prism
 	{
 		m_Registry.on_destroy<ScriptComponent>().disconnect();
 		m_Registry.on_construct<ScriptComponent>().disconnect<&OnScriptComponentConstruct>();
+		OnShutdown();
 		delete[] m_PhysicsBodyEntityBuffer;
 		m_PhysicsBodyEntityBuffer = nullptr;
 		m_Registry.clear();
@@ -132,7 +164,7 @@ namespace Prism
 
 	void Scene::OnUpdate()
 	{
-		// Update all entities
+		// Script OnUpdate (per-frame)
 		{
 			float ts = Time::GetDeltaTime();
 			auto view = m_Registry.view<ScriptComponent>();
@@ -144,15 +176,23 @@ namespace Prism
 					ScriptEngine::OnUpdateEntity(m_SceneID, entityID, ts);
 			}
 		}
+	}
+
+	void Scene::OnFixedUpdate()
+	{
+		if (!Time::ShouldFixedUpdate())
+			return;
 
 		// Box2D physics step
-		float ts = Time::GetDeltaTime();
 		{
 			auto view = m_Registry.view<Box2DWorldComponent>();
-			auto& box2DWorld = m_Registry.get<Box2DWorldComponent>(view.front()).World;
-			int32_t velocityIterations = 6;
-			int32_t positionIterations = 2;
-			box2DWorld->Step(ts, velocityIterations, positionIterations);
+			if (!view.empty())
+			{
+				auto& box2DWorld = m_Registry.get<Box2DWorldComponent>(view.front()).World;
+				int32_t velocityIterations = 6;
+				int32_t positionIterations = 2;
+				box2DWorld->Step(Time::GetFixedDeltaTime(), velocityIterations, positionIterations);
+			}
 		}
 
 		// Sync Box2D positions back to entity transforms
@@ -169,6 +209,29 @@ namespace Prism
 				tc.Position.x = position.x;
 				tc.Position.y = position.y;
 				tc.Rotation = glm::quat({ 0.0f, 0.0f, body->GetAngle() });
+			}
+		}
+
+		// PhysX fixed-step simulation
+		{
+			auto physxView = m_Registry.view<PhysXSceneComponent>();
+			if (!physxView.empty())
+			{
+				physx::PxScene* physxScene = m_Registry.get<PhysXSceneComponent>(physxView.front()).World;
+				physxScene->simulate(Time::GetFixedDeltaTime());
+				physxScene->fetchResults(true);
+			}
+		}
+
+		// Script OnFixedUpdate
+		{
+			auto view = m_Registry.view<ScriptComponent>();
+			for (auto entity : view)
+			{
+				UUID entityID = m_Registry.get<IDComponent>(entity).ID;
+				Entity e = { entity, this };
+				if (ScriptEngine::ModuleExists(e.GetComponent<ScriptComponent>().ModuleName))
+					ScriptEngine::OnFixedUpdateEntity(m_SceneID, entityID);
 			}
 		}
 	}
@@ -375,9 +438,48 @@ namespace Prism
 
 	void Scene::OnRuntimeStop()
 	{
+		// Release PhysX scene
+		{
+			auto physxView = m_Registry.view<PhysXSceneComponent>();
+			if (!physxView.empty())
+			{
+				auto& physxComp = m_Registry.get<PhysXSceneComponent>(m_SceneEntity);
+				if (physxComp.World)
+				{
+					physxComp.World->release();
+					physxComp.World = nullptr;
+				}
+				if (physxComp.CpuDispatcher)
+				{
+					physxComp.CpuDispatcher->release();
+					physxComp.CpuDispatcher = nullptr;
+				}
+			}
+		}
+
 		delete[] m_PhysicsBodyEntityBuffer;
 		m_PhysicsBodyEntityBuffer = nullptr;
 		m_IsPlaying = false;
+	}
+
+	void Scene::OnShutdown()
+	{
+        auto physxView = m_Registry.view<PhysXSceneComponent>();
+        if (!physxView.empty())
+        {
+            auto& physxComp = m_Registry.get<PhysXSceneComponent>(m_SceneEntity);
+            if (physxComp.World)
+            {
+                physxComp.World->release();
+                physxComp.World = nullptr;
+            }
+            if (physxComp.CpuDispatcher)
+            {
+                physxComp.CpuDispatcher->release();
+                physxComp.CpuDispatcher = nullptr;
+            }
+        }
+
 	}
 
 	void Scene::SetViewportSize(uint32_t width, uint32_t height)

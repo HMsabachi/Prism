@@ -1,4 +1,4 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "ScriptEngine.h"
 #include "ScriptEngineRegistry.h"
 #include "Native/String.h"
@@ -9,6 +9,7 @@
 
 namespace Prism
 {
+
 	static void RolkyMessageCallback(std::string_view message, Rolky::MessageLevel level)
 	{
 		if (level & Rolky::MessageLevel::Error) PR_CORE_ERROR("[Rolky] {0}", message);
@@ -312,6 +313,11 @@ namespace Prism
 	{
 		EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
 		entityInstance.Object->InvokeMethod("OnUpdate");
+	}
+	void ScriptEngine::OnFixedUpdateEntity(UUID sceneID, UUID entityID)
+	{
+		EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
+		//entityInstance.Object->InvokeMethod("OnFixedUpdate");
 	}
 	void ScriptEngine::OnCollision2DBegin(Entity entity)
 	{
