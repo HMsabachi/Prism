@@ -84,6 +84,33 @@ namespace Prism
             InternalCalls.Prism_MeshComponent_SetMesh(id, unmanagedInstance);
         }
 
+        public MaterialInstance GetMaterial(int index)
+        {
+            return Mesh?.GetMaterial(index);
+        }
+
+        public void SetMaterial(int index, MaterialInstance material)
+        {
+            if (Mesh != null)
+                Mesh.SetMaterial(index, material);
+        }
+
+        public int GetMaterialCount()
+        {
+            return Mesh?.GetMaterialCount() ?? 0;
+        }
+
+        public void SetOverrideMaterial(MaterialInstance material)
+        {
+            if (Mesh != null)
+                Mesh.SetOverrideMaterial(material);
+        }
+
+        public MaterialInstance GetOverrideMaterial()
+        {
+            return Mesh?.GetOverrideMaterial();
+        }
+
     }
 
     public class CameraComponent : Component

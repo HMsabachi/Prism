@@ -26,10 +26,6 @@ Shader "Custom/SimplePBR_Static"
 
         // Toggles
         u_RadiancePrefilter("环境光预过滤", Float) = 0.0
-        u_AlbedoTexToggle("颜色贴图开关", Bool) = false
-        u_NormalTexToggle("法线贴图开关", Bool) = false
-        u_MetalnessTexToggle("金属度贴图开关", Bool) = false
-        u_RoughnessTexToggle("粗糙度贴图开关", Bool) = false
 
         // light
         u_LightDirection("光照方向", Vector3) = (1, 1, 1)
@@ -47,13 +43,17 @@ Shader "Custom/SimplePBR_Static"
 
     SubShader
     {
-        
+
         Pass
         {
             Tags { "Queue" = "Geometry" "RenderType" = "Opaque" }
             Name "ForwardBase"
             GLSL
             {
+                #pragma shader_feature ALBEDO_MAP
+                #pragma shader_feature NORMAL_MAP
+                #pragma shader_feature METALNESS_MAP
+                #pragma shader_feature ROUGHNESS_MAP
                 #include "PrismBuiltin.glsl"
                 #include "PrismPBR.glsl"
                 attribute vec3 a_Position : POSITION;
@@ -152,7 +152,7 @@ Shader "Custom/SimplePBR_Static"
                     int u_EnvRadianceTexLevels = textureQueryLevels(u_EnvRadianceTex);
                     float NoV = clamp(m_Params.NdotV, 0.0, 1.0);
                     vec3 R = 2.0 * dot(m_Params.View, m_Params.Normal) * m_Params.Normal - m_Params.View;
-                    
+
                     vec3 specularIrradiance = textureLod(u_EnvRadianceTex, RotateVectorAboutY(u_EnvMapRotation, Lr), (m_Params.Roughness * m_Params.Roughness) * u_EnvRadianceTexLevels).rgb;
                     // Sample BRDF Lut, 1.0 - roughness for y-coord because texture was generated (in Sparky) for gloss model
                     vec2 specularBRDF = texture(u_BRDFLUTTexture, vec2(m_Params.NdotV, 1.0 - m_Params.Roughness)).rg;
@@ -165,23 +165,35 @@ Shader "Custom/SimplePBR_Static"
                 {
                     vec3 u_CameraPosition = Prism_CameraPosition;
                     // Standard PBR inputs
-                    m_Params.Albedo = u_AlbedoTexToggle ? texture(u_AlbedoTexture, vs_Output.TexCoord).rgb : u_AlbedoColor; 
-                    m_Params.Metalness = u_MetalnessTexToggle ? texture(u_MetalnessTexture, vs_Output.TexCoord).r : u_Metalness;
-                    m_Params.Roughness = u_RoughnessTexToggle ?  texture(u_RoughnessTexture, vs_Output.TexCoord).r : u_Roughness;
+                #ifdef ALBEDO_MAP
+                    m_Params.Albedo = texture(u_AlbedoTexture, vs_Output.TexCoord).rgb;
+                #else
+                    m_Params.Albedo = u_AlbedoColor;
+                #endif
+                #ifdef METALNESS_MAP
+                    m_Params.Metalness = texture(u_MetalnessTexture, vs_Output.TexCoord).r;
+                #else
+                    m_Params.Metalness = u_Metalness;
+                #endif
+                #ifdef ROUGHNESS_MAP
+                    m_Params.Roughness = texture(u_RoughnessTexture, vs_Output.TexCoord).r;
+                #else
+                    m_Params.Roughness = u_Roughness;
+                #endif
                     m_Params.Roughness = max(m_Params.Roughness, 0.05); // Minimum roughness of 0.05 to keep specular highlight
 
                     m_Params.Albedo = mix(m_Params.Albedo, u_Color, 0.2);
                     // Normals (either from vertex or map)
+                #ifdef NORMAL_MAP
+                    m_Params.Normal = normalize(2.0 * texture(u_NormalTexture, vs_Output.TexCoord).rgb - 1.0);
+                    m_Params.Normal = normalize(vs_Output.WorldNormals * m_Params.Normal);
+                #else
                     m_Params.Normal = normalize(vs_Output.Normal);
-                    if (u_NormalTexToggle)
-                    {
-                        m_Params.Normal = normalize(2.0 * texture(u_NormalTexture, vs_Output.TexCoord).rgb - 1.0);
-                        m_Params.Normal = normalize(vs_Output.WorldNormals * m_Params.Normal);
-                    }
+                #endif
 
                     m_Params.View = normalize(u_CameraPosition - vs_Output.WorldPosition);
                     m_Params.NdotV = max(dot(m_Params.Normal, m_Params.View), 0.0);
-                        
+
                     // Specular reflection vector
                     vec3 Lr = 2.0 * m_Params.NdotV * m_Params.Normal - m_Params.View;
 
@@ -195,7 +207,7 @@ Shader "Custom/SimplePBR_Static"
                     FragColor = vec4(iblContribution, 1.0);
                     //FragColor = vec4(u_Color, 1.0);
                 }
-                
+
             }
         }
     }

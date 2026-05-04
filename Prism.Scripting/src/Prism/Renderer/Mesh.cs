@@ -30,9 +30,34 @@ namespace Prism
 
         public MaterialInstance GetMaterial(int index)
         {
-            unsafe 
-            { 
+            unsafe
+            {
                 return new MaterialInstance(InternalCalls.Prism_Mesh_GetMaterialByIndex(m_UnmanagedInstance, index));
+            }
+        }
+
+        public void SetMaterial(int index, MaterialInstance material)
+        {
+            unsafe
+            {
+                InternalCalls.Prism_Mesh_SetMaterialByIndex(m_UnmanagedInstance, index, material?.m_UnmanagedInstance ?? IntPtr.Zero);
+            }
+        }
+
+        public void SetOverrideMaterial(MaterialInstance material)
+        {
+            unsafe
+            {
+                InternalCalls.Prism_Mesh_SetOverrideMaterial(m_UnmanagedInstance, material?.m_UnmanagedInstance ?? IntPtr.Zero);
+            }
+        }
+
+        public MaterialInstance GetOverrideMaterial()
+        {
+            unsafe
+            {
+                IntPtr ptr = InternalCalls.Prism_Mesh_GetOverrideMaterial(m_UnmanagedInstance);
+                return ptr != IntPtr.Zero ? new MaterialInstance(ptr) : null;
             }
         }
 

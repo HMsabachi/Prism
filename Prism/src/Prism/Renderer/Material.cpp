@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "Material.h"
 
 namespace Prism
@@ -53,9 +53,11 @@ namespace Prism
 
 	void Material::Bind()
 	{
-		m_Shader->Bind();
+		Ref<Shader> variant = m_Shader->GetVariant(m_KeywordMask);
+		variant->Bind();
+		variant->ApplyCommand(m_ShaderCommand);
 		if (m_PropertyBuffer)
-			m_Shader->SetProperty(m_PropertyBuffer);
+			variant->SetProperty(m_Shader->GetDeclaration(), m_PropertyBuffer);
 		BindTextures();
 	}
 
@@ -118,6 +120,16 @@ namespace Prism
 		m_Material->m_MaterialInstances.erase(this);
 	}
 
+	void MaterialInstance::SetShader(const Ref<PrismShader>& shader)
+	{
+		m_Material->m_MaterialInstances.erase(this);
+		m_Material = Material::Create(shader);
+		m_Material->m_MaterialInstances.insert(this);
+		AllocateStorage();
+		m_OverriddenValues.clear();
+		m_KeywordMask = 0;
+	}
+
 	void MaterialInstance::OnShaderReloaded()
 	{
 		AllocateStorage();
@@ -166,9 +178,12 @@ namespace Prism
 
 	void MaterialInstance::Bind()
 	{
-		m_Material->m_Shader->Bind();
+		Ref<PrismShader> shader = m_Material->m_Shader;
+		Ref<Shader> variant = shader->GetVariant(m_KeywordMask);
+		variant->Bind();
+		variant->ApplyCommand(shader->GetShaderCommand());
 		if (m_PropertyBuffer)
-			m_Material->m_Shader->SetProperty(m_PropertyBuffer);
+			variant->SetProperty(shader->GetDeclaration(), m_PropertyBuffer);
 
 		m_Material->BindTextures();
 		for (size_t i = 0; i < m_Textures.size(); i++)
@@ -177,6 +192,6 @@ namespace Prism
 			if (texture)
 				texture->Bind(i);
 		}
-		m_Material->m_Shader->GetOriginalShader()->SetMat4("Prism_Model", m_Transform);
+		variant->SetMat4("Prism_Model", m_Transform);
 	}
 }

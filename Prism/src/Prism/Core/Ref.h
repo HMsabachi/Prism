@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <stdint.h>
 #include "Core.h"
 namespace Prism
@@ -105,6 +105,11 @@ namespace Prism
 
 		operator bool() { return m_Instance != nullptr; }
 		operator bool() const { return m_Instance != nullptr; }
+		template<typename T2>
+		bool operator== (Ref<T2>& other) const { return m_Instance == (T*)other.m_Instance; }
+		template<typename T2>
+		bool operator!= (Ref<T2>& other) const { return m_Instance != (T*)other.m_Instance; }
+
 
 		T* operator->() { return m_Instance; }
 		const T* operator->() const { return m_Instance; }

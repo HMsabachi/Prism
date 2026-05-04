@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "PrismShader.h"
 #include "Prism/Renderer/Shader/Parser/ShaderParser.h"
 #include "Prism/Utilities/Utilities.h"
@@ -57,6 +57,10 @@ namespace Prism
 		m_Shader.Reset(Shader::Create(m_Name, result.Passes[0].VertexShaderCode, result.Passes[0].FragmentShaderCode));
 		m_ShaderCommand = ParseShaderCommand(result.RenderCommand);
 
+		// Save generated sources for variant compilation
+		m_VertexShaderSource = result.Passes[0].VertexShaderCode;
+		m_FragmentShaderSource = result.Passes[0].FragmentShaderCode;
+
 		// Reset keyword/variant state (important for Reload)
 		m_Keywords.clear();
 		m_Variants.clear();
@@ -78,6 +82,52 @@ namespace Prism
 			baseVariant.DebugName = "(default)";
 			baseVariant.ShaderProgram = m_Shader;
 			m_Variants[0] = baseVariant;
+		}
+
+		// Compile all keyword variant combinations
+		if (!m_Keywords.empty())
+		{
+			size_t kwCount = m_Keywords.size();
+			if (kwCount > 10)
+			{
+				PR_CORE_WARN("Shader '{0}' has {1} keywords -> too many variants, skipping compilation", m_Name, kwCount);
+			}
+			else
+			{
+				size_t numVariants = size_t(1) << kwCount;
+				for (KeywordMask mask = 1; mask < numVariants; mask++)
+				{
+					std::string defines;
+					std::string debugName;
+					for (const auto& kw : m_Keywords)
+					{
+						if (mask & (KeywordMask(1) << kw.Index))
+						{
+							defines += "#define " + kw.Name + "\n";
+							if (!debugName.empty()) debugName += "|";
+							debugName += kw.Name;
+						}
+					}
+
+					auto makeVariantSource = [](const std::string& base, const std::string& defs) -> std::string {
+						size_t pos = base.find('\n');
+						if (pos == std::string::npos) return base;
+						return base.substr(0, pos + 1) + defs + base.substr(pos + 1);
+					};
+
+					std::string vsCode = makeVariantSource(m_VertexShaderSource, defines);
+					std::string fsCode = makeVariantSource(m_FragmentShaderSource, defines);
+
+					std::string variantName = m_Name + "#" + debugName;
+					Ref<Shader> variantProgram = Shader::Create(variantName, vsCode, fsCode);
+
+					ShaderVariant variant;
+					variant.Mask = mask;
+					variant.DebugName = debugName;
+					variant.ShaderProgram = variantProgram;
+					m_Variants[mask] = variant;
+				}
+			}
 		}
 
 		m_Declaration = PropertyBufferDeclaration();
@@ -376,4 +426,10 @@ namespace Prism
 		PR_CORE_ASSERT(m_Shaders.find(name) != m_Shaders.end());
 		return m_Shaders.at(name);
 	}
+
+	const std::unordered_map<std::string, Prism::Ref<Prism::PrismShader>>& ShaderLibrary::GetAll() const
+	{
+		return m_Shaders;
+	}
+
 }

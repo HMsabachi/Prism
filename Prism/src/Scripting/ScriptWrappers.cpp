@@ -214,6 +214,25 @@ namespace Prism {
 			return materials.size();
 		}
 
+		void Prism_Mesh_SetMaterialByIndex(Ref<Mesh>* inMesh, int32_t index, Ref<MaterialInstance>* material)
+		{
+			Ref<Mesh>& mesh = *(Ref<Mesh>*)inMesh;
+			mesh->SetMaterial(index, material ? *material : nullptr);
+		}
+
+		void Prism_Mesh_SetOverrideMaterial(Ref<Mesh>* inMesh, Ref<MaterialInstance>* material)
+		{
+			Ref<Mesh>& mesh = *(Ref<Mesh>*)inMesh;
+			mesh->SetOverrideMaterial(material ? *material : nullptr);
+		}
+
+		Prism::Ref<Prism::MaterialInstance>* Prism_Mesh_GetOverrideMaterial(Ref<Mesh>* inMesh)
+		{
+			Ref<Mesh>& mesh = *(Ref<Mesh>*)inMesh;
+			auto overrideMat = mesh->GetOverrideMaterial();
+			return overrideMat ? new Ref<MaterialInstance>(overrideMat) : nullptr;
+		}
+
 		void* Prism_MeshFactory_CreatePlane(float width, float height)
 		{
 			return new Ref<Mesh>(new Mesh("assets/models/Plane1m.obj"));
@@ -390,6 +409,38 @@ namespace Prism {
 			Ref<MaterialInstance>& instance = *(Ref<MaterialInstance>*)_this;
 			instance->Set(uniform, *texture);
 			uniform.Free(uniform);
+		}
+
+		void Prism_Material_SetKeyword(Ref<Material>* _this, Rolky::String name, bool enabled)
+		{
+			Ref<Material>& instance = *(Ref<Material>*)_this;
+			std::string kwName = name;
+			name.Free(name);
+			instance->SetKeyword(kwName, enabled);
+		}
+
+		bool Prism_Material_IsKeywordEnabled(Ref<Material>* _this, Rolky::String name)
+		{
+			Ref<Material>& instance = *(Ref<Material>*)_this;
+			std::string kwName = name;
+			name.Free(name);
+			return instance->IsKeywordEnabled(kwName);
+		}
+
+		void Prism_MaterialInstance_SetKeyword(Ref<MaterialInstance>* _this, Rolky::String name, bool enabled)
+		{
+			Ref<MaterialInstance>& instance = *(Ref<MaterialInstance>*)_this;
+			std::string kwName = name;
+			name.Free(name);
+			instance->SetKeyword(kwName, enabled);
+		}
+
+		bool Prism_MaterialInstance_IsKeywordEnabled(Ref<MaterialInstance>* _this, Rolky::String name)
+		{
+			Ref<MaterialInstance>& instance = *(Ref<MaterialInstance>*)_this;
+			std::string kwName = name;
+			name.Free(name);
+			return instance->IsKeywordEnabled(kwName);
 		}
 
 #pragma endregion

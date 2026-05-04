@@ -80,6 +80,9 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_Mesh_GetMaterial);
         PR_ADD_INTERNAL_CALL(Prism_Mesh_GetMaterialByIndex);
         PR_ADD_INTERNAL_CALL(Prism_Mesh_GetMaterialCount);
+        PR_ADD_INTERNAL_CALL(Prism_Mesh_SetMaterialByIndex);
+        PR_ADD_INTERNAL_CALL(Prism_Mesh_SetOverrideMaterial);
+        PR_ADD_INTERNAL_CALL(Prism_Mesh_GetOverrideMaterial);
         PR_ADD_INTERNAL_CALL(Prism_MeshFactory_CreatePlane);
         // MaterialComponent
         PR_ADD_INTERNAL_CALL(Prism_MaterialComponent_GetMaterial);
@@ -106,6 +109,10 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_MaterialInstance_SetVector3);
         PR_ADD_INTERNAL_CALL(Prism_MaterialInstance_SetVector4);
         PR_ADD_INTERNAL_CALL(Prism_MaterialInstance_SetTexture);
+        PR_ADD_INTERNAL_CALL(Prism_Material_SetKeyword);
+        PR_ADD_INTERNAL_CALL(Prism_Material_IsKeywordEnabled);
+        PR_ADD_INTERNAL_CALL(Prism_MaterialInstance_SetKeyword);
+        PR_ADD_INTERNAL_CALL(Prism_MaterialInstance_IsKeywordEnabled);
 
 
         engineAssembly.UploadInternalCalls();

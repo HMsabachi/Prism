@@ -1,4 +1,4 @@
-﻿#include "EditorLayer.h"
+#include "EditorLayer.h"
 
 #include "Prism/ImGui/ImGuizmo.h"
 
@@ -442,12 +442,17 @@ namespace Prism
 				break;
 			}
 			case PropertyDeclarationType::Int:
+			{
+				auto& value = materialInstance.Get<Type::Int>(name);
+				ImGui::Text("%s", displayName.c_str());
+				ImGui::SameLine();
+				ImGui::DragInt(("##" + name).c_str(), &value);
+				break;
+			}
 			case PropertyDeclarationType::Bool:
 			{
-				auto& value = materialInstance.Get<int>(name);
-				bool b = value != 0;
-				if (ImGui::Checkbox(displayName.c_str(), &b))
-					value = b ? 1 : 0;
+				bool& b = materialInstance.Get<Type::Bool>(name);
+				ImGui::Checkbox(displayName.c_str(), &b);
 				break;
 			}
 			case PropertyDeclarationType::Texture2D:
@@ -862,12 +867,46 @@ namespace Prism
 						if (selectedMaterialIndex < materials.size())
 						{
 							auto& materialInstance = materials[selectedMaterialIndex];
-							ImGui::Text("Shader: %s", materialInstance->GetShader()->GetName().c_str());
+							{
+								auto currentShader = materialInstance->GetShader();
+								std::string shaderName = currentShader->GetName();
+								if (ImGui::BeginCombo("Shader", shaderName.c_str()))
+								{
+									auto& allShaders = Renderer::GetShaderLibrary()->GetAll();
+									for (auto& [name, shader] : allShaders)
+									{
+										bool isSelected = (shader == currentShader);
+										if (ImGui::Selectable(name.c_str(), isSelected))
+										{
+											if (shader != currentShader)
+												materialInstance->SetShader(shader);
+										}
+										if (isSelected)
+											ImGui::SetItemDefaultFocus();
+									}
+									ImGui::EndCombo();
+								}
+							}
 
 							auto& decl = materialInstance->GetShader()->GetDeclaration();
 							for (const auto& prop : decl)
 							{
 								DrawMaterialProperty(prop, *materialInstance);
+							}
+
+							// Keyword toggles
+							auto shader = materialInstance->GetShader();
+							const auto& keywords = shader->GetKeywords();
+							if (!keywords.empty())
+							{
+								ImGui::Separator();
+								ImGui::Text("Shader Keywords");
+								for (const auto& kw : keywords)
+								{
+									bool enabled = materialInstance->IsKeywordEnabled(kw.Name);
+									if (ImGui::Checkbox(kw.Name.c_str(), &enabled))
+										materialInstance->SetKeyword(kw.Name, enabled);
+								}
 							}
 						}
 					}

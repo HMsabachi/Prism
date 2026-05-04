@@ -261,7 +261,7 @@ namespace Prism {
 					{
 						m_Textures[i] = texture;
 						mi->Set("u_AlbedoTexture", m_Textures[i]);
-						mi->Set("u_AlbedoTexToggle", 1.0f);
+						mi->SetKeyword("ALBEDO_MAP", true);
 					}
 					else
 					{
@@ -277,7 +277,7 @@ namespace Prism {
 				}
 
 				// Normal maps
-				mi->Set("u_NormalTexToggle", 0.0f);
+				mi->SetKeyword("NORMAL_MAP", false);
 				if (aiMaterial->GetTexture(aiTextureType_NORMALS, 0, &aiTexPath) == AI_SUCCESS)
 				{
 					// TODO: Temp - this should be handled by Prism's filesystem
@@ -291,7 +291,7 @@ namespace Prism {
 					if (texture->Loaded())
 					{
 						mi->Set("u_NormalTexture", texture);
-						mi->Set("u_NormalTexToggle", 1.0f);
+						mi->SetKeyword("NORMAL_MAP", true);
 					}
 					else
 					{
@@ -320,7 +320,7 @@ namespace Prism {
 					{
 						PR_MESH_LOG("  Roughness map path = {0}", texturePath);
 						mi->Set("u_RoughnessTexture", texture);
-						mi->Set("u_RoughnessTexToggle", 1.0f);
+						mi->SetKeyword("ROUGHNESS_MAP", true);
 					}
 					else
 					{
@@ -439,13 +439,13 @@ namespace Prism {
 							if (texture->Loaded())
 							{
 								mi->Set("u_MetalnessTexture", texture);
-								mi->Set("u_MetalnessTexToggle", 1.0f);
+								mi->SetKeyword("METALNESS_MAP", true);
 							}
 							else
 							{
 								PR_CORE_ERROR("  Could not load texture: {0}", texturePath);
 								mi->Set("u_Metalness", metalness);
-								mi->Set("u_MetalnessTexToggle", 0.0f);
+								mi->SetKeyword("METALNESS_MAP", false);
 							}
 							break;
 						}
@@ -456,7 +456,7 @@ namespace Prism {
 					PR_MESH_LOG("    No metalness map");
 
 					mi->Set("u_Metalness", metalness);
-					mi->Set("u_MetalnessTexToggle", 0.0f);
+					mi->SetKeyword("METALNESS_MAP", false);
 				}
 			}
 			PR_MESH_LOG("------------------------------");

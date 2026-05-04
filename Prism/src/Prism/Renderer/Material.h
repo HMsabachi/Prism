@@ -187,6 +187,7 @@ namespace Prism
 	public:
 		void Bind();
 		Ref<PrismShader> GetShader() const { return m_Material->m_Shader; }
+		void SetShader(const Ref<PrismShader>& shader);
 
 	private:
 		void AllocateStorage();

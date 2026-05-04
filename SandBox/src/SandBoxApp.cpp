@@ -172,10 +172,10 @@ public:
 		m_MeshMaterial->Set("u_LightRadiance", m_Light.Radiance);
 		//m_MeshMaterial->Set("u_CameraPosition", m_Camera.GetPosition());
 		m_MeshMaterial->Set("u_RadiancePrefilter", m_RadiancePrefilter ? 1.0f : 0.0f);
-		m_MeshMaterial->Set("u_AlbedoTexToggle", m_AlbedoInput.UseTexture ? 1.0f : 0.0f);
-		m_MeshMaterial->Set("u_NormalTexToggle", m_NormalInput.UseTexture ? 1.0f : 0.0f);
-		m_MeshMaterial->Set("u_MetalnessTexToggle", m_MetalnessInput.UseTexture ? 1.0f : 0.0f);
-		m_MeshMaterial->Set("u_RoughnessTexToggle", m_RoughnessInput.UseTexture ? 1.0f : 0.0f);
+		m_MeshMaterial->SetKeyword("ALBEDO_MAP", m_AlbedoInput.UseTexture);
+		m_MeshMaterial->SetKeyword("NORMAL_MAP", m_NormalInput.UseTexture);
+		m_MeshMaterial->SetKeyword("METALNESS_MAP", m_MetalnessInput.UseTexture);
+		m_MeshMaterial->SetKeyword("ROUGHNESS_MAP", m_RoughnessInput.UseTexture);
 		m_MeshMaterial->Set("u_EnvMapRotation", m_EnvMapRotation);
 
 		m_MeshMaterial->Set("u_EnvRadianceTex", m_EnvironmentCubeMap);
@@ -199,10 +199,10 @@ public:
 		m_SphereMesh->GetMaterial()->Set("u_LightRadiance", m_Light.Radiance);
 		//m_SphereMesh->GetMaterial()->Set("u_CameraPosition", m_Camera.GetPosition());
 		m_SphereMesh->GetMaterial()->Set("u_RadiancePrefilter", m_RadiancePrefilter ? 1.0f : 0.0f);
-		m_SphereMesh->GetMaterial()->Set("u_AlbedoTexToggle", m_AlbedoInput.UseTexture ? 1.0f : 0.0f);
-		m_SphereMesh->GetMaterial()->Set("u_NormalTexToggle", m_NormalInput.UseTexture ? 1.0f : 0.0f);
-		m_SphereMesh->GetMaterial()->Set("u_MetalnessTexToggle", m_MetalnessInput.UseTexture ? 1.0f : 0.0f);
-		m_SphereMesh->GetMaterial()->Set("u_RoughnessTexToggle", m_RoughnessInput.UseTexture ? 1.0f : 0.0f);
+		m_SphereMesh->GetMaterial()->SetKeyword("ALBEDO_MAP", m_AlbedoInput.UseTexture);
+		m_SphereMesh->GetMaterial()->SetKeyword("NORMAL_MAP", m_NormalInput.UseTexture);
+		m_SphereMesh->GetMaterial()->SetKeyword("METALNESS_MAP", m_MetalnessInput.UseTexture);
+		m_SphereMesh->GetMaterial()->SetKeyword("ROUGHNESS_MAP", m_RoughnessInput.UseTexture);
 		m_SphereMesh->GetMaterial()->Set("u_EnvMapRotation", m_EnvMapRotation);
 
 		m_SphereMesh->GetMaterial()->Set("u_EnvRadianceTex", m_EnvironmentCubeMap);

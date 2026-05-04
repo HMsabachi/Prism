@@ -26,10 +26,6 @@ Shader "Custom/SimplePBR_Animated"
 
         // Toggles
         u_RadiancePrefilter("环境光预过滤", Float) = 0.0
-        u_AlbedoTexToggle("颜色贴图开关", Float) = 0.0
-        u_NormalTexToggle("法线贴图开关", Float) = 0.0
-        u_MetalnessTexToggle("金属度贴图开关", Float) = 0.0
-        u_RoughnessTexToggle("粗糙度贴图开关", Float) = 0.0
 
         // light
         u_LightDirection("光照方向", Vector3) = (1, 1, 1)
@@ -47,13 +43,17 @@ Shader "Custom/SimplePBR_Animated"
 
     SubShader
     {
-        
+
         Pass
         {
             Tags { "Queue" = "Geometry" "RenderType" = "Opaque" }
             Name "ForwardBase"
             GLSL
             {
+                #pragma shader_feature ALBEDO_MAP
+                #pragma shader_feature NORMAL_MAP
+                #pragma shader_feature METALNESS_MAP
+                #pragma shader_feature ROUGHNESS_MAP
                 #include "PrismBuiltin.glsl"
                 #include "PrismPBR.glsl"
                 attribute vec3 a_Position : POSITION;
@@ -91,7 +91,7 @@ Shader "Custom/SimplePBR_Animated"
 
                     vs_Output.WorldPosition = vec3(u_ModelMatrix * boneTransform * vec4(a_Position, 1.0));
                     vs_Output.Normal = mat3(u_ModelMatrix) * mat3(boneTransform) * a_Normal;
-                    
+
 
                     vs_Output.TexCoord = vec2(a_TexCoord.x, 1.0 - a_TexCoord.y);
                     vs_Output.WorldNormals = mat3(u_ModelMatrix) * mat3(a_Tangent, a_Binormal, a_Normal);
@@ -185,23 +185,35 @@ Shader "Custom/SimplePBR_Animated"
                 {
                     vec3 u_CameraPosition = Prism_CameraPosition;
                     // Standard PBR inputs
-                    m_Params.Albedo = u_AlbedoTexToggle > 0.5 ? texture(u_AlbedoTexture, vs_Output.TexCoord).rgb : u_AlbedoColor; 
-                    m_Params.Metalness = u_MetalnessTexToggle > 0.5 ? texture(u_MetalnessTexture, vs_Output.TexCoord).r : u_Metalness;
-                    m_Params.Roughness = u_RoughnessTexToggle > 0.5 ?  texture(u_RoughnessTexture, vs_Output.TexCoord).r : u_Roughness;
+                #ifdef ALBEDO_MAP
+                    m_Params.Albedo = texture(u_AlbedoTexture, vs_Output.TexCoord).rgb;
+                #else
+                    m_Params.Albedo = u_AlbedoColor;
+                #endif
+                #ifdef METALNESS_MAP
+                    m_Params.Metalness = texture(u_MetalnessTexture, vs_Output.TexCoord).r;
+                #else
+                    m_Params.Metalness = u_Metalness;
+                #endif
+                #ifdef ROUGHNESS_MAP
+                    m_Params.Roughness = texture(u_RoughnessTexture, vs_Output.TexCoord).r;
+                #else
+                    m_Params.Roughness = u_Roughness;
+                #endif
                     m_Params.Roughness = max(m_Params.Roughness, 0.05); // Minimum roughness of 0.05 to keep specular highlight
 
                     m_Params.Albedo = mix(m_Params.Albedo, u_Color, 0.2);
                     // Normals (either from vertex or map)
+                #ifdef NORMAL_MAP
+                    m_Params.Normal = normalize(2.0 * texture(u_NormalTexture, vs_Output.TexCoord).rgb - 1.0);
+                    m_Params.Normal = normalize(vs_Output.WorldNormals * m_Params.Normal);
+                #else
                     m_Params.Normal = normalize(vs_Output.Normal);
-                    if (u_NormalTexToggle > 0.5)
-                    {
-                        m_Params.Normal = normalize(2.0 * texture(u_NormalTexture, vs_Output.TexCoord).rgb - 1.0);
-                        m_Params.Normal = normalize(vs_Output.WorldNormals * m_Params.Normal);
-                    }
+                #endif
 
                     m_Params.View = normalize(u_CameraPosition - vs_Output.WorldPosition);
                     m_Params.NdotV = max(dot(m_Params.Normal, m_Params.View), 0.0);
-                        
+
                     // Specular reflection vector
                     vec3 Lr = 2.0 * m_Params.NdotV * m_Params.Normal - m_Params.View;
 
@@ -214,7 +226,7 @@ Shader "Custom/SimplePBR_Animated"
                     FragColor = vec4(lightContribution + iblContribution, 1.0);
                     //FragColor = vec4(u_Color, 1.0);
                 }
-                
+
             }
         }
     }

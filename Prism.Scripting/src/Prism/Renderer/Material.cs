@@ -39,7 +39,17 @@ namespace Prism
 
         internal IntPtr m_UnmanagedInstance;
 
-        
+        public void SetKeyword(string name, bool enabled)
+        {
+            unsafe { InternalCalls.Prism_Material_SetKeyword(m_UnmanagedInstance, name, enabled); }
+        }
+
+        public bool IsKeywordEnabled(string name)
+        {
+            unsafe { return InternalCalls.Prism_Material_IsKeywordEnabled(m_UnmanagedInstance, name); }
+        }
+
+
     }
 
     public class MaterialInstance
@@ -111,6 +121,16 @@ namespace Prism
 
         internal IntPtr m_UnmanagedInstance;
 
-       
+        public void SetKeyword(string name, bool enabled)
+        {
+            unsafe { InternalCalls.Prism_MaterialInstance_SetKeyword(m_UnmanagedInstance, name, enabled); }
+        }
+
+        public bool IsKeywordEnabled(string name)
+        {
+            unsafe { return InternalCalls.Prism_MaterialInstance_IsKeywordEnabled(m_UnmanagedInstance, name); }
+        }
+
+
     }
 }

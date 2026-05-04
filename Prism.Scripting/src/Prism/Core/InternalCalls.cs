@@ -36,6 +36,9 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr> Prism_Mesh_GetMaterial;
         internal static delegate* unmanaged[Cdecl]<IntPtr, Int32, IntPtr> Prism_Mesh_GetMaterialByIndex;
         internal static delegate* unmanaged[Cdecl]<IntPtr, Int32> Prism_Mesh_GetMaterialCount;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, Int32, IntPtr, void> Prism_Mesh_SetMaterialByIndex;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr, void> Prism_Mesh_SetOverrideMaterial;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr> Prism_Mesh_GetOverrideMaterial;
         internal static delegate* unmanaged[Cdecl]<float, float, IntPtr> Prism_MeshFactory_CreatePlane;
         // MaterialComponent
         internal static delegate* unmanaged[Cdecl]<UInt64, IntPtr> Prism_MaterialComponent_GetMaterial;
@@ -55,6 +58,10 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, IntPtr, void> Prism_MaterialInstance_SetVector3;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, IntPtr, void> Prism_MaterialInstance_SetVector4;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, IntPtr, void> Prism_MaterialInstance_SetTexture;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, bool, void> Prism_Material_SetKeyword;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, bool> Prism_Material_IsKeywordEnabled;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, bool, void> Prism_MaterialInstance_SetKeyword;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, bool> Prism_MaterialInstance_IsKeywordEnabled;
 
         // RigidBody2DComponent
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector2*, Vector2*, bool, void> Prism_RigidBody2DComponent_ApplyLinearImpulse;

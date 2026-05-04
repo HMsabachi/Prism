@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Prism/Core/Core.h"
 #include "Prism/Renderer/Shader.h"
 #include "ShaderPropertyDeclaration.h"
@@ -82,6 +82,8 @@ namespace Prism
 		// Keyword / Variant data
 		std::vector<ShaderKeyword> m_Keywords;
 		std::unordered_map<KeywordMask, ShaderVariant> m_Variants;
+		std::string m_VertexShaderSource;
+		std::string m_FragmentShaderSource;
 
 	public:
 		static std::vector<Ref<PrismShader>> s_AllShaders;
@@ -96,10 +98,10 @@ namespace Prism
 		void Add(const Ref<PrismShader>& shader);
 		void Load(const std::string& path);
 		void Load(const std::string& name, const std::string& path);
-	void LoadAll(const std::string& directory);
+		void LoadAll(const std::string& directory);
 
 		const Ref<PrismShader>& Get(const std::string& name) const;
-
+		const std::unordered_map<std::string, Ref<PrismShader>>& GetAll() const;
 	private:
 		std::unordered_map<std::string, Ref<PrismShader>> m_Shaders;
 	};
