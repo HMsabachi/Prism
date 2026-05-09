@@ -49,8 +49,9 @@ premake5 xcode4        # macOS Xcode
 - 编辑器运行时脚本热重载（支持 Play 时自动重载）
 - C# 端完整 API：Input、Time、Log、Math（Vector2/3/4、Matrix4）、Renderer（Material、Mesh、Texture2D）
 - C# 材质 API：`MaterialInstance.Set/GetMaterial`、`SetOverrideMaterial`、`SetKeyword/IsKeywordEnabled`
-- C# 端物理 API：`RigidBody2DComponent.ApplyLinearImpulse`
-- 示例脚本：MapGenerator（程序化地形）、PlayerCube（物理控制）、BasicController（相机移动）、Sink（下沉平台）、RandomColor（随机颜色）
+- C# 端物理 API：`RigidBody2DComponent.ApplyLinearImpulse`、`RigidBodyComponent.AddForce/AddTorque`（3D 物理，支持 ForceMode）、碰撞回调（`AddCollisionBeginCallback` / `AddCollisionEndCallback`）
+- C# 端方向 API：`GetForwardDirection` / `GetRightDirection` / `GetUpDirection`
+- 示例脚本：MapGenerator（程序化地形）、PlayerCube（2D 物理控制）、PlayerCube3D / PlayerSphere（3D 物理控制）、BasicController（相机移动）、Sink（下沉平台）、RandomColor（随机颜色）
 
 ### 实体组件系统（ECS）
 - 基于 **entt** 库
