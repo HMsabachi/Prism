@@ -1,4 +1,4 @@
-using Prism;
+﻿using Prism;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -44,9 +44,9 @@ namespace Example
             m_CollisionCounter--;
         }
 
-        void OnUpdate()
+        void OnFixedUpdate()
         {
-            float ts = Time.DeltaTime;
+            float ts = Time.FixedDeltaTime;
             float movementForce = HorizontalForce;
             Velocity = m_PhysicsBody.LinearVelocity;
             if (!Colliding)

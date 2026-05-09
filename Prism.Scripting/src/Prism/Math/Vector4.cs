@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 
 namespace Prism
@@ -51,6 +51,14 @@ namespace Prism
                 Z /= mag;
                 W /= mag;
             }
+        }
+
+        public void Clamp(Vector4 min, Vector4 max)
+        {
+            X = Mathf.Clamp(X, min.X, max.X);
+            Y = Mathf.Clamp(Y, min.Y, max.Y);
+            Z = Mathf.Clamp(Z, min.Z, max.Z);
+            W = Mathf.Clamp(W, min.W, max.W);
         }
 
         public static float Distance(Vector4 a, Vector4 b)

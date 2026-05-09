@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "SceneSerializer.h"
 
 #include "Entity.h"
@@ -317,6 +317,72 @@ namespace Prism {
 			out << YAML::EndMap; // CircleCollider2DComponent
 		}
 
+		if (entity.HasComponent<RigidBodyComponent>())
+		{
+			out << YAML::Key << "RigidBodyComponent";
+			out << YAML::BeginMap; // RigidBodyComponent
+
+			auto& rbComponent = entity.GetComponent<RigidBodyComponent>();
+			out << YAML::Key << "BodyType" << YAML::Value << (int)rbComponent.BodyType;
+			out << YAML::Key << "Mass" << YAML::Value << rbComponent.Mass;
+			out << YAML::Key << "LockPositionX" << YAML::Value << rbComponent.LockPositionX;
+			out << YAML::Key << "LockPositionY" << YAML::Value << rbComponent.LockPositionY;
+			out << YAML::Key << "LockPositionZ" << YAML::Value << rbComponent.LockPositionZ;
+			out << YAML::Key << "LockRotationX" << YAML::Value << rbComponent.LockRotationX;
+			out << YAML::Key << "LockRotationY" << YAML::Value << rbComponent.LockRotationY;
+			out << YAML::Key << "LockRotationZ" << YAML::Value << rbComponent.LockRotationZ;
+
+			out << YAML::EndMap; // RigidBodyComponent
+		}
+
+		if (entity.HasComponent<PhysicsMaterialComponent>())
+		{
+			out << YAML::Key << "PhysicsMaterialComponent";
+			out << YAML::BeginMap; // PhysicsMaterialComponent
+
+			auto& pmComponent = entity.GetComponent<PhysicsMaterialComponent>();
+			out << YAML::Key << "StaticFriction" << YAML::Value << pmComponent.StaticFriction;
+			out << YAML::Key << "DynamicFriction" << YAML::Value << pmComponent.DynamicFriction;
+			out << YAML::Key << "Bounciness" << YAML::Value << pmComponent.Bounciness;
+
+			out << YAML::EndMap; // PhysicsMaterialComponent
+		}
+
+		if (entity.HasComponent<BoxColliderComponent>())
+		{
+			out << YAML::Key << "BoxColliderComponent";
+			out << YAML::BeginMap; // BoxColliderComponent
+
+			auto& bcComponent = entity.GetComponent<BoxColliderComponent>();
+			out << YAML::Key << "Size" << YAML::Value << bcComponent.Size;
+			out << YAML::Key << "Offset" << YAML::Value << bcComponent.Offset;
+
+			out << YAML::EndMap; // BoxColliderComponent
+		}
+
+		if (entity.HasComponent<SphereColliderComponent>())
+		{
+			out << YAML::Key << "SphereColliderComponent";
+			out << YAML::BeginMap; // SphereColliderComponent
+
+			auto& scComponent = entity.GetComponent<SphereColliderComponent>();
+			out << YAML::Key << "Radius" << YAML::Value << scComponent.Radius;
+
+			out << YAML::EndMap; // SphereColliderComponent
+		}
+
+		if (entity.HasComponent<CapsuleColliderComponent>())
+		{
+			out << YAML::Key << "CapsuleColliderComponent";
+			out << YAML::BeginMap; // CapsuleColliderComponent
+
+			auto& ccComponent = entity.GetComponent<CapsuleColliderComponent>();
+			out << YAML::Key << "Radius" << YAML::Value << ccComponent.Radius;
+			out << YAML::Key << "Height" << YAML::Value << ccComponent.Height;
+
+			out << YAML::EndMap; // CapsuleColliderComponent
+		}
+
 		out << YAML::EndMap; // Entity
 	}
 
@@ -568,6 +634,61 @@ namespace Prism {
 					component.Friction = circleCollider2DComponent["Friction"] ? circleCollider2DComponent["Friction"].as<float>() : 1.0f;
 
 					PR_CORE_INFO("  CircleCollider2DComponent: Offset={0},{1}, Radius={2}, Density={3}, Friction={4}", component.Offset.x, component.Offset.y, component.Radius, component.Density, component.Friction);
+				}
+				auto rigidBodyComponent = entity["RigidBodyComponent"];
+				if (rigidBodyComponent)
+				{
+					auto& component = deserializedEntity.AddComponent<RigidBodyComponent>();
+					component.BodyType = (RigidBodyComponent::Type)rigidBodyComponent["BodyType"].as<int>();
+					component.Mass = rigidBodyComponent["Mass"] ? rigidBodyComponent["Mass"].as<float>() : 1.0f;
+					component.LockPositionX = rigidBodyComponent["LockPositionX"] ? rigidBodyComponent["LockPositionX"].as<bool>() : false;
+					component.LockPositionY = rigidBodyComponent["LockPositionY"] ? rigidBodyComponent["LockPositionY"].as<bool>() : false;
+					component.LockPositionZ = rigidBodyComponent["LockPositionZ"] ? rigidBodyComponent["LockPositionZ"].as<bool>() : false;
+					component.LockRotationX = rigidBodyComponent["LockRotationX"] ? rigidBodyComponent["LockRotationX"].as<bool>() : false;
+					component.LockRotationY = rigidBodyComponent["LockRotationY"] ? rigidBodyComponent["LockRotationY"].as<bool>() : false;
+					component.LockRotationZ = rigidBodyComponent["LockRotationZ"] ? rigidBodyComponent["LockRotationZ"].as<bool>() : false;
+
+					PR_CORE_INFO("  RigidBodyComponent: Type={0}, Mass={1}", (int)component.BodyType, component.Mass);
+				}
+
+				auto physicsMaterialComponent = entity["PhysicsMaterialComponent"];
+				if (physicsMaterialComponent)
+				{
+					auto& component = deserializedEntity.AddComponent<PhysicsMaterialComponent>();
+					component.StaticFriction = physicsMaterialComponent["StaticFriction"].as<float>();
+					component.DynamicFriction = physicsMaterialComponent["DynamicFriction"].as<float>();
+					component.Bounciness = physicsMaterialComponent["Bounciness"].as<float>();
+
+					PR_CORE_INFO("  PhysicsMaterialComponent: StaticFriction={0}, DynamicFriction={1}, Bounciness={2}", component.StaticFriction, component.DynamicFriction, component.Bounciness);
+				}
+
+				auto boxColliderComponent = entity["BoxColliderComponent"];
+				if (boxColliderComponent)
+				{
+					auto& component = deserializedEntity.AddComponent<BoxColliderComponent>();
+					component.Size = boxColliderComponent["Size"].as<glm::vec3>();
+					component.Offset = boxColliderComponent["Offset"].as<glm::vec3>();
+
+					PR_CORE_INFO("  BoxColliderComponent: Size={0},{1},{2}, Offset={3},{4},{5}", component.Size.x, component.Size.y, component.Size.z, component.Offset.x, component.Offset.y, component.Offset.z);
+				}
+
+				auto sphereColliderComponent = entity["SphereColliderComponent"];
+				if (sphereColliderComponent)
+				{
+					auto& component = deserializedEntity.AddComponent<SphereColliderComponent>();
+					component.Radius = sphereColliderComponent["Radius"].as<float>();
+
+					PR_CORE_INFO("  SphereColliderComponent: Radius={0}", component.Radius);
+				}
+
+				auto capsuleColliderComponent = entity["CapsuleColliderComponent"];
+				if (capsuleColliderComponent)
+				{
+					auto& component = deserializedEntity.AddComponent<CapsuleColliderComponent>();
+					component.Radius = capsuleColliderComponent["Radius"].as<float>();
+					component.Height = capsuleColliderComponent["Height"].as<float>();
+
+					PR_CORE_INFO("  CapsuleColliderComponent: Radius={0}, Height={1}", component.Radius, component.Height);
 				}
 			}
 		}

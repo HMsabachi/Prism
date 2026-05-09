@@ -68,8 +68,19 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector2*, void> Prism_RigidBody2DComponent_GetLinearVelocity;
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector2*, void> Prism_RigidBody2DComponent_SetLinearVelocity;
 
+        // RigidBodyComponent
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, Int32, void> Prism_RigidBodyComponent_AddForce;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, Int32, void> Prism_RigidBodyComponent_AddTorque;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_RigidBodyComponent_GetLinearVelocity;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_RigidBodyComponent_SetLinearVelocity;
+
         // Entity
         internal static delegate* unmanaged[Cdecl]<NativeString, UInt64> Prism_Entity_FindEntityByTag;
+
+        // Entity Directions
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_Entity_GetForwardDirection;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_Entity_GetRightDirection;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_Entity_GetUpDirection;
 
         // TransformComponent
         internal static delegate* unmanaged[Cdecl]<UInt64, Matrix4*, void> Prism_TransformComponent_GetTransform;

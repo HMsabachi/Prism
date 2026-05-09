@@ -160,4 +160,55 @@ namespace Prism
     public class CircleCollider2DComponent : Component
     {
     }
+
+    public enum ForceMode
+    {
+        Force = 0,
+        Impulse,
+        VelocityChange,
+        Acceleration
+    }
+
+    public class RigidBodyComponent : Component
+    {
+        public void AddForce(Vector3 force, ForceMode forceMode = ForceMode.Force)
+        {
+            unsafe { InternalCalls.Prism_RigidBodyComponent_AddForce(Entity.ID, &force, (int)forceMode); }
+        }
+
+        public void AddTorque(Vector3 torque, ForceMode forceMode = ForceMode.Force)
+        {
+            unsafe { InternalCalls.Prism_RigidBodyComponent_AddTorque(Entity.ID, &torque, (int)forceMode); }
+        }
+
+        public Vector3 LinearVelocity
+        {
+            get { return GetLinearVelocity(); }
+            set { SetLinearVelocity(value); }
+        }
+
+        public Vector3 GetLinearVelocity()
+        {
+            Vector3 velocity;
+            unsafe { InternalCalls.Prism_RigidBodyComponent_GetLinearVelocity(Entity.ID, &velocity); }
+            return velocity;
+        }
+
+        public void SetLinearVelocity(Vector3 velocity)
+        {
+            unsafe { InternalCalls.Prism_RigidBodyComponent_SetLinearVelocity(Entity.ID, &velocity); }
+        }
+    }
+
+    public class BoxColliderComponent : Component
+    {
+    }
+
+    public class SphereColliderComponent : Component
+    {
+    }
+
+    public class CapsuleColliderComponent : Component
+    {
+    }
 }

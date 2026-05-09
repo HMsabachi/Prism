@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "Application.h"
 
 #include "Log.h"
@@ -11,7 +11,7 @@
 #include "Prism/Renderer/Shader/Parser/ShaderParser.h"
 
 #include "Scripting/ScriptEngine.h"
-#include "Prism/Physics/PhysXManager.h"
+#include "Prism/Physics/Physics3D.h"
 
 
 #include <imgui.h>
@@ -30,255 +30,255 @@ namespace Prism
 #define BIND_EVENT_FN(x) std::bind(&Application::x, this, std::placeholders::_1)
 #define PR_ERROR_COLOR 1, 0, 1, 1
 
-	Application* Application::s_Instance = nullptr;
+    Application* Application::s_Instance = nullptr;
 
-	Application::Application(const ApplicationProps& props)
-		: m_Props(props)
-	{
-		PR_PROFILE_FUNCTION();
-		PR_CORE_ASSERT(!s_Instance, "Application already exists! 应用已经存在");
-		s_Instance = this;
+    Application::Application(const ApplicationProps& props)
+        : m_Props(props)
+    {
+        PR_PROFILE_FUNCTION();
+        PR_CORE_ASSERT(!s_Instance, "Application already exists! 应用已经存在");
+        s_Instance = this;
 
-		Initialize();
+        Initialize();
 
-		
-	}
-	void Application::Initialize()
-	{
-		// 初始化窗口 Initialize Window
-		m_Window = std::unique_ptr<Window>(Window::Create(WindowProps(m_Props.Name, m_Props.WindowWidth, m_Props.WindowHeight)));
-		m_Window->SetEventCallback(BIND_EVENT_FN(OnEvent));
-		m_Window->SetVSync(m_Props.VSync);
-		// 初始化渲染器 Initialize Renderer
+        
+    }
+    void Application::Initialize()
+    {
+        // 初始化窗口 Initialize Window
+        m_Window = std::unique_ptr<Window>(Window::Create(WindowProps(m_Props.Name, m_Props.WindowWidth, m_Props.WindowHeight)));
+        m_Window->SetEventCallback(BIND_EVENT_FN(OnEvent));
+        m_Window->SetVSync(m_Props.VSync);
+        // 初始化渲染器 Initialize Renderer
 
-		// 初始化时间管理器 Initialize Time Manager
-		Time::Init();
-		// 初始化ImGui层 Initialize ImGui Layer
-		m_ImGuiLayer = new ImGuiLayer("ImGui");
-		PushOverlay(m_ImGuiLayer);
-		// 初始化PrismShader解释器
-		ShaderParser::Init("Assets/Shaders/Include");
-		// 初始化 PhysX 物理引擎
-		PhysXManager::Init();
-		// 初始化渲染器 Initialize Renderer
-		Renderer::Init();
-		Renderer::WaitAndRender();
-	}
+        // 初始化时间管理器 Initialize Time Manager
+        Time::Init();
+        // 初始化ImGui层 Initialize ImGui Layer
+        m_ImGuiLayer = new ImGuiLayer("ImGui");
+        PushOverlay(m_ImGuiLayer);
+        // 初始化PrismShader解释器
+        ShaderParser::Init("Assets/Shaders/Include");
+        // 初始化 PhysX 物理引擎
+        Physics3D::Init();
+        // 初始化渲染器 Initialize Renderer
+        Renderer::Init();
+        Renderer::WaitAndRender();
+    }
 
-	Application::~Application()
-	{
-		PR_PROFILE_FUNCTION();
-	}
-	
+    Application::~Application()
+    {
+        PR_PROFILE_FUNCTION();
+    }
+    
 
-	void Application::OnEvent(Event& e)
-	{
-		PR_PROFILE_FUNCTION();
-		EventDispatcher dispatcher(e);
-		dispatcher.Dispatch<WindowCloseEvent>(BIND_EVENT_FN(OnWindowClose));
-		dispatcher.Dispatch<WindowResizeEvent>(BIND_EVENT_FN(OnWindowResize));
+    void Application::OnEvent(Event& e)
+    {
+        PR_PROFILE_FUNCTION();
+        EventDispatcher dispatcher(e);
+        dispatcher.Dispatch<WindowCloseEvent>(BIND_EVENT_FN(OnWindowClose));
+        dispatcher.Dispatch<WindowResizeEvent>(BIND_EVENT_FN(OnWindowResize));
 
-		for (auto it = m_LayerStack.rbegin(); it != m_LayerStack.rend(); ++it)
-		{
-			(*it)->OnEvent(e);
-			if (e.Handled)
-				break;
-		}
-		//PR_CORE_TRACE("{0}", e);
-	}
+        for (auto it = m_LayerStack.rbegin(); it != m_LayerStack.rend(); ++it)
+        {
+            (*it)->OnEvent(e);
+            if (e.Handled)
+                break;
+        }
+        //PR_CORE_TRACE("{0}", e);
+    }
 
-	void Application::Run()
-	{
-		PR_PROFILE_FUNCTION();
-		OnInit();
-		while (m_Running)
-			OnUpdate();
-		OnShutdown();
-	}
+    void Application::Run()
+    {
+        PR_PROFILE_FUNCTION();
+        OnInit();
+        while (m_Running)
+            OnUpdate();
+        OnShutdown();
+    }
 
-	void Application::OnUpdate()
-	{
-		PR_PROFILE_FUNCTION();
-		Time::Update();
-		
-		if (!m_Minimized)
-		{
-			PR_PROFILE_SCOPE("Update LayerStack")
-			for (Layer* layer : m_LayerStack)
-				layer->OnUpdate();
+    void Application::OnUpdate()
+    {
+        PR_PROFILE_FUNCTION();
+        Time::Update();
+        
+        if (!m_Minimized)
+        {
+            PR_PROFILE_SCOPE("Update LayerStack")
+            for (Layer* layer : m_LayerStack)
+                layer->OnUpdate();
 
-			Application* app = this;
-			Renderer::Submit([app]() { app->RenderImGui(); });
+            Application* app = this;
+            Renderer::Submit([app]() { app->RenderImGui(); });
 
-			Renderer::WaitAndRender();
-		}
-		m_Window->OnUpdate();
-	}
+            Renderer::WaitAndRender();
+        }
+        m_Window->OnUpdate();
+    }
 #pragma region Private Methods 私有方法
 
-	void Application::OnInit()
-	{
-		ScriptEngine::Initialize();
-		ScriptEngine::LoadEngineAssembly("Assets/scripts/Prism.Scripting.dll");
-		ScriptEngine::LoadAppAssembly("Assets/scripts/ExampleApp.dll");
-	}
+    void Application::OnInit()
+    {
+        ScriptEngine::Initialize();
+        ScriptEngine::LoadEngineAssembly("Assets/scripts/Prism.Scripting.dll");
+        ScriptEngine::LoadAppAssembly("Assets/scripts/ExampleApp.dll");
+    }
 
-	void Application::OnShutdown()
-	{
+    void Application::OnShutdown()
+    {
         m_LayerStack.Shutdown();
-		ScriptEngine::Shutdown();
-		PhysXManager::Shutdown();
-	}
+        ScriptEngine::Shutdown();
+        Physics3D::Shutdown();
+    }
 
-	void Application::RenderImGui()
-	{
-		PR_PROFILE_FUNCTION();
-		ImGuiRenderer();
+    void Application::RenderImGui()
+    {
+        PR_PROFILE_FUNCTION();
+        ImGuiRenderer();
 
-		for (Layer* layer : m_LayerStack)
-			layer->OnImGuiRender();
-		m_ImGuiLayer->End();
-	}
+        for (Layer* layer : m_LayerStack)
+            layer->OnImGuiRender();
+        m_ImGuiLayer->End();
+    }
 
-	void Application::ImGuiRenderer()
-	{
-		m_ImGuiLayer->Begin();
-		ImGui::Begin("Renderer");
-		auto& caps = RendererAPI::GetCapabilities();
-		if (ImGui::TreeNode("Base Info"))
-		{
-			ImGui::Text("Vendor: %s", caps.Vendor.c_str());
-			ImGui::Text("Renderer: %s", caps.Renderer.c_str());
-			ImGui::Text("Version: %s", caps.Version.c_str());
-			ImGui::Text("MaxSamples: %d", caps.MaxSamples);
-			ImGui::Text("MaxTextureUnits: %d", caps.MaxTextureUnits);
-			ImGui::Text("MaxAnisotropy: %.0f", caps.MaxAnisotropy);
-			ImGui::TreePop();
-		}
-		if (ImGui::TreeNode("2D Renderer Info"))
-		{
-			auto stats = Renderer2D::GetStats();
-			ImGui::Text("DrawCalls: %d", stats.DrawCalls);
-			ImGui::Text("VertexCount: %d", stats.GetTotalVertexCount());
-			Renderer2D::ResetStats();
-			ImGui::TreePop();
-		}
+    void Application::ImGuiRenderer()
+    {
+        m_ImGuiLayer->Begin();
+        ImGui::Begin("Renderer");
+        auto& caps = RendererAPI::GetCapabilities();
+        if (ImGui::TreeNode("Base Info"))
+        {
+            ImGui::Text("Vendor: %s", caps.Vendor.c_str());
+            ImGui::Text("Renderer: %s", caps.Renderer.c_str());
+            ImGui::Text("Version: %s", caps.Version.c_str());
+            ImGui::Text("MaxSamples: %d", caps.MaxSamples);
+            ImGui::Text("MaxTextureUnits: %d", caps.MaxTextureUnits);
+            ImGui::Text("MaxAnisotropy: %.0f", caps.MaxAnisotropy);
+            ImGui::TreePop();
+        }
+        if (ImGui::TreeNode("2D Renderer Info"))
+        {
+            auto stats = Renderer2D::GetStats();
+            ImGui::Text("DrawCalls: %d", stats.DrawCalls);
+            ImGui::Text("VertexCount: %d", stats.GetTotalVertexCount());
+            Renderer2D::ResetStats();
+            ImGui::TreePop();
+        }
         ImGui::Text("RenderCommandQueue: %d", Renderer::GetRenderCommandQueue().GetSubmitCount());
-		Renderer::GetRenderCommandQueue().ResetSubmitCount();
-		ImGui::Text("Fps: %d", (int)(1.0f / Time::GetDeltaTime()));
-		ImGui::End();
-	}
+        Renderer::GetRenderCommandQueue().ResetSubmitCount();
+        ImGui::Text("Fps: %d", (int)(1.0f / Time::GetDeltaTime()));
+        ImGui::End();
+    }
 
 #pragma region Event Handling 事件处理
-	bool Application::OnWindowClose(WindowCloseEvent& e)
-	{
-		PR_PROFILE_FUNCTION();
-		m_Running = false;
-		return true;
-	}
-	bool Application::OnWindowResize(WindowResizeEvent& e)
-	{
-		PR_PROFILE_FUNCTION();
-		if (e.GetWidth() == 0 || e.GetHeight() == 0)
-		{
-			m_Minimized = true;
-			PR_CORE_INFO("已暂停引擎 Engine Paused");
-			return false;
-		}
-		int width = e.GetWidth(), height = e.GetHeight();
+    bool Application::OnWindowClose(WindowCloseEvent& e)
+    {
+        PR_PROFILE_FUNCTION();
+        m_Running = false;
+        return true;
+    }
+    bool Application::OnWindowResize(WindowResizeEvent& e)
+    {
+        PR_PROFILE_FUNCTION();
+        if (e.GetWidth() == 0 || e.GetHeight() == 0)
+        {
+            m_Minimized = true;
+            PR_CORE_INFO("已暂停引擎 Engine Paused");
+            return false;
+        }
+        int width = e.GetWidth(), height = e.GetHeight();
 
-		Renderer::Submit([=]() { RendererAPI::SetViewport(0, 0, width, height); });
+        Renderer::Submit([=]() { RendererAPI::SetViewport(0, 0, width, height); });
 
-		auto& fbs = FramebufferPool::GetGlobal()->GetAll();
-		for (auto& fb : fbs)
-		{
-			fb->Resize(width, height);
-		}
+        auto& fbs = FramebufferPool::GetGlobal()->GetAll();
+        for (auto& fb : fbs)
+        {
+            fb->Resize(width, height);
+        }
 
-		m_Minimized = false;
+        m_Minimized = false;
 
-		return false;
-	}
+        return false;
+    }
 #pragma endregion
 
 #pragma region LayerStack 层栈
-	void Application::PushLayer(Layer* layer)
-	{
-		m_LayerStack.PushLayer(layer);
-	}
-	void Application::PushOverlay(Layer* layer)
-	{
-		m_LayerStack.PushOverlay(layer);
-	}
+    void Application::PushLayer(Layer* layer)
+    {
+        m_LayerStack.PushLayer(layer);
+    }
+    void Application::PushOverlay(Layer* layer)
+    {
+        m_LayerStack.PushOverlay(layer);
+    }
 #pragma endregion
 
 #pragma endregion
 
 #pragma region Public Methods 公共方法
-	std::string Application::OpenFile(const char* filter) const
-	{
-		OPENFILENAMEA ofn;       // common dialog box structure
-		CHAR szFile[260] = { 0 };       // if using TCHAR macros
+    std::string Application::OpenFile(const char* filter) const
+    {
+        OPENFILENAMEA ofn;       // common dialog box structure
+        CHAR szFile[260] = { 0 };       // if using TCHAR macros
 
-		// Initialize OPENFILENAME
-		ZeroMemory(&ofn, sizeof(OPENFILENAME));
-		ofn.lStructSize = sizeof(OPENFILENAME);
-		ofn.hwndOwner = glfwGetWin32Window((GLFWwindow*)m_Window->GetNativeWindow());
-		ofn.lpstrFile = szFile;
-		ofn.nMaxFile = sizeof(szFile);
-		ofn.lpstrFilter = filter;
-		ofn.nFilterIndex = 1;
-		ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+        // Initialize OPENFILENAME
+        ZeroMemory(&ofn, sizeof(OPENFILENAME));
+        ofn.lStructSize = sizeof(OPENFILENAME);
+        ofn.hwndOwner = glfwGetWin32Window((GLFWwindow*)m_Window->GetNativeWindow());
+        ofn.lpstrFile = szFile;
+        ofn.nMaxFile = sizeof(szFile);
+        ofn.lpstrFilter = filter;
+        ofn.nFilterIndex = 1;
+        ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
 
-		if (GetOpenFileNameA(&ofn) == TRUE)
-		{
-			return ofn.lpstrFile;
-		}
-		return std::string();
-	}
-	std::string Application::SaveFile(const char* filter) const
-	{
-		OPENFILENAMEA ofn;       // common dialog box structure
-		CHAR szFile[260] = { 0 };       // if using TCHAR macros
+        if (GetOpenFileNameA(&ofn) == TRUE)
+        {
+            return ofn.lpstrFile;
+        }
+        return std::string();
+    }
+    std::string Application::SaveFile(const char* filter) const
+    {
+        OPENFILENAMEA ofn;       // common dialog box structure
+        CHAR szFile[260] = { 0 };       // if using TCHAR macros
 
-		// Initialize OPENFILENAME
-		ZeroMemory(&ofn, sizeof(OPENFILENAME));
-		ofn.lStructSize = sizeof(OPENFILENAME);
-		ofn.hwndOwner = glfwGetWin32Window((GLFWwindow*)m_Window->GetNativeWindow());
-		ofn.lpstrFile = szFile;
-		ofn.nMaxFile = sizeof(szFile);
-		ofn.lpstrFilter = filter;
-		ofn.nFilterIndex = 1;
-		ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+        // Initialize OPENFILENAME
+        ZeroMemory(&ofn, sizeof(OPENFILENAME));
+        ofn.lStructSize = sizeof(OPENFILENAME);
+        ofn.hwndOwner = glfwGetWin32Window((GLFWwindow*)m_Window->GetNativeWindow());
+        ofn.lpstrFile = szFile;
+        ofn.nMaxFile = sizeof(szFile);
+        ofn.lpstrFilter = filter;
+        ofn.nFilterIndex = 1;
+        ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
 
-		if (GetSaveFileNameA(&ofn) == TRUE)
-		{
-			return ofn.lpstrFile;
-		}
-		return std::string();
-	}
+        if (GetSaveFileNameA(&ofn) == TRUE)
+        {
+            return ofn.lpstrFile;
+        }
+        return std::string();
+    }
 
-	const char* Application::GetConfigurationName()
-	{
+    const char* Application::GetConfigurationName()
+    {
 #if defined(PR_DEBUG)
-		return "Debug";
+        return "Debug";
 #elif defined(PR_RELEASE)
-		return "Release";
+        return "Release";
 #elif defined(PR_DIST)
-		return "Dist";
+        return "Dist";
 #else
-		return "Unknown";
+        return "Unknown";
 #endif
-	}
+    }
 
-	const char* Application::GetPlatformName()
-	{
+    const char* Application::GetPlatformName()
+    {
 #if defined(PR_PLATFORM_WINDOWS)
-		return "Windows";
+        return "Windows";
 #else
-		return "Unknown";
+        return "Unknown";
 #endif
-	}
+    }
 
 #pragma endregion
 

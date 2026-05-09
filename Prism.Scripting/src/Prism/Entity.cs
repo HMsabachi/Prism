@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -10,8 +10,10 @@ namespace Prism
     {
         public ulong ID { get; internal set; }
 
-        private List<Action<float>> m_Collision2DBeginCallbacks = new List<Action<float>>();
-        private List<Action<float>> m_Collision2DEndCallbacks = new List<Action<float>>();
+        private Action<float>? m_Collision2DBeginCallbacks;
+        private Action<float>? m_Collision2DEndCallbacks;
+        private Action<float>? m_CollisionBeginCallbacks;
+        private Action<float>? m_CollisionEndCallbacks;
 
         protected Entity() { ID = 0; }
 
@@ -72,26 +74,65 @@ namespace Prism
             }
         }
 
+        public void AddCollisionBeginCallback(Action<float> callback)
+        {
+            m_CollisionBeginCallbacks += callback;
+        }
+
+        public void AddCollisionEndCallback(Action<float> callback)
+        {
+            m_CollisionEndCallbacks += callback;
+        }
+
+        private void OnCollisionBegin(float data)
+        {
+            m_CollisionBeginCallbacks?.Invoke(data);
+        }
+
+        private void OnCollisionEnd(float data)
+        {
+            m_CollisionEndCallbacks?.Invoke(data);
+        }
+
         public void AddCollision2DBeginCallback(Action<float> callback)
         {
-            m_Collision2DBeginCallbacks.Add(callback);
+            m_Collision2DBeginCallbacks += callback;
         }
 
         public void AddCollision2DEndCallback(Action<float> callback)
         {
-            m_Collision2DEndCallbacks.Add(callback);
+            m_Collision2DEndCallbacks += callback;
         }
 
         private void OnCollision2DBegin(float data)
         {
-            foreach (var callback in m_Collision2DBeginCallbacks)
-                callback.Invoke(data);
+            m_Collision2DBeginCallbacks?.Invoke(data);  
         }
 
         private void OnCollision2DEnd(float data)
         {
-            foreach (var callback in m_Collision2DEndCallbacks)
-                callback.Invoke(data);
+            m_Collision2DEndCallbacks?.Invoke(data);
+        }
+
+        public Vector3 GetForwardDirection()
+        {
+            Vector3 direction;
+            unsafe { InternalCalls.Prism_Entity_GetForwardDirection(ID, &direction); }
+            return direction;
+        }
+
+        public Vector3 GetRightDirection()
+        {
+            Vector3 direction;
+            unsafe { InternalCalls.Prism_Entity_GetRightDirection(ID, &direction); }
+            return direction;
+        }
+
+        public Vector3 GetUpDirection()
+        {
+            Vector3 direction;
+            unsafe { InternalCalls.Prism_Entity_GetUpDirection(ID, &direction); }
+            return direction;
         }
 
         // Entity lookup

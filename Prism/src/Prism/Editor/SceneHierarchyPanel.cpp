@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "SceneHierarchyPanel.h"
 
 #include <imgui.h>
@@ -59,7 +59,7 @@ namespace Prism {
 					DrawEntityNode(e);
 			}
 
-			if (ImGui::BeginPopupContextWindow(0, 1))
+			if (ImGui::BeginPopupContextWindow("CreateEntityPopup", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverExistingPopup))
 			{
 				if (ImGui::MenuItem("Create Empty Entity"))
 				{
@@ -134,6 +134,46 @@ namespace Prism {
 						if (ImGui::Button("Circle Collider 2D"))
 						{
 							m_SelectionContext.AddComponent<CircleCollider2DComponent>();
+							ImGui::CloseCurrentPopup();
+						}
+					}
+					if (!m_SelectionContext.HasComponent<RigidBodyComponent>())
+					{
+						if (ImGui::Button("Rigidbody"))
+						{
+							m_SelectionContext.AddComponent<RigidBodyComponent>();
+							ImGui::CloseCurrentPopup();
+						}
+					}
+					if (!m_SelectionContext.HasComponent<PhysicsMaterialComponent>())
+					{
+						if (ImGui::Button("Physics Material"))
+						{
+							m_SelectionContext.AddComponent<PhysicsMaterialComponent>();
+							ImGui::CloseCurrentPopup();
+						}
+					}
+					if (!m_SelectionContext.HasComponent<BoxColliderComponent>())
+					{
+						if (ImGui::Button("Box Collider"))
+						{
+							m_SelectionContext.AddComponent<BoxColliderComponent>();
+							ImGui::CloseCurrentPopup();
+						}
+					}
+					if (!m_SelectionContext.HasComponent<SphereColliderComponent>())
+					{
+						if (ImGui::Button("Sphere Collider"))
+						{
+							m_SelectionContext.AddComponent<SphereColliderComponent>();
+							ImGui::CloseCurrentPopup();
+						}
+					}
+					if (!m_SelectionContext.HasComponent<CapsuleColliderComponent>())
+					{
+						if (ImGui::Button("Capsule Collider"))
+						{
+							m_SelectionContext.AddComponent<CapsuleColliderComponent>();
 							ImGui::CloseCurrentPopup();
 						}
 					}
@@ -537,7 +577,7 @@ namespace Prism {
 				ImGui::NextColumn();
 
 				ImGui::Text("Scale");
-				ImGui::NextColumn();
+							ImGui::NextColumn();
 				ImGui::PushItemWidth(-1);
 
 				if (ImGui::DragFloat3("##scale", glm::value_ptr(tc.Scale), 0.25f))
@@ -702,6 +742,71 @@ namespace Prism {
 			Property("Radius", component.Radius);
 			Property("Density", component.Density);
 			Property("Friction", component.Friction);
+		});
+
+		DrawComponent<RigidBodyComponent>("Rigidbody", entity, [](auto& component)
+		{
+			const char* bodyTypeStrings[] = { "Static", "Dynamic", "Kinematic" };
+			const char* currentType = bodyTypeStrings[(int)component.BodyType];
+			if (ImGui::BeginCombo("Type", currentType))
+			{
+				for (int i = 0; i < 3; i++)
+				{
+					bool is_selected = (currentType == bodyTypeStrings[i]);
+					if (ImGui::Selectable(bodyTypeStrings[i], is_selected))
+					{
+						component.BodyType = (RigidBodyComponent::Type)i;
+					}
+					if (is_selected)
+						ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
+			}
+
+			if (component.BodyType == RigidBodyComponent::Type::Dynamic)
+			{
+				BeginPropertyGrid();
+				Property("Mass", component.Mass);
+				Property("Lock Position X", component.LockPositionX);
+				Property("Lock Position Y", component.LockPositionY);
+				Property("Lock Position Z", component.LockPositionZ);
+				Property("Lock Rotation X", component.LockRotationX);
+				Property("Lock Rotation Y", component.LockRotationY);
+				Property("Lock Rotation Z", component.LockRotationZ);
+				EndPropertyGrid();
+			}
+		});
+
+		DrawComponent<PhysicsMaterialComponent>("Physics Material", entity, [](auto& component)
+		{
+			BeginPropertyGrid();
+			Property("Static Friction", component.StaticFriction);
+			Property("Dynamic Friction", component.DynamicFriction);
+			Property("Bounciness", component.Bounciness);
+			EndPropertyGrid();
+		});
+
+		DrawComponent<BoxColliderComponent>("Box Collider", entity, [](auto& component)
+		{
+			BeginPropertyGrid();
+			Property("Size", component.Size);
+			Property("Offset", component.Offset);
+			EndPropertyGrid();
+		});
+
+		DrawComponent<SphereColliderComponent>("Sphere Collider", entity, [](auto& component)
+		{
+			BeginPropertyGrid();
+			Property("Radius", component.Radius);
+			EndPropertyGrid();
+		});
+
+		DrawComponent<CapsuleColliderComponent>("Capsule Collider", entity, [](auto& component)
+		{
+			BeginPropertyGrid();
+			Property("Radius", component.Radius);
+			Property("Height", component.Height);
+			EndPropertyGrid();
 		});
 
 		if (entity.HasComponent<ScriptComponent>())

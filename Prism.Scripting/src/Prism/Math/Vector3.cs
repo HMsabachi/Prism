@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 
 namespace Prism
@@ -68,6 +68,13 @@ namespace Prism
                 Y /= mag;
                 Z /= mag;
             }
+        }
+
+        public void Clamp(Vector3 min, Vector3 max)
+        {
+            X = Mathf.Clamp(X, min.X, max.X);
+            Y = Mathf.Clamp(Y, min.Y, max.Y);
+            Z = Mathf.Clamp(Z, min.Z, max.Z);
         }
 
         public Vector2 XY

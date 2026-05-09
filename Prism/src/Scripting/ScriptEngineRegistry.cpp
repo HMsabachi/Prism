@@ -44,6 +44,10 @@ namespace Prism
 		RegisterManagedComponent<RigidBody2DComponent>(engineAssembly);
 		RegisterManagedComponent<BoxCollider2DComponent>(engineAssembly);
 		RegisterManagedComponent<CircleCollider2DComponent>(engineAssembly);
+		RegisterManagedComponent<RigidBodyComponent>(engineAssembly);
+		RegisterManagedComponent<BoxColliderComponent>(engineAssembly);
+		RegisterManagedComponent<SphereColliderComponent>(engineAssembly);
+		RegisterManagedComponent<CapsuleColliderComponent>(engineAssembly);
 	}
 
 	void ScriptEngineRegistry::RegisterAll()
@@ -101,6 +105,15 @@ namespace Prism
 		PR_ADD_INTERNAL_CALL(Prism_TransformComponent_SetPosition);
 		PR_ADD_INTERNAL_CALL(Prism_TransformComponent_SetRotation);
 		PR_ADD_INTERNAL_CALL(Prism_TransformComponent_SetScale);
+			// Entity
+			PR_ADD_INTERNAL_CALL(Prism_Entity_GetForwardDirection);
+			PR_ADD_INTERNAL_CALL(Prism_Entity_GetRightDirection);
+			PR_ADD_INTERNAL_CALL(Prism_Entity_GetUpDirection);
+		// RigidBodyComponent
+		PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_AddForce);
+		PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_AddTorque);
+		PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_GetLinearVelocity);
+		PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_SetLinearVelocity);
 		// Texture2D
 		PR_ADD_INTERNAL_CALL(Prism_Texture2D_Constructor);
 		PR_ADD_INTERNAL_CALL(Prism_Texture2D_Destructor);

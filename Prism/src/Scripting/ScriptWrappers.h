@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <Rolky/Array.hpp>
 
 namespace Rolky
@@ -53,6 +53,10 @@ namespace Prism
 		void Prism_Entity_CreateComponent(uint64_t entityID, Rolky::ReflectionType type);
 		bool Prism_Entity_HasComponent(uint64_t entityID, Rolky::ReflectionType type);
 		uint64_t Prism_Entity_FindEntityByTag(Rolky::String tag);
+			// Entity Directions
+		void Prism_Entity_GetForwardDirection(uint64_t entityID, glm::vec3* outDirection);
+		void Prism_Entity_GetRightDirection(uint64_t entityID, glm::vec3* outDirection);
+		void Prism_Entity_GetUpDirection(uint64_t entityID, glm::vec3* outDirection);
 
 		// TransformComponent
 		void Prism_TransformComponent_GetTransform(uint64_t entityID, glm::mat4* outTransform);
@@ -91,6 +95,12 @@ namespace Prism
 		void Prism_RigidBody2DComponent_ApplyLinearImpulse(uint64_t entityID, glm::vec2* impulse, glm::vec2* offset, bool wake);
 		void Prism_RigidBody2DComponent_GetLinearVelocity(uint64_t entityID, glm::vec2* outVelocity);
 		void Prism_RigidBody2DComponent_SetLinearVelocity(uint64_t entityID, glm::vec2* velocity);
+
+	// RigidBodyComponent
+	void Prism_RigidBodyComponent_AddForce(uint64_t entityID, glm::vec3* force, int32_t forceMode);
+	void Prism_RigidBodyComponent_AddTorque(uint64_t entityID, glm::vec3* torque, int32_t forceMode);
+	void Prism_RigidBodyComponent_GetLinearVelocity(uint64_t entityID, glm::vec3* outVelocity);
+	void Prism_RigidBodyComponent_SetLinearVelocity(uint64_t entityID, glm::vec3* velocity);
 
 		// Material
 		Ref<Material>* Prism_Material_Constructor(Rolky::String shaderName);

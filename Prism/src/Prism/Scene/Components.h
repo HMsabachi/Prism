@@ -179,12 +179,60 @@ namespace Prism {
 		}
 	};
 
+	struct RigidBodyComponent
+	{
+		enum class Type { Static, Dynamic, Kinematic };
+		Type BodyType = Type::Static;
+		float Mass = 1.0F;
+
+		bool LockPositionX = false;
+		bool LockPositionY = false;
+		bool LockPositionZ = false;
+		bool LockRotationX = false;
+		bool LockRotationY = false;
+		bool LockRotationZ = false;
+
+		void* RuntimeActor = nullptr;
+
+		RigidBodyComponent() = default;
+		RigidBodyComponent(const RigidBodyComponent& other) = default;
+	};
+
+	// TODO: This will eventually be a resource, but that requires object referencing through the editor
+	struct PhysicsMaterialComponent
+	{
+		float StaticFriction = 1.0F;
+		float DynamicFriction = 1.0F;
+		float Bounciness = 1.0F;
+
+		PhysicsMaterialComponent() = default;
+		PhysicsMaterialComponent(const PhysicsMaterialComponent& other) = default;
+	};
+
+	struct BoxColliderComponent
+	{
+		glm::vec3 Size = { 1.0F, 1.0F, 1.0F };
+		glm::vec3 Offset = { 0.0F, 0.0F, 0.0F };
+
+		BoxColliderComponent() = default;
+		BoxColliderComponent(const BoxColliderComponent& other) = default;
+	};
+
 	struct SphereColliderComponent
 	{
 		float Radius = 0.5f;
 
 		SphereColliderComponent() = default;
 		SphereColliderComponent(const SphereColliderComponent& other) = default;
+	};
+
+	struct CapsuleColliderComponent
+	{
+		float Radius = 0.5F;
+		float Height = 1.0F;
+
+		CapsuleColliderComponent() = default;
+		CapsuleColliderComponent(const CapsuleColliderComponent& other) = default;
 	};
 
 }

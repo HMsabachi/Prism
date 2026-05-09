@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 
 namespace Prism
@@ -58,6 +58,12 @@ namespace Prism
             }
         }
 
+        public void Clamp(Vector2 min, Vector2 max)
+        {
+            X = Mathf.Clamp(X, min.X, max.X);
+            Y = Mathf.Clamp(Y, min.Y, max.Y);
+        }
+
         public static float Distance(Vector2 a, Vector2 b)
             => (a - b).Magnitude;
 
@@ -95,12 +101,6 @@ namespace Prism
                 Math.Clamp(value.X, min.X, max.X),
                 Math.Clamp(value.Y, min.Y, max.Y)
             );
-        }
-
-        public void Clamp(Vector2 min, Vector2 max)
-        {
-            X = Math.Clamp(X, min.X, max.X);
-            Y = Math.Clamp(Y, min.Y, max.Y);
         }
 
         public static bool EpsilonEquals(Vector2 a, Vector2 b)

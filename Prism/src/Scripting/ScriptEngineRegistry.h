@@ -1,11 +1,11 @@
-﻿#pragma once
+#pragma once
 namespace Prism 
 {
 
-	class ScriptEngineRegistry
-	{
-	public:
-		static void RegisterAll();
-	};
+    class ScriptEngineRegistry
+    {
+    public:
+        static void RegisterAll();
+    };
 
 }

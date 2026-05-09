@@ -15,126 +15,126 @@
 
 namespace Prism
 {
-	class EditorLayer : public Prism::Layer
-	{
-	public:
-		EditorLayer();
+    class EditorLayer : public Prism::Layer
+    {
+    public:
+        EditorLayer();
 
 
-		virtual ~EditorLayer();
+        virtual ~EditorLayer();
 
-		virtual void OnAttach() override;
+        virtual void OnAttach() override;
 
-		virtual void OnDetach() override;
+        virtual void OnDetach() override;
 
-		virtual void OnUpdate() override;
+        virtual void OnUpdate() override;
 
-		enum class PropertyFlag
-		{
-			None = 0, ColorProperty = 1, DragProperty = 2, SliderProperty = 4
-		};
+        enum class PropertyFlag
+        {
+            None = 0, ColorProperty = 1, DragProperty = 2, SliderProperty = 4
+        };
 
-		virtual void OnImGuiRender() override;
+        virtual void OnImGuiRender() override;
 
-		virtual void OnEvent(Event& event) override;
-		bool OnKeyPressedEvent(KeyPressedEvent& e);
-		bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
+        virtual void OnEvent(Event& event) override;
+        bool OnKeyPressedEvent(KeyPressedEvent& e);
+        bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
 
-		bool Property(const std::string& name, bool& value);
-		bool Property(const std::string& name, float& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
-		bool Property(const std::string& name, glm::vec2& value, PropertyFlag flags);
-		bool Property(const std::string& name, glm::vec2& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
-		bool Property(const std::string& name, glm::vec3& value, PropertyFlag flags);
-		bool Property(const std::string& name, glm::vec3& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
-		bool Property(const std::string& name, glm::vec4& value, PropertyFlag flags);
-		bool Property(const std::string& name, glm::vec4& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
+        bool Property(const std::string& name, bool& value);
+        bool Property(const std::string& name, float& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
+        bool Property(const std::string& name, glm::vec2& value, PropertyFlag flags);
+        bool Property(const std::string& name, glm::vec2& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
+        bool Property(const std::string& name, glm::vec3& value, PropertyFlag flags);
+        bool Property(const std::string& name, glm::vec3& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
+        bool Property(const std::string& name, glm::vec4& value, PropertyFlag flags);
+        bool Property(const std::string& name, glm::vec4& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
 
-		void ShowBoundingBoxes(bool show, bool onTop = false);
-		void UpdateWindowTitle(const std::string& sceneName);
-		void SelectEntity(Entity entity);
-		void DrawMaterialProperty(const PropertyDeclaration& prop, MaterialInstance& materialInstance);
+        void ShowBoundingBoxes(bool show, bool onTop = false);
+        void UpdateWindowTitle(const std::string& sceneName);
+        void SelectEntity(Entity entity);
+        void DrawMaterialProperty(const PropertyDeclaration& prop, MaterialInstance& materialInstance);
 
-		void OpenScene();
-		void SaveScene();
-		void SaveSceneAs();
-	private:
-		std::pair<float, float> GetMouseViewportSpace();
-		std::pair<glm::vec3, glm::vec3> CastRay(float mx, float my);
+        void OpenScene();
+        void SaveScene();
+        void SaveSceneAs();
+    private:
+        std::pair<float, float> GetMouseViewportSpace();
+        std::pair<glm::vec3, glm::vec3> CastRay(float mx, float my);
 
-		struct SelectedSubmesh
-		{
-			Prism::Entity Entity;
-			Submesh* Mesh = nullptr;
-			float Distance = 0.0f;
-		};
+        struct SelectedSubmesh
+        {
+            Prism::Entity Entity;
+            Submesh* Mesh = nullptr;
+            float Distance = 0.0f;
+        };
 
-		void OnSelected(const SelectedSubmesh& selectionContext);
-		void OnEntityDeleted(Entity e);
-		Ray CastMouseRay();
+        void OnSelected(const SelectedSubmesh& selectionContext);
+        void OnEntityDeleted(Entity e);
+        Ray CastMouseRay();
 
-		void OnScenePlay();
-		void OnSceneStop();
+        void OnScenePlay();
+        void OnSceneStop();
 
-		float GetSnapValue();
-	private:
-		std::vector<Ref<MaterialInstance>> m_MetalSphereMaterialInstances;
-		std::vector<Ref<MaterialInstance>> m_DielectricSphereMaterialInstances;
-	private:
-		Scope<SceneHierarchyPanel> m_SceneHierarchyPanel;
+        float GetSnapValue();
+    private:
+        std::vector<Ref<MaterialInstance>> m_MetalSphereMaterialInstances;
+        std::vector<Ref<MaterialInstance>> m_DielectricSphereMaterialInstances;
+    private:
+        Scope<SceneHierarchyPanel> m_SceneHierarchyPanel;
 
-		Ref<Scene> m_ActiveScene;
-		Ref<Scene> m_RuntimeScene, m_EditorScene;
+        Ref<Scene> m_ActiveScene;
+        Ref<Scene> m_RuntimeScene, m_EditorScene;
 
-		EditorCamera m_EditorCamera;
+        EditorCamera m_EditorCamera;
 
-		Ref<Material> m_SphereBaseMaterial;
+        Ref<Material> m_SphereBaseMaterial;
 
-		Ref<Material> m_MeshMaterial;
+        Ref<Material> m_MeshMaterial;
 
-		bool m_RadiancePrefilter = false;
+        bool m_RadiancePrefilter = false;
 
-		float m_EnvMapRotation = 0.0f;
+        float m_EnvMapRotation = 0.0f;
 
-		enum class SceneType : uint32_t
-		{
-			Spheres = 0, Model = 1
-		};
-		SceneType m_SceneType;
+        enum class SceneType : uint32_t
+        {
+            Spheres = 0, Model = 1
+        };
+        SceneType m_SceneType;
 
-		// Editor resources
-		Ref<Texture2D> m_CheckerboardTex;
-		Ref<Texture2D> m_PlayButtonTex;
+        // Editor resources
+        Ref<Texture2D> m_CheckerboardTex;
+        Ref<Texture2D> m_PlayButtonTex;
 
-		glm::vec2 m_ViewportBounds[2];
-		int m_GizmoType = -1; //  no gizmo
-		float m_SnapValue = 0.5f;
-		float m_RotationSnapValue = 45.0f;
-		bool m_AllowViewportCameraEvents = true;
-		bool m_DrawOnTopBoundingBoxes = false;
+        glm::vec2 m_ViewportBounds[2];
+        int m_GizmoType = -1; //  no gizmo
+        float m_SnapValue = 0.5f;
+        float m_RotationSnapValue = 45.0f;
+        bool m_AllowViewportCameraEvents = true;
+        bool m_DrawOnTopBoundingBoxes = false;
 
-		bool m_UIShowBoundingBoxes = false;
-		bool m_UIShowBoundingBoxesOnTop = false;
+        bool m_UIShowBoundingBoxes = false;
+        bool m_UIShowBoundingBoxesOnTop = false;
 
-		bool m_ViewportPanelMouseOver = false;
-		bool m_ViewportPanelFocused = false;
-		bool m_ReloadScriptOnPlay = false;
-		std::string m_SceneFilePath;
+        bool m_ViewportPanelMouseOver = false;
+        bool m_ViewportPanelFocused = false;
+        bool m_ReloadScriptOnPlay = false;
+        std::string m_SceneFilePath;
 
-		enum class SceneState
-		{
-			Edit = 0, Play = 1, Pause = 2
-		};
-		SceneState m_SceneState = SceneState::Edit;
+        enum class SceneState
+        {
+            Edit = 0, Play = 1, Pause = 2
+        };
+        SceneState m_SceneState = SceneState::Edit;
 
 
-		enum class SelectionMode
-		{
-			None = 0, Entity = 1, SubMesh = 2
-		};
+        enum class SelectionMode
+        {
+            None = 0, Entity = 1, SubMesh = 2
+        };
 
-		SelectionMode m_SelectionMode = SelectionMode::Entity;
-		std::vector<SelectedSubmesh> m_SelectionContext;
-		glm::mat4* m_RelativeTransform = nullptr;
-		glm::mat4* m_CurrentlySelectedTransform = nullptr;
-	};
+        SelectionMode m_SelectionMode = SelectionMode::Entity;
+        std::vector<SelectedSubmesh> m_SelectionContext;
+        glm::mat4* m_RelativeTransform = nullptr;
+        glm::mat4* m_CurrentlySelectedTransform = nullptr;
+    };
 }
