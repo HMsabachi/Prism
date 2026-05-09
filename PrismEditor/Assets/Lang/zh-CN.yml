@@ -1,0 +1,102 @@
+language: zh-CN
+translations:
+  # ===== 窗口/面板标题 =====
+  Model: 模型
+  Environment: 环境
+  Toolbar: 工具栏
+  Viewport: 视口
+  Materials: 材质
+  Scene Hierarchy: 场景层级
+  Properties: 属性
+
+  # ===== 菜单栏 =====
+  File: 文件
+  New Scene: 新建场景
+  Open Scene...: 打开场景...
+  Save Scene: 保存场景
+  Save Scene As...: 场景另存为...
+  Exit: 退出
+  Script: 脚本
+  Reload C# Assembly: 重新加载 C# 程序集
+  Reload assembly on play: 运行时自动重载
+
+  # ===== 按钮 =====
+  Load Environment Map: 加载环境贴图
+  Add Component: 添加组件
+  Camera: 相机
+  Mesh: 网格
+  Sprite Renderer: 精灵渲染器
+  Rigidbody 2D: 刚体 2D
+  Box Collider 2D: 盒碰撞器 2D
+  Circle Collider 2D: 圆碰撞器 2D
+  Rigidbody: 刚体
+  Physics Material: 物理材质
+  Box Collider: 盒碰撞器
+  Sphere Collider: 球碰撞器
+  Capsule Collider: 胶囊碰撞器
+  Reload: 重新加载
+
+  # ===== 属性分区标题 =====
+  Shaders: 着色器
+  Transform: 变换
+
+  # ===== 弹出菜单 =====
+  Create Empty Entity: 创建空实体
+  Delete: 删除
+
+  # ===== 环境/场景属性 =====
+  Skybox LOD: 天空盒 LOD
+  Light Direction: 光照方向
+  Light Radiance: 光照强度
+  Light Multiplier: 光照倍率
+  Gravity: 重力
+  Exposure: 曝光
+  Radiance Prefiltering: 光照预过滤
+  Env Map Rotation: 环境图旋转
+  Show Bounding Boxes: 显示包围盒
+  On Top: 置顶显示
+
+  # ===== 变换属性 =====
+  Translation: 位置
+  Rotation: 旋转
+  Scale: 缩放
+
+  # ===== 网格属性 =====
+  File Path: 文件路径
+  Shader Keywords: 着色器关键字
+
+  # ===== 相机属性 =====
+  Projection: 投影
+  Perspective: 透视
+  Orthographic: 正交
+  Vertical FOV: 垂直视场角
+  Near Clip: 近裁剪面
+  Far Clip: 远裁剪面
+  Size: 大小
+
+  # ===== 刚体属性 =====
+  Type: 类型
+  Static: 静态
+  Dynamic: 动态
+  Kinematic: 运动学
+  Mass: 质量
+  Fixed Rotation: 固定旋转
+  Lock Position X: 锁定位置 X
+  Lock Position Y: 锁定位置 Y
+  Lock Position Z: 锁定位置 Z
+  Lock Rotation X: 锁定旋转 X
+  Lock Rotation Y: 锁定旋转 Y
+  Lock Rotation Z: 锁定旋转 Z
+
+  # ===== 碰撞器属性 =====
+  Offset: 偏移
+  Density: 密度
+  Friction: 摩擦力
+  Radius: 半径
+  Static Friction: 静摩擦力
+  Dynamic Friction: 动摩擦力
+  Bounciness: 弹性
+  Height: 高度
+
+  # ===== 脚本属性 =====
+  Module Name: 模块名称

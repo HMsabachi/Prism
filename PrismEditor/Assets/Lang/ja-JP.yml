@@ -1,0 +1,102 @@
+language: ja-JP
+translations:
+  # ===== ウィンドウ/パネルタイトル =====
+  Model: モデル
+  Environment: 環境
+  Toolbar: ツールバー
+  Viewport: ビューポート
+  Materials: マテリアル
+  Scene Hierarchy: シーン階層
+  Properties: プロパティ
+
+  # ===== メニューバー =====
+  File: ファイル
+  New Scene: 新規シーン
+  Open Scene...: シーンを開く...
+  Save Scene: シーンを保存
+  Save Scene As...: シーンを別名で保存...
+  Exit: 終了
+  Script: スクリプト
+  Reload C# Assembly: C# アセンブリを再読み込み
+  Reload assembly on play: 再生時に自動リロード
+
+  # ===== ボタン =====
+  Load Environment Map: 環境マップを読み込み
+  Add Component: コンポーネント追加
+  Camera: カメラ
+  Mesh: メッシュ
+  Sprite Renderer: スプライトレンダラー
+  Rigidbody 2D: リジッドボディ 2D
+  Box Collider 2D: ボックスコライダー 2D
+  Circle Collider 2D: 円コライダー 2D
+  Rigidbody: リジッドボディ
+  Physics Material: 物理マテリアル
+  Box Collider: ボックスコライダー
+  Sphere Collider: スフィアコライダー
+  Capsule Collider: カプセルコライダー
+  Reload: 再読み込み
+
+  # ===== プロパティセクションタイトル =====
+  Shaders: シェーダー
+  Transform: トランスフォーム
+
+  # ===== ポップアップメニュー =====
+  Create Empty Entity: 空のエンティティを作成
+  Delete: 削除
+
+  # ===== 環境/シーンプロパティ =====
+  Skybox LOD: スカイボックス LOD
+  Light Direction: ライト方向
+  Light Radiance: ライト輝度
+  Light Multiplier: ライト倍率
+  Gravity: 重力
+  Exposure: 露出
+  Radiance Prefiltering: 輝度プリフィルタリング
+  Env Map Rotation: 環境マップ回転
+  Show Bounding Boxes: バウンディングボックス表示
+  On Top: 前面表示
+
+  # ===== トランスフォームプロパティ =====
+  Translation: 位置
+  Rotation: 回転
+  Scale: スケール
+
+  # ===== メッシュプロパティ =====
+  File Path: ファイルパス
+  Shader Keywords: シェーダーキーワード
+
+  # ===== カメラプロパティ =====
+  Projection: 投影
+  Perspective: 透視投影
+  Orthographic: 正射投影
+  Vertical FOV: 垂直視野角
+  Near Clip: 近クリップ面
+  Far Clip: 遠クリップ面
+  Size: サイズ
+
+  # ===== リジッドボディプロパティ =====
+  Type: タイプ
+  Static: 静的
+  Dynamic: 動的
+  Kinematic: キネマティック
+  Mass: 質量
+  Fixed Rotation: 回転固定
+  Lock Position X: 位置ロック X
+  Lock Position Y: 位置ロック Y
+  Lock Position Z: 位置ロック Z
+  Lock Rotation X: 回転ロック X
+  Lock Rotation Y: 回転ロック Y
+  Lock Rotation Z: 回転ロック Z
+
+  # ===== コライダープロパティ =====
+  Offset: オフセット
+  Density: 密度
+  Friction: 摩擦
+  Radius: 半径
+  Static Friction: 静止摩擦
+  Dynamic Friction: 動摩擦
+  Bounciness: 弾性
+  Height: 高さ
+
+  # ===== スクリプトプロパティ =====
+  Module Name: モジュール名

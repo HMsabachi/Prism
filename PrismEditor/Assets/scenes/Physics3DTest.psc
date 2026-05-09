@@ -2,34 +2,59 @@ Scene: Scene Name
 Environment:
   AssetPath: assets\env\pink_sunrise_4k.hdr
   Light:
-    Direction: [-0.787, -0.73299998, 1]
+    Direction: [-0.787, -0.733, 1]
     Radiance: [1, 1, 1]
-    Multiplier: 0.514999986
+    Multiplier: 0.515
 Entities:
-  - Entity: 10169503531257462571
+  - Entity: 18306113171518048249
     TagComponent:
       Tag: Box
     TransformComponent:
-      Position: [0, 1.5, 0]
+      Position: [0, 0, 0]
       Rotation: [1, 0, 0, 0]
-      Scale: [2, 2, 2]
+      Scale: [50, 1, 50]
     MeshComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBodyComponent:
-      BodyType: 1
-      Mass: 0.5
+      BodyType: 0
+      Mass: 1
+      LockPositionX: false
+      LockPositionY: false
+      LockPositionZ: false
+      LockRotationX: false
+      LockRotationY: false
+      LockRotationZ: false
     PhysicsMaterialComponent:
       StaticFriction: 1
       DynamicFriction: 1
       Bounciness: 0
     BoxColliderComponent:
+      Size: [50, 1, 50]
       Offset: [0, 0, 0]
-      Size: [2, 2, 2]
+  - Entity: 5178862374589434728
+    TagComponent:
+      Tag: Camera
+    TransformComponent:
+      Position: [-21.740631, 9.706595, 15]
+      Rotation: [0.99991035, -0.013391121, 0, 0]
+      Scale: [1, 1, 1]
+    ScriptComponent:
+      ModuleName: Example.BasicController
+      StoredFields:
+        - Name: Speed
+          Type: 1
+          Data: 12
+        - Name: DistanceFromPlayer
+          Type: 1
+          Data: 15
+    CameraComponent:
+      Camera: some camera data...
+      Primary: true
   - Entity: 14057422478420564497
     TagComponent:
       Tag: Player
     TransformComponent:
-      Position: [-19.43363, 4.50874043, -1.96695328e-06]
+      Position: [-19.43363, 4.5087404, -1.9669533e-06]
       Rotation: [1, 0, 0, 0]
       Scale: [1, 1, 1]
     ScriptComponent:
@@ -49,47 +74,40 @@ Entities:
     RigidBodyComponent:
       BodyType: 1
       Mass: 1
+      LockPositionX: false
+      LockPositionY: false
+      LockPositionZ: false
+      LockRotationX: true
+      LockRotationY: true
+      LockRotationZ: true
     PhysicsMaterialComponent:
       StaticFriction: 1
       DynamicFriction: 1
       Bounciness: 0
     SphereColliderComponent:
       Radius: 0.5
-  - Entity: 5178862374589434728
-    TagComponent:
-      Tag: Camera
-    TransformComponent:
-      Position: [-21.7406311, 9.70659542, 15]
-      Rotation: [0.999910355, -0.0133911213, 0, 0]
-      Scale: [1, 1, 1]
-    ScriptComponent:
-      ModuleName: Example.BasicController
-      StoredFields:
-        - Name: Speed
-          Type: 1
-          Data: 12
-        - Name: DistanceFromPlayer
-          Type: 1
-          Data: 15
-    CameraComponent:
-      Camera: some camera data...
-      Primary: true
-  - Entity: 18306113171518048249
+  - Entity: 10169503531257462571
     TagComponent:
       Tag: Box
     TransformComponent:
-      Position: [0, 0, 0]
+      Position: [0, 1.5, 0]
       Rotation: [1, 0, 0, 0]
-      Scale: [50, 1, 50]
+      Scale: [2, 2, 2]
     MeshComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBodyComponent:
-      BodyType: 0
-      Mass: 1
+      BodyType: 1
+      Mass: 0.5
+      LockPositionX: false
+      LockPositionY: false
+      LockPositionZ: false
+      LockRotationX: false
+      LockRotationY: false
+      LockRotationZ: false
     PhysicsMaterialComponent:
       StaticFriction: 1
       DynamicFriction: 1
       Bounciness: 0
     BoxColliderComponent:
+      Size: [2, 2, 2]
       Offset: [0, 0, 0]
-      Size: [50, 1, 50]

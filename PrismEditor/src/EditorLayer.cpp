@@ -1,6 +1,7 @@
 #include "EditorLayer.h"
 
 #include "Prism/ImGui/ImGuizmo.h"
+#include "Prism/Core/LanguageManager.h"
 
 #include <filesystem>
 
@@ -112,6 +113,9 @@ namespace Prism
             // Editor
             m_CheckerboardTex = Texture2D::Create("assets/editor/Checkerboard.tga");
             m_PlayButtonTex = Texture2D::Create("assets/editor/PlayButton.png");
+
+            // 语言设置
+            LanguageManager::Get().LoadLanguage("Assets/Lang/en-US.yml");
 
             m_EditorScene = Ref<Scene>::Create();
             UpdateWindowTitle("Untitled Scene");
@@ -611,24 +615,24 @@ namespace Prism
             ImGui::Begin("Model");
 
             ImGui::Begin("Environment");
-            if (ImGui::Button("Load Environment Map"))
+            if (ImGui::Button(TR("Load Environment Map")))
             {
                 std::string filename = Application::Get().OpenFile("*.hdr");
                 if (filename != "")
                     m_EditorScene->SetEnvironment(Environment::Load(filename));
             }
 
-            ImGui::SliderFloat("Skybox LOD", &m_EditorScene->GetSkyboxLod(), 0.0f, 11.0f);
+            ImGui::SliderFloat(TR("Skybox LOD"), &m_EditorScene->GetSkyboxLod(), 0.0f, 11.0f);
             ImGui::Columns(2);
             ImGui::AlignTextToFramePadding();
 
             auto& light = m_EditorScene->GetLight();
-            Property("Light Direction", light.Direction, PropertyFlag::SliderProperty);
-            Property("Light Radiance", light.Radiance, PropertyFlag::ColorProperty);
-            Property("Light Multiplier", light.Multiplier, 0.0f, 5.0f, PropertyFlag::SliderProperty);
+            Property(TR("Light Direction"), light.Direction, PropertyFlag::SliderProperty);
+            Property(TR("Light Radiance"), light.Radiance, PropertyFlag::ColorProperty);
+            Property(TR("Light Multiplier"), light.Multiplier, 0.0f, 5.0f, PropertyFlag::SliderProperty);
             {
                 float physics2DGravity = m_SceneState == SceneState::Edit ? m_EditorScene->GetPhysics2DGravity() : m_RuntimeScene->GetPhysics2DGravity();
-                if (Property("Gravity", physics2DGravity, -10000.0f, 10000.0f, PropertyFlag::DragProperty))
+                if (Property(TR("Gravity"), physics2DGravity, -10000.0f, 10000.0f, PropertyFlag::DragProperty))
                 {
                     if (m_SceneState == SceneState::Edit)
                         m_EditorScene->SetPhysics2DGravity(physics2DGravity);
@@ -636,15 +640,15 @@ namespace Prism
                         m_RuntimeScene->SetPhysics2DGravity(physics2DGravity);
                 }
             }
-            Property("Exposure", m_EditorCamera.GetExposure(), 0.0f, 5.0f, PropertyFlag::SliderProperty);
+            Property(TR("Exposure"), m_EditorCamera.GetExposure(), 0.0f, 5.0f, PropertyFlag::SliderProperty);
 
-            Property("Radiance Prefiltering", m_RadiancePrefilter);
-            Property("Env Map Rotation", m_EnvMapRotation, -360.0f, 360.0f, PropertyFlag::SliderProperty);
-            if (Property("Show Bounding Boxes", m_UIShowBoundingBoxes))
+            Property(TR("Radiance Prefiltering"), m_RadiancePrefilter);
+            Property(TR("Env Map Rotation"), m_EnvMapRotation, -360.0f, 360.0f, PropertyFlag::SliderProperty);
+            if (Property(TR("Show Bounding Boxes"), m_UIShowBoundingBoxes))
                 ShowBoundingBoxes(m_UIShowBoundingBoxes, m_UIShowBoundingBoxesOnTop);
-            if (m_UIShowBoundingBoxes && Property("On Top", m_UIShowBoundingBoxesOnTop))
+            if (m_UIShowBoundingBoxes && Property(TR("On Top"), m_UIShowBoundingBoxesOnTop))
                 ShowBoundingBoxes(m_UIShowBoundingBoxes, m_UIShowBoundingBoxesOnTop);
-            char* label = m_SelectionMode == SelectionMode::Entity ? "Entity" : "Mesh";
+            char* label = m_SelectionMode == SelectionMode::Entity ? const_cast<char*>(TR("Entity")) : const_cast<char*>(TR("Mesh"));
             if (ImGui::Button(label))
             {
                 m_SelectionMode = m_SelectionMode == SelectionMode::Entity ? SelectionMode::SubMesh : SelectionMode::Entity;
@@ -656,7 +660,7 @@ namespace Prism
 
             ImGui::Separator();
             {
-                ImGui::Text("Mesh");
+                ImGui::Text(TR("Mesh"));
                 //auto meshComponent = m_MeshEntity.GetComponent<MeshComponent>();
                 //std::string fullpath = meshComponent.Mesh ? meshComponent.Mesh->GetFilePath() : "None";
                 //size_t found = fullpath.find_last_of("/\\");
@@ -678,7 +682,7 @@ namespace Prism
 
 
 
-            if (ImGui::TreeNode("Shaders"))
+            if (ImGui::TreeNode(TR("Shaders")))
             {
                 auto& shaders = Prism::PrismShader::s_AllShaders;
                 for (auto& shader : shaders)
@@ -801,35 +805,47 @@ namespace Prism
 
             if (ImGui::BeginMenuBar())
             {
-                if (ImGui::BeginMenu("File"))
+                if (ImGui::BeginMenu(TR("File")))
                 {
-                    if (ImGui::MenuItem("New Scene"))
+                    if (ImGui::MenuItem(TR("New Scene")))
                     {
 
                     }
-                    if (ImGui::MenuItem("Open Scene...", "Ctrl+O"))
+                    if (ImGui::MenuItem(TR("Open Scene..."), "Ctrl+O"))
                     {
                         OpenScene();
                     }
-                    if (ImGui::MenuItem("Save Scene", "Ctrl+S"))
+                    if (ImGui::MenuItem(TR("Save Scene"), "Ctrl+S"))
                     {
                         SaveScene();
                     }
-                    if (ImGui::MenuItem("Save Scene As...", "Ctrl+Shift+S"))
+                    if (ImGui::MenuItem(TR("Save Scene As..."), "Ctrl+Shift+S"))
                     {
                         SaveSceneAs();
                     }
                     ImGui::Separator();
-                    if (ImGui::MenuItem("Exit"))
+                    if (ImGui::MenuItem(TR("Exit")))
                         p_open = false;
                     ImGui::EndMenu();
                 }
 
-                if (ImGui::BeginMenu("Script"))
+                if (ImGui::BeginMenu(TR("Script")))
                 {
-                    if (ImGui::MenuItem("Reload C# Assembly"))
+                    if (ImGui::MenuItem(TR("Reload C# Assembly")))
                         ScriptEngine::ReloadAssembly("assets/scripts/ExampleApp.dll");
-                    ImGui::MenuItem("Reload assembly on play", nullptr, &m_ReloadScriptOnPlay);
+                    ImGui::MenuItem(TR("Reload assembly on play"), nullptr, &m_ReloadScriptOnPlay);
+                    ImGui::EndMenu();
+                }
+
+                if (ImGui::BeginMenu("Language"))
+                {
+                    if (ImGui::MenuItem("English"))
+                        LanguageManager::Get().LoadLanguage("Assets/Lang/en-US.yml");
+                    if (ImGui::MenuItem("中文"))
+                        LanguageManager::Get().LoadLanguage("Assets/Lang/zh-CN.yml");
+                    if (ImGui::MenuItem("日本語"))
+                        LanguageManager::Get().LoadLanguage("Assets/Lang/ja-JP.yml");
+
                     ImGui::EndMenu();
                 }
 
@@ -902,7 +918,7 @@ namespace Prism
                             if (!keywords.empty())
                             {
                                 ImGui::Separator();
-                                ImGui::Text("Shader Keywords");
+                                ImGui::Text(TR("Shader Keywords"));
                                 for (const auto& kw : keywords)
                                 {
                                     bool enabled = materialInstance->IsKeywordEnabled(kw.Name);

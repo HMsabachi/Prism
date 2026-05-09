@@ -6,6 +6,7 @@
 #include "Prism/Core/Application.h"
 #include "Prism/Renderer/Mesh.h"
 #include "Scripting/ScriptEngine.h"
+#include "Prism/Core/LanguageManager.h"
 #include <assimp/scene.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -61,7 +62,7 @@ namespace Prism {
 
 			if (ImGui::BeginPopupContextWindow("CreateEntityPopup", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverExistingPopup))
 			{
-				if (ImGui::MenuItem("Create Empty Entity"))
+				if (ImGui::MenuItem(TR("Create Empty Entity")))
 				{
 					m_Context->CreateEntity("Empty Entity");
 				}
@@ -76,14 +77,14 @@ namespace Prism {
 			{
 				DrawComponents(m_SelectionContext);
 
-				if (ImGui::Button("Add Component"))
+				if (ImGui::Button(TR("Add Component")))
 					ImGui::OpenPopup("AddComponentPanel");
 
 				if (ImGui::BeginPopup("AddComponentPanel"))
 				{
 					if (!m_SelectionContext.HasComponent<CameraComponent>())
 					{
-						if (ImGui::Button("Camera"))
+						if (ImGui::Button(TR("Camera")))
 						{
 							m_SelectionContext.AddComponent<CameraComponent>();
 							ImGui::CloseCurrentPopup();
@@ -91,7 +92,7 @@ namespace Prism {
 					}
 					if (!m_SelectionContext.HasComponent<MeshComponent>())
 					{
-						if (ImGui::Button("Mesh"))
+						if (ImGui::Button(TR("Mesh")))
 						{
 							m_SelectionContext.AddComponent<MeshComponent>();
 							ImGui::CloseCurrentPopup();
@@ -99,7 +100,7 @@ namespace Prism {
 					}
 					if (!m_SelectionContext.HasComponent<ScriptComponent>())
 					{
-						if (ImGui::Button("Script"))
+						if (ImGui::Button(TR("Script")))
 						{
 							m_SelectionContext.AddComponent<ScriptComponent>();
 							ImGui::CloseCurrentPopup();
@@ -107,7 +108,7 @@ namespace Prism {
 					}
 					if (!m_SelectionContext.HasComponent<SpriteRendererComponent>())
 					{
-						if (ImGui::Button("Sprite Renderer"))
+						if (ImGui::Button(TR("Sprite Renderer")))
 						{
 							m_SelectionContext.AddComponent<SpriteRendererComponent>();
 							ImGui::CloseCurrentPopup();
@@ -115,7 +116,7 @@ namespace Prism {
 					}
 					if (!m_SelectionContext.HasComponent<RigidBody2DComponent>())
 					{
-						if (ImGui::Button("Rigidbody 2D"))
+						if (ImGui::Button(TR("Rigidbody 2D")))
 						{
 							m_SelectionContext.AddComponent<RigidBody2DComponent>();
 							ImGui::CloseCurrentPopup();
@@ -123,7 +124,7 @@ namespace Prism {
 					}
 					if (!m_SelectionContext.HasComponent<BoxCollider2DComponent>())
 					{
-						if (ImGui::Button("Box Collider 2D"))
+						if (ImGui::Button(TR("Box Collider 2D")))
 						{
 							m_SelectionContext.AddComponent<BoxCollider2DComponent>();
 							ImGui::CloseCurrentPopup();
@@ -131,7 +132,7 @@ namespace Prism {
 					}
 					if (!m_SelectionContext.HasComponent<CircleCollider2DComponent>())
 					{
-						if (ImGui::Button("Circle Collider 2D"))
+						if (ImGui::Button(TR("Circle Collider 2D")))
 						{
 							m_SelectionContext.AddComponent<CircleCollider2DComponent>();
 							ImGui::CloseCurrentPopup();
@@ -139,7 +140,7 @@ namespace Prism {
 					}
 					if (!m_SelectionContext.HasComponent<RigidBodyComponent>())
 					{
-						if (ImGui::Button("Rigidbody"))
+						if (ImGui::Button(TR("Rigidbody")))
 						{
 							m_SelectionContext.AddComponent<RigidBodyComponent>();
 							ImGui::CloseCurrentPopup();
@@ -147,7 +148,7 @@ namespace Prism {
 					}
 					if (!m_SelectionContext.HasComponent<PhysicsMaterialComponent>())
 					{
-						if (ImGui::Button("Physics Material"))
+						if (ImGui::Button(TR("Physics Material")))
 						{
 							m_SelectionContext.AddComponent<PhysicsMaterialComponent>();
 							ImGui::CloseCurrentPopup();
@@ -155,7 +156,7 @@ namespace Prism {
 					}
 					if (!m_SelectionContext.HasComponent<BoxColliderComponent>())
 					{
-						if (ImGui::Button("Box Collider"))
+						if (ImGui::Button(TR("Box Collider")))
 						{
 							m_SelectionContext.AddComponent<BoxColliderComponent>();
 							ImGui::CloseCurrentPopup();
@@ -163,7 +164,7 @@ namespace Prism {
 					}
 					if (!m_SelectionContext.HasComponent<SphereColliderComponent>())
 					{
-						if (ImGui::Button("Sphere Collider"))
+						if (ImGui::Button(TR("Sphere Collider")))
 						{
 							m_SelectionContext.AddComponent<SphereColliderComponent>();
 							ImGui::CloseCurrentPopup();
@@ -171,7 +172,7 @@ namespace Prism {
 					}
 					if (!m_SelectionContext.HasComponent<CapsuleColliderComponent>())
 					{
-						if (ImGui::Button("Capsule Collider"))
+						if (ImGui::Button(TR("Capsule Collider")))
 						{
 							m_SelectionContext.AddComponent<CapsuleColliderComponent>();
 							ImGui::CloseCurrentPopup();
@@ -221,7 +222,7 @@ namespace Prism {
 		bool entityDeleted = false;
 		if (ImGui::BeginPopupContextItem())
 		{
-			if (ImGui::MenuItem("Delete"))
+			if (ImGui::MenuItem(TR("Delete")))
 				entityDeleted = true;
 
 			ImGui::EndPopup();
@@ -547,12 +548,12 @@ namespace Prism {
 		if (entity.HasComponent<TransformComponent>())
 		{
 			auto& tc = entity.GetComponent<TransformComponent>();
-			if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(TransformComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, "Transform"))
+			if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(TransformComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, TR("Transform")))
 			{
 				glm::vec3 rotation = glm::degrees(glm::eulerAngles(tc.Rotation));
 
 				ImGui::Columns(2);
-				ImGui::Text("Translation");
+				ImGui::Text(TR("Translation"));
 				ImGui::NextColumn();
 				ImGui::PushItemWidth(-1);
 
@@ -564,7 +565,7 @@ namespace Prism {
 				ImGui::PopItemWidth();
 				ImGui::NextColumn();
 
-				ImGui::Text("Rotation");
+				ImGui::Text(TR("Rotation"));
 				ImGui::NextColumn();
 				ImGui::PushItemWidth(-1);
 
@@ -576,7 +577,7 @@ namespace Prism {
 				ImGui::PopItemWidth();
 				ImGui::NextColumn();
 
-				ImGui::Text("Scale");
+				ImGui::Text(TR("Scale"));
 							ImGui::NextColumn();
 				ImGui::PushItemWidth(-1);
 
@@ -599,13 +600,13 @@ namespace Prism {
 		if (entity.HasComponent<MeshComponent>())
 		{
 			auto& mc = entity.GetComponent<MeshComponent>();
-			if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(TransformComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, "Mesh"))
+			if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(TransformComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, TR("Mesh")))
 			{
 				ImGui::Columns(3);
 				ImGui::SetColumnWidth(0, 100);
 				ImGui::SetColumnWidth(1, 300);
 				ImGui::SetColumnWidth(2, 40);
-				ImGui::Text("File Path");
+				ImGui::Text(TR("File Path"));
 				ImGui::NextColumn();
 				ImGui::PushItemWidth(-1);
 				if (mc.Mesh)
@@ -630,12 +631,12 @@ namespace Prism {
 		if (entity.HasComponent<CameraComponent>())
 		{
 			auto& cc = entity.GetComponent<CameraComponent>();
-			if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(CameraComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, "Camera"))
+			if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(CameraComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, TR("Camera")))
 			{
 				// Projection Type
-				const char* projTypeStrings[] = { "Perspective", "Orthographic" };
+				const char* projTypeStrings[] = { TR("Perspective"), TR("Orthographic") };
 				const char* currentProj = projTypeStrings[(int)cc.Camera.GetProjectionType()];
-				if (ImGui::BeginCombo("Projection", currentProj))
+				if (ImGui::BeginCombo(TR("Projection"), currentProj))
 				{
 					for (int type = 0; type < 2; type++)
 					{
@@ -656,15 +657,15 @@ namespace Prism {
 				if (cc.Camera.GetProjectionType() == SceneCamera::ProjectionType::Perspective)
 				{
 					float verticalFOV = cc.Camera.GetPerspectiveVerticalFOV();
-					if (Property("Vertical FOV", verticalFOV))
+					if (Property(TR("Vertical FOV"), verticalFOV))
 						cc.Camera.SetPerspectiveVerticalFOV(verticalFOV);
 
 					float nearClip = cc.Camera.GetPerspectiveNearClip();
-					if (Property("Near Clip", nearClip))
+					if (Property(TR("Near Clip"), nearClip))
 						cc.Camera.SetPerspectiveNearClip(nearClip);
 					ImGui::SameLine();
 					float farClip = cc.Camera.GetPerspectiveFarClip();
-					if (Property("Far Clip", farClip))
+					if (Property(TR("Far Clip"), farClip))
 						cc.Camera.SetPerspectiveFarClip(farClip);
 				}
 
@@ -672,15 +673,15 @@ namespace Prism {
 				else if (cc.Camera.GetProjectionType() == SceneCamera::ProjectionType::Orthographic)
 				{
 					float orthoSize = cc.Camera.GetOrthographicSize();
-					if (Property("Size", orthoSize))
+					if (Property(TR("Size"), orthoSize))
 						cc.Camera.SetOrthographicSize(orthoSize);
 
 					float nearClip = cc.Camera.GetOrthographicNearClip();
-					if (Property("Near Clip", nearClip))
+					if (Property(TR("Near Clip"), nearClip))
 						cc.Camera.SetOrthographicNearClip(nearClip);
 					ImGui::SameLine();
 					float farClip = cc.Camera.GetOrthographicFarClip();
-					if (Property("Far Clip", farClip))
+					if (Property(TR("Far Clip"), farClip))
 						cc.Camera.SetOrthographicFarClip(farClip);
 				}
 
@@ -693,7 +694,7 @@ namespace Prism {
 		if (entity.HasComponent<SpriteRendererComponent>())
 		{
 			auto& src = entity.GetComponent<SpriteRendererComponent>();
-			if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(SpriteRendererComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, "Sprite Renderer"))
+			if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(SpriteRendererComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, TR("Sprite Renderer")))
 			{
 
 				ImGui::TreePop();
@@ -701,11 +702,11 @@ namespace Prism {
 			ImGui::Separator();
 		}
 
-		DrawComponent<RigidBody2DComponent>("Rigidbody 2D", entity, [](auto& component)
+		DrawComponent<RigidBody2DComponent>(TR("Rigidbody 2D"), entity, [](auto& component)
 		{
-			const char* bodyTypeStrings[] = { "Static", "Dynamic", "Kinematic" };
+			const char* bodyTypeStrings[] = { TR("Static"), TR("Dynamic"), TR("Kinematic") };
 			const char* currentType = bodyTypeStrings[(int)component.BodyType];
-			if (ImGui::BeginCombo("Type", currentType))
+			if (ImGui::BeginCombo(TR("Type"), currentType))
 			{
 				for (int i = 0; i < 3; i++)
 				{
@@ -723,32 +724,32 @@ namespace Prism {
 			if (component.BodyType == RigidBody2DComponent::Type::Dynamic)
 			{
 				BeginPropertyGrid();
-				Property("Fixed Rotation", component.FixedRotation);
+				Property(TR("Fixed Rotation"), component.FixedRotation);
 				EndPropertyGrid();
 			}
 		});
 
-		DrawComponent<BoxCollider2DComponent>("Box Collider 2D", entity, [](auto& component)
+		DrawComponent<BoxCollider2DComponent>(TR("Box Collider 2D"), entity, [](auto& component)
 		{
-			Property("Offset", component.Offset);
-			Property("Size", component.Size);
-			Property("Density", component.Density);
-			Property("Friction", component.Friction);
+			Property(TR("Offset"), component.Offset);
+			Property(TR("Size"), component.Size);
+			Property(TR("Density"), component.Density);
+			Property(TR("Friction"), component.Friction);
 		});
 
-		DrawComponent<CircleCollider2DComponent>("Circle Collider 2D", entity, [](auto& component)
+		DrawComponent<CircleCollider2DComponent>(TR("Circle Collider 2D"), entity, [](auto& component)
 		{
-			Property("Offset", component.Offset);
-			Property("Radius", component.Radius);
-			Property("Density", component.Density);
-			Property("Friction", component.Friction);
+			Property(TR("Offset"), component.Offset);
+			Property(TR("Radius"), component.Radius);
+			Property(TR("Density"), component.Density);
+			Property(TR("Friction"), component.Friction);
 		});
 
-		DrawComponent<RigidBodyComponent>("Rigidbody", entity, [](auto& component)
+		DrawComponent<RigidBodyComponent>(TR("Rigidbody"), entity, [](auto& component)
 		{
-			const char* bodyTypeStrings[] = { "Static", "Dynamic", "Kinematic" };
+			const char* bodyTypeStrings[] = { TR("Static"), TR("Dynamic"), TR("Kinematic") };
 			const char* currentType = bodyTypeStrings[(int)component.BodyType];
-			if (ImGui::BeginCombo("Type", currentType))
+			if (ImGui::BeginCombo(TR("Type"), currentType))
 			{
 				for (int i = 0; i < 3; i++)
 				{
@@ -766,57 +767,57 @@ namespace Prism {
 			if (component.BodyType == RigidBodyComponent::Type::Dynamic)
 			{
 				BeginPropertyGrid();
-				Property("Mass", component.Mass);
-				Property("Lock Position X", component.LockPositionX);
-				Property("Lock Position Y", component.LockPositionY);
-				Property("Lock Position Z", component.LockPositionZ);
-				Property("Lock Rotation X", component.LockRotationX);
-				Property("Lock Rotation Y", component.LockRotationY);
-				Property("Lock Rotation Z", component.LockRotationZ);
+				Property(TR("Mass"), component.Mass);
+				Property(TR("Lock Position X"), component.LockPositionX);
+				Property(TR("Lock Position Y"), component.LockPositionY);
+				Property(TR("Lock Position Z"), component.LockPositionZ);
+				Property(TR("Lock Rotation X"), component.LockRotationX);
+				Property(TR("Lock Rotation Y"), component.LockRotationY);
+				Property(TR("Lock Rotation Z"), component.LockRotationZ);
 				EndPropertyGrid();
 			}
 		});
 
-		DrawComponent<PhysicsMaterialComponent>("Physics Material", entity, [](auto& component)
+		DrawComponent<PhysicsMaterialComponent>(TR("Physics Material"), entity, [](auto& component)
 		{
 			BeginPropertyGrid();
-			Property("Static Friction", component.StaticFriction);
-			Property("Dynamic Friction", component.DynamicFriction);
-			Property("Bounciness", component.Bounciness);
+			Property(TR("Static Friction"), component.StaticFriction);
+			Property(TR("Dynamic Friction"), component.DynamicFriction);
+			Property(TR("Bounciness"), component.Bounciness);
 			EndPropertyGrid();
 		});
 
-		DrawComponent<BoxColliderComponent>("Box Collider", entity, [](auto& component)
+		DrawComponent<BoxColliderComponent>(TR("Box Collider"), entity, [](auto& component)
 		{
 			BeginPropertyGrid();
-			Property("Size", component.Size);
-			Property("Offset", component.Offset);
+			Property(TR("Size"), component.Size);
+			Property(TR("Offset"), component.Offset);
 			EndPropertyGrid();
 		});
 
-		DrawComponent<SphereColliderComponent>("Sphere Collider", entity, [](auto& component)
+		DrawComponent<SphereColliderComponent>(TR("Sphere Collider"), entity, [](auto& component)
 		{
 			BeginPropertyGrid();
-			Property("Radius", component.Radius);
+			Property(TR("Radius"), component.Radius);
 			EndPropertyGrid();
 		});
 
-		DrawComponent<CapsuleColliderComponent>("Capsule Collider", entity, [](auto& component)
+		DrawComponent<CapsuleColliderComponent>(TR("Capsule Collider"), entity, [](auto& component)
 		{
 			BeginPropertyGrid();
-			Property("Radius", component.Radius);
-			Property("Height", component.Height);
+			Property(TR("Radius"), component.Radius);
+			Property(TR("Height"), component.Height);
 			EndPropertyGrid();
 		});
 
 		if (entity.HasComponent<ScriptComponent>())
 		{
 			auto& sc = entity.GetComponent<ScriptComponent>();
-			if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(ScriptComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, "Script"))
+			if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(ScriptComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, TR("Script")))
 			{
 				BeginPropertyGrid();
 				std::string oldName = sc.ModuleName;
-				if (Property("Module Name", sc.ModuleName, !ScriptEngine::ModuleExists(sc.ModuleName))) // TODO: no live edit
+				if (Property(TR("Module Name"), sc.ModuleName, !ScriptEngine::ModuleExists(sc.ModuleName))) // TODO: no live edit
 				{
 					// Shutdown old script
 					if (ScriptEngine::ModuleExists(oldName))

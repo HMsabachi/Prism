@@ -90,7 +90,18 @@ namespace Prism
 		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // Enable viewports  启用viewports
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable keyboard navigation  启用键盘导航
 
-		ImFont* pFont = io.Fonts->AddFontFromFileTTF("Assets\\Fonts\\TTF\\LXGWWenKai-Medium.ttf", 25.0f, nullptr, io.Fonts->GetGlyphRangesChineseSimplifiedCommon());
+		// 构建多语言字形范围
+		static const ImWchar jpGlyphRanges[] =
+		{
+			0x0020, 0x00FF, // ASCII + Latin-1
+			0x3000, 0x30FF, // CJK 符号和标点、平假名、片假名
+			0x31F0, 0x31FF, // 片假名语音扩展
+			0xFF00, 0xFFEF, // 全角 ASCII、半角片假名
+			0x4E00, 0x9FFF, // CJK 统一表意文字
+			0
+		};
+
+		ImFont* pFont = io.Fonts->AddFontFromFileTTF("Assets\\Fonts\\TTF\\LXGWWenKai-Medium.ttf", 25.0f, nullptr, jpGlyphRanges);
 		io.FontDefault = io.Fonts->Fonts.back();
 
 		//SetKeyMap(io); // Set disable 暂时禁用
