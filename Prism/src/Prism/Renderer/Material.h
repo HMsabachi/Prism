@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Shader/PrismShader.h"
 #include "Shader/ShaderVariant.h"
@@ -18,12 +18,16 @@ namespace Prism
 
 		void Bind();
 
-	// Keyword API
-	void SetKeyword(const std::string& name, bool enabled);
-	bool IsKeywordEnabled(const std::string& name) const;
-	KeywordMask GetKeywordMask() const { return m_KeywordMask; }
+		// Multi-Pass API
+		uint32_t GetPassCount() const { return m_Shader->GetPassCount(); }
+		void BindPass(uint32_t passIndex);
 
-#pragma region Set函数
+		// Keyword API
+		void SetKeyword(const std::string& name, bool enabled);
+		bool IsKeywordEnabled(const std::string& name) const;
+		KeywordMask GetKeywordMask() const { return m_KeywordMask; }
+
+	#pragma region Set函数
 		template <typename T>
 		void Set(const std::string& name, const T& value)
 		{
@@ -36,7 +40,7 @@ namespace Prism
 			for (auto mi : m_MaterialInstances)
 				mi->OnMaterialValueUpdated(decl);
 		}
-				void Set(const std::string& name, const Ref<Texture2D>& texture)
+		void Set(const std::string& name, const Ref<Texture2D>& texture)
 		{
 			auto decl = FindPropertyDeclaration(name);
 			PR_CORE_ASSERT(decl, "Could not find uniform with name 'x'");
@@ -47,7 +51,7 @@ namespace Prism
 				m_Textures.resize((size_t)slot + 1);
 			m_Textures[slot] = texture;
 		}
-				void Set(const std::string& name, const Ref<TextureCube>& texture)
+		void Set(const std::string& name, const Ref<TextureCube>& texture)
 		{
 			auto decl = FindPropertyDeclaration(name);
 			PR_CORE_ASSERT(decl, "Could not find uniform with name 'x'");
@@ -58,7 +62,7 @@ namespace Prism
 				m_Textures.resize((size_t)slot + 1);
 			m_Textures[slot] = texture;
 		}
-#pragma endregion
+	#pragma endregion
 
 		template<typename T>
 		T& Get(const std::string& name)
@@ -110,12 +114,16 @@ namespace Prism
 
 		const std::string& GetName() const { return m_Name; }
 
+		// Multi-Pass API
+		uint32_t GetPassCount() const { return m_Material->GetPassCount(); }
+		void BindPass(uint32_t passIndex);
+
 		// Keyword API
 		void SetKeyword(const std::string& name, bool enabled);
 		bool IsKeywordEnabled(const std::string& name) const;
 		KeywordMask GetKeywordMask() const { return m_KeywordMask; }
 
-#pragma region Set函数
+	#pragma region Set函数
 		template <typename T>
 		void Set(const std::string& name, const T& value)
 		{
@@ -125,7 +133,7 @@ namespace Prism
 			buffer.Write((byte*)&value, decl->GetSize(), decl->GetOffset());
 			m_OverriddenValues.insert(name);
 		}
-				void Set(const std::string& name, const Ref<Texture>& texture)
+		void Set(const std::string& name, const Ref<Texture>& texture)
 		{
 			auto decl = m_Material->FindPropertyDeclaration(name);
 			PR_CORE_ASSERT(decl, "Could not find uniform with name 'x'");
@@ -135,19 +143,19 @@ namespace Prism
 				m_Textures.resize((size_t)slot + 1);
 			m_Textures[slot] = texture;
 		}
-				void Set(const std::string& name, const Ref<Texture2D>& texture)
+		void Set(const std::string& name, const Ref<Texture2D>& texture)
 		{
 			Set(name, (const Ref<Texture>&)texture);
 		}
-				void Set(const std::string& name, const Ref<TextureCube>& texture)
+		void Set(const std::string& name, const Ref<TextureCube>& texture)
 		{
 			Set(name, (const Ref<Texture>&)texture);
 		}
-				void Set(const std::string& name, const glm::mat4& value)
+		void Set(const std::string& name, const glm::mat4& value)
 		{
 			m_Transform = value;
 		}
-#pragma endregion
+	#pragma endregion
 
 		template<typename T>
 		T& Get(const std::string& name)

@@ -12,6 +12,14 @@ namespace Prism
 {
 	using ShaderReloadedCallback = std::function<void()>;
 
+	struct ShaderPass
+	{
+		Ref<Shader> Program;
+		ShaderCommand Command;
+		std::string Name;
+		std::unordered_map<std::string, std::string> Tags;
+	};
+
 	class PRISM_API PrismShader : public RefCounted
 	{
 	public:
@@ -38,7 +46,12 @@ namespace Prism
 
 		const PropertyBufferDeclaration& GetDeclaration() const { return m_Declaration; }
 		const Buffer& GetDefaultValueBuffer() const { return m_DefaultValueBuffer; }
-		const ShaderCommand& GetShaderCommand() const { return m_ShaderCommand; }
+		const ShaderCommand& GetShaderCommand() const;
+
+		// --- Multi-Pass API ---
+		uint32_t GetPassCount() const { return (uint32_t)m_Passes.size(); }
+		const ShaderPass& GetPass(uint32_t index) const { return m_Passes[index]; }
+		void BindPass(uint32_t passIndex);
 
 		template<typename T>
 		const T& GetDefaultValue(const std::string& name) const
@@ -54,6 +67,7 @@ namespace Prism
 		uint8_t GetKeywordIndex(const std::string& name) const;
 		bool IsKeywordDefined(const std::string& name) const;
 		Ref<Shader> GetVariant(KeywordMask mask) const;
+		Ref<Shader> GetPassProgram(uint32_t passIndex, KeywordMask mask) const;
 
 	public:
 		void SetMat4FromRenderThread(const std::string& name, const glm::mat4& value);
@@ -70,20 +84,24 @@ namespace Prism
 	private:
 		std::string m_Name;
 		std::string m_FilePath;
-		Ref<Shader> m_Shader; // Base shader (keyword mask = 0)
+
+		// Multi-Pass: each pass has its own Shader program + command
+		std::vector<ShaderPass> m_Passes;
+
+		// 单 Pass 快捷引用（指向 m_Passes[0].Program），向后兼容
+		Ref<Shader> m_Shader;
 
 		PropertyBufferDeclaration m_Declaration;
 		Buffer m_DefaultValueBuffer;
 		uint32_t m_NextTexSlot = 0;
-		ShaderCommand m_ShaderCommand;
 
 		std::vector<ShaderReloadedCallback> m_ReloadedCallbacks;
 
 		// Keyword / Variant data
 		std::vector<ShaderKeyword> m_Keywords;
 		std::unordered_map<KeywordMask, ShaderVariant> m_Variants;
-		std::string m_VertexShaderSource;
-		std::string m_FragmentShaderSource;
+		std::vector<std::string> m_VertexShaderSources;
+		std::vector<std::string> m_FragmentShaderSources;
 
 	public:
 		static std::vector<Ref<PrismShader>> s_AllShaders;

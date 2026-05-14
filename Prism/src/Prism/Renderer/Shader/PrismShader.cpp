@@ -42,6 +42,15 @@ namespace Prism
         Load(source);
     }
 
+    // ======================================================================
+    // 编译单个 Pass 的 Helper
+    // ======================================================================
+    static Ref<Shader> CompilePass(const std::string& debugName,
+        const std::string& vsCode, const std::string& fsCode)
+    {
+        return Ref<Shader>(Shader::Create(debugName, vsCode, fsCode));
+    }
+
     void PrismShader::Load(const std::string& source)
     {
         ShaderParser parser;
@@ -52,20 +61,59 @@ namespace Prism
             return;
         }
 
+        uint32_t passCount = (uint32_t)result.Passes.size();
+        PR_CORE_INFO("Loading shader '{0}' with {1} pass(es)", result.ShaderName, passCount);
+
         m_Name = result.ShaderName;
 
-        m_Shader.Reset(Shader::Create(m_Name, result.Passes[0].VertexShaderCode, result.Passes[0].FragmentShaderCode));
-        m_ShaderCommand = ParseShaderCommand(result.RenderCommand);
+        // ------------------------------------------------------------------
+        // 1. 编译所有 Pass
+        // ------------------------------------------------------------------
+        m_Passes.clear();
+        m_Passes.reserve(passCount);
+        m_VertexShaderSources.clear();
+        m_FragmentShaderSources.clear();
+        m_VertexShaderSources.reserve(passCount);
+        m_FragmentShaderSources.reserve(passCount);
 
-        // Save generated sources for variant compilation
-        m_VertexShaderSource = result.Passes[0].VertexShaderCode;
-        m_FragmentShaderSource = result.Passes[0].FragmentShaderCode;
+        for (uint32_t i = 0; i < passCount; i++)
+        {
+            const auto& passDesc = result.Passes[i];
 
-        // Reset keyword/variant state (important for Reload)
+            PR_CORE_INFO("  Pass[{0}] '{1}': VS code length={2}, FS code length={3}",
+                i, passDesc.Name, passDesc.VertexShaderCode.size(), passDesc.FragmentShaderCode.size());
+
+            ShaderPass pass;
+            pass.Name = passDesc.Name;
+            pass.Tags = passDesc.Tags;
+
+            pass.Program = CompilePass(
+                m_Name + "_pass" + std::to_string(i),
+                passDesc.VertexShaderCode,
+                passDesc.FragmentShaderCode
+            );
+
+            // RenderCommand: Pass 级别优先，否则用 Shader 级别
+            std::string rcText = passDesc.RenderCommand.empty()
+                ? result.RenderCommand
+                : passDesc.RenderCommand;
+            pass.Command = ParseShaderCommand(rcText);
+
+            m_Passes.push_back(std::move(pass));
+            m_VertexShaderSources.push_back(passDesc.VertexShaderCode);
+            m_FragmentShaderSources.push_back(passDesc.FragmentShaderCode);
+        }
+
+        // 单 Pass 快捷引用（向后兼容）
+        m_Shader = m_Passes[0].Program;
+
+        // ------------------------------------------------------------------
+        // 2. 重置关键字 / 变体状态
+        // ------------------------------------------------------------------
         m_Keywords.clear();
         m_Variants.clear();
 
-        // Populate keywords from parser result
+        // 填充关键字
         uint8_t kwIdx = 0;
         for (const auto& kw : result.Keywords)
         {
@@ -75,16 +123,18 @@ namespace Prism
         if (kwIdx > MAX_KEYWORDS_PER_SHADER)
             PR_CORE_WARN("Shader '{0}' has {1} keywords (max {2})", m_Name, kwIdx, MAX_KEYWORDS_PER_SHADER);
 
-        // Register base variant (mask = 0)
+        // 注册基础变体 (mask = 0)
         {
             ShaderVariant baseVariant;
             baseVariant.Mask = 0;
             baseVariant.DebugName = "(default)";
             baseVariant.ShaderProgram = m_Shader;
+            for (auto& pass : m_Passes)
+                baseVariant.PassPrograms.push_back(pass.Program);
             m_Variants[0] = baseVariant;
         }
 
-        // Compile all keyword variant combinations
+        // 编译所有关键字变体组合
         if (!m_Keywords.empty())
         {
             size_t kwCount = m_Keywords.size();
@@ -115,21 +165,32 @@ namespace Prism
                         return base.substr(0, pos + 1) + defs + base.substr(pos + 1);
                         };
 
-                    std::string vsCode = makeVariantSource(m_VertexShaderSource, defines);
-                    std::string fsCode = makeVariantSource(m_FragmentShaderSource, defines);
-
-                    std::string variantName = m_Name + "#" + debugName;
-                    Ref<Shader> variantProgram = Shader::Create(variantName, vsCode, fsCode);
-
                     ShaderVariant variant;
                     variant.Mask = mask;
                     variant.DebugName = debugName;
-                    variant.ShaderProgram = variantProgram;
+
+                    // 为每个 Pass 编译对应的变体
+                    for (uint32_t p = 0; p < passCount; p++)
+                    {
+                        std::string vsCode = makeVariantSource(m_VertexShaderSources[p], defines);
+                        std::string fsCode = makeVariantSource(m_FragmentShaderSources[p], defines);
+
+                        std::string variantPassName = m_Name + "#" + debugName + "_pass" + std::to_string(p);
+                        Ref<Shader> variantProgram = Ref<Shader>(Shader::Create(variantPassName, vsCode, fsCode));
+
+                        variant.PassPrograms.push_back(variantProgram);
+                        if (p == 0)
+                            variant.ShaderProgram = variantProgram;
+                    }
+
                     m_Variants[mask] = variant;
                 }
             }
         }
 
+        // ------------------------------------------------------------------
+        // 3. 属性声明 & 默认值
+        // ------------------------------------------------------------------
         m_Declaration = PropertyBufferDeclaration();
         for (const auto& prop : result.Properties)
         {
@@ -274,10 +335,25 @@ namespace Prism
         return decl->GetValue<uint32_t>(m_DefaultValueBuffer);
     }
 
+    const ShaderCommand& PrismShader::GetShaderCommand() const
+    {
+        // 向后兼容：返回 Pass 0 的命令
+        return m_Passes[0].Command;
+    }
+
     void PrismShader::Bind()
     {
-        m_Shader->Bind();
-        m_Shader->ApplyCommand(m_ShaderCommand);
+        // 向后兼容：绑定 Pass 0
+        m_Passes[0].Program->Bind();
+        m_Passes[0].Program->ApplyCommand(m_Passes[0].Command);
+    }
+
+    void PrismShader::BindPass(uint32_t passIndex)
+    {
+        PR_CORE_ASSERT(passIndex < m_Passes.size(), "BindPass: passIndex {0} out of range ({1} passes)", passIndex, m_Passes.size());
+        auto& pass = m_Passes[passIndex];
+        pass.Program->Bind();
+        pass.Program->ApplyCommand(pass.Command);
     }
 
     void PrismShader::SetProperty(const Buffer& buffer)
@@ -321,6 +397,7 @@ namespace Prism
 
     Ref<Shader> PrismShader::GetVariant(KeywordMask mask) const
     {
+        // 向后兼容：返回 Pass 0 的变体程序
         auto it = m_Variants.find(mask);
         if (it != m_Variants.end())
             return it->second.ShaderProgram;
@@ -328,6 +405,24 @@ namespace Prism
         if (mask != 0)
             PR_CORE_WARN("Variant mask {0} not compiled for shader '{1}', falling back to base", mask, m_Name);
         return m_Shader;
+    }
+
+    Ref<Shader> PrismShader::GetPassProgram(uint32_t passIndex, KeywordMask mask) const
+    {
+        PR_CORE_ASSERT(passIndex < m_Passes.size(),
+            "GetPassProgram: passIndex {0} out of range ({1} passes)", passIndex, m_Passes.size());
+
+        auto it = m_Variants.find(mask);
+        if (it != m_Variants.end())
+        {
+            if (passIndex < it->second.PassPrograms.size())
+                return it->second.PassPrograms[passIndex];
+            return it->second.ShaderProgram;
+        }
+
+        if (mask != 0)
+            PR_CORE_WARN("Variant mask {0} not compiled for shader '{1}', falling back to base", mask, m_Name);
+        return m_Passes[passIndex].Program;
     }
 
 #pragma endregion

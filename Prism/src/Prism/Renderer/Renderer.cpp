@@ -1,4 +1,4 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "Renderer.h"
 #include "RenderCommand.h"
 #include "Shader/PrismShader.h"
@@ -184,8 +184,6 @@ namespace Prism
 	}
 	void Renderer::SubmitMesh(Ref<Mesh> mesh, const glm::mat4& transform, Ref<MaterialInstance> overrideMaterial)
 	{
-		// auto material = overrideMaterial ? overrideMaterial : mesh->GetMaterialInstance();
-		// auto shader = material->GetShader();
 		mesh->m_VertexBuffer->Bind();
 		mesh->m_Pipeline->Bind();
 		mesh->m_IndexBuffer->Bind();
@@ -194,19 +192,30 @@ namespace Prism
 		{
 			auto material = overrideMaterial ? overrideMaterial : materials[submesh.MaterialIndex];
 			auto shader = material->GetShader();
-			material->Bind();
-			if (mesh->m_IsAnimated)
+
+			uint32_t passCount = material->GetPassCount();
+			for (uint32_t p = 0; p < passCount; p++)
 			{
-				for (size_t i = 0; i < mesh->m_BoneTransforms.size(); i++)
+				if (p == 0)
+					material->Bind();
+				else
+					material->BindPass(p);
+
+				Ref<Shader> passProgram = shader->GetPassProgram(p, material->GetKeywordMask());
+				passProgram->SetMat4("Prism_Model", transform * submesh.Transform);
+
+				if (mesh->m_IsAnimated)
 				{
-					std::string uniformName = std::string("u_BoneTransforms[") + std::to_string(i) + std::string("]");
-					mesh->m_MeshShader->SetMat4(uniformName, mesh->m_BoneTransforms[i]);
+					for (size_t i = 0; i < mesh->m_BoneTransforms.size(); i++)
+					{
+						std::string uniformName = "u_BoneTransforms[" + std::to_string(i) + "]";
+						passProgram->SetMat4(uniformName, mesh->m_BoneTransforms[i]);
+					}
 				}
+				Renderer::Submit([submesh, material]() {
+					glDrawElementsBaseVertex(GL_TRIANGLES, submesh.IndexCount, GL_UNSIGNED_INT, (void*)(sizeof(uint32_t) * submesh.BaseIndex), submesh.BaseVertex);
+				});
 			}
-			shader->SetMat4("Prism_Model", transform * submesh.Transform);
-			Renderer::Submit([submesh, material]() {
-				glDrawElementsBaseVertex(GL_TRIANGLES, submesh.IndexCount, GL_UNSIGNED_INT, (void*)(sizeof(uint32_t) * submesh.BaseIndex), submesh.BaseVertex);
-			});
 		}
 	}
 

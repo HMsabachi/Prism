@@ -78,11 +78,12 @@ void Parser::SkipBalancedBlock()
     // Assumes the current token is the opening brace.
     // Consumes tokens until the matching closing brace.
     int depth = 1;
+    int braceCountIn = 0, braceCountOut = 0;
     while (depth > 0 && Peek().IsNot(TokenType::EndOfFile))
     {
         Token t = Advance();
-        if (t.Is(TokenType::LeftBrace)) depth++;
-        else if (t.Is(TokenType::RightBrace)) depth--;
+        if (t.Is(TokenType::LeftBrace)) { depth++; braceCountIn++; }
+        else if (t.Is(TokenType::RightBrace)) { depth--; braceCountOut++; }
     }
 }
 
@@ -356,7 +357,7 @@ void Parser::ParseRenderCommandBlock(ParseResult& result)
 // ParsePass
 // ======================================================================
 // Grammar:
-//   Pass ::= "Pass" "{" Tags? Name? GLSLBlock? "}"
+//   Pass ::= "Pass" "{" Tags? Name? RenderCommand? GLSLBlock? "}"
 // ======================================================================
 
 void Parser::ParsePass(ParseResult& result)
@@ -366,25 +367,49 @@ void Parser::ParsePass(ParseResult& result)
 
     PassDescriptor pass;
 
-    if (Match(TokenType::TagsKw))
-        ParseTags(pass);
-
-    if (Match(TokenType::NameKw))
-        pass.Name = Expect(TokenType::StringLiteral).Value;
-
-    if (Match(TokenType::GLSLKw))
+    // Use a loop to handle optional blocks in any order
+    bool handled = true;
+    while (handled)
     {
-        Token openBrace = Expect(TokenType::LeftBrace);
-        pass.GLSLSourceLine = openBrace.Line;
-        Lexer::ExtractBlockContent(m_Source, openBrace.Offset, pass.RawGLSL);
-        SkipBalancedBlock();
+        handled = false;
 
-        // Phase 3: 解析 GLSL 内容
-        GLSLParser glslParser(pass.RawGLSL);
-        pass.GLSL = glslParser.Parse();
+        if (Match(TokenType::TagsKw))
+        {
+            ParseTags(pass);
+            handled = true;
+        }
+
+        if (Match(TokenType::NameKw))
+        {
+            pass.Name = Expect(TokenType::StringLiteral).Value;
+            handled = true;
+        }
+
+        if (Match(TokenType::RenderCommandKw))
+        {
+            Token openBrace = Expect(TokenType::LeftBrace);
+            std::string rawContent;
+            if (Lexer::ExtractBlockContent(m_Source, openBrace.Offset, rawContent))
+                pass.RenderCommand = rawContent;
+            SkipBalancedBlock();
+            handled = true;
+        }
+
+        if (Match(TokenType::GLSLKw))
+        {
+            Token openBrace = Expect(TokenType::LeftBrace);
+            pass.GLSLSourceLine = openBrace.Line;
+            Lexer::ExtractBlockContent(m_Source, openBrace.Offset, pass.RawGLSL);
+            SkipBalancedBlock();
+
+            GLSLParser glslParser(pass.RawGLSL);
+            pass.GLSL = glslParser.Parse();
+            handled = true;
+        }
     }
 
     Expect(TokenType::RightBrace);
+
     result.Passes.push_back(std::move(pass));
 }
 

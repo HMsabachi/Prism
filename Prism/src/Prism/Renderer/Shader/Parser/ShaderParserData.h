@@ -51,6 +51,7 @@ namespace Prism
 	{
 		std::string Name;
 		std::unordered_map<std::string, std::string> Tags;
+		std::string RenderCommand;          // 可选：Pass 级别的渲染命令
 		std::vector<VertexAttributeDescriptor> Attributes;
 		std::string RawGLSL;
 		std::string VertexShaderCode;

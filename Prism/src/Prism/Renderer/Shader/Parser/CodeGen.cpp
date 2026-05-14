@@ -1,4 +1,4 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "CodeGen.h"
 #include "Prism/Renderer/Shader/ShaderPropertyDeclaration.h"
 #include <regex>

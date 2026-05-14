@@ -21,6 +21,7 @@ namespace Prism
     {
         KeywordMask Mask = 0;
         std::string DebugName; // e.g. "ALBEDO_MAP|NORMAL_MAP"
-        Ref<Shader> ShaderProgram;
+        Ref<Shader> ShaderProgram;          // 单 Pass 兼容（等价于 PassPrograms[0]）
+        std::vector<Ref<Shader>> PassPrograms; // 多 Pass：每个 Pass 的变体版本
     };
 }

@@ -1,4 +1,4 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "ShaderCommand.h"
 #include "Prism/Utilities/Utilities.h"
 
@@ -8,8 +8,8 @@ namespace Prism
 	{
 		if (s == "Back")  return CullMode::Back;
 		if (s == "Front") return CullMode::Front;
-		if (s == "Off")   return CullMode::Off; 
-		return CullMode::Back; 
+		if (s == "Off")   return CullMode::Off;
+		return CullMode::Back;
 	}
 
 	DepthCompareFunc StringToDepthCompareFunc(const std::string& s)
@@ -46,23 +46,23 @@ namespace Prism
 			tokens.pop();
 			return;
 		}
-		if (tokens.size() >= 2) 
+		if (tokens.size() >= 2)
 		{
 			state.blendSrcRGB = StringToBlendFactor(tokens.front()); tokens.pop();
 			state.blendDstRGB = StringToBlendFactor(tokens.front()); tokens.pop();
-			if (tokens.size() >= 2) 
+			if (tokens.size() >= 2)
 			{
 				state.blendSrcAlpha = StringToBlendFactor(tokens.front());  tokens.pop();
 				state.blendDstAlpha = StringToBlendFactor(tokens.front());  tokens.pop();
 			}
-			else 
+			else
 			{
 				state.blendSrcAlpha = state.blendSrcRGB;
 				state.blendDstAlpha = state.blendDstRGB;
 			}
 			state.flags |= ShaderCommandFlag::Blend;
 		}
-		
+
 	}
 	void ParseCullCommand(StrParse::Tokens& tokens, ShaderCommand& state)
 	{
@@ -114,7 +114,7 @@ namespace Prism
 		ShaderCommand state;
 		while (!tokenLines.empty())
 		{
-			Tokens tokens = tokenLines.front();
+			Tokens& tokens = tokenLines.front();
 			std::string& tokenKey = tokens.front();
 			if (tokenKey == "Blend")
 				ParseBlendCommand(tokens, state);
@@ -124,7 +124,10 @@ namespace Prism
 				ParseZTestCommand(tokens, state);
 			else if (tokenKey == "ZWrite")
 				ParseZWriteCommand(tokens, state);
-			tokenLines.pop();
+			else
+				tokens.pop(); // skip unknown token
+			if (tokens.empty())
+				tokenLines.pop();
 		}
 		return state;
 	}

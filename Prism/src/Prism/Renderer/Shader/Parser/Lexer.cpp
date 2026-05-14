@@ -299,7 +299,12 @@ bool Lexer::ExtractBlockContent(const std::string& source, size_t openBracePos, 
 
         if (inString)
         {
-            if (c == '"' && source[i - 1] != '\\')
+            if (c == '\\')
+            {
+                i++; // skip escaped character
+                continue;
+            }
+            if (c == '"')
                 inString = false;
             continue;
         }
@@ -319,7 +324,7 @@ bool Lexer::ExtractBlockContent(const std::string& source, size_t openBracePos, 
             continue;
         }
 
-        if (c == '"' && source[i - 1] != '\\')
+        if (c == '"')
             inString = true;
         else if (c == '/' && n == '/')
         {

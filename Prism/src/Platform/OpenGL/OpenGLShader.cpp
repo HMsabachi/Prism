@@ -194,6 +194,7 @@ namespace Prism
 			glDeleteShader(id);
 
 		m_RendererID = program;
+		PR_CORE_INFO("  Shader '{0}' compiled successfully (ID={1})", m_Name, program);
 	}
 
 	void OpenGLShader::SetFloat(const std::string& name, float value)

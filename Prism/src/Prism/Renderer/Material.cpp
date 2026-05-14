@@ -53,9 +53,15 @@ namespace Prism
 
 	void Material::Bind()
 	{
-		Ref<Shader> variant = m_Shader->GetVariant(m_KeywordMask);
+		BindPass(0);
+	}
+
+	void Material::BindPass(uint32_t passIndex)
+	{
+		Ref<Shader> variant = m_Shader->GetPassProgram(passIndex, m_KeywordMask);
+		const auto& pass = m_Shader->GetPass(passIndex);
 		variant->Bind();
-		variant->ApplyCommand(m_ShaderCommand);
+		variant->ApplyCommand(pass.Command);
 		if (m_PropertyBuffer)
 			variant->SetProperty(m_Shader->GetDeclaration(), m_PropertyBuffer);
 		BindTextures();
@@ -178,10 +184,16 @@ namespace Prism
 
 	void MaterialInstance::Bind()
 	{
+		BindPass(0);
+	}
+
+	void MaterialInstance::BindPass(uint32_t passIndex)
+	{
 		Ref<PrismShader> shader = m_Material->m_Shader;
-		Ref<Shader> variant = shader->GetVariant(m_KeywordMask);
+		Ref<Shader> variant = shader->GetPassProgram(passIndex, m_KeywordMask);
+		const auto& pass = shader->GetPass(passIndex);
 		variant->Bind();
-		variant->ApplyCommand(shader->GetShaderCommand());
+		variant->ApplyCommand(pass.Command);
 		if (m_PropertyBuffer)
 			variant->SetProperty(shader->GetDeclaration(), m_PropertyBuffer);
 

@@ -1,4 +1,4 @@
-**Prism Shadeing Language (PSL) 使用文档**
+**Prism Shading Language (PSL) 使用文档**
 
 ---
 
@@ -21,6 +21,8 @@ Shader "您的Shader名称"   // 必须是第一个有效语句，名称用于 S
     {
         Pass
         {
+            // Pass 内的可选块（Name、Tags、RenderCommand、GLSL）
+            // 可按任意顺序排列
             Name "ForwardBase"          // Pass 名称（可选，但推荐）
             Tags { "Queue" = "Geometry" "LightMode" = "ForwardBase" }  // Tags（可选）
 
@@ -242,7 +244,7 @@ material.SetKeyword("ALBEDO_MAP", false);
 ### 6. 高级功能与注意事项
 
 - **#include**：支持相对路径，`ResolveIncludes` 递归处理，历史记录防循环。
-- **多 Pass**：`SubShader` 内可写多个 `Pass`，解析器会全部收集。
+- **多 Pass**：`SubShader` 内可写多个 `Pass`，解析器会全部收集。每个 Pass 内的可选块（`Name`、`Tags`、`RenderCommand`、`GLSL`）可按任意顺序排列，解析器会自动识别。
 - **Tags**：目前仅解析存储在 `PassDescriptor::Tags`
 - **Reload**：修改 .Shader 文件后调用 `PrismShader::Reload()` 会重新解析并触发所有 `ShaderReloadedCallback`。
 - **运行时设置 Uniform**：使用 `PrismShader::SetInt`、`SetFloat`、`SetVec3`、`SetMat4` 等（直接调用底层 `Shader`）。
