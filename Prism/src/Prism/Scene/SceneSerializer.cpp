@@ -1,4 +1,4 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "SceneSerializer.h"
 
 #include "Entity.h"
@@ -399,6 +399,13 @@ namespace Prism {
 		out << YAML::Key << "Radiance" << YAML::Value << light.Radiance;
 		out << YAML::Key << "Multiplier" << YAML::Value << light.Multiplier;
 		out << YAML::EndMap; // Light
+		out << YAML::Key << "Shadow" << YAML::Value;
+		out << YAML::BeginMap; // Shadow
+		out << YAML::Key << "Enabled" << YAML::Value << scene->IsShadowEnabled();
+		out << YAML::Key << "Bias" << YAML::Value << scene->GetShadowBias();
+		out << YAML::Key << "NormalBias" << YAML::Value << scene->GetShadowNormalBias();
+		out << YAML::Key << "CascadeCount" << YAML::Value << scene->GetCascadeCount();
+		out << YAML::EndMap; // Shadow
 		out << YAML::EndMap; // Environment
 	}
 
@@ -451,12 +458,20 @@ namespace Prism {
 			m_Scene->SetEnvironment(Environment::Load(envPath));
 
 			auto lightNode = environment["Light"];
-			if (lightNode)
+            if (lightNode)
+            {
+                auto& light = m_Scene->GetLight();
+                light.Direction = lightNode["Direction"].as<glm::vec3>();
+                light.Radiance = lightNode["Radiance"].as<glm::vec3>();
+                light.Multiplier = lightNode["Multiplier"].as<float>();
+            }
+			auto shadowNode = environment["Shadow"];
+			if (shadowNode)
 			{
-				auto& light = m_Scene->GetLight();
-				light.Direction = lightNode["Direction"].as<glm::vec3>();
-				light.Radiance = lightNode["Radiance"].as<glm::vec3>();
-				light.Multiplier = lightNode["Multiplier"].as<float>();
+				m_Scene->SetShadowEnabled(shadowNode["Enabled"].as<bool>());
+				m_Scene->SetShadowBias(shadowNode["Bias"].as<float>());
+				m_Scene->SetShadowNormalBias(shadowNode["NormalBias"].as<float>());
+				m_Scene->SetCascadeCount(shadowNode["CascadeCount"].as<uint32_t>());
 			}
 		}
 

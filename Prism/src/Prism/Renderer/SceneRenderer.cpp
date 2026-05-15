@@ -13,6 +13,9 @@
 namespace Prism
 {
 	static void UpdateGlobalsUBO();
+	static void UpdateShadowData();
+
+	static constexpr uint32_t SHADOW_MAP_SIZE = 2048;
 
 	struct SceneRendererData
 	{
@@ -47,6 +50,10 @@ namespace Prism
 		// Grid
 		Ref<MaterialInstance> GridMaterial;
 		Ref<MaterialInstance> OutlineMaterial;
+
+		// Shadow
+		Ref<Framebuffer> ShadowFBOs[4];
+		Ref<MaterialInstance> ShadowDepthMaterial;
 
 		SceneRendererOptions Options;
 	};
@@ -88,6 +95,18 @@ namespace Prism
 		// Outline
 		auto outlineShader = Renderer::GetShaderLibrary()->Get("Standard/Outline");
 		s_Data.OutlineMaterial = MaterialInstance::Create(Material::Create(outlineShader));
+
+		// Shadow FBOs
+		FramebufferSpecification shadowFBOSpec;
+		shadowFBOSpec.Width = SHADOW_MAP_SIZE;
+		shadowFBOSpec.Height = SHADOW_MAP_SIZE;
+		shadowFBOSpec.Format = FramebufferFormat::Depth;
+		for (int i = 0; i < 4; i++)
+			s_Data.ShadowFBOs[i] = Framebuffer::Create(shadowFBOSpec);
+
+		// Shadow depth material
+		auto shadowShader = Renderer::GetShaderLibrary()->Get("Hidden/ShadowDepth");
+		s_Data.ShadowDepthMaterial = MaterialInstance::Create(Material::Create(shadowShader));
 	}
 
 	void SceneRenderer::SetViewportSize(uint32_t width, uint32_t height)
@@ -106,6 +125,10 @@ namespace Prism
 		s_Data.SceneData.SkyboxMaterial = scene->m_SkyboxMaterial;
 		s_Data.SceneData.SceneEnvironment = scene->m_Environment;
 		s_Data.SceneData.ActiveLight = scene->m_Light;
+
+		if (s_Data.ActiveScene->IsShadowEnabled())
+			UpdateShadowData();
+
 		UpdateGlobalsUBO();
 	}
 
@@ -113,9 +136,9 @@ namespace Prism
 	{
 		PR_CORE_ASSERT(s_Data.ActiveScene, "");
 
-		s_Data.ActiveScene = nullptr;
-
 		FlushDrawList();
+
+		s_Data.ActiveScene = nullptr;
 	}
 
 	void SceneRenderer::SubmitMesh(Ref<Mesh> mesh, const glm::mat4& transform, Ref<MaterialInstance> overrideMaterial)
@@ -212,6 +235,13 @@ namespace Prism
 		auto skyboxShader = s_Data.SceneData.SkyboxMaterial->GetShader();
 		// s_Data.SceneInfo.EnvironmentIrradianceMap->Bind(0);
 		Renderer::SubmitFullscreenQuad(s_Data.SceneData.SkyboxMaterial);
+
+		// Bind shadow depth textures
+		if (s_Data.ActiveScene && s_Data.ActiveScene->IsShadowEnabled())
+		{
+			for (int i = 0; i < 4; i++)
+				s_Data.ShadowFBOs[i]->BindDepthTexture(10 + i);
+		}
 
 		// Render entities
 		for (auto& dc : s_Data.DrawList)
@@ -320,7 +350,8 @@ namespace Prism
 
 	void SceneRenderer::FlushDrawList()
 	{
-		PR_CORE_ASSERT(!s_Data.ActiveScene, "");
+		if (s_Data.ActiveScene && s_Data.ActiveScene->IsShadowEnabled())
+			ShadowPass();
 
 		GeometryPass();
 		CompositePass();
@@ -349,6 +380,129 @@ namespace Prism
 	{
 		return s_Data.Options;
 	}
+
+	static void UpdateShadowData()
+	{
+		auto& camera = s_Data.SceneData.SceneCamera;
+		auto& light = s_Data.ActiveScene->GetLight();
+		auto& sceneUniforms = s_Data.SceneData.SceneUniforms;
+		uint32_t cascadeCount = glm::clamp(s_Data.ActiveScene->GetCascadeCount(), 1u, 4u);
+
+		// 从投影矩阵提取相机参数
+		auto& proj = camera.Camera.GetProjectionMatrix();
+		float f = proj[1][1];
+		float fov = 2.0f * atan(1.0f / f);
+		float aspect = proj[0][0] / proj[1][1];
+		float nearClip = proj[3][2] / (proj[2][2] - 1.0f);
+		float farClip = proj[3][2] / (proj[2][2] + 1.0f);
+
+		// Practical Split Scheme 级联分割
+		float splits[4] = {};
+		float splitLambda = 0.95f;
+		for (uint32_t i = 0; i < cascadeCount; i++)
+		{
+			float fraction = (float)(i + 1) / (float)cascadeCount;
+			float logSplit = nearClip * pow(farClip / nearClip, fraction);
+			float uniSplit = nearClip + (farClip - nearClip) * fraction;
+			splits[i] = logSplit * splitLambda + uniSplit * (1.0f - splitLambda);
+		}
+
+		sceneUniforms.CascadeSplits = glm::vec4(splits[0], splits[1], splits[2], splits[3]);
+		sceneUniforms.ShadowParams = glm::vec4(
+			s_Data.ActiveScene->GetShadowBias(),
+			s_Data.ActiveScene->GetShadowNormalBias(),
+			(float)cascadeCount, 0.0f
+		);
+
+		glm::mat4 invView = glm::inverse(camera.ViewMatrix);
+		glm::vec3 lightDir = glm::normalize(light.Direction);
+		float tanHalfFov = tanf(fov * 0.5f);
+		float yNearExt = nearClip * tanHalfFov;
+		float xNearExt = yNearExt * aspect;
+
+		float prevSplit = nearClip;
+		for (uint32_t cascade = 0; cascade < cascadeCount; cascade++)
+		{
+			float splitDist = splits[cascade];
+			float nScale = prevSplit / nearClip;
+			float fScale = splitDist / nearClip;
+
+			// 构建级联视锥体 8 顶点（观察空间）
+			glm::vec3 viewCorners[8];
+			viewCorners[0] = glm::vec3(-xNearExt * nScale, -yNearExt * nScale, -prevSplit);
+			viewCorners[1] = glm::vec3(xNearExt * nScale, -yNearExt * nScale, -prevSplit);
+			viewCorners[2] = glm::vec3(xNearExt * nScale, yNearExt * nScale, -prevSplit);
+			viewCorners[3] = glm::vec3(-xNearExt * nScale, yNearExt * nScale, -prevSplit);
+			viewCorners[4] = glm::vec3(-xNearExt * fScale, -yNearExt * fScale, -splitDist);
+			viewCorners[5] = glm::vec3(xNearExt * fScale, -yNearExt * fScale, -splitDist);
+			viewCorners[6] = glm::vec3(xNearExt * fScale, yNearExt * fScale, -splitDist);
+			viewCorners[7] = glm::vec3(-xNearExt * fScale, yNearExt * fScale, -splitDist);
+
+			// 转换到世界空间
+			glm::vec3 center(0.0f);
+			glm::vec3 worldCorners[8];
+			for (int j = 0; j < 8; j++)
+			{
+				worldCorners[j] = glm::vec3(invView * glm::vec4(viewCorners[j], 1.0f));
+				center += worldCorners[j];
+			}
+			center /= 8.0f;
+
+			// 光照空间视图矩阵
+			glm::vec3 up = glm::abs(lightDir.y) < 0.99f ? glm::vec3(0.0f, 1.0f, 0.0f) : glm::vec3(1.0f, 0.0f, 0.0f);
+			glm::mat4 lightView = glm::lookAt(center - lightDir * 1000.0f, center, up);
+
+			// 计算光照空间 AABB
+			glm::vec3 minBounds(FLT_MAX), maxBounds(-FLT_MAX);
+			for (int j = 0; j < 8; j++)
+			{
+				glm::vec4 lc = lightView * glm::vec4(worldCorners[j], 1.0f);
+				minBounds = glm::min(minBounds, glm::vec3(lc));
+				maxBounds = glm::max(maxBounds, glm::vec3(lc));
+			}
+
+			// 对齐到纹素（稳定阴影边缘）
+			float tx = (maxBounds.x - minBounds.x) / (float)SHADOW_MAP_SIZE;
+			float ty = (maxBounds.y - minBounds.y) / (float)SHADOW_MAP_SIZE;
+			if (tx > 0.0f) { minBounds.x = floorf(minBounds.x / tx) * tx; maxBounds.x = ceilf(maxBounds.x / tx) * tx; }
+			if (ty > 0.0f) { minBounds.y = floorf(minBounds.y / ty) * ty; maxBounds.y = ceilf(maxBounds.y / ty) * ty; }
+
+			// 正交投影深度范围
+			float zNear = glm::max(0.001f, -maxBounds.z);
+			float zFar = -minBounds.z;
+
+			sceneUniforms.ShadowMatrices[cascade] = glm::ortho(minBounds.x, maxBounds.x, minBounds.y, maxBounds.y, zNear, zFar) * lightView;
+
+			prevSplit = splitDist;
+		}
+	}
+
+	void SceneRenderer::ShadowPass()
+	{
+		if (s_Data.DrawList.empty())
+			return;
+
+		auto& sceneUniforms = s_Data.SceneData.SceneUniforms;
+		uint32_t cascadeCount = (uint32_t)sceneUniforms.ShadowParams.z;
+		if (cascadeCount == 0 || cascadeCount > 4)
+			return;
+
+		Ref<PrismShader> shadowPrismShader = s_Data.ShadowDepthMaterial->GetShader();
+		Ref<Shader> shadowProgram = shadowPrismShader->GetPassProgram(0, 0);
+
+		for (uint32_t cascade = 0; cascade < cascadeCount; cascade++)
+		{
+			s_Data.ShadowFBOs[cascade]->Bind();
+			Renderer::Submit([]() { glClear(GL_DEPTH_BUFFER_BIT); });
+
+			s_Data.ShadowDepthMaterial->Bind();
+			shadowProgram->SetMat4("u_LightVP", sceneUniforms.ShadowMatrices[cascade]);
+
+			for (auto& dc : s_Data.DrawList)
+				Renderer::SubmitMesh(dc.Mesh, dc.Transform, s_Data.ShadowDepthMaterial);
+		}
+	}
+
 	static void UpdateGlobalsUBO()
 	{
 		auto& camera = s_Data.SceneData.SceneCamera;

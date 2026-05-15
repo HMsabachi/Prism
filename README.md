@@ -64,6 +64,8 @@ premake5 xcode4        # macOS Xcode
 - Prism Shader Language (PSL) — 自定义着色器语言，支持 Properties、RenderCommand、多 Pass
 - **Shader 变体系统** — `#pragma shader_feature` + 自动编译 2^N 变体，`KeywordMask` 位掩码切换
 - 模板测试封装与 Stencil Buffer 物体描边（Outline）
+- **级联阴影映射（CSM）** — 4 级联、Practical Split Scheme 视锥分割、纹素对齐阴影稳定
+- **PCF 软阴影** — 16 采样 Poisson Disk、旋转核去条纹、硬件 PCF 深度比较
 - OpenGLStateCache 渲染状态统一管理
 - RenderPass 系统与多线程命令队列
 - Renderer2D + AABB 可视化调试
@@ -81,6 +83,7 @@ premake5 xcode4        # macOS Xcode
 - 材质面板（显示网格材质层级、着色器切换下拉框、关键字 Checkbox、属性实时编辑）
 - Shader 关键字可视化开关（Material 面板自动列出所有 `#pragma shader_feature`）
 - Physics2D 重力参数实时调节
+- **阴影参数实时调节** — 阴影开关、深度偏移/法线偏移、级联数量
 - ImGui Property 系统支持 Slider/Drag/Color 三种控件模式
 
 ### 基础系统
@@ -166,6 +169,7 @@ Prism/
 
 - [x] C# 脚本系统完善（热重载、编辑器脚本属性面板、物理 API）
 - [x] 2D 物理系统集成（Box2D：刚体、碰撞体、重力）
+- [x] **级联阴影映射（CSM）+ PCF 软阴影**
 - [ ] 完整资源管理系统与序列化
 - [ ] 跨平台窗口与渲染抽象
 - [ ] Vulkan 后端支持（长期目标）

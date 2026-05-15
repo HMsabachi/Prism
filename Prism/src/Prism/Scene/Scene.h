@@ -28,8 +28,8 @@ namespace Prism
     const size_t MAX_LIGHTS = 1;
     struct Light
     {
-        alignas(16) glm::vec3 Direction{ 0.0f, 0.0f, 0.0f };
-        alignas(16) glm::vec3 Radiance{ 0.0f, 0.0f, 0.0f };
+        alignas(16) glm::vec3 Direction{ -0.5f, -1.0f, -0.5f };
+        alignas(16) glm::vec3 Radiance{ 1.0f, 1.0f, 1.0f };
         alignas(4) float Multiplier = 1.0f;
     };
 
@@ -63,6 +63,15 @@ namespace Prism
 
         Light& GetLight() { return m_Light; }
         const Light& GetLight() const { return m_Light; }
+
+        bool IsShadowEnabled() const { return m_ShadowsEnabled; }
+        void SetShadowEnabled(bool enabled) { m_ShadowsEnabled = enabled; }
+        float GetShadowBias() const { return m_ShadowBias; }
+        void SetShadowBias(float bias) { m_ShadowBias = bias; }
+        float GetShadowNormalBias() const { return m_ShadowNormalBias; }
+        void SetShadowNormalBias(float bias) { m_ShadowNormalBias = bias; }
+        uint32_t GetCascadeCount() const { return m_CascadeCount; }
+        void SetCascadeCount(uint32_t count) { m_CascadeCount = glm::clamp(count, 1u, 4u); }
 
         Entity GetMainCameraEntity();
 
@@ -106,6 +115,12 @@ namespace Prism
 
         Light m_Light;
         float m_LightMultiplier = 0.3f;
+
+        // 阴影设置
+        bool m_ShadowsEnabled = true;
+        float m_ShadowBias = 0.001f;
+        float m_ShadowNormalBias = 0.1f;
+        uint32_t m_CascadeCount = 4;
 
         Environment m_Environment;
         Ref<TextureCube> m_SkyboxTexture;

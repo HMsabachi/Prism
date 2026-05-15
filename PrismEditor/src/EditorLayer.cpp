@@ -316,7 +316,7 @@ namespace Prism
             if ((int)flags & (int)PropertyFlag::ColorProperty)
                 ImGui::ColorEdit3(id.c_str(), glm::value_ptr(value), ImGuiColorEditFlags_NoInputs);
             else if ((int)flags & (int)PropertyFlag::SliderProperty)
-                ImGui::SliderFloat3(id.c_str(), glm::value_ptr(value), min, max);
+                modified = ImGui::SliderFloat3(id.c_str(), glm::value_ptr(value), min, max);
             else
                 modified = ImGui::DragFloat3(id.c_str(), glm::value_ptr(value));
 
@@ -339,7 +339,7 @@ namespace Prism
 
             std::string id = "##" + name;
             if ((int)flags & (int)PropertyFlag::SliderProperty)
-                ImGui::SliderFloat(id.c_str(), &value, min, max);
+                modified = ImGui::SliderFloat(id.c_str(), &value, min, max);
             else
                 modified = ImGui::DragFloat(id.c_str(), &value);
 
@@ -630,6 +630,33 @@ namespace Prism
             Property(TR("Light Direction"), light.Direction, PropertyFlag::SliderProperty);
             Property(TR("Light Radiance"), light.Radiance, PropertyFlag::ColorProperty);
             Property(TR("Light Multiplier"), light.Multiplier, 0.0f, 5.0f, PropertyFlag::SliderProperty);
+
+            // Shadow
+            {
+                auto shadowScene = m_SceneState == SceneState::Edit ? m_EditorScene : m_RuntimeScene;
+                if (shadowScene)
+                {
+                    bool shadowEnabled = shadowScene->IsShadowEnabled();
+                    if (Property(TR("Shadows"), shadowEnabled))
+                        shadowScene->SetShadowEnabled(shadowEnabled);
+
+                    if (shadowEnabled)
+                    {
+                        float shadowBias = shadowScene->GetShadowBias();
+                        if (Property(TR("Shadow Bias"), shadowBias, 0.0f, 0.05f, PropertyFlag::SliderProperty))
+                            shadowScene->SetShadowBias(shadowBias);
+
+                        float shadowNormalBias = shadowScene->GetShadowNormalBias();
+                        if (Property(TR("Normal Bias"), shadowNormalBias, 0.0f, 1.0f, PropertyFlag::SliderProperty))
+                            shadowScene->SetShadowNormalBias(shadowNormalBias);
+
+                        float cascadeCount = (float)shadowScene->GetCascadeCount();
+                        if (Property(TR("Cascades"), cascadeCount, 1.0f, 4.0f, PropertyFlag::SliderProperty))
+                            shadowScene->SetCascadeCount((uint32_t)cascadeCount);
+                    }
+                }
+            }
+
             {
                 float physics2DGravity = m_SceneState == SceneState::Edit ? m_EditorScene->GetPhysics2DGravity() : m_RuntimeScene->GetPhysics2DGravity();
                 if (Property(TR("Gravity"), physics2DGravity, -10000.0f, 10000.0f, PropertyFlag::DragProperty))

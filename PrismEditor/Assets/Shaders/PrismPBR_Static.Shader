@@ -116,7 +116,7 @@ Shader "Custom/SimplePBR_Static"
                     vec3 result = vec3(0.0);
                     for(int i = 0; i < PRISM_MAX_LIGHTS; i++)
                     {
-                        vec3 Li = Prism_Lights[i].Direction;
+                        vec3 Li = -Prism_Lights[i].Direction;
                         vec3 Lradiance = Prism_Lights[i].Radiance * Prism_Lights[i].Multiplier;
                         vec3 Lh = normalize(Li + m_Params.View);
 
@@ -136,6 +136,15 @@ Shader "Custom/SimplePBR_Static"
 
                         result += (diffuseBRDF + specularBRDF) * Lradiance * cosLi;
                     }
+
+                    float shadow = 1.0;
+                    if (Prism_ShadowParams.z > 0.0)
+                    {
+                        vec3 biasedPos = vs_Output.WorldPosition + m_Params.Normal * Prism_ShadowParams.y;
+                        shadow = Prism_GetShadow(biasedPos, -(Prism_View * vec4(vs_Output.WorldPosition, 1.0)).z);
+                    }
+                    result *= shadow;
+
                     return result;
                 }
 
@@ -201,7 +210,6 @@ Shader "Custom/SimplePBR_Static"
                     vec3 iblContribution = IBL(F0, Lr);
 
                     FragColor = vec4(lightContribution + iblContribution, 1.0);
-                    FragColor = vec4(iblContribution, 1.0);
                     //FragColor = vec4(u_Color, 1.0);
                 }
 

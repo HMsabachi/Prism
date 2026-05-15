@@ -33,8 +33,10 @@ namespace Prism
 		{
 			auto decl = FindPropertyDeclaration(name);
 			if (!decl)
+			{
+				PR_CORE_WARN("Material::Set - Could not find uniform with name '{0}'", name);
 				return;
-			PR_CORE_ASSERT(decl, "Could not find uniform with name 'x'");
+			}
 			auto& buffer = m_PropertyBuffer;
 			buffer.Write((byte*)&value, decl->GetSize(), decl->GetOffset());
 			for (auto mi : m_MaterialInstances)
@@ -43,7 +45,11 @@ namespace Prism
 		void Set(const std::string& name, const Ref<Texture2D>& texture)
 		{
 			auto decl = FindPropertyDeclaration(name);
-			PR_CORE_ASSERT(decl, "Could not find uniform with name 'x'");
+			if (!decl)
+			{
+				PR_CORE_WARN("Material::Set - Could not find uniform with name '{0}'", name);
+				return;
+			}
 			auto& buffer = m_PropertyBuffer;
 			auto& tex = *(PropertyType::Texture2D*)&buffer[decl->GetOffset()];
 			uint32_t slot = tex.slot;
@@ -54,7 +60,11 @@ namespace Prism
 		void Set(const std::string& name, const Ref<TextureCube>& texture)
 		{
 			auto decl = FindPropertyDeclaration(name);
-			PR_CORE_ASSERT(decl, "Could not find uniform with name 'x'");
+			if (!decl)
+			{
+				PR_CORE_WARN("Material::Set - Could not find uniform with name '{0}'", name);
+				return;
+			}
 			auto& buffer = m_PropertyBuffer;
 			auto& tex = *(PropertyType::TextureCube*)&buffer[decl->GetOffset()];
 			uint32_t slot = tex.slot;
@@ -68,7 +78,12 @@ namespace Prism
 		T& Get(const std::string& name)
 		{
 			auto decl = FindPropertyDeclaration(name);
-			PR_CORE_ASSERT(decl, "Could not find uniform with name 'x'");
+			if (!decl)
+			{
+				PR_CORE_WARN("Material::Get - Could not find uniform with name '{0}'", name);
+				static T s_Default{};
+				return s_Default;
+			}
 			auto& buffer = m_PropertyBuffer;
 			return buffer.Read<T>(decl->GetOffset());
 		}
@@ -77,11 +92,19 @@ namespace Prism
 		Ref<T> GetResource(const std::string& name)
 		{
 			auto decl = FindPropertyDeclaration(name);
-			PR_CORE_ASSERT(decl, "Could not find uniform with name 'x'");
+			if (!decl)
+			{
+				PR_CORE_WARN("Material::GetResource - Could not find uniform with name '{0}'", name);
+				return nullptr;
+			}
 			auto& buffer = m_PropertyBuffer;
 			auto& tex = *(PropertyType::Texture2D*)&buffer[decl->GetOffset()];
 			uint32_t slot = tex.slot;
-			PR_CORE_ASSERT(slot < m_Textures.size(), "Texture slot is invalid!");
+			if (slot >= m_Textures.size())
+			{
+				PR_CORE_WARN("Material::GetResource - Texture slot {0} is invalid for uniform '{1}'", slot, name);
+				return nullptr;
+			}
 			return m_Textures[slot];
 		}
 
@@ -128,7 +151,11 @@ namespace Prism
 		void Set(const std::string& name, const T& value)
 		{
 			auto decl = m_Material->FindPropertyDeclaration(name);
-			PR_CORE_ASSERT(decl, "Could not find uniform with name 'x'");
+			if (!decl)
+			{
+				PR_CORE_WARN("MaterialInstance::Set - Could not find uniform with name '{0}'", name);
+				return;
+			}
 			auto& buffer = m_PropertyBuffer;
 			buffer.Write((byte*)&value, decl->GetSize(), decl->GetOffset());
 			m_OverriddenValues.insert(name);
@@ -136,7 +163,11 @@ namespace Prism
 		void Set(const std::string& name, const Ref<Texture>& texture)
 		{
 			auto decl = m_Material->FindPropertyDeclaration(name);
-			PR_CORE_ASSERT(decl, "Could not find uniform with name 'x'");
+			if (!decl)
+			{
+				PR_CORE_WARN("MaterialInstance::Set - Could not find uniform with name '{0}'", name);
+				return;
+			}
 			auto& buffer = m_PropertyBuffer;
 			uint32_t slot = (*(PropertyType::Texture2D*)&buffer[decl->GetOffset()]).slot;
 			if (m_Textures.size() <= slot)
@@ -161,7 +192,12 @@ namespace Prism
 		T& Get(const std::string& name)
 		{
 			auto decl = m_Material->FindPropertyDeclaration(name);
-			PR_CORE_ASSERT(decl, "Could not find uniform with name 'x'");
+			if (!decl)
+			{
+				PR_CORE_WARN("MaterialInstance::Get - Could not find uniform with name '{0}'", name);
+				static T s_Default{};
+				return s_Default;
+			}
 			auto& buffer = m_PropertyBuffer;
 			return buffer.Read<T>(decl->GetOffset());
 		}
@@ -170,11 +206,19 @@ namespace Prism
 		Ref<T> GetResource(const std::string& name)
 		{
 			auto decl = m_Material->FindPropertyDeclaration(name);
-			PR_CORE_ASSERT(decl, "Could not find uniform with name 'x'");
+			if (!decl)
+			{
+				PR_CORE_WARN("MaterialInstance::GetResource - Could not find uniform with name '{0}'", name);
+				return nullptr;
+			}
 			auto& buffer = m_PropertyBuffer;
 			auto& tex = *(PropertyType::Texture2D*)&buffer[decl->GetOffset()];
 			uint32_t slot = tex.slot;
-			PR_CORE_ASSERT(slot < m_Textures.size(), "Texture slot is invalid!");
+			if (slot >= m_Textures.size())
+			{
+				PR_CORE_WARN("MaterialInstance::GetResource - Texture slot {0} is invalid for uniform '{1}'", slot, name);
+				return nullptr;
+			}
 			return m_Textures[slot];
 		}
 

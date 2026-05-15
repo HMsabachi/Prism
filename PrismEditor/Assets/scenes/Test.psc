@@ -2,8 +2,8 @@ Scene: Scene Name
 Environment:
   AssetPath: E:\PrismEngine\Prism\PrismEditor\Assets\env\birchwood_4k.hdr
   Light:
-    Direction: [0, 0, 0]
-    Radiance: [0, 0, 0]
+    Direction: [-0.5, -1, -0.5]
+    Radiance: [1, 1, 1]
     Multiplier: 1
 Entities:
   - Entity: 4272325128816557942

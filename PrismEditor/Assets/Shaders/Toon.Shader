@@ -2,7 +2,7 @@ Shader "Custom/Toon"
 {
     Properties
     {
-        u_MainColor("固有色", Color3) = (1.0, 1.0, 1.0)
+        u_AlbedoColor("固有色", Color3) = (1.0, 1.0, 1.0)
         u_MainTexture("固有色贴图", Texture2D) = {}
         u_MainTextureTiling("贴图缩放", Vector2) = (1.0, 1.0)
         u_MainTextureOffset("贴图偏移", Vector2) = (0.0, 0.0)
@@ -85,7 +85,7 @@ Shader "Custom/Toon"
                     vec3 lightDir = normalize(u_LightDirection);
                     vec3 lightColor = u_LightColor;
 
-                    vec3 albedo = u_MainColor.rgb;
+                    vec3 albedo = u_AlbedoColor;
                 #ifdef MAIN_TEXTURE
                     albedo *= texture(u_MainTexture, vs_Output.TexCoord).rgb;
                 #endif

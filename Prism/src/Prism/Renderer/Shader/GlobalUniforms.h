@@ -21,7 +21,11 @@ namespace Prism {
 
         Light Lights[MAX_LIGHTS];
 
-        float _padding1[48]{ 0.0f };
+        glm::mat4 ShadowMatrices[4]{};
+        glm::vec4 CascadeSplits{};       // 级联分割距离（视空间）
+        glm::vec4 ShadowParams{};        // x=深度偏移, y=法线偏移, z=级联数, w=未使用
+
+        float _padding1[24]{ 0.0f };
     };
 
     class PRISM_API GlobalUniforms

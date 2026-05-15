@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Prism/Renderer/RendererAPI.h"
 
 namespace Prism {
@@ -7,7 +7,8 @@ namespace Prism {
 	{
 		None = 0,
 		RGBA8 = 1,
-		RGBA16F = 2
+		RGBA16F = 2,
+		Depth = 3
 	};
 
 	struct PRISM_API FramebufferSpecification

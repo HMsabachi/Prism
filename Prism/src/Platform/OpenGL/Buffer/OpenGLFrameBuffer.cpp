@@ -11,14 +11,22 @@ namespace Prism {
 	OpenGLFramebuffer::OpenGLFramebuffer(const FramebufferSpecification& spec)
 		: m_Specification(spec)
 	{
-		Resize(spec.Width, spec.Height);
+		Resize(spec.Width, spec.Height, true);
 	}
 
 	OpenGLFramebuffer::~OpenGLFramebuffer()
 	{
-		Renderer::Submit([=](){
-			glDeleteFramebuffers(1, &m_RendererID);
-			});
+		GLuint id = m_RendererID;
+		GLuint color = m_ColorAttachment;
+		GLuint depth = m_DepthAttachment;
+		Renderer::Submit([id, color, depth](){
+			if (id)
+				glDeleteFramebuffers(1, &id);
+			if (color)
+				glDeleteTextures(1, &color);
+			if (depth)
+				glDeleteTextures(1, &depth);
+		});
 	}
 
 	void OpenGLFramebuffer::Resize(uint32_t width, uint32_t height, bool forceRecreate)
@@ -28,111 +36,118 @@ namespace Prism {
 
 		m_Specification.Width = width;
 		m_Specification.Height = height;
-		Renderer::Submit([this]()
+		Ref<OpenGLFramebuffer> instance = this;
+		Renderer::Submit([instance]() mutable
 			{
-				if (m_RendererID)
+				if (instance->m_RendererID)
 				{
-					glDeleteFramebuffers(1, &m_RendererID);
-					glDeleteTextures(1, &m_ColorAttachment);
-					glDeleteTextures(1, &m_DepthAttachment);
+					glDeleteFramebuffers(1, &instance->m_RendererID);
+					glDeleteTextures(1, &instance->m_ColorAttachment);
+					glDeleteTextures(1, &instance->m_DepthAttachment);
+					instance->m_RendererID = 0;
+					instance->m_ColorAttachment = 0;
+					instance->m_DepthAttachment = 0;
 				}
 
-				glGenFramebuffers(1, &m_RendererID);
-				glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID);
+				glCreateFramebuffers(1, &instance->m_RendererID);
 
-				bool multisample = m_Specification.Samples > 1;
+				if (instance->m_Specification.Format == FramebufferFormat::Depth)
+				{
+					glCreateTextures(GL_TEXTURE_2D, 1, &instance->m_DepthAttachment);
+					glTextureStorage2D(instance->m_DepthAttachment, 1, GL_DEPTH_COMPONENT32, instance->m_Specification.Width, instance->m_Specification.Height);
+					glTextureParameteri(instance->m_DepthAttachment, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+					glTextureParameteri(instance->m_DepthAttachment, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+					glTextureParameteri(instance->m_DepthAttachment, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+					glTextureParameteri(instance->m_DepthAttachment, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+					glTextureParameteri(instance->m_DepthAttachment, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+					glTextureParameteri(instance->m_DepthAttachment, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+
+					glNamedFramebufferTexture(instance->m_RendererID, GL_DEPTH_ATTACHMENT, instance->m_DepthAttachment, 0);
+					glNamedFramebufferDrawBuffer(instance->m_RendererID, GL_NONE);
+					glNamedFramebufferReadBuffer(instance->m_RendererID, GL_NONE);
+
+					GLenum fbStatus = glCheckNamedFramebufferStatus(instance->m_RendererID, GL_FRAMEBUFFER);
+					PR_CORE_ASSERT(fbStatus == GL_FRAMEBUFFER_COMPLETE, "深度 Framebuffer 不完整!");
+					return;
+				}
+
+				glBindFramebuffer(GL_FRAMEBUFFER, instance->m_RendererID);
+
+				bool multisample = instance->m_Specification.Samples > 1;
 				if (multisample)
 				{
-					glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &m_ColorAttachment);
-					glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, m_ColorAttachment);
+					glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &instance->m_ColorAttachment);
+					glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, instance->m_ColorAttachment);
 
-					// TODO: 这里创建Prism Texture Object
-					if (m_Specification.Format == FramebufferFormat::RGBA16F)
+					if (instance->m_Specification.Format == FramebufferFormat::RGBA16F)
 					{
-						glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, m_Specification.Samples, GL_RGBA16F, m_Specification.Width, m_Specification.Height, GL_FALSE);
+						glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, instance->m_Specification.Samples, GL_RGBA16F, instance->m_Specification.Width, instance->m_Specification.Height, GL_FALSE);
 					}
-					else if (m_Specification.Format == FramebufferFormat::RGBA8)
+					else if (instance->m_Specification.Format == FramebufferFormat::RGBA8)
 					{
-						glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, m_Specification.Samples, GL_RGBA8, m_Specification.Width, m_Specification.Height, GL_FALSE);
-					}				
+						glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, instance->m_Specification.Samples, GL_RGBA8, instance->m_Specification.Width, instance->m_Specification.Height, GL_FALSE);
+					}
 					glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
 				}
 				else
 				{
-					glCreateTextures(GL_TEXTURE_2D, 1, &m_ColorAttachment);
-					glBindTexture(GL_TEXTURE_2D, m_ColorAttachment);
-
-					// TODO: Create Prism texture object based on format here
-					if (m_Specification.Format == FramebufferFormat::RGBA16F)
-					{
-						glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, m_Specification.Width, m_Specification.Height, 0, GL_RGBA, GL_FLOAT, nullptr);
-					}
-					else if (m_Specification.Format == FramebufferFormat::RGBA8)
-					{
-						glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_Specification.Width, m_Specification.Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-					}
-					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-					glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-					glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_ColorAttachment, 0);
+					glCreateTextures(GL_TEXTURE_2D, 1, &instance->m_ColorAttachment);
+					glTextureStorage2D(instance->m_ColorAttachment, 1, instance->m_Specification.Format == FramebufferFormat::RGBA16F ? GL_RGBA16F : GL_RGBA8, instance->m_Specification.Width, instance->m_Specification.Height);
+					glTextureParameteri(instance->m_ColorAttachment, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+					glTextureParameteri(instance->m_ColorAttachment, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+					glNamedFramebufferTexture(instance->m_RendererID, GL_COLOR_ATTACHMENT0, instance->m_ColorAttachment, 0);
 				}
 
 				if (multisample)
 				{
-					glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &m_DepthAttachment);
-					glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, m_DepthAttachment);
-					// glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 8, GL_DEPTH24_STENCIL8, m_Specification.Width, m_Specification.Height, GL_TRUE);
-					glTexStorage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, m_Specification.Samples, GL_DEPTH24_STENCIL8, m_Specification.Width, m_Specification.Height, GL_FALSE);
-					glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
-					// glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D_MULTISAMPLE, m_DepthAttachment, 0);
+					glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &instance->m_DepthAttachment);
+					glTextureStorage2DMultisample(instance->m_DepthAttachment, instance->m_Specification.Samples, GL_DEPTH24_STENCIL8, instance->m_Specification.Width, instance->m_Specification.Height, GL_FALSE);
+					glNamedFramebufferTexture(instance->m_RendererID, GL_DEPTH_STENCIL_ATTACHMENT, instance->m_DepthAttachment, 0);
 				}
 				else
 				{
-					glCreateTextures(GL_TEXTURE_2D, 1, &m_DepthAttachment);
-					glBindTexture(GL_TEXTURE_2D, m_DepthAttachment);
-					glTexImage2D(
-						GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, m_Specification.Width, m_Specification.Height, 0,
-						GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL
-					);
-					glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, m_DepthAttachment, 0);
+					glCreateTextures(GL_TEXTURE_2D, 1, &instance->m_DepthAttachment);
+					glTextureStorage2D(instance->m_DepthAttachment, 1, GL_DEPTH24_STENCIL8, instance->m_Specification.Width, instance->m_Specification.Height);
+					glNamedFramebufferTexture(instance->m_RendererID, GL_DEPTH_STENCIL_ATTACHMENT, instance->m_DepthAttachment, 0);
 				}
 				if (multisample)
-					glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, m_ColorAttachment, 0);
-				else
-					glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, m_ColorAttachment, 0);
-				glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, m_DepthAttachment, 0);
+					glNamedFramebufferTexture(instance->m_RendererID, GL_COLOR_ATTACHMENT0, instance->m_ColorAttachment, 0);
 
-				PR_CORE_ASSERT(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE, "Framebuffer is incomplete!");
-
-				glBindFramebuffer(GL_FRAMEBUFFER, 0);
+				GLenum fbStatus = glCheckNamedFramebufferStatus(instance->m_RendererID, GL_FRAMEBUFFER);
+				PR_CORE_ASSERT(fbStatus == GL_FRAMEBUFFER_COMPLETE, "Framebuffer is incomplete!");
 			});
 	}
 
 	void OpenGLFramebuffer::Bind() const
 	{
-		Renderer::Submit([this](){
-			glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID);
-			glViewport(0, 0, m_Specification.Width, m_Specification.Height);
-			});
+		Ref<const OpenGLFramebuffer> instance = this;
+		Renderer::Submit([instance](){
+			glBindFramebuffer(GL_FRAMEBUFFER, instance->m_RendererID);
+			glViewport(0, 0, instance->m_Specification.Width, instance->m_Specification.Height);
+		});
 	}
 
 	void OpenGLFramebuffer::Unbind() const
 	{
-		Renderer::Submit([this](){
+		Ref<const OpenGLFramebuffer> instance = this;
+		Renderer::Submit([instance](){
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-			});
+		});
 	}
 
 	void OpenGLFramebuffer::BindTexture(uint32_t slot) const
 	{
-		Renderer::Submit([this, slot](){
-			glBindTextureUnit(slot, m_ColorAttachment);
+		Ref<const OpenGLFramebuffer> instance = this;
+		Renderer::Submit([instance, slot](){
+			glBindTextureUnit(slot, instance->m_ColorAttachment);
 		});
 	}
 
 	void OpenGLFramebuffer::BindDepthTexture(uint32_t slot ) const
 	{
-		Renderer::Submit([this, slot](){
-			glBindTextureUnit(slot, m_DepthAttachment);
+		Ref<const OpenGLFramebuffer> instance = this;
+		Renderer::Submit([instance, slot](){
+			glBindTextureUnit(slot, instance->m_DepthAttachment);
 		});
 	}
 

@@ -2,22 +2,27 @@ Scene: Scene Name
 Environment:
   AssetPath: assets\env\pink_sunrise_4k.hdr
   Light:
-    Direction: [-0.787, -0.733, 1]
+    Direction: [-0.608, -1, 0.552]
     Radiance: [1, 1, 1]
     Multiplier: 0.515
+  Shadow:
+    Enabled: true
+    Bias: 0.001
+    NormalBias: 0.1
+    CascadeCount: 4
 Entities:
-  - Entity: 10169503531257462571
+  - Entity: 18306113171518048249
     TagComponent:
       Tag: Box
     TransformComponent:
-      Position: [0, 1.5, 0]
+      Position: [0, 0, 0]
       Rotation: [1, 0, 0, 0]
-      Scale: [2, 2, 2]
+      Scale: [50, 1, 50]
     MeshComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBodyComponent:
-      BodyType: 1
-      Mass: 0.5
+      BodyType: 0
+      Mass: 1
       LockPositionX: false
       LockPositionY: false
       LockPositionZ: false
@@ -29,8 +34,27 @@ Entities:
       DynamicFriction: 1
       Bounciness: 0
     BoxColliderComponent:
-      Size: [2, 2, 2]
+      Size: [50, 1, 50]
       Offset: [0, 0, 0]
+  - Entity: 5178862374589434728
+    TagComponent:
+      Tag: Camera
+    TransformComponent:
+      Position: [-21.740631, 9.706595, 15]
+      Rotation: [0.99991035, -0.013391121, 0, 0]
+      Scale: [1, 1, 1]
+    ScriptComponent:
+      ModuleName: Example.BasicController
+      StoredFields:
+        - Name: Speed
+          Type: 1
+          Data: 12
+        - Name: DistanceFromPlayer
+          Type: 1
+          Data: 15
+    CameraComponent:
+      Camera: some camera data...
+      Primary: true
   - Entity: 14057422478420564497
     TagComponent:
       Tag: Player
@@ -67,37 +91,18 @@ Entities:
       Bounciness: 0
     SphereColliderComponent:
       Radius: 0.5
-  - Entity: 5178862374589434728
-    TagComponent:
-      Tag: Camera
-    TransformComponent:
-      Position: [-21.740631, 9.706595, 15]
-      Rotation: [0.99991035, -0.013391121, 0, 0]
-      Scale: [1, 1, 1]
-    ScriptComponent:
-      ModuleName: Example.BasicController
-      StoredFields:
-        - Name: Speed
-          Type: 1
-          Data: 12
-        - Name: DistanceFromPlayer
-          Type: 1
-          Data: 15
-    CameraComponent:
-      Camera: some camera data...
-      Primary: true
-  - Entity: 18306113171518048249
+  - Entity: 10169503531257462571
     TagComponent:
       Tag: Box
     TransformComponent:
-      Position: [0, 0, 0]
+      Position: [0, 1.5, 0]
       Rotation: [1, 0, 0, 0]
-      Scale: [50, 1, 50]
+      Scale: [2, 2, 2]
     MeshComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBodyComponent:
-      BodyType: 0
-      Mass: 1
+      BodyType: 1
+      Mass: 0.5
       LockPositionX: false
       LockPositionY: false
       LockPositionZ: false
@@ -109,5 +114,5 @@ Entities:
       DynamicFriction: 1
       Bounciness: 0
     BoxColliderComponent:
-      Size: [50, 1, 50]
+      Size: [2, 2, 2]
       Offset: [0, 0, 0]

@@ -48,6 +48,7 @@ namespace Prism
 		static SceneRendererOptions& GetOptions();
 	private:
 		static void FlushDrawList();
+		static void ShadowPass();
 		static void GeometryPass();
 		static void CompositePass();
 	};

@@ -168,21 +168,21 @@ int CodeGen::GetLocationBySemantic(const std::string& semantic)
 {
     std::string upper = semantic;
     std::transform(semantic.begin(), semantic.end(), upper.begin(), ::toupper);
-    if (upper == "POSITION")    return 0;
-    if (upper == "NORMAL")      return 1;
-    if (upper == "TANGENT")     return 2;
-    if (upper == "BINORMAL")    return 3;
-    if (upper == "TEXCOORD0")   return 4;
-    if (upper == "TEXCOORD1")   return 5;
-    if (upper == "BONEINDICES") return 6;
-    if (upper == "BONEWEIGHTS") return 7;
-    if (upper == "INSTANCEID")  return 8;
-    if (upper == "COLOR")       return 9;
-    if (upper == "INDEX0")      return 10;
-    if (upper == "INDEX1")      return 11;
-    if (upper == "OTHER0")      return 12;
-    if (upper == "OTHER1")      return 13;
-    if (upper == "OTHER2")      return 14;
+    if (upper == "POSITION")    return static_cast<int>(VertexSemantic::Position);
+    if (upper == "NORMAL")      return static_cast<int>(VertexSemantic::Normal);
+    if (upper == "TANGENT")     return static_cast<int>(VertexSemantic::Tangent);
+    if (upper == "BINORMAL")    return static_cast<int>(VertexSemantic::Binormal);
+    if (upper == "TEXCOORD0")   return static_cast<int>(VertexSemantic::TexCoord0);
+    if (upper == "TEXCOORD1")   return static_cast<int>(VertexSemantic::TexCoord1);
+    if (upper == "BONEINDICES") return static_cast<int>(VertexSemantic::BoneIndices);
+    if (upper == "BONEWEIGHTS") return static_cast<int>(VertexSemantic::BoneWeights);
+    if (upper == "INSTANCEID")  return static_cast<int>(VertexSemantic::InstanceID);
+    if (upper == "COLOR")       return static_cast<int>(VertexSemantic::Color);
+    if (upper == "INDEX0")      return static_cast<int>(VertexSemantic::Index0);
+    if (upper == "INDEX1")      return static_cast<int>(VertexSemantic::Index1);
+    if (upper == "OTHER0")      return static_cast<int>(VertexSemantic::Other0);
+    if (upper == "OTHER1")      return static_cast<int>(VertexSemantic::Other1);
+    if (upper == "OTHER2")      return static_cast<int>(VertexSemantic::Other2);
     return -1;
 }
 
