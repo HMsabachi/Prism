@@ -81,6 +81,10 @@ namespace Rolky {
 	using InvokeMethodRetFn = void (*)(void*, String, const void**, const ManagedType*, int32_t, void*);
 	using InvokeStaticMethodFn = void (*)(TypeId, String, const void**, const ManagedType*, int32_t);
 	using InvokeStaticMethodRetFn = void (*)(TypeId, String, const void**, const ManagedType*, int32_t, void*);
+	using TryInvokeMethodFn = Bool32 (*)(void*, String, const void**, const ManagedType*, int32_t);
+	using TryInvokeMethodRetFn = Bool32 (*)(void*, String, const void**, const ManagedType*, int32_t, void*);
+	using TryInvokeStaticMethodFn = Bool32 (*)(TypeId, String, const void**, const ManagedType*, int32_t);
+	using TryInvokeStaticMethodRetFn = Bool32 (*)(TypeId, String, const void**, const ManagedType*, int32_t, void*);
 	using SetFieldValueFn = void (*)(void*, String, void*);
 	using GetFieldValueFn = void (*)(void*, String, void*);
 	using SetPropertyValueFn = void (*)(void*, String, void*);
@@ -161,6 +165,10 @@ namespace Rolky {
 		InvokeMethodRetFn InvokeMethodRetFptr = nullptr;
 		InvokeStaticMethodFn InvokeStaticMethodFptr = nullptr;
 		InvokeStaticMethodRetFn InvokeStaticMethodRetFptr = nullptr;
+		TryInvokeMethodFn TryInvokeMethodFptr = nullptr;
+		TryInvokeMethodRetFn TryInvokeMethodRetFptr = nullptr;
+		TryInvokeStaticMethodFn TryInvokeStaticMethodFptr = nullptr;
+		TryInvokeStaticMethodRetFn TryInvokeStaticMethodRetFptr = nullptr;
 		SetFieldValueFn SetFieldValueFptr = nullptr;
 		GetFieldValueFn GetFieldValueFptr = nullptr;
 		SetPropertyValueFn SetPropertyValueFptr = nullptr;

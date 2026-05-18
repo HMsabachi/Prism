@@ -60,6 +60,42 @@ namespace Rolky {
 			}
 		}
 
+		template<typename TReturn, typename... TArgs>
+		bool TryInvokeMethod(std::string_view InMethodName, TReturn& OutResult, TArgs&&... InParameters) const
+		{
+			constexpr size_t parameterCount = sizeof...(InParameters);
+
+			if constexpr (parameterCount > 0)
+			{
+				const void* parameterValues[parameterCount];
+				ManagedType parameterTypes[parameterCount];
+				AddToArray<TArgs...>(parameterValues, parameterTypes, std::forward<TArgs>(InParameters)..., std::make_index_sequence<parameterCount> {});
+				return TryInvokeMethodRetInternal(InMethodName, parameterValues, parameterTypes, parameterCount, &OutResult);
+			}
+			else
+			{
+				return TryInvokeMethodRetInternal(InMethodName, nullptr, nullptr, 0, &OutResult);
+			}
+		}
+
+		template<typename... TArgs>
+		bool TryInvokeMethod(std::string_view InMethodName, TArgs&&... InParameters) const
+		{
+			constexpr size_t parameterCount = sizeof...(InParameters);
+
+			if constexpr (parameterCount > 0)
+			{
+				const void* parameterValues[parameterCount];
+				ManagedType parameterTypes[parameterCount];
+				AddToArray<TArgs...>(parameterValues, parameterTypes, std::forward<TArgs>(InParameters)..., std::make_index_sequence<parameterCount> {});
+				return TryInvokeMethodInternal(InMethodName, parameterValues, parameterTypes, parameterCount);
+			}
+			else
+			{
+				return TryInvokeMethodInternal(InMethodName, nullptr, nullptr, 0);
+			}
+		}
+
 		template<typename TValue>
 		void SetFieldValue(std::string_view InFieldName, TValue InValue) const
 		{
@@ -100,6 +136,8 @@ namespace Rolky {
 		bool IsValid() const { return m_Handle != nullptr && m_Type != nullptr; }
 
 	private:
+		bool TryInvokeMethodInternal(std::string_view InMethodName, const void** InParameters, const ManagedType* InParameterTypes, size_t InLength) const;
+		bool TryInvokeMethodRetInternal(std::string_view InMethodName, const void** InParameters, const ManagedType* InParameterTypes, size_t InLength, void* InResultStorage) const;
 		void InvokeMethodInternal(std::string_view InMethodName, const void** InParameters, const ManagedType* InParameterTypes, size_t InLength) const;
 		void InvokeMethodRetInternal(std::string_view InMethodName, const void** InParameters, const ManagedType* InParameterTypes, size_t InLength, void* InResultStorage) const;
 

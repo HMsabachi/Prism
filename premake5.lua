@@ -1,4 +1,4 @@
-﻿workspace "Prism"
+workspace "Prism"
     architecture "x86_64"
     --startproject "Sandbox"
     startproject "PrismEditor"
@@ -136,7 +136,7 @@ project "Prism"
             ('{COPY} "vendor/PhysX/bin/%{cfg.buildcfg}/*.dll" "../bin/%{outputdir}/PrismEditor/"')
         }
     filter "configurations:Debug"
-        defines "PR_DEBUG"
+        defines  "PR_DEBUG"
         optimize "Off"
         symbols "On"
         runtime "Debug"
@@ -153,7 +153,7 @@ project "Prism"
         
 
     filter "configurations:Release"
-        defines "PR_RELEASE"
+        defines {"PR_RELEASE", "NDEBUG"}
         optimize "On"
         runtime "Release"
         links
@@ -169,7 +169,7 @@ project "Prism"
 
 
     filter "configurations:Dist"
-        defines "PR_DIST"
+        defines {"PR_DIST", "NDEBUG"}
         optimize "On"
         runtime "Release"
         links

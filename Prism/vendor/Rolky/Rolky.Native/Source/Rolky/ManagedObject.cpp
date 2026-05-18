@@ -75,6 +75,22 @@ namespace Rolky {
 		String::Free(methodName);
 	}
 
+	bool ManagedObject::TryInvokeMethodInternal(std::string_view InMethodName, const void** InParameters, const ManagedType* InParameterTypes, size_t InLength) const
+	{
+		auto methodName = String::New(InMethodName);
+		Bool32 result = s_ManagedFunctions.TryInvokeMethodFptr(m_Handle, methodName, InParameters, InParameterTypes, static_cast<int32_t>(InLength));
+		String::Free(methodName);
+		return result != 0;
+	}
+
+	bool ManagedObject::TryInvokeMethodRetInternal(std::string_view InMethodName, const void** InParameters, const ManagedType* InParameterTypes, size_t InLength, void* InResultStorage) const
+	{
+		auto methodName = String::New(InMethodName);
+		Bool32 result = s_ManagedFunctions.TryInvokeMethodRetFptr(m_Handle, methodName, InParameters, InParameterTypes, static_cast<int32_t>(InLength), InResultStorage);
+		String::Free(methodName);
+		return result != 0;
+	}
+
 	void ManagedObject::SetFieldValueRaw(std::string_view InFieldName, void* InValue) const
 	{
 		auto fieldName = String::New(InFieldName);

@@ -1,4 +1,4 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "SceneRenderer.h"
 
 #include "ComputeShader/ComputeShader.h"
@@ -202,12 +202,38 @@ namespace Prism
 		return { envFiltered, irradianceMap };
 	}
 
+
+
 	// TODO: 移除这些
 #include <glad/glad.h>
+    void SceneRenderer::ShadowPass()
+    {
+        PR_PROFILE_FUNCTION();
+        if (s_Data.DrawList.empty())
+            return;
 
+        auto& sceneUniforms = s_Data.SceneData.SceneUniforms;
+        uint32_t cascadeCount = (uint32_t)sceneUniforms.ShadowParams.z;
+        if (cascadeCount == 0 || cascadeCount > 4)
+            return;
+
+        Ref<PrismShader> shadowPrismShader = s_Data.ShadowDepthMaterial->GetShader();
+        Ref<Shader> shadowProgram = shadowPrismShader->GetPassProgram(0, 0);
+
+        for (uint32_t cascade = 0; cascade < cascadeCount; cascade++)
+        {
+            s_Data.ShadowFBOs[cascade]->Bind();
+            Renderer::Submit([]() { glClear(GL_DEPTH_BUFFER_BIT); });
+
+            s_Data.ShadowDepthMaterial->Bind();
+            shadowProgram->SetMat4("u_LightVP", sceneUniforms.ShadowMatrices[cascade]);
+
+            for (auto& dc : s_Data.DrawList)
+                Renderer::SubmitMesh(dc.Mesh, dc.Transform, s_Data.ShadowDepthMaterial);
+        }
+    }
 	void SceneRenderer::GeometryPass()
 	{
-#if 1
 		PR_PROFILE_FUNCTION();
 		//Renderer::GetRenderCommandQueue().ResetSubmitCount();
 		// 描边相关
@@ -220,7 +246,6 @@ namespace Prism
 				glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 			});
 		}
-
 		Renderer::BeginRenderPass(s_Data.GeoPass);
 
 		if (outline)
@@ -230,7 +255,6 @@ namespace Prism
 					glStencilMask(0);
 				});
 		}
-
 		// Skybox
 		auto skyboxShader = s_Data.SceneData.SkyboxMaterial->GetShader();
 		// s_Data.SceneInfo.EnvironmentIrradianceMap->Bind(0);
@@ -242,7 +266,6 @@ namespace Prism
 			for (int i = 0; i < 4; i++)
 				s_Data.ShadowFBOs[i]->BindDepthTexture(10 + i);
 		}
-
 		// Render entities
 		for (auto& dc : s_Data.DrawList)
 		{
@@ -312,8 +335,6 @@ namespace Prism
 					//glEnable(GL_DEPTH_TEST);
 				});
 		}
-
-
 		// Grid
 		if (GetOptions().ShowGrid)
 		{
@@ -327,11 +348,7 @@ namespace Prism
 				Renderer::DrawAABB(dc.Mesh, dc.Transform);
 			Renderer2D::EndScene();
 		}
-
 		Renderer::EndRenderPass();
-		uint32_t count = Renderer::GetRenderCommandQueue().GetSubmitCount();
-		//PR_CORE_INFO("Submitted {0} commands", count);
-#endif
 	}
 
 	void SceneRenderer::CompositePass()
@@ -381,127 +398,99 @@ namespace Prism
 		return s_Data.Options;
 	}
 
-	static void UpdateShadowData()
-	{
-		auto& camera = s_Data.SceneData.SceneCamera;
-		auto& light = s_Data.ActiveScene->GetLight();
-		auto& sceneUniforms = s_Data.SceneData.SceneUniforms;
-		uint32_t cascadeCount = glm::clamp(s_Data.ActiveScene->GetCascadeCount(), 1u, 4u);
+    static void UpdateShadowData()
+    {
+        auto& camera = s_Data.SceneData.SceneCamera;
+        auto& light = s_Data.ActiveScene->GetLight();
+        auto& sceneUniforms = s_Data.SceneData.SceneUniforms;
+        uint32_t cascadeCount = glm::clamp(s_Data.ActiveScene->GetCascadeCount(), 1u, 4u);
 
-		// 从投影矩阵提取相机参数
-		auto& proj = camera.Camera.GetProjectionMatrix();
-		float f = proj[1][1];
-		float fov = 2.0f * atan(1.0f / f);
-		float aspect = proj[0][0] / proj[1][1];
-		float nearClip = proj[3][2] / (proj[2][2] - 1.0f);
-		float farClip = proj[3][2] / (proj[2][2] + 1.0f);
+        // 提取相机参数
+        auto& proj = camera.Camera.GetProjectionMatrix();
+        float f = proj[1][1];
+        float fov = 2.0f * atan(1.0f / f);
+        float aspect = proj[1][1] / proj[0][0];
+        float nearClip = proj[3][2] / (proj[2][2] - 1.0f);
+        float farClip = proj[3][2] / (proj[2][2] + 1.0f);
 
-		// Practical Split Scheme 级联分割
-		float splits[4] = {};
-		float splitLambda = 0.95f;
-		for (uint32_t i = 0; i < cascadeCount; i++)
-		{
-			float fraction = (float)(i + 1) / (float)cascadeCount;
-			float logSplit = nearClip * pow(farClip / nearClip, fraction);
-			float uniSplit = nearClip + (farClip - nearClip) * fraction;
-			splits[i] = logSplit * splitLambda + uniSplit * (1.0f - splitLambda);
-		}
+        // PSSM 级联分割
+        float splits[4] = {};
+        float splitLambda = 0.95f;
+        for (uint32_t i = 0; i < cascadeCount; i++)
+        {
+            float fraction = (float)(i + 1) / (float)cascadeCount;
+            float logSplit = nearClip * pow(farClip / nearClip, fraction);
+            float uniSplit = nearClip + (farClip - nearClip) * fraction;
+            splits[i] = logSplit * splitLambda + uniSplit * (1.0f - splitLambda);
+        }
 
-		sceneUniforms.CascadeSplits = glm::vec4(splits[0], splits[1], splits[2], splits[3]);
-		sceneUniforms.ShadowParams = glm::vec4(
-			s_Data.ActiveScene->GetShadowBias(),
-			s_Data.ActiveScene->GetShadowNormalBias(),
-			(float)cascadeCount, 0.0f
-		);
+        sceneUniforms.CascadeSplits = glm::vec4(splits[0], splits[1], splits[2], splits[3]);
+        sceneUniforms.ShadowParams = glm::vec4(
+            s_Data.ActiveScene->GetShadowBias(),
+            s_Data.ActiveScene->GetShadowNormalBias(),
+            (float)cascadeCount, 0.0f
+        );
 
-		glm::mat4 invView = glm::inverse(camera.ViewMatrix);
-		glm::vec3 lightDir = glm::normalize(light.Direction);
-		float tanHalfFov = tanf(fov * 0.5f);
-		float yNearExt = nearClip * tanHalfFov;
-		float xNearExt = yNearExt * aspect;
+        glm::mat4 invView = glm::inverse(camera.ViewMatrix);
+        glm::vec3 lightDir = glm::normalize(light.Direction);
 
-		float prevSplit = nearClip;
-		for (uint32_t cascade = 0; cascade < cascadeCount; cascade++)
-		{
-			float splitDist = splits[cascade];
-			float nScale = prevSplit / nearClip;
-			float fScale = splitDist / nearClip;
+        glm::vec3 up = glm::abs(lightDir.y) < 0.99f ? glm::vec3(0.0f, 1.0f, 0.0f) : glm::vec3(1.0f, 0.0f, 0.0f);
+        glm::mat4 lightView = glm::lookAt(-lightDir, glm::vec3(0.0f), up);
 
-			// 构建级联视锥体 8 顶点（观察空间）
-			glm::vec3 viewCorners[8];
-			viewCorners[0] = glm::vec3(-xNearExt * nScale, -yNearExt * nScale, -prevSplit);
-			viewCorners[1] = glm::vec3(xNearExt * nScale, -yNearExt * nScale, -prevSplit);
-			viewCorners[2] = glm::vec3(xNearExt * nScale, yNearExt * nScale, -prevSplit);
-			viewCorners[3] = glm::vec3(-xNearExt * nScale, yNearExt * nScale, -prevSplit);
-			viewCorners[4] = glm::vec3(-xNearExt * fScale, -yNearExt * fScale, -splitDist);
-			viewCorners[5] = glm::vec3(xNearExt * fScale, -yNearExt * fScale, -splitDist);
-			viewCorners[6] = glm::vec3(xNearExt * fScale, yNearExt * fScale, -splitDist);
-			viewCorners[7] = glm::vec3(-xNearExt * fScale, yNearExt * fScale, -splitDist);
+        float tanHalfFov = tanf(fov * 0.5f);
 
-			// 转换到世界空间
-			glm::vec3 center(0.0f);
-			glm::vec3 worldCorners[8];
-			for (int j = 0; j < 8; j++)
-			{
-				worldCorners[j] = glm::vec3(invView * glm::vec4(viewCorners[j], 1.0f));
-				center += worldCorners[j];
-			}
-			center /= 8.0f;
+        float prevSplit = nearClip;
+        for (uint32_t cascade = 0; cascade < cascadeCount; cascade++)
+        {
+            float nextSplit = splits[cascade];
 
-			// 光照空间视图矩阵
-			glm::vec3 up = glm::abs(lightDir.y) < 0.99f ? glm::vec3(0.0f, 1.0f, 0.0f) : glm::vec3(1.0f, 0.0f, 0.0f);
-			glm::mat4 lightView = glm::lookAt(center - lightDir * 1000.0f, center, up);
 
-			// 计算光照空间 AABB
-			glm::vec3 minBounds(FLT_MAX), maxBounds(-FLT_MAX);
-			for (int j = 0; j < 8; j++)
-			{
-				glm::vec4 lc = lightView * glm::vec4(worldCorners[j], 1.0f);
-				minBounds = glm::min(minBounds, glm::vec3(lc));
-				maxBounds = glm::max(maxBounds, glm::vec3(lc));
-			}
+            float k = sqrtf(1.0f + aspect * aspect) * tanHalfFov;
+            float centerZ = 0.0f;
+            float radius = 0.0f;
 
-			// 对齐到纹素（稳定阴影边缘）
-			float tx = (maxBounds.x - minBounds.x) / (float)SHADOW_MAP_SIZE;
-			float ty = (maxBounds.y - minBounds.y) / (float)SHADOW_MAP_SIZE;
-			if (tx > 0.0f) { minBounds.x = floorf(minBounds.x / tx) * tx; maxBounds.x = ceilf(maxBounds.x / tx) * tx; }
-			if (ty > 0.0f) { minBounds.y = floorf(minBounds.y / ty) * ty; maxBounds.y = ceilf(maxBounds.y / ty) * ty; }
+            // 外接球公式到包围盒
+            if (k * k >= (nextSplit - prevSplit) / (nextSplit + prevSplit)) {
+                centerZ = nextSplit;
+                radius = nextSplit * k;
+            }
+            else {
+                centerZ = 0.5f * (prevSplit + nextSplit) * (1.0f + k * k);
+                radius = 0.5f * sqrtf(powf(nextSplit - prevSplit, 2.0f) + 2.0f * (nextSplit * nextSplit + prevSplit * prevSplit) * k * k + powf(nextSplit + prevSplit, 2.0f) * powf(k, 4.0f));
+            }
 
-			// 正交投影深度范围
-			float zNear = glm::max(0.001f, -maxBounds.z);
-			float zFar = -minBounds.z;
+            // 观察空间到世界空间
+            glm::vec3 sphereCenterWorld = glm::vec3(invView * glm::vec4(0.0f, 0.0f, -centerZ, 1.0f));
 
-			sceneUniforms.ShadowMatrices[cascade] = glm::ortho(minBounds.x, maxBounds.x, minBounds.y, maxBounds.y, zNear, zFar) * lightView;
+            // 光照空间
+            glm::vec3 sphereCenterLight = glm::vec3(lightView * glm::vec4(sphereCenterWorld, 1.0f));
 
-			prevSplit = splitDist;
-		}
-	}
+            // 外接球对称
+            float minX = sphereCenterLight.x - radius;
+            float maxX = sphereCenterLight.x + radius;
+            float minY = sphereCenterLight.y - radius;
+            float maxY = sphereCenterLight.y + radius;
 
-	void SceneRenderer::ShadowPass()
-	{
-		if (s_Data.DrawList.empty())
-			return;
+            float minZ = sphereCenterLight.z - radius - 200.0f;
+            float maxZ = sphereCenterLight.z + radius + 200.0f;
 
-		auto& sceneUniforms = s_Data.SceneData.SceneUniforms;
-		uint32_t cascadeCount = (uint32_t)sceneUniforms.ShadowParams.z;
-		if (cascadeCount == 0 || cascadeCount > 4)
-			return;
+            // 纹素对齐
+            float worldTexelSize = (2.0f * radius) / (float)SHADOW_MAP_SIZE;
 
-		Ref<PrismShader> shadowPrismShader = s_Data.ShadowDepthMaterial->GetShader();
-		Ref<Shader> shadowProgram = shadowPrismShader->GetPassProgram(0, 0);
+            minX = floorf(minX / worldTexelSize) * worldTexelSize;
+            minY = floorf(minY / worldTexelSize) * worldTexelSize;
 
-		for (uint32_t cascade = 0; cascade < cascadeCount; cascade++)
-		{
-			s_Data.ShadowFBOs[cascade]->Bind();
-			Renderer::Submit([]() { glClear(GL_DEPTH_BUFFER_BIT); });
+            maxX = minX + (2.0f * radius);
+            maxY = minY + (2.0f * radius);
 
-			s_Data.ShadowDepthMaterial->Bind();
-			shadowProgram->SetMat4("u_LightVP", sceneUniforms.ShadowMatrices[cascade]);
+            // 最终正交投影矩阵
+            glm::mat4 lightOrtho = glm::ortho(minX, maxX, minY, maxY, -maxZ, -minZ);
 
-			for (auto& dc : s_Data.DrawList)
-				Renderer::SubmitMesh(dc.Mesh, dc.Transform, s_Data.ShadowDepthMaterial);
-		}
-	}
+            sceneUniforms.ShadowMatrices[cascade] = lightOrtho * lightView;
+
+            prevSplit = nextSplit;
+        }
+    }
 
 	static void UpdateGlobalsUBO()
 	{

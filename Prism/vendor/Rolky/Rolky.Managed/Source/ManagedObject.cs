@@ -222,7 +222,7 @@ internal static class ManagedObject
 		}
 	}
 
-	private static unsafe MethodInfo? TryGetMethodInfo(Type InType, string? InMethodName, ManagedType* InParameterTypes, int InParameterCount, BindingFlags InBindingFlags)
+	private static unsafe MethodInfo? TryGetMethodInfo(Type InType, string? InMethodName, ManagedType* InParameterTypes, int InParameterCount, BindingFlags InBindingFlags, bool InLogOnFailure = true)
 	{
 		MethodInfo? methodInfo = null;
 
@@ -256,7 +256,8 @@ internal static class ManagedObject
 
 			if (methodInfo == null)
 			{
-				LogMessage($"Failed to find method '{InMethodName}' for type {InType.FullName} with {InParameterCount} parameters.", MessageLevel.Error);
+				if (InLogOnFailure)
+					LogMessage($"Failed to find method '{InMethodName}' for type {InType.FullName} with {InParameterCount} parameters.", MessageLevel.Error);
 				return null;
 			}
 
@@ -401,7 +402,123 @@ internal static class ManagedObject
 	}
 
 	[UnmanagedCallersOnly]
-	internal static void SetFieldValue(IntPtr InTarget, NativeString InFieldName, IntPtr InValue)
+	internal static unsafe Bool32 TryInvokeStaticMethod(int InType, NativeString InMethodName, IntPtr InParameters, ManagedType* InParameterTypes, int InParameterCount)
+		{
+			try
+			{
+				if (!TypeInterface.s_CachedTypes.TryGetValue(InType, out var type) || type == null)
+					return false;
+
+				var methodInfo = TryGetMethodInfo(type, InMethodName, InParameterTypes, InParameterCount, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static, false);
+
+				if (methodInfo == null)
+					return false;
+
+				var parameters = Marshalling.MarshalParameterArray(InParameters, InParameterCount, methodInfo);
+
+				methodInfo.Invoke(null, parameters);
+				return true;
+			}
+			catch (Exception ex)
+			{
+				HandleException(ex);
+				return false;
+			}
+		}
+
+		[UnmanagedCallersOnly]
+		internal static unsafe Bool32 TryInvokeStaticMethodRet(int InType, NativeString InMethodName, IntPtr InParameters, ManagedType* InParameterTypes, int InParameterCount, IntPtr InResultStorage)
+		{
+			try
+			{
+				if (!TypeInterface.s_CachedTypes.TryGetValue(InType, out var type) || type == null)
+					return false;
+
+				var methodInfo = TryGetMethodInfo(type, InMethodName, InParameterTypes, InParameterCount, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static, false);
+
+				if (methodInfo == null)
+					return false;
+
+				var methodParameters = Marshalling.MarshalParameterArray(InParameters, InParameterCount, methodInfo);
+
+				object? value = methodInfo.Invoke(null, methodParameters);
+
+				if (value != null)
+					Marshalling.MarshalReturnValue(null, value, methodInfo, InResultStorage);
+
+				return true;
+			}
+			catch (Exception ex)
+			{
+				HandleException(ex);
+				return false;
+			}
+		}
+
+		[UnmanagedCallersOnly]
+		internal static unsafe Bool32 TryInvokeMethod(IntPtr InObjectHandle, NativeString InMethodName, IntPtr InParameters, ManagedType* InParameterTypes, int InParameterCount)
+		{
+			try
+			{
+				var target = GCHandle.FromIntPtr(InObjectHandle).Target;
+
+				if (target == null)
+					return false;
+
+				var targetType = target.GetType();
+
+				var methodInfo = TryGetMethodInfo(targetType, InMethodName, InParameterTypes, InParameterCount, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, false);
+
+				if (methodInfo == null)
+					return false;
+
+				var parameters = Marshalling.MarshalParameterArray(InParameters, InParameterCount, methodInfo);
+
+				methodInfo.Invoke(target, parameters);
+				return true;
+			}
+			catch (Exception ex)
+			{
+				HandleException(ex);
+				return false;
+			}
+		}
+
+		[UnmanagedCallersOnly]
+		internal static unsafe Bool32 TryInvokeMethodRet(IntPtr InObjectHandle, NativeString InMethodName, IntPtr InParameters, ManagedType* InParameterTypes, int InParameterCount, IntPtr InResultStorage)
+		{
+			try
+			{
+				var target = GCHandle.FromIntPtr(InObjectHandle).Target;
+
+				if (target == null)
+					return false;
+
+				var targetType = target.GetType();
+
+				var methodInfo = TryGetMethodInfo(targetType, InMethodName, InParameterTypes, InParameterCount, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, false);
+
+				if (methodInfo == null)
+					return false;
+
+				var methodParameters = Marshalling.MarshalParameterArray(InParameters, InParameterCount, methodInfo);
+
+				object? value = methodInfo.Invoke(target, methodParameters);
+
+				if (value != null)
+					Marshalling.MarshalReturnValue(target, value, methodInfo, InResultStorage);
+
+				return true;
+			}
+			catch (Exception ex)
+			{
+				HandleException(ex);
+				return false;
+			}
+		}
+
+		[UnmanagedCallersOnly]
+		internal static void SetFieldValue(IntPtr InTarget, NativeString InFieldName, IntPtr InValue)
 	{
 		try
 		{

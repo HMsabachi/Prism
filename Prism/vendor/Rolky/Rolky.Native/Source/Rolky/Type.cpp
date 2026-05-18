@@ -189,6 +189,22 @@ namespace Rolky {
 		String::Free(methodName);
 	}
 
+	bool Type::TryInvokeStaticMethodInternal(std::string_view InMethodName, const void** InParameters, const ManagedType* InParameterTypes, size_t InLength) const
+	{
+		auto methodName = String::New(InMethodName);
+		Bool32 result = s_ManagedFunctions.TryInvokeStaticMethodFptr(m_Id, methodName, InParameters, InParameterTypes, static_cast<int32_t>(InLength));
+		String::Free(methodName);
+		return result != 0;
+	}
+
+	bool Type::TryInvokeStaticMethodRetInternal(std::string_view InMethodName, const void** InParameters, const ManagedType* InParameterTypes, size_t InLength, void* InResultStorage) const
+	{
+		auto methodName = String::New(InMethodName);
+		Bool32 result = s_ManagedFunctions.TryInvokeStaticMethodRetFptr(m_Id, methodName, InParameters, InParameterTypes, static_cast<int32_t>(InLength), InResultStorage);
+		String::Free(methodName);
+		return result != 0;
+	}
+
 
 	ReflectionType::operator Type&() const
 	{

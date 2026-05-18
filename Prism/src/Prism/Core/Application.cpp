@@ -1,4 +1,4 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "Application.h"
 
 #include "Log.h"
@@ -133,6 +133,7 @@ namespace Prism
     void Application::RenderImGui()
     {
         PR_PROFILE_FUNCTION();
+        m_ImGuiLayer->Begin();
         ImGuiRenderer();
 
         for (Layer* layer : m_LayerStack)
@@ -142,7 +143,8 @@ namespace Prism
 
     void Application::ImGuiRenderer()
     {
-        m_ImGuiLayer->Begin();
+        static float timer = 0.0f;
+        timer += Time::GetDeltaTime();
         ImGui::Begin("Renderer");
         auto& caps = RendererAPI::GetCapabilities();
         if (ImGui::TreeNode("Base Info"))
@@ -165,7 +167,15 @@ namespace Prism
         }
         ImGui::Text("RenderCommandQueue: %d", Renderer::GetRenderCommandQueue().GetSubmitCount());
         Renderer::GetRenderCommandQueue().ResetSubmitCount();
-        ImGui::Text("Fps: %d", (int)(1.0f / Time::GetDeltaTime()));
+        static int fps0 = 0, fps1 = 0;
+        fps0 += (int)(1.0f / Time::GetDeltaTime());
+        fps0 >>= 1;
+        if (timer >= 1.0f)
+        {
+            timer = 0.0f;
+            fps1 = fps0;
+        }
+        ImGui::Text("Fps: %d", fps1);
         ImGui::End();
     }
 

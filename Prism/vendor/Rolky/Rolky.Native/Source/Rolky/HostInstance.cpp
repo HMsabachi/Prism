@@ -332,6 +332,11 @@ namespace Rolky {
 		s_ManagedFunctions.InvokeStaticMethodFptr = LoadRolkyManagedFunctionPtr<InvokeStaticMethodFn>(ROLKY_STR("Rolky.Managed.ManagedObject, Rolky.Managed"), ROLKY_STR("InvokeStaticMethod"));
 		s_ManagedFunctions.InvokeStaticMethodRetFptr = LoadRolkyManagedFunctionPtr<InvokeStaticMethodRetFn>(ROLKY_STR("Rolky.Managed.ManagedObject, Rolky.Managed"), ROLKY_STR("InvokeStaticMethodRet"));
 
+		s_ManagedFunctions.TryInvokeMethodFptr = LoadRolkyManagedFunctionPtr<TryInvokeMethodFn>(ROLKY_STR("Rolky.Managed.ManagedObject, Rolky.Managed"), ROLKY_STR("TryInvokeMethod"));
+		s_ManagedFunctions.TryInvokeMethodRetFptr = LoadRolkyManagedFunctionPtr<TryInvokeMethodRetFn>(ROLKY_STR("Rolky.Managed.ManagedObject, Rolky.Managed"), ROLKY_STR("TryInvokeMethodRet"));
+		s_ManagedFunctions.TryInvokeStaticMethodFptr = LoadRolkyManagedFunctionPtr<TryInvokeStaticMethodFn>(ROLKY_STR("Rolky.Managed.ManagedObject, Rolky.Managed"), ROLKY_STR("TryInvokeStaticMethod"));
+		s_ManagedFunctions.TryInvokeStaticMethodRetFptr = LoadRolkyManagedFunctionPtr<TryInvokeStaticMethodRetFn>(ROLKY_STR("Rolky.Managed.ManagedObject, Rolky.Managed"), ROLKY_STR("TryInvokeStaticMethodRet"));
+
 		s_ManagedFunctions.GetMethodInfoNameFptr = LoadRolkyManagedFunctionPtr<GetMethodInfoNameFn>(ROLKY_STR("Rolky.Managed.TypeInterface, Rolky.Managed"), ROLKY_STR("GetMethodInfoName"));
 		s_ManagedFunctions.GetMethodInfoReturnTypeFptr = LoadRolkyManagedFunctionPtr<GetMethodInfoReturnTypeFn>(ROLKY_STR("Rolky.Managed.TypeInterface, Rolky.Managed"), ROLKY_STR("GetMethodInfoReturnType"));
 		s_ManagedFunctions.GetMethodInfoParameterTypesFptr = LoadRolkyManagedFunctionPtr<GetMethodInfoParameterTypesFn>(ROLKY_STR("Rolky.Managed.TypeInterface, Rolky.Managed"), ROLKY_STR("GetMethodInfoParameterTypes"));

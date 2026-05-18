@@ -1,4 +1,4 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "ScriptEngine.h"
 #include "ScriptEngineRegistry.h"
 #include "Native/String.h"
@@ -316,22 +316,19 @@ namespace Prism
     {
         PR_PROFILE_FUNCTION();
         EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
-        if (entityInstance.ScriptClass->HasMethod("OnCreate"))
-            entityInstance.Object->InvokeMethod("OnCreate");
+        entityInstance.Object->TryInvokeMethod("OnCreate");
     }
     void ScriptEngine::OnUpdateEntity(UUID sceneID, UUID entityID, float ts)
     {
         PR_PROFILE_FUNCTION();
         EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
-        if (entityInstance.ScriptClass->HasMethod("OnUpdate"))
-            entityInstance.Object->InvokeMethod("OnUpdate");
+        entityInstance.Object->TryInvokeMethod("OnUpdate");
     }
     void ScriptEngine::OnFixedUpdateEntity(UUID sceneID, UUID entityID)
     {
         PR_PROFILE_FUNCTION();
         EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
-        if (entityInstance.ScriptClass->HasMethod("OnFixedUpdate"))
-            entityInstance.Object->InvokeMethod("OnFixedUpdate");
+        entityInstance.Object->TryInvokeMethod("OnFixedUpdate");
     }
     void ScriptEngine::OnCollision2DBegin(Entity entity)
     {
