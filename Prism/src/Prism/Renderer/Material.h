@@ -38,7 +38,7 @@ namespace Prism
 				return;
 			}
 			auto& buffer = m_PropertyBuffer;
-			buffer.Write((byte*)&value, decl->GetSize(), decl->GetOffset());
+			buffer.Write((byte*)&value, sizeof(T), decl->GetOffset());
 			for (auto mi : m_MaterialInstances)
 				mi->OnMaterialValueUpdated(decl);
 		}
@@ -157,7 +157,7 @@ namespace Prism
 				return;
 			}
 			auto& buffer = m_PropertyBuffer;
-			buffer.Write((byte*)&value, decl->GetSize(), decl->GetOffset());
+			buffer.Write((byte*)&value, sizeof(T), decl->GetOffset());
 			m_OverriddenValues.insert(name);
 		}
 		void Set(const std::string& name, const Ref<Texture>& texture)
