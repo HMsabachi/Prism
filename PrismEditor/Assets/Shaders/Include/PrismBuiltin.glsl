@@ -86,8 +86,8 @@ float Prism_GetShadow(vec3 worldPos, float viewDepth)
     vec2 texelSize = 1.0 / vec2(textureSize(Prism_ShadowMap0, 0));
 
     
-    if (cascade == 0) return Prism_ShadowSample(Prism_ShadowMap0, projCoords, bias, texelSize, 2.5);
-    if (cascade == 1) return Prism_ShadowSample(Prism_ShadowMap1, projCoords, bias, texelSize, 2.5);
-    if (cascade == 2) return Prism_ShadowSample(Prism_ShadowMap2, projCoords, bias, texelSize, 2.5);
-    return Prism_ShadowSample(Prism_ShadowMap3, projCoords, bias, texelSize, 2.5);
+    if (cascade == 0) return Prism_ShadowSample(Prism_ShadowMap0, projCoords, bias, texelSize, 1.5);
+    if (cascade == 1) return Prism_ShadowSample(Prism_ShadowMap1, projCoords, bias, texelSize, 1.5);
+    if (cascade == 2) return Prism_ShadowSample(Prism_ShadowMap2, projCoords, bias, texelSize, 1.5);
+    return Prism_ShadowSample(Prism_ShadowMap3, projCoords, bias, texelSize, 1.5);
 }

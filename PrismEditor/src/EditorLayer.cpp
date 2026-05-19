@@ -1,4 +1,5 @@
 #include "EditorLayer.h"
+#include "EditorProperty.h"
 
 #include "Prism/ImGui/ImGuizmo.h"
 #include "Prism/Core/LanguageManager.h"
@@ -258,110 +259,6 @@ namespace Prism
             }
         }
 
-        bool EditorLayer::Property(const std::string& name, glm::vec4& value, float min /*= -1.0f*/, float max /*= 1.0f*/, PropertyFlag flags /*= PropertyFlag::None*/)
-        {
-            bool modified = false;
-            ImGui::Text(name.c_str());
-            ImGui::NextColumn();
-            ImGui::PushItemWidth(-1);
-
-            std::string id = "##" + name;
-            if ((int)flags & (int)PropertyFlag::ColorProperty)
-                ImGui::ColorEdit4(id.c_str(), glm::value_ptr(value), ImGuiColorEditFlags_NoInputs);
-            else if ((int)flags & (int)PropertyFlag::SliderProperty)
-                ImGui::SliderFloat4(id.c_str(), glm::value_ptr(value), min, max);
-            else
-                modified = ImGui::DragFloat4(id.c_str(), glm::value_ptr(value));
-
-            ImGui::PopItemWidth();
-            ImGui::NextColumn();
-            return modified;
-        }
-        bool EditorLayer::Property(const std::string& name, glm::vec2& value, EditorLayer::PropertyFlag flags)
-        {
-            return Property(name, value, -1.0f, 1.0f, flags);
-        }
-
-        bool EditorLayer::Property(const std::string& name, glm::vec2& value, float min, float max, EditorLayer::PropertyFlag flags)
-        {
-            bool modified = false;
-            ImGui::Text(name.c_str());
-            ImGui::NextColumn();
-            ImGui::PushItemWidth(-1);
-
-            std::string id = "##" + name;
-            if ((int)flags & (int)PropertyFlag::SliderProperty)
-                ImGui::SliderFloat2(id.c_str(), glm::value_ptr(value), min, max);
-            else
-                modified = ImGui::DragFloat2(id.c_str(), glm::value_ptr(value));
-
-            ImGui::PopItemWidth();
-            ImGui::NextColumn();
-            return modified;
-        }
-
-        bool EditorLayer::Property(const std::string& name, glm::vec4& value, PropertyFlag flags)
-        {
-            return Property(name, value, -1.0f, 1.0f, flags);
-        }
-
-        bool EditorLayer::Property(const std::string& name, glm::vec3& value, float min /*= -1.0f*/, float max /*= 1.0f*/, PropertyFlag flags /*= PropertyFlag::None*/)
-        {
-            bool modified = false;
-            ImGui::Text(name.c_str());
-            ImGui::NextColumn();
-            ImGui::PushItemWidth(-1);
-
-            std::string id = "##" + name;
-            if ((int)flags & (int)PropertyFlag::ColorProperty)
-                ImGui::ColorEdit3(id.c_str(), glm::value_ptr(value), ImGuiColorEditFlags_NoInputs);
-            else if ((int)flags & (int)PropertyFlag::SliderProperty)
-                modified = ImGui::SliderFloat3(id.c_str(), glm::value_ptr(value), min, max);
-            else
-                modified = ImGui::DragFloat3(id.c_str(), glm::value_ptr(value));
-
-            ImGui::PopItemWidth();
-            ImGui::NextColumn();
-            return modified;
-        }
-
-        bool EditorLayer::Property(const std::string& name, glm::vec3& value, PropertyFlag flags)
-        {
-            return Property(name, value, -1.0f, 1.0f, flags);
-        }
-
-        bool EditorLayer::Property(const std::string& name, float& value, float min /*= -1.0f*/, float max /*= 1.0f*/, PropertyFlag flags /*= PropertyFlag::None*/)
-        {
-            bool modified = false;
-            ImGui::Text(name.c_str());
-            ImGui::NextColumn();
-            ImGui::PushItemWidth(-1);
-
-            std::string id = "##" + name;
-            if ((int)flags & (int)PropertyFlag::SliderProperty)
-                modified = ImGui::SliderFloat(id.c_str(), &value, min, max);
-            else
-                modified = ImGui::DragFloat(id.c_str(), &value);
-
-            ImGui::PopItemWidth();
-            ImGui::NextColumn();
-            return modified;
-        }
-
-        bool EditorLayer::Property(const std::string& name, bool& value)
-        {
-            ImGui::Text(name.c_str());
-            ImGui::NextColumn();
-            ImGui::PushItemWidth(-1);
-
-            std::string id = "##" + name;
-            bool result = ImGui::Checkbox(id.c_str(), &value);
-
-            ImGui::PopItemWidth();
-            ImGui::NextColumn();
-            return result;
-        }
-
         void EditorLayer::ShowBoundingBoxes(bool show, bool onTop /*= false*/)
         {
             SceneRenderer::GetOptions().ShowBoundingBoxes = show && !onTop;
@@ -373,7 +270,12 @@ namespace Prism
             SelectedSubmesh selection;
             if (entity.HasComponent<MeshComponent>())
             {
-                selection.Mesh = &entity.GetComponent<MeshComponent>().Mesh->GetSubmeshes()[0];
+                auto& meshComp = entity.GetComponent<MeshComponent>();
+
+                if (meshComp.Mesh)
+                {
+                    selection.Mesh = &meshComp.Mesh->GetSubmeshes()[0];
+                }
             }
             selection.Entity = entity;
             m_SelectionContext.clear();
@@ -397,121 +299,73 @@ namespace Prism
         {
             const auto& name = prop.GetName();
             const auto& displayName = prop.GetDisplayName();
-            std::string id = "##" + name;
 
             switch (prop.GetType())
             {
             case PropertyDeclarationType::Float:
             {
                 auto& value = materialInstance.Get<float>(name);
-                ImGui::Text("%s", displayName.c_str());
-                ImGui::SameLine();
-                ImGui::DragFloat(id.c_str(), &value);
+                Property(displayName, value);
                 break;
             }
             case PropertyDeclarationType::Range:
             {
                 auto& range = materialInstance.Get<Type::Range>(name);
-                ImGui::Text("%s", displayName.c_str());
-                ImGui::SameLine();
-                ImGui::SliderFloat(id.c_str(), &range.value, range.min, range.max);
+                Property(displayName, range.value, range.min, range.max, PropertyFlag::SliderProperty);
                 break;
             }
             case PropertyDeclarationType::Color:
-            {
-                auto& color = materialInstance.Get<glm::vec3>(name);
-                ImGui::ColorEdit3(displayName.c_str(), glm::value_ptr(color), ImGuiColorEditFlags_NoInputs);
-                break;
-            }
             case PropertyDeclarationType::Color3:
             {
                 auto& color = materialInstance.Get<glm::vec3>(name);
-                ImGui::ColorEdit3(displayName.c_str(), glm::value_ptr(color), ImGuiColorEditFlags_NoInputs);
+                Property(displayName, color, PropertyFlag::ColorProperty);
                 break;
             }
             case PropertyDeclarationType::Vector2:
             {
                 auto& vec2 = materialInstance.Get<glm::vec2>(name);
-                ImGui::DragFloat2(displayName.c_str(), glm::value_ptr(vec2));
+                Property(displayName, vec2);
                 break;
             }
             case PropertyDeclarationType::Vector3:
             {
                 auto& vec3 = materialInstance.Get<glm::vec3>(name);
-                ImGui::DragFloat3(displayName.c_str(), glm::value_ptr(vec3));
+                Property(displayName, vec3);
                 break;
             }
             case PropertyDeclarationType::Vector4:
             {
                 auto& vec4 = materialInstance.Get<glm::vec4>(name);
-                ImGui::DragFloat4(displayName.c_str(), glm::value_ptr(vec4));
+                Property(displayName, vec4);
                 break;
             }
             case PropertyDeclarationType::Int:
             {
                 auto& value = materialInstance.Get<Type::Int>(name);
-                ImGui::Text("%s", displayName.c_str());
-                ImGui::SameLine();
-                ImGui::DragInt(("##" + name).c_str(), &value);
+                Property(displayName, value);
                 break;
             }
             case PropertyDeclarationType::Bool:
             {
                 bool& b = materialInstance.Get<Type::Bool>(name);
-                ImGui::Checkbox(displayName.c_str(), &b);
+                Property(displayName, b);
                 break;
             }
             case PropertyDeclarationType::Texture2D:
             {
-                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
                 Ref<Texture2D> texture = materialInstance.TryGetResource<Texture2D>(name);
-                ImGui::Image(texture ? (void*)texture->GetRendererID() : (void*)m_CheckerboardTex->GetRendererID(), ImVec2(64, 64));
-                ImGui::PopStyleVar();
-                if (ImGui::IsItemHovered())
+                if (Property(displayName, texture, m_CheckerboardTex->GetRendererID()))
                 {
-                    if (texture)
-                    {
-                        ImGui::BeginTooltip();
-                        ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-                        ImGui::TextUnformatted(texture->GetPath().c_str());
-                        ImGui::PopTextWrapPos();
-                        ImGui::Image((void*)texture->GetRendererID(), ImVec2(384, 384));
-                        ImGui::EndTooltip();
-                    }
-                    if (ImGui::IsItemClicked())
-                    {
-                        std::string filename = Application::Get().OpenFile("");
-                        if (filename != "")
-                        {
-                            auto newTexture = Texture2D::Create(filename);
-                            materialInstance.Set(name, newTexture);
-                        }
-                    }
+                    std::string filename = Application::Get().OpenFile("");
+                    if (!filename.empty())
+                        materialInstance.Set(name, Texture2D::Create(filename));
                 }
-                ImGui::SameLine();
-                ImGui::Text("%s", displayName.c_str());
                 break;
             }
             case PropertyDeclarationType::TextureCube:
             {
-                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
                 Ref<TextureCube> texture = materialInstance.TryGetResource<TextureCube>(name);
-                ImGui::Image(texture ? (void*)texture->GetRendererID() : (void*)m_CheckerboardTex->GetRendererID(), ImVec2(64, 64));
-                ImGui::PopStyleVar();
-                if (ImGui::IsItemHovered())
-                {
-                    if (texture)
-                    {
-                        ImGui::BeginTooltip();
-                        ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-                        ImGui::TextUnformatted(texture->GetPath().c_str());
-                        ImGui::PopTextWrapPos();
-                        ImGui::Image((void*)texture->GetRendererID(), ImVec2(384, 384));
-                        ImGui::EndTooltip();
-                    }
-                }
-                ImGui::SameLine();
-                ImGui::Text("%s", displayName.c_str());
+                Property(displayName, texture, m_CheckerboardTex->GetRendererID());
                 break;
             }
             }
@@ -574,8 +428,6 @@ namespace Prism
             static bool opt_fullscreen = true;
             static bool opt_padding = false;
             static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
-            // We are using the ImGuiWindowFlags_NoDocking flag to make the parent window not dockable into,
-            // because it would be confusing to have two docking targets within each others.
             ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
             if (opt_fullscreen)
             {
@@ -933,11 +785,13 @@ namespace Prism
                                 }
                             }
 
+                            ImGui::Columns(2);
                             auto& decl = materialInstance->GetShader()->GetDeclaration();
                             for (const auto& prop : decl)
                             {
                                 DrawMaterialProperty(prop, *materialInstance);
                             }
+                            ImGui::Columns(1);
 
                             // Keyword toggles
                             auto shader = materialInstance->GetShader();
@@ -981,7 +835,8 @@ namespace Prism
             {
                 m_RuntimeScene->OnEvent(e);
             }
-                        m_EditorCamera.OnEvent(e);
+            if (m_AllowViewportCameraEvents)
+                            m_EditorCamera.OnEvent(e);
             EventDispatcher dispatcher(e);
             dispatcher.Dispatch<KeyPressedEvent>(PR_BIND_EVENT_FN(EditorLayer::OnKeyPressedEvent));
             dispatcher.Dispatch<MouseButtonPressedEvent>(PR_BIND_EVENT_FN(EditorLayer::OnMouseButtonPressed));

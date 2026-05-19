@@ -103,6 +103,12 @@ Shader "Custom/Toon"
                     float NdotL = dot(N, L);
                     float NdotV = max(dot(N, V), 0.0);
                     float NdotH = max(dot(N, H), 0.0);
+                    float shadow = 1.0;
+                    if (Prism_ShadowParams.z > 0.0)
+                    {
+                        vec3 biasedPos = vs_Output.WorldPosition + N * Prism_ShadowParams.y;
+                        shadow = Prism_GetShadow(biasedPos, -(Prism_View * vec4(vs_Output.WorldPosition, 1.0)).z);
+                    }
 
                     vec3 shadowColor = albedo * u_ShadowColor.rgb * u_ShadowBrightness;
                     vec3 highlightColor = albedo * u_HighlightIntensity;
@@ -133,8 +139,7 @@ Shader "Custom/Toon"
                     rim = pow(rim, u_RimPower);
                     float rimStep = smoothstep(0.5 - u_RimSmooth, 0.5 + u_RimSmooth, rim);
                     vec3 rimColor = rimStep * u_RimColor.rgb * u_RimIntensity;
-
-                    vec3 finalColor = diffuseColor * lightColor + specularColor + rimColor;
+                    vec3 finalColor = (diffuseColor * lightColor + specularColor) * shadow + rimColor;
                     FragColor = vec4(finalColor, 1.0);
                 }
             }

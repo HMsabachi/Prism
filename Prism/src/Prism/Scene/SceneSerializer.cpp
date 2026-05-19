@@ -383,6 +383,18 @@ namespace Prism {
 			out << YAML::EndMap; // CapsuleColliderComponent
 		}
 
+		if (entity.HasComponent<MeshColliderComponent>())
+		{
+			out << YAML::Key << "MeshColliderComponent";
+			out << YAML::BeginMap; // MeshColliderComponent
+
+			auto& mcComponent = entity.GetComponent<MeshColliderComponent>();
+			if (mcComponent.CollisionMesh)
+				out << YAML::Key << "AssetPath" << YAML::Value << mcComponent.CollisionMesh->GetFilePath();
+
+			out << YAML::EndMap; // MeshColliderComponent
+		}
+
 		out << YAML::EndMap; // Entity
 	}
 
@@ -704,6 +716,15 @@ namespace Prism {
 					component.Height = capsuleColliderComponent["Height"].as<float>();
 
 					PR_CORE_INFO("  CapsuleColliderComponent: Radius={0}, Height={1}", component.Radius, component.Height);
+				}
+
+				auto meshColliderComponent = entity["MeshColliderComponent"];
+				if (meshColliderComponent)
+				{
+					std::string meshPath = meshColliderComponent["AssetPath"].as<std::string>();
+					deserializedEntity.AddComponent<MeshColliderComponent>(Ref<Mesh>::Create(meshPath));
+
+					PR_CORE_INFO("  MeshColliderComponent: AssetPath={0}", meshPath);
 				}
 			}
 		}

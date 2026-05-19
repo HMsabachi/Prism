@@ -1,6 +1,7 @@
 ﻿#include "prpch.h"
 #include "Physics3D.h"
 #include "Prism/Scene/Components.h"
+#include "Prism/Renderer/Mesh.h"
 
 #include <glm/glm.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
@@ -12,6 +13,7 @@
 #include <PhysX/extensions/PxSimpleFactory.h>
 #include <PhysX/extensions/PxRigidBodyExt.h>
 #include <PhysX/pvd/PxPvdTransport.h>
+#include <PhysX/cooking/PxCooking.h>
 
 #define PHYSX_DEBUGGER 1
 
@@ -153,6 +155,74 @@ namespace Prism
 			shape->setSimulationFilterData(filterData);
 		}
 		s_PXAllocator.deallocate(shapes);
+	}
+
+	physx::PxConvexMesh* Physics3D::CreateConvexMeshCollider(const Ref<Mesh>& mesh)
+	{
+		const auto& vertices = mesh->GetStaticVertices();
+		if (vertices.empty())
+		{
+			PR_CORE_ERROR("Physics3D::CreateConvexMeshCollider: mesh has no vertices!");
+			return nullptr;
+		}
+
+		physx::PxConvexMeshDesc convexDesc;
+		convexDesc.points.count = (physx::PxU32)vertices.size();
+		convexDesc.points.stride = sizeof(Vertex);
+		convexDesc.points.data = vertices.data();
+		convexDesc.flags = physx::PxConvexFlag::eCOMPUTE_CONVEX;
+
+		physx::PxConvexMeshCookingResult::Enum result;
+		physx::PxConvexMesh* convexMesh = PxCreateConvexMesh(
+			physx::PxCookingParams(physx::PxTolerancesScale()),
+			convexDesc,
+			*PxGetStandaloneInsertionCallback(),
+			&result
+		);
+
+		if (!convexMesh)
+		{
+			PR_CORE_ERROR("Physics3D::CreateConvexMeshCollider failed! Cooking result: {0}", (int)result);
+			return nullptr;
+		}
+
+		return convexMesh;
+	}
+
+	physx::PxTriangleMesh* Physics3D::CreateTriangleMeshCollider(const Ref<Mesh>& mesh)
+	{
+		const auto& vertices = mesh->GetStaticVertices();
+		const auto& indices = mesh->GetIndices();
+
+		if (vertices.empty() || indices.empty())
+		{
+			PR_CORE_ERROR("Physics3D::CreateTriangleMeshCollider: mesh has no vertices or indices!");
+			return nullptr;
+		}
+
+		physx::PxTriangleMeshDesc meshDesc;
+		meshDesc.points.count = (physx::PxU32)vertices.size();
+		meshDesc.points.stride = sizeof(Vertex);
+		meshDesc.points.data = vertices.data();
+		meshDesc.triangles.count = (physx::PxU32)indices.size();
+		meshDesc.triangles.stride = sizeof(Index);
+		meshDesc.triangles.data = indices.data();
+
+		physx::PxTriangleMeshCookingResult::Enum result;
+		physx::PxTriangleMesh* triangleMesh = PxCreateTriangleMesh(
+			physx::PxCookingParams(physx::PxTolerancesScale()),
+			meshDesc,
+			*PxGetStandaloneInsertionCallback(),
+			&result
+		);
+
+		if (!triangleMesh)
+		{
+			PR_CORE_ERROR("Physics3D::CreateTriangleMeshCollider failed! Cooking result: {0}", (int)result);
+			return nullptr;
+		}
+
+		return triangleMesh;
 	}
 
 	PhysXErrorCallback Physics3D::s_PXErrorCallback;

@@ -610,6 +610,67 @@ namespace Prism
 
                     Physics3D::SetCollisionFilters(actor, (uint32_t)FilterGroup::Dynamic, (uint32_t)FilterGroup::All);
                 }
+
+                // Mesh colliders
+                auto meshColliderView = m_Registry.view<MeshColliderComponent>();
+                for (auto entity : meshColliderView)
+                {
+                    Entity e = { entity, this };
+                    if (!e.HasComponent<RigidBodyComponent>())
+                        continue;
+
+                    auto& rb = e.GetComponent<RigidBodyComponent>();
+                    PR_CORE_ASSERT(rb.RuntimeActor);
+                    physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
+                    auto& mc = e.GetComponent<MeshColliderComponent>();
+
+                    if (!mc.CollisionMesh)
+                    {
+                        PR_CORE_ERROR("MeshColliderComponent has no CollisionMesh assigned!");
+                        continue;
+                    }
+
+                    physx::PxMaterial* material;
+                    if (e.HasComponent<PhysicsMaterialComponent>())
+                    {
+                        auto& pm = e.GetComponent<PhysicsMaterialComponent>();
+                        material = Physics3D::CreateMaterial(pm.StaticFriction, pm.DynamicFriction, pm.Bounciness);
+                    }
+                    else
+                    {
+                        material = Physics3D::CreateMaterial(1.0f, 1.0f, 1.0f);
+                    }
+
+                    physx::PxShape* shape = nullptr;
+                    if (rb.BodyType == RigidBodyComponent::Type::Dynamic || rb.BodyType == RigidBodyComponent::Type::Kinematic)
+                    {
+                        physx::PxConvexMesh* convexMesh = Physics3D::CreateConvexMeshCollider(mc);
+                        if (!convexMesh)
+                            continue;
+
+                        physx::PxConvexMeshGeometry geometry(convexMesh);
+                        auto* physics = Physics3D::GetFactory();
+                        shape = physics->createShape(geometry, *material, true);
+                        convexMesh->release();
+                    }
+                    else
+                    {
+                        physx::PxTriangleMesh* triangleMesh = Physics3D::CreateTriangleMeshCollider(mc);
+                        if (!triangleMesh)
+                            continue;
+
+                        physx::PxTriangleMeshGeometry geometry(triangleMesh);
+                        auto* physics = Physics3D::GetFactory();
+                        shape = physics->createShape(geometry, *material, true);
+                        triangleMesh->release();
+                    }
+
+                    shape->setLocalPose(physx::PxTransform(physx::PxIdentity));
+                    actor->attachShape(*shape);
+                    shape->release();
+
+                    Physics3D::SetCollisionFilters(actor, (uint32_t)FilterGroup::Dynamic, (uint32_t)FilterGroup::All);
+                }
             }
         }
 
@@ -773,6 +834,7 @@ namespace Prism
         CopyComponentIfExists<BoxColliderComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<SphereColliderComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<CapsuleColliderComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<MeshColliderComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
     }
 
     Entity Scene::FindEntityByTag(const std::string& tag)
@@ -825,6 +887,7 @@ namespace Prism
         CopyComponent<BoxColliderComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<SphereColliderComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<CapsuleColliderComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<MeshColliderComponent>(target->m_Registry, m_Registry, enttMap);
 
         const auto& entityInstanceMap = ScriptEngine::GetEntityInstanceMap();
         if (entityInstanceMap.find(target->GetUUID()) != entityInstanceMap.end())

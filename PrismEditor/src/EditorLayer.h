@@ -3,8 +3,7 @@
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
-//#include "Prism/Core/EntryPoint.h"
-#include "glm/gtc/type_ptr.inl"
+#include "glm/gtc/type_ptr.hpp"
 
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -29,25 +28,11 @@ namespace Prism
 
         virtual void OnUpdate() override;
 
-        enum class PropertyFlag
-        {
-            None = 0, ColorProperty = 1, DragProperty = 2, SliderProperty = 4
-        };
-
         virtual void OnImGuiRender() override;
 
         virtual void OnEvent(Event& event) override;
         bool OnKeyPressedEvent(KeyPressedEvent& e);
         bool OnMouseButtonPressed(MouseButtonPressedEvent& e);
-
-        bool Property(const std::string& name, bool& value);
-        bool Property(const std::string& name, float& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
-        bool Property(const std::string& name, glm::vec2& value, PropertyFlag flags);
-        bool Property(const std::string& name, glm::vec2& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
-        bool Property(const std::string& name, glm::vec3& value, PropertyFlag flags);
-        bool Property(const std::string& name, glm::vec3& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
-        bool Property(const std::string& name, glm::vec4& value, PropertyFlag flags);
-        bool Property(const std::string& name, glm::vec4& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
 
         void ShowBoundingBoxes(bool show, bool onTop = false);
         void UpdateWindowTitle(const std::string& sceneName);

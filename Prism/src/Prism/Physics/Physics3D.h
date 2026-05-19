@@ -5,6 +5,7 @@
 namespace Prism
 {
 	struct RigidBodyComponent; // Forward declaration (defined in Components.h)
+	class Mesh; // Forward declaration (defined in Mesh.h)
 
 	enum class ForceMode : uint16_t
 	{
@@ -59,6 +60,9 @@ namespace Prism
 		static physx::PxPhysics* GetFactory() { return s_PXPhysicsFactory; }
 
 		static void SetCollisionFilters(physx::PxRigidActor* actor, uint32_t filterGroup, uint32_t filterMask);
+
+		static physx::PxConvexMesh* CreateConvexMeshCollider(const Ref<Mesh>& mesh);
+		static physx::PxTriangleMesh* CreateTriangleMeshCollider(const Ref<Mesh>& mesh);
 
 	private:
 		static PhysXErrorCallback s_PXErrorCallback;

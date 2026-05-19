@@ -178,6 +178,14 @@ namespace Prism {
 							ImGui::CloseCurrentPopup();
 						}
 					}
+					if (!m_SelectionContext.HasComponent<MeshColliderComponent>())
+					{
+						if (ImGui::Button(TR("Mesh Collider")))
+						{
+							m_SelectionContext.AddComponent<MeshColliderComponent>();
+							ImGui::CloseCurrentPopup();
+						}
+					}
 					ImGui::EndPopup();
 				}
 			}
@@ -808,6 +816,31 @@ namespace Prism {
 			Property(TR("Radius"), component.Radius);
 			Property(TR("Height"), component.Height);
 			EndPropertyGrid();
+		});
+
+		DrawComponent<MeshColliderComponent>(TR("Mesh Collider"), entity, [](auto& component)
+		{
+			ImGui::Columns(3);
+			ImGui::SetColumnWidth(0, 100);
+			ImGui::SetColumnWidth(1, 300);
+			ImGui::SetColumnWidth(2, 40);
+			ImGui::Text("File Path");
+			ImGui::NextColumn();
+			ImGui::PushItemWidth(-1);
+			if (component.CollisionMesh)
+				ImGui::InputText("##meshcolliderfilepath", (char*)component.CollisionMesh->GetFilePath().c_str(), 256, ImGuiInputTextFlags_ReadOnly);
+			else
+				ImGui::InputText("##meshcolliderfilepath", (char*)"Null", 256, ImGuiInputTextFlags_ReadOnly);
+			ImGui::PopItemWidth();
+			ImGui::NextColumn();
+			if (ImGui::Button("...##openmeshcollider"))
+			{
+				std::string file = Application::Get().OpenFile();
+				if (!file.empty())
+					component.CollisionMesh = Ref<Mesh>::Create(file);
+			}
+			ImGui::NextColumn();
+			ImGui::Columns(1);
 		});
 
 		if (entity.HasComponent<ScriptComponent>())

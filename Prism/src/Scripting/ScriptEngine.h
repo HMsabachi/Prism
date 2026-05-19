@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Prism/Scene/Components.h"
 #include "Prism/Scene/Entity.h"
 
@@ -33,7 +33,7 @@ namespace Prism
         FieldType Type;
         PublicField(const std::string& name, FieldType type);
         PublicField(const PublicField&) = delete;
-        PublicField(PublicField&& other);
+        PublicField(PublicField&& other) noexcept;
         ~PublicField();
 
         void CopyStoredValueToRuntime();

@@ -1,7 +1,11 @@
-﻿#pragma once
+#pragma once
 
 #include "Prism/Core/Core.h"
 #include "RendererAPI.h"
+
+namespace Prism {
+    struct Buffer;
+}
 
 namespace Prism {
 

@@ -97,7 +97,7 @@ namespace Prism
     {
         m_StoredValueBuffer = AllocateBuffer(type);
     }
-    PublicField::PublicField(PublicField&& other)
+    PublicField::PublicField(PublicField&& other) noexcept
     {
         Name = std::move(other.Name);
         Type = other.Type;
@@ -499,13 +499,3 @@ namespace Prism
     }
 
 }
-
-
-/// typedef int (CORECLR_DELEGATE_CALLTYPE* load_assembly_and_get_function_pointer_fn)(
-/// 	const char_t* assembly_path,      // 程序集磁盘路径
-/// 	const char_t* type_name,          // 类型全称 (命名空间.类名, 程序集名)
-/// 	const char_t* method_name,        // 静态方法名
-/// 	const char_t* delegate_type_name, // 委托类型名 (或使用特殊常量)
-/// 	void* reserved,           // 必须为 nullptr
-/// 	void** result              // 输出：接收到的函数指针
-/// 	);
