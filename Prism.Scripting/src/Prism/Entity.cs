@@ -114,27 +114,6 @@ namespace Prism
             m_Collision2DEndCallbacks?.Invoke(data);
         }
 
-        public Vector3 GetForwardDirection()
-        {
-            Vector3 direction;
-            unsafe { InternalCalls.Prism_Entity_GetForwardDirection(ID, &direction); }
-            return direction;
-        }
-
-        public Vector3 GetRightDirection()
-        {
-            Vector3 direction;
-            unsafe { InternalCalls.Prism_Entity_GetRightDirection(ID, &direction); }
-            return direction;
-        }
-
-        public Vector3 GetUpDirection()
-        {
-            Vector3 direction;
-            unsafe { InternalCalls.Prism_Entity_GetUpDirection(ID, &direction); }
-            return direction;
-        }
-
         // Entity lookup
         public static Entity FindEntityByTagStatic(string tag)
         {

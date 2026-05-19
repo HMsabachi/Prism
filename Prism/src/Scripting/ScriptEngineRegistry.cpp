@@ -97,18 +97,12 @@ namespace Prism
 		PR_ADD_INTERNAL_CALL(Prism_RigidBody2DComponent_GetLinearVelocity);
 		PR_ADD_INTERNAL_CALL(Prism_RigidBody2DComponent_SetLinearVelocity);
 		// TransformComponent
-		PR_ADD_INTERNAL_CALL(Prism_TransformComponent_GetTransform);
 		PR_ADD_INTERNAL_CALL(Prism_TransformComponent_GetPosition);
 		PR_ADD_INTERNAL_CALL(Prism_TransformComponent_GetRotation);
 		PR_ADD_INTERNAL_CALL(Prism_TransformComponent_GetScale);
-		PR_ADD_INTERNAL_CALL(Prism_TransformComponent_SetTransform);
 		PR_ADD_INTERNAL_CALL(Prism_TransformComponent_SetPosition);
 		PR_ADD_INTERNAL_CALL(Prism_TransformComponent_SetRotation);
 		PR_ADD_INTERNAL_CALL(Prism_TransformComponent_SetScale);
-			// Entity
-			PR_ADD_INTERNAL_CALL(Prism_Entity_GetForwardDirection);
-			PR_ADD_INTERNAL_CALL(Prism_Entity_GetRightDirection);
-			PR_ADD_INTERNAL_CALL(Prism_Entity_GetUpDirection);
 		// RigidBodyComponent
 		PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_AddForce);
 		PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_AddTorque);

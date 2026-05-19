@@ -1,7 +1,10 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "Physics3D.h"
 #include "Prism/Scene/Components.h"
 #include "Prism/Renderer/Mesh.h"
+#include "Scripting/ScriptEngine.h"
+
+#include <PhysX/PxPhysicsAPI.h>
 
 #include <glm/glm.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
@@ -19,6 +22,30 @@
 
 namespace Prism
 {
+	struct PhysXAllocator : public physx::PxAllocatorCallback
+	{
+		void* allocate(size_t size, const char*, const char*, int) override
+		{
+			return ::malloc(size);
+		}
+
+		void deallocate(void* ptr) override
+		{
+			::free(ptr);
+		}
+	};
+
+	struct PhysXErrorCallback : public physx::PxErrorCallback
+	{
+		void reportError(physx::PxErrorCode::Enum code, const char* message, const char* file, int line) override
+		{
+			PR_CORE_ERROR("PhysX: {0} ({1}:{2})", message, file, line);
+		}
+	};
+
+	static PhysXAllocator s_PhysicsAllocator;
+	static PhysXErrorCallback s_PhysicsErrorCallback;
+
 	static std::tuple<glm::vec3, glm::quat, glm::vec3> GetTransformDecomposition(const glm::mat4& transform)
 	{
 		glm::vec3 scale, translation, skew;
@@ -28,6 +55,48 @@ namespace Prism
 
 		return { translation, orientation, scale };
 	}
+
+	class PhysXContactListener : public physx::PxSimulationEventCallback
+	{
+	public:
+		void onConstraintBreak(physx::PxConstraintInfo*, physx::PxU32) override {}
+		void onWake(physx::PxActor**, physx::PxU32) override {}
+		void onSleep(physx::PxActor**, physx::PxU32) override {}
+		void onTrigger(physx::PxTriggerPair*, physx::PxU32) override {}
+		void onAdvance(const physx::PxRigidBody* const*, const physx::PxTransform*, const physx::PxU32) override {}
+
+		void onContact(const physx::PxContactPairHeader& pairHeader, const physx::PxContactPair* pairs, physx::PxU32 nbPairs) override
+		{
+			for (physx::PxU32 i = 0; i < nbPairs; i++)
+			{
+				if (pairs[i].flags & physx::PxContactPairFlag::eACTOR_PAIR_HAS_FIRST_TOUCH)
+				{
+					Entity* a = (Entity*)(pairHeader.actors[0]->userData);
+					Entity* b = (Entity*)(pairHeader.actors[1]->userData);
+
+					if (a && a->HasComponent<ScriptComponent>() && ScriptEngine::ModuleExists(a->GetComponent<ScriptComponent>().ModuleName))
+						ScriptEngine::OnCollisionBegin(*a);
+
+					if (b && b->HasComponent<ScriptComponent>() && ScriptEngine::ModuleExists(b->GetComponent<ScriptComponent>().ModuleName))
+						ScriptEngine::OnCollisionBegin(*b);
+				}
+
+				if (pairs[i].flags & physx::PxContactPairFlag::eACTOR_PAIR_LOST_TOUCH)
+				{
+					Entity* a = (Entity*)(pairHeader.actors[0]->userData);
+					Entity* b = (Entity*)(pairHeader.actors[1]->userData);
+
+					if (a && a->HasComponent<ScriptComponent>() && ScriptEngine::ModuleExists(a->GetComponent<ScriptComponent>().ModuleName))
+						ScriptEngine::OnCollisionEnd(*a);
+
+					if (b && b->HasComponent<ScriptComponent>() && ScriptEngine::ModuleExists(b->GetComponent<ScriptComponent>().ModuleName))
+						ScriptEngine::OnCollisionEnd(*b);
+				}
+			}
+		}
+	};
+
+	static PhysXContactListener s_PhysXContactListener;
 
 	static physx::PxFilterFlags HazelFilterShader(
 		physx::PxFilterObjectAttributes attributes0, physx::PxFilterData filterData0,
@@ -55,13 +124,15 @@ namespace Prism
 	{
 		PR_CORE_ASSERT(!s_PXFoundation, "Physics3D::Init shouldn't be called more than once!");
 
-		s_PXFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, s_PXAllocator, s_PXErrorCallback);
+			s_PXAllocator = &s_PhysicsAllocator;
+			s_PXErrorCallback = &s_PhysicsErrorCallback;
+
+			s_PXFoundation = PxCreateFoundation(PX_PHYSICS_VERSION, *s_PXAllocator, *s_PXErrorCallback);
 		PR_CORE_ASSERT(s_PXFoundation, "PxCreateFoundation Failed!");
 
 #if PHYSX_DEBUGGER
 		s_PXPvd = PxCreatePvd(*s_PXFoundation);
-		physx::PxPvdTransport* transport = physx::PxDefaultPvdSocketTransportCreate("localhost", 5425, 10);
-		s_PXPvd->connect(*transport, physx::PxPvdInstrumentationFlag::eALL);
+		ConnectToPhysXDebugger();
 #endif
 
 		s_PXPhysicsFactory = PxCreatePhysics(PX_PHYSICS_VERSION, *s_PXFoundation, physx::PxTolerancesScale(), true, s_PXPvd);
@@ -70,24 +141,40 @@ namespace Prism
 
 	void Physics3D::Shutdown()
 	{
+		DisconnectFromPhysXDebugger();
 		s_PXPhysicsFactory->release();
 		s_PXFoundation->release();
+	}
+
+	void Physics3D::ConnectToPhysXDebugger()
+	{
+#if PHYSX_DEBUGGER
+		if (!s_PXPvd)
+			return;
+		physx::PxPvdTransport* transport = physx::PxDefaultPvdSocketTransportCreate("localhost", 5425, 10);
+		s_PXPvd->connect(*transport, physx::PxPvdInstrumentationFlag::eALL);
+#endif
+	}
+
+	void Physics3D::DisconnectFromPhysXDebugger()
+	{
+#if PHYSX_DEBUGGER
+		if (s_PXPvd && s_PXPvd->isConnected(false))
+			s_PXPvd->disconnect();
+#endif
 	}
 
 	physx::PxSceneDesc Physics3D::CreateSceneDesc()
 	{
 		physx::PxSceneDesc sceneDesc(s_PXPhysicsFactory->getTolerancesScale());
 
-		if (!sceneDesc.cpuDispatcher)
-		{
-			physx::PxDefaultCpuDispatcher* cpuDispatcher = physx::PxDefaultCpuDispatcherCreate(1);
-			if (!cpuDispatcher)
-				PR_CORE_ASSERT(false, "Failed to create PhysX CPU dispatcher!");
-			sceneDesc.cpuDispatcher = cpuDispatcher;
-		}
+		physx::PxDefaultCpuDispatcher* cpuDispatcher = physx::PxDefaultCpuDispatcherCreate(1);
+		if (!cpuDispatcher)
+			PR_CORE_ASSERT(false, "Failed to create PhysX CPU dispatcher!");
+		sceneDesc.cpuDispatcher = cpuDispatcher;
 
-		if (!sceneDesc.filterShader)
-			sceneDesc.filterShader = HazelFilterShader;
+		sceneDesc.filterShader = HazelFilterShader;
+		sceneDesc.simulationEventCallback = &s_PhysXContactListener;
 
 		return sceneDesc;
 	}
@@ -108,14 +195,16 @@ namespace Prism
 		else if (rigidbody.BodyType == RigidBodyComponent::Type::Dynamic)
 		{
 			physx::PxRigidDynamic* dynamicActor = s_PXPhysicsFactory->createRigidDynamic(CreatePose(transform));
-			physx::PxRigidBodyExt::updateMassAndInertia(*dynamicActor, rigidbody.Mass);
 
+			dynamicActor->setRigidBodyFlag(physx::PxRigidBodyFlag::eKINEMATIC, rigidbody.IsKinematic);
 			dynamicActor->setRigidDynamicLockFlag(physx::PxRigidDynamicLockFlag::eLOCK_LINEAR_X, rigidbody.LockPositionX);
 			dynamicActor->setRigidDynamicLockFlag(physx::PxRigidDynamicLockFlag::eLOCK_LINEAR_Y, rigidbody.LockPositionY);
 			dynamicActor->setRigidDynamicLockFlag(physx::PxRigidDynamicLockFlag::eLOCK_LINEAR_Z, rigidbody.LockPositionZ);
 			dynamicActor->setRigidDynamicLockFlag(physx::PxRigidDynamicLockFlag::eLOCK_ANGULAR_X, rigidbody.LockRotationX);
 			dynamicActor->setRigidDynamicLockFlag(physx::PxRigidDynamicLockFlag::eLOCK_ANGULAR_Y, rigidbody.LockRotationY);
 			dynamicActor->setRigidDynamicLockFlag(physx::PxRigidDynamicLockFlag::eLOCK_ANGULAR_Z, rigidbody.LockRotationZ);
+
+			physx::PxRigidBodyExt::updateMassAndInertia(*dynamicActor, rigidbody.Mass);
 
 			actor = dynamicActor;
 		}
@@ -147,14 +236,14 @@ namespace Prism
 		filterData.word1 = filterMask;
 
 		const physx::PxU32 numShapes = actor->getNbShapes();
-		physx::PxShape** shapes = (physx::PxShape**)s_PXAllocator.allocate(sizeof(physx::PxShape*) * numShapes, "", "", 0);
+		physx::PxShape** shapes = (physx::PxShape**)s_PXAllocator->allocate(sizeof(physx::PxShape*) * numShapes, "", "", 0);
 		actor->getShapes(shapes, numShapes);
 		for (physx::PxU32 i = 0; i < numShapes; i++)
 		{
 			physx::PxShape* shape = shapes[i];
 			shape->setSimulationFilterData(filterData);
 		}
-		s_PXAllocator.deallocate(shapes);
+		s_PXAllocator->deallocate(shapes);
 	}
 
 	physx::PxConvexMesh* Physics3D::CreateConvexMeshCollider(const Ref<Mesh>& mesh)
@@ -225,8 +314,8 @@ namespace Prism
 		return triangleMesh;
 	}
 
-	PhysXErrorCallback Physics3D::s_PXErrorCallback;
-	PhysXAllocator Physics3D::s_PXAllocator;
+	physx::PxErrorCallback* Physics3D::s_PXErrorCallback = nullptr;
+	physx::PxAllocatorCallback* Physics3D::s_PXAllocator = nullptr;
 	physx::PxFoundation* Physics3D::s_PXFoundation = nullptr;
 	physx::PxPhysics* Physics3D::s_PXPhysicsFactory = nullptr;
 	physx::PxPvd* Physics3D::s_PXPvd = nullptr;

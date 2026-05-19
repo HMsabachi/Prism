@@ -181,9 +181,10 @@ namespace Prism {
 
 	struct RigidBodyComponent
 	{
-		enum class Type { Static, Dynamic, Kinematic };
+		enum class Type { Static, Dynamic };
 		Type BodyType = Type::Static;
 		float Mass = 1.0F;
+		bool IsKinematic = false;
 
 		bool LockPositionX = false;
 		bool LockPositionY = false;

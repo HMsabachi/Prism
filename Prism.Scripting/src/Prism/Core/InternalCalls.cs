@@ -77,17 +77,10 @@ namespace Prism
         // Entity
         internal static delegate* unmanaged[Cdecl]<NativeString, UInt64> Prism_Entity_FindEntityByTag;
 
-        // Entity Directions
-        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_Entity_GetForwardDirection;
-        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_Entity_GetRightDirection;
-        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_Entity_GetUpDirection;
-
         // TransformComponent
-        internal static delegate* unmanaged[Cdecl]<UInt64, Matrix4*, void> Prism_TransformComponent_GetTransform;
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_TransformComponent_GetPosition;
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_TransformComponent_GetRotation;
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_TransformComponent_GetScale;
-        internal static delegate* unmanaged[Cdecl]<UInt64, Matrix4, void> Prism_TransformComponent_SetTransform;
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector3, void> Prism_TransformComponent_SetPosition;
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector3, void> Prism_TransformComponent_SetRotation;
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector3, void> Prism_TransformComponent_SetScale;

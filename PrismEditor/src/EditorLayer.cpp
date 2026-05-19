@@ -3,6 +3,7 @@
 
 #include "Prism/ImGui/ImGuizmo.h"
 #include "Prism/Core/LanguageManager.h"
+#include "Prism/Physics/Physics3D.h"
 
 #include <filesystem>
 
@@ -713,6 +714,15 @@ namespace Prism
                     if (ImGui::MenuItem(TR("Reload C# Assembly")))
                         ScriptEngine::ReloadAssembly("assets/scripts/ExampleApp.dll");
                     ImGui::MenuItem(TR("Reload assembly on play"), nullptr, &m_ReloadScriptOnPlay);
+                    ImGui::EndMenu();
+                }
+
+                if (ImGui::BeginMenu("Debug"))
+                {
+                    if (ImGui::MenuItem("Connect To PVD"))
+                    {
+                        Physics3D::ConnectToPhysXDebugger();
+                    }
                     ImGui::EndMenu();
                 }
 

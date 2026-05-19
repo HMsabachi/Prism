@@ -152,37 +152,6 @@ namespace Prism {
 #pragma endregion
 
 #pragma region TransformComponent
-		void Prism_Entity_GetForwardDirection(uint64_t entityID, glm::vec3* outDirection)
-		{
-			Entity entity = GetEntityFromEntityID(entityID);
-			auto& transformComponent = entity.GetComponent<TransformComponent>();
-			glm::mat4 transform = transformComponent.GetTransform();
-			*outDirection = glm::normalize(glm::vec3(transform[2]));
-		}
-
-		void Prism_Entity_GetRightDirection(uint64_t entityID, glm::vec3* outDirection)
-		{
-			Entity entity = GetEntityFromEntityID(entityID);
-			auto& transformComponent = entity.GetComponent<TransformComponent>();
-			glm::mat4 transform = transformComponent.GetTransform();
-			*outDirection = glm::normalize(glm::vec3(transform[0]));
-		}
-
-		void Prism_Entity_GetUpDirection(uint64_t entityID, glm::vec3* outDirection)
-		{
-			Entity entity = GetEntityFromEntityID(entityID);
-			auto& transformComponent = entity.GetComponent<TransformComponent>();
-			glm::mat4 transform = transformComponent.GetTransform();
-			*outDirection = glm::normalize(glm::vec3(transform[1]));
-		}
-
-		void Prism_TransformComponent_GetTransform(uint64_t entityID, glm::mat4* outTransform)
-		{
-			Entity entity = GetEntityFromEntityID(entityID);
-			auto& transformComponent = entity.GetComponent<TransformComponent>();
-			memcpy(outTransform, glm::value_ptr(transformComponent.GetTransform()), sizeof(glm::mat4));
-		}
-
 		void Prism_TransformComponent_GetPosition(uint64_t entityID, glm::vec3* outPosition)
 		{
 			Entity entity = GetEntityFromEntityID(entityID);
@@ -203,14 +172,6 @@ namespace Prism {
 			auto& transformComponent = entity.GetComponent<TransformComponent>();
 			memcpy(outScale, &transformComponent.Scale, sizeof(glm::vec3));
 		}
-		
-		void Prism_TransformComponent_SetTransform(uint64_t entityID, glm::mat4 inTransform)
-		{
-			Entity entity = GetEntityFromEntityID(entityID);
-			auto& transformComponent = entity.GetComponent<TransformComponent>();
-			transformComponent.SetTransform(inTransform);
-		}
-		
 		void Prism_TransformComponent_SetPosition(uint64_t entityID, glm::vec3 inPosition)
 		{
 			Entity entity = GetEntityFromEntityID(entityID);
@@ -405,39 +366,55 @@ namespace Prism {
 		{
 			Entity entity = GetEntityFromEntityID(entityID);
 			auto& rb = entity.GetComponent<RigidBodyComponent>();
-			physx::PxRigidDynamic* actor = static_cast<physx::PxRigidDynamic*>(rb.RuntimeActor);
-			if (actor && rb.BodyType == RigidBodyComponent::Type::Dynamic)
-				actor->addForce(physx::PxVec3(force->x, force->y, force->z), (physx::PxForceMode::Enum)forceMode);
+
+			if (rb.IsKinematic)
+			{
+				PR_CORE_WARN("Cannot add a force to a kinematic actor! EntityID({0})", entityID);
+				return;
+			}
+
+			physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
+			physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
+			PR_CORE_ASSERT(dynamicActor);
+			dynamicActor->addForce(physx::PxVec3(force->x, force->y, force->z), (physx::PxForceMode::Enum)forceMode);
 		}
 
 		void Prism_RigidBodyComponent_AddTorque(uint64_t entityID, glm::vec3* torque, int32_t forceMode)
 		{
 			Entity entity = GetEntityFromEntityID(entityID);
 			auto& rb = entity.GetComponent<RigidBodyComponent>();
-			physx::PxRigidDynamic* actor = static_cast<physx::PxRigidDynamic*>(rb.RuntimeActor);
-			if (actor && rb.BodyType == RigidBodyComponent::Type::Dynamic)
-				actor->addTorque(physx::PxVec3(torque->x, torque->y, torque->z), (physx::PxForceMode::Enum)forceMode);
+
+			if (rb.IsKinematic)
+			{
+				PR_CORE_WARN("Cannot add torque to a kinematic actor! EntityID({0})", entityID);
+				return;
+			}
+
+			physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
+			physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
+			PR_CORE_ASSERT(dynamicActor);
+			dynamicActor->addTorque(physx::PxVec3(torque->x, torque->y, torque->z), (physx::PxForceMode::Enum)forceMode);
 		}
 
 		void Prism_RigidBodyComponent_GetLinearVelocity(uint64_t entityID, glm::vec3* outVelocity)
 		{
 			Entity entity = GetEntityFromEntityID(entityID);
 			auto& rb = entity.GetComponent<RigidBodyComponent>();
-			physx::PxRigidDynamic* actor = static_cast<physx::PxRigidDynamic*>(rb.RuntimeActor);
-			if (actor && rb.BodyType == RigidBodyComponent::Type::Dynamic)
-			{
-				physx::PxVec3 velocity = actor->getLinearVelocity();
-				*outVelocity = glm::vec3(velocity.x, velocity.y, velocity.z);
-			}
+			physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
+			physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
+			PR_CORE_ASSERT(dynamicActor);
+			physx::PxVec3 velocity = dynamicActor->getLinearVelocity();
+			*outVelocity = glm::vec3(velocity.x, velocity.y, velocity.z);
 		}
 
 		void Prism_RigidBodyComponent_SetLinearVelocity(uint64_t entityID, glm::vec3* velocity)
 		{
 			Entity entity = GetEntityFromEntityID(entityID);
 			auto& rb = entity.GetComponent<RigidBodyComponent>();
-			physx::PxRigidDynamic* actor = static_cast<physx::PxRigidDynamic*>(rb.RuntimeActor);
-			if (actor && rb.BodyType == RigidBodyComponent::Type::Dynamic)
-				actor->setLinearVelocity(physx::PxVec3(velocity->x, velocity->y, velocity->z));
+			physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
+			physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
+			PR_CORE_ASSERT(dynamicActor);
+			dynamicActor->setLinearVelocity(physx::PxVec3(velocity->x, velocity->y, velocity->z));
 		}
 
 #pragma endregion

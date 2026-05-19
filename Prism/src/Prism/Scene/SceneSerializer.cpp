@@ -325,6 +325,7 @@ namespace Prism {
 			auto& rbComponent = entity.GetComponent<RigidBodyComponent>();
 			out << YAML::Key << "BodyType" << YAML::Value << (int)rbComponent.BodyType;
 			out << YAML::Key << "Mass" << YAML::Value << rbComponent.Mass;
+			out << YAML::Key << "IsKinematic" << YAML::Value << rbComponent.IsKinematic;
 			out << YAML::Key << "LockPositionX" << YAML::Value << rbComponent.LockPositionX;
 			out << YAML::Key << "LockPositionY" << YAML::Value << rbComponent.LockPositionY;
 			out << YAML::Key << "LockPositionZ" << YAML::Value << rbComponent.LockPositionZ;
@@ -668,6 +669,7 @@ namespace Prism {
 					auto& component = deserializedEntity.AddComponent<RigidBodyComponent>();
 					component.BodyType = (RigidBodyComponent::Type)rigidBodyComponent["BodyType"].as<int>();
 					component.Mass = rigidBodyComponent["Mass"] ? rigidBodyComponent["Mass"].as<float>() : 1.0f;
+					component.IsKinematic = rigidBodyComponent["IsKinematic"] ? rigidBodyComponent["IsKinematic"].as<bool>() : false;
 					component.LockPositionX = rigidBodyComponent["LockPositionX"] ? rigidBodyComponent["LockPositionX"].as<bool>() : false;
 					component.LockPositionY = rigidBodyComponent["LockPositionY"] ? rigidBodyComponent["LockPositionY"].as<bool>() : false;
 					component.LockPositionZ = rigidBodyComponent["LockPositionZ"] ? rigidBodyComponent["LockPositionZ"].as<bool>() : false;

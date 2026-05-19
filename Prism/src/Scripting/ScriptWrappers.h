@@ -53,17 +53,11 @@ namespace Prism
 		void Prism_Entity_CreateComponent(uint64_t entityID, Rolky::ReflectionType type);
 		bool Prism_Entity_HasComponent(uint64_t entityID, Rolky::ReflectionType type);
 		uint64_t Prism_Entity_FindEntityByTag(Rolky::String tag);
-			// Entity Directions
-		void Prism_Entity_GetForwardDirection(uint64_t entityID, glm::vec3* outDirection);
-		void Prism_Entity_GetRightDirection(uint64_t entityID, glm::vec3* outDirection);
-		void Prism_Entity_GetUpDirection(uint64_t entityID, glm::vec3* outDirection);
-
+	
 		// TransformComponent
-		void Prism_TransformComponent_GetTransform(uint64_t entityID, glm::mat4* outTransform);
 		void Prism_TransformComponent_GetPosition(uint64_t entityID, glm::vec3* outPosition);
 		void Prism_TransformComponent_GetRotation(uint64_t entityID, glm::vec3* outRotation);
 		void Prism_TransformComponent_GetScale(uint64_t entityID, glm::vec3* outScale);
-		void Prism_TransformComponent_SetTransform(uint64_t entityID, glm::mat4 inTransform);
 		void Prism_TransformComponent_SetPosition(uint64_t entityID, glm::vec3 inPosition);
 		void Prism_TransformComponent_SetRotation(uint64_t entityID, glm::vec3 inRotation);
 		void Prism_TransformComponent_SetScale(uint64_t entityID, glm::vec3 inScale);

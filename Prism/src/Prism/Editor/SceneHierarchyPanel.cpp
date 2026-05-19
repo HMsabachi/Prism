@@ -755,11 +755,11 @@ namespace Prism {
 
 		DrawComponent<RigidBodyComponent>(TR("Rigidbody"), entity, [](auto& component)
 		{
-			const char* bodyTypeStrings[] = { TR("Static"), TR("Dynamic"), TR("Kinematic") };
+			const char* bodyTypeStrings[] = { TR("Static"), TR("Dynamic") };
 			const char* currentType = bodyTypeStrings[(int)component.BodyType];
 			if (ImGui::BeginCombo(TR("Type"), currentType))
 			{
-				for (int i = 0; i < 3; i++)
+				for (int i = 0; i < 2; i++)
 				{
 					bool is_selected = (currentType == bodyTypeStrings[i]);
 					if (ImGui::Selectable(bodyTypeStrings[i], is_selected))
@@ -776,13 +776,22 @@ namespace Prism {
 			{
 				BeginPropertyGrid();
 				Property(TR("Mass"), component.Mass);
-				Property(TR("Lock Position X"), component.LockPositionX);
-				Property(TR("Lock Position Y"), component.LockPositionY);
-				Property(TR("Lock Position Z"), component.LockPositionZ);
-				Property(TR("Lock Rotation X"), component.LockRotationX);
-				Property(TR("Lock Rotation Y"), component.LockRotationY);
-				Property(TR("Lock Rotation Z"), component.LockRotationZ);
+				Property(TR("Is Kinematic"), component.IsKinematic);
 				EndPropertyGrid();
+
+				if (ImGui::TreeNode(TR("Constraints")))
+				{
+					BeginPropertyGrid();
+					Property(TR("Position X"), component.LockPositionX);
+					Property(TR("Position Y"), component.LockPositionY);
+					Property(TR("Position Z"), component.LockPositionZ);
+					Property(TR("Rotation X"), component.LockRotationX);
+					Property(TR("Rotation Y"), component.LockRotationY);
+					Property(TR("Rotation Z"), component.LockRotationZ);
+					EndPropertyGrid();
+
+					ImGui::TreePop();
+				}
 			}
 		});
 

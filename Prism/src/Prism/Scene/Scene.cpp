@@ -79,50 +79,6 @@ namespace Prism
 
     static ContactListener s_Box2DContactListener;
 
-    class PhysXContactListener : public physx::PxSimulationEventCallback
-    {
-    public:
-        void onConstraintBreak(physx::PxConstraintInfo*, physx::PxU32) override {}
-        void onWake(physx::PxActor**, physx::PxU32) override {}
-        void onSleep(physx::PxActor**, physx::PxU32) override {}
-        void onTrigger(physx::PxTriggerPair*, physx::PxU32) override {}
-        void onAdvance(const physx::PxRigidBody* const*, const physx::PxTransform*, const physx::PxU32) override {}
-
-        void onContact(const physx::PxContactPairHeader& pairHeader, const physx::PxContactPair* pairs, physx::PxU32 nbPairs) override
-        {
-            for (physx::PxU32 i = 0; i < nbPairs; i++)
-            {
-                const physx::PxContactPair& contactPair = pairs[i];
-
-                if (contactPair.events & physx::PxPairFlag::eNOTIFY_TOUCH_FOUND)
-                {
-                    Entity* a = (Entity*)(pairHeader.actors[0]->userData);
-                    Entity* b = (Entity*)(pairHeader.actors[1]->userData);
-
-                    if (a && a->HasComponent<ScriptComponent>() && ScriptEngine::ModuleExists(a->GetComponent<ScriptComponent>().ModuleName))
-                        ScriptEngine::OnCollisionBegin(*a);
-
-                    if (b && b->HasComponent<ScriptComponent>() && ScriptEngine::ModuleExists(b->GetComponent<ScriptComponent>().ModuleName))
-                        ScriptEngine::OnCollisionBegin(*b);
-                }
-
-                if (contactPair.events & physx::PxPairFlag::eNOTIFY_TOUCH_LOST)
-                {
-                    Entity* a = (Entity*)(pairHeader.actors[0]->userData);
-                    Entity* b = (Entity*)(pairHeader.actors[1]->userData);
-
-                    if (a && a->HasComponent<ScriptComponent>() && ScriptEngine::ModuleExists(a->GetComponent<ScriptComponent>().ModuleName))
-                        ScriptEngine::OnCollisionEnd(*a);
-
-                    if (b && b->HasComponent<ScriptComponent>() && ScriptEngine::ModuleExists(b->GetComponent<ScriptComponent>().ModuleName))
-                        ScriptEngine::OnCollisionEnd(*b);
-                }
-            }
-        }
-    };
-
-    static PhysXContactListener s_PhysXContactListener;
-
     static void OnScriptComponentConstruct(entt::registry& registry, entt::entity entity)
     {
         auto sceneView = registry.view<SceneComponent>();
@@ -162,7 +118,6 @@ namespace Prism
         {
             physx::PxSceneDesc sceneDesc = Physics3D::CreateSceneDesc();
             sceneDesc.gravity = physx::PxVec3(0.0F, -9.8F, 0.0F);
-            sceneDesc.simulationEventCallback = &s_PhysXContactListener;
             PhysXSceneComponent& physxWorld = m_Registry.emplace<PhysXSceneComponent>(m_SceneEntity, Physics3D::CreateScene(sceneDesc));
             PR_CORE_ASSERT(physxWorld.World);
         }
@@ -642,7 +597,7 @@ namespace Prism
                     }
 
                     physx::PxShape* shape = nullptr;
-                    if (rb.BodyType == RigidBodyComponent::Type::Dynamic || rb.BodyType == RigidBodyComponent::Type::Kinematic)
+                    if (rb.BodyType == RigidBodyComponent::Type::Dynamic)
                     {
                         physx::PxConvexMesh* convexMesh = Physics3D::CreateConvexMeshCollider(mc);
                         if (!convexMesh)

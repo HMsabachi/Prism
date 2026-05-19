@@ -21,9 +21,12 @@ namespace Example
 
         private bool Colliding => m_CollisionCounter > 0;
 
+        private TransformComponent m_Transform;
+
         void OnCreate()
         {
             m_PhysicsBody = GetComponent<RigidBodyComponent>();
+            m_Transform = GetComponent<TransformComponent>();
 
             MeshComponent meshComponent = GetComponent<MeshComponent>();
             m_MeshMaterial = meshComponent.Mesh.GetMaterial(0);
@@ -52,9 +55,9 @@ namespace Example
                 movementForce *= 0.4f;
             }
 
-            Vector3 forward = GetForwardDirection();
-            Vector3 right = GetRightDirection();
-            Vector3 up = GetUpDirection();
+            Vector3 forward = m_Transform.Forward;
+            Vector3 right = m_Transform.Right;
+            Vector3 up = m_Transform.Up;
 
             if (Input.IsKeyPressed(KeyCode.W))
                 m_PhysicsBody.AddForce(forward * movementForce);
