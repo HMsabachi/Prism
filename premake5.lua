@@ -115,7 +115,7 @@ project "Prism"
         "vendor/Python/libs"
     }
     includedirs { "%{prj.name}/src/Scripting" }
-    links { "nethost", "python313" }
+    links { "nethost" }
 
     filter "files:%{prj.name}/src/Scripting/CSharp/Native/**.cpp or files:Prism/vendor/yaml-cpp/src/**.cpp"
         flags { "NoPCH" }

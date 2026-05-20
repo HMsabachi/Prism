@@ -2,7 +2,7 @@
 
 ![Prism Engine Logo](https://github.com/HMsabachi/Prism/blob/main/Prism/assets/logo/WhiteLogo.png?raw=true "Prism Engine")
 
-**Prism** 是一个轻量级、模块化、用 **C++17** 开发的跨平台游戏引擎。渲染后端使用 **OpenGL**（现代 API，如 `glCreateBuffer`、`glCreateVertexArrays` 等），**C# 脚本系统**基于 **.NET 9** 与 **Rolky** 互操作框架，编辑器使用 **ImGui** 构建。
+**Prism** 是一个轻量级、模块化、用 **C++17** 开发的跨平台游戏引擎。渲染后端使用 **OpenGL**（现代 API，如 `glCreateBuffer`、`glCreateVertexArrays` 等），**多语言脚本系统**支持 **C#**（.NET 9 + Rolky）和 **Python 3.13**（CPython 嵌入式），编辑器使用 **ImGui** 构建。
 
 > **注意：最新开发进度请切换到 `Prism3D` 分支**（`git checkout Prism3D`），所有最新提交均在此分支。
 
@@ -52,6 +52,15 @@ premake5 xcode4        # macOS Xcode
 - C# 端物理 API：`RigidBody2DComponent.ApplyLinearImpulse`、`RigidBodyComponent.AddForce/AddTorque`（3D 物理，支持 ForceMode）、碰撞回调（`AddCollisionBeginCallback` / `AddCollisionEndCallback`）
 - C# 端方向 API：`GetForwardDirection` / `GetRightDirection` / `GetUpDirection`
 - 示例脚本：MapGenerator（程序化地形）、PlayerCube（2D 物理控制）、PlayerCube3D / PlayerSphere（3D 物理控制）、BasicController（相机移动）、Sink（下沉平台）、RandomColor（随机颜色）
+
+### Python 脚本系统（新特性）
+- **Python 3.13** 嵌入式 CPython 运行时
+- 与 C# 相同的实体生命周期：`OnCreate` / `OnUpdate` / `OnFixedUpdate`
+- 脚本格式：class-based，`__annotations__` 自动暴露为编辑器公共字段
+- 完整 2D/3D 碰撞回调支持：`OnCollisionBegin` / `OnCollisionEnd` / `OnCollision2DBegin` / `OnCollision2DEnd`
+- `prism` 内置模块桥接引擎 API（场景、变换、输入、日志等）
+- 多脚本混合：同一实体可同时挂载 C# 和 Python 脚本
+- Python 标准库完整内置（Lib/ + DLLs/）
 
 ### 实体组件系统（ECS）
 - 基于 **entt** 库
@@ -113,7 +122,9 @@ Prism/
 │   ├── src/Platform/
 │   │   ├── OpenGL/         # OpenGL 后端实现（Buffer、FBO、Shader、Texture、SSBO 等）
 │   │   └── Windows/        # Windows 平台层（GLFW 窗口、输入）
-│   └── src/Scripting/      # C++/C# 互操作引擎（ScriptEngine、InternalCall 注册）
+│   └── src/Scripting/      # 多语言脚本引擎
+│       ├── CSharp/         # C++/C# 互操作引擎（Rolky、InternalCall 注册）
+│       └── Python/         # Python 脚本引擎（CPython 嵌入、prism 桥接）
 │
 ├── Prism.Scripting/        # C# 脚本层（.NET 9 托管程序集）
 │   └── src/Prism/
@@ -130,6 +141,7 @@ Prism/
 │   └── src/                # Script.cs、MapGenerator.cs、PlayerCube.cs、BasicController.cs、Sink.cs、RandomColor.cs
 ├── SandBox/                # 旧版 C++ 示例（逐步淘汰）
 ├── vendor/                 # 第三方库
+│   └── Python/             # CPython 3.13 嵌入式运行时（include、libs、DLLs、Lib/）
 ├── docs/                   # 技术文档（PSL、Time、Renderer）
 ├── premake5.lua            # 构建配置
 ├── Prism.sln               # Visual Studio C++ 解决方案
@@ -141,13 +153,13 @@ Prism/
 
 | 类别 | 技术 |
 |------|------|
-| 语言 | C++17、C# 12 (.NET 9) |
+| 语言 | C++17、C# 12 (.NET 9)、Python 3.13 |
 | 图形 API | OpenGL 4.5+ (Core Profile) |
 | 窗口 | GLFW |
 | 数学 | GLM |
 | ECS | entt（单头文件）|
 | UI | ImGui + ImGuizmo |
-| 脚本互操作 | Rolky |
+| 脚本互操作 | Rolky、CPython 嵌入式 C API |
 | 日志 | spdlog |
 | 模型导入 | Assimp |
 | 序列化 | yaml-cpp |
@@ -170,6 +182,7 @@ Prism/
 - [x] C# 脚本系统完善（热重载、编辑器脚本属性面板、物理 API）
 - [x] 2D 物理系统集成（Box2D：刚体、碰撞体、重力）
 - [x] **级联阴影映射（CSM）+ PCF 软阴影**
+- [x] **Python 3.13 多语言脚本系统**（嵌入式 CPython、prism 桥接模块、PythonPublicField）
 - [ ] 完整资源管理系统与序列化
 - [ ] 跨平台窗口与渲染抽象
 - [ ] Vulkan 后端支持（长期目标）
