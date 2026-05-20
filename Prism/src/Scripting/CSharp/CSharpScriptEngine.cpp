@@ -124,7 +124,10 @@ namespace Prism
 		if (m_Host && m_LoadContext)
 			m_Host->UnloadAssemblyLoadContext(*m_LoadContext);
 		if (m_Host)
+		{
 			m_Host->Shutdown();
+			m_Host.reset();
+		}
 		m_SceneContext = nullptr;
 		m_LoadContext = nullptr;
 		m_EntityInstanceMap.clear();

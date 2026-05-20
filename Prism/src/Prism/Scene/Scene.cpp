@@ -23,6 +23,7 @@
 
 // PhysX
 #include "Prism/Physics/Physics3D.h"
+#include <PhysX/PxPhysicsAPI.h>
 
 namespace Prism
 {

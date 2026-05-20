@@ -5,8 +5,8 @@
 
 namespace Prism
 {
-	struct RigidBodyComponent; // Forward declaration (defined in Components.h)
-	class Mesh; // Forward declaration (defined in Mesh.h)
+	struct RigidBodyComponent; 
+	class Mesh; 
 
 	enum class ForceMode : uint16_t
 	{

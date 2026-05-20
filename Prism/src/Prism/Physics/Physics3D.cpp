@@ -20,6 +20,11 @@
 
 #define PHYSX_DEBUGGER 1
 
+PRISM_API void PrismConnectPhysXDebugger()
+{
+	Prism::Physics3D::ConnectToPhysXDebugger();
+}
+
 namespace Prism
 {
 	struct PhysXAllocator : public physx::PxAllocatorCallback

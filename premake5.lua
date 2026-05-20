@@ -213,7 +213,6 @@ project "PrismEditor"
         "%{IncludeDir.glm}",
             "%{IncludeDir.nethost}",
         "%{IncludeDir.entt}",
-        "%{IncludeDir.PhysX}"
 
     }
 

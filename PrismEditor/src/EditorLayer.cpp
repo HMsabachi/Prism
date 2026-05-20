@@ -3,7 +3,8 @@
 
 #include "Prism/ImGui/ImGuizmo.h"
 #include "Prism/Core/LanguageManager.h"
-#include "Prism/Physics/Physics3D.h"
+
+PRISM_API void PrismConnectPhysXDebugger();
 
 #include <filesystem>
 
@@ -721,7 +722,7 @@ namespace Prism
                 {
                     if (ImGui::MenuItem("Connect To PVD"))
                     {
-                        Physics3D::ConnectToPhysXDebugger();
+                        PrismConnectPhysXDebugger();
                     }
                     ImGui::EndMenu();
                 }
