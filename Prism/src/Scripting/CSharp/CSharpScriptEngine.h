@@ -15,19 +15,20 @@ namespace Rolky
 
 namespace Prism
 {
-	struct EntityInstance
+	// Per-script instance data (one entity can have multiple)
+	struct EntityScriptInstance
 	{
 		Rolky::Type* ScriptClass = nullptr;
 		std::unique_ptr<Rolky::ManagedObject> Object;
-		Scene* SceneInstance = nullptr;
-		uint32_t HasMethods;
+		uint32_t HasMethods = 0;
 	};
 
 	using ScriptModuleFieldMap = std::unordered_map<std::string, std::unordered_map<std::string, std::unique_ptr<PublicField>>>;
 
 	struct EntityInstanceData
 	{
-		EntityInstance Instance;
+		// Multiple scripts per entity, keyed by moduleName
+		std::unordered_map<std::string, std::unique_ptr<EntityScriptInstance>> Scripts;
 		ScriptModuleFieldMap ModuleFieldMap;
 	};
 
@@ -50,14 +51,14 @@ namespace Prism
 		void OnSceneDestruct(UUID sceneID) override;
 		void CopyEntityScriptData(UUID dst, UUID src) override;
 		bool HasEntityScriptData(UUID sceneID) override;
-		void InitScriptEntity(Entity entity) override;
+		void InitScriptEntity(Entity entity, const std::string& moduleName) override;
 		void ShutdownScriptEntity(Entity entity, const std::string& moduleName) override;
-		void InstantiateEntityClass(Entity entity) override;
+		void InstantiateEntityClass(Entity entity, const std::string& moduleName) override;
 		bool ModuleExists(const std::string& moduleName) override;
-		void OnCreateEntity(Entity entity) override;
-		void OnCreateEntity(UUID sceneID, UUID entityID) override;
-		void OnUpdateEntity(UUID sceneID, UUID entityID, float ts) override;
-		void OnFixedUpdateEntity(UUID sceneID, UUID entityID) override;
+		void OnCreateEntity(Entity entity, const std::string& moduleName) override;
+		void OnCreateEntity(UUID sceneID, UUID entityID, const std::string& moduleName) override;
+		void OnUpdateEntity(UUID sceneID, UUID entityID, const std::string& moduleName, float ts) override;
+		void OnFixedUpdateEntity(UUID sceneID, UUID entityID, const std::string& moduleName) override;
 		void OnScriptComponentDestroyed(UUID sceneID, UUID entityID) override;
 		void OnCollision2DBegin(Entity entity) override;
 		void OnCollision2DBegin(UUID sceneID, UUID entityID) override;
@@ -78,6 +79,7 @@ namespace Prism
 		// C#-specific accessors
 		EntityInstanceMap& GetEntityInstanceMap();
 		EntityInstanceData& GetEntityInstanceData(UUID sceneID, UUID entityID);
+		EntityScriptInstance& GetEntityScriptInstance(UUID sceneID, UUID entityID, const std::string& moduleName);
 		Rolky::ManagedAssembly& GetEngineAssembly();
 
 	private:

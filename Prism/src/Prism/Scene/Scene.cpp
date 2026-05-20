@@ -1,4 +1,4 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "Scene.h"
 
 #include "Prism/Events/Event.h"
@@ -55,12 +55,11 @@ namespace Prism
             Entity& a = *(Entity*)contact->GetFixtureA()->GetBody()->GetUserData().pointer;
             Entity& b = *(Entity*)contact->GetFixtureB()->GetBody()->GetUserData().pointer;
 
-            // TODO: improve these if checks
-            if (a.HasComponent<ScriptComponent>() && ScriptEngineManager::Get()->ModuleExists(a.GetComponent<ScriptComponent>().ModuleName))
-                ScriptEngineManager::Get()->OnCollision2DBegin(a);
+            if (a.HasComponent<ScriptsComponent>())
+                ScriptEngineManager::OnCollision2DBegin(a);
 
-            if (b.HasComponent<ScriptComponent>() && ScriptEngineManager::Get()->ModuleExists(b.GetComponent<ScriptComponent>().ModuleName))
-                ScriptEngineManager::Get()->OnCollision2DBegin(b);
+            if (b.HasComponent<ScriptsComponent>())
+                ScriptEngineManager::OnCollision2DBegin(b);
         }
 
         /// Called when two fixtures cease to touch.
@@ -69,45 +68,19 @@ namespace Prism
             Entity& a = *(Entity*)contact->GetFixtureA()->GetBody()->GetUserData().pointer;
             Entity& b = *(Entity*)contact->GetFixtureB()->GetBody()->GetUserData().pointer;
 
-            // TODO: improve these if checks
-            if (a.HasComponent<ScriptComponent>() && ScriptEngineManager::Get()->ModuleExists(a.GetComponent<ScriptComponent>().ModuleName))
-                ScriptEngineManager::Get()->OnCollision2DEnd(a);
+            if (a.HasComponent<ScriptsComponent>())
+                ScriptEngineManager::OnCollision2DEnd(a);
 
-            if (b.HasComponent<ScriptComponent>() && ScriptEngineManager::Get()->ModuleExists(b.GetComponent<ScriptComponent>().ModuleName))
-                ScriptEngineManager::Get()->OnCollision2DEnd(b);
+            if (b.HasComponent<ScriptsComponent>())
+                ScriptEngineManager::OnCollision2DEnd(b);
         }
     };
 
     static ContactListener s_Box2DContactListener;
 
-    static void OnScriptComponentConstruct(entt::registry& registry, entt::entity entity)
-    {
-        auto sceneView = registry.view<SceneComponent>();
-        UUID sceneID = registry.get<SceneComponent>(sceneView.front()).SceneID;
-        Scene* scene = s_ActiveScenes[sceneID];
-
-        auto entityID = registry.get<IDComponent>(entity).ID;
-        PR_CORE_ASSERT(scene->m_EntityIDMap.find(entityID) != scene->m_EntityIDMap.end());
-        ScriptEngineManager::Get()->InitScriptEntity(scene->m_EntityIDMap.at(entityID));
-    }
-
-    static void OnScriptComponentDestroy(entt::registry& registry, entt::entity entity)
-    {
-        auto sceneView = registry.view<SceneComponent>();
-        UUID sceneID = registry.get<SceneComponent>(sceneView.front()).SceneID;
-
-        Scene* scene = s_ActiveScenes[sceneID];
-
-        auto entityID = registry.get<IDComponent>(entity).ID;
-        ScriptEngineManager::Get()->OnScriptComponentDestroyed(sceneID, entityID);
-    }
-
     Scene::Scene(const std::string& debugName)
         : m_DebugName(debugName)
     {
-        m_Registry.on_construct<ScriptComponent>().connect<&OnScriptComponentConstruct>();
-        m_Registry.on_destroy<ScriptComponent>().connect<&OnScriptComponentDestroy>();
-
         m_SceneEntity = m_Registry.create();
         m_Registry.emplace<SceneComponent>(m_SceneEntity, m_SceneID);
 
@@ -129,8 +102,6 @@ namespace Prism
 
     Scene::~Scene()
     {
-        m_Registry.on_destroy<ScriptComponent>().disconnect();
-        m_Registry.on_construct<ScriptComponent>().disconnect<&OnScriptComponentConstruct>();
         OnShutdown();
         delete[] m_PhysicsBodyEntityBuffer;
         m_PhysicsBodyEntityBuffer = nullptr;
@@ -138,7 +109,7 @@ namespace Prism
         m_Physics3DBodyEntityBuffer = nullptr;
         m_Registry.clear();
         s_ActiveScenes.erase(m_SceneID);
-        ScriptEngineManager::Get()->OnSceneDestruct(m_SceneID);
+        ScriptEngineManager::OnSceneDestruct(m_SceneID);
     }
 
     void Scene::Init()
@@ -154,13 +125,17 @@ namespace Prism
         // Script OnUpdate (per-frame)
         {
             float ts = Time::GetDeltaTime();
-            auto view = m_Registry.view<ScriptComponent>();
+            auto view = m_Registry.view<ScriptsComponent>();
             for (auto entity : view)
             {
-                UUID entityID = m_Registry.get<IDComponent>(entity).ID;
                 Entity e = { entity, this };
-                if (ScriptEngineManager::Get()->ModuleExists(e.GetComponent<ScriptComponent>().ModuleName))
-                    ScriptEngineManager::Get()->OnUpdateEntity(m_SceneID, entityID, ts);
+                auto& scripts = e.GetComponent<ScriptsComponent>().Scripts;
+                for (auto& script : scripts)
+                {
+                    auto* engine = ScriptEngineManager::Get(script.Language);
+                    if (engine && engine->ModuleExists(script.ModuleName))
+                        engine->OnUpdateEntity(m_SceneID, e.GetUUID(), script.ModuleName, ts);
+                }
             }
         }
     }
@@ -233,13 +208,17 @@ namespace Prism
 
         // Script OnFixedUpdate
         {
-            auto view = m_Registry.view<ScriptComponent>();
+            auto view = m_Registry.view<ScriptsComponent>();
             for (auto entity : view)
             {
-                UUID entityID = m_Registry.get<IDComponent>(entity).ID;
                 Entity e = { entity, this };
-                if (ScriptEngineManager::Get()->ModuleExists(e.GetComponent<ScriptComponent>().ModuleName))
-                    ScriptEngineManager::Get()->OnFixedUpdateEntity(m_SceneID, entityID);
+                auto& scripts = e.GetComponent<ScriptsComponent>().Scripts;
+                for (auto& script : scripts)
+                {
+                    auto* engine = ScriptEngineManager::Get(script.Language);
+                    if (engine && engine->ModuleExists(script.ModuleName))
+                        engine->OnFixedUpdateEntity(m_SceneID, e.GetUUID(), script.ModuleName);
+                }
             }
         }
     }
@@ -349,15 +328,23 @@ namespace Prism
     }
     void Scene::OnRuntimeStart()
     {
-        ScriptEngineManager::Get()->SetSceneContext(this);
+        ScriptEngineManager::SetSceneContext(this);
 
         {
-            auto view = m_Registry.view<ScriptComponent>();
+            auto view = m_Registry.view<ScriptsComponent>();
             for (auto entity : view)
             {
                 Entity e = { entity, this };
-                if (ScriptEngineManager::Get()->ModuleExists(e.GetComponent<ScriptComponent>().ModuleName))
-                    ScriptEngineManager::Get()->InstantiateEntityClass(e);
+                auto& scripts = e.GetComponent<ScriptsComponent>().Scripts;
+                for (auto& script : scripts)
+                {
+                    auto* engine = ScriptEngineManager::Get(script.Language);
+                    if (engine && engine->ModuleExists(script.ModuleName))
+                    {
+                        engine->InitScriptEntity(e, script.ModuleName);
+                        engine->InstantiateEntityClass(e, script.ModuleName);
+                    }
+                }
             }
         }
 
@@ -739,8 +726,16 @@ namespace Prism
 
     void Scene::DestroyEntity(Entity entity)
     {
-        if (entity.HasComponent<ScriptComponent>())
-            ScriptEngineManager::Get()->OnScriptComponentDestroyed(m_SceneID, entity.GetUUID());
+        if (entity.HasComponent<ScriptsComponent>())
+        {
+            // Notify all engines to clean up this entity's script data
+            for (auto lang : { ScriptLanguage::CSharp, ScriptLanguage::Python })
+            {
+                auto* engine = ScriptEngineManager::Get(lang);
+                if (engine)
+                    engine->OnScriptComponentDestroyed(m_SceneID, entity.GetUUID());
+            }
+        }
 
         m_Registry.destroy(entity.m_EntityHandle);
     }
@@ -779,7 +774,13 @@ namespace Prism
         CopyComponentIfExists<TransformComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<MeshComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<MaterialComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        CopyComponentIfExists<ScriptComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<ScriptsComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        if (newEntity.HasComponent<ScriptsComponent>())
+        {
+            auto& scripts = newEntity.GetComponent<ScriptsComponent>().Scripts;
+            for (auto& script : scripts)
+                ScriptEngineManager::OnScriptAdded(newEntity, script);
+        }
         CopyComponentIfExists<CameraComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<SpriteRendererComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<RigidBody2DComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
@@ -832,7 +833,7 @@ namespace Prism
         CopyComponent<TransformComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<MeshComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<MaterialComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<ScriptComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<ScriptsComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<CameraComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<SpriteRendererComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<RigidBody2DComponent>(target->m_Registry, m_Registry, enttMap);
@@ -845,9 +846,28 @@ namespace Prism
         CopyComponent<CapsuleColliderComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<MeshColliderComponent>(target->m_Registry, m_Registry, enttMap);
 
-        auto* engine = ScriptEngineManager::Get();
-        if (engine->HasEntityScriptData(m_SceneID))
-            engine->CopyEntityScriptData(target->GetUUID(), m_SceneID);
+        // Copy script field data for all engines
+        for (auto lang : { ScriptLanguage::CSharp, ScriptLanguage::Python })
+        {
+            auto* engine = ScriptEngineManager::Get(lang);
+            if (engine && engine->HasEntityScriptData(m_SceneID))
+            {
+                {
+                    auto targetView = target->m_Registry.view<ScriptsComponent>();
+                    for (auto targetEntity : targetView)
+                    {
+                        Entity e = { targetEntity, target.Raw() };
+                        auto& scripts = e.GetComponent<ScriptsComponent>().Scripts;
+                        for (auto& script : scripts)
+                        {
+                            if (script.Language == lang)
+                                ScriptEngineManager::OnScriptAdded(e, script);
+                        }
+                    }
+                }
+                engine->CopyEntityScriptData(target->GetUUID(), m_SceneID);
+            }
+        }
 
         target->SetPhysics2DGravity(GetPhysics2DGravity());
     }

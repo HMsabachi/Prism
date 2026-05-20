@@ -5,6 +5,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 #include "Prism/Core/UUID.h"
+#include "Scripting/ScriptTypes.h"
 
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Mesh.h"
@@ -75,17 +76,24 @@ namespace Prism {
 		operator Ref<Prism::Mesh>() { return Mesh; }
 	};
 
-	struct ScriptComponent
+	struct ScriptInstance
 	{
 		std::string ModuleName;
+		ScriptLanguage Language = ScriptLanguage::CSharp;
+		bool Enabled = true;
 
-		ScriptComponent() = default;
-		ScriptComponent(const ScriptComponent& other)
-			: ModuleName(other.ModuleName) {
+		ScriptInstance() = default;
+		ScriptInstance(const std::string& moduleName, ScriptLanguage language = ScriptLanguage::CSharp)
+			: ModuleName(moduleName), Language(language) {
 		}
-		ScriptComponent(const std::string& moduleName)
-			: ModuleName(moduleName) {
-		}
+	};
+
+	struct ScriptsComponent
+	{
+		std::vector<ScriptInstance> Scripts;
+
+		ScriptsComponent() = default;
+		ScriptsComponent(const ScriptsComponent& other) = default;
 	};
 
 	struct CameraComponent

@@ -37,7 +37,7 @@ namespace Prism
 		RegisterManagedComponent<TagComponent>(engine);
 		RegisterManagedComponent<TransformComponent>(engine);
 		RegisterManagedComponent<MeshComponent>(engine);
-		RegisterManagedComponent<ScriptComponent>(engine);
+		RegisterManagedComponent<ScriptsComponent>(engine);
 		RegisterManagedComponent<CameraComponent>(engine);
 		RegisterManagedComponent<SpriteRendererComponent>(engine);
 		RegisterManagedComponent<MaterialComponent>(engine);

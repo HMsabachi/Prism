@@ -79,11 +79,11 @@ namespace Prism
 					Entity* a = (Entity*)(pairHeader.actors[0]->userData);
 					Entity* b = (Entity*)(pairHeader.actors[1]->userData);
 
-					if (a && a->HasComponent<ScriptComponent>() && ScriptEngineManager::Get()->ModuleExists(a->GetComponent<ScriptComponent>().ModuleName))
-						ScriptEngineManager::Get()->OnCollisionBegin(*a);
+					if (a && a->HasComponent<ScriptsComponent>())
+						ScriptEngineManager::OnCollisionBegin(*a);
 
-					if (b && b->HasComponent<ScriptComponent>() && ScriptEngineManager::Get()->ModuleExists(b->GetComponent<ScriptComponent>().ModuleName))
-						ScriptEngineManager::Get()->OnCollisionBegin(*b);
+					if (b && b->HasComponent<ScriptsComponent>())
+						ScriptEngineManager::OnCollisionBegin(*b);
 				}
 
 				if (pairs[i].flags & physx::PxContactPairFlag::eACTOR_PAIR_LOST_TOUCH)
@@ -91,11 +91,11 @@ namespace Prism
 					Entity* a = (Entity*)(pairHeader.actors[0]->userData);
 					Entity* b = (Entity*)(pairHeader.actors[1]->userData);
 
-					if (a && a->HasComponent<ScriptComponent>() && ScriptEngineManager::Get()->ModuleExists(a->GetComponent<ScriptComponent>().ModuleName))
-						ScriptEngineManager::Get()->OnCollisionEnd(*a);
+					if (a && a->HasComponent<ScriptsComponent>())
+						ScriptEngineManager::OnCollisionEnd(*a);
 
-					if (b && b->HasComponent<ScriptComponent>() && ScriptEngineManager::Get()->ModuleExists(b->GetComponent<ScriptComponent>().ModuleName))
-						ScriptEngineManager::Get()->OnCollisionEnd(*b);
+					if (b && b->HasComponent<ScriptsComponent>())
+						ScriptEngineManager::OnCollisionEnd(*b);
 				}
 			}
 		}

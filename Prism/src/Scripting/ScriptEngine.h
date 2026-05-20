@@ -1,18 +1,13 @@
 #pragma once
 #include "Prism/Scene/Components.h"
 #include "Prism/Scene/Entity.h"
+#include "Scripting/ScriptTypes.h"
 
 namespace Prism
 {
 	enum class FieldType
 	{
 		None = 0, Float, Int, UnsignedInt, String, Vec2, Vec3, Vec4
-	};
-
-	enum class ScriptLanguage : uint32_t
-	{
-		CSharp = 0,
-		Python = 1
 	};
 
 	struct PublicFieldInfo
@@ -44,19 +39,19 @@ namespace Prism
 		virtual void CopyEntityScriptData(UUID dst, UUID src) = 0;
 		virtual bool HasEntityScriptData(UUID sceneID) = 0;
 
-		// Entity lifecycle
-		virtual void InitScriptEntity(Entity entity) = 0;
+		// Entity lifecycle (need explicit moduleName for multi-script support)
+		virtual void InitScriptEntity(Entity entity, const std::string& moduleName) = 0;
 		virtual void ShutdownScriptEntity(Entity entity, const std::string& moduleName) = 0;
-		virtual void InstantiateEntityClass(Entity entity) = 0;
+		virtual void InstantiateEntityClass(Entity entity, const std::string& moduleName) = 0;
 		virtual bool ModuleExists(const std::string& moduleName) = 0;
 
-		virtual void OnCreateEntity(Entity entity) = 0;
-		virtual void OnCreateEntity(UUID sceneID, UUID entityID) = 0;
-		virtual void OnUpdateEntity(UUID sceneID, UUID entityID, float ts) = 0;
-		virtual void OnFixedUpdateEntity(UUID sceneID, UUID entityID) = 0;
+		virtual void OnCreateEntity(Entity entity, const std::string& moduleName) = 0;
+		virtual void OnCreateEntity(UUID sceneID, UUID entityID, const std::string& moduleName) = 0;
+		virtual void OnUpdateEntity(UUID sceneID, UUID entityID, const std::string& moduleName, float ts) = 0;
+		virtual void OnFixedUpdateEntity(UUID sceneID, UUID entityID, const std::string& moduleName) = 0;
 		virtual void OnScriptComponentDestroyed(UUID sceneID, UUID entityID) = 0;
 
-		// Collision callbacks
+		// Collision callbacks (iterates all scripts on entity internally)
 		virtual void OnCollision2DBegin(Entity entity) = 0;
 		virtual void OnCollision2DBegin(UUID sceneID, UUID entityID) = 0;
 		virtual void OnCollision2DEnd(Entity entity) = 0;
@@ -69,7 +64,7 @@ namespace Prism
 		// Debug
 		virtual void OnImGuiRender() = 0;
 
-		// 字段访问
+		// 字段访问（已有 moduleName 参数，保持不变）
 		virtual uint32_t GetFieldCount(UUID sceneID, UUID entityID, const std::string& moduleName) = 0;
 		virtual bool GetFieldInfo(UUID sceneID, UUID entityID, const std::string& moduleName, uint32_t index, PublicFieldInfo& outInfo) = 0;
 		virtual PublicField* GetField(UUID sceneID, UUID entityID, const std::string& moduleName, const std::string& fieldName) = 0;

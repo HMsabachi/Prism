@@ -65,35 +65,35 @@ namespace Prism
 	class CSharpPublicField : public PublicField
 	{
 	public:
-		CSharpPublicField(const std::string& name, FieldType type, EntityInstance* entityInstance)
-			: PublicField(name, type), m_EntityInstance(entityInstance) {}
+		CSharpPublicField(const std::string& name, FieldType type, EntityScriptInstance* entityScript)
+			: PublicField(name, type), m_EntityScript(entityScript) {}
 
 		bool IsRuntimeAvailable() const override
 		{
-			return m_EntityInstance && m_EntityInstance->Object && m_EntityInstance->Object->IsValid();
+			return m_EntityScript && m_EntityScript->Object && m_EntityScript->Object->IsValid();
 		}
 
 		void CopyStoredValueToRuntime() override
 		{
-			PR_CORE_ASSERT(m_EntityInstance && m_EntityInstance->Object && m_EntityInstance->Object->IsValid());
-			m_EntityInstance->Object->SetFieldValueRaw(GetName(), const_cast<uint8_t*>(m_StoredValueBuffer));
+			PR_CORE_ASSERT(m_EntityScript && m_EntityScript->Object && m_EntityScript->Object->IsValid());
+			m_EntityScript->Object->SetFieldValueRaw(GetName(), const_cast<uint8_t*>(m_StoredValueBuffer));
 		}
 
 	protected:
 		void GetRuntimeValue_Internal(void* outValue) const override
 		{
-			PR_CORE_ASSERT(m_EntityInstance && m_EntityInstance->Object && m_EntityInstance->Object->IsValid());
-			m_EntityInstance->Object->GetFieldValueRaw(GetName(), outValue);
+			PR_CORE_ASSERT(m_EntityScript && m_EntityScript->Object && m_EntityScript->Object->IsValid());
+			m_EntityScript->Object->GetFieldValueRaw(GetName(), outValue);
 		}
 
 		void SetRuntimeValue_Internal(const void* value) override
 		{
-			PR_CORE_ASSERT(m_EntityInstance && m_EntityInstance->Object && m_EntityInstance->Object->IsValid());
-			m_EntityInstance->Object->SetFieldValueRaw(GetName(), const_cast<void*>(value));
+			PR_CORE_ASSERT(m_EntityScript && m_EntityScript->Object && m_EntityScript->Object->IsValid());
+			m_EntityScript->Object->SetFieldValueRaw(GetName(), const_cast<void*>(value));
 		}
 
 	private:
-		EntityInstance* m_EntityInstance = nullptr;
+		EntityScriptInstance* m_EntityScript = nullptr;
 	};
 
 	CSharpScriptEngine::CSharpScriptEngine()
@@ -168,7 +168,11 @@ namespace Prism
 				{
 					const auto& entityMap = scene->GetEntityMap();
 					PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
-					InitScriptEntity(entityMap.at(entityID));
+					// Re-init all scripts for this entity
+					for (auto& [moduleName, script] : entityInstanceData.Scripts)
+					{
+						InitScriptEntity(entityMap.at(entityID), moduleName);
+					}
 				}
 			}
 		}
@@ -180,8 +184,11 @@ namespace Prism
 		{
 			for (auto& [entityID, entityInstanceData] : m_EntityInstanceMap.at(sceneID))
 			{
-				if (entityInstanceData.Instance.Object)
-					entityInstanceData.Instance.Object->Destroy();
+				for (auto& [moduleName, script] : entityInstanceData.Scripts)
+				{
+					if (script && script->Object)
+						script->Object->Destroy();
+				}
 			}
 			m_EntityInstanceMap.at(sceneID).clear();
 			m_EntityInstanceMap.erase(sceneID);
@@ -228,30 +235,33 @@ namespace Prism
 		return m_EntityInstanceMap.find(sceneID) != m_EntityInstanceMap.end();
 	}
 
-	void CSharpScriptEngine::OnCreateEntity(Entity entity)
+	void CSharpScriptEngine::OnCreateEntity(Entity entity, const std::string& moduleName)
 	{
-		OnCreateEntity(entity.GetSceneUUID(), entity.GetComponent<IDComponent>().ID);
+		OnCreateEntity(entity.GetSceneUUID(), entity.GetComponent<IDComponent>().ID, moduleName);
 	}
 
-	void CSharpScriptEngine::OnCreateEntity(UUID sceneID, UUID entityID)
+	void CSharpScriptEngine::OnCreateEntity(UUID sceneID, UUID entityID, const std::string& moduleName)
 	{
 		PR_PROFILE_FUNCTION();
-		EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
-		entityInstance.Object->TryInvokeMethod("OnCreate");
+		EntityScriptInstance& entityScript = GetEntityScriptInstance(sceneID, entityID, moduleName);
+		if (entityScript.Object)
+			entityScript.Object->TryInvokeMethod("OnCreate");
 	}
 
-	void CSharpScriptEngine::OnUpdateEntity(UUID sceneID, UUID entityID, float ts)
+	void CSharpScriptEngine::OnUpdateEntity(UUID sceneID, UUID entityID, const std::string& moduleName, float ts)
 	{
 		PR_PROFILE_FUNCTION();
-		EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
-		entityInstance.Object->TryInvokeMethod("OnUpdate");
+		EntityScriptInstance& entityScript = GetEntityScriptInstance(sceneID, entityID, moduleName);
+		if (entityScript.Object)
+			entityScript.Object->TryInvokeMethod("OnUpdate");
 	}
 
-	void CSharpScriptEngine::OnFixedUpdateEntity(UUID sceneID, UUID entityID)
+	void CSharpScriptEngine::OnFixedUpdateEntity(UUID sceneID, UUID entityID, const std::string& moduleName)
 	{
 		PR_PROFILE_FUNCTION();
-		EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
-		entityInstance.Object->TryInvokeMethod("OnFixedUpdate");
+		EntityScriptInstance& entityScript = GetEntityScriptInstance(sceneID, entityID, moduleName);
+		if (entityScript.Object)
+			entityScript.Object->TryInvokeMethod("OnFixedUpdate");
 	}
 
 	void CSharpScriptEngine::OnCollision2DBegin(Entity entity)
@@ -262,8 +272,12 @@ namespace Prism
 	void CSharpScriptEngine::OnCollision2DBegin(UUID sceneID, UUID entityID)
 	{
 		PR_PROFILE_FUNCTION();
-		EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
-		entityInstance.Object->InvokeMethod("OnCollision2DBegin", 5.0f);
+		EntityInstanceData& entityData = GetEntityInstanceData(sceneID, entityID);
+		for (auto& [moduleName, script] : entityData.Scripts)
+		{
+			if (script && script->Object)
+				script->Object->InvokeMethod("OnCollision2DBegin", 5.0f);
+		}
 	}
 
 	void CSharpScriptEngine::OnCollision2DEnd(Entity entity)
@@ -274,8 +288,12 @@ namespace Prism
 	void CSharpScriptEngine::OnCollision2DEnd(UUID sceneID, UUID entityID)
 	{
 		PR_PROFILE_FUNCTION();
-		EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
-		entityInstance.Object->InvokeMethod("OnCollision2DEnd", 5.0f);
+		EntityInstanceData& entityData = GetEntityInstanceData(sceneID, entityID);
+		for (auto& [moduleName, script] : entityData.Scripts)
+		{
+			if (script && script->Object)
+				script->Object->InvokeMethod("OnCollision2DEnd", 5.0f);
+		}
 	}
 
 	void CSharpScriptEngine::OnCollisionBegin(Entity entity)
@@ -286,8 +304,12 @@ namespace Prism
 	void CSharpScriptEngine::OnCollisionBegin(UUID sceneID, UUID entityID)
 	{
 		PR_PROFILE_FUNCTION();
-		EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
-		entityInstance.Object->InvokeMethod("OnCollisionBegin", 5.0f);
+		EntityInstanceData& entityData = GetEntityInstanceData(sceneID, entityID);
+		for (auto& [moduleName, script] : entityData.Scripts)
+		{
+			if (script && script->Object)
+				script->Object->InvokeMethod("OnCollisionBegin", 5.0f);
+		}
 	}
 
 	void CSharpScriptEngine::OnCollisionEnd(Entity entity)
@@ -298,8 +320,12 @@ namespace Prism
 	void CSharpScriptEngine::OnCollisionEnd(UUID sceneID, UUID entityID)
 	{
 		PR_PROFILE_FUNCTION();
-		EntityInstance& entityInstance = GetEntityInstanceData(sceneID, entityID).Instance;
-		entityInstance.Object->InvokeMethod("OnCollisionEnd", 5.0f);
+		EntityInstanceData& entityData = GetEntityInstanceData(sceneID, entityID);
+		for (auto& [moduleName, script] : entityData.Scripts)
+		{
+			if (script && script->Object)
+				script->Object->InvokeMethod("OnCollisionEnd", 5.0f);
+		}
 	}
 
 	void CSharpScriptEngine::OnScriptComponentDestroyed(UUID sceneID, UUID entityID)
@@ -315,14 +341,16 @@ namespace Prism
 		return m_AppAssembly.GetType(moduleName);
 	}
 
-	void CSharpScriptEngine::InitScriptEntity(Entity entity)
+	void CSharpScriptEngine::InitScriptEntity(Entity entity, const std::string& moduleName)
 	{
 		PR_PROFILE_FUNCTION();
 		Scene* scene = entity.GetScene();
 		UUID id = entity.GetComponent<IDComponent>().ID;
-		auto& moduleName = entity.GetComponent<ScriptComponent>().ModuleName;
 		if (moduleName.empty())
 			return;
+
+		// 先注册实体到 map（使 OnScriptAdded 始终有效，GetOrCreateField 的断言能通过）
+		EntityInstanceData& entityInstanceData = m_EntityInstanceMap[scene->GetUUID()][id];
 
 		if (!ModuleExists(moduleName))
 		{
@@ -333,9 +361,21 @@ namespace Prism
 		Rolky::Type& scriptClass = m_EntityClassMap[moduleName];
 		scriptClass = m_AppAssembly.GetType(moduleName);
 
-		EntityInstanceData& entityInstanceData = m_EntityInstanceMap[scene->GetUUID()][id];
-		EntityInstance& entityInstance = entityInstanceData.Instance;
-		entityInstance.ScriptClass = &scriptClass;
+		auto& entityScript = entityInstanceData.Scripts[moduleName];
+		if (!entityScript)
+			entityScript = std::make_unique<EntityScriptInstance>();
+		entityScript->ScriptClass = &scriptClass;
+
+		// Detect which methods are implemented
+		entityScript->HasMethods = 0;
+		auto methods = scriptClass.GetMethods();
+		for (auto& method : methods)
+		{
+			if (method.GetName() == "OnCreate") entityScript->HasMethods |= Script_OnCreate;
+			if (method.GetName() == "OnUpdate") entityScript->HasMethods |= Script_OnUpdate;
+			if (method.GetName() == "OnFixedUpdate") entityScript->HasMethods |= Script_OnFixedUpdate;
+		}
+
 		ScriptModuleFieldMap& moduleFieldMap = entityInstanceData.ModuleFieldMap;
 		auto& fieldMap = moduleFieldMap[moduleName];
 
@@ -361,7 +401,7 @@ namespace Prism
 					}
 					else
 					{
-						auto prismField = std::make_unique<CSharpPublicField>(field.GetName(), prismFieldType, &entityInstance);
+						auto prismField = std::make_unique<CSharpPublicField>(field.GetName(), prismFieldType, entityScript.get());
 
 						temp.GetFieldValueRaw((std::string)field.GetName(), defaultValue);
 						prismField->SetStoredValueRaw(defaultValue);
@@ -376,25 +416,27 @@ namespace Prism
 	void CSharpScriptEngine::ShutdownScriptEntity(Entity entity, const std::string& moduleName)
 	{
 		EntityInstanceData& entityInstanceData = GetEntityInstanceData(entity.GetSceneUUID(), entity.GetUUID());
-		ScriptModuleFieldMap& moduleFieldMap = entityInstanceData.ModuleFieldMap;
-		if (moduleFieldMap.find(moduleName) != moduleFieldMap.end())
-			moduleFieldMap.erase(moduleName);
+		if (entityInstanceData.Scripts.find(moduleName) != entityInstanceData.Scripts.end())
+			entityInstanceData.Scripts.erase(moduleName);
+		if (entityInstanceData.ModuleFieldMap.find(moduleName) != entityInstanceData.ModuleFieldMap.end())
+			entityInstanceData.ModuleFieldMap.erase(moduleName);
 	}
 
-	void CSharpScriptEngine::InstantiateEntityClass(Entity entity)
+	void CSharpScriptEngine::InstantiateEntityClass(Entity entity, const std::string& moduleName)
 	{
 		PR_PROFILE_FUNCTION();
 		Scene* scene = entity.GetScene();
 		UUID id = entity.GetComponent<IDComponent>().ID;
-		auto& moduleName = entity.GetComponent<ScriptComponent>().ModuleName;
 
 		EntityInstanceData& entityInstanceData = GetEntityInstanceData(scene->GetUUID(), id);
-		EntityInstance& entityInstance = entityInstanceData.Instance;
-		PR_CORE_ASSERT(entityInstance.ScriptClass);
+		auto it = entityInstanceData.Scripts.find(moduleName);
+		PR_CORE_ASSERT(it != entityInstanceData.Scripts.end());
+		EntityScriptInstance& entityScript = *it->second;
+		PR_CORE_ASSERT(entityScript.ScriptClass);
 
-		entityInstance.Object = std::make_unique<Rolky::ManagedObject>();
-		*entityInstance.Object = std::move(entityInstance.ScriptClass->CreateInstance());
-		entityInstance.Object->SetPropertyValue("ID", id);
+		entityScript.Object = std::make_unique<Rolky::ManagedObject>();
+		*entityScript.Object = std::move(entityScript.ScriptClass->CreateInstance());
+		entityScript.Object->SetPropertyValue("ID", id);
 
 		// 将所有公共字段设置为适当的值
 		ScriptModuleFieldMap& moduleFieldMap = entityInstanceData.ModuleFieldMap;
@@ -405,7 +447,7 @@ namespace Prism
 				field->CopyStoredValueToRuntime();
 		}
 
-		OnCreateEntity(entity);
+		OnCreateEntity(entity, moduleName);
 	}
 
 	EntityInstanceData& CSharpScriptEngine::GetEntityInstanceData(UUID sceneID, UUID entityID)
@@ -414,6 +456,14 @@ namespace Prism
 		auto& entityIDMap = m_EntityInstanceMap.at(sceneID);
 		PR_CORE_ASSERT(entityIDMap.find(entityID) != entityIDMap.end(), "Invalid entity ID!");
 		return entityIDMap.at(entityID);
+	}
+
+	EntityScriptInstance& CSharpScriptEngine::GetEntityScriptInstance(UUID sceneID, UUID entityID, const std::string& moduleName)
+	{
+		EntityInstanceData& entityData = GetEntityInstanceData(sceneID, entityID);
+		auto it = entityData.Scripts.find(moduleName);
+		PR_CORE_ASSERT(it != entityData.Scripts.end(), "Script module '{0}' not found for entity!", moduleName);
+		return *it->second;
 	}
 
 	EntityInstanceMap& CSharpScriptEngine::GetEntityInstanceMap()
@@ -445,16 +495,16 @@ namespace Prism
 					opened = ImGui::TreeNode((void*)(uint64_t)entityID, "%s (%llx)", entityName.c_str(), entityID);
 					if (opened)
 					{
-						for (auto& [moduleName, fieldMap] : entityInstanceData.ModuleFieldMap)
+						for (auto& [moduleName, script] : entityInstanceData.Scripts)
 						{
 							opened = ImGui::TreeNode(moduleName.c_str());
 							if (opened)
 							{
-								for (auto& [fieldName, field] : fieldMap)
+								if (entityInstanceData.ModuleFieldMap.find(moduleName) != entityInstanceData.ModuleFieldMap.end())
 								{
-									opened = ImGui::TreeNodeEx((void*)field.get(), ImGuiTreeNodeFlags_Leaf, fieldName.c_str());
-									if (opened)
+									for (auto& [fieldName, field] : entityInstanceData.ModuleFieldMap.at(moduleName))
 									{
+										ImGui::TreeNodeEx((void*)field.get(), ImGuiTreeNodeFlags_Leaf, fieldName.c_str());
 										ImGui::TreePop();
 									}
 								}
@@ -523,12 +573,20 @@ namespace Prism
 	PublicField* CSharpScriptEngine::GetOrCreateField(UUID sceneID, UUID entityID, const std::string& moduleName, const std::string& fieldName, FieldType type)
 	{
 		auto& entityInstanceData = GetEntityInstanceData(sceneID, entityID);
+		// Ensure the script instance exists
+		auto scriptIt = entityInstanceData.Scripts.find(moduleName);
+		if (scriptIt == entityInstanceData.Scripts.end())
+		{
+			auto script = std::make_unique<EntityScriptInstance>();
+			scriptIt = entityInstanceData.Scripts.emplace(moduleName, std::move(script)).first;
+		}
+
 		auto& fields = entityInstanceData.ModuleFieldMap[moduleName];
 		auto it = fields.find(fieldName);
 		if (it != fields.end())
 			return it->second.get();
 
-		auto field = std::make_unique<CSharpPublicField>(fieldName, type, &entityInstanceData.Instance);
+		auto field = std::make_unique<CSharpPublicField>(fieldName, type, scriptIt->second.get());
 		auto* ptr = field.get();
 		fields[fieldName] = std::move(field);
 		return ptr;

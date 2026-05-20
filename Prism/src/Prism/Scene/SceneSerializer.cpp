@@ -184,57 +184,66 @@ namespace Prism {
 			out << YAML::EndMap; // TransformComponent
 		}
 
-		if (entity.HasComponent<ScriptComponent>())
+		if (entity.HasComponent<ScriptsComponent>())
 		{
-			out << YAML::Key << "ScriptComponent";
-			out << YAML::BeginMap; // ScriptComponent
+			out << YAML::Key << "ScriptsComponent";
+			out << YAML::Value << YAML::BeginSeq;
 
-			auto& moduleName = entity.GetComponent<ScriptComponent>().ModuleName;
-			out << YAML::Key << "ModuleName" << YAML::Value << moduleName;
+			auto& scripts = entity.GetComponent<ScriptsComponent>().Scripts;
+			for (const auto& script : scripts)
+			{
+				out << YAML::BeginMap; // Script
+				out << YAML::Key << "ModuleName" << YAML::Value << script.ModuleName;
+				out << YAML::Key << "Language" << YAML::Value << (uint32_t)script.Language;
 
-			auto* engine = ScriptEngineManager::Get();
-				uint32_t fieldCount = engine->GetFieldCount(entity.GetSceneUUID(), uuid, moduleName);
-				if (fieldCount > 0)
+				auto* engine = ScriptEngineManager::Get(script.Language);
+				if (engine)
 				{
-					out << YAML::Key << "StoredFields" << YAML::Value;
-					out << YAML::BeginSeq;
-					for (uint32_t i = 0; i < fieldCount; i++)
+					uint32_t fieldCount = engine->GetFieldCount(entity.GetSceneUUID(), uuid, script.ModuleName);
+					if (fieldCount > 0)
 					{
-						PublicFieldInfo info;
-						engine->GetFieldInfo(entity.GetSceneUUID(), uuid, moduleName, i, info);
-						out << YAML::BeginMap; // Field
-						out << YAML::Key << "Name" << YAML::Value << info.Name;
-						out << YAML::Key << "Type" << YAML::Value << (uint32_t)info.Type;
-						out << YAML::Key << "Data" << YAML::Value;
-
-						auto* field = engine->GetField(entity.GetSceneUUID(), uuid, moduleName, info.Name);
-						switch (info.Type)
+						out << YAML::Key << "StoredFields" << YAML::Value;
+						out << YAML::BeginSeq;
+						for (uint32_t i = 0; i < fieldCount; i++)
 						{
-						case FieldType::Int:
-							out << field->GetStoredValue<int32_t>();
-							break;
-						case FieldType::UnsignedInt:
-							out << field->GetStoredValue<uint32_t>();
-							break;
-						case FieldType::Float:
-							out << field->GetStoredValue<float>();
-							break;
-						case FieldType::Vec2:
-							out << field->GetStoredValue<glm::vec2>();
-							break;
-						case FieldType::Vec3:
-							out << field->GetStoredValue<glm::vec3>();
-							break;
-						case FieldType::Vec4:
-							out << field->GetStoredValue<glm::vec4>();
-							break;
+							PublicFieldInfo info;
+							engine->GetFieldInfo(entity.GetSceneUUID(), uuid, script.ModuleName, i, info);
+							out << YAML::BeginMap; // Field
+							out << YAML::Key << "Name" << YAML::Value << info.Name;
+							out << YAML::Key << "Type" << YAML::Value << (uint32_t)info.Type;
+							out << YAML::Key << "Data" << YAML::Value;
+
+							auto* field = engine->GetField(entity.GetSceneUUID(), uuid, script.ModuleName, info.Name);
+							switch (info.Type)
+							{
+							case FieldType::Int:
+								out << field->GetStoredValue<int32_t>();
+								break;
+							case FieldType::UnsignedInt:
+								out << field->GetStoredValue<uint32_t>();
+								break;
+							case FieldType::Float:
+								out << field->GetStoredValue<float>();
+								break;
+							case FieldType::Vec2:
+								out << field->GetStoredValue<glm::vec2>();
+								break;
+							case FieldType::Vec3:
+								out << field->GetStoredValue<glm::vec3>();
+								break;
+							case FieldType::Vec4:
+								out << field->GetStoredValue<glm::vec4>();
+								break;
+							}
+							out << YAML::EndMap; // Field
 						}
-						out << YAML::EndMap; // Field
+						out << YAML::EndSeq;
 					}
-					out << YAML::EndSeq;
 				}
 
-			out << YAML::EndMap; // ScriptComponent
+				out << YAML::EndMap; // Script
+			}
+			out << YAML::EndSeq;
 		}
 
 		if (entity.HasComponent<MeshComponent>())
@@ -526,52 +535,88 @@ namespace Prism {
 					PR_CORE_INFO("    Scale: {0}, {1}, {2}", scale.x, scale.y, scale.z);
 				}
 
-				auto scriptComponent = entity["ScriptComponent"];
-				if (scriptComponent)
+				// Helper lambda for deserializing stored fields
+				auto deserializeFields = [&](const YAML::Node& storedFields, ScriptEngine* engine, const std::string& moduleName)
 				{
-					std::string moduleName = scriptComponent["ModuleName"].as<std::string>();
-					deserializedEntity.AddComponent<ScriptComponent>(moduleName);
-
-					PR_CORE_INFO("  Script Module: {0}", moduleName);
-
-					if (ScriptEngineManager::Get()->ModuleExists(moduleName))
+					if (!storedFields || !engine)
+						return;
+					for (auto field : storedFields)
 					{
-						auto storedFields = scriptComponent["StoredFields"];
-						if (storedFields)
+						std::string name = field["Name"].as<std::string>();
+						FieldType type = (FieldType)field["Type"].as<uint32_t>();
+						auto dataNode = field["Data"];
+						auto* f = engine->GetOrCreateField(m_Scene->GetUUID(), uuid, moduleName, name, type);
+						switch (type)
 						{
-							for (auto field : storedFields)
-							{
-								std::string name = field["Name"].as<std::string>();
-								FieldType type = (FieldType)field["Type"].as<uint32_t>();
-								auto* engine = ScriptEngineManager::Get();
-								auto dataNode = field["Data"];
-								auto* f = engine->GetOrCreateField(m_Scene->GetUUID(), uuid, moduleName, name, type);
-								switch (type)
-								{
-								case FieldType::Float:
-									f->SetStoredValue(dataNode.as<float>());
-									break;
-								case FieldType::Int:
-									f->SetStoredValue(dataNode.as<int32_t>());
-									break;
-								case FieldType::UnsignedInt:
-									f->SetStoredValue(dataNode.as<uint32_t>());
-									break;
-								case FieldType::String:
-									PR_CORE_ASSERT(false, "Unimplemented");
-									break;
-								case FieldType::Vec2:
-									f->SetStoredValue(dataNode.as<glm::vec2>());
-									break;
-								case FieldType::Vec3:
-									f->SetStoredValue(dataNode.as<glm::vec3>());
-									break;
-								case FieldType::Vec4:
-									f->SetStoredValue(dataNode.as<glm::vec4>());
-									break;
-								}
-							}
+						case FieldType::Float:
+							f->SetStoredValue(dataNode.as<float>());
+							break;
+						case FieldType::Int:
+							f->SetStoredValue(dataNode.as<int32_t>());
+							break;
+						case FieldType::UnsignedInt:
+							f->SetStoredValue(dataNode.as<uint32_t>());
+							break;
+						case FieldType::String:
+							PR_CORE_ASSERT(false, "Unimplemented");
+							break;
+						case FieldType::Vec2:
+							f->SetStoredValue(dataNode.as<glm::vec2>());
+							break;
+						case FieldType::Vec3:
+							f->SetStoredValue(dataNode.as<glm::vec3>());
+							break;
+						case FieldType::Vec4:
+							f->SetStoredValue(dataNode.as<glm::vec4>());
+							break;
 						}
+					}
+				};
+
+				// New format: ScriptsComponent (sequence)
+				auto scriptsNode = entity["ScriptsComponent"];
+				if (scriptsNode)
+				{
+					if (!deserializedEntity.HasComponent<ScriptsComponent>())
+						deserializedEntity.AddComponent<ScriptsComponent>();
+
+					auto& scripts = deserializedEntity.GetComponent<ScriptsComponent>().Scripts;
+
+					for (auto scriptNode : scriptsNode)
+					{
+						std::string moduleName = scriptNode["ModuleName"].as<std::string>();
+						ScriptLanguage language = (ScriptLanguage)scriptNode["Language"].as<uint32_t>();
+
+						scripts.emplace_back(moduleName, language);
+						ScriptEngineManager::OnScriptAdded(deserializedEntity, scripts.back());
+
+						PR_CORE_INFO("  Script: Module={0}, Language={1}", moduleName, (uint32_t)language);
+
+						auto* engine = ScriptEngineManager::Get(language);
+						auto storedFields = scriptNode["StoredFields"];
+						deserializeFields(storedFields, engine, moduleName);
+					}
+				}
+				else
+				{
+					// Backward compat: old ScriptComponent format
+					auto scriptComponent = entity["ScriptComponent"];
+					if (scriptComponent)
+					{
+						std::string moduleName = scriptComponent["ModuleName"].as<std::string>();
+
+						if (!deserializedEntity.HasComponent<ScriptsComponent>())
+							deserializedEntity.AddComponent<ScriptsComponent>();
+
+						auto& scripts = deserializedEntity.GetComponent<ScriptsComponent>().Scripts;
+						scripts.emplace_back(moduleName, ScriptLanguage::CSharp);
+						ScriptEngineManager::OnScriptAdded(deserializedEntity, scripts.back());
+
+						PR_CORE_INFO("  Script Module (legacy): {0}", moduleName);
+
+						auto* engine = ScriptEngineManager::Get(ScriptLanguage::CSharp);
+						auto storedFields = scriptComponent["StoredFields"];
+						deserializeFields(storedFields, engine, moduleName);
 					}
 				}
 

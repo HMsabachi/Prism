@@ -29,7 +29,7 @@ namespace Prism {
 
 		static Entity GetEntityFromEntityID(uint64_t entityID)
 		{
-			Ref<Scene> scene = ScriptEngineManager::Get()->GetCurrentSceneContext();
+			Ref<Scene> scene = ScriptEngineManager::Get(ScriptLanguage::CSharp)->GetCurrentSceneContext();
 			PR_CORE_ASSERT(scene, "No active scene!");
 			const auto& entityMap = scene->GetEntityMap();
 			PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
@@ -134,7 +134,7 @@ namespace Prism {
 
 		uint64_t Prism_Entity_FindEntityByTag(Rolky::String tag)
 		{
-			Ref<Scene> scene = ScriptEngineManager::Get()->GetCurrentSceneContext();
+			Ref<Scene> scene = ScriptEngineManager::Get(ScriptLanguage::CSharp)->GetCurrentSceneContext();
 			PR_CORE_ASSERT(scene, "No active scene!");
 			std::string tagStr = tag;
 			Rolky::String::Free(tag);
@@ -309,7 +309,7 @@ namespace Prism {
 #pragma region MaterialComponent
 	Ref<MaterialInstance>* Prism_MaterialComponent_GetMaterial(uint64_t entityID)
 	{
-		Ref<Scene> scene = ScriptEngineManager::Get()->GetCurrentSceneContext();
+		Ref<Scene> scene = ScriptEngineManager::Get(ScriptLanguage::CSharp)->GetCurrentSceneContext();
 		PR_CORE_ASSERT(scene, "No active scene!");
 		const auto& entityMap = scene->GetEntityMap();
 		PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
@@ -320,7 +320,7 @@ namespace Prism {
 
 	void Prism_MaterialComponent_SetMaterial(uint64_t entityID, Ref<MaterialInstance>* materialInstance)
 	{
-		Ref<Scene> scene = ScriptEngineManager::Get()->GetCurrentSceneContext();
+		Ref<Scene> scene = ScriptEngineManager::Get(ScriptLanguage::CSharp)->GetCurrentSceneContext();
 		PR_CORE_ASSERT(scene, "No active scene!");
 		const auto& entityMap = scene->GetEntityMap();
 		PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
@@ -361,7 +361,7 @@ namespace Prism {
 
 		#pragma endregion
 
-		#pragma region RigidBodyComponent
+#pragma region RigidBodyComponent
 		void Prism_RigidBodyComponent_AddForce(uint64_t entityID, glm::vec3* force, int32_t forceMode)
 		{
 			Entity entity = GetEntityFromEntityID(entityID);

@@ -139,8 +139,7 @@ namespace Prism
         friend class SceneSerializer;
         friend class ContactListener;
 
-        friend void OnScriptComponentConstruct(entt::registry& registry, entt::entity entity);
-        friend void OnScriptComponentDestroy(entt::registry& registry, entt::entity entity);
+        // Script lifecycle is now handled manually via ScriptsComponent
     };
 
 }

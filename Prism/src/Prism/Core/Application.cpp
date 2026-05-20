@@ -123,7 +123,7 @@ namespace Prism
         csharpEngine->Initialize();
         csharpEngine->LoadEngineAssembly("Assets/scripts/Prism.Scripting.dll");
         csharpEngine->LoadAppAssembly("Assets/scripts/ExampleApp.dll");
-        ScriptEngineManager::Register(std::move(csharpEngine));
+        ScriptEngineManager::Register(ScriptLanguage::CSharp, std::move(csharpEngine));
     }
 
     void Application::OnShutdown()
