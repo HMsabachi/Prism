@@ -1,4 +1,4 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "ScriptWrappers.h"
 #include "Prism/Core/Math/Noise.h"
 
@@ -8,7 +8,7 @@
 #include "Prism/Scene/Components.h"
 
 #include "Prism/Renderer/Renderer.h"
-#include "ScriptEngine.h"
+#include "Scripting/ScriptEngineManager.h"
 #include <glm/gtc/type_ptr.hpp>
 
 #include <Rolky/String.hpp>
@@ -29,7 +29,7 @@ namespace Prism {
 
 		static Entity GetEntityFromEntityID(uint64_t entityID)
 		{
-			Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
+			Ref<Scene> scene = ScriptEngineManager::Get()->GetCurrentSceneContext();
 			PR_CORE_ASSERT(scene, "No active scene!");
 			const auto& entityMap = scene->GetEntityMap();
 			PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
@@ -134,7 +134,7 @@ namespace Prism {
 
 		uint64_t Prism_Entity_FindEntityByTag(Rolky::String tag)
 		{
-			Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
+			Ref<Scene> scene = ScriptEngineManager::Get()->GetCurrentSceneContext();
 			PR_CORE_ASSERT(scene, "No active scene!");
 			std::string tagStr = tag;
 			Rolky::String::Free(tag);
@@ -165,7 +165,7 @@ namespace Prism {
 			glm::vec3 euler = glm::eulerAngles(transformComponent.Rotation);
 			memcpy(outRotation, &euler, sizeof(glm::vec3));
 		}
-		
+
 		void Prism_TransformComponent_GetScale(uint64_t entityID, glm::vec3* outScale)
 		{
 			Entity entity = GetEntityFromEntityID(entityID);
@@ -178,14 +178,14 @@ namespace Prism {
 			auto& transformComponent = entity.GetComponent<TransformComponent>();
 			transformComponent.Position = inPosition;
 		}
-		
+
 		void Prism_TransformComponent_SetRotation(uint64_t entityID, glm::vec3 inRotation)
 		{
 			Entity entity = GetEntityFromEntityID(entityID);
 			auto& transformComponent = entity.GetComponent<TransformComponent>();
 			transformComponent.Rotation = glm::quat(glm::radians(inRotation));
 		}
-		
+
 		void Prism_TransformComponent_SetScale(uint64_t entityID, glm::vec3 inScale)
 		{
 			Entity entity = GetEntityFromEntityID(entityID);
@@ -309,7 +309,7 @@ namespace Prism {
 #pragma region MaterialComponent
 	Ref<MaterialInstance>* Prism_MaterialComponent_GetMaterial(uint64_t entityID)
 	{
-		Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
+		Ref<Scene> scene = ScriptEngineManager::Get()->GetCurrentSceneContext();
 		PR_CORE_ASSERT(scene, "No active scene!");
 		const auto& entityMap = scene->GetEntityMap();
 		PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
@@ -320,7 +320,7 @@ namespace Prism {
 
 	void Prism_MaterialComponent_SetMaterial(uint64_t entityID, Ref<MaterialInstance>* materialInstance)
 	{
-		Ref<Scene> scene = ScriptEngine::GetCurrentSceneContext();
+		Ref<Scene> scene = ScriptEngineManager::Get()->GetCurrentSceneContext();
 		PR_CORE_ASSERT(scene, "No active scene!");
 		const auto& entityMap = scene->GetEntityMap();
 		PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
@@ -359,9 +359,9 @@ namespace Prism {
 			body->SetLinearVelocity(b2Vec2(velocity->x, velocity->y));
 		}
 
-	#pragma endregion
+		#pragma endregion
 
-	#pragma region RigidBodyComponent
+		#pragma region RigidBodyComponent
 		void Prism_RigidBodyComponent_AddForce(uint64_t entityID, glm::vec3* force, int32_t forceMode)
 		{
 			Entity entity = GetEntityFromEntityID(entityID);
@@ -425,7 +425,6 @@ namespace Prism {
 			std::string name = shaderName;
 			Rolky::String::Free(shaderName);
 			const auto& shader = Renderer::GetShaderLibrary()->Get(name);
-			//PR_CORE_ASSERT(shader, "Shader '{0}' not found!", name);
 			return new Ref<Material>(Material::Create(shader));
 		}
 

@@ -83,6 +83,7 @@ namespace Prism
 
 		UUID GetUUID() { return GetComponent<IDComponent>().ID; }
 		UUID GetSceneUUID() { return m_Scene->GetUUID(); }
+		Scene* GetScene() const { return m_Scene; }
 	private:
 		Entity(const std::string& name);
 	private:
@@ -91,7 +92,6 @@ namespace Prism
 
 		friend class Scene;
 		friend class SceneSerializer;
-		friend class ScriptEngine;
 	};
 
 }

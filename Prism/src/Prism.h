@@ -55,6 +55,7 @@
 
 // Scripting
 #include "Scripting/ScriptEngine.h"
+#include "Scripting/ScriptEngineManager.h"
 
 // ---------------------------------------------------
 

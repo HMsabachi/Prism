@@ -2,146 +2,95 @@
 #include "Prism/Scene/Components.h"
 #include "Prism/Scene/Entity.h"
 
-namespace Rolky
-{
-    struct HostInstance;
-    struct AssemblyLoadContext;
-    struct ManagedAssembly;
-    class FieldInfo;
-    class ManagedObject;
-    class Type;
-}
-
 namespace Prism
 {
-    enum class FieldType
-    {
-        None = 0, Float, Int, UnsignedInt, String, Vec2, Vec3, Vec4
-    };
+	enum class FieldType
+	{
+		None = 0, Float, Int, UnsignedInt, String, Vec2, Vec3, Vec4
+	};
 
-    struct EntityInstance
-    {
-        Rolky::Type* ScriptClass = nullptr;
-        std::unique_ptr<Rolky::ManagedObject> Object;
-        Scene* SceneInstance = nullptr;
-        uint32_t HasMethods;
-    };
+	enum class ScriptLanguage : uint32_t
+	{
+		CSharp = 0,
+		Python = 1
+	};
 
-    struct PublicField
+	struct PublicFieldInfo
     {
         std::string Name;
         FieldType Type;
-        PublicField(const std::string& name, FieldType type);
-        PublicField(const PublicField&) = delete;
-        PublicField(PublicField&& other) noexcept;
-        ~PublicField();
-
-        void CopyStoredValueToRuntime();
-        bool IsRuntimeAvailable() const;
-
-        template<typename T>
-        T GetStoredValue() const
-        {
-            T value;
-            GetStoredValue_Internal(&value);
-            return value;
-        }
-
-        template<typename T>
-        void SetStoredValue(T value) const
-        {
-            SetStoredValue_Internal(&value);
-        }
-
-        template<typename T>
-        T GetRuntimeValue() const
-        {
-            T value;
-            GetRuntimeValue_Internal(&value);
-            return value;
-        }
-
-        template<typename T>
-        void SetRuntimeValue(T value) const
-        {
-            SetRuntimeValue_Internal(&value);
-        }
-
-        void SetStoredValueRaw(void* src);
-    private:
-        EntityInstance* m_EntityInstance;
-        uint8_t* m_StoredValueBuffer = nullptr;
-
-        uint8_t* AllocateBuffer(FieldType type);
-        void SetStoredValue_Internal(void* value) const;
-        void GetStoredValue_Internal(void* outValue) const;
-        void SetRuntimeValue_Internal(void* value) const;
-        void GetRuntimeValue_Internal(void* outValue) const;
-
-        friend class ScriptEngine;
     };
+	class PublicField;
+	const char* FieldTypeToString(FieldType type);
 
-    using ScriptModuleFieldMap = std::unordered_map<std::string, std::unordered_map<std::string, PublicField>>;
+	class PRISM_API ScriptEngine
+	{
+	public:
+		virtual ~ScriptEngine() = default;
 
-    struct EntityInstanceData
-    {
-        EntityInstance Instance;
-        ScriptModuleFieldMap ModuleFieldMap;
-    };
+		// Lifecycle
+		virtual bool Initialize() = 0;
+		virtual void Shutdown() = 0;
 
-    using EntityInstanceMap = std::unordered_map<UUID, std::unordered_map<UUID, EntityInstanceData>>;
-    class PRISM_API ScriptEngine
-    {
-    public:
-        static bool Initialize();
+		// Assembly/module loading
+		virtual bool LoadEngineAssembly(const std::string& path) = 0;
+		virtual bool LoadAppAssembly(const std::string& path) = 0;
+		virtual void ReloadAssembly(const std::string& path) = 0;
 
-        static void Shutdown();
+		// Scene context
+		virtual void SetSceneContext(const Ref<Scene>& scene) = 0;
+		virtual const Ref<Scene>& GetCurrentSceneContext() = 0;
+		virtual void OnSceneDestruct(UUID sceneID) = 0;
+		virtual void CopyEntityScriptData(UUID dst, UUID src) = 0;
+		virtual bool HasEntityScriptData(UUID sceneID) = 0;
 
-        static bool LoadEngineAssembly(const std::string& assemblyPath);
-        static bool LoadAppAssembly(const std::string& assemblyPath);
+		// Entity lifecycle
+		virtual void InitScriptEntity(Entity entity) = 0;
+		virtual void ShutdownScriptEntity(Entity entity, const std::string& moduleName) = 0;
+		virtual void InstantiateEntityClass(Entity entity) = 0;
+		virtual bool ModuleExists(const std::string& moduleName) = 0;
 
-        static void OnSceneDestruct(UUID sceneID);
-        static void ReloadAssembly(const std::string& path);
+		virtual void OnCreateEntity(Entity entity) = 0;
+		virtual void OnCreateEntity(UUID sceneID, UUID entityID) = 0;
+		virtual void OnUpdateEntity(UUID sceneID, UUID entityID, float ts) = 0;
+		virtual void OnFixedUpdateEntity(UUID sceneID, UUID entityID) = 0;
+		virtual void OnScriptComponentDestroyed(UUID sceneID, UUID entityID) = 0;
 
-        static void SetSceneContext(const Ref<Scene>& scene);
-        static const Ref<Scene>& GetCurrentSceneContext();
+		// Collision callbacks
+		virtual void OnCollision2DBegin(Entity entity) = 0;
+		virtual void OnCollision2DBegin(UUID sceneID, UUID entityID) = 0;
+		virtual void OnCollision2DEnd(Entity entity) = 0;
+		virtual void OnCollision2DEnd(UUID sceneID, UUID entityID) = 0;
+		virtual void OnCollisionBegin(Entity entity) = 0;
+		virtual void OnCollisionBegin(UUID sceneID, UUID entityID) = 0;
+		virtual void OnCollisionEnd(Entity entity) = 0;
+		virtual void OnCollisionEnd(UUID sceneID, UUID entityID) = 0;
 
-        static void CopyEntityScriptData(UUID dst, UUID src);
+		// Debug
+		virtual void OnImGuiRender() = 0;
 
-        static void OnCreateEntity(Entity entity);
-        static void OnCreateEntity(UUID sceneID, UUID entityID);
-        static void OnUpdateEntity(UUID sceneID, UUID entityID, float ts);
-        static void OnFixedUpdateEntity(UUID sceneID, UUID entityID);
+		// 字段访问
+		virtual uint32_t GetFieldCount(UUID sceneID, UUID entityID, const std::string& moduleName) = 0;
+		virtual bool GetFieldInfo(UUID sceneID, UUID entityID, const std::string& moduleName, uint32_t index, PublicFieldInfo& outInfo) = 0;
+		virtual PublicField* GetField(UUID sceneID, UUID entityID, const std::string& moduleName, const std::string& fieldName) = 0;
+		virtual PublicField* GetOrCreateField(UUID sceneID, UUID entityID, const std::string& moduleName, const std::string& fieldName, FieldType type) = 0;
 
-        static void OnCollision2DBegin(Entity entity);
-        static void OnCollision2DBegin(UUID sceneID, UUID entityID);
-        static void OnCollision2DEnd(Entity entity);
-        static void OnCollision2DEnd(UUID sceneID, UUID entityID);
-
-        static void OnCollisionBegin(Entity entity);
-        static void OnCollisionBegin(UUID sceneID, UUID entityID);
-        static void OnCollisionEnd(Entity entity);
-        static void OnCollisionEnd(UUID sceneID, UUID entityID);
-
-        static void OnScriptComponentDestroyed(UUID sceneID, UUID entityID);
-
-        static bool ModuleExists(const std::string& moduleName);
-        static void InitScriptEntity(Entity entity);
-        static void ShutdownScriptEntity(Entity entity, const std::string& moduleName);
-        static void InstantiateEntityClass(Entity entity);
-
-        static EntityInstanceMap& GetEntityInstanceMap();
-        static EntityInstanceData& GetEntityInstanceData(UUID sceneID, UUID entityID);
-
-        // Debug
-        static void OnImGuiRender();
-    public:
-        static Rolky::ManagedAssembly& GetEngineAssembly();
-    private:
-        static std::unique_ptr<Rolky::HostInstance> m_Host;
-        static std::unique_ptr<Rolky::AssemblyLoadContext> m_LoadContext;
-
-        static void* s_HostHandle;
-        static void* s_AssemblyLoadContext;   
-    };
+		// Entity 便捷重载
+		uint32_t GetFieldCount(Entity entity, const std::string& moduleName)
+		{
+			return GetFieldCount(entity.GetSceneUUID(), entity.GetUUID(), moduleName);
+		}
+		bool GetFieldInfo(Entity entity, const std::string& moduleName, uint32_t index, PublicFieldInfo& outInfo)
+		{
+			return GetFieldInfo(entity.GetSceneUUID(), entity.GetUUID(), moduleName, index, outInfo);
+		}
+		PublicField* GetField(Entity entity, const std::string& moduleName, const std::string& fieldName)
+		{
+			return GetField(entity.GetSceneUUID(), entity.GetUUID(), moduleName, fieldName);
+		}
+		PublicField* GetOrCreateField(Entity entity, const std::string& moduleName, const std::string& fieldName, FieldType type)
+		{
+			return GetOrCreateField(entity.GetSceneUUID(), entity.GetUUID(), moduleName, fieldName, type);
+		}
+	};
 }

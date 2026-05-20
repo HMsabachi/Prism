@@ -1,20 +1,18 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "SceneHierarchyPanel.h"
 
 #include <imgui.h>
 
 #include "Prism/Core/Application.h"
 #include "Prism/Renderer/Mesh.h"
-#include "Scripting/ScriptEngine.h"
+#include "Scripting/ScriptEngineManager.h"
+#include "Scripting/PublicField.h"
 #include "Prism/Core/LanguageManager.h"
 #include <assimp/scene.h>
 
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/quaternion.hpp>
-#include <glm/gtx/matrix_decompose.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
-#include <Rolky/ManagedObject.hpp>
 
 // TODO:
 // - Eventually change imgui node IDs to be entity/asset GUID
@@ -859,90 +857,74 @@ namespace Prism {
 			{
 				BeginPropertyGrid();
 				std::string oldName = sc.ModuleName;
-				if (Property(TR("Module Name"), sc.ModuleName, !ScriptEngine::ModuleExists(sc.ModuleName))) // TODO: no live edit
+				if (Property(TR("Module Name"), sc.ModuleName, !ScriptEngineManager::Get()->ModuleExists(sc.ModuleName))) // TODO: no live edit
 				{
 					// Shutdown old script
-					if (ScriptEngine::ModuleExists(oldName))
-						ScriptEngine::ShutdownScriptEntity(entity, oldName);
+					if (ScriptEngineManager::Get()->ModuleExists(oldName))
+						ScriptEngineManager::Get()->ShutdownScriptEntity(entity, oldName);
 
-					if (ScriptEngine::ModuleExists(sc.ModuleName))
-						ScriptEngine::InitScriptEntity(entity);
+					if (ScriptEngineManager::Get()->ModuleExists(sc.ModuleName))
+						ScriptEngineManager::Get()->InitScriptEntity(entity);
 				}
 
-				// Public Fields
-				if (ScriptEngine::ModuleExists(sc.ModuleName))
+				if (ScriptEngineManager::Get()->ModuleExists(sc.ModuleName))
 				{
-					EntityInstanceData& entityInstanceData = ScriptEngine::GetEntityInstanceData(entity.GetSceneUUID(), id);
-					auto& moduleFieldMap = entityInstanceData.ModuleFieldMap;
-					if (moduleFieldMap.find(sc.ModuleName) != moduleFieldMap.end())
+					auto* engine = ScriptEngineManager::Get();
+					uint32_t fieldCount = engine->GetFieldCount(entity.GetSceneUUID(), id, sc.ModuleName);
+					for (uint32_t i = 0; i < fieldCount; i++)
 					{
-						auto& publicFields = moduleFieldMap.at(sc.ModuleName);
-						for (auto& [name, field] : publicFields)
+						PublicFieldInfo info;
+						engine->GetFieldInfo(entity.GetSceneUUID(), id, sc.ModuleName, i, info);
+
+						auto* field = engine->GetField(entity.GetSceneUUID(), id, sc.ModuleName, info.Name);
+						bool isRuntime = m_Context->m_IsPlaying && field->IsRuntimeAvailable();
+						switch (info.Type)
 						{
-							bool isRuntime = m_Context->m_IsPlaying && field.IsRuntimeAvailable();
-							switch (field.Type)
+						case FieldType::Int:
+						{
+							int value = isRuntime ? field->GetRuntimeValue<int>() : field->GetStoredValue<int>();
+							if (Property(info.Name.c_str(), value))
 							{
-							case FieldType::Int:
+								isRuntime ? field->SetRuntimeValue(value) : field->SetStoredValue(value);
+							}
+							break;
+						}
+						case FieldType::Float:
+						{
+							float value = isRuntime ? field->GetRuntimeValue<float>() : field->GetStoredValue<float>();
+							if (Property(info.Name.c_str(), value, 0.2f))
 							{
-								int value = isRuntime ? field.GetRuntimeValue<int>() : field.GetStoredValue<int>();
-								if (Property(field.Name.c_str(), value))
-								{
-									if (isRuntime)
-										field.SetRuntimeValue(value);
-									else
-										field.SetStoredValue(value);
-								}
-								break;
+								isRuntime ? field->SetRuntimeValue(value) : field->SetStoredValue(value);
 							}
-							case FieldType::Float:
+							break;
+						}
+						case FieldType::Vec2:
+						{
+							glm::vec2 value = isRuntime ? field->GetRuntimeValue<glm::vec2>() : field->GetStoredValue<glm::vec2>();
+							if (Property(info.Name.c_str(), value, 0.2f))
 							{
-								float value = isRuntime ? field.GetRuntimeValue<float>() : field.GetStoredValue<float>();
-								if (Property(field.Name.c_str(), value, 0.2f))
-								{
-									if (isRuntime)
-										field.SetRuntimeValue(value);
-									else
-										field.SetStoredValue(value);
-								}
-								break;
+								isRuntime ? field->SetRuntimeValue(value) : field->SetStoredValue(value);
 							}
-							case FieldType::Vec2:
+							break;
+						}
+						case FieldType::Vec3:
+						{
+							glm::vec3 value = isRuntime ? field->GetRuntimeValue<glm::vec3>() : field->GetStoredValue<glm::vec3>();
+							if (Property(info.Name.c_str(), value, 0.2f))
 							{
-								glm::vec2 value = isRuntime ? field.GetRuntimeValue<glm::vec2>() : field.GetStoredValue<glm::vec2>();
-								if (Property(field.Name.c_str(), value, 0.2f))
-								{
-									if (isRuntime)
-										field.SetRuntimeValue(value);
-									else
-										field.SetStoredValue(value);
-								}
-								break;
+								isRuntime ? field->SetRuntimeValue(value) : field->SetStoredValue(value);
 							}
-							case FieldType::Vec3:
+							break;
+						}
+						case FieldType::Vec4:
+						{
+							glm::vec4 value = isRuntime ? field->GetRuntimeValue<glm::vec4>() : field->GetStoredValue<glm::vec4>();
+							if (Property(info.Name.c_str(), value, 0.2f))
 							{
-								glm::vec3 value = isRuntime ? field.GetRuntimeValue<glm::vec3>() : field.GetStoredValue<glm::vec3>();
-								if (Property(field.Name.c_str(), value, 0.2f))
-								{
-									if (isRuntime)
-										field.SetRuntimeValue(value);
-									else
-										field.SetStoredValue(value);
-								}
-								break;
+								isRuntime ? field->SetRuntimeValue(value) : field->SetStoredValue(value);
 							}
-							case FieldType::Vec4:
-							{
-								glm::vec4 value = isRuntime ? field.GetRuntimeValue<glm::vec4>() : field.GetStoredValue<glm::vec4>();
-								if (Property(field.Name.c_str(), value, 0.2f))
-								{
-									if (isRuntime)
-										field.SetRuntimeValue(value);
-									else
-										field.SetStoredValue(value);
-								}
-								break;
-							}
-							}
+							break;
+						}
 						}
 					}
 				}
@@ -951,7 +933,7 @@ namespace Prism {
 #if TODO
 				if (ImGui::Button("Run Script"))
 				{
-					ScriptEngine::OnCreateEntity(entity);
+					ScriptEngineManager::Get()->OnCreateEntity(entity);
 				}
 #endif
 				ImGui::TreePop();

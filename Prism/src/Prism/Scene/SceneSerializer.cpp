@@ -3,7 +3,8 @@
 
 #include "Entity.h"
 #include "Components.h"
-#include "Scripting/ScriptEngine.h"
+#include "Scripting/ScriptEngineManager.h"
+#include "Scripting/PublicField.h"
 
 #include "yaml-cpp/yaml.h"
 
@@ -191,45 +192,47 @@ namespace Prism {
 			auto& moduleName = entity.GetComponent<ScriptComponent>().ModuleName;
 			out << YAML::Key << "ModuleName" << YAML::Value << moduleName;
 
-			EntityInstanceData& data = ScriptEngine::GetEntityInstanceData(entity.GetSceneUUID(), uuid);
-			const auto& moduleFieldMap = data.ModuleFieldMap;
-			if (moduleFieldMap.find(moduleName) != moduleFieldMap.end())
-			{
-				const auto& fields = moduleFieldMap.at(moduleName);
-				out << YAML::Key << "StoredFields" << YAML::Value;
-				out << YAML::BeginSeq;
-				for (const auto& [name, field] : fields)
+			auto* engine = ScriptEngineManager::Get();
+				uint32_t fieldCount = engine->GetFieldCount(entity.GetSceneUUID(), uuid, moduleName);
+				if (fieldCount > 0)
 				{
-					out << YAML::BeginMap; // Field
-					out << YAML::Key << "Name" << YAML::Value << name;
-					out << YAML::Key << "Type" << YAML::Value << (uint32_t)field.Type;
-					out << YAML::Key << "Data" << YAML::Value;
-
-					switch (field.Type)
+					out << YAML::Key << "StoredFields" << YAML::Value;
+					out << YAML::BeginSeq;
+					for (uint32_t i = 0; i < fieldCount; i++)
 					{
-					case FieldType::Int:
-						out << field.GetStoredValue<int>();
-						break;
-					case FieldType::UnsignedInt:
-						out << field.GetStoredValue<uint32_t>();
-						break;
-					case FieldType::Float:
-						out << field.GetStoredValue<float>();
-						break;
-					case FieldType::Vec2:
-						out << field.GetStoredValue<glm::vec2>();
-						break;
-					case FieldType::Vec3:
-						out << field.GetStoredValue<glm::vec3>();
-						break;
-					case FieldType::Vec4:
-						out << field.GetStoredValue<glm::vec4>();
-						break;
+						PublicFieldInfo info;
+						engine->GetFieldInfo(entity.GetSceneUUID(), uuid, moduleName, i, info);
+						out << YAML::BeginMap; // Field
+						out << YAML::Key << "Name" << YAML::Value << info.Name;
+						out << YAML::Key << "Type" << YAML::Value << (uint32_t)info.Type;
+						out << YAML::Key << "Data" << YAML::Value;
+
+						auto* field = engine->GetField(entity.GetSceneUUID(), uuid, moduleName, info.Name);
+						switch (info.Type)
+						{
+						case FieldType::Int:
+							out << field->GetStoredValue<int32_t>();
+							break;
+						case FieldType::UnsignedInt:
+							out << field->GetStoredValue<uint32_t>();
+							break;
+						case FieldType::Float:
+							out << field->GetStoredValue<float>();
+							break;
+						case FieldType::Vec2:
+							out << field->GetStoredValue<glm::vec2>();
+							break;
+						case FieldType::Vec3:
+							out << field->GetStoredValue<glm::vec3>();
+							break;
+						case FieldType::Vec4:
+							out << field->GetStoredValue<glm::vec4>();
+							break;
+						}
+						out << YAML::EndMap; // Field
 					}
-					out << YAML::EndMap; // Field
+					out << YAML::EndSeq;
 				}
-				out << YAML::EndSeq;
-			}
 
 			out << YAML::EndMap; // ScriptComponent
 		}
@@ -531,7 +534,7 @@ namespace Prism {
 
 					PR_CORE_INFO("  Script Module: {0}", moduleName);
 
-					if (ScriptEngine::ModuleExists(moduleName))
+					if (ScriptEngineManager::Get()->ModuleExists(moduleName))
 					{
 						auto storedFields = scriptComponent["StoredFields"];
 						if (storedFields)
@@ -540,52 +543,32 @@ namespace Prism {
 							{
 								std::string name = field["Name"].as<std::string>();
 								FieldType type = (FieldType)field["Type"].as<uint32_t>();
-								EntityInstanceData& data = ScriptEngine::GetEntityInstanceData(m_Scene->GetUUID(), uuid);
-								auto& moduleFieldMap = data.ModuleFieldMap;
-								auto& publicFields = moduleFieldMap[moduleName];
-								if (publicFields.find(name) == publicFields.end())
-								{
-									PublicField pf = { name, type };
-									publicFields.emplace(name, std::move(pf));
-								}
+								auto* engine = ScriptEngineManager::Get();
 								auto dataNode = field["Data"];
+								auto* f = engine->GetOrCreateField(m_Scene->GetUUID(), uuid, moduleName, name, type);
 								switch (type)
 								{
 								case FieldType::Float:
-								{
-									publicFields.at(name).SetStoredValue(dataNode.as<float>());
+									f->SetStoredValue(dataNode.as<float>());
 									break;
-								}
 								case FieldType::Int:
-								{
-									publicFields.at(name).SetStoredValue(dataNode.as<int32_t>());
+									f->SetStoredValue(dataNode.as<int32_t>());
 									break;
-								}
 								case FieldType::UnsignedInt:
-								{
-									publicFields.at(name).SetStoredValue(dataNode.as<uint32_t>());
+									f->SetStoredValue(dataNode.as<uint32_t>());
 									break;
-								}
 								case FieldType::String:
-								{
 									PR_CORE_ASSERT(false, "Unimplemented");
 									break;
-								}
 								case FieldType::Vec2:
-								{
-									publicFields.at(name).SetStoredValue(dataNode.as<glm::vec2>());
+									f->SetStoredValue(dataNode.as<glm::vec2>());
 									break;
-								}
 								case FieldType::Vec3:
-								{
-									publicFields.at(name).SetStoredValue(dataNode.as<glm::vec3>());
+									f->SetStoredValue(dataNode.as<glm::vec3>());
 									break;
-								}
 								case FieldType::Vec4:
-								{
-									publicFields.at(name).SetStoredValue(dataNode.as<glm::vec4>());
+									f->SetStoredValue(dataNode.as<glm::vec4>());
 									break;
-								}
 								}
 							}
 						}
@@ -741,4 +724,3 @@ namespace Prism {
 	}
 
 }
-

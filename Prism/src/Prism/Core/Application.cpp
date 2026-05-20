@@ -10,7 +10,8 @@
 #include "Prism/Renderer/Buffer/Framebuffer.h"
 #include "Prism/Renderer/Shader/Parser/ShaderParser.h"
 
-#include "Scripting/ScriptEngine.h"
+#include "Scripting/ScriptEngineManager.h"
+#include "Scripting/CSharp/CSharpScriptEngine.h"
 #include "Prism/Physics/Physics3D.h"
 
 
@@ -118,15 +119,17 @@ namespace Prism
 
     void Application::OnInit()
     {
-        ScriptEngine::Initialize();
-        ScriptEngine::LoadEngineAssembly("Assets/scripts/Prism.Scripting.dll");
-        ScriptEngine::LoadAppAssembly("Assets/scripts/ExampleApp.dll");
+        auto csharpEngine = std::make_unique<CSharpScriptEngine>();
+        csharpEngine->Initialize();
+        csharpEngine->LoadEngineAssembly("Assets/scripts/Prism.Scripting.dll");
+        csharpEngine->LoadAppAssembly("Assets/scripts/ExampleApp.dll");
+        ScriptEngineManager::Register(std::move(csharpEngine));
     }
 
     void Application::OnShutdown()
     {
         m_LayerStack.Shutdown();
-        ScriptEngine::Shutdown();
+        ScriptEngineManager::Shutdown();
         Physics3D::Shutdown();
     }
 

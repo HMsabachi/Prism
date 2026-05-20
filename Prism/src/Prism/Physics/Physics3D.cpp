@@ -2,7 +2,7 @@
 #include "Physics3D.h"
 #include "Prism/Scene/Components.h"
 #include "Prism/Renderer/Mesh.h"
-#include "Scripting/ScriptEngine.h"
+#include "Scripting/ScriptEngineManager.h"
 
 #include <PhysX/PxPhysicsAPI.h>
 
@@ -74,11 +74,11 @@ namespace Prism
 					Entity* a = (Entity*)(pairHeader.actors[0]->userData);
 					Entity* b = (Entity*)(pairHeader.actors[1]->userData);
 
-					if (a && a->HasComponent<ScriptComponent>() && ScriptEngine::ModuleExists(a->GetComponent<ScriptComponent>().ModuleName))
-						ScriptEngine::OnCollisionBegin(*a);
+					if (a && a->HasComponent<ScriptComponent>() && ScriptEngineManager::Get()->ModuleExists(a->GetComponent<ScriptComponent>().ModuleName))
+						ScriptEngineManager::Get()->OnCollisionBegin(*a);
 
-					if (b && b->HasComponent<ScriptComponent>() && ScriptEngine::ModuleExists(b->GetComponent<ScriptComponent>().ModuleName))
-						ScriptEngine::OnCollisionBegin(*b);
+					if (b && b->HasComponent<ScriptComponent>() && ScriptEngineManager::Get()->ModuleExists(b->GetComponent<ScriptComponent>().ModuleName))
+						ScriptEngineManager::Get()->OnCollisionBegin(*b);
 				}
 
 				if (pairs[i].flags & physx::PxContactPairFlag::eACTOR_PAIR_LOST_TOUCH)
@@ -86,11 +86,11 @@ namespace Prism
 					Entity* a = (Entity*)(pairHeader.actors[0]->userData);
 					Entity* b = (Entity*)(pairHeader.actors[1]->userData);
 
-					if (a && a->HasComponent<ScriptComponent>() && ScriptEngine::ModuleExists(a->GetComponent<ScriptComponent>().ModuleName))
-						ScriptEngine::OnCollisionEnd(*a);
+					if (a && a->HasComponent<ScriptComponent>() && ScriptEngineManager::Get()->ModuleExists(a->GetComponent<ScriptComponent>().ModuleName))
+						ScriptEngineManager::Get()->OnCollisionEnd(*a);
 
-					if (b && b->HasComponent<ScriptComponent>() && ScriptEngine::ModuleExists(b->GetComponent<ScriptComponent>().ModuleName))
-						ScriptEngine::OnCollisionEnd(*b);
+					if (b && b->HasComponent<ScriptComponent>() && ScriptEngineManager::Get()->ModuleExists(b->GetComponent<ScriptComponent>().ModuleName))
+						ScriptEngineManager::Get()->OnCollisionEnd(*b);
 				}
 			}
 		}

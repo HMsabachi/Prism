@@ -1,25 +1,26 @@
 #include "prpch.h"
 #include "ScriptEngineRegistry.h"
-#include "ScriptEngine.h"
+#include "CSharpScriptEngine.h"
 #include "ScriptWrappers.h"
 #include <coreclr_delegates.h>
 #include <Rolky/Assembly.hpp>
 #include <spdlog/fmt/fmt.h>
 
-#include "Native/String.h"
 #include "Prism/Utilities/TypeInfo.h"
+
 namespace Prism
 {
 	std::unordered_map<Rolky::TypeId, std::function<void(Entity&)>> s_CreateComponentFuncs;
 	std::unordered_map<Rolky::TypeId, std::function<bool(Entity&)>> s_HasComponentFuncs;
 
 	template<typename TComponent>
-	static void RegisterManagedComponent(Rolky::ManagedAssembly& coreAssembly)
+	static void RegisterManagedComponent(CSharpScriptEngine& engine)
 	{
 		const TypeNameString& componentTypeName = TypeInfo<TComponent, true>().Name();
 		std::string componentName = "Prism.";
 		componentName += componentTypeName;
-		auto& type = coreAssembly.GetType(componentName);
+		auto& engineAssembly = engine.GetEngineAssembly();
+		auto& type = engineAssembly.GetType(componentName);
 		if (type)
 		{
 			s_CreateComponentFuncs[type.GetTypeId()] = [](Entity& entity) { entity.AddComponent<TComponent>(); };
@@ -31,29 +32,28 @@ namespace Prism
 		}
 	}
 
-	static void InitComponentTypes()
+	static void InitComponentTypes(CSharpScriptEngine& engine)
 	{
-		auto& engineAssembly = ScriptEngine::GetEngineAssembly();
-		RegisterManagedComponent<TagComponent>(engineAssembly);
-		RegisterManagedComponent<TransformComponent>(engineAssembly);
-		RegisterManagedComponent<MeshComponent>(engineAssembly);
-		RegisterManagedComponent<ScriptComponent>(engineAssembly);
-		RegisterManagedComponent<CameraComponent>(engineAssembly);
-		RegisterManagedComponent<SpriteRendererComponent>(engineAssembly);
-		RegisterManagedComponent<MaterialComponent>(engineAssembly);
-		RegisterManagedComponent<RigidBody2DComponent>(engineAssembly);
-		RegisterManagedComponent<BoxCollider2DComponent>(engineAssembly);
-		RegisterManagedComponent<CircleCollider2DComponent>(engineAssembly);
-		RegisterManagedComponent<RigidBodyComponent>(engineAssembly);
-		RegisterManagedComponent<BoxColliderComponent>(engineAssembly);
-		RegisterManagedComponent<SphereColliderComponent>(engineAssembly);
-		RegisterManagedComponent<CapsuleColliderComponent>(engineAssembly);
+		RegisterManagedComponent<TagComponent>(engine);
+		RegisterManagedComponent<TransformComponent>(engine);
+		RegisterManagedComponent<MeshComponent>(engine);
+		RegisterManagedComponent<ScriptComponent>(engine);
+		RegisterManagedComponent<CameraComponent>(engine);
+		RegisterManagedComponent<SpriteRendererComponent>(engine);
+		RegisterManagedComponent<MaterialComponent>(engine);
+		RegisterManagedComponent<RigidBody2DComponent>(engine);
+		RegisterManagedComponent<BoxCollider2DComponent>(engine);
+		RegisterManagedComponent<CircleCollider2DComponent>(engine);
+		RegisterManagedComponent<RigidBodyComponent>(engine);
+		RegisterManagedComponent<BoxColliderComponent>(engine);
+		RegisterManagedComponent<SphereColliderComponent>(engine);
+		RegisterManagedComponent<CapsuleColliderComponent>(engine);
 	}
 
-	void ScriptEngineRegistry::RegisterAll()
+	void ScriptEngineRegistry::RegisterAll(CSharpScriptEngine& engine)
 	{
-		InitComponentTypes();
-		auto& engineAssembly = ScriptEngine::GetEngineAssembly();
+		InitComponentTypes(engine);
+		auto& engineAssembly = engine.GetEngineAssembly();
 #define PR_ADD_INTERNAL_CALL(func) engineAssembly.AddInternalCall("Prism.InternalCalls", #func, (void*)&func)
 		using namespace Script;
 		// Log
@@ -128,8 +128,6 @@ namespace Prism
 		PR_ADD_INTERNAL_CALL(Prism_MaterialInstance_SetKeyword);
 		PR_ADD_INTERNAL_CALL(Prism_MaterialInstance_IsKeywordEnabled);
 
-
 		engineAssembly.UploadInternalCalls();
-
 	}
 }

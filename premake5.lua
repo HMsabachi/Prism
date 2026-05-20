@@ -114,7 +114,7 @@ project "Prism"
     includedirs { "%{prj.name}/src/Scripting" }
     links { "nethost" }   
 
-    filter "files:%{prj.name}/src/Scripting/Native/**.cpp or files:Prism/vendor/yaml-cpp/src/**.cpp"
+    filter "files:%{prj.name}/src/Scripting/CSharp/Native/**.cpp or files:Prism/vendor/yaml-cpp/src/**.cpp"
         flags { "NoPCH" }
 
     filter "system:windows"
