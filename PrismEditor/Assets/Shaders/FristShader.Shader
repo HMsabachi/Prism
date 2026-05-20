@@ -1,7 +1,6 @@
 // Prism Shader Language v1.0
 Shader "Custom/MyFirstShader"
 {
-    // ==================== Properties（材质参数） ====================
     Properties
     {
         _MainColor("主颜色", Color) = (1, 1, 1, 1)
@@ -22,11 +21,11 @@ Shader "Custom/MyFirstShader"
                 attribute vec3 aPos : POSITION;
                 attribute vec2 aUV : TEXCOORD0;
                 attribute vec3 aNormal : NORMAL;
-                VARYING vec2 vUV; // Prism 引擎定义的跨阶段变量
+                VARYING vec2 vUV;
                 VARYING vec3 vNormal;
                 void main()
                 {
-                    gl_Position = Prism_ViewProjection * Prism_Model * vec4(aPos, 1.0); // Prism_ 前缀是引擎全局变量
+                    gl_Position = Prism_ViewProjection * Prism_Model * vec4(aPos, 1.0);
                     vUV = aUV;
                 }
 

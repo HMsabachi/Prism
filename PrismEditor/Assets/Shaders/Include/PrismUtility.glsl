@@ -1,3 +1,21 @@
+const vec2 blurdf = vec2(0.4, 0.2);
+vec4 PF_Fastblur(sampler2D tex, vec2 coord, float radius) {
+    vec4 returns, norm = texture(tex, coord); if (radius <= 1.0) return norm;
+    float lod = log2(radius); int ilod = int(lod); float n = ilod - lod + 1.0;
+    vec2 blurdfr = vec2(blurdf.y, -blurdf.x), df = 1.0 / textureSize(tex, ilod), dfr = df * blurdfr;
+    df *= blurdf; returns = n * (textureLod(tex, coord, ilod)
+        + textureLod(tex, coord + df, ilod) + textureLod(tex, coord + dfr, ilod)
+        + textureLod(tex, coord - df, ilod) + textureLod(tex, coord - dfr, ilod));
+    df = 1.0 / textureSize(tex, ilod + 1), dfr = df * blurdfr, df *= blurdf;
+    returns += (textureLod(tex, coord, ilod + 1)
+        + textureLod(tex, coord + df, ilod + 1) + textureLod(tex, coord + dfr, ilod + 1)
+        + textureLod(tex, coord - df, ilod + 1) + textureLod(tex, coord - dfr, ilod + 1));
+    df = 1.0 / textureSize(tex, ilod + 2), dfr = df * blurdfr, df *= blurdf;
+    returns += (1.0 - n) * (textureLod(tex, coord, ilod + 2)
+        + textureLod(tex, coord + df, ilod + 2) + textureLod(tex, coord + dfr, ilod + 2)
+        + textureLod(tex, coord - df, ilod + 2) + textureLod(tex, coord - dfr, ilod + 2));
+    return mix(norm, returns * 0.1, clamp(2.0 * radius - 2.0, 0.0, 1.0));
+}
 // 旋转矩阵：输入弧度 a，返回旋转后的坐标
 vec2 PF_Rotate(vec2 v, float a) {
     float s = sin(a);
@@ -58,7 +76,7 @@ float PF_DrawShape(float dist, float thickness, float blur) {
     return smoothstep(blur, -blur, dist - thickness);
 }
 
-// 适配分辨率，将 UV 映射到 [-1, 1] 且保持比例
+// 适配分辨率
 vec2 PF_FixUV(vec2 fragCoord, vec2 resolution) {
     return (2.0 * fragCoord - resolution.xy) / min(resolution.y, resolution.x);
 }

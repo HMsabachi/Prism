@@ -27,6 +27,7 @@ IncludeDir["Rolky"] = "Prism/vendor/Rolky/Rolky.Native/Include"
 IncludeDir["yaml"] = "Prism/vendor/yaml-cpp/include"
 IncludeDir["Box2D"] = "Prism/vendor/box2d/include"
 IncludeDir["PhysX"] = "Prism/vendor/PhysX/include"
+IncludeDir["Python"] = "vendor/Python/include/Python"
 
 LibraryDir = {}
 LibraryDir["nethost"] = "Prism/vendor/nethost"
@@ -86,7 +87,8 @@ project "Prism"
         "%{IncludeDir.Rolky}",
         "%{IncludeDir.yaml}",
         "%{IncludeDir.Box2D}",
-        "%{IncludeDir.PhysX}"
+        "%{IncludeDir.PhysX}",
+        "%{IncludeDir.Python}"
     }
 
     libdirs
@@ -109,10 +111,11 @@ project "Prism"
     libdirs
     {
         "%{IncludeDir.nethost}",
-        "%{LibraryDir.PhysX}/%{cfg.buildcfg}"
+        "%{LibraryDir.PhysX}/%{cfg.buildcfg}",
+        "vendor/Python/libs"
     }
     includedirs { "%{prj.name}/src/Scripting" }
-    links { "nethost" }   
+    links { "nethost", "python313" }
 
     filter "files:%{prj.name}/src/Scripting/CSharp/Native/**.cpp or files:Prism/vendor/yaml-cpp/src/**.cpp"
         flags { "NoPCH" }
@@ -133,7 +136,13 @@ project "Prism"
         {
             ("{COPY} %{cfg.buildtarget.relpath} \"../bin/" .. outputdir .. "/PrismEditor/\""),
             ('{COPY} "vendor/nethost/*.dll" "../bin/%{outputdir}/PrismEditor/"'),
-            ('{COPY} "vendor/PhysX/bin/%{cfg.buildcfg}/*.dll" "../bin/%{outputdir}/PrismEditor/"')
+            ('{COPY} "vendor/PhysX/bin/%{cfg.buildcfg}/*.dll" "../bin/%{outputdir}/PrismEditor/"'),
+            ('{COPY} "../vendor/Python/python313.dll" "../bin/%{outputdir}/PrismEditor/"'),
+            ('{COPY} "../vendor/Python/python3.dll" "../bin/%{outputdir}/PrismEditor/"'),
+            ('{COPY} "../vendor/Python/vcruntime140.dll" "../bin/%{outputdir}/PrismEditor/"'),
+            ('{COPY} "../vendor/Python/vcruntime140_1.dll" "../bin/%{outputdir}/PrismEditor/"'),
+            ('{COPYDIR} "../vendor/Python/Lib" "../bin/%{outputdir}/PrismEditor/Lib"'),
+            ('{COPYDIR} "../vendor/Python/DLLs" "../bin/%{outputdir}/PrismEditor/DLLs"')
         }
     filter "configurations:Debug"
         defines  "PR_DEBUG"

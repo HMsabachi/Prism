@@ -12,6 +12,7 @@
 
 #include "Scripting/ScriptEngineManager.h"
 #include "Scripting/CSharp/CSharpScriptEngine.h"
+#include "Scripting/Python/PythonScriptEngine.h"
 #include "Prism/Physics/Physics3D.h"
 
 
@@ -124,6 +125,9 @@ namespace Prism
         csharpEngine->LoadEngineAssembly("Assets/scripts/Prism.Scripting.dll");
         csharpEngine->LoadAppAssembly("Assets/scripts/ExampleApp.dll");
         ScriptEngineManager::Register(ScriptLanguage::CSharp, std::move(csharpEngine));
+        auto pythonEngine = std::make_unique<PythonScriptEngine>();
+        pythonEngine->Initialize();
+        ScriptEngineManager::Register(ScriptLanguage::Python, std::move(pythonEngine));
     }
 
     void Application::OnShutdown()

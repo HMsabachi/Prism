@@ -483,13 +483,13 @@ namespace Prism {
 			m_Scene->SetEnvironment(Environment::Load(envPath));
 
 			auto lightNode = environment["Light"];
-            if (lightNode)
-            {
-                auto& light = m_Scene->GetLight();
-                light.Direction = lightNode["Direction"].as<glm::vec3>();
-                light.Radiance = lightNode["Radiance"].as<glm::vec3>();
-                light.Multiplier = lightNode["Multiplier"].as<float>();
-            }
+			if (lightNode)
+			{
+				auto& light = m_Scene->GetLight();
+				light.Direction = lightNode["Direction"].as<glm::vec3>();
+				light.Radiance = lightNode["Radiance"].as<glm::vec3>();
+				light.Multiplier = lightNode["Multiplier"].as<float>();
+			}
 			auto shadowNode = environment["Shadow"];
 			if (shadowNode)
 			{
