@@ -272,8 +272,9 @@ namespace Prism
 	void CSharpScriptEngine::OnCollision2DBegin(UUID sceneID, UUID entityID)
 	{
 		PR_PROFILE_FUNCTION();
-		EntityInstanceData& entityData = GetEntityInstanceData(sceneID, entityID);
-		for (auto& [moduleName, script] : entityData.Scripts)
+		EntityInstanceData* entityData = TryGetEntityInstanceData(sceneID, entityID);
+		if (!entityData) return;
+		for (auto& [moduleName, script] : entityData->Scripts)
 		{
 			if (script && script->Object)
 				script->Object->InvokeMethod("OnCollision2DBegin", 5.0f);
@@ -288,8 +289,9 @@ namespace Prism
 	void CSharpScriptEngine::OnCollision2DEnd(UUID sceneID, UUID entityID)
 	{
 		PR_PROFILE_FUNCTION();
-		EntityInstanceData& entityData = GetEntityInstanceData(sceneID, entityID);
-		for (auto& [moduleName, script] : entityData.Scripts)
+		EntityInstanceData* entityData = TryGetEntityInstanceData(sceneID, entityID);
+		if (!entityData) return;
+		for (auto& [moduleName, script] : entityData->Scripts)
 		{
 			if (script && script->Object)
 				script->Object->InvokeMethod("OnCollision2DEnd", 5.0f);
@@ -304,8 +306,9 @@ namespace Prism
 	void CSharpScriptEngine::OnCollisionBegin(UUID sceneID, UUID entityID)
 	{
 		PR_PROFILE_FUNCTION();
-		EntityInstanceData& entityData = GetEntityInstanceData(sceneID, entityID);
-		for (auto& [moduleName, script] : entityData.Scripts)
+		EntityInstanceData* entityData = TryGetEntityInstanceData(sceneID, entityID);
+		if (!entityData) return;
+		for (auto& [moduleName, script] : entityData->Scripts)
 		{
 			if (script && script->Object)
 				script->Object->InvokeMethod("OnCollisionBegin", 5.0f);
@@ -320,8 +323,9 @@ namespace Prism
 	void CSharpScriptEngine::OnCollisionEnd(UUID sceneID, UUID entityID)
 	{
 		PR_PROFILE_FUNCTION();
-		EntityInstanceData& entityData = GetEntityInstanceData(sceneID, entityID);
-		for (auto& [moduleName, script] : entityData.Scripts)
+		EntityInstanceData* entityData = TryGetEntityInstanceData(sceneID, entityID);
+		if (!entityData) return;
+		for (auto& [moduleName, script] : entityData->Scripts)
 		{
 			if (script && script->Object)
 				script->Object->InvokeMethod("OnCollisionEnd", 5.0f);
@@ -456,6 +460,17 @@ namespace Prism
 		auto& entityIDMap = m_EntityInstanceMap.at(sceneID);
 		PR_CORE_ASSERT(entityIDMap.find(entityID) != entityIDMap.end(), "Invalid entity ID!");
 		return entityIDMap.at(entityID);
+	}
+
+	EntityInstanceData* CSharpScriptEngine::TryGetEntityInstanceData(UUID sceneID, UUID entityID)
+	{
+		auto sceneIt = m_EntityInstanceMap.find(sceneID);
+		if (sceneIt == m_EntityInstanceMap.end())
+			return nullptr;
+		auto entityIt = sceneIt->second.find(entityID);
+		if (entityIt == sceneIt->second.end())
+			return nullptr;
+		return &entityIt->second;
 	}
 
 	EntityScriptInstance& CSharpScriptEngine::GetEntityScriptInstance(UUID sceneID, UUID entityID, const std::string& moduleName)

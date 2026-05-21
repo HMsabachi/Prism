@@ -25,8 +25,6 @@
 #include <GLFW/glfw3native.h>
 #include <Windows.h>
 
-
-
 namespace Prism
 {
 #define BIND_EVENT_FN(x) std::bind(&Application::x, this, std::placeholders::_1)

@@ -1,21 +1,17 @@
 #pragma once
 #include "Scripting/ScriptEngine.h"
 #include "Scripting/PublicField.h"
+#include "Scripting/Python/PythonScriptCore.h"
 #include <unordered_map>
 #include <memory>
-
-// Forward declare Python types to avoid <Python.h> / <Windows.h> macro conflicts
-// when this header is included from files with precompiled headers
-struct _object;
-typedef _object PyObject;
 
 namespace Prism
 {
 	struct PythonEntityScriptInstance
 	{
-		PyObject* Module = nullptr;
-		PyObject* Class = nullptr;
-		PyObject* Instance = nullptr;
+		Python::ScriptModule Module;
+		Python::ScriptClass Class;
+		Python::ScriptObject Object;
 		uint32_t HasMethods = 0;
 	};
 
@@ -81,8 +77,9 @@ namespace Prism
 		PublicField* GetField(UUID sceneID, UUID entityID, const std::string& moduleName, const std::string& fieldName) override;
 		PublicField* GetOrCreateField(UUID sceneID, UUID entityID, const std::string& moduleName, const std::string& fieldName, FieldType type) override;
 
-		// Internal helpers (for wrappers)
+		// Internal helpers
 		PythonEntityInstanceData& GetEntityInstanceData(UUID sceneID, UUID entityID);
+		PythonEntityScriptInstance* GetScriptInstance(UUID sceneID, UUID entityID, const std::string& moduleName);
 
 	private:
 		PythonEntityInstanceMap m_EntityInstanceMap;

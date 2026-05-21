@@ -1,0 +1,289 @@
+#pragma once
+#include <string>
+#include <vector>
+#include <unordered_map>
+
+namespace Prism::Python {
+	struct ScriptValue;
+
+	// ─── RAII 辅助类（实现见 .cpp，void* 为 opaque 存储避免暴露 Python.h）───
+
+	class GILGuard
+	{
+	public:
+		GILGuard();
+		~GILGuard();
+		GILGuard(const GILGuard&) = delete;
+		GILGuard& operator=(const GILGuard&) = delete;
+	private:
+		void* m_State;
+	};
+
+	class PyErrorSaver
+	{
+	public:
+		PyErrorSaver();
+		~PyErrorSaver();
+		void Clear();
+		void Log();
+	private:
+		void Restore();
+		void* m_Exc;
+		void* m_Val;
+		void* m_Tb;
+	};
+
+	// RAII 包装
+	class ScriptRef
+	{
+	public:
+		ScriptRef() = default;
+		~ScriptRef();
+
+		explicit ScriptRef(ScriptValue* value);		
+		ScriptRef(const ScriptRef& other);
+		ScriptRef(ScriptRef&& other) noexcept;
+		ScriptRef& operator=(const ScriptRef& other);
+		ScriptRef& operator=(ScriptRef&& other) noexcept;
+
+		bool IsValid() const { return m_Value != nullptr; }
+		bool IsNone() const;
+
+		static ScriptRef Adopt(ScriptValue* value);
+		ScriptValue* Detach();						
+		ScriptValue* Get() const { return m_Value; }
+
+		ScriptRef GetAttribute(const char* name) const;
+		void SetAttribute(const char* name, const ScriptRef& value) const;
+		bool HasAttribute(const char* name) const;
+
+	private:
+		ScriptValue* m_Value = nullptr;
+		friend class ScriptModule;
+		friend class ScriptClass;
+		friend class ScriptObject;
+		friend class NativeModule;
+	};
+
+	class ScriptHost
+	{
+	public:
+		static bool Initialize();
+		static void Shutdown();
+		static bool IsInitialized();
+	};
+
+	class ScriptModule
+	{
+	public:
+		ScriptModule() = default;
+		static ScriptModule Import(const char* name);
+			static bool ModuleExists(const char* name);
+
+		ScriptRef GetAttribute(const char* name) const;
+		bool HasAttribute(const char* name) const;
+
+		bool IsValid() const { return m_Ref.IsValid(); }
+
+	private:
+		friend class ScriptClass;
+		explicit ScriptModule(ScriptRef ref) : m_Ref(std::move(ref)) {}
+		ScriptRef m_Ref;
+	};
+
+	class ScriptClass
+	{
+	public:
+		ScriptClass() = default;
+		static ScriptClass From(const ScriptModule& mod, const char* name);
+
+		bool HasMethod(const char* name) const;
+
+		using AnnotationMap = std::unordered_map<std::string, ScriptRef>;
+		AnnotationMap GetAnnotations() const;
+
+		class ScriptObject CreateInstance() const;
+
+		bool IsValid() const { return m_Ref.IsValid(); }
+
+	private:
+		friend class ScriptObject;
+		explicit ScriptClass(ScriptRef ref) : m_Ref(std::move(ref)) {}
+		ScriptRef m_Ref;
+	};
+
+	class ScriptObject
+	{
+	public:
+		ScriptObject() = default;
+		explicit ScriptObject(ScriptRef ref);
+
+		ScriptRef GetAttribute(const char* name) const { return m_Ref.GetAttribute(name); }
+		void SetAttribute(const char* name, const ScriptRef& value) const { m_Ref.SetAttribute(name, value); }
+		bool HasAttribute(const char* name) const { return m_Ref.HasAttribute(name); }
+
+		// Rolky 风格方法调用，0~N 参数，自动返回值转换
+		template<typename TReturn = void, typename... TArgs>
+		TReturn Invoke(const char* method, TArgs&&... args)
+		{
+			if constexpr (std::is_same_v<TReturn, void>)
+			{
+				InvokeArgs(method, std::forward<TArgs>(args)...);
+			}
+			else
+			{
+				ScriptRef result = InvokeArgs(method, std::forward<TArgs>(args)...);
+				return ConvertFromScriptRef<TReturn>(result);
+			}
+		}
+
+		// 类型化字段读写
+		template<typename T>
+		T GetField(const char* name) const;
+		template<typename T>
+		void SetField(const char* name, T value);
+
+		void GetFieldRaw(const char* name, void* buffer) const;
+		void SetFieldRaw(const char* name, const void* buffer) const;
+
+		bool IsValid() const { return m_Ref.IsValid(); }
+
+	private:
+		friend class ScriptClass;
+		template<typename... TArgs>
+		ScriptRef InvokeArgs(const char* method, TArgs&&... args);
+		ScriptRef InvokeWithTuple(const char* method, const ScriptRef& tuple);
+
+		ScriptRef m_Ref;
+	};
+
+	// 转换函数
+	ScriptRef FloatToValue(float v);
+	ScriptRef IntToValue(int32_t v);
+	ScriptRef UInt64ToValue(uint64_t v);
+	ScriptRef StringToValue(const std::string_view v);
+	ScriptRef BoolToValue(bool v);
+	ScriptRef NoneValue();
+
+	float		ValueToFloat(const ScriptRef& v);
+	int32_t		ValueToInt(const ScriptRef& v);
+	uint64_t	ValueToUInt64(const ScriptRef& v);
+	std::string ValueToString(const ScriptRef& v);
+	bool		ValueToBool(const ScriptRef& v);
+
+	// Tuple 操作
+	ScriptRef MakeTuple(const ScriptRef* elements, uint32_t count);
+	uint32_t  GetTupleSize(const ScriptRef& tuple);
+	ScriptRef GetTupleElement(const ScriptRef& tuple, uint32_t index);
+
+	// 原生模块注册
+	using NativeFunction = ScriptValue* (*)(ScriptValue* self, ScriptValue* args);
+
+	class NativeModule
+	{
+	public:
+		explicit NativeModule(const char* name);
+		~NativeModule();
+		void AddFunction(const char* name, NativeFunction func, const char* doc = nullptr);
+		void Register();
+
+	private:
+		struct FuncEntry
+		{
+			std::string Name;
+			NativeFunction Func;
+			std::string Doc;
+		};
+		std::string m_Name;
+		std::vector<FuncEntry> m_Functions;
+	};
+
+	// ─── 模板辅助 ─────────────────────────────────────
+
+	template<typename T>
+	ScriptRef ToValue(T&& value)
+	{
+		using Raw = std::decay_t<T>;
+		if constexpr (std::is_same_v<Raw, float>)
+			return FloatToValue(static_cast<float>(value));
+		else if constexpr (std::is_same_v<Raw, double>)
+			return FloatToValue(static_cast<float>(value));
+		else if constexpr (std::is_same_v<Raw, int32_t>)
+			return IntToValue(value);
+		else if constexpr (std::is_same_v<Raw, uint32_t>)
+			return UInt64ToValue(value);
+		else if constexpr (std::is_same_v<Raw, uint64_t>)
+			return UInt64ToValue(value);
+		else if constexpr (std::is_same_v<Raw, std::string>)
+			return StringToValue(value);
+		else if constexpr (std::is_same_v<Raw, const char*>)
+			return StringToValue(std::string_view(value));
+		else if constexpr (std::is_same_v<Raw, bool>)
+			return BoolToValue(value);
+		else
+			static_assert(AlwaysFalse<T>::value, "Unsupported type for Python conversion");
+	}
+
+	// ScriptRef -> C++ 类型自动转换
+	template<typename T>
+	T ConvertFromScriptRef(const ScriptRef& v)
+	{
+		using Raw = std::decay_t<T>;
+		if constexpr (std::is_same_v<Raw, float>)
+			return ValueToFloat(v);
+		else if constexpr (std::is_same_v<Raw, double>)
+			return static_cast<double>(ValueToFloat(v));
+		else if constexpr (std::is_same_v<Raw, int32_t>)
+			return ValueToInt(v);
+		else if constexpr (std::is_same_v<Raw, uint64_t>)
+			return ValueToUInt64(v);
+		else if constexpr (std::is_same_v<Raw, std::string>)
+			return ValueToString(v);
+		else if constexpr (std::is_same_v<Raw, bool>)
+			return ValueToBool(v);
+		else
+			static_assert(AlwaysFalse<T>::value, "Unsupported type for Python return conversion");
+	}
+
+	template<typename... TArgs>
+	ScriptRef ScriptObject::InvokeArgs(const char* method, TArgs&&... args)
+	{
+		if constexpr (sizeof...(TArgs) == 0)
+		{
+			ScriptRef empty;
+			return InvokeWithTuple(method, empty);
+		}
+		else
+		{
+			ScriptRef pyArgs[] = { ToValue(std::forward<TArgs>(args))... };
+			ScriptRef tuple = MakeTuple(pyArgs, sizeof...(TArgs));
+			return InvokeWithTuple(method, tuple);
+		}
+	}
+
+	template<typename T>
+	T ScriptObject::GetField(const char* name) const
+	{
+		using Raw = std::decay_t<T>;
+		ScriptRef val = GetAttribute(name);
+		if constexpr (std::is_same_v<Raw, float>)
+			return static_cast<T>(ValueToFloat(val));
+		else if constexpr (std::is_same_v<Raw, int32_t>)
+			return static_cast<T>(ValueToInt(val));
+		else if constexpr (std::is_same_v<Raw, uint64_t>)
+			return static_cast<T>(ValueToUInt64(val));
+		else if constexpr (std::is_same_v<Raw, std::string>)
+			return static_cast<T>(ValueToString(val));
+		else if constexpr (std::is_same_v<Raw, bool>)
+			return static_cast<T>(ValueToBool(val));
+		else
+			static_assert(AlwaysFalse<T>::value, "Unsupported type for Python field access");
+	}
+
+	template<typename T>
+	void ScriptObject::SetField(const char* name, T value)
+	{
+		SetAttribute(name, ToValue(std::forward<T>(value)));
+	}
+
+} // namespace Prism::Python

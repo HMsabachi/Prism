@@ -921,11 +921,10 @@ namespace Prism {
 						if (ImGui::InputText("##modulename", buffer, 256))
 						{
 							std::string newName(buffer);
-
-								if (engine && engine->ModuleExists(oldName))
-									engine->ShutdownScriptEntity(entity, oldName);
-								if (engine && engine->ModuleExists(newName))
-									engine->InitScriptEntity(entity, newName);
+                            if (engine && engine->ModuleExists(oldName))
+                                engine->ShutdownScriptEntity(entity, oldName);
+                            if (engine && engine->ModuleExists(newName))
+                                engine->InitScriptEntity(entity, newName);
 							
 							script.ModuleName = newName;
 						}

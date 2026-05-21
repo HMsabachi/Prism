@@ -79,6 +79,7 @@ namespace Prism
 		// C#-specific accessors
 		EntityInstanceMap& GetEntityInstanceMap();
 		EntityInstanceData& GetEntityInstanceData(UUID sceneID, UUID entityID);
+		EntityInstanceData* TryGetEntityInstanceData(UUID sceneID, UUID entityID);
 		EntityScriptInstance& GetEntityScriptInstance(UUID sceneID, UUID entityID, const std::string& moduleName);
 		Rolky::ManagedAssembly& GetEngineAssembly();
 

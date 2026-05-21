@@ -142,7 +142,7 @@ project "Prism"
             ('{COPY} "../vendor/Python/vcruntime140.dll" "../bin/%{outputdir}/PrismEditor/"'),
             ('{COPY} "../vendor/Python/vcruntime140_1.dll" "../bin/%{outputdir}/PrismEditor/"'),
             ('{COPYDIR} "../vendor/Python/Lib" "../bin/%{outputdir}/PrismEditor/Lib"'),
-            ('{COPYDIR} "../vendor/Python/DLLs" "../bin/%{outputdir}/PrismEditor/DLLs"')
+            ('{COPYDIR} "../vendor/Python/DLLs" "../bin/%{outputdir}/PrismEditor/DLLs"'),
         }
     filter "configurations:Debug"
         defines  "PR_DEBUG"

@@ -42,7 +42,7 @@ namespace Prism {
 		void Prism_Log_LogMessage(LogLevel level, Rolky::String inFormattedMessage)
 		{
 			std::string message = inFormattedMessage;
-			message = "[Script]: " + message;
+			message = "[CSharp]: " + message;
 			switch (level)
 			{
 			case LogLevel::Trace:
