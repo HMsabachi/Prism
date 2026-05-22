@@ -6,6 +6,9 @@
 #include <Rolky/Assembly.hpp>
 #include <spdlog/fmt/fmt.h>
 
+#include "Prism/Scene/Components.h"
+#include "Prism/Scene/Entity.h"
+
 #include "Prism/Utilities/TypeInfo.h"
 
 namespace Prism

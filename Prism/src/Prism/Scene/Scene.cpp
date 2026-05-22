@@ -6,6 +6,7 @@
 #include "Components.h"
 
 #include "Scripting/ScriptEngineManager.h"
+#include "Scripting/ScriptObject.h"
 
 #include "Prism/Renderer/Renderer2D.h"
 #include "Prism/Renderer/SceneRenderer.h"
@@ -50,29 +51,30 @@ namespace Prism
     class ContactListener : public b2ContactListener
     {
     public:
+        Scene* CurrentScene = nullptr;
+
         virtual void BeginContact(b2Contact* contact) override
         {
             Entity& a = *(Entity*)contact->GetFixtureA()->GetBody()->GetUserData().pointer;
             Entity& b = *(Entity*)contact->GetFixtureB()->GetBody()->GetUserData().pointer;
 
-            if (a.HasComponent<ScriptsComponent>())
-                ScriptEngineManager::OnCollision2DBegin(a);
-
-            if (b.HasComponent<ScriptsComponent>())
-                ScriptEngineManager::OnCollision2DBegin(b);
+            if (CurrentScene)
+            {
+                CurrentScene->OnCollision2DBegin(a);
+                CurrentScene->OnCollision2DBegin(b);
+            }
         }
 
-        /// Called when two fixtures cease to touch.
         virtual void EndContact(b2Contact* contact) override
         {
             Entity& a = *(Entity*)contact->GetFixtureA()->GetBody()->GetUserData().pointer;
             Entity& b = *(Entity*)contact->GetFixtureB()->GetBody()->GetUserData().pointer;
 
-            if (a.HasComponent<ScriptsComponent>())
-                ScriptEngineManager::OnCollision2DEnd(a);
-
-            if (b.HasComponent<ScriptsComponent>())
-                ScriptEngineManager::OnCollision2DEnd(b);
+            if (CurrentScene)
+            {
+                CurrentScene->OnCollision2DEnd(a);
+                CurrentScene->OnCollision2DEnd(b);
+            }
         }
     };
 
@@ -87,6 +89,7 @@ namespace Prism
         // TODO: Obviously not necessary in all cases
         m_Registry.emplace<Box2DWorldComponent>(m_SceneEntity, std::make_unique<b2World>(b2Vec2{ 0.0f, -9.8f }));
         m_Registry.get<Box2DWorldComponent>(m_SceneEntity).World->SetContactListener(&s_Box2DContactListener);
+        s_Box2DContactListener.CurrentScene = this;
 
         // PhysX
         {
@@ -109,7 +112,6 @@ namespace Prism
         m_Physics3DBodyEntityBuffer = nullptr;
         m_Registry.clear();
         s_ActiveScenes.erase(m_SceneID);
-        ScriptEngineManager::OnSceneDestruct(m_SceneID);
     }
 
     void Scene::Init()
@@ -122,9 +124,8 @@ namespace Prism
 
     void Scene::OnUpdate()
     {
-        // Script OnUpdate (per-frame)
+        // Script OnUpdate (per-frame) via ScriptStorage
         {
-            float ts = Time::GetDeltaTime();
             auto view = m_Registry.view<ScriptsComponent>();
             for (auto entity : view)
             {
@@ -132,9 +133,9 @@ namespace Prism
                 auto& scripts = e.GetComponent<ScriptsComponent>().Scripts;
                 for (auto& script : scripts)
                 {
-                    auto* engine = ScriptEngineManager::Get(script.Language);
-                    if (engine && engine->ModuleExists(script.ModuleName))
-                        engine->OnUpdateEntity(m_SceneID, e.GetUUID(), script.ModuleName, ts);
+                    auto* group = m_ScriptStorage.FindGroup(e.GetUUID(), script.ModuleName);
+                    if (group && group->Instance)
+                            group->Instance->TryInvokeMethod("OnUpdate");
                 }
             }
         }
@@ -206,7 +207,7 @@ namespace Prism
             }
         }
 
-        // Script OnFixedUpdate
+        // Script OnFixedUpdate via ScriptStorage
         {
             auto view = m_Registry.view<ScriptsComponent>();
             for (auto entity : view)
@@ -215,9 +216,9 @@ namespace Prism
                 auto& scripts = e.GetComponent<ScriptsComponent>().Scripts;
                 for (auto& script : scripts)
                 {
-                    auto* engine = ScriptEngineManager::Get(script.Language);
-                    if (engine && engine->ModuleExists(script.ModuleName))
-                        engine->OnFixedUpdateEntity(m_SceneID, e.GetUUID(), script.ModuleName);
+                    auto* group = m_ScriptStorage.FindGroup(e.GetUUID(), script.ModuleName);
+                    if (group && group->Instance)
+                            group->Instance->TryInvokeMethod("OnFixedUpdate");
                 }
             }
         }
@@ -330,6 +331,7 @@ namespace Prism
     {
         ScriptEngineManager::SetSceneContext(this);
 
+        // Initialize script groups and instantiate entity classes
         {
             auto view = m_Registry.view<ScriptsComponent>();
             for (auto entity : view)
@@ -341,8 +343,16 @@ namespace Prism
                     auto* engine = ScriptEngineManager::Get(script.Language);
                     if (engine && engine->ModuleExists(script.ModuleName))
                     {
-                        engine->InitScriptEntity(e, script.ModuleName);
-                        engine->InstantiateEntityClass(e, script.ModuleName);
+                        // Create ScriptGroup in storage
+                        auto& entityStorage = m_ScriptStorage.GetOrCreateEntity(e.GetUUID());
+                        auto& group = entityStorage.Groups[script.ModuleName];
+                        group.EntityID = e.GetUUID();
+                        group.ModuleName = script.ModuleName;
+
+                        engine->InitScriptEntity(e, group);
+                        engine->InstantiateEntityClass(group);
+                        if (group.Instance)
+                            group.Instance->TryInvokeMethod("OnCreate");
                     }
                 }
             }
@@ -430,6 +440,7 @@ namespace Prism
 
         // PhysX 3D physics
         {
+            Physics3D::SetCollisionScene(this);
             auto physxView = m_Registry.view<PhysXSceneComponent>();
             if (!physxView.empty())
             {
@@ -622,6 +633,22 @@ namespace Prism
 
     void Scene::OnRuntimeStop()
     {
+        // Clear physics collision scene pointers
+        s_Box2DContactListener.CurrentScene = nullptr;
+        Physics3D::SetCollisionScene(nullptr);
+
+        // Cleanup script runtime instances
+        {
+            for (auto& [entityID, entityStorage] : m_ScriptStorage.GetEntities())
+            {
+                for (auto& [moduleName, group] : entityStorage.Groups)
+                {
+                    group.Instance.reset();
+                }
+            }
+            m_ScriptStorage.Clear();
+        }
+
         // Release PhysX scene
         {
             auto physxView = m_Registry.view<PhysXSceneComponent>();
@@ -728,13 +755,16 @@ namespace Prism
     {
         if (entity.HasComponent<ScriptsComponent>())
         {
-            // Notify all engines to clean up this entity's script data
-            for (auto lang : { ScriptLanguage::CSharp, ScriptLanguage::Python })
+            // Clean up this entity's script groups from ScriptStorage
+            auto* entityStorage = m_ScriptStorage.FindEntity(entity.GetUUID());
+            if (entityStorage)
             {
-                auto* engine = ScriptEngineManager::Get(lang);
-                if (engine)
-                    engine->OnScriptComponentDestroyed(m_SceneID, entity.GetUUID());
+                for (auto& [moduleName, group] : entityStorage->Groups)
+                {
+                    group.Instance.reset();
+                }
             }
+            m_ScriptStorage.RemoveEntity(entity.GetUUID());
         }
 
         m_Registry.destroy(entity.m_EntityHandle);
@@ -779,7 +809,7 @@ namespace Prism
         {
             auto& scripts = newEntity.GetComponent<ScriptsComponent>().Scripts;
             for (auto& script : scripts)
-                ScriptEngineManager::OnScriptAdded(newEntity, script);
+                ScriptEngineManager::OnScriptAdded(newEntity, script, m_ScriptStorage);
         }
         CopyComponentIfExists<CameraComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<SpriteRendererComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
@@ -846,30 +876,57 @@ namespace Prism
         CopyComponent<CapsuleColliderComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<MeshColliderComponent>(target->m_Registry, m_Registry, enttMap);
 
-        // Copy script field data for all engines
-        for (auto lang : { ScriptLanguage::CSharp, ScriptLanguage::Python })
+        // Copy script field data via ScriptStorage
         {
-            auto* engine = ScriptEngineManager::Get(lang);
-            if (engine && engine->HasEntityScriptData(m_SceneID))
+            auto targetView = target->m_Registry.view<ScriptsComponent>();
+            for (auto targetEntity : targetView)
             {
-                {
-                    auto targetView = target->m_Registry.view<ScriptsComponent>();
-                    for (auto targetEntity : targetView)
-                    {
-                        Entity e = { targetEntity, target.Raw() };
-                        auto& scripts = e.GetComponent<ScriptsComponent>().Scripts;
-                        for (auto& script : scripts)
-                        {
-                            if (script.Language == lang)
-                                ScriptEngineManager::OnScriptAdded(e, script);
-                        }
-                    }
-                }
-                engine->CopyEntityScriptData(target->GetUUID(), m_SceneID);
+                Entity e = { targetEntity, target.Raw() };
+                auto& scripts = e.GetComponent<ScriptsComponent>().Scripts;
+                for (auto& script : scripts)
+                    ScriptEngineManager::OnScriptAdded(e, script, target->m_ScriptStorage);
             }
+        }
+        // Copy stored field values from source (editor) to target (runtime)
+        for (auto& [entityUUID, entityStorage] : m_ScriptStorage.GetEntities())
+        {
+            for (auto& [moduleName, group] : entityStorage.Groups)
+                target->m_ScriptStorage.CopyGroupDataFrom(m_ScriptStorage, entityUUID, entityUUID, moduleName);
         }
 
         target->SetPhysics2DGravity(GetPhysics2DGravity());
+    }
+
+    // Collision dispatch — invoke matching method on all script groups for this entity
+    void Scene::OnCollision2DBegin(Entity entity) { OnCollisionBegin(entity); }
+    void Scene::OnCollision2DEnd(Entity entity)   { OnCollisionEnd(entity); }
+
+    void Scene::OnCollisionBegin(Entity entity)
+    {
+        if (!entity.HasComponent<ScriptsComponent>())
+            return;
+        auto& scripts = entity.GetComponent<ScriptsComponent>().Scripts;
+        for (auto& script : scripts)
+        {
+            auto* group = m_ScriptStorage.FindGroup(entity.GetUUID(), script.ModuleName);
+            if (!group || !group->Instance)
+                continue;
+            group->Instance->TryInvokeMethod("OnCollisionBegin", 0.0f);
+        }
+    }
+
+    void Scene::OnCollisionEnd(Entity entity)
+    {
+        if (!entity.HasComponent<ScriptsComponent>())
+            return;
+        auto& scripts = entity.GetComponent<ScriptsComponent>().Scripts;
+        for (auto& script : scripts)
+        {
+            auto* group = m_ScriptStorage.FindGroup(entity.GetUUID(), script.ModuleName);
+            if (!group || !group->Instance)
+                continue;
+            group->Instance->TryInvokeMethod("OnCollisionEnd", 0.0f);
+        }
     }
 
     Ref<Scene> Scene::GetScene(UUID uuid)

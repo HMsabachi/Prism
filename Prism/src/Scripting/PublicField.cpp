@@ -30,7 +30,7 @@ namespace Prism
 		case FieldType::Float:       return 4;
 		case FieldType::Int:         return 4;
 		case FieldType::UnsignedInt: return 4;
-		case FieldType::String:      return 8; // TODO
+		case FieldType::String:      return static_cast<uint32_t>(sizeof(std::string));
 		case FieldType::Vec2:        return 4 * 2;
 		case FieldType::Vec3:        return 4 * 3;
 		case FieldType::Vec4:        return 4 * 4;

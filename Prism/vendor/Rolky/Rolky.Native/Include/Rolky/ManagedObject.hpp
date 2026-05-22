@@ -135,7 +135,7 @@ namespace Rolky {
 
 		bool IsValid() const { return m_Handle != nullptr && m_Type != nullptr; }
 
-	private:
+	public:
 		bool TryInvokeMethodInternal(std::string_view InMethodName, const void** InParameters, const ManagedType* InParameterTypes, size_t InLength) const;
 		bool TryInvokeMethodRetInternal(std::string_view InMethodName, const void** InParameters, const ManagedType* InParameterTypes, size_t InLength, void* InResultStorage) const;
 		void InvokeMethodInternal(std::string_view InMethodName, const void** InParameters, const ManagedType* InParameterTypes, size_t InLength) const;

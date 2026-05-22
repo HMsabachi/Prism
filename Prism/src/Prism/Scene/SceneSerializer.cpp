@@ -18,754 +18,750 @@
 
 namespace YAML {
 
-	template<>
-	struct convert<glm::vec2>
-	{
-		static Node encode(const glm::vec2& rhs)
-		{
-			Node node;
-			node.push_back(rhs.x);
-			node.push_back(rhs.y);
-			return node;
-		}
+    template<>
+    struct convert<glm::vec2>
+    {
+        static Node encode(const glm::vec2& rhs)
+        {
+            Node node;
+            node.push_back(rhs.x);
+            node.push_back(rhs.y);
+            return node;
+        }
 
-		static bool decode(const Node& node, glm::vec2& rhs)
-		{
-			if (!node.IsSequence() || node.size() != 2)
-				return false;
+        static bool decode(const Node& node, glm::vec2& rhs)
+        {
+            if (!node.IsSequence() || node.size() != 2)
+                return false;
 
-			rhs.x = node[0].as<float>();
-			rhs.y = node[1].as<float>();
-			return true;
-		}
-	};
+            rhs.x = node[0].as<float>();
+            rhs.y = node[1].as<float>();
+            return true;
+        }
+    };
 
-	template<>
-	struct convert<glm::vec3>
-	{
-		static Node encode(const glm::vec3& rhs)
-		{
-			Node node;
-			node.push_back(rhs.x);
-			node.push_back(rhs.y);
-			node.push_back(rhs.z);
-			return node;
-		}
+    template<>
+    struct convert<glm::vec3>
+    {
+        static Node encode(const glm::vec3& rhs)
+        {
+            Node node;
+            node.push_back(rhs.x);
+            node.push_back(rhs.y);
+            node.push_back(rhs.z);
+            return node;
+        }
 
-		static bool decode(const Node& node, glm::vec3& rhs)
-		{
-			if (!node.IsSequence() || node.size() != 3)
-				return false;
+        static bool decode(const Node& node, glm::vec3& rhs)
+        {
+            if (!node.IsSequence() || node.size() != 3)
+                return false;
 
-			rhs.x = node[0].as<float>();
-			rhs.y = node[1].as<float>();
-			rhs.z = node[2].as<float>();
-			return true;
-		}
-	};
+            rhs.x = node[0].as<float>();
+            rhs.y = node[1].as<float>();
+            rhs.z = node[2].as<float>();
+            return true;
+        }
+    };
 
-	template<>
-	struct convert<glm::vec4>
-	{
-		static Node encode(const glm::vec4& rhs)
-		{
-			Node node;
-			node.push_back(rhs.x);
-			node.push_back(rhs.y);
-			node.push_back(rhs.z);
-			node.push_back(rhs.w);
-			return node;
-		}
+    template<>
+    struct convert<glm::vec4>
+    {
+        static Node encode(const glm::vec4& rhs)
+        {
+            Node node;
+            node.push_back(rhs.x);
+            node.push_back(rhs.y);
+            node.push_back(rhs.z);
+            node.push_back(rhs.w);
+            return node;
+        }
 
-		static bool decode(const Node& node, glm::vec4& rhs)
-		{
-			if (!node.IsSequence() || node.size() != 4)
-				return false;
+        static bool decode(const Node& node, glm::vec4& rhs)
+        {
+            if (!node.IsSequence() || node.size() != 4)
+                return false;
 
-			rhs.x = node[0].as<float>();
-			rhs.y = node[1].as<float>();
-			rhs.z = node[2].as<float>();
-			rhs.w = node[3].as<float>();
-			return true;
-		}
-	};
+            rhs.x = node[0].as<float>();
+            rhs.y = node[1].as<float>();
+            rhs.z = node[2].as<float>();
+            rhs.w = node[3].as<float>();
+            return true;
+        }
+    };
 
-	template<>
-	struct convert<glm::quat>
-	{
-		static Node encode(const glm::quat& rhs)
-		{
-			Node node;
-			node.push_back(rhs.w);
-			node.push_back(rhs.x);
-			node.push_back(rhs.y);
-			node.push_back(rhs.z);
-			return node;
-		}
+    template<>
+    struct convert<glm::quat>
+    {
+        static Node encode(const glm::quat& rhs)
+        {
+            Node node;
+            node.push_back(rhs.w);
+            node.push_back(rhs.x);
+            node.push_back(rhs.y);
+            node.push_back(rhs.z);
+            return node;
+        }
 
-		static bool decode(const Node& node, glm::quat& rhs)
-		{
-			if (!node.IsSequence() || node.size() != 4)
-				return false;
+        static bool decode(const Node& node, glm::quat& rhs)
+        {
+            if (!node.IsSequence() || node.size() != 4)
+                return false;
 
-			rhs.w = node[0].as<float>();
-			rhs.x = node[1].as<float>();
-			rhs.y = node[2].as<float>();
-			rhs.z = node[3].as<float>();
-			return true;
-		}
-	};
+            rhs.w = node[0].as<float>();
+            rhs.x = node[1].as<float>();
+            rhs.y = node[2].as<float>();
+            rhs.z = node[3].as<float>();
+            return true;
+        }
+    };
 }
 
 namespace Prism {
 
-	YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec2& v)
-	{
-		out << YAML::Flow;
-		out << YAML::BeginSeq << v.x << v.y << YAML::EndSeq;
-		return out;
-	}
-
-	YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec3& v)
-	{
-		out << YAML::Flow;
-		out << YAML::BeginSeq << v.x << v.y << v.z << YAML::EndSeq;
-		return out;
-	}
-
-
-	YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec4& v)
-	{
-		out << YAML::Flow;
-		out << YAML::BeginSeq << v.x << v.y << v.z << v.w << YAML::EndSeq;
-		return out;
-	}
-
-	YAML::Emitter& operator<<(YAML::Emitter& out, const glm::quat& v)
-	{
-		out << YAML::Flow;
-		out << YAML::BeginSeq << v.w << v.x << v.y << v.z << YAML::EndSeq;
-		return out;
-	}
-
-	SceneSerializer::SceneSerializer(const Ref<Scene>& scene)
-		: m_Scene(scene)
-	{
-	}
-
-		static void SerializeEntity(YAML::Emitter& out, Entity entity)
-	{
-		UUID uuid = entity.GetComponent<IDComponent>().ID;
-		out << YAML::BeginMap; // Entity
-		out << YAML::Key << "Entity";
-		out << YAML::Value << uuid;
-
-		if (entity.HasComponent<TagComponent>())
-		{
-			out << YAML::Key << "TagComponent";
-			out << YAML::BeginMap; // TagComponent
-
-			auto& tag = entity.GetComponent<TagComponent>().Tag;
-			out << YAML::Key << "Tag" << YAML::Value << tag;
-
-			out << YAML::EndMap; // TagComponent
-		}
-
-		if (entity.HasComponent<TransformComponent>())
-		{
-			out << YAML::Key << "TransformComponent";
-			out << YAML::BeginMap; // TransformComponent
-
-			auto& tc = entity.GetComponent<TransformComponent>();
-			out << YAML::Key << "Position" << YAML::Value << tc.Position;
-			out << YAML::Key << "Rotation" << YAML::Value << tc.Rotation;
-			out << YAML::Key << "Scale" << YAML::Value << tc.Scale;
-
-			out << YAML::EndMap; // TransformComponent
-		}
-
-		if (entity.HasComponent<ScriptsComponent>())
-		{
-			out << YAML::Key << "ScriptsComponent";
-			out << YAML::Value << YAML::BeginSeq;
-
-			auto& scripts = entity.GetComponent<ScriptsComponent>().Scripts;
-			for (const auto& script : scripts)
-			{
-				out << YAML::BeginMap; // Script
-				out << YAML::Key << "ModuleName" << YAML::Value << script.ModuleName;
-				out << YAML::Key << "Language" << YAML::Value << (uint32_t)script.Language;
-
-				auto* engine = ScriptEngineManager::Get(script.Language);
-				if (engine)
-				{
-					uint32_t fieldCount = engine->GetFieldCount(entity.GetSceneUUID(), uuid, script.ModuleName);
-					if (fieldCount > 0)
-					{
-						out << YAML::Key << "StoredFields" << YAML::Value;
-						out << YAML::BeginSeq;
-						for (uint32_t i = 0; i < fieldCount; i++)
-						{
-							PublicFieldInfo info;
-							engine->GetFieldInfo(entity.GetSceneUUID(), uuid, script.ModuleName, i, info);
-							out << YAML::BeginMap; // Field
-							out << YAML::Key << "Name" << YAML::Value << info.Name;
-							out << YAML::Key << "Type" << YAML::Value << (uint32_t)info.Type;
-							out << YAML::Key << "Data" << YAML::Value;
-
-							auto* field = engine->GetField(entity.GetSceneUUID(), uuid, script.ModuleName, info.Name);
-							switch (info.Type)
-							{
-							case FieldType::Int:
-								out << field->GetStoredValue<int32_t>();
-								break;
-							case FieldType::UnsignedInt:
-								out << field->GetStoredValue<uint32_t>();
-								break;
-							case FieldType::Float:
-								out << field->GetStoredValue<float>();
-								break;
-							case FieldType::Vec2:
-								out << field->GetStoredValue<glm::vec2>();
-								break;
-							case FieldType::Vec3:
-								out << field->GetStoredValue<glm::vec3>();
-								break;
-							case FieldType::Vec4:
-								out << field->GetStoredValue<glm::vec4>();
-								break;
-							}
-							out << YAML::EndMap; // Field
-						}
-						out << YAML::EndSeq;
-					}
-				}
-
-				out << YAML::EndMap; // Script
-			}
-			out << YAML::EndSeq;
-		}
-
-		if (entity.HasComponent<MeshComponent>())
-		{
-			out << YAML::Key << "MeshComponent";
-			out << YAML::BeginMap; // MeshComponent
-
-			auto mesh = entity.GetComponent<MeshComponent>().Mesh;
-			out << YAML::Key << "AssetPath" << YAML::Value << mesh->GetFilePath();
-
-			out << YAML::EndMap; // MeshComponent
-		}
-		if (entity.HasComponent<MaterialComponent>())
-		{
-			out << YAML::Key << "MaterialComponent";
-			out << YAML::BeginMap; // MaterialComponent
-			out << YAML::EndMap; // MaterialComponent
-		}
-
-		if (entity.HasComponent<CameraComponent>())
-		{
-			out << YAML::Key << "CameraComponent";
-			out << YAML::BeginMap; // CameraComponent
-
-			auto& cameraComponent = entity.GetComponent<CameraComponent>();
-			out << YAML::Key << "Camera" << YAML::Value << "some camera data...";
-			out << YAML::Key << "Primary" << YAML::Value << cameraComponent.Primary;
-
-			out << YAML::EndMap; // CameraComponent
-		}
-
-		if (entity.HasComponent<SpriteRendererComponent>())
-		{
-			out << YAML::Key << "SpriteRendererComponent";
-			out << YAML::BeginMap; // SpriteRendererComponent
-
-			auto& spriteRendererComponent = entity.GetComponent<SpriteRendererComponent>();
-			out << YAML::Key << "Color" << YAML::Value << spriteRendererComponent.Color;
-			if (spriteRendererComponent.Texture)
-				out << YAML::Key << "TextureAssetPath" << YAML::Value << "path/to/asset";
-			out << YAML::Key << "TilingFactor" << YAML::Value << spriteRendererComponent.TilingFactor;
-
-			out << YAML::EndMap; // SpriteRendererComponent
-		}
-
-		if (entity.HasComponent<RigidBody2DComponent>())
-		{
-			out << YAML::Key << "RigidBody2DComponent";
-			out << YAML::BeginMap; // RigidBody2DComponent
-
-			auto& rb2dComponent = entity.GetComponent<RigidBody2DComponent>();
-			out << YAML::Key << "BodyType" << YAML::Value << (int)rb2dComponent.BodyType;
-			out << YAML::Key << "FixedRotation" << YAML::Value << rb2dComponent.FixedRotation;
-
-			out << YAML::EndMap; // RigidBody2DComponent
-		}
-
-		if (entity.HasComponent<BoxCollider2DComponent>())
-		{
-			out << YAML::Key << "BoxCollider2DComponent";
-			out << YAML::BeginMap; // BoxCollider2DComponent
-
-			auto& bc2dComponent = entity.GetComponent<BoxCollider2DComponent>();
-			out << YAML::Key << "Offset" << YAML::Value << bc2dComponent.Offset;
-			out << YAML::Key << "Size" << YAML::Value << bc2dComponent.Size;
-			out << YAML::Key << "Density" << YAML::Value << bc2dComponent.Density;
-			out << YAML::Key << "Friction" << YAML::Value << bc2dComponent.Friction;
-
-			out << YAML::EndMap; // BoxCollider2DComponent
-		}
-
-		if (entity.HasComponent<CircleCollider2DComponent>())
-		{
-			out << YAML::Key << "CircleCollider2DComponent";
-			out << YAML::BeginMap; // CircleCollider2DComponent
-
-			auto& cc2dComponent = entity.GetComponent<CircleCollider2DComponent>();
-			out << YAML::Key << "Offset" << YAML::Value << cc2dComponent.Offset;
-			out << YAML::Key << "Radius" << YAML::Value << cc2dComponent.Radius;
-			out << YAML::Key << "Density" << YAML::Value << cc2dComponent.Density;
-			out << YAML::Key << "Friction" << YAML::Value << cc2dComponent.Friction;
-
-			out << YAML::EndMap; // CircleCollider2DComponent
-		}
-
-		if (entity.HasComponent<RigidBodyComponent>())
-		{
-			out << YAML::Key << "RigidBodyComponent";
-			out << YAML::BeginMap; // RigidBodyComponent
-
-			auto& rbComponent = entity.GetComponent<RigidBodyComponent>();
-			out << YAML::Key << "BodyType" << YAML::Value << (int)rbComponent.BodyType;
-			out << YAML::Key << "Mass" << YAML::Value << rbComponent.Mass;
-			out << YAML::Key << "IsKinematic" << YAML::Value << rbComponent.IsKinematic;
-			out << YAML::Key << "LockPositionX" << YAML::Value << rbComponent.LockPositionX;
-			out << YAML::Key << "LockPositionY" << YAML::Value << rbComponent.LockPositionY;
-			out << YAML::Key << "LockPositionZ" << YAML::Value << rbComponent.LockPositionZ;
-			out << YAML::Key << "LockRotationX" << YAML::Value << rbComponent.LockRotationX;
-			out << YAML::Key << "LockRotationY" << YAML::Value << rbComponent.LockRotationY;
-			out << YAML::Key << "LockRotationZ" << YAML::Value << rbComponent.LockRotationZ;
-
-			out << YAML::EndMap; // RigidBodyComponent
-		}
-
-		if (entity.HasComponent<PhysicsMaterialComponent>())
-		{
-			out << YAML::Key << "PhysicsMaterialComponent";
-			out << YAML::BeginMap; // PhysicsMaterialComponent
-
-			auto& pmComponent = entity.GetComponent<PhysicsMaterialComponent>();
-			out << YAML::Key << "StaticFriction" << YAML::Value << pmComponent.StaticFriction;
-			out << YAML::Key << "DynamicFriction" << YAML::Value << pmComponent.DynamicFriction;
-			out << YAML::Key << "Bounciness" << YAML::Value << pmComponent.Bounciness;
-
-			out << YAML::EndMap; // PhysicsMaterialComponent
-		}
-
-		if (entity.HasComponent<BoxColliderComponent>())
-		{
-			out << YAML::Key << "BoxColliderComponent";
-			out << YAML::BeginMap; // BoxColliderComponent
-
-			auto& bcComponent = entity.GetComponent<BoxColliderComponent>();
-			out << YAML::Key << "Size" << YAML::Value << bcComponent.Size;
-			out << YAML::Key << "Offset" << YAML::Value << bcComponent.Offset;
-
-			out << YAML::EndMap; // BoxColliderComponent
-		}
-
-		if (entity.HasComponent<SphereColliderComponent>())
-		{
-			out << YAML::Key << "SphereColliderComponent";
-			out << YAML::BeginMap; // SphereColliderComponent
-
-			auto& scComponent = entity.GetComponent<SphereColliderComponent>();
-			out << YAML::Key << "Radius" << YAML::Value << scComponent.Radius;
-
-			out << YAML::EndMap; // SphereColliderComponent
-		}
-
-		if (entity.HasComponent<CapsuleColliderComponent>())
-		{
-			out << YAML::Key << "CapsuleColliderComponent";
-			out << YAML::BeginMap; // CapsuleColliderComponent
-
-			auto& ccComponent = entity.GetComponent<CapsuleColliderComponent>();
-			out << YAML::Key << "Radius" << YAML::Value << ccComponent.Radius;
-			out << YAML::Key << "Height" << YAML::Value << ccComponent.Height;
-
-			out << YAML::EndMap; // CapsuleColliderComponent
-		}
-
-		if (entity.HasComponent<MeshColliderComponent>())
-		{
-			out << YAML::Key << "MeshColliderComponent";
-			out << YAML::BeginMap; // MeshColliderComponent
-
-			auto& mcComponent = entity.GetComponent<MeshColliderComponent>();
-			if (mcComponent.CollisionMesh)
-				out << YAML::Key << "AssetPath" << YAML::Value << mcComponent.CollisionMesh->GetFilePath();
-
-			out << YAML::EndMap; // MeshColliderComponent
-		}
-
-		out << YAML::EndMap; // Entity
-	}
-
-	static void SerializeEnvironment(YAML::Emitter& out, const Ref<Scene>& scene)
-	{
-		out << YAML::Key << "Environment";
-		out << YAML::Value;
-		out << YAML::BeginMap; // Environment
-		out << YAML::Key << "AssetPath" << YAML::Value << scene->GetEnvironment().FilePath;
-		const auto& light = scene->GetLight();
-		out << YAML::Key << "Light" << YAML::Value;
-		out << YAML::BeginMap; // Light
-		out << YAML::Key << "Direction" << YAML::Value << light.Direction;
-		out << YAML::Key << "Radiance" << YAML::Value << light.Radiance;
-		out << YAML::Key << "Multiplier" << YAML::Value << light.Multiplier;
-		out << YAML::EndMap; // Light
-		out << YAML::Key << "Shadow" << YAML::Value;
-		out << YAML::BeginMap; // Shadow
-		out << YAML::Key << "Enabled" << YAML::Value << scene->IsShadowEnabled();
-		out << YAML::Key << "Bias" << YAML::Value << scene->GetShadowBias();
-		out << YAML::Key << "NormalBias" << YAML::Value << scene->GetShadowNormalBias();
-		out << YAML::Key << "CascadeCount" << YAML::Value << scene->GetCascadeCount();
-		out << YAML::EndMap; // Shadow
-		out << YAML::EndMap; // Environment
-	}
-
-	void SceneSerializer::Serialize(const std::string& filepath)
-	{
-		YAML::Emitter out;
-		out << YAML::BeginMap;
-		out << YAML::Key << "Scene";
-		out << YAML::Value << "Scene Name";
-		SerializeEnvironment(out, m_Scene);
-		out << YAML::Key << "Entities";
-		out << YAML::Value << YAML::BeginSeq;
-		for (auto entityID : m_Scene->m_Registry.view<entt::entity>())
-		{
-			Entity entity = { entityID, m_Scene.Raw() };
-			if (!entity || !entity.HasComponent<IDComponent>())
-				continue;
-			SerializeEntity(out, entity);
-		}
-		out << YAML::EndSeq;
-		out << YAML::EndMap;
-
-		std::ofstream fout(filepath);
-		fout << out.c_str();
-	}
-
-	void SceneSerializer::SerializeRuntime(const std::string& filepath)
-	{
-		// Not implemented
-		PR_CORE_ASSERT(false);
-	}
-
-	bool SceneSerializer::Deserialize(const std::string& filepath)
-	{
-		std::ifstream stream(filepath);
-		std::stringstream strStream;
-		strStream << stream.rdbuf();
-
-		YAML::Node data = YAML::Load(strStream.str());
-		if (!data["Scene"])
-			return false;
-
-		std::string sceneName = data["Scene"].as<std::string>();
-		PR_CORE_INFO("Deserializing scene '{0}'", sceneName);
-
-		auto environment = data["Environment"];
-		if (environment)
-		{
-			std::string envPath = environment["AssetPath"].as<std::string>();
-			m_Scene->SetEnvironment(Environment::Load(envPath));
-
-			auto lightNode = environment["Light"];
-			if (lightNode)
-			{
-				auto& light = m_Scene->GetLight();
-				light.Direction = lightNode["Direction"].as<glm::vec3>();
-				light.Radiance = lightNode["Radiance"].as<glm::vec3>();
-				light.Multiplier = lightNode["Multiplier"].as<float>();
-			}
-			auto shadowNode = environment["Shadow"];
-			if (shadowNode)
-			{
-				m_Scene->SetShadowEnabled(shadowNode["Enabled"].as<bool>());
-				m_Scene->SetShadowBias(shadowNode["Bias"].as<float>());
-				m_Scene->SetShadowNormalBias(shadowNode["NormalBias"].as<float>());
-				m_Scene->SetCascadeCount(shadowNode["CascadeCount"].as<uint32_t>());
-			}
-		}
-
-		auto entities = data["Entities"];
-		if (entities)
-		{
-			for (auto entity : entities)
-			{
-				uint64_t uuid = entity["Entity"].as<uint64_t>();
-
-				std::string name;
-				auto tagComponent = entity["TagComponent"];
-				if (tagComponent)
-					name = tagComponent["Tag"].as<std::string>();
-
-				PR_CORE_INFO("Deserialized entity with ID = {0}, name = {1}", uuid, name);
-
-				Entity deserializedEntity = m_Scene->CreateEntityWithID(uuid, name);
-
-				auto transformComponent = entity["TransformComponent"];
-				if (transformComponent)
-				{
-					// Entities always have transforms
-					auto& tc = deserializedEntity.GetComponent<TransformComponent>();
-					glm::vec3 translation = transformComponent["Position"].as<glm::vec3>();
-					glm::quat rotation = transformComponent["Rotation"].as<glm::quat>();
-					glm::vec3 scale = transformComponent["Scale"].as<glm::vec3>();
-
-					tc.Position = translation;
-					tc.Rotation = rotation;
-					tc.Scale = scale;
-
-					PR_CORE_INFO("  Entity Transform:");
-					PR_CORE_INFO("    Translation: {0}, {1}, {2}", translation.x, translation.y, translation.z);
-					PR_CORE_INFO("    Rotation: {0}, {1}, {2}, {3}", rotation.w, rotation.x, rotation.y, rotation.z);
-					PR_CORE_INFO("    Scale: {0}, {1}, {2}", scale.x, scale.y, scale.z);
-				}
-
-				// Helper lambda for deserializing stored fields
-				auto deserializeFields = [&](const YAML::Node& storedFields, ScriptEngine* engine, const std::string& moduleName)
-				{
-					if (!storedFields || !engine)
-						return;
-					for (auto field : storedFields)
-					{
-						std::string name = field["Name"].as<std::string>();
-						FieldType type = (FieldType)field["Type"].as<uint32_t>();
-						auto dataNode = field["Data"];
-						auto* f = engine->GetOrCreateField(m_Scene->GetUUID(), uuid, moduleName, name, type);
-						switch (type)
-						{
-						case FieldType::Float:
-							f->SetStoredValue(dataNode.as<float>());
-							break;
-						case FieldType::Int:
-							f->SetStoredValue(dataNode.as<int32_t>());
-							break;
-						case FieldType::UnsignedInt:
-							f->SetStoredValue(dataNode.as<uint32_t>());
-							break;
-						case FieldType::String:
-							PR_CORE_ASSERT(false, "Unimplemented");
-							break;
-						case FieldType::Vec2:
-							f->SetStoredValue(dataNode.as<glm::vec2>());
-							break;
-						case FieldType::Vec3:
-							f->SetStoredValue(dataNode.as<glm::vec3>());
-							break;
-						case FieldType::Vec4:
-							f->SetStoredValue(dataNode.as<glm::vec4>());
-							break;
-						}
-					}
-				};
-
-				// New format: ScriptsComponent (sequence)
-				auto scriptsNode = entity["ScriptsComponent"];
-				if (scriptsNode)
-				{
-					if (!deserializedEntity.HasComponent<ScriptsComponent>())
-						deserializedEntity.AddComponent<ScriptsComponent>();
-
-					auto& scripts = deserializedEntity.GetComponent<ScriptsComponent>().Scripts;
-
-					for (auto scriptNode : scriptsNode)
-					{
-						std::string moduleName = scriptNode["ModuleName"].as<std::string>();
-						ScriptLanguage language = (ScriptLanguage)scriptNode["Language"].as<uint32_t>();
-
-						scripts.emplace_back(moduleName, language);
-						ScriptEngineManager::OnScriptAdded(deserializedEntity, scripts.back());
-
-						PR_CORE_INFO("  Script: Module={0}, Language={1}", moduleName, (uint32_t)language);
-
-						auto* engine = ScriptEngineManager::Get(language);
-						auto storedFields = scriptNode["StoredFields"];
-						deserializeFields(storedFields, engine, moduleName);
-					}
-				}
-				else
-				{
-					// Backward compat: old ScriptComponent format
-					auto scriptComponent = entity["ScriptComponent"];
-					if (scriptComponent)
-					{
-						std::string moduleName = scriptComponent["ModuleName"].as<std::string>();
-
-						if (!deserializedEntity.HasComponent<ScriptsComponent>())
-							deserializedEntity.AddComponent<ScriptsComponent>();
-
-						auto& scripts = deserializedEntity.GetComponent<ScriptsComponent>().Scripts;
-						scripts.emplace_back(moduleName, ScriptLanguage::CSharp);
-						ScriptEngineManager::OnScriptAdded(deserializedEntity, scripts.back());
-
-						PR_CORE_INFO("  Script Module (legacy): {0}", moduleName);
-
-						auto* engine = ScriptEngineManager::Get(ScriptLanguage::CSharp);
-						auto storedFields = scriptComponent["StoredFields"];
-						deserializeFields(storedFields, engine, moduleName);
-					}
-				}
-
-				auto meshComponent = entity["MeshComponent"];
-				if (meshComponent)
-				{
-					std::string meshPath = meshComponent["AssetPath"].as<std::string>();
-					// TEMP (because script creates mesh component...)
-					if (!deserializedEntity.HasComponent<MeshComponent>())
-						deserializedEntity.AddComponent<MeshComponent>(Ref<Mesh>::Create(meshPath));
-
-					PR_CORE_INFO("  Mesh Asset Path: {0}", meshPath);
-				}
-
-				auto materialComponent = entity["MaterialComponent"];
-				if (materialComponent)
-				{
-					deserializedEntity.AddComponent<MaterialComponent>();
-					PR_CORE_INFO("  MaterialComponent present.");
-				}
-
-				auto cameraComponent = entity["CameraComponent"];
-				if (cameraComponent)
-				{
-					auto& component = deserializedEntity.AddComponent<CameraComponent>();
-					component.Camera = SceneCamera();
-					component.Primary = cameraComponent["Primary"].as<bool>();
-
-					PR_CORE_INFO("  Primary Camera: {0}", component.Primary);
-				}
-
-				auto spriteRendererComponent = entity["SpriteRendererComponent"];
-				if (spriteRendererComponent)
-				{
-					auto& component = deserializedEntity.AddComponent<SpriteRendererComponent>();
-					component.Color = spriteRendererComponent["Color"].as<glm::vec4>();
-					component.TilingFactor = spriteRendererComponent["TilingFactor"].as<float>();
-
-					PR_CORE_INFO("  SpriteRendererComponent present.");
-				}
-
-				auto rigidBody2DComponent = entity["RigidBody2DComponent"];
-				if (rigidBody2DComponent)
-				{
-					auto& component = deserializedEntity.AddComponent<RigidBody2DComponent>();
-					component.BodyType = (RigidBody2DComponent::Type)rigidBody2DComponent["BodyType"].as<int>();
-					component.FixedRotation = rigidBody2DComponent["FixedRotation"] ? rigidBody2DComponent["FixedRotation"].as<bool>() : false;
-
-					PR_CORE_INFO("  RigidBody2DComponent: Type={0}, FixedRotation={1}", (int)component.BodyType, component.FixedRotation);
-				}
-
-				auto boxCollider2DComponent = entity["BoxCollider2DComponent"];
-				if (boxCollider2DComponent)
-				{
-					auto& component = deserializedEntity.AddComponent<BoxCollider2DComponent>();
-					component.Offset = boxCollider2DComponent["Offset"].as<glm::vec2>();
-					component.Size = boxCollider2DComponent["Size"].as<glm::vec2>();
-					component.Density = boxCollider2DComponent["Density"] ? boxCollider2DComponent["Density"].as<float>() : 1.0f;
-					component.Friction = boxCollider2DComponent["Friction"] ? boxCollider2DComponent["Friction"].as<float>() : 1.0f;
-
-					PR_CORE_INFO("  BoxCollider2DComponent: Offset={0},{1}, Size={2},{3}, Density={4}, Friction={5}", component.Offset.x, component.Offset.y, component.Size.x, component.Size.y, component.Density, component.Friction);
-				}
-
-				auto circleCollider2DComponent = entity["CircleCollider2DComponent"];
-				if (circleCollider2DComponent)
-				{
-					auto& component = deserializedEntity.AddComponent<CircleCollider2DComponent>();
-					component.Offset = circleCollider2DComponent["Offset"].as<glm::vec2>();
-					component.Radius = circleCollider2DComponent["Radius"].as<float>();
-					component.Density = circleCollider2DComponent["Density"] ? circleCollider2DComponent["Density"].as<float>() : 1.0f;
-					component.Friction = circleCollider2DComponent["Friction"] ? circleCollider2DComponent["Friction"].as<float>() : 1.0f;
-
-					PR_CORE_INFO("  CircleCollider2DComponent: Offset={0},{1}, Radius={2}, Density={3}, Friction={4}", component.Offset.x, component.Offset.y, component.Radius, component.Density, component.Friction);
-				}
-				auto rigidBodyComponent = entity["RigidBodyComponent"];
-				if (rigidBodyComponent)
-				{
-					auto& component = deserializedEntity.AddComponent<RigidBodyComponent>();
-					component.BodyType = (RigidBodyComponent::Type)rigidBodyComponent["BodyType"].as<int>();
-					component.Mass = rigidBodyComponent["Mass"] ? rigidBodyComponent["Mass"].as<float>() : 1.0f;
-					component.IsKinematic = rigidBodyComponent["IsKinematic"] ? rigidBodyComponent["IsKinematic"].as<bool>() : false;
-					component.LockPositionX = rigidBodyComponent["LockPositionX"] ? rigidBodyComponent["LockPositionX"].as<bool>() : false;
-					component.LockPositionY = rigidBodyComponent["LockPositionY"] ? rigidBodyComponent["LockPositionY"].as<bool>() : false;
-					component.LockPositionZ = rigidBodyComponent["LockPositionZ"] ? rigidBodyComponent["LockPositionZ"].as<bool>() : false;
-					component.LockRotationX = rigidBodyComponent["LockRotationX"] ? rigidBodyComponent["LockRotationX"].as<bool>() : false;
-					component.LockRotationY = rigidBodyComponent["LockRotationY"] ? rigidBodyComponent["LockRotationY"].as<bool>() : false;
-					component.LockRotationZ = rigidBodyComponent["LockRotationZ"] ? rigidBodyComponent["LockRotationZ"].as<bool>() : false;
-
-					PR_CORE_INFO("  RigidBodyComponent: Type={0}, Mass={1}", (int)component.BodyType, component.Mass);
-				}
-
-				auto physicsMaterialComponent = entity["PhysicsMaterialComponent"];
-				if (physicsMaterialComponent)
-				{
-					auto& component = deserializedEntity.AddComponent<PhysicsMaterialComponent>();
-					component.StaticFriction = physicsMaterialComponent["StaticFriction"].as<float>();
-					component.DynamicFriction = physicsMaterialComponent["DynamicFriction"].as<float>();
-					component.Bounciness = physicsMaterialComponent["Bounciness"].as<float>();
-
-					PR_CORE_INFO("  PhysicsMaterialComponent: StaticFriction={0}, DynamicFriction={1}, Bounciness={2}", component.StaticFriction, component.DynamicFriction, component.Bounciness);
-				}
-
-				auto boxColliderComponent = entity["BoxColliderComponent"];
-				if (boxColliderComponent)
-				{
-					auto& component = deserializedEntity.AddComponent<BoxColliderComponent>();
-					component.Size = boxColliderComponent["Size"].as<glm::vec3>();
-					component.Offset = boxColliderComponent["Offset"].as<glm::vec3>();
-
-					PR_CORE_INFO("  BoxColliderComponent: Size={0},{1},{2}, Offset={3},{4},{5}", component.Size.x, component.Size.y, component.Size.z, component.Offset.x, component.Offset.y, component.Offset.z);
-				}
-
-				auto sphereColliderComponent = entity["SphereColliderComponent"];
-				if (sphereColliderComponent)
-				{
-					auto& component = deserializedEntity.AddComponent<SphereColliderComponent>();
-					component.Radius = sphereColliderComponent["Radius"].as<float>();
-
-					PR_CORE_INFO("  SphereColliderComponent: Radius={0}", component.Radius);
-				}
-
-				auto capsuleColliderComponent = entity["CapsuleColliderComponent"];
-				if (capsuleColliderComponent)
-				{
-					auto& component = deserializedEntity.AddComponent<CapsuleColliderComponent>();
-					component.Radius = capsuleColliderComponent["Radius"].as<float>();
-					component.Height = capsuleColliderComponent["Height"].as<float>();
-
-					PR_CORE_INFO("  CapsuleColliderComponent: Radius={0}, Height={1}", component.Radius, component.Height);
-				}
-
-				auto meshColliderComponent = entity["MeshColliderComponent"];
-				if (meshColliderComponent)
-				{
-					std::string meshPath = meshColliderComponent["AssetPath"].as<std::string>();
-					deserializedEntity.AddComponent<MeshColliderComponent>(Ref<Mesh>::Create(meshPath));
-
-					PR_CORE_INFO("  MeshColliderComponent: AssetPath={0}", meshPath);
-				}
-			}
-		}
-		return true;
-	}
-
-	bool SceneSerializer::DeserializeRuntime(const std::string& filepath)
-	{
-		// Not implemented
-		PR_CORE_ASSERT(false);
-		return false;
-	}
+    YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec2& v)
+    {
+        out << YAML::Flow;
+        out << YAML::BeginSeq << v.x << v.y << YAML::EndSeq;
+        return out;
+    }
+
+    YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec3& v)
+    {
+        out << YAML::Flow;
+        out << YAML::BeginSeq << v.x << v.y << v.z << YAML::EndSeq;
+        return out;
+    }
+
+
+    YAML::Emitter& operator<<(YAML::Emitter& out, const glm::vec4& v)
+    {
+        out << YAML::Flow;
+        out << YAML::BeginSeq << v.x << v.y << v.z << v.w << YAML::EndSeq;
+        return out;
+    }
+
+    YAML::Emitter& operator<<(YAML::Emitter& out, const glm::quat& v)
+    {
+        out << YAML::Flow;
+        out << YAML::BeginSeq << v.w << v.x << v.y << v.z << YAML::EndSeq;
+        return out;
+    }
+
+    SceneSerializer::SceneSerializer(const Ref<Scene>& scene)
+        : m_Scene(scene)
+    {
+    }
+
+        static void SerializeEntity(YAML::Emitter& out, Entity entity, Scene* scene)
+    {
+        UUID uuid = entity.GetComponent<IDComponent>().ID;
+        out << YAML::BeginMap; // Entity
+        out << YAML::Key << "Entity";
+        out << YAML::Value << uuid;
+
+        if (entity.HasComponent<TagComponent>())
+        {
+            out << YAML::Key << "TagComponent";
+            out << YAML::BeginMap; // TagComponent
+
+            auto& tag = entity.GetComponent<TagComponent>().Tag;
+            out << YAML::Key << "Tag" << YAML::Value << tag;
+
+            out << YAML::EndMap; // TagComponent
+        }
+
+        if (entity.HasComponent<TransformComponent>())
+        {
+            out << YAML::Key << "TransformComponent";
+            out << YAML::BeginMap; // TransformComponent
+
+            auto& tc = entity.GetComponent<TransformComponent>();
+            out << YAML::Key << "Position" << YAML::Value << tc.Position;
+            out << YAML::Key << "Rotation" << YAML::Value << tc.Rotation;
+            out << YAML::Key << "Scale" << YAML::Value << tc.Scale;
+
+            out << YAML::EndMap; // TransformComponent
+        }
+
+        if (entity.HasComponent<ScriptsComponent>())
+        {
+            out << YAML::Key << "ScriptsComponent";
+            out << YAML::Value << YAML::BeginSeq;
+
+            auto& scripts = entity.GetComponent<ScriptsComponent>().Scripts;
+            for (const auto& script : scripts)
+            {
+                out << YAML::BeginMap; // Script
+                out << YAML::Key << "ModuleName" << YAML::Value << script.ModuleName;
+                out << YAML::Key << "Language" << YAML::Value << (uint32_t)script.Language;
+
+                auto* group = scene->GetScriptStorage().FindGroup(uuid, script.ModuleName);
+                if (group && !group->Fields.empty())
+                {
+                    out << YAML::Key << "StoredFields" << YAML::Value;
+                    out << YAML::BeginSeq;
+                    for (auto& [fieldName, field] : group->Fields)
+                    {
+                        out << YAML::BeginMap; // Field
+                        out << YAML::Key << "Name" << YAML::Value << fieldName;
+                        out << YAML::Key << "Type" << YAML::Value << (uint32_t)field->GetType();
+                        out << YAML::Key << "Data" << YAML::Value;
+
+                        switch (field->GetType())
+                        {
+                        case FieldType::Int:
+                            out << field->GetStoredValue<int32_t>();
+                            break;
+                        case FieldType::UnsignedInt:
+                            out << field->GetStoredValue<uint32_t>();
+                            break;
+                        case FieldType::Float:
+                            out << field->GetStoredValue<float>();
+                            break;
+                        case FieldType::Vec2:
+                            out << field->GetStoredValue<glm::vec2>();
+                            break;
+                        case FieldType::Vec3:
+                            out << field->GetStoredValue<glm::vec3>();
+                            break;
+                        case FieldType::Vec4:
+                            out << field->GetStoredValue<glm::vec4>();
+                            break;
+                        }
+                        out << YAML::EndMap; // Field
+                    }
+                    out << YAML::EndSeq;
+                }
+
+                out << YAML::EndMap; // Script
+            }
+            out << YAML::EndSeq;
+        }
+
+        if (entity.HasComponent<MeshComponent>())
+        {
+            out << YAML::Key << "MeshComponent";
+            out << YAML::BeginMap; // MeshComponent
+
+            auto mesh = entity.GetComponent<MeshComponent>().Mesh;
+            out << YAML::Key << "AssetPath" << YAML::Value << mesh->GetFilePath();
+
+            out << YAML::EndMap; // MeshComponent
+        }
+        if (entity.HasComponent<MaterialComponent>())
+        {
+            out << YAML::Key << "MaterialComponent";
+            out << YAML::BeginMap; // MaterialComponent
+            out << YAML::EndMap; // MaterialComponent
+        }
+
+        if (entity.HasComponent<CameraComponent>())
+        {
+            out << YAML::Key << "CameraComponent";
+            out << YAML::BeginMap; // CameraComponent
+
+            auto& cameraComponent = entity.GetComponent<CameraComponent>();
+            out << YAML::Key << "Camera" << YAML::Value << "some camera data...";
+            out << YAML::Key << "Primary" << YAML::Value << cameraComponent.Primary;
+
+            out << YAML::EndMap; // CameraComponent
+        }
+
+        if (entity.HasComponent<SpriteRendererComponent>())
+        {
+            out << YAML::Key << "SpriteRendererComponent";
+            out << YAML::BeginMap; // SpriteRendererComponent
+
+            auto& spriteRendererComponent = entity.GetComponent<SpriteRendererComponent>();
+            out << YAML::Key << "Color" << YAML::Value << spriteRendererComponent.Color;
+            if (spriteRendererComponent.Texture)
+                out << YAML::Key << "TextureAssetPath" << YAML::Value << "path/to/asset";
+            out << YAML::Key << "TilingFactor" << YAML::Value << spriteRendererComponent.TilingFactor;
+
+            out << YAML::EndMap; // SpriteRendererComponent
+        }
+
+        if (entity.HasComponent<RigidBody2DComponent>())
+        {
+            out << YAML::Key << "RigidBody2DComponent";
+            out << YAML::BeginMap; // RigidBody2DComponent
+
+            auto& rb2dComponent = entity.GetComponent<RigidBody2DComponent>();
+            out << YAML::Key << "BodyType" << YAML::Value << (int)rb2dComponent.BodyType;
+            out << YAML::Key << "FixedRotation" << YAML::Value << rb2dComponent.FixedRotation;
+
+            out << YAML::EndMap; // RigidBody2DComponent
+        }
+
+        if (entity.HasComponent<BoxCollider2DComponent>())
+        {
+            out << YAML::Key << "BoxCollider2DComponent";
+            out << YAML::BeginMap; // BoxCollider2DComponent
+
+            auto& bc2dComponent = entity.GetComponent<BoxCollider2DComponent>();
+            out << YAML::Key << "Offset" << YAML::Value << bc2dComponent.Offset;
+            out << YAML::Key << "Size" << YAML::Value << bc2dComponent.Size;
+            out << YAML::Key << "Density" << YAML::Value << bc2dComponent.Density;
+            out << YAML::Key << "Friction" << YAML::Value << bc2dComponent.Friction;
+
+            out << YAML::EndMap; // BoxCollider2DComponent
+        }
+
+        if (entity.HasComponent<CircleCollider2DComponent>())
+        {
+            out << YAML::Key << "CircleCollider2DComponent";
+            out << YAML::BeginMap; // CircleCollider2DComponent
+
+            auto& cc2dComponent = entity.GetComponent<CircleCollider2DComponent>();
+            out << YAML::Key << "Offset" << YAML::Value << cc2dComponent.Offset;
+            out << YAML::Key << "Radius" << YAML::Value << cc2dComponent.Radius;
+            out << YAML::Key << "Density" << YAML::Value << cc2dComponent.Density;
+            out << YAML::Key << "Friction" << YAML::Value << cc2dComponent.Friction;
+
+            out << YAML::EndMap; // CircleCollider2DComponent
+        }
+
+        if (entity.HasComponent<RigidBodyComponent>())
+        {
+            out << YAML::Key << "RigidBodyComponent";
+            out << YAML::BeginMap; // RigidBodyComponent
+
+            auto& rbComponent = entity.GetComponent<RigidBodyComponent>();
+            out << YAML::Key << "BodyType" << YAML::Value << (int)rbComponent.BodyType;
+            out << YAML::Key << "Mass" << YAML::Value << rbComponent.Mass;
+            out << YAML::Key << "IsKinematic" << YAML::Value << rbComponent.IsKinematic;
+            out << YAML::Key << "LockPositionX" << YAML::Value << rbComponent.LockPositionX;
+            out << YAML::Key << "LockPositionY" << YAML::Value << rbComponent.LockPositionY;
+            out << YAML::Key << "LockPositionZ" << YAML::Value << rbComponent.LockPositionZ;
+            out << YAML::Key << "LockRotationX" << YAML::Value << rbComponent.LockRotationX;
+            out << YAML::Key << "LockRotationY" << YAML::Value << rbComponent.LockRotationY;
+            out << YAML::Key << "LockRotationZ" << YAML::Value << rbComponent.LockRotationZ;
+
+            out << YAML::EndMap; // RigidBodyComponent
+        }
+
+        if (entity.HasComponent<PhysicsMaterialComponent>())
+        {
+            out << YAML::Key << "PhysicsMaterialComponent";
+            out << YAML::BeginMap; // PhysicsMaterialComponent
+
+            auto& pmComponent = entity.GetComponent<PhysicsMaterialComponent>();
+            out << YAML::Key << "StaticFriction" << YAML::Value << pmComponent.StaticFriction;
+            out << YAML::Key << "DynamicFriction" << YAML::Value << pmComponent.DynamicFriction;
+            out << YAML::Key << "Bounciness" << YAML::Value << pmComponent.Bounciness;
+
+            out << YAML::EndMap; // PhysicsMaterialComponent
+        }
+
+        if (entity.HasComponent<BoxColliderComponent>())
+        {
+            out << YAML::Key << "BoxColliderComponent";
+            out << YAML::BeginMap; // BoxColliderComponent
+
+            auto& bcComponent = entity.GetComponent<BoxColliderComponent>();
+            out << YAML::Key << "Size" << YAML::Value << bcComponent.Size;
+            out << YAML::Key << "Offset" << YAML::Value << bcComponent.Offset;
+
+            out << YAML::EndMap; // BoxColliderComponent
+        }
+
+        if (entity.HasComponent<SphereColliderComponent>())
+        {
+            out << YAML::Key << "SphereColliderComponent";
+            out << YAML::BeginMap; // SphereColliderComponent
+
+            auto& scComponent = entity.GetComponent<SphereColliderComponent>();
+            out << YAML::Key << "Radius" << YAML::Value << scComponent.Radius;
+
+            out << YAML::EndMap; // SphereColliderComponent
+        }
+
+        if (entity.HasComponent<CapsuleColliderComponent>())
+        {
+            out << YAML::Key << "CapsuleColliderComponent";
+            out << YAML::BeginMap; // CapsuleColliderComponent
+
+            auto& ccComponent = entity.GetComponent<CapsuleColliderComponent>();
+            out << YAML::Key << "Radius" << YAML::Value << ccComponent.Radius;
+            out << YAML::Key << "Height" << YAML::Value << ccComponent.Height;
+
+            out << YAML::EndMap; // CapsuleColliderComponent
+        }
+
+        if (entity.HasComponent<MeshColliderComponent>())
+        {
+            out << YAML::Key << "MeshColliderComponent";
+            out << YAML::BeginMap; // MeshColliderComponent
+
+            auto& mcComponent = entity.GetComponent<MeshColliderComponent>();
+            if (mcComponent.CollisionMesh)
+                out << YAML::Key << "AssetPath" << YAML::Value << mcComponent.CollisionMesh->GetFilePath();
+
+            out << YAML::EndMap; // MeshColliderComponent
+        }
+
+        out << YAML::EndMap; // Entity
+    }
+
+    static void SerializeEnvironment(YAML::Emitter& out, const Ref<Scene>& scene)
+    {
+        out << YAML::Key << "Environment";
+        out << YAML::Value;
+        out << YAML::BeginMap; // Environment
+        out << YAML::Key << "AssetPath" << YAML::Value << scene->GetEnvironment().FilePath;
+        const auto& light = scene->GetLight();
+        out << YAML::Key << "Light" << YAML::Value;
+        out << YAML::BeginMap; // Light
+        out << YAML::Key << "Direction" << YAML::Value << light.Direction;
+        out << YAML::Key << "Radiance" << YAML::Value << light.Radiance;
+        out << YAML::Key << "Multiplier" << YAML::Value << light.Multiplier;
+        out << YAML::EndMap; // Light
+        out << YAML::Key << "Shadow" << YAML::Value;
+        out << YAML::BeginMap; // Shadow
+        out << YAML::Key << "Enabled" << YAML::Value << scene->IsShadowEnabled();
+        out << YAML::Key << "Bias" << YAML::Value << scene->GetShadowBias();
+        out << YAML::Key << "NormalBias" << YAML::Value << scene->GetShadowNormalBias();
+        out << YAML::Key << "CascadeCount" << YAML::Value << scene->GetCascadeCount();
+        out << YAML::EndMap; // Shadow
+        out << YAML::EndMap; // Environment
+    }
+
+    void SceneSerializer::Serialize(const std::string& filepath)
+    {
+        YAML::Emitter out;
+        out << YAML::BeginMap;
+        out << YAML::Key << "Scene";
+        out << YAML::Value << "Scene Name";
+        SerializeEnvironment(out, m_Scene);
+        out << YAML::Key << "Entities";
+        out << YAML::Value << YAML::BeginSeq;
+        for (auto entityID : m_Scene->m_Registry.view<entt::entity>())
+        {
+            Entity entity = { entityID, m_Scene.Raw() };
+            if (!entity || !entity.HasComponent<IDComponent>())
+                continue;
+            SerializeEntity(out, entity, m_Scene.Raw());
+        }
+        out << YAML::EndSeq;
+        out << YAML::EndMap;
+
+        std::ofstream fout(filepath);
+        fout << out.c_str();
+    }
+
+    void SceneSerializer::SerializeRuntime(const std::string& filepath)
+    {
+        // Not implemented
+        PR_CORE_ASSERT(false);
+    }
+
+    bool SceneSerializer::Deserialize(const std::string& filepath)
+    {
+        std::ifstream stream(filepath);
+        std::stringstream strStream;
+        strStream << stream.rdbuf();
+
+        YAML::Node data = YAML::Load(strStream.str());
+        if (!data["Scene"])
+            return false;
+
+        std::string sceneName = data["Scene"].as<std::string>();
+        PR_CORE_INFO("Deserializing scene '{0}'", sceneName);
+
+        auto environment = data["Environment"];
+        if (environment)
+        {
+            std::string envPath = environment["AssetPath"].as<std::string>();
+            m_Scene->SetEnvironment(Environment::Load(envPath));
+
+            auto lightNode = environment["Light"];
+            if (lightNode)
+            {
+                auto& light = m_Scene->GetLight();
+                light.Direction = lightNode["Direction"].as<glm::vec3>();
+                light.Radiance = lightNode["Radiance"].as<glm::vec3>();
+                light.Multiplier = lightNode["Multiplier"].as<float>();
+            }
+            auto shadowNode = environment["Shadow"];
+            if (shadowNode)
+            {
+                m_Scene->SetShadowEnabled(shadowNode["Enabled"].as<bool>());
+                m_Scene->SetShadowBias(shadowNode["Bias"].as<float>());
+                m_Scene->SetShadowNormalBias(shadowNode["NormalBias"].as<float>());
+                m_Scene->SetCascadeCount(shadowNode["CascadeCount"].as<uint32_t>());
+            }
+        }
+
+        auto entities = data["Entities"];
+        if (entities)
+        {
+            for (auto entity : entities)
+            {
+                uint64_t uuid = entity["Entity"].as<uint64_t>();
+
+                std::string name;
+                auto tagComponent = entity["TagComponent"];
+                if (tagComponent)
+                    name = tagComponent["Tag"].as<std::string>();
+
+                PR_CORE_INFO("Deserialized entity with ID = {0}, name = {1}", uuid, name);
+
+                Entity deserializedEntity = m_Scene->CreateEntityWithID(uuid, name);
+
+                auto transformComponent = entity["TransformComponent"];
+                if (transformComponent)
+                {
+                    // Entities always have transforms
+                    auto& tc = deserializedEntity.GetComponent<TransformComponent>();
+                    glm::vec3 translation = transformComponent["Position"].as<glm::vec3>();
+                    glm::quat rotation = transformComponent["Rotation"].as<glm::quat>();
+                    glm::vec3 scale = transformComponent["Scale"].as<glm::vec3>();
+
+                    tc.Position = translation;
+                    tc.Rotation = rotation;
+                    tc.Scale = scale;
+
+                    PR_CORE_INFO("  Entity Transform:");
+                    PR_CORE_INFO("    Translation: {0}, {1}, {2}", translation.x, translation.y, translation.z);
+                    PR_CORE_INFO("    Rotation: {0}, {1}, {2}, {3}", rotation.w, rotation.x, rotation.y, rotation.z);
+                    PR_CORE_INFO("    Scale: {0}, {1}, {2}", scale.x, scale.y, scale.z);
+                }
+
+                // Helper lambda for deserializing stored fields via ScriptStorage
+                auto deserializeFields = [&](const YAML::Node& storedFields, const std::string& moduleName)
+                {
+                    if (!storedFields)
+                        return;
+                    auto* group = m_Scene->GetScriptStorage().FindGroup(uuid, moduleName);
+                    if (!group)
+                        return;
+                    for (auto field : storedFields)
+                    {
+                        std::string name = field["Name"].as<std::string>();
+                        auto dataNode = field["Data"];
+                        auto fit = group->Fields.find(name);
+                        if (fit == group->Fields.end())
+                            continue;
+                        auto* f = fit->second.get();
+                        switch (f->GetType())
+                        {
+                        case FieldType::Float:
+                            f->SetStoredValue(dataNode.as<float>());
+                            break;
+                        case FieldType::Int:
+                            f->SetStoredValue(dataNode.as<int32_t>());
+                            break;
+                        case FieldType::UnsignedInt:
+                            f->SetStoredValue(dataNode.as<uint32_t>());
+                            break;
+                        case FieldType::String:
+                            PR_CORE_ASSERT(false, "Unimplemented");
+                            break;
+                        case FieldType::Vec2:
+                            f->SetStoredValue(dataNode.as<glm::vec2>());
+                            break;
+                        case FieldType::Vec3:
+                            f->SetStoredValue(dataNode.as<glm::vec3>());
+                            break;
+                        case FieldType::Vec4:
+                            f->SetStoredValue(dataNode.as<glm::vec4>());
+                            break;
+                        }
+                    }
+                };
+
+                // New format: ScriptsComponent (sequence)
+                auto scriptsNode = entity["ScriptsComponent"];
+                if (scriptsNode)
+                {
+                    if (!deserializedEntity.HasComponent<ScriptsComponent>())
+                        deserializedEntity.AddComponent<ScriptsComponent>();
+
+                    auto& scripts = deserializedEntity.GetComponent<ScriptsComponent>().Scripts;
+
+                    for (auto scriptNode : scriptsNode)
+                    {
+                        std::string moduleName = scriptNode["ModuleName"].as<std::string>();
+                        ScriptLanguage language = (ScriptLanguage)scriptNode["Language"].as<uint32_t>();
+
+                        scripts.emplace_back(moduleName, language);
+                        ScriptEngineManager::OnScriptAdded(deserializedEntity, scripts.back(), m_Scene->GetScriptStorage());
+
+                        PR_CORE_INFO("  Script: Module={0}, Language={1}", moduleName, (uint32_t)language);
+
+                        auto storedFields = scriptNode["StoredFields"];
+                        deserializeFields(storedFields, moduleName);
+                    }
+                }
+                else
+                {
+                    // Backward compat: old ScriptComponent format
+                    auto scriptComponent = entity["ScriptComponent"];
+                    if (scriptComponent)
+                    {
+                        std::string moduleName = scriptComponent["ModuleName"].as<std::string>();
+
+                        if (!deserializedEntity.HasComponent<ScriptsComponent>())
+                            deserializedEntity.AddComponent<ScriptsComponent>();
+
+                        auto& scripts = deserializedEntity.GetComponent<ScriptsComponent>().Scripts;
+                        scripts.emplace_back(moduleName, ScriptLanguage::CSharp);
+                        ScriptEngineManager::OnScriptAdded(deserializedEntity, scripts.back(), m_Scene->GetScriptStorage());
+
+                        PR_CORE_INFO("  Script Module (legacy): {0}", moduleName);
+
+                        auto storedFields = scriptComponent["StoredFields"];
+                        deserializeFields(storedFields, moduleName);
+                    }
+                }
+
+                auto meshComponent = entity["MeshComponent"];
+                if (meshComponent)
+                {
+                    std::string meshPath = meshComponent["AssetPath"].as<std::string>();
+                    // TEMP (because script creates mesh component...)
+                    if (!deserializedEntity.HasComponent<MeshComponent>())
+                        deserializedEntity.AddComponent<MeshComponent>(Ref<Mesh>::Create(meshPath));
+
+                    PR_CORE_INFO("  Mesh Asset Path: {0}", meshPath);
+                }
+
+                auto materialComponent = entity["MaterialComponent"];
+                if (materialComponent)
+                {
+                    deserializedEntity.AddComponent<MaterialComponent>();
+                    PR_CORE_INFO("  MaterialComponent present.");
+                }
+
+                auto cameraComponent = entity["CameraComponent"];
+                if (cameraComponent)
+                {
+                    auto& component = deserializedEntity.AddComponent<CameraComponent>();
+                    component.Camera = SceneCamera();
+                    component.Primary = cameraComponent["Primary"].as<bool>();
+
+                    PR_CORE_INFO("  Primary Camera: {0}", component.Primary);
+                }
+
+                auto spriteRendererComponent = entity["SpriteRendererComponent"];
+                if (spriteRendererComponent)
+                {
+                    auto& component = deserializedEntity.AddComponent<SpriteRendererComponent>();
+                    component.Color = spriteRendererComponent["Color"].as<glm::vec4>();
+                    component.TilingFactor = spriteRendererComponent["TilingFactor"].as<float>();
+
+                    PR_CORE_INFO("  SpriteRendererComponent present.");
+                }
+
+                auto rigidBody2DComponent = entity["RigidBody2DComponent"];
+                if (rigidBody2DComponent)
+                {
+                    auto& component = deserializedEntity.AddComponent<RigidBody2DComponent>();
+                    component.BodyType = (RigidBody2DComponent::Type)rigidBody2DComponent["BodyType"].as<int>();
+                    component.FixedRotation = rigidBody2DComponent["FixedRotation"] ? rigidBody2DComponent["FixedRotation"].as<bool>() : false;
+
+                    PR_CORE_INFO("  RigidBody2DComponent: Type={0}, FixedRotation={1}", (int)component.BodyType, component.FixedRotation);
+                }
+
+                auto boxCollider2DComponent = entity["BoxCollider2DComponent"];
+                if (boxCollider2DComponent)
+                {
+                    auto& component = deserializedEntity.AddComponent<BoxCollider2DComponent>();
+                    component.Offset = boxCollider2DComponent["Offset"].as<glm::vec2>();
+                    component.Size = boxCollider2DComponent["Size"].as<glm::vec2>();
+                    component.Density = boxCollider2DComponent["Density"] ? boxCollider2DComponent["Density"].as<float>() : 1.0f;
+                    component.Friction = boxCollider2DComponent["Friction"] ? boxCollider2DComponent["Friction"].as<float>() : 1.0f;
+
+                    PR_CORE_INFO("  BoxCollider2DComponent: Offset={0},{1}, Size={2},{3}, Density={4}, Friction={5}", component.Offset.x, component.Offset.y, component.Size.x, component.Size.y, component.Density, component.Friction);
+                }
+
+                auto circleCollider2DComponent = entity["CircleCollider2DComponent"];
+                if (circleCollider2DComponent)
+                {
+                    auto& component = deserializedEntity.AddComponent<CircleCollider2DComponent>();
+                    component.Offset = circleCollider2DComponent["Offset"].as<glm::vec2>();
+                    component.Radius = circleCollider2DComponent["Radius"].as<float>();
+                    component.Density = circleCollider2DComponent["Density"] ? circleCollider2DComponent["Density"].as<float>() : 1.0f;
+                    component.Friction = circleCollider2DComponent["Friction"] ? circleCollider2DComponent["Friction"].as<float>() : 1.0f;
+
+                    PR_CORE_INFO("  CircleCollider2DComponent: Offset={0},{1}, Radius={2}, Density={3}, Friction={4}", component.Offset.x, component.Offset.y, component.Radius, component.Density, component.Friction);
+                }
+                auto rigidBodyComponent = entity["RigidBodyComponent"];
+                if (rigidBodyComponent)
+                {
+                    auto& component = deserializedEntity.AddComponent<RigidBodyComponent>();
+                    component.BodyType = (RigidBodyComponent::Type)rigidBodyComponent["BodyType"].as<int>();
+                    component.Mass = rigidBodyComponent["Mass"] ? rigidBodyComponent["Mass"].as<float>() : 1.0f;
+                    component.IsKinematic = rigidBodyComponent["IsKinematic"] ? rigidBodyComponent["IsKinematic"].as<bool>() : false;
+                    component.LockPositionX = rigidBodyComponent["LockPositionX"] ? rigidBodyComponent["LockPositionX"].as<bool>() : false;
+                    component.LockPositionY = rigidBodyComponent["LockPositionY"] ? rigidBodyComponent["LockPositionY"].as<bool>() : false;
+                    component.LockPositionZ = rigidBodyComponent["LockPositionZ"] ? rigidBodyComponent["LockPositionZ"].as<bool>() : false;
+                    component.LockRotationX = rigidBodyComponent["LockRotationX"] ? rigidBodyComponent["LockRotationX"].as<bool>() : false;
+                    component.LockRotationY = rigidBodyComponent["LockRotationY"] ? rigidBodyComponent["LockRotationY"].as<bool>() : false;
+                    component.LockRotationZ = rigidBodyComponent["LockRotationZ"] ? rigidBodyComponent["LockRotationZ"].as<bool>() : false;
+
+                    PR_CORE_INFO("  RigidBodyComponent: Type={0}, Mass={1}", (int)component.BodyType, component.Mass);
+                }
+
+                auto physicsMaterialComponent = entity["PhysicsMaterialComponent"];
+                if (physicsMaterialComponent)
+                {
+                    auto& component = deserializedEntity.AddComponent<PhysicsMaterialComponent>();
+                    component.StaticFriction = physicsMaterialComponent["StaticFriction"].as<float>();
+                    component.DynamicFriction = physicsMaterialComponent["DynamicFriction"].as<float>();
+                    component.Bounciness = physicsMaterialComponent["Bounciness"].as<float>();
+
+                    PR_CORE_INFO("  PhysicsMaterialComponent: StaticFriction={0}, DynamicFriction={1}, Bounciness={2}", component.StaticFriction, component.DynamicFriction, component.Bounciness);
+                }
+
+                auto boxColliderComponent = entity["BoxColliderComponent"];
+                if (boxColliderComponent)
+                {
+                    auto& component = deserializedEntity.AddComponent<BoxColliderComponent>();
+                    component.Size = boxColliderComponent["Size"].as<glm::vec3>();
+                    component.Offset = boxColliderComponent["Offset"].as<glm::vec3>();
+
+                    PR_CORE_INFO("  BoxColliderComponent: Size={0},{1},{2}, Offset={3},{4},{5}", component.Size.x, component.Size.y, component.Size.z, component.Offset.x, component.Offset.y, component.Offset.z);
+                }
+
+                auto sphereColliderComponent = entity["SphereColliderComponent"];
+                if (sphereColliderComponent)
+                {
+                    auto& component = deserializedEntity.AddComponent<SphereColliderComponent>();
+                    component.Radius = sphereColliderComponent["Radius"].as<float>();
+
+                    PR_CORE_INFO("  SphereColliderComponent: Radius={0}", component.Radius);
+                }
+
+                auto capsuleColliderComponent = entity["CapsuleColliderComponent"];
+                if (capsuleColliderComponent)
+                {
+                    auto& component = deserializedEntity.AddComponent<CapsuleColliderComponent>();
+                    component.Radius = capsuleColliderComponent["Radius"].as<float>();
+                    component.Height = capsuleColliderComponent["Height"].as<float>();
+
+                    PR_CORE_INFO("  CapsuleColliderComponent: Radius={0}, Height={1}", component.Radius, component.Height);
+                }
+
+                auto meshColliderComponent = entity["MeshColliderComponent"];
+                if (meshColliderComponent)
+                {
+                    std::string meshPath = meshColliderComponent["AssetPath"].as<std::string>();
+                    deserializedEntity.AddComponent<MeshColliderComponent>(Ref<Mesh>::Create(meshPath));
+
+                    PR_CORE_INFO("  MeshColliderComponent: AssetPath={0}", meshPath);
+                }
+            }
+        }
+        return true;
+    }
+
+    bool SceneSerializer::DeserializeRuntime(const std::string& filepath)
+    {
+        // Not implemented
+        PR_CORE_ASSERT(false);
+        return false;
+    }
 
 }

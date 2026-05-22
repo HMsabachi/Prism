@@ -41,6 +41,7 @@ namespace Prism
 
 		static void SetCollisionFilters(physx::PxRigidActor* actor, uint32_t filterGroup, uint32_t filterMask);
 
+		static void SetCollisionScene(class Scene* scene);
 		static void ConnectToPhysXDebugger();
 		static void DisconnectFromPhysXDebugger();
 

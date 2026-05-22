@@ -1,4 +1,4 @@
-﻿using Prism;
+using Prism;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -38,6 +38,7 @@ namespace Example
 
         void OnPlayerCollisionBegin(float value)
         {
+            Log.Trace("PlayerSphere OnPlayerCollisionBegin {0}", value);
             m_CollisionCounter++;
         }
 
@@ -54,16 +55,13 @@ namespace Example
             {
                 movementForce *= 0.4f;
             }
-
             Vector3 forward = m_Transform.Forward;
             Vector3 right = m_Transform.Right;
             Vector3 up = m_Transform.Up;
-
             if (Input.IsKeyPressed(KeyCode.W))
                 m_PhysicsBody.AddForce(forward * movementForce);
             else if (Input.IsKeyPressed(KeyCode.S))
                 m_PhysicsBody.AddForce(forward * -movementForce);
-
             if (Input.IsKeyPressed(KeyCode.D))
                 m_PhysicsBody.AddForce(right * movementForce);
             else if (Input.IsKeyPressed(KeyCode.A))
@@ -71,12 +69,10 @@ namespace Example
 
             if (Colliding && Input.IsKeyPressed(KeyCode.Space))
                 m_PhysicsBody.AddForce(up * JumpForce);
-
             if (Colliding)
                 m_MeshMaterial.Set("u_AlbedoColor", new Vector3(1.0f, 0.0f, 0.0f));
             else
                 m_MeshMaterial.Set("u_AlbedoColor", new Vector3(0.8f, 0.8f, 0.8f));
-
             Vector3 linearVelocity = m_PhysicsBody.GetLinearVelocity();
             linearVelocity.Clamp(new Vector3(-MaxSpeed.X, -1000, -MaxSpeed.Z), MaxSpeed);
             m_PhysicsBody.SetLinearVelocity(linearVelocity);

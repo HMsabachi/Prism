@@ -1,6 +1,7 @@
 #pragma once
 #include "Prism/Core/UUID.h"
-
+#include "Scripting/PublicField.h"
+#include "Scripting/ScriptStorage.h"
 
 #include <entt/entt.hpp>
 
@@ -94,6 +95,16 @@ namespace Prism
 
         void CopyTo(Ref<Scene>& target);
 
+        // Script storage access
+        SceneScriptStorage& GetScriptStorage() { return m_ScriptStorage; }
+        const SceneScriptStorage& GetScriptStorage() const { return m_ScriptStorage; }
+
+        // Collision dispatch (called by physics contact listeners)
+        void OnCollision2DBegin(Entity entity);
+        void OnCollision2DEnd(Entity entity);
+        void OnCollisionBegin(Entity entity);
+        void OnCollisionEnd(Entity entity);
+
         UUID GetUUID() const { return m_SceneID; }
 
         static Ref<Scene> GetScene(UUID uuid);
@@ -140,6 +151,8 @@ namespace Prism
         friend class ContactListener;
 
         // Script lifecycle is now handled manually via ScriptsComponent
+
+        SceneScriptStorage m_ScriptStorage;
     };
 
 }

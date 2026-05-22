@@ -1,127 +1,102 @@
 #include "prpch.h"
 #include "ScriptEngineManager.h"
+#include "Scripting/ScriptStorage.h"
+#include "Prism/Scene/Components.h"
+#include "Prism/Scene/Entity.h"
 
 namespace Prism
 {
-	std::unordered_map<ScriptLanguage, std::unique_ptr<ScriptEngine>> ScriptEngineManager::s_Engines;
+    std::unordered_map<ScriptLanguage, std::unique_ptr<ScriptEngine>> ScriptEngineManager::s_Engines;
 
-	void ScriptEngineManager::Init()
-	{
-		s_Engines.clear();
-	}
+    void ScriptEngineManager::Init()
+    {
+        s_Engines.clear();
+    }
 
-	void ScriptEngineManager::Shutdown()
-	{
-		for (auto& [lang, engine] : s_Engines)
-		{
-			if (engine)
-			{
-				engine->Shutdown();
-				engine.reset();
-			}
-		}
-		s_Engines.clear();
-	}
+    void ScriptEngineManager::Shutdown()
+    {
+        for (auto& [lang, engine] : s_Engines)
+        {
+            if (engine)
+            {
+                engine->Shutdown();
+                engine.reset();
+            }
+        }
+        s_Engines.clear();
+    }
 
-	ScriptEngine* ScriptEngineManager::Get(ScriptLanguage lang)
-	{
-		auto it = s_Engines.find(lang);
-		return it != s_Engines.end() ? it->second.get() : nullptr;
-	}
+    ScriptEngine* ScriptEngineManager::Get(ScriptLanguage lang)
+    {
+        auto it = s_Engines.find(lang);
+        return it != s_Engines.end() ? it->second.get() : nullptr;
+    }
 
-	void ScriptEngineManager::Register(ScriptLanguage lang, std::unique_ptr<ScriptEngine> engine)
-	{
-		s_Engines[lang] = std::move(engine);
-	}
+    void ScriptEngineManager::Register(ScriptLanguage lang, std::unique_ptr<ScriptEngine> engine)
+    {
+        s_Engines[lang] = std::move(engine);
+    }
 
-	bool ScriptEngineManager::IsRegistered(ScriptLanguage lang)
-	{
-		return s_Engines.find(lang) != s_Engines.end();
-	}
+    bool ScriptEngineManager::IsRegistered(ScriptLanguage lang)
+    {
+        return s_Engines.find(lang) != s_Engines.end();
+    }
 
-	void ScriptEngineManager::OnScriptAdded(Entity entity, const ScriptInstance& script)
-	{
-		auto* engine = Get(script.Language);
-		if (engine)
-			engine->InitScriptEntity(entity, script.ModuleName);
-	}
+    void ScriptEngineManager::OnScriptAdded(Entity entity, const ScriptInstance& script, SceneScriptStorage& storage)
+    {
+        auto* engine = Get(script.Language);
+        if (!engine)
+            return;
 
-	void ScriptEngineManager::OnScriptRemoved(Entity entity, const ScriptInstance& script)
-	{
-		auto* engine = Get(script.Language);
-		if (engine)
-			engine->ShutdownScriptEntity(entity, script.ModuleName);
-	}
+        auto& entityStorage = storage.GetOrCreateEntity(entity.GetUUID());
+        auto& group = entityStorage.Groups[script.ModuleName];
+        group.EntityID = entity.GetUUID();
+        group.ModuleName = script.ModuleName;
+    
 
-	void ScriptEngineManager::SetSceneContext(const Ref<Scene>& scene)
-	{
-		for (auto& [lang, engine] : s_Engines)
-		{
-			if (engine)
-				engine->SetSceneContext(scene);
-		}
-	}
 
-	void ScriptEngineManager::OnSceneDestruct(UUID sceneID)
-	{
-		for (auto& [lang, engine] : s_Engines)
-		{
-			if (engine)
-				engine->OnSceneDestruct(sceneID);
-		}
-	}
+        engine->InitScriptEntity(entity, group);
+    }
 
-	void ScriptEngineManager::ReloadAssembly(const std::string& path)
-	{
-		for (auto& [lang, engine] : s_Engines)
-		{
-			if (engine)
-				engine->ReloadAssembly(path);
-		}
-	}
+    void ScriptEngineManager::OnScriptRemoved(Entity entity, const ScriptInstance& script, SceneScriptStorage& storage)
+    {
+        auto* engine = Get(script.Language);
+        if (!engine)
+            return;
 
-	void ScriptEngineManager::OnImGuiRender()
-	{
-		for (auto& [lang, engine] : s_Engines)
-		{
-			if (engine)
-				engine->OnImGuiRender();
-		}
-	}
+        auto* group = storage.FindGroup(entity.GetUUID(), script.ModuleName);
+        if (!group)
+            return;
 
-	void ScriptEngineManager::OnCollision2DBegin(Entity entity)
-	{
-		for (auto& [lang, engine] : s_Engines)
-		{
-			if (engine)
-				engine->OnCollision2DBegin(entity);
-		}
-	}
+        engine->ShutdownScriptEntity(*group);
+        storage.RemoveGroup(entity.GetUUID(), script.ModuleName);
+    }
 
-	void ScriptEngineManager::OnCollision2DEnd(Entity entity)
-	{
-		for (auto& [lang, engine] : s_Engines)
-		{
-			if (engine)
-				engine->OnCollision2DEnd(entity);
-		}
-	}
+    void ScriptEngineManager::SetSceneContext(const Ref<Scene>& scene)
+    {
+        for (auto& [lang, engine] : s_Engines)
+        {
+            if (engine)
+                engine->SetSceneContext(scene);
+        }
+    }
 
-	void ScriptEngineManager::OnCollisionBegin(Entity entity)
-	{
-		for (auto& [lang, engine] : s_Engines)
-		{
-			if (engine)
-				engine->OnCollisionBegin(entity);
-		}
-	}
+    void ScriptEngineManager::ReloadAssembly(const std::string& path)
+    {
+        for (auto& [lang, engine] : s_Engines)
+        {
+            if (engine)
+                engine->ReloadAssembly(path);
+        }
+    }
 
-	void ScriptEngineManager::OnCollisionEnd(Entity entity)
-	{
-		for (auto& [lang, engine] : s_Engines)
-		{
-			if (engine)
-				engine->OnCollisionEnd(entity);
-		}
-	}
+    void ScriptEngineManager::OnImGuiRender()
+    {
+        for (auto& [lang, engine] : s_Engines)
+        {
+            if (engine)
+                engine->OnImGuiRender();
+        }
+    }
+
 }
