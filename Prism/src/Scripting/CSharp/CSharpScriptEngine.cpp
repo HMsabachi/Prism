@@ -106,7 +106,7 @@ namespace Prism
 		PR_PROFILE_FUNCTION();
 
 		Rolky::HostSettings setting;
-		setting.RolkyDirectory = "Assets/scripts";
+		setting.RolkyDirectory = "Assets/scripts/net9.0";
 		setting.MessageCallback = RolkyMessageCallback;
 		setting.ExceptionCallback = RolkyExceptionCallback;
 		m_Host = std::make_unique<Rolky::HostInstance>();

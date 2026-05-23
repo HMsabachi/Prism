@@ -120,8 +120,8 @@ namespace Prism
     {
         auto csharpEngine = std::make_unique<CSharpScriptEngine>();
         csharpEngine->Initialize();
-        csharpEngine->LoadEngineAssembly("Assets/scripts/Prism.Scripting.dll");
-        csharpEngine->LoadAppAssembly("Assets/scripts/ExampleApp.dll");
+        csharpEngine->LoadEngineAssembly("Assets/scripts/net9.0/Prism.Scripting.dll");
+        csharpEngine->LoadAppAssembly("Assets/scripts/net9.0/ExampleApp.dll");
         ScriptEngineManager::Register(ScriptLanguage::CSharp, std::move(csharpEngine));
         auto pythonEngine = std::make_unique<PythonScriptEngine>();
         pythonEngine->Initialize();

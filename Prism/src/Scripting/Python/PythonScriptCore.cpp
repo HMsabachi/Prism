@@ -222,7 +222,7 @@ namespace Prism::Python {
         PyRun_SimpleString(
             "import sys\n"
             "import os\n"
-            "scripts_path = os.path.abspath('Assets/scripts')\n"
+            "scripts_path = os.path.abspath('Assets/scripts/Python')\n"
             "if scripts_path not in sys.path:\n"
             "    sys.path.insert(0, scripts_path)\n"
             "print(f'[Python]{scripts_path}')\n"
