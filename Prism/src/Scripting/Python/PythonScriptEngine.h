@@ -36,6 +36,9 @@ namespace Prism
         // Storage lookup (takes storage reference)
         static PythonEntityScriptStorage& GetEntityScriptStorage(PythonScriptStorage& storage, UUID scriptID);
 
+        static UUID AddBehaviour(Entity& entity, PythonBehaviourBinding& binding);
+        static void RemoveBehaviour(Entity& entity, UUID behaviourID);
+
         static Python::ScriptObject* GetScriptObject(UUID sceneID, UUID scriptID);
         static void RemoveScriptObject(PythonScriptStorage& storage, UUID scriptID);
         static void ReleaseAll();

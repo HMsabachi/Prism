@@ -151,7 +151,21 @@ namespace Prism {
     {
     }
 
-        static void SerializeEntity(YAML::Emitter& out, Entity entity, Scene* scene)
+        // ── FNV-1a hash for field name lookup ──
+    static uint32_t HashFieldName(const std::string& name)
+    {
+        constexpr uint64_t FNV1aBasis = 14695981039346656037ULL;
+        constexpr uint64_t FNV1aPrime = 1099511628211ULL;
+        uint64_t hash = FNV1aBasis;
+        for (char c : name)
+        {
+            hash ^= static_cast<uint64_t>(c);
+            hash *= FNV1aPrime;
+        }
+        return (uint32_t)hash;
+    }
+
+    static void SerializeEntity(YAML::Emitter& out, Entity entity, Scene* scene)
     {
         UUID uuid = entity.GetComponent<IDComponent>().ID;
         out << YAML::BeginMap; // Entity
@@ -342,6 +356,103 @@ namespace Prism {
                 out << YAML::Key << "AssetPath" << YAML::Value << mcComponent.CollisionMesh->GetFilePath();
 
             out << YAML::EndMap; // MeshColliderComponent
+        }
+
+        if (entity.HasComponent<CSharpScriptComponent>())
+        {
+            auto& comp = entity.GetComponent<CSharpScriptComponent>();
+            out << YAML::Key << "CSharpScriptComponent";
+            out << YAML::BeginMap;
+            out << YAML::Key << "Behaviours";
+            out << YAML::BeginSeq;
+            for (auto& binding : comp.Behaviours)
+            {
+                out << YAML::BeginMap;
+                out << YAML::Key << "ID" << YAML::Value << (uint64_t)binding.BehaviourID;
+                out << YAML::Key << "ClassName" << YAML::Value << binding.ClassName;
+                if (!binding.Fields.empty())
+                {
+                    out << YAML::Key << "Fields";
+                    out << YAML::BeginSeq;
+                    for (auto& [hash, field] : binding.Fields)
+                    {
+                        out << YAML::BeginMap;
+                        out << YAML::Key << "Name" << YAML::Value << field.GetName();
+                        out << YAML::Key << "Type" << YAML::Value << (uint8_t)field.GetType();
+                        switch (field.GetType())
+                        {
+                            case ScriptFieldType::Float:
+                                out << YAML::Key << "Value" << YAML::Value << field.GetValue<float>();
+                                break;
+                            case ScriptFieldType::Int32:
+                                out << YAML::Key << "Value" << YAML::Value << field.GetValue<int32_t>();
+                                break;
+                            case ScriptFieldType::Bool:
+                                out << YAML::Key << "Value" << YAML::Value << field.GetValue<bool>();
+                                break;
+                            case ScriptFieldType::String:
+                                out << YAML::Key << "Value" << YAML::Value << field.GetStringValue();
+                                break;
+                            default:
+                                break;
+                        }
+                        out << YAML::EndMap;
+                    }
+                    out << YAML::EndSeq;
+                }
+                out << YAML::EndMap;
+            }
+            out << YAML::EndSeq;
+            out << YAML::EndMap;
+        }
+
+        if (entity.HasComponent<PythonScriptComponent>())
+        {
+            auto& comp = entity.GetComponent<PythonScriptComponent>();
+            out << YAML::Key << "PythonScriptComponent";
+            out << YAML::BeginMap;
+            out << YAML::Key << "Behaviours";
+            out << YAML::BeginSeq;
+            for (auto& binding : comp.Behaviours)
+            {
+                out << YAML::BeginMap;
+                out << YAML::Key << "ID" << YAML::Value << (uint64_t)binding.BehaviourID;
+                out << YAML::Key << "ClassName" << YAML::Value << binding.ClassName;
+                out << YAML::Key << "ModuleName" << YAML::Value << binding.ModuleName;
+                if (!binding.Fields.empty())
+                {
+                    out << YAML::Key << "Fields";
+                    out << YAML::BeginSeq;
+                    for (auto& [hash, field] : binding.Fields)
+                    {
+                        out << YAML::BeginMap;
+                        out << YAML::Key << "Name" << YAML::Value << field.GetName();
+                        out << YAML::Key << "Type" << YAML::Value << (uint8_t)field.GetType();
+                        switch (field.GetType())
+                        {
+                            case ScriptFieldType::Float:
+                                out << YAML::Key << "Value" << YAML::Value << field.GetValue<float>();
+                                break;
+                            case ScriptFieldType::Int32:
+                                out << YAML::Key << "Value" << YAML::Value << field.GetValue<int32_t>();
+                                break;
+                            case ScriptFieldType::Bool:
+                                out << YAML::Key << "Value" << YAML::Value << field.GetValue<bool>();
+                                break;
+                            case ScriptFieldType::String:
+                                out << YAML::Key << "Value" << YAML::Value << field.GetStringValue();
+                                break;
+                            default:
+                                break;
+                        }
+                        out << YAML::EndMap;
+                    }
+                    out << YAML::EndSeq;
+                }
+                out << YAML::EndMap;
+            }
+            out << YAML::EndSeq;
+            out << YAML::EndMap;
         }
 
         out << YAML::EndMap; // Entity
@@ -633,6 +744,119 @@ namespace Prism {
                     deserializedEntity.AddComponent<MeshColliderComponent>(Ref<Mesh>::Create(meshPath));
 
                     PR_CORE_INFO("  MeshColliderComponent: AssetPath={0}", meshPath);
+                }
+
+                // CSharpScriptComponent — deserialize Behaviours
+                auto csharpScriptComponent = entity["CSharpScriptComponent"];
+                if (csharpScriptComponent)
+                {
+                    auto& comp = deserializedEntity.GetComponent<CSharpScriptComponent>();
+                    auto behavioursNode = csharpScriptComponent["Behaviours"];
+                    if (behavioursNode)
+                    {
+                        for (auto bindingNode : behavioursNode)
+                        {
+                            CSharpBehaviourBinding binding;
+                            binding.BehaviourID = (UUID)bindingNode["ID"].as<uint64_t>();
+                            binding.ClassName = bindingNode["ClassName"].as<std::string>();
+
+                            auto fieldsNode = bindingNode["Fields"];
+                            if (fieldsNode)
+                            {
+                                for (auto fieldNode : fieldsNode)
+                                {
+                                    std::string fieldName = fieldNode["Name"].as<std::string>();
+                                    ScriptFieldType fieldType = (ScriptFieldType)fieldNode["Type"].as<uint8_t>();
+                                    CSharpField field(fieldName, fieldType);
+
+                                    if (fieldNode["Value"])
+                                    {
+                                        switch (fieldType)
+                                        {
+                                            case ScriptFieldType::Float:
+                                                field.SetValue(fieldNode["Value"].as<float>());
+                                                break;
+                                            case ScriptFieldType::Int32:
+                                                field.SetValue(fieldNode["Value"].as<int32_t>());
+                                                break;
+                                            case ScriptFieldType::Bool:
+                                                field.SetValue(fieldNode["Value"].as<bool>());
+                                                break;
+                                            case ScriptFieldType::String:
+                                                field.SetStringValue(fieldNode["Value"].as<std::string>());
+                                                break;
+                                            default:
+                                                break;
+                                        }
+                                    }
+
+                                    uint32_t fieldHash = HashFieldName(fieldName);
+                                    binding.Fields[fieldHash] = std::move(field);
+                                }
+                            }
+
+                            comp.Behaviours.push_back(std::move(binding));
+                        }
+                    }
+
+                    PR_CORE_INFO("  CSharpScriptComponent: {0} Behaviours loaded", comp.Behaviours.size());
+                }
+
+                // PythonScriptComponent — deserialize Behaviours
+                auto pythonScriptComponent = entity["PythonScriptComponent"];
+                if (pythonScriptComponent)
+                {
+                    auto& comp = deserializedEntity.GetComponent<PythonScriptComponent>();
+                    auto behavioursNode = pythonScriptComponent["Behaviours"];
+                    if (behavioursNode)
+                    {
+                        for (auto bindingNode : behavioursNode)
+                        {
+                            PythonBehaviourBinding binding;
+                            binding.BehaviourID = (UUID)bindingNode["ID"].as<uint64_t>();
+                            binding.ClassName = bindingNode["ClassName"].as<std::string>();
+                            binding.ModuleName = bindingNode["ModuleName"].as<std::string>();
+
+                            auto fieldsNode = bindingNode["Fields"];
+                            if (fieldsNode)
+                            {
+                                for (auto fieldNode : fieldsNode)
+                                {
+                                    std::string fieldName = fieldNode["Name"].as<std::string>();
+                                    ScriptFieldType fieldType = (ScriptFieldType)fieldNode["Type"].as<uint8_t>();
+                                    PythonField field(fieldName, fieldType);
+
+                                    if (fieldNode["Value"])
+                                    {
+                                        switch (fieldType)
+                                        {
+                                            case ScriptFieldType::Float:
+                                                field.SetValue(fieldNode["Value"].as<float>());
+                                                break;
+                                            case ScriptFieldType::Int32:
+                                                field.SetValue(fieldNode["Value"].as<int32_t>());
+                                                break;
+                                            case ScriptFieldType::Bool:
+                                                field.SetValue(fieldNode["Value"].as<bool>());
+                                                break;
+                                            case ScriptFieldType::String:
+                                                field.SetStringValue(fieldNode["Value"].as<std::string>());
+                                                break;
+                                            default:
+                                                break;
+                                        }
+                                    }
+
+                                    uint32_t fieldHash = HashFieldName(fieldName);
+                                    binding.Fields[fieldHash] = std::move(field);
+                                }
+                            }
+
+                            comp.Behaviours.push_back(std::move(binding));
+                        }
+                    }
+
+                    PR_CORE_INFO("  PythonScriptComponent: {0} Behaviours loaded", comp.Behaviours.size());
                 }
             }
         }

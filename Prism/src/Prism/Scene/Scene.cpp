@@ -152,31 +152,35 @@ namespace Prism
     {
         float ts = Time::GetDeltaTime();
 
-        // C# Script OnUpdate
+        // C# Script OnUpdate — iterate Behaviours
         {
             auto view = m_Registry.view<CSharpScriptComponent>();
+            UUID sceneID = GetUUID();
             for (auto entity : view)
             {
                 auto& comp = m_Registry.get<CSharpScriptComponent>(entity);
-                if (!comp.ScriptID)
-                    continue;
-                auto& entry = CSharpScriptEngine::GetEntityScriptStorage(*m_CSharpScriptStorage, comp.ScriptID);
-                if (entry.Instance->IsValid())
-                    entry.Instance->InvokeMethod("OnUpdate");
+                for (auto& binding : comp.Behaviours)
+                {
+                    auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
+                    if (obj && obj->IsValid())
+                        obj->InvokeMethod("OnUpdate");
+                }
             }
         }
 
-        // Python Script OnUpdate
+        // Python Script OnUpdate — iterate Behaviours
         {
             auto view = m_Registry.view<PythonScriptComponent>();
+            UUID sceneID = GetUUID();
             for (auto entity : view)
             {
                 auto& comp = m_Registry.get<PythonScriptComponent>(entity);
-                if (!comp.ScriptID)
-                    continue;
-                auto& entry = PythonScriptEngine::GetEntityScriptStorage(*m_PythonScriptStorage, comp.ScriptID);
-                if (entry.Instance && entry.Instance->IsValid())
-                    entry.Instance->Invoke<void>("OnUpdate");
+                for (auto& binding : comp.Behaviours)
+                {
+                    auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
+                    if (obj && obj->IsValid())
+                        obj->Invoke<void>("OnUpdate");
+                }
             }
         }
     }
@@ -247,31 +251,35 @@ namespace Prism
             }
         }
 
-        // C# Script OnFixedUpdate
+        // C# Script OnFixedUpdate — iterate Behaviours
         {
             auto view = m_Registry.view<CSharpScriptComponent>();
+            UUID sceneID = GetUUID();
             for (auto entity : view)
             {
                 auto& comp = m_Registry.get<CSharpScriptComponent>(entity);
-                if (!comp.ScriptID)
-                    continue;
-                auto& entry = CSharpScriptEngine::GetEntityScriptStorage(*m_CSharpScriptStorage, comp.ScriptID);
-                if (entry.Instance->IsValid())
-                    entry.Instance->InvokeMethod("OnFixedUpdate");
+                for (auto& binding : comp.Behaviours)
+                {
+                    auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
+                    if (obj && obj->IsValid())
+                        obj->InvokeMethod("OnFixedUpdate");
+                }
             }
         }
 
-        // Python Script OnFixedUpdate
+        // Python Script OnFixedUpdate — iterate Behaviours
         {
             auto view = m_Registry.view<PythonScriptComponent>();
+            UUID sceneID = GetUUID();
             for (auto entity : view)
             {
                 auto& comp = m_Registry.get<PythonScriptComponent>(entity);
-                if (!comp.ScriptID)
-                    continue;
-                auto& entry = PythonScriptEngine::GetEntityScriptStorage(*m_PythonScriptStorage, comp.ScriptID);
-                if (entry.Instance && entry.Instance->IsValid())
-                    entry.Instance->Invoke<void>("OnFixedUpdate");
+                for (auto& binding : comp.Behaviours)
+                {
+                    auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
+                    if (obj && obj->IsValid())
+                        obj->Invoke<void>("OnFixedUpdate");
+                }
             }
         }
     }
@@ -384,31 +392,49 @@ namespace Prism
         CSharpScriptEngine::SetSceneContext(this);
         PythonScriptEngine::SetSceneContext(this);
 
-        // C#: Call OnCreate on already-instantiated scripts (instances created via serialization or editor)
+        // C#: Create Behaviour instances, then call OnCreate
         {
             auto view = m_Registry.view<CSharpScriptComponent>();
+            UUID sceneID = GetUUID();
             for (auto entity : view)
             {
+                Entity e = { entity, this };
                 auto& comp = m_Registry.get<CSharpScriptComponent>(entity);
-                if (!comp.ScriptID)
-                    continue;
-                auto& entry = CSharpScriptEngine::GetEntityScriptStorage(*m_CSharpScriptStorage, comp.ScriptID);
-                if (entry.Instance->IsValid())
-                    entry.Instance->InvokeMethod("OnCreate");
+                for (auto& binding : comp.Behaviours)
+                {
+                    auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
+                    if (!obj || !obj->IsValid())
+                        CSharpScriptEngine::AddBehaviour(e, binding);
+                }
+                for (auto& binding : comp.Behaviours)
+                {
+                    auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
+                    if (obj && obj->IsValid())
+                        obj->InvokeMethod("OnCreate");
+                }
             }
         }
 
-        // Python: Call OnCreate on already-instantiated scripts
+        // Python: Create Behaviour instances, then call OnCreate
         {
             auto view = m_Registry.view<PythonScriptComponent>();
+            UUID sceneID = GetUUID();
             for (auto entity : view)
             {
+                Entity e = { entity, this };
                 auto& comp = m_Registry.get<PythonScriptComponent>(entity);
-                if (!comp.ScriptID)
-                    continue;
-                auto& entry = PythonScriptEngine::GetEntityScriptStorage(*m_PythonScriptStorage, comp.ScriptID);
-                if (entry.Instance && entry.Instance->IsValid())
-                    entry.Instance->Invoke<void>("OnCreate");
+                for (auto& binding : comp.Behaviours)
+                {
+                    auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
+                    if (!obj || !obj->IsValid())
+                        PythonScriptEngine::AddBehaviour(e, binding);
+                }
+                for (auto& binding : comp.Behaviours)
+                {
+                    auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
+                    if (obj && obj->IsValid())
+                        obj->Invoke<void>("OnCreate");
+                }
             }
         }
 
@@ -639,21 +665,46 @@ namespace Prism
         s_Box2DContactListener.CurrentScene = nullptr;
         Physics3D::SetCollisionScene(nullptr);
 
-        // Cleanup C# script runtime instances (call OnDestroy, then clear storage)
+        // Cleanup C# script runtime — call OnDestroy on Behaviours, then clear storage
         {
-            for (auto& [id, entry] : m_CSharpScriptStorage->EntityStorage)
-                if (entry.Instance->IsValid())
-                    entry.Instance->InvokeMethod("OnDestroy");
+            auto view = m_Registry.view<CSharpScriptComponent>();
+            UUID sceneID = GetUUID();
+            for (auto entity : view)
+            {
+                auto& comp = m_Registry.get<CSharpScriptComponent>(entity);
+                for (auto& binding : comp.Behaviours)
+                {
+                    auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
+                    if (obj && obj->IsValid())
+                        obj->InvokeMethod("OnDestroy");
+                }
+                comp.Behaviours.clear();
+            }
             m_CSharpScriptStorage->Clear();
         }
 
-        // Cleanup Python script runtime instances (call OnDestroy, then clear storage)
+        // Cleanup Python script runtime — call OnDestroy on Behaviours, then clear storage
         {
-            for (auto& [id, entry] : m_PythonScriptStorage->EntityStorage)
-                if (entry.Instance && entry.Instance->IsValid())
-                    entry.Instance->Invoke<void>("OnDestroy");
+            auto view = m_Registry.view<PythonScriptComponent>();
+            UUID sceneID = GetUUID();
+            for (auto entity : view)
+            {
+                auto& comp = m_Registry.get<PythonScriptComponent>(entity);
+                for (auto& binding : comp.Behaviours)
+                {
+                    auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
+                    if (obj && obj->IsValid())
+                        obj->Invoke<void>("OnDestroy");
+                }
+                comp.Behaviours.clear();
+            }
             m_PythonScriptStorage->Clear();
         }
+
+        // Cleanup managed object maps for this scene
+        UUID currentSceneID = GetUUID();
+        CSharpScriptEngine::s_ManagedObjects.erase(currentSceneID);
+        PythonScriptEngine::s_PythonScriptObjects.erase(currentSceneID);
 
         // Release PhysX scene
         {
@@ -896,50 +947,54 @@ namespace Prism
 
     void Scene::OnCollisionBegin(Entity entity)
     {
+        UUID sceneID = GetUUID();
+
         if (entity.HasComponent<CSharpScriptComponent>())
         {
             auto& comp = entity.GetComponent<CSharpScriptComponent>();
-            if (comp.ScriptID)
+            for (auto& binding : comp.Behaviours)
             {
-                auto& entry = CSharpScriptEngine::GetEntityScriptStorage(*m_CSharpScriptStorage, comp.ScriptID);
-                if (entry.Instance->IsValid())
-                    entry.Instance->TryInvokeMethod("OnCollisionBegin", 0.0f);
+                auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
+                if (obj && obj->IsValid())
+                    obj->TryInvokeMethod("OnCollisionBegin", 0.0f);
             }
         }
 
         if (entity.HasComponent<PythonScriptComponent>())
         {
             auto& comp = entity.GetComponent<PythonScriptComponent>();
-            if (comp.ScriptID)
+            for (auto& binding : comp.Behaviours)
             {
-                auto& entry = PythonScriptEngine::GetEntityScriptStorage(*m_PythonScriptStorage, comp.ScriptID);
-                if (entry.Instance && entry.Instance->IsValid())
-                    entry.Instance->Invoke<void>("OnCollisionBegin", 0.0f);
+                auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
+                if (obj && obj->IsValid())
+                    obj->Invoke<void>("OnCollisionBegin", 0.0f);
             }
         }
     }
 
     void Scene::OnCollisionEnd(Entity entity)
     {
+        UUID sceneID = GetUUID();
+
         if (entity.HasComponent<CSharpScriptComponent>())
         {
             auto& comp = entity.GetComponent<CSharpScriptComponent>();
-            if (comp.ScriptID)
+            for (auto& binding : comp.Behaviours)
             {
-                auto& entry = CSharpScriptEngine::GetEntityScriptStorage(*m_CSharpScriptStorage, comp.ScriptID);
-                if (entry.Instance->IsValid())
-                    entry.Instance->TryInvokeMethod("OnCollisionEnd", 0.0f);
+                auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
+                if (obj && obj->IsValid())
+                    obj->TryInvokeMethod("OnCollisionEnd", 0.0f);
             }
         }
 
         if (entity.HasComponent<PythonScriptComponent>())
         {
             auto& comp = entity.GetComponent<PythonScriptComponent>();
-            if (comp.ScriptID)
+            for (auto& binding : comp.Behaviours)
             {
-                auto& entry = PythonScriptEngine::GetEntityScriptStorage(*m_PythonScriptStorage, comp.ScriptID);
-                if (entry.Instance && entry.Instance->IsValid())
-                    entry.Instance->Invoke<void>("OnCollisionEnd", 0.0f);
+                auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
+                if (obj && obj->IsValid())
+                    obj->Invoke<void>("OnCollisionEnd", 0.0f);
             }
         }
     }
@@ -990,6 +1045,18 @@ namespace Prism
     void Scene::OnCSharpScriptComponentDestroy(entt::registry& registry, entt::entity entity)
     {
         auto& comp = registry.get<CSharpScriptComponent>(entity);
+        UUID sceneID = GetUUID();
+
+        // Destroy all Behaviour instances first
+        for (auto& binding : comp.Behaviours)
+        {
+            auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
+            if (obj && obj->IsValid())
+                obj->InvokeMethod("OnDestroy");
+        }
+        comp.Behaviours.clear();
+
+        // Destroy the Entity managed object
         if (comp.ScriptID)
         {
             auto& entry = CSharpScriptEngine::GetEntityScriptStorage(*m_CSharpScriptStorage, comp.ScriptID);
@@ -1016,6 +1083,18 @@ namespace Prism
     void Scene::OnPythonScriptComponentDestroy(entt::registry& registry, entt::entity entity)
     {
         auto& comp = registry.get<PythonScriptComponent>(entity);
+        UUID sceneID = GetUUID();
+
+        // Destroy all Behaviour instances first
+        for (auto& binding : comp.Behaviours)
+        {
+            auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
+            if (obj && obj->IsValid())
+                obj->Invoke<void>("OnDestroy");
+        }
+        comp.Behaviours.clear();
+
+        // Destroy the Entity managed object
         if (comp.ScriptID)
         {
             auto& entry = PythonScriptEngine::GetEntityScriptStorage(*m_PythonScriptStorage, comp.ScriptID);

@@ -6,6 +6,10 @@
 #include "Prism/Core/Application.h"
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Core/LanguageManager.h"
+#include "Scripting/CSharp/CSharpScriptMetaRegistry.h"
+#include "Scripting/CSharp/CSharpScriptEngine.h"
+#include "Scripting/Python/PythonScriptMetaRegistry.h"
+#include "Scripting/Python/PythonScriptEngine.h"
 #include <assimp/scene.h>
 
 #include <glm/glm.hpp>
@@ -849,7 +853,134 @@ namespace Prism {
             if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(CSharpScriptComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, TR("C# Script")))
             {
                 auto& comp = entity.GetComponent<CSharpScriptComponent>();
-                ImGui::Text("%s", comp.ScriptID ? "Script: Active" : "Script: None");
+
+                if (ImGui::Button(TR("Add Behaviour")))
+                    ImGui::OpenPopup("AddCSharpBehaviour");
+
+                if (ImGui::BeginPopup("AddCSharpBehaviour"))
+                {
+                    auto classes = CSharpScriptMetaRegistry::GetAllBehaviourClasses();
+                    if (classes.empty())
+                    {
+                        ImGui::TextDisabled("No behaviour classes found");
+                    }
+                    else
+                    {
+                        for (auto* meta : classes)
+                        {
+                            if (ImGui::MenuItem(meta->FullName.c_str()))
+                            {
+                                CSharpBehaviourBinding binding;
+                                binding.BehaviourID = UUID();
+                                binding.ClassName = meta->FullName;
+                                for (auto& [hash, fieldMeta] : meta->Fields)
+                                {
+                                    CSharpField field(fieldMeta.Name, fieldMeta.Type);
+                                    if (fieldMeta.DefaultValue.Data && fieldMeta.DefaultValue.Size > 0)
+                                        field.SetBuffer(fieldMeta.DefaultValue);
+                                    binding.Fields[hash] = std::move(field);
+                                }
+                                comp.Behaviours.push_back(std::move(binding));
+                            }
+                        }
+                    }
+                    ImGui::EndPopup();
+                }
+
+                UUID pendingRemove = 0;
+                int idx = 0;
+                for (auto& binding : comp.Behaviours)
+                {
+                    ImGui::PushID(idx++);
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.2f, 0.2f, 0.6f));
+                    if (ImGui::SmallButton("X"))
+                        pendingRemove = binding.BehaviourID;
+                    ImGui::PopStyleColor();
+                    ImGui::SameLine();
+
+                    std::string shortName = binding.ClassName;
+                    auto dotPos = shortName.rfind('.');
+                    if (dotPos != std::string::npos)
+                        shortName = shortName.substr(dotPos + 1);
+
+                    if (ImGui::TreeNodeEx(shortName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+                    {
+                        for (auto& [hash, field] : binding.Fields)
+                        {
+                            ImGui::PushID(hash);
+                            switch (field.GetType())
+                            {
+                                case ScriptFieldType::Float:
+                                {
+                                    float val = field.GetValue<float>();
+                                    if (ImGui::DragFloat(field.GetName().c_str(), &val, 0.1f))
+                                        field.SetValue(val);
+                                    break;
+                                }
+                                case ScriptFieldType::Double:
+                                {
+                                    double val = field.GetValue<double>();
+                                    if (ImGui::InputDouble(field.GetName().c_str(), &val))
+                                        field.SetValue(val);
+                                    break;
+                                }
+                                case ScriptFieldType::Bool:
+                                {
+                                    bool val = field.GetValue<bool>();
+                                    if (ImGui::Checkbox(field.GetName().c_str(), &val))
+                                        field.SetValue(val);
+                                    break;
+                                }
+                                case ScriptFieldType::Int32:
+                                {
+                                    int32_t val = field.GetValue<int32_t>();
+                                    if (ImGui::DragInt(field.GetName().c_str(), &val))
+                                        field.SetValue(val);
+                                    break;
+                                }
+                                case ScriptFieldType::String:
+                                {
+                                    std::string valStr = field.GetStringValue();
+                                    char buf[256] = {};
+                                    valStr.copy(buf, sizeof(buf) - 1);
+                                    if (ImGui::InputText(field.GetName().c_str(), buf, sizeof(buf)))
+                                        field.SetStringValue(std::string(buf));
+                                    break;
+                                }
+                                case ScriptFieldType::Vector2:
+                                {
+                                    auto val = field.GetValue<glm::vec2>();
+                                    if (ImGui::DragFloat2(field.GetName().c_str(), glm::value_ptr(val), 0.1f))
+                                        field.SetValue(val);
+                                    break;
+                                }
+                                case ScriptFieldType::Vector3:
+                                {
+                                    auto val = field.GetValue<glm::vec3>();
+                                    if (ImGui::DragFloat3(field.GetName().c_str(), glm::value_ptr(val), 0.1f))
+                                        field.SetValue(val);
+                                    break;
+                                }
+                                case ScriptFieldType::Vector4:
+                                {
+                                    auto val = field.GetValue<glm::vec4>();
+                                    if (ImGui::DragFloat4(field.GetName().c_str(), glm::value_ptr(val), 0.1f))
+                                        field.SetValue(val);
+                                    break;
+                                }
+                                default:
+                                    break;
+                            }
+                            ImGui::PopID();
+                        }
+                        ImGui::TreePop();
+                    }
+                    ImGui::PopID();
+                }
+
+                if (pendingRemove)
+                    CSharpScriptEngine::RemoveBehaviour(entity, pendingRemove);
+
                 ImGui::TreePop();
             }
             ImGui::Separator();
@@ -861,7 +992,120 @@ namespace Prism {
             if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(PythonScriptComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, TR("Python Script")))
             {
                 auto& comp = entity.GetComponent<PythonScriptComponent>();
-                ImGui::Text("%s", comp.ScriptID ? "Script: Active" : "Script: None");
+
+                if (ImGui::Button(TR("Add Behaviour")))
+                    ImGui::OpenPopup("AddPythonBehaviour");
+
+                if (ImGui::BeginPopup("AddPythonBehaviour"))
+                {
+                    auto classes = PythonScriptMetaRegistry::GetAllBehaviourClasses();
+                    if (classes.empty())
+                    {
+                        ImGui::TextDisabled("No behaviour classes found");
+                    }
+                    else
+                    {
+                        for (auto* meta : classes)
+                        {
+                            if (ImGui::MenuItem(meta->FullName.c_str()))
+                            {
+                                PythonBehaviourBinding binding;
+                                binding.BehaviourID = UUID();
+                                binding.ClassName = meta->ClassName;
+                                binding.ModuleName = meta->ModuleName;
+                                for (auto& [hash, fieldMeta] : meta->Fields)
+                                {
+                                    PythonField field(fieldMeta.Name, fieldMeta.Type);
+                                    if (fieldMeta.DefaultValue.Data && fieldMeta.DefaultValue.Size > 0)
+                                        field.SetBuffer(fieldMeta.DefaultValue);
+                                    binding.Fields[hash] = std::move(field);
+                                }
+                                comp.Behaviours.push_back(std::move(binding));
+                            }
+                        }
+                    }
+                    ImGui::EndPopup();
+                }
+
+                UUID pendingRemove = 0;
+                int idx = 0;
+                for (auto& binding : comp.Behaviours)
+                {
+                    ImGui::PushID(idx++);
+                    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.2f, 0.2f, 0.6f));
+                    if (ImGui::SmallButton("X"))
+                        pendingRemove = binding.BehaviourID;
+                    ImGui::PopStyleColor();
+                    ImGui::SameLine();
+
+                    std::string shortName = binding.ClassName;
+                    auto dotPos = shortName.rfind('.');
+                    if (dotPos != std::string::npos)
+                        shortName = shortName.substr(dotPos + 1);
+
+                    if (ImGui::TreeNodeEx(shortName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+                    {
+                        for (auto& [hash, field] : binding.Fields)
+                        {
+                            ImGui::PushID(hash);
+                            switch (field.GetType())
+                            {
+                                case ScriptFieldType::Float:
+                                {
+                                    float val = field.GetValue<float>();
+                                    if (ImGui::DragFloat(field.GetName().c_str(), &val, 0.1f))
+                                        field.SetValue(val);
+                                    break;
+                                }
+                                case ScriptFieldType::Double:
+                                {
+                                    // Python doesn't natively support double; use buffer
+                                    float fval = field.GetValue<float>();
+                                    double dval = (double)fval;
+                                    if (ImGui::InputDouble(field.GetName().c_str(), &dval))
+                                        field.SetValue((float)dval);
+                                    break;
+                                }
+                                case ScriptFieldType::Bool:
+                                {
+                                    bool val = field.GetValue<bool>();
+                                    if (ImGui::Checkbox(field.GetName().c_str(), &val))
+                                        field.SetValue(val);
+                                    break;
+                                }
+                                case ScriptFieldType::Int32:
+                                {
+                                    int32_t val = field.GetValue<int32_t>();
+                                    if (ImGui::DragInt(field.GetName().c_str(), &val))
+                                        field.SetValue(val);
+                                    break;
+                                }
+                                case ScriptFieldType::String:
+                                {
+                                    std::string valStr = field.GetStringValue();
+                                    char buf[256] = {};
+                                    valStr.copy(buf, sizeof(buf) - 1);
+                                    if (ImGui::InputText(field.GetName().c_str(), buf, sizeof(buf)))
+                                        field.SetStringValue(std::string(buf));
+                                    break;
+                                }
+                                // TODO: Python doesn't natively support Vector2/3/4 field types yet
+                                case ScriptFieldType::Vector2:
+                                case ScriptFieldType::Vector3:
+                                case ScriptFieldType::Vector4:
+                                default:
+                                    break;
+                            }
+                            ImGui::PopID();
+                        }
+                        ImGui::TreePop();
+                    }
+                    ImGui::PopID();
+                }
+
+                if (pendingRemove)
+                    PythonScriptEngine::RemoveBehaviour(entity, pendingRemove);
+
                 ImGui::TreePop();
             }
             ImGui::Separator();

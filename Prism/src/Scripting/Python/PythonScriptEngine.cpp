@@ -11,6 +11,7 @@
 #include "Prism/Scene/Entity.h"
 
 #include <filesystem>
+#include <algorithm>
 #include <imgui.h>
 #include <functional>
 
@@ -123,6 +124,89 @@ namespace Prism
                 s_PythonScriptObjects.erase(sceneIt);
             storage.Remove(scriptID);
         }
+    }
+
+    UUID PythonScriptEngine::AddBehaviour(Entity& entity, PythonBehaviourBinding& binding)
+    {
+        UUID sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
+        UUID entityID = entity.GetUUID();
+
+        Python::ScriptModule mod = Python::ScriptModule::Import(binding.ModuleName.c_str());
+        if (!mod.IsValid())
+        {
+            PR_CORE_ERROR("[Python] Cannot add behaviour: module not found {0}", binding.ModuleName);
+            return 0;
+        }
+
+        Python::ScriptClass cls = Python::ScriptClass::From(mod, binding.ClassName.c_str());
+        if (!cls.IsValid())
+        {
+            PR_CORE_ERROR("[Python] Cannot add behaviour: class {0} not found in {1}", binding.ClassName, binding.ModuleName);
+            return 0;
+        }
+
+        Python::ScriptObject obj = cls.CreateInstance();
+        if (!obj.IsValid())
+        {
+            PR_CORE_ERROR("[Python] Failed to create instance of {0}", binding.ClassName);
+            return 0;
+        }
+
+        // Push field values from C++ buffer to Python instance
+        for (auto& [hash, field] : binding.Fields)
+        {
+            Buffer buf = field.GetBuffer();
+            if (buf.Data && buf.Size > 0)
+                obj.SetFieldRaw(field.GetName().c_str(), buf.Data);
+        }
+
+        Python::ScriptObject* entityObj = GetScriptObject(sceneID, entityID);
+        if (entityObj)
+            obj.SetAttribute("entity", entityObj->GetRef());
+
+        UUID behaviourID = binding.BehaviourID;
+        auto& sceneMap = s_PythonScriptObjects[sceneID];
+        auto [it, inserted] = sceneMap.emplace(behaviourID, std::move(obj));
+        PR_CORE_ASSERT(inserted, "BehaviourID collision in s_PythonScriptObjects!");
+
+        // Bind fields to the now-stable Python object
+        for (auto& [hash, field] : binding.Fields)
+            field.SetInstance(&it->second);
+
+        PR_CORE_INFO("[Python] Added behaviour {0} ({1}) to entity {2}", binding.ClassName, (uint64_t)behaviourID, (uint64_t)entityID);
+        return behaviourID;
+    }
+
+    void PythonScriptEngine::RemoveBehaviour(Entity& entity, UUID behaviourID)
+    {
+        UUID sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
+
+        auto* obj = GetScriptObject(sceneID, behaviourID);
+        if (obj && obj->IsValid())
+            obj->Invoke<void>("OnDestroy");
+
+        // Clear field instances and remove binding
+        auto& comp = entity.GetComponent<PythonScriptComponent>();
+        for (auto& binding : comp.Behaviours)
+        {
+            if (binding.BehaviourID == behaviourID)
+            {
+                for (auto& [hash, field] : binding.Fields)
+                    field.ClearInstance();
+                break;
+            }
+        }
+
+        auto sceneIt = s_PythonScriptObjects.find(sceneID);
+        if (sceneIt != s_PythonScriptObjects.end())
+            sceneIt->second.erase(behaviourID);
+
+        comp.Behaviours.erase(
+            std::remove_if(comp.Behaviours.begin(), comp.Behaviours.end(),
+                [behaviourID](const auto& b) { return b.BehaviourID == behaviourID; }),
+            comp.Behaviours.end());
+
+        PR_CORE_INFO("[Python] Removed behaviour {0} from entity {1}", (uint64_t)behaviourID, (uint64_t)entity.GetUUID());
     }
 
     void PythonScriptEngine::ReleaseAll()

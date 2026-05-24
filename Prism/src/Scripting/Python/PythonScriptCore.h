@@ -159,6 +159,8 @@ namespace Prism::Python {
 
         bool IsValid() const { return m_Ref.IsValid(); }
 
+        ScriptRef GetRef() const { return m_Ref; }
+
         // For PythonObject
         template<typename... TArgs>
         ScriptRef InvokeArgs(const char* method, TArgs&&... args);

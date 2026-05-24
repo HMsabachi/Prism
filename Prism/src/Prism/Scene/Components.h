@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+#include <unordered_map>
 #include <glm/glm.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/quaternion.hpp>
@@ -10,6 +12,8 @@
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Scene/SceneCamera.h"
 #include "glm/gtx/quaternion.hpp"
+#include "Scripting/CSharp/CSharpField.h"
+#include "Scripting/Python/PythonField.h"
 
 
 namespace Prism {
@@ -76,14 +80,31 @@ namespace Prism {
 		operator Ref<Prism::Mesh>() { return Mesh; }
 	};
 
+	struct CSharpBehaviourBinding
+	{
+		UUID BehaviourID = 0;
+		std::string ClassName;
+		std::unordered_map<uint32_t, CSharpField> Fields;
+	};
+
+	struct PythonBehaviourBinding
+	{
+		UUID BehaviourID = 0;
+		std::string ClassName;       // Short class name (e.g. "SmokeTest")
+		std::string ModuleName;      // Python module path (e.g. "SmokeTest" or "SmokeTest.SubModule")
+		std::unordered_map<uint32_t, PythonField> Fields;
+	};
+
 	struct CSharpScriptComponent
 	{
 		UUID ScriptID = 0;
+		std::vector<CSharpBehaviourBinding> Behaviours;
 	};
 
 	struct PythonScriptComponent
 	{
 		UUID ScriptID = 0;
+		std::vector<PythonBehaviourBinding> Behaviours;
 	};
 
 	struct CameraComponent

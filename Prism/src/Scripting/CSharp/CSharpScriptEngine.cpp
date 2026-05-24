@@ -7,6 +7,7 @@
 #include "Prism/Scene/Entity.h"
 #include "Prism/Scene/Components.h"
 #include <filesystem>
+#include <algorithm>
 #include <imgui.h>
 
 #include <Rolky/HostInstance.hpp>
@@ -90,6 +91,87 @@ namespace Prism
                 s_ManagedObjects.erase(sceneIt);
             storage.Remove(scriptID);
         }
+    }
+
+    UUID CSharpScriptEngine::AddBehaviour(Entity& entity, CSharpBehaviourBinding& binding)
+    {
+        UUID sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
+        UUID entityID = entity.GetUUID();
+
+        auto* entityObj = GetManagedObject(sceneID, entityID);
+        if (!entityObj)
+        {
+            PR_CORE_ERROR("[C# Script] Cannot add behaviour: Entity managed object not found for {0}", (uint64_t)entityID);
+            return 0;
+        }
+
+        auto type = GetAppAssembly().GetType(binding.ClassName);
+        if (!type)
+        {
+            PR_CORE_ERROR("[C# Script] Class not found in app assembly: {0}", binding.ClassName);
+            return 0;
+        }
+
+        auto instance = type.CreateInstance();
+        if (!instance.IsValid())
+        {
+            PR_CORE_ERROR("[C# Script] Failed to create instance of {0}", binding.ClassName);
+            return 0;
+        }
+
+        // Push field values from C++ buffer to C# instance
+        for (auto& [hash, field] : binding.Fields)
+        {
+            Buffer buf = field.GetBuffer();
+            if (buf.Data && buf.Size > 0)
+                instance.SetFieldValueRaw(field.GetName(), buf.Data);
+        }
+
+        instance.SetPropertyValueRaw("Entity", entityObj);
+
+        UUID behaviourID = binding.BehaviourID;
+        auto& sceneMap = s_ManagedObjects[sceneID];
+        auto [it, inserted] = sceneMap.emplace(behaviourID, std::move(instance));
+        PR_CORE_ASSERT(inserted, "BehaviourID collision in s_ManagedObjects!");
+
+        // Bind fields to the now-stable managed object
+        for (auto& [hash, field] : binding.Fields)
+            field.SetInstance(&it->second);
+
+        PR_CORE_INFO("[C# Script] Added behaviour {0} ({1}) to entity {2}", binding.ClassName, (uint64_t)behaviourID, (uint64_t)entityID);
+        return behaviourID;
+    }
+
+    void CSharpScriptEngine::RemoveBehaviour(Entity& entity, UUID behaviourID)
+    {
+        UUID sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
+
+        auto* obj = GetManagedObject(sceneID, behaviourID);
+        if (obj && obj->IsValid())
+            obj->InvokeMethod("OnDestroy");
+
+        // Clear field instances and remove binding
+        auto& comp = entity.GetComponent<CSharpScriptComponent>();
+        for (auto& binding : comp.Behaviours)
+        {
+            if (binding.BehaviourID == behaviourID)
+            {
+                for (auto& [hash, field] : binding.Fields)
+                    field.ClearInstance();
+                break;
+            }
+        }
+
+        auto sceneIt = s_ManagedObjects.find(sceneID);
+        if (sceneIt != s_ManagedObjects.end())
+            sceneIt->second.erase(behaviourID);
+
+        comp.Behaviours.erase(
+            std::remove_if(comp.Behaviours.begin(), comp.Behaviours.end(),
+                [behaviourID](const auto& b) { return b.BehaviourID == behaviourID; }),
+            comp.Behaviours.end());
+
+        PR_CORE_INFO("[C# Script] Removed behaviour {0} from entity {1}", (uint64_t)behaviourID, (uint64_t)entity.GetUUID());
     }
 
     void CSharpScriptEngine::ReleaseAll()

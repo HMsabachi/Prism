@@ -37,6 +37,9 @@ namespace Prism
         static void RemoveManagedObject(CSharpScriptStorage& storage, UUID scriptID);
         static void ReleaseAll();
 
+        static UUID AddBehaviour(Entity& entity, CSharpBehaviourBinding& binding);
+        static void RemoveBehaviour(Entity& entity, UUID behaviourID);
+
         // Storage lookup (takes storage reference)
         static CSharpEntityScriptStorage& GetEntityScriptStorage(CSharpScriptStorage& storage, UUID scriptID);
 
