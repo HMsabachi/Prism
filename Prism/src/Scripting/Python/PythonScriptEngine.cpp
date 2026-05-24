@@ -47,6 +47,7 @@ namespace Prism
     // Static members
     Ref<Scene> PythonScriptEngine::s_SceneContext;
     bool PythonScriptEngine::s_Initialized = false;
+    std::unordered_map<UUID, std::unordered_map<UUID, Python::ScriptObject>> PythonScriptEngine::s_PythonScriptObjects;
 
     void PythonScriptEngine::Initialize()
     {
@@ -96,5 +97,32 @@ namespace Prism
     const Ref<Scene>& PythonScriptEngine::GetCurrentSceneContext()
     {
         return s_SceneContext;
+    }
+
+    Python::ScriptObject* PythonScriptEngine::GetScriptObject(UUID sceneID, UUID scriptID)
+    {
+        auto sceneIt = s_PythonScriptObjects.find(sceneID);
+        if (sceneIt == s_PythonScriptObjects.end())
+            return nullptr;
+        auto objIt = sceneIt->second.find(scriptID);
+        return objIt != sceneIt->second.end() ? &objIt->second : nullptr;
+    }
+
+    void PythonScriptEngine::RemoveScriptObject(PythonScriptStorage& storage, UUID scriptID)
+    {
+        auto sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
+        auto sceneIt = s_PythonScriptObjects.find(sceneID);
+        if (sceneIt != s_PythonScriptObjects.end())
+        {
+            sceneIt->second.erase(scriptID);
+            if (sceneIt->second.empty())
+                s_PythonScriptObjects.erase(sceneIt);
+            storage.Remove(scriptID);
+        }
+    }
+
+    void PythonScriptEngine::ReleaseAll()
+    {
+        s_PythonScriptObjects.clear();
     }
 }

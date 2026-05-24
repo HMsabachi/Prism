@@ -10,14 +10,14 @@ class Entity;
 struct CSharpEntityScriptStorage
 {
     UUID ScriptID;
-    Rolky::ManagedObject Instance;
+    Rolky::ManagedObject* Instance = nullptr;
 };
 
 struct CSharpScriptStorage
 {
     std::unordered_map<UUID, CSharpEntityScriptStorage> EntityStorage;
 
-    void Store(UUID scriptID, Rolky::ManagedObject obj);
+    void Store(UUID scriptID, Rolky::ManagedObject* obj);
     void Remove(UUID scriptID);
     void CopyTo(CSharpScriptStorage& other) const;
     void CopyEntityStorage(UUID entityID, UUID targetEntityID, CSharpScriptStorage& targetStorage) const;

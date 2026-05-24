@@ -329,7 +329,7 @@ project "ExampleApp"
     kind "SharedLib"
     language "C#"
     clr "Unsafe"
-    targetdir ("PrismEditor/Assets/Scripts")
+    targetdir ("PrismEditor/Assets/Scripts/net9.0")
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
     filter { "action:vs* or system:windows" }
         language "C#"

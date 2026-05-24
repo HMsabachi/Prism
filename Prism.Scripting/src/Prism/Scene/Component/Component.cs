@@ -11,7 +11,7 @@ namespace Prism
 {
     public abstract class Component
     {
-        public Entity Entity { get; set; }
+        public Entity Entity { get; internal set; }
 
     }
 

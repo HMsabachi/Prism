@@ -15,17 +15,28 @@ namespace Prism
         private Action<float>? m_CollisionBeginCallbacks;
         private Action<float>? m_CollisionEndCallbacks;
 
-        protected Entity() { ID = 0; }
+        public Entity() 
+        { 
+            ID = 0; 
+            Log.Trace("Created Entity {0}", ID); 
+        }
 
         internal Entity(ulong id)
         {
             ID = id;
+            Log.Trace("Created Entity {0}", ID);
         }
 
         ~Entity()
         {
-            Console.WriteLine("Destroyed Entity {0}", ID);
+            Log.Trace("Destroyed Entity {0}", ID);
         }
+
+        private void OnCreate() { }
+        private void OnDestroy() { }
+        private void OnUpdate() { }
+        private void OnFixedUpdate() { }
+
 
         public TransformComponent Transform => GetComponent<TransformComponent>();
 

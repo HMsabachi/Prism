@@ -161,8 +161,8 @@ namespace Prism
                 if (!comp.ScriptID)
                     continue;
                 auto& entry = CSharpScriptEngine::GetEntityScriptStorage(*m_CSharpScriptStorage, comp.ScriptID);
-                if (entry.Instance.IsValid())
-                    entry.Instance.TryInvokeMethod("OnUpdate", ts);
+                if (entry.Instance->IsValid())
+                    entry.Instance->InvokeMethod("OnUpdate");
             }
         }
 
@@ -175,8 +175,8 @@ namespace Prism
                 if (!comp.ScriptID)
                     continue;
                 auto& entry = PythonScriptEngine::GetEntityScriptStorage(*m_PythonScriptStorage, comp.ScriptID);
-                if (entry.Instance.IsValid())
-                    entry.Instance.Invoke<void>("OnUpdate");
+                if (entry.Instance && entry.Instance->IsValid())
+                    entry.Instance->Invoke<void>("OnUpdate");
             }
         }
     }
@@ -256,8 +256,8 @@ namespace Prism
                 if (!comp.ScriptID)
                     continue;
                 auto& entry = CSharpScriptEngine::GetEntityScriptStorage(*m_CSharpScriptStorage, comp.ScriptID);
-                if (entry.Instance.IsValid())
-                    entry.Instance.TryInvokeMethod("OnFixedUpdate", ts);
+                if (entry.Instance->IsValid())
+                    entry.Instance->InvokeMethod("OnFixedUpdate");
             }
         }
 
@@ -270,8 +270,8 @@ namespace Prism
                 if (!comp.ScriptID)
                     continue;
                 auto& entry = PythonScriptEngine::GetEntityScriptStorage(*m_PythonScriptStorage, comp.ScriptID);
-                if (entry.Instance.IsValid())
-                    entry.Instance.Invoke<void>("OnFixedUpdate");
+                if (entry.Instance && entry.Instance->IsValid())
+                    entry.Instance->Invoke<void>("OnFixedUpdate");
             }
         }
     }
@@ -393,8 +393,8 @@ namespace Prism
                 if (!comp.ScriptID)
                     continue;
                 auto& entry = CSharpScriptEngine::GetEntityScriptStorage(*m_CSharpScriptStorage, comp.ScriptID);
-                if (entry.Instance.IsValid())
-                    entry.Instance.TryInvokeMethod("OnCreate");
+                if (entry.Instance->IsValid())
+                    entry.Instance->InvokeMethod("OnCreate");
             }
         }
 
@@ -407,8 +407,8 @@ namespace Prism
                 if (!comp.ScriptID)
                     continue;
                 auto& entry = PythonScriptEngine::GetEntityScriptStorage(*m_PythonScriptStorage, comp.ScriptID);
-                if (entry.Instance.IsValid())
-                    entry.Instance.Invoke<void>("OnCreate");
+                if (entry.Instance && entry.Instance->IsValid())
+                    entry.Instance->Invoke<void>("OnCreate");
             }
         }
 
@@ -642,16 +642,16 @@ namespace Prism
         // Cleanup C# script runtime instances (call OnDestroy, then clear storage)
         {
             for (auto& [id, entry] : m_CSharpScriptStorage->EntityStorage)
-                if (entry.Instance.IsValid())
-                    entry.Instance.TryInvokeMethod("OnDestroy");
+                if (entry.Instance->IsValid())
+                    entry.Instance->InvokeMethod("OnDestroy");
             m_CSharpScriptStorage->Clear();
         }
 
         // Cleanup Python script runtime instances (call OnDestroy, then clear storage)
         {
             for (auto& [id, entry] : m_PythonScriptStorage->EntityStorage)
-                if (entry.Instance.IsValid())
-                    entry.Instance.Invoke<void>("OnDestroy");
+                if (entry.Instance && entry.Instance->IsValid())
+                    entry.Instance->Invoke<void>("OnDestroy");
             m_PythonScriptStorage->Clear();
         }
 
@@ -731,6 +731,8 @@ namespace Prism
         idComponent.ID = {};
 
         entity.AddComponent<TransformComponent>();
+        entity.AddComponent<CSharpScriptComponent>();
+        entity.AddComponent<PythonScriptComponent>();
         if (!name.empty())
             entity.AddComponent<TagComponent>(name);
 
@@ -744,6 +746,8 @@ namespace Prism
         idComponent.ID = uuid;
 
         entity.AddComponent<TransformComponent>();
+        entity.AddComponent<CSharpScriptComponent>();
+        entity.AddComponent<PythonScriptComponent>();
         if (!name.empty())
             entity.AddComponent<TagComponent>(name);
 
@@ -789,6 +793,182 @@ namespace Prism
         }
     }
 
+    void Scene::DuplicateEntity(Entity entity)
+    {
+        Entity newEntity;
+        if (entity.HasComponent<TagComponent>())
+            newEntity = CreateEntity(entity.GetComponent<TagComponent>().Tag);
+        else
+            newEntity = CreateEntity();
+
+        CopyComponentIfExists<TransformComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<MeshComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<MaterialComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<CSharpScriptComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<PythonScriptComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<CameraComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<SpriteRendererComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<RigidBody2DComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<BoxCollider2DComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<CircleCollider2DComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<RigidBodyComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<PhysicsMaterialComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<BoxColliderComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<SphereColliderComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<CapsuleColliderComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<MeshColliderComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+    }
+
+    Entity Scene::FindEntityByTag(const std::string& tag)
+    {
+        // TODO: If this becomes used often, consider indexing by tag
+        auto view = m_Registry.view<TagComponent>();
+        for (auto entity : view)
+        {
+            const auto& candidate = view.get<TagComponent>(entity).Tag;
+            if (candidate == tag)
+                return Entity(entity, this);
+        }
+
+        return Entity{};
+    }
+
+    Entity Scene::TryGetEntityByUUID(UUID uuid)
+    {
+        auto it = m_EntityIDMap.find(uuid);
+        if (it != m_EntityIDMap.end())
+            return it->second;
+        return {};
+    }
+
+    // Copy to runtime
+    void Scene::CopyTo(Ref<Scene>& target)
+    {
+        // Environment
+        target->m_Light = m_Light;
+        target->m_LightMultiplier = m_LightMultiplier;
+
+        target->m_Environment = m_Environment;
+        target->m_SkyboxTexture = m_SkyboxTexture;
+        target->m_SkyboxMaterial = m_SkyboxMaterial;
+        target->m_SkyboxLod = m_SkyboxLod;
+
+        CSharpScriptEngine::SetSceneContext(target);
+        PythonScriptEngine::SetSceneContext(target);
+
+        std::unordered_map<UUID, entt::entity> enttMap;
+        auto idComponents = m_Registry.view<IDComponent>();
+        for (auto entity : idComponents)
+        {
+            auto uuid = m_Registry.get<IDComponent>(entity).ID;
+            Entity e = target->CreateEntityWithID(uuid, "", true);
+            enttMap[uuid] = e.m_EntityHandle;
+        }
+
+        CopyComponent<TagComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<TransformComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<MeshComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<MaterialComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<CSharpScriptComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<PythonScriptComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<CameraComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<SpriteRendererComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<RigidBody2DComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<BoxCollider2DComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<CircleCollider2DComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<RigidBodyComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<PhysicsMaterialComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<BoxColliderComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<SphereColliderComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<CapsuleColliderComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<MeshColliderComponent>(target->m_Registry, m_Registry, enttMap);
+
+
+        CSharpScriptEngine::SetSceneContext(this);
+        PythonScriptEngine::SetSceneContext(this);
+
+        target->SetPhysics2DGravity(GetPhysics2DGravity());
+    }
+
+    // Collision dispatch — invoke matching method on all script groups for this entity
+    void Scene::OnCollision2DBegin(Entity entity) { OnCollisionBegin(entity); }
+    void Scene::OnCollision2DEnd(Entity entity)   { OnCollisionEnd(entity); }
+
+    void Scene::OnCollisionBegin(Entity entity)
+    {
+        if (entity.HasComponent<CSharpScriptComponent>())
+        {
+            auto& comp = entity.GetComponent<CSharpScriptComponent>();
+            if (comp.ScriptID)
+            {
+                auto& entry = CSharpScriptEngine::GetEntityScriptStorage(*m_CSharpScriptStorage, comp.ScriptID);
+                if (entry.Instance->IsValid())
+                    entry.Instance->TryInvokeMethod("OnCollisionBegin", 0.0f);
+            }
+        }
+
+        if (entity.HasComponent<PythonScriptComponent>())
+        {
+            auto& comp = entity.GetComponent<PythonScriptComponent>();
+            if (comp.ScriptID)
+            {
+                auto& entry = PythonScriptEngine::GetEntityScriptStorage(*m_PythonScriptStorage, comp.ScriptID);
+                if (entry.Instance && entry.Instance->IsValid())
+                    entry.Instance->Invoke<void>("OnCollisionBegin", 0.0f);
+            }
+        }
+    }
+
+    void Scene::OnCollisionEnd(Entity entity)
+    {
+        if (entity.HasComponent<CSharpScriptComponent>())
+        {
+            auto& comp = entity.GetComponent<CSharpScriptComponent>();
+            if (comp.ScriptID)
+            {
+                auto& entry = CSharpScriptEngine::GetEntityScriptStorage(*m_CSharpScriptStorage, comp.ScriptID);
+                if (entry.Instance->IsValid())
+                    entry.Instance->TryInvokeMethod("OnCollisionEnd", 0.0f);
+            }
+        }
+
+        if (entity.HasComponent<PythonScriptComponent>())
+        {
+            auto& comp = entity.GetComponent<PythonScriptComponent>();
+            if (comp.ScriptID)
+            {
+                auto& entry = PythonScriptEngine::GetEntityScriptStorage(*m_PythonScriptStorage, comp.ScriptID);
+                if (entry.Instance && entry.Instance->IsValid())
+                    entry.Instance->Invoke<void>("OnCollisionEnd", 0.0f);
+            }
+        }
+    }
+
+    Ref<Scene> Scene::GetScene(UUID uuid)
+    {
+        if (s_ActiveScenes.find(uuid) != s_ActiveScenes.end())
+            return s_ActiveScenes.at(uuid);
+
+        return {};
+    }
+
+    float Scene::GetPhysics2DGravity() const
+    {
+        return m_Registry.get<Box2DWorldComponent>(m_SceneEntity).World->GetGravity().y;
+    }
+
+    void Scene::SetPhysics2DGravity(float gravity)
+    {
+        m_Registry.get<Box2DWorldComponent>(m_SceneEntity).World->SetGravity({ 0.0f, gravity });
+    }
+
+    Environment Environment::Load(const std::string& filepath)
+    {
+        auto [radiance, irradiance] = SceneRenderer::CreateEnvironmentMap(filepath);
+        return { filepath, radiance, irradiance };
+    }
+
+
     // ============================================================
     // Component lifecycle callbacks (entt signal handlers)
     // ============================================================
@@ -797,7 +977,14 @@ namespace Prism
 
     void Scene::OnCSharpScriptComponentConstruct(entt::registry& registry, entt::entity entity)
     {
-        // TODO: Create C# script instance when component is added during runtime
+        Entity e = { entity, this };
+        if (!e.HasComponent<IDComponent>())
+            return;
+
+        uint64_t entityID = (uint64_t)e.GetComponent<IDComponent>().ID;
+        CSharpScriptEngine::InstantiateEngine(entityID, "Prism.Entity", *m_CSharpScriptStorage);
+        auto& comp = registry.get<CSharpScriptComponent>(entity);
+        comp.ScriptID = entityID;
     }
 
     void Scene::OnCSharpScriptComponentDestroy(entt::registry& registry, entt::entity entity)
@@ -806,9 +993,9 @@ namespace Prism
         if (comp.ScriptID)
         {
             auto& entry = CSharpScriptEngine::GetEntityScriptStorage(*m_CSharpScriptStorage, comp.ScriptID);
-            if (entry.Instance.IsValid())
-                entry.Instance.TryInvokeMethod("OnDestroy");
-            m_CSharpScriptStorage->Remove(comp.ScriptID);
+            if (entry.Instance->IsValid())
+                entry.Instance->InvokeMethod("OnDestroy");
+            CSharpScriptEngine::RemoveManagedObject(*m_CSharpScriptStorage, comp.ScriptID);
             comp.ScriptID = 0;
         }
     }
@@ -817,7 +1004,13 @@ namespace Prism
 
     void Scene::OnPythonScriptComponentConstruct(entt::registry& registry, entt::entity entity)
     {
-        // TODO: Create Python script instance when component is added during runtime
+        Entity e = { entity, this };
+        if (!e.HasComponent<IDComponent>())
+            return;
+        uint64_t entityID = (uint64_t)e.GetComponent<IDComponent>().ID;
+        PythonScriptEngine::Instantiate(entityID, "Prism.Entity", *m_PythonScriptStorage);
+        auto& comp = registry.get<PythonScriptComponent>(entity);
+        comp.ScriptID = entityID;
     }
 
     void Scene::OnPythonScriptComponentDestroy(entt::registry& registry, entt::entity entity)
@@ -826,9 +1019,9 @@ namespace Prism
         if (comp.ScriptID)
         {
             auto& entry = PythonScriptEngine::GetEntityScriptStorage(*m_PythonScriptStorage, comp.ScriptID);
-            if (entry.Instance.IsValid())
-                entry.Instance.Invoke<void>("OnDestroy");
-            m_PythonScriptStorage->Remove(comp.ScriptID);
+            if (entry.Instance && entry.Instance->IsValid())
+                entry.Instance->Invoke<void>("OnDestroy");
+            PythonScriptEngine::RemoveScriptObject(*m_PythonScriptStorage, comp.ScriptID);
             comp.ScriptID = 0;
         }
     }
@@ -954,173 +1147,5 @@ namespace Prism
 
         static_cast<physx::PxRigidActor*>(rb.RuntimeActor)->release();
         rb.RuntimeActor = nullptr;
-    }
-
-    void Scene::DuplicateEntity(Entity entity)
-    {
-        Entity newEntity;
-        if (entity.HasComponent<TagComponent>())
-            newEntity = CreateEntity(entity.GetComponent<TagComponent>().Tag);
-        else
-            newEntity = CreateEntity();
-
-        CopyComponentIfExists<TransformComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        CopyComponentIfExists<MeshComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        CopyComponentIfExists<MaterialComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        CopyComponentIfExists<CSharpScriptComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        CopyComponentIfExists<PythonScriptComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        CopyComponentIfExists<CameraComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        CopyComponentIfExists<SpriteRendererComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        CopyComponentIfExists<RigidBody2DComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        CopyComponentIfExists<BoxCollider2DComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        CopyComponentIfExists<CircleCollider2DComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        CopyComponentIfExists<RigidBodyComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        CopyComponentIfExists<PhysicsMaterialComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        CopyComponentIfExists<BoxColliderComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        CopyComponentIfExists<SphereColliderComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        CopyComponentIfExists<CapsuleColliderComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        CopyComponentIfExists<MeshColliderComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-    }
-
-    Entity Scene::FindEntityByTag(const std::string& tag)
-    {
-        // TODO: If this becomes used often, consider indexing by tag
-        auto view = m_Registry.view<TagComponent>();
-        for (auto entity : view)
-        {
-            const auto& candidate = view.get<TagComponent>(entity).Tag;
-            if (candidate == tag)
-                return Entity(entity, this);
-        }
-
-        return Entity{};
-    }
-
-    Entity Scene::TryGetEntityByUUID(UUID uuid)
-    {
-        auto it = m_EntityIDMap.find(uuid);
-        if (it != m_EntityIDMap.end())
-            return it->second;
-        return {};
-    }
-
-    // Copy to runtime
-    void Scene::CopyTo(Ref<Scene>& target)
-    {
-        // Environment
-        target->m_Light = m_Light;
-        target->m_LightMultiplier = m_LightMultiplier;
-
-        target->m_Environment = m_Environment;
-        target->m_SkyboxTexture = m_SkyboxTexture;
-        target->m_SkyboxMaterial = m_SkyboxMaterial;
-        target->m_SkyboxLod = m_SkyboxLod;
-
-        std::unordered_map<UUID, entt::entity> enttMap;
-        auto idComponents = m_Registry.view<IDComponent>();
-        for (auto entity : idComponents)
-        {
-            auto uuid = m_Registry.get<IDComponent>(entity).ID;
-            Entity e = target->CreateEntityWithID(uuid, "", true);
-            enttMap[uuid] = e.m_EntityHandle;
-        }
-
-        CopyComponent<TagComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<TransformComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<MeshComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<MaterialComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<CSharpScriptComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<PythonScriptComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<CameraComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<SpriteRendererComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<RigidBody2DComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<BoxCollider2DComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<CircleCollider2DComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<RigidBodyComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<PhysicsMaterialComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<BoxColliderComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<SphereColliderComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<CapsuleColliderComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<MeshColliderComponent>(target->m_Registry, m_Registry, enttMap);
-
-        target->SetPhysics2DGravity(GetPhysics2DGravity());
-    }
-
-    // Collision dispatch — invoke matching method on all script groups for this entity
-    void Scene::OnCollision2DBegin(Entity entity) { OnCollisionBegin(entity); }
-    void Scene::OnCollision2DEnd(Entity entity)   { OnCollisionEnd(entity); }
-
-    void Scene::OnCollisionBegin(Entity entity)
-    {
-        if (entity.HasComponent<CSharpScriptComponent>())
-        {
-            auto& comp = entity.GetComponent<CSharpScriptComponent>();
-            if (comp.ScriptID)
-            {
-                auto& entry = CSharpScriptEngine::GetEntityScriptStorage(*m_CSharpScriptStorage, comp.ScriptID);
-                if (entry.Instance.IsValid())
-                    entry.Instance.TryInvokeMethod("OnCollisionBegin", 0.0f);
-            }
-        }
-
-        if (entity.HasComponent<PythonScriptComponent>())
-        {
-            auto& comp = entity.GetComponent<PythonScriptComponent>();
-            if (comp.ScriptID)
-            {
-                auto& entry = PythonScriptEngine::GetEntityScriptStorage(*m_PythonScriptStorage, comp.ScriptID);
-                if (entry.Instance.IsValid())
-                    entry.Instance.Invoke<void>("OnCollisionBegin", 0.0f);
-            }
-        }
-    }
-
-    void Scene::OnCollisionEnd(Entity entity)
-    {
-        if (entity.HasComponent<CSharpScriptComponent>())
-        {
-            auto& comp = entity.GetComponent<CSharpScriptComponent>();
-            if (comp.ScriptID)
-            {
-                auto& entry = CSharpScriptEngine::GetEntityScriptStorage(*m_CSharpScriptStorage, comp.ScriptID);
-                if (entry.Instance.IsValid())
-                    entry.Instance.TryInvokeMethod("OnCollisionEnd", 0.0f);
-            }
-        }
-
-        if (entity.HasComponent<PythonScriptComponent>())
-        {
-            auto& comp = entity.GetComponent<PythonScriptComponent>();
-            if (comp.ScriptID)
-            {
-                auto& entry = PythonScriptEngine::GetEntityScriptStorage(*m_PythonScriptStorage, comp.ScriptID);
-                if (entry.Instance.IsValid())
-                    entry.Instance.Invoke<void>("OnCollisionEnd", 0.0f);
-            }
-        }
-    }
-
-    Ref<Scene> Scene::GetScene(UUID uuid)
-    {
-        if (s_ActiveScenes.find(uuid) != s_ActiveScenes.end())
-            return s_ActiveScenes.at(uuid);
-
-        return {};
-    }
-
-    float Scene::GetPhysics2DGravity() const
-    {
-        return m_Registry.get<Box2DWorldComponent>(m_SceneEntity).World->GetGravity().y;
-    }
-
-    void Scene::SetPhysics2DGravity(float gravity)
-    {
-        m_Registry.get<Box2DWorldComponent>(m_SceneEntity).World->SetGravity({ 0.0f, gravity });
-    }
-
-    Environment Environment::Load(const std::string& filepath)
-    {
-        auto [radiance, irradiance] = SceneRenderer::CreateEnvironmentMap(filepath);
-        return { filepath, radiance, irradiance };
     }
 }

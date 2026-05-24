@@ -4,9 +4,9 @@
 namespace Prism
 {
 
-    void CSharpScriptStorage::Store(UUID scriptID, Rolky::ManagedObject obj)
+    void CSharpScriptStorage::Store(UUID scriptID, Rolky::ManagedObject* obj)
     {
-        EntityStorage[scriptID] = { scriptID, std::move(obj) };
+        EntityStorage[scriptID] = { scriptID, obj };
     }
 
     void CSharpScriptStorage::Remove(UUID scriptID)

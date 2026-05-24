@@ -31,6 +31,7 @@ namespace Prism
     Rolky::ManagedAssembly CSharpScriptEngine::s_EngineAssembly;
     Rolky::ManagedAssembly CSharpScriptEngine::s_AppAssembly;
     bool CSharpScriptEngine::s_Initialized = false;
+    std::unordered_map<UUID, std::unordered_map<UUID, Rolky::ManagedObject>> CSharpScriptEngine::s_ManagedObjects;
 
     void CSharpScriptEngine::Initialize()
     {
@@ -48,6 +49,7 @@ namespace Prism
 
     void CSharpScriptEngine::Shutdown()
     {
+        s_ManagedObjects.clear();
         if (s_Host && s_LoadContext)
             s_Host->UnloadAssemblyLoadContext(*s_LoadContext);
         if (s_Host)
@@ -65,6 +67,33 @@ namespace Prism
         auto it = storage.EntityStorage.find(scriptID);
         PR_CORE_ASSERT(it != storage.EntityStorage.end(), "CSharpScript entity not found!");
         return it->second;
+    }
+
+    Rolky::ManagedObject* CSharpScriptEngine::GetManagedObject(UUID sceneID, UUID scriptID)
+    {
+        auto sceneIt = s_ManagedObjects.find(sceneID);
+        if (sceneIt == s_ManagedObjects.end())
+            return nullptr;
+        auto objIt = sceneIt->second.find(scriptID);
+        return objIt != sceneIt->second.end() ? &objIt->second : nullptr;
+    }
+
+    void CSharpScriptEngine::RemoveManagedObject(CSharpScriptStorage& storage, UUID scriptID)
+    {
+        auto sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
+        auto sceneIt = s_ManagedObjects.find(sceneID);
+        if (sceneIt != s_ManagedObjects.end())
+        {
+            sceneIt->second.erase(scriptID);
+            if (sceneIt->second.empty())
+                s_ManagedObjects.erase(sceneIt);
+            storage.Remove(scriptID);
+        }
+    }
+
+    void CSharpScriptEngine::ReleaseAll()
+    {
+        s_ManagedObjects.clear();
     }
 
     void CSharpScriptEngine::LoadEngineAssembly(const std::string& assemblyPath)

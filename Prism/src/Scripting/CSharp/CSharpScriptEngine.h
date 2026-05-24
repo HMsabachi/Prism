@@ -23,9 +23,19 @@ namespace Prism
         static void Initialize();
         static void Shutdown();
 
-        // Template: generate ScriptID, create object, store, return copy
+        // ===== 对象所有权 (双重 map: SceneID → (ScriptID → ManagedObject)) =====
+        static std::unordered_map<UUID, std::unordered_map<UUID, Rolky::ManagedObject>> s_ManagedObjects;
+
+
         template<typename... TArgs>
-        static Rolky::ManagedObject Instantiate(std::string_view className, CSharpScriptStorage& storage, TArgs&&... args);
+        static UUID Instantiate(std::string_view className, CSharpScriptStorage& storage, TArgs&&... args);
+
+        template<typename... TArgs>
+        static UUID InstantiateEngine(UUID scriptID, std::string_view className, CSharpScriptStorage& storage, TArgs&&... args);
+
+        static Rolky::ManagedObject* GetManagedObject(UUID sceneID, UUID scriptID);
+        static void RemoveManagedObject(CSharpScriptStorage& storage, UUID scriptID);
+        static void ReleaseAll();
 
         // Storage lookup (takes storage reference)
         static CSharpEntityScriptStorage& GetEntityScriptStorage(CSharpScriptStorage& storage, UUID scriptID);
@@ -42,7 +52,6 @@ namespace Prism
         static bool ModuleExists(const std::string& moduleName);
         static void OnImGuiRender();
 
-
         static Rolky::ManagedAssembly& GetEngineAssembly();
         static Rolky::ManagedAssembly& GetAppAssembly();
 
@@ -54,15 +63,38 @@ namespace Prism
         static Rolky::ManagedAssembly s_AppAssembly;
         static bool s_Initialized;
     };
+
+    // ── Template implementation ──
+
     template<typename... TArgs>
-    Rolky::ManagedObject CSharpScriptEngine::Instantiate(std::string_view className, CSharpScriptStorage& storage, TArgs&&... args)
+    UUID CSharpScriptEngine::Instantiate(std::string_view className, CSharpScriptStorage& storage, TArgs&&... args)
     {
         auto type = GetAppAssembly().GetType(className);
         PR_CORE_ASSERT(type, "Class not found in app assembly!");
         auto instance = type->CreateInstance(std::forward<TArgs>(args)...);
         UUID scriptID = UUID();
-        storage.Store(scriptID, instance);
-        return instance;
+        auto sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
+        auto& sceneMap = s_ManagedObjects[sceneID];
+        auto [it, inserted] = sceneMap.emplace(scriptID, std::move(instance));
+        PR_CORE_ASSERT(inserted, "ScriptID collision in s_ManagedObjects!");
+        storage.Store(scriptID, &it->second);
+        return scriptID;
+    }
+
+    // 从 engine assembly 创建框架类 (如 Prism.Entity), 使用外部传入的 ScriptID
+    template<typename... TArgs>
+    UUID CSharpScriptEngine::InstantiateEngine(UUID scriptID, std::string_view className, CSharpScriptStorage& storage, TArgs&&... args)
+    {
+        auto type = GetEngineAssembly().GetType(className);
+        PR_CORE_ASSERT(type, "Class not found in engine assembly!");
+        auto instance = type.CreateInstance(std::forward<TArgs>(args)...);
+        UUID sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
+        auto& sceneMap = s_ManagedObjects[sceneID];
+        auto [it, inserted] = sceneMap.emplace(scriptID, std::move(instance));
+        PR_CORE_ASSERT(inserted, "ScriptID collision in s_ManagedObjects!");
+        it->second.SetPropertyValue<uint64_t>("ID", (uint64_t)scriptID);
+        storage.Store(scriptID, &it->second);
+        return scriptID;
     }
 
 }

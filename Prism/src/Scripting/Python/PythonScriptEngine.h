@@ -26,12 +26,19 @@ namespace Prism
         static void Initialize();
         static void Shutdown();
 
-        // Template: generate ScriptID, create object, store, return copy
+        // 双重 map: SceneID → (ScriptID → ScriptObject)
+        static std::unordered_map<UUID, std::unordered_map<UUID, Python::ScriptObject>> s_PythonScriptObjects;
+
+        // 创建脚本对象, 使用外部传入的 ScriptID, 存入 s_PythonScriptObjects + storage
         template<typename... TArgs>
-        static Python::ScriptObject Instantiate(std::string_view className, PythonScriptStorage& storage, TArgs&&... args);
+        static UUID Instantiate(UUID scriptID, std::string_view className, PythonScriptStorage& storage, TArgs&&... args);
 
         // Storage lookup (takes storage reference)
         static PythonEntityScriptStorage& GetEntityScriptStorage(PythonScriptStorage& storage, UUID scriptID);
+
+        static Python::ScriptObject* GetScriptObject(UUID sceneID, UUID scriptID);
+        static void RemoveScriptObject(PythonScriptStorage& storage, UUID scriptID);
+        static void ReleaseAll();
 
         // Scene context
         static void SetSceneContext(const Ref<Scene>& scene);
@@ -42,9 +49,9 @@ namespace Prism
         static bool s_Initialized;
     };
 
-    // Template definition: import module, get class, create instance, store, return copy
+    // Template: import module, create instance, store in double map + storage
     template<typename... TArgs>
-    Python::ScriptObject PythonScriptEngine::Instantiate(std::string_view className, PythonScriptStorage& storage, TArgs&&... /*args*/)
+    UUID PythonScriptEngine::Instantiate(UUID scriptID, std::string_view className, PythonScriptStorage& storage, TArgs&&... /*args*/)
     {
         // className format: "ModuleName.ClassName" or just "ClassName"
         std::string_view moduleName = className;
@@ -63,9 +70,13 @@ namespace Prism
         PR_CORE_ASSERT(cls.IsValid(), "Python class not found!");
 
         Python::ScriptObject obj = cls.CreateInstance();
-        UUID scriptID = UUID();
-        storage.Store(scriptID, obj);
-        return obj;
+        UUID sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
+        auto& sceneMap = s_PythonScriptObjects[sceneID];
+        auto [it, inserted] = sceneMap.emplace(scriptID, std::move(obj));
+        PR_CORE_ASSERT(inserted, "ScriptID collision in s_PythonScriptObjects!");
+        it->second.SetField<uint64_t>("_id", (uint64_t)scriptID);
+        storage.Store(scriptID, &it->second);
+        return scriptID;
     }
 }
 
