@@ -252,6 +252,8 @@ namespace Prism::Python {
         PyObject* module = PyImport_ImportModule(name);
         if (module)
             mod.m_Ref = ScriptRef::Adopt(ToSV(module));
+        else
+            saver.Log();
         return mod;
     }
 
@@ -293,6 +295,35 @@ namespace Prism::Python {
         return m_Ref.HasAttribute(name);
     }
 
+    std::vector<std::string> ScriptModule::GetNames() const
+    {
+        std::vector<std::string> names;
+        if (!IsValid())
+            return names;
+
+        GILGuard gil;
+        PyErrorSaver saver;
+
+        PyObject* pyMod = ToPy(m_Ref.Get());
+        PyObject* dirList = PyObject_Dir(pyMod);
+        if (dirList && PyList_Check(dirList))
+        {
+            Py_ssize_t count = PyList_Size(dirList);
+            names.reserve(static_cast<size_t>(count));
+            for (Py_ssize_t i = 0; i < count; i++)
+            {
+                PyObject* item = PyList_GetItem(dirList, i);
+                if (item && PyUnicode_Check(item))
+                {
+                    const char* s = PyUnicode_AsUTF8(item);
+                    if (s) names.emplace_back(s);
+                }
+            }
+        }
+        Py_XDECREF(dirList);
+        return names;
+    }
+
     // ─── ScriptClass ─────────────────────────────────────────────────────
 
     ScriptClass ScriptClass::From(const ScriptModule& mod, const char* name)
@@ -310,6 +341,147 @@ namespace Prism::Python {
     bool ScriptClass::HasMethod(const char* name) const
     {
         return m_Ref.HasAttribute(name);
+    }
+
+    // ── 运行时类型查询 ──────────────────────────────────────────────────────
+
+    std::string ScriptClass::GetName() const
+    {
+        if (!m_Ref.IsValid()) return {};
+        GILGuard gil;
+        PyObject* pyCls = ToPy(m_Ref.Get());
+        PyObject* nameAttr = PyObject_GetAttrString(pyCls, "__name__");
+        std::string result;
+        if (nameAttr && PyUnicode_Check(nameAttr))
+        {
+            const char* s = PyUnicode_AsUTF8(nameAttr);
+            if (s) result = s;
+        }
+        Py_XDECREF(nameAttr);
+        return result;
+    }
+
+    std::string ScriptClass::GetFullName() const
+    {
+        if (!m_Ref.IsValid()) return {};
+        GILGuard gil;
+        PyObject* pyCls = ToPy(m_Ref.Get());
+
+        PyObject* modName = PyObject_GetAttrString(pyCls, "__module__");
+        PyObject* qualName = PyObject_GetAttrString(pyCls, "__qualname__");
+
+        std::string result;
+        if (modName && PyUnicode_Check(modName) && qualName && PyUnicode_Check(qualName))
+        {
+            const char* mod = PyUnicode_AsUTF8(modName);
+            const char* qn = PyUnicode_AsUTF8(qualName);
+            if (mod && qn)
+            {
+                result = mod;
+                result += '.';
+                result += qn;
+            }
+        }
+        else
+        {
+            // fallback: just __qualname__
+            if (qualName && PyUnicode_Check(qualName))
+            {
+                const char* qn = PyUnicode_AsUTF8(qualName);
+                if (qn) result = qn;
+            }
+        }
+
+        Py_XDECREF(modName);
+        Py_XDECREF(qualName);
+        return result;
+    }
+
+    bool ScriptClass::IsSubclassOf(const ScriptClass& other) const
+    {
+        if (!m_Ref.IsValid() || !other.m_Ref.IsValid())
+            return false;
+
+        GILGuard gil;
+        PyObject* pyCls = ToPy(m_Ref.Get());
+        PyObject* pyOther = ToPy(other.m_Ref.Get());
+        int result = PyObject_IsSubclass(pyCls, pyOther);
+        return result == 1;
+    }
+
+    // ── 字段反射 ────────────────────────────────────────────────────────────
+
+    std::vector<ScriptClass::FieldInfo> ScriptClass::GetFields() const
+    {
+        std::vector<FieldInfo> fields;
+        if (!m_Ref.IsValid())
+            return fields;
+
+        GILGuard gil;
+        PyErrorSaver saver;
+        PyObject* pyCls = ToPy(m_Ref.Get());
+
+        // 1) 读 __annotations__ → 字段名到类型对象的映射
+        PyObject* annotations = PyObject_GetAttrString(pyCls, "__annotations__");
+        if (!annotations || !PyDict_Check(annotations))
+        {
+            Py_XDECREF(annotations);
+            return fields;
+        }
+
+        // 2) 获取类的 __dict__（用于检查默认值）
+        PyObject* clsDict = PyObject_GetAttrString(pyCls, "__dict__");
+
+        fields.reserve(static_cast<size_t>(PyDict_Size(annotations)));
+
+        PyObject* key, * annValue;
+        Py_ssize_t pos = 0;
+        while (PyDict_Next(annotations, &pos, &key, &annValue))
+        {
+            if (!key || !PyUnicode_Check(key))
+                continue;
+
+            const char* fieldName = PyUnicode_AsUTF8(key);
+            if (!fieldName)
+                continue;
+
+            FieldInfo info;
+            info.Name = fieldName;
+
+            // 类型标注转字符串
+            // annValue 通常是类型对象（如 <class 'float'>），取 __name__
+            PyObject* typeNameAttr = PyObject_GetAttrString(annValue, "__name__");
+            if (typeNameAttr && PyUnicode_Check(typeNameAttr))
+            {
+                const char* tn = PyUnicode_AsUTF8(typeNameAttr);
+                if (tn) info.TypeAnnotation = tn;
+            }
+            else
+            {
+                // fallback: str(annotation)
+                PyObject* strRepr = PyObject_Str(annValue);
+                if (strRepr && PyUnicode_Check(strRepr))
+                {
+                    const char* s = PyUnicode_AsUTF8(strRepr);
+                    if (s) info.TypeAnnotation = s;
+                }
+                Py_XDECREF(strRepr);
+            }
+            Py_XDECREF(typeNameAttr);
+
+            // 检查类 __dict__ 中是否有默认值
+            if (clsDict && PyDict_Check(clsDict))
+            {
+                PyObject* defaultVal = PyDict_GetItemString(clsDict, fieldName);
+                info.HasDefault = (defaultVal != nullptr);
+            }
+
+            fields.push_back(std::move(info));
+        }
+
+        Py_XDECREF(clsDict);
+        Py_XDECREF(annotations);
+        return fields;
     }
 
     ScriptClass::AnnotationMap ScriptClass::GetAnnotations() const

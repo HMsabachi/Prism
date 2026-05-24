@@ -121,7 +121,7 @@ project "Prism"
         flags { "NoPCH" }
 
     filter "system:windows"
-        cppdialect "C++17"
+        cppdialect "C++20"
         systemversion "latest"
 
         buildoptions { "/utf-8" }
@@ -232,7 +232,7 @@ project "PrismEditor"
     }
 
     filter "system:windows"
-        cppdialect "C++17"
+        cppdialect "C++20"
         systemversion "latest"
 
         buildoptions { "/utf-8" }

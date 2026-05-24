@@ -80,6 +80,7 @@ namespace Prism::Python {
 
         ScriptRef GetAttribute(const char* name) const;
         bool HasAttribute(const char* name) const;
+        std::vector<std::string> GetNames() const;  // dir(module)
 
         bool IsValid() const { return m_Ref.IsValid(); }
 
@@ -94,6 +95,20 @@ namespace Prism::Python {
     public:
         ScriptClass() = default;
         static ScriptClass From(const ScriptModule& mod, const char* name);
+
+        // ── 运行时类型查询（仿 Rolky Type API）──
+        std::string GetName() const;        // __name__
+        std::string GetFullName() const;    // __module__ + "." + __qualname__
+        bool IsSubclassOf(const ScriptClass& other) const;  // issubclass()
+
+        // ── 字段反射 ──
+        struct FieldInfo
+        {
+            std::string Name;
+            std::string TypeAnnotation;  // 标注字符串，如 "float", "int", "Prism.Vector3"
+            bool HasDefault = false;
+        };
+        std::vector<FieldInfo> GetFields() const;  // __annotations__ + 默认值
 
         bool HasMethod(const char* name) const;
 
@@ -219,10 +234,9 @@ namespace Prism::Python {
         else if constexpr (std::is_same_v<Raw, bool>)
             return BoolToValue(value);
         else
-            static_assert(AlwaysFalse<T>::value, "Unsupported type for Python conversion");
+            static_assert(false, "Unsupported type for Python conversion");
     }
 
-    // ScriptRef -> C++ 绫诲瀷鑷姩杞崲
     template<typename T>
     T ConvertFromScriptRef(const ScriptRef& v)
     {
@@ -240,7 +254,7 @@ namespace Prism::Python {
         else if constexpr (std::is_same_v<Raw, bool>)
             return ValueToBool(v);
         else
-            static_assert(AlwaysFalse<T>::value, "Unsupported type for Python return conversion");
+            static_assert(false, "Unsupported type for Python return conversion");
     }
 
     template<typename... TArgs>
@@ -275,7 +289,7 @@ namespace Prism::Python {
         else if constexpr (std::is_same_v<Raw, bool>)
             return static_cast<T>(ValueToBool(val));
         else
-            static_assert(AlwaysFalse<T>::value, "Unsupported type for Python field access");
+            static_assert(false, "Unsupported type for Python field access");
     }
 
     template<typename T>

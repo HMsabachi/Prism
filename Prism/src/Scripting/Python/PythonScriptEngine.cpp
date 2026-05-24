@@ -2,6 +2,7 @@
 #include "PythonScriptEngine.h"
 #include "PythonScriptStorage.h"
 #include "PythonScriptWrappers.h"
+#include "PythonScriptMetaRegistry.h"
 
 #include <Python.h>
 
@@ -67,6 +68,8 @@ namespace Prism
 
         s_Initialized = true;
         PR_CORE_TRACE("[Python] Python 运行时已初始化");
+
+        PythonScriptMetaRegistry::BuildCache();
     }
 
     void PythonScriptEngine::Shutdown()
@@ -76,6 +79,7 @@ namespace Prism
         if (!s_Initialized)
             return;
 
+        PythonScriptMetaRegistry::Shutdown();
         Python::ScriptHost::Shutdown();
         s_Initialized = false;
         s_SceneContext = nullptr;

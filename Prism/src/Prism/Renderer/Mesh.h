@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <vector>
 #include <glm/glm.hpp>
@@ -139,7 +139,7 @@ namespace Prism {
 		void SetOverrideMaterial(const Ref<MaterialInstance>& material) { m_OverrideMaterial = material; }
 		Ref<MaterialInstance> GetOverrideMaterial() { return m_OverrideMaterial; }
 		void SetMaterial(uint32_t index, const Ref<MaterialInstance>& material) { PR_CORE_ASSERT(index < m_Materials.size()); m_Materials[index] = material; }
-		std::vector<Ref<MaterialInstance>> GetMaterials() { return m_Materials; }
+		std::vector<Ref<MaterialInstance>>& GetMaterials() { return m_Materials; }
 		const std::vector<Ref<Texture2D>>& GetTextures() const { return m_Textures; }
 		const std::string& GetFilePath() const { return m_FilePath; }
 

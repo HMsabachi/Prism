@@ -2,6 +2,7 @@
 #include "CSharpScriptEngine.h"
 #include "CSharpScriptStorage.h"
 #include "ScriptEngineRegistry.h"
+#include "CSharpScriptMetaRegistry.h"
 #include "Prism/Scene/Scene.h"
 #include "Prism/Scene/Entity.h"
 #include "Prism/Scene/Components.h"
@@ -111,6 +112,7 @@ namespace Prism
         PR_PROFILE_FUNCTION();
         auto path = std::filesystem::absolute(assemblyPath).string();
         s_AppAssembly = s_LoadContext->LoadAssembly(path);
+        CSharpScriptMetaRegistry::BuildCache();
     }
 
     void CSharpScriptEngine::ReloadAssembly(const std::string& assemblyPath)
