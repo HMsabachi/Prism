@@ -1,16 +1,16 @@
-﻿#pragma once
+#pragma once
 
 #include <glm/glm.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 #include "Prism/Core/UUID.h"
-#include "Scripting/ScriptTypes.h"
 
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Scene/SceneCamera.h"
 #include "glm/gtx/quaternion.hpp"
+
 
 namespace Prism {
 
@@ -76,24 +76,14 @@ namespace Prism {
 		operator Ref<Prism::Mesh>() { return Mesh; }
 	};
 
-	struct ScriptInstance
+	struct CSharpScriptComponent
 	{
-		std::string ModuleName;
-		ScriptLanguage Language = ScriptLanguage::CSharp;
-		bool Enabled = true;
-
-		ScriptInstance() = default;
-		ScriptInstance(const std::string& moduleName, ScriptLanguage language = ScriptLanguage::CSharp)
-			: ModuleName(moduleName), Language(language) {
-		}
+		UUID ScriptID = 0;
 	};
 
-	struct ScriptsComponent
+	struct PythonScriptComponent
 	{
-		std::vector<ScriptInstance> Scripts;
-
-		ScriptsComponent() = default;
-		ScriptsComponent(const ScriptsComponent& other) = default;
+		UUID ScriptID = 0;
 	};
 
 	struct CameraComponent

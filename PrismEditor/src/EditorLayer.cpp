@@ -3,6 +3,8 @@
 
 #include "Prism/ImGui/ImGuizmo.h"
 #include "Prism/Core/LanguageManager.h"
+#include "Scripting/CSharp/CSharpScriptEngine.h"
+#include "Scripting/Python/PythonScriptEngine.h"
 
 PRISM_API void PrismConnectPhysXDebugger();
 
@@ -122,7 +124,8 @@ namespace Prism
 
             m_EditorScene = Ref<Scene>::Create();
             UpdateWindowTitle("Untitled Scene");
-            ScriptEngineManager::SetSceneContext(m_EditorScene);
+            CSharpScriptEngine::SetSceneContext(m_EditorScene);
+        PythonScriptEngine::SetSceneContext(m_EditorScene);
             m_SceneHierarchyPanel = CreateScope<SceneHierarchyPanel>(m_EditorScene);
             m_SceneHierarchyPanel->SetSelectionChangedCallback(std::bind(&EditorLayer::SelectEntity, this, std::placeholders::_1));
             m_SceneHierarchyPanel->SetEntityDeletedCallback(std::bind(&EditorLayer::OnEntityDeleted, this, std::placeholders::_1));
@@ -142,7 +145,7 @@ namespace Prism
             m_SceneState = SceneState::Play;
 
             if (m_ReloadScriptOnPlay)
-                ScriptEngineManager::ReloadAssembly("assets/scripts/ExampleApp.dll");
+                CSharpScriptEngine::ReloadAssembly("assets/scripts/ExampleApp.dll");
 
             m_RuntimeScene = Ref<Scene>::Create();
             m_EditorScene->CopyTo(m_RuntimeScene);
@@ -161,7 +164,8 @@ namespace Prism
             m_RuntimeScene = nullptr;
 
             m_SelectionContext.clear();
-            ScriptEngineManager::SetSceneContext(m_EditorScene);
+            CSharpScriptEngine::SetSceneContext(m_EditorScene);
+        PythonScriptEngine::SetSceneContext(m_EditorScene);
             m_SceneHierarchyPanel->SetContext(m_EditorScene);
             UpdateWindowTitle("Untitled Scene");
         }
@@ -386,7 +390,8 @@ namespace Prism
                 std::filesystem::path path = filepath;
                 UpdateWindowTitle(path.filename().string());
                 m_SceneHierarchyPanel->SetContext(m_EditorScene);
-                ScriptEngineManager::SetSceneContext(m_EditorScene);
+                CSharpScriptEngine::SetSceneContext(m_EditorScene);
+        PythonScriptEngine::SetSceneContext(m_EditorScene);
 
                 m_EditorScene->SetSelectedEntity({});
                 m_SelectionContext.clear();
@@ -713,7 +718,7 @@ namespace Prism
                 if (ImGui::BeginMenu(TR("Script")))
                 {
                     if (ImGui::MenuItem(TR("Reload C# Assembly")))
-                        ScriptEngineManager::ReloadAssembly("assets/scripts/ExampleApp.dll");
+                        CSharpScriptEngine::ReloadAssembly("assets/scripts/ExampleApp.dll");
                     ImGui::MenuItem(TR("Reload assembly on play"), nullptr, &m_ReloadScriptOnPlay);
                     ImGui::EndMenu();
                 }
@@ -824,7 +829,8 @@ namespace Prism
             }
 
             ImGui::End();
-            ScriptEngineManager::OnImGuiRender();
+            CSharpScriptEngine::OnImGuiRender();
+            //PythonScriptEngine::OnImGuiRender();
 
             ImGui::End();
         #endif

@@ -10,7 +10,6 @@
 #include "Prism/Renderer/Buffer/Framebuffer.h"
 #include "Prism/Renderer/Shader/Parser/ShaderParser.h"
 
-#include "Scripting/ScriptEngineManager.h"
 #include "Scripting/CSharp/CSharpScriptEngine.h"
 #include "Scripting/Python/PythonScriptEngine.h"
 #include "Prism/Physics/Physics3D.h"
@@ -118,20 +117,18 @@ namespace Prism
 
     void Application::OnInit()
     {
-        auto csharpEngine = std::make_unique<CSharpScriptEngine>();
-        csharpEngine->Initialize();
-        csharpEngine->LoadEngineAssembly("Assets/scripts/net9.0/Prism.Scripting.dll");
-        csharpEngine->LoadAppAssembly("Assets/scripts/net9.0/ExampleApp.dll");
-        ScriptEngineManager::Register(ScriptLanguage::CSharp, std::move(csharpEngine));
-        auto pythonEngine = std::make_unique<PythonScriptEngine>();
-        pythonEngine->Initialize();
-        ScriptEngineManager::Register(ScriptLanguage::Python, std::move(pythonEngine));
+        CSharpScriptEngine::Initialize();
+        CSharpScriptEngine::LoadEngineAssembly("Assets/scripts/net9.0/Prism.Scripting.dll");
+        CSharpScriptEngine::LoadAppAssembly("Assets/scripts/net9.0/ExampleApp.dll");
+
+        PythonScriptEngine::Initialize();
     }
 
     void Application::OnShutdown()
     {
         m_LayerStack.Shutdown();
-        ScriptEngineManager::Shutdown();
+        CSharpScriptEngine::Shutdown();
+        PythonScriptEngine::Shutdown();
         Physics3D::Shutdown();
     }
 

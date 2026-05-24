@@ -1,53 +1,70 @@
 #pragma once
-#include "Scripting/ScriptEngine.h"
-#include "Scripting/PublicField.h"
-#include "Scripting/ScriptStorage.h"
 #include <unordered_map>
+#include <memory>
+#include "Prism/Core/Core.h"
+#include "Prism/Core/UUID.h"
+#include "Prism/Core/Ref.h"
+#include "Prism/Core/Log.h"
+#include "Prism/Scene/Entity.h"
+#include "CSharpScriptStorage.h"
 
-namespace Rolky
-{
-	struct HostInstance;
-	struct AssemblyLoadContext;
-	struct ManagedAssembly;
-	class ManagedObject;
-	class Type;
-}
 #include <Rolky/HostInstance.hpp>
+
 
 namespace Prism
 {
-	class CSharpScriptEngine : public ScriptEngine
-	{
-	public:
-		CSharpScriptEngine();
-		~CSharpScriptEngine() override;
+    class Scene;
 
-		// ScriptEngine interface
-		bool Initialize() override;
-		void Shutdown() override;
-		bool LoadEngineAssembly(const std::string& path) override;
-		bool LoadAppAssembly(const std::string& path) override;
-		void ReloadAssembly(const std::string& path) override;
-		void SetSceneContext(const Ref<Scene>& scene) override;
-		const Ref<Scene>& GetCurrentSceneContext() override;
-		void InitScriptEntity(Entity& entity, ScriptGroup& group) override;
-		void ShutdownScriptEntity(ScriptGroup& group) override;
-		void InstantiateEntityClass(ScriptGroup& group) override;
-		bool ModuleExists(const std::string& moduleName) override;
-		void OnImGuiRender() override;
+    class PRISM_API CSharpScriptEngine
+    {
+    public:
+        CSharpScriptEngine() = delete;
 
-		// C#-specific accessors
-		Rolky::ManagedAssembly& GetEngineAssembly();
+        static void Initialize();
+        static void Shutdown();
 
-	private:
-		std::unique_ptr<Rolky::HostInstance> m_Host;
-		std::unique_ptr<Rolky::AssemblyLoadContext> m_LoadContext;
+        // Template: generate ScriptID, create object, store, return copy
+        template<typename... TArgs>
+        static Rolky::ManagedObject Instantiate(std::string_view className, CSharpScriptStorage& storage, TArgs&&... args);
 
-		Ref<Scene> m_SceneContext;
+        // Storage lookup (takes storage reference)
+        static CSharpEntityScriptStorage& GetEntityScriptStorage(CSharpScriptStorage& storage, UUID scriptID);
 
-		std::unordered_map<std::string, Rolky::Type> m_EntityClassMap;
-		Rolky::ManagedAssembly m_EngineAssembly;
-		Rolky::ManagedAssembly m_AppAssembly;
-		bool m_Initialized = false;
-	};
+        // Assembly management
+        static void LoadEngineAssembly(const std::string& path);
+        static void LoadAppAssembly(const std::string& path);
+        static void ReloadAssembly(const std::string& path);
+
+        // Scene context
+        static void SetSceneContext(const Ref<Scene>& scene);
+        static const Ref<Scene>& GetCurrentSceneContext();
+
+        static bool ModuleExists(const std::string& moduleName);
+        static void OnImGuiRender();
+
+
+        static Rolky::ManagedAssembly& GetEngineAssembly();
+        static Rolky::ManagedAssembly& GetAppAssembly();
+
+    private:
+        static std::unique_ptr<Rolky::HostInstance> s_Host;
+        static std::unique_ptr<Rolky::AssemblyLoadContext> s_LoadContext;
+        static Ref<Scene> s_SceneContext;
+        static Rolky::ManagedAssembly s_EngineAssembly;
+        static Rolky::ManagedAssembly s_AppAssembly;
+        static bool s_Initialized;
+    };
+    template<typename... TArgs>
+    Rolky::ManagedObject CSharpScriptEngine::Instantiate(std::string_view className, CSharpScriptStorage& storage, TArgs&&... args)
+    {
+        auto type = GetAppAssembly().GetType(className);
+        PR_CORE_ASSERT(type, "Class not found in app assembly!");
+        auto instance = type->CreateInstance(std::forward<TArgs>(args)...);
+        UUID scriptID = UUID();
+        storage.Store(scriptID, instance);
+        return instance;
+    }
+
 }
+
+

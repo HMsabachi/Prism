@@ -3,8 +3,6 @@
 
 #include "Entity.h"
 #include "Components.h"
-#include "Scripting/ScriptEngineManager.h"
-#include "Scripting/PublicField.h"
 
 #include "yaml-cpp/yaml.h"
 
@@ -182,61 +180,6 @@ namespace Prism {
             out << YAML::Key << "Scale" << YAML::Value << tc.Scale;
 
             out << YAML::EndMap; // TransformComponent
-        }
-
-        if (entity.HasComponent<ScriptsComponent>())
-        {
-            out << YAML::Key << "ScriptsComponent";
-            out << YAML::Value << YAML::BeginSeq;
-
-            auto& scripts = entity.GetComponent<ScriptsComponent>().Scripts;
-            for (const auto& script : scripts)
-            {
-                out << YAML::BeginMap; // Script
-                out << YAML::Key << "ModuleName" << YAML::Value << script.ModuleName;
-                out << YAML::Key << "Language" << YAML::Value << (uint32_t)script.Language;
-
-                auto* group = scene->GetScriptStorage().FindGroup(uuid, script.ModuleName);
-                if (group && !group->Fields.empty())
-                {
-                    out << YAML::Key << "StoredFields" << YAML::Value;
-                    out << YAML::BeginSeq;
-                    for (auto& [fieldName, field] : group->Fields)
-                    {
-                        out << YAML::BeginMap; // Field
-                        out << YAML::Key << "Name" << YAML::Value << fieldName;
-                        out << YAML::Key << "Type" << YAML::Value << (uint32_t)field->GetType();
-                        out << YAML::Key << "Data" << YAML::Value;
-
-                        switch (field->GetType())
-                        {
-                        case FieldType::Int:
-                            out << field->GetStoredValue<int32_t>();
-                            break;
-                        case FieldType::UnsignedInt:
-                            out << field->GetStoredValue<uint32_t>();
-                            break;
-                        case FieldType::Float:
-                            out << field->GetStoredValue<float>();
-                            break;
-                        case FieldType::Vec2:
-                            out << field->GetStoredValue<glm::vec2>();
-                            break;
-                        case FieldType::Vec3:
-                            out << field->GetStoredValue<glm::vec3>();
-                            break;
-                        case FieldType::Vec4:
-                            out << field->GetStoredValue<glm::vec4>();
-                            break;
-                        }
-                        out << YAML::EndMap; // Field
-                    }
-                    out << YAML::EndSeq;
-                }
-
-                out << YAML::EndMap; // Script
-            }
-            out << YAML::EndSeq;
         }
 
         if (entity.HasComponent<MeshComponent>())
@@ -528,91 +471,30 @@ namespace Prism {
                     PR_CORE_INFO("    Scale: {0}, {1}, {2}", scale.x, scale.y, scale.z);
                 }
 
-                // Helper lambda for deserializing stored fields via ScriptStorage
-                auto deserializeFields = [&](const YAML::Node& storedFields, const std::string& moduleName)
+                // Script serialization is not yet implemented for the new
+                // CSharpScriptComponent / PythonScriptComponent system.
+                // TODO: Serialize Behaviour list and field values via engine API.
+                // Backward compat: read old ScriptsComponent / ScriptComponent format
+                // to avoid data loss, but data is not processed (FieldType and
+                // ScriptStorage have been removed).
                 {
-                    if (!storedFields)
-                        return;
-                    auto* group = m_Scene->GetScriptStorage().FindGroup(uuid, moduleName);
-                    if (!group)
-                        return;
-                    for (auto field : storedFields)
+                    auto scriptsNode = entity["ScriptsComponent"];
+                    if (scriptsNode)
                     {
-                        std::string name = field["Name"].as<std::string>();
-                        auto dataNode = field["Data"];
-                        auto fit = group->Fields.find(name);
-                        if (fit == group->Fields.end())
-                            continue;
-                        auto* f = fit->second.get();
-                        switch (f->GetType())
+                        for (auto scriptNode : scriptsNode)
                         {
-                        case FieldType::Float:
-                            f->SetStoredValue(dataNode.as<float>());
-                            break;
-                        case FieldType::Int:
-                            f->SetStoredValue(dataNode.as<int32_t>());
-                            break;
-                        case FieldType::UnsignedInt:
-                            f->SetStoredValue(dataNode.as<uint32_t>());
-                            break;
-                        case FieldType::String:
-                            PR_CORE_ASSERT(false, "Unimplemented");
-                            break;
-                        case FieldType::Vec2:
-                            f->SetStoredValue(dataNode.as<glm::vec2>());
-                            break;
-                        case FieldType::Vec3:
-                            f->SetStoredValue(dataNode.as<glm::vec3>());
-                            break;
-                        case FieldType::Vec4:
-                            f->SetStoredValue(dataNode.as<glm::vec4>());
-                            break;
+                            std::string moduleName = scriptNode["ModuleName"].as<std::string>();
+                            PR_CORE_INFO("  Script (legacy): Module={0}", moduleName);
                         }
                     }
-                };
-
-                // New format: ScriptsComponent (sequence)
-                auto scriptsNode = entity["ScriptsComponent"];
-                if (scriptsNode)
-                {
-                    if (!deserializedEntity.HasComponent<ScriptsComponent>())
-                        deserializedEntity.AddComponent<ScriptsComponent>();
-
-                    auto& scripts = deserializedEntity.GetComponent<ScriptsComponent>().Scripts;
-
-                    for (auto scriptNode : scriptsNode)
+                    else
                     {
-                        std::string moduleName = scriptNode["ModuleName"].as<std::string>();
-                        ScriptLanguage language = (ScriptLanguage)scriptNode["Language"].as<uint32_t>();
-
-                        scripts.emplace_back(moduleName, language);
-                        ScriptEngineManager::OnScriptAdded(deserializedEntity, scripts.back(), m_Scene->GetScriptStorage());
-
-                        PR_CORE_INFO("  Script: Module={0}, Language={1}", moduleName, (uint32_t)language);
-
-                        auto storedFields = scriptNode["StoredFields"];
-                        deserializeFields(storedFields, moduleName);
-                    }
-                }
-                else
-                {
-                    // Backward compat: old ScriptComponent format
-                    auto scriptComponent = entity["ScriptComponent"];
-                    if (scriptComponent)
-                    {
-                        std::string moduleName = scriptComponent["ModuleName"].as<std::string>();
-
-                        if (!deserializedEntity.HasComponent<ScriptsComponent>())
-                            deserializedEntity.AddComponent<ScriptsComponent>();
-
-                        auto& scripts = deserializedEntity.GetComponent<ScriptsComponent>().Scripts;
-                        scripts.emplace_back(moduleName, ScriptLanguage::CSharp);
-                        ScriptEngineManager::OnScriptAdded(deserializedEntity, scripts.back(), m_Scene->GetScriptStorage());
-
-                        PR_CORE_INFO("  Script Module (legacy): {0}", moduleName);
-
-                        auto storedFields = scriptComponent["StoredFields"];
-                        deserializeFields(storedFields, moduleName);
+                        auto scriptComponent = entity["ScriptComponent"];
+                        if (scriptComponent)
+                        {
+                            std::string moduleName = scriptComponent["ModuleName"].as<std::string>();
+                            PR_CORE_INFO("  Script Module (legacy): {0}", moduleName);
+                        }
                     }
                 }
 

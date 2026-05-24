@@ -6,8 +6,6 @@
 namespace Prism::Python {
     struct ScriptValue;
 
-    // 鈹€鈹€鈹€ RAII 杈呭姪绫伙紙瀹炵幇瑙?.cpp锛寁oid* 涓?opaque 瀛樺偍閬垮厤鏆撮湶 Python.h锛夆攢鈹€鈹€
-
     class GILGuard
     {
     public:

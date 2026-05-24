@@ -1,7 +1,5 @@
 #pragma once
 #include "Prism/Core/UUID.h"
-#include "Scripting/PublicField.h"
-#include "Scripting/ScriptStorage.h"
 
 #include <entt/entt.hpp>
 
@@ -13,6 +11,8 @@ namespace Prism
     class TextureCube;
     class Texture2D;
     class EditorCamera;
+    struct CSharpScriptStorage;
+    struct PythonScriptStorage;
 }
 
 namespace Prism
@@ -90,14 +90,11 @@ namespace Prism
         }
 
         Entity FindEntityByTag(const std::string& tag);
+        Entity TryGetEntityByUUID(UUID uuid);
 
         const EntityMap& GetEntityMap() const { return m_EntityIDMap; }
 
         void CopyTo(Ref<Scene>& target);
-
-        // Script storage access
-        SceneScriptStorage& GetScriptStorage() { return m_ScriptStorage; }
-        const SceneScriptStorage& GetScriptStorage() const { return m_ScriptStorage; }
 
         // Collision dispatch (called by physics contact listeners)
         void OnCollision2DBegin(Entity entity);
@@ -141,18 +138,26 @@ namespace Prism
 
         float m_SkyboxLod = 0.0f;
         bool m_IsPlaying = false;
-        Entity* m_PhysicsBodyEntityBuffer = nullptr;
-        Entity* m_Physics3DBodyEntityBuffer = nullptr;
+        CSharpScriptStorage* m_CSharpScriptStorage = nullptr;
+        PythonScriptStorage* m_PythonScriptStorage = nullptr;
+
+        // entt signal callbacks
+        void OnCSharpScriptComponentConstruct(entt::registry& registry, entt::entity entity);
+        void OnCSharpScriptComponentDestroy(entt::registry& registry, entt::entity entity);
+        void OnPythonScriptComponentConstruct(entt::registry& registry, entt::entity entity);
+        void OnPythonScriptComponentDestroy(entt::registry& registry, entt::entity entity);
+        void OnRigidBody2DComponentConstruct(entt::registry& registry, entt::entity entity);
+        void OnRigidBody2DComponentDestroy(entt::registry& registry, entt::entity entity);
+        void OnBoxCollider2DComponentConstruct(entt::registry& registry, entt::entity entity);
+        void OnCircleCollider2DComponentConstruct(entt::registry& registry, entt::entity entity);
+        void OnRigidBodyComponentConstruct(entt::registry& registry, entt::entity entity);
+        void OnRigidBodyComponentDestroy(entt::registry& registry, entt::entity entity);
 
         friend class Entity;
         friend class SceneRenderer;
         friend class SceneHierarchyPanel;
         friend class SceneSerializer;
         friend class ContactListener;
-
-        // Script lifecycle is now handled manually via ScriptsComponent
-
-        SceneScriptStorage m_ScriptStorage;
     };
 
 }

@@ -5,8 +5,6 @@
 
 #include "Prism/Core/Application.h"
 #include "Prism/Renderer/Mesh.h"
-#include "Scripting/ScriptEngineManager.h"
-#include "Scripting/PublicField.h"
 #include "Prism/Core/LanguageManager.h"
 #include <assimp/scene.h>
 
@@ -95,15 +93,6 @@ namespace Prism {
                             m_SelectionContext.AddComponent<MeshComponent>();
                             ImGui::CloseCurrentPopup();
                         }
-                    }
-                    if (ImGui::Button(TR("Script")))
-                    {
-                        if (!m_SelectionContext.HasComponent<ScriptsComponent>())
-                            m_SelectionContext.AddComponent<ScriptsComponent>();
-                        auto& scripts = m_SelectionContext.GetComponent<ScriptsComponent>().Scripts;
-                        scripts.emplace_back("NewScript", ScriptLanguage::CSharp);
-                        ScriptEngineManager::OnScriptAdded(m_SelectionContext, scripts.back(), m_Context->GetScriptStorage());
-                        ImGui::CloseCurrentPopup();
                     }
                     if (!m_SelectionContext.HasComponent<SpriteRendererComponent>())
                     {
@@ -854,180 +843,25 @@ namespace Prism {
                 ImGui::Columns(1);
             });
 
-        // ScriptsComponent - multi-script support
-        if (entity.HasComponent<ScriptsComponent>())
+        // CSharpScriptComponent
+        if (entity.HasComponent<CSharpScriptComponent>())
         {
-            auto& sc = entity.GetComponent<ScriptsComponent>();
-            if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(ScriptsComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, TR("Scripts")))
+            if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(CSharpScriptComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, TR("C# Script")))
             {
-                int scriptToDelete = -1;
+                auto& comp = entity.GetComponent<CSharpScriptComponent>();
+                ImGui::Text("%s", comp.ScriptID ? "Script: Active" : "Script: None");
+                ImGui::TreePop();
+            }
+            ImGui::Separator();
+        }
 
-                for (size_t i = 0; i < sc.Scripts.size(); i++)
-                {
-                    auto& script = sc.Scripts[i];
-                    ImGui::PushID((int)i); 
-
-                    std::string nodeName = script.ModuleName.empty() ? "Script" : script.ModuleName;
-                    bool open = ImGui::TreeNodeEx("##script_entry", ImGuiTreeNodeFlags_DefaultOpen, "%s", nodeName.c_str());
-
-                    // Delete button
-                    ImGui::SameLine();
-                    if (ImGui::Button("X##script_remove"))
-                    {
-                        scriptToDelete = (int)i;
-                    }
-
-                    if (open)
-                    {
-                        BeginPropertyGrid();
-
-                        // Language dropdown
-                        const char* langStrings[] = { "C#", "Python" };
-                        int currentLang = (int)script.Language;
-                        ImGui::Text(TR("Language"));
-                        ImGui::NextColumn();
-                        ImGui::PushItemWidth(-1);
-                        if (ImGui::BeginCombo("##language", langStrings[currentLang]))
-                        {
-                            for (int lang = 0; lang < 2; lang++)
-                            {
-                                bool is_selected = (currentLang == lang);
-                                if (ImGui::Selectable(langStrings[lang], is_selected))
-                                {
-                                    ScriptEngineManager::OnScriptRemoved(entity, script, m_Context->GetScriptStorage());
-                                    script.Language = (ScriptLanguage)lang;
-                                    ScriptEngineManager::OnScriptAdded(entity, script, m_Context->GetScriptStorage());
-                                }
-                                if (is_selected)
-                                    ImGui::SetItemDefaultFocus();
-                            }
-                            ImGui::EndCombo();
-                        }
-                        ImGui::PopItemWidth();
-                        ImGui::NextColumn();
-
-                        // Module name
-                        std::string oldName = script.ModuleName;
-                        auto* engine = ScriptEngineManager::Get(script.Language);
-                        bool moduleExists = engine ? engine->ModuleExists(script.ModuleName) : false;
-
-                        ImGui::Text(TR("Module Name"));
-                        ImGui::NextColumn();
-                        ImGui::PushItemWidth(-1);
-                        char buffer[256];
-                        strcpy(buffer, script.ModuleName.c_str());
-                        if (!moduleExists)
-                            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.2f, 0.2f, 1.0f));
-                        if (ImGui::InputText("##modulename", buffer, 256))
-                        {
-                            std::string newName(buffer);
-                            if (engine && engine->ModuleExists(oldName))
-                                {									auto* oldGroup = m_Context->GetScriptStorage().FindGroup(id, oldName);
-                                    if (oldGroup)
-                                        engine->ShutdownScriptEntity(*oldGroup);
-                                    m_Context->GetScriptStorage().RemoveGroup(id, oldName);
-                                }
-                            if (engine && engine->ModuleExists(newName))
-                            {
-                                auto& entityStorage = m_Context->GetScriptStorage().GetOrCreateEntity(id);
-                                auto& newGroup = entityStorage.Groups[newName];
-                                newGroup.EntityID = id;
-                                newGroup.ModuleName = newName;
-
-
-                                engine->InitScriptEntity(entity, newGroup);
-                            }
-                            
-                            script.ModuleName = newName;
-                        }
-                        if (!moduleExists)
-                            ImGui::PopStyleColor();
-                        ImGui::PopItemWidth();
-                        ImGui::NextColumn();
-
-                        // Enabled
-                        Property(TR("Enabled"), script.Enabled);
-
-                        EndPropertyGrid();
-
-                        // Public fields
-                        {
-                            auto* group = m_Context->GetScriptStorage().FindGroup(id, script.ModuleName);
-                            if (group && !group->Fields.empty())
-                            {
-                                for (auto& [fieldName, field] : group->Fields)
-                                {
-                                    bool isRuntime = m_Context->m_IsPlaying && field->IsRuntimeAvailable();
-                                    switch (field->GetType())
-                                    {
-                                    case FieldType::Int:
-                                    {
-                                        int value = isRuntime ? field->GetRuntimeValue<int>() : field->GetStoredValue<int>();
-                                        if (Property(fieldName.c_str(), value))
-                                        {
-                                            isRuntime ? field->SetRuntimeValue(value) : field->SetStoredValue(value);
-                                        }
-                                        break;
-                                    }
-                                    case FieldType::Float:
-                                    {
-                                        float value = isRuntime ? field->GetRuntimeValue<float>() : field->GetStoredValue<float>();
-                                        if (Property(fieldName.c_str(), value, 0.2f))
-                                        {
-                                            isRuntime ? field->SetRuntimeValue(value) : field->SetStoredValue(value);
-                                        }
-                                        break;
-                                    }
-                                    case FieldType::Vec2:
-                                    {
-                                        glm::vec2 value = isRuntime ? field->GetRuntimeValue<glm::vec2>() : field->GetStoredValue<glm::vec2>();
-                                        if (Property(fieldName.c_str(), value, 0.2f))
-                                        {
-                                            isRuntime ? field->SetRuntimeValue(value) : field->SetStoredValue(value);
-                                        }
-                                        break;
-                                    }
-                                    case FieldType::Vec3:
-                                    {
-                                        glm::vec3 value = isRuntime ? field->GetRuntimeValue<glm::vec3>() : field->GetStoredValue<glm::vec3>();
-                                        if (Property(fieldName.c_str(), value, 0.2f))
-                                        {
-                                            isRuntime ? field->SetRuntimeValue(value) : field->SetStoredValue(value);
-                                        }
-                                        break;
-                                    }
-                                    case FieldType::Vec4:
-                                    {
-                                        glm::vec4 value = isRuntime ? field->GetRuntimeValue<glm::vec4>() : field->GetStoredValue<glm::vec4>();
-                                        if (Property(fieldName.c_str(), value, 0.2f))
-                                        {
-                                            isRuntime ? field->SetRuntimeValue(value) : field->SetStoredValue(value);
-                                        }
-                                        break;
-                                    }
-                                    }
-                                }
-                            }
-                        }
-
-                        ImGui::TreePop();
-                    }
-
-                    ImGui::PopID();
-                }
-                if (scriptToDelete != -1)
-                {
-                    ScriptEngineManager::OnScriptRemoved(entity, sc.Scripts[scriptToDelete], m_Context->GetScriptStorage());
-                    sc.Scripts.erase(sc.Scripts.begin() + scriptToDelete);
-                }
-
-                // Add Script button
-                if (ImGui::Button(TR("Add Script")))
-                {
-                    sc.Scripts.emplace_back("NewScript", ScriptLanguage::CSharp);
-                    ScriptEngineManager::OnScriptAdded(entity, sc.Scripts.back(), m_Context->GetScriptStorage());
-                }
-
+        // PythonScriptComponent
+        if (entity.HasComponent<PythonScriptComponent>())
+        {
+            if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(PythonScriptComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, TR("Python Script")))
+            {
+                auto& comp = entity.GetComponent<PythonScriptComponent>();
+                ImGui::Text("%s", comp.ScriptID ? "Script: Active" : "Script: None");
                 ImGui::TreePop();
             }
             ImGui::Separator();

@@ -222,7 +222,8 @@ project "PrismEditor"
         "%{IncludeDir.glm}",
             "%{IncludeDir.nethost}",
         "%{IncludeDir.entt}",
-
+        "%{IncludeDir.Rolky}",
+        "%{IncludeDir.Python}",
     }
 
     links

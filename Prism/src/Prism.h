@@ -53,10 +53,6 @@
 #include "Prism/Editor/SceneHierarchyPanel.h"
 #include "Prism/Editor/EditorCamera.h"
 
-// Scripting
-#include "Scripting/ScriptEngine.h"
-#include "Scripting/ScriptEngineManager.h"
-
 // ---------------------------------------------------
 
 #include "Prism/Renderer/Camera/OrthographicCamera.h"

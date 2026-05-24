@@ -4,7 +4,6 @@
 #include "Prism/Scene/Entity.h"
 #include "Prism/Scene/Components.h"
 #include "Prism/Renderer/Mesh.h"
-#include "Scripting/ScriptEngineManager.h"
 
 #include <PhysX/PxPhysicsAPI.h>
 
@@ -79,30 +78,27 @@ namespace Prism
             if (!s_PhysXCollisionScene)
                 return;
 
+            UUID aID = (UUID)(uintptr_t)(pairHeader.actors[0]->userData);
+            UUID bID = (UUID)(uintptr_t)(pairHeader.actors[1]->userData);
+            Entity a = s_PhysXCollisionScene->TryGetEntityByUUID(aID);
+            Entity b = s_PhysXCollisionScene->TryGetEntityByUUID(bID);
+
             for (physx::PxU32 i = 0; i < nbPairs; i++)
             {
                 if (pairs[i].flags & physx::PxContactPairFlag::eACTOR_PAIR_HAS_FIRST_TOUCH)
                 {
-                    Entity* a = (Entity*)(pairHeader.actors[0]->userData);
-                    Entity* b = (Entity*)(pairHeader.actors[1]->userData);
-
-                    if (a && a->HasComponent<ScriptsComponent>())
-                        s_PhysXCollisionScene->OnCollisionBegin(*a);
-
-                    if (b && b->HasComponent<ScriptsComponent>())
-                        s_PhysXCollisionScene->OnCollisionBegin(*b);
+                    if (a)
+                        s_PhysXCollisionScene->OnCollisionBegin(a);
+                    if (b)
+                        s_PhysXCollisionScene->OnCollisionBegin(b);
                 }
 
                 if (pairs[i].flags & physx::PxContactPairFlag::eACTOR_PAIR_LOST_TOUCH)
                 {
-                    Entity* a = (Entity*)(pairHeader.actors[0]->userData);
-                    Entity* b = (Entity*)(pairHeader.actors[1]->userData);
-
-                    if (a && a->HasComponent<ScriptsComponent>())
-                        s_PhysXCollisionScene->OnCollisionEnd(*a);
-
-                    if (b && b->HasComponent<ScriptsComponent>())
-                        s_PhysXCollisionScene->OnCollisionEnd(*b);
+                    if (a)
+                        s_PhysXCollisionScene->OnCollisionEnd(a);
+                    if (b)
+                        s_PhysXCollisionScene->OnCollisionEnd(b);
                 }
             }
         }

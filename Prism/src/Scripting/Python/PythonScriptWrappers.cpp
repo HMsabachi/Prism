@@ -7,8 +7,7 @@
 #include "Prism/Scene/Entity.h"
 #include "Prism/Scene/Components.h"
 
-#include "Scripting/ScriptEngineManager.h"
-
+#include "Scripting/Python/PythonScriptEngine.h"
 #include <glm/gtc/type_ptr.hpp>
 
 namespace Prism {
@@ -21,7 +20,7 @@ namespace Prism::Script
 
 	static Entity GetEntityFromEntityID(uint64_t entityID)
 	{
-		Ref<Scene> scene = ScriptEngineManager::Get(ScriptLanguage::Python)->GetCurrentSceneContext();
+		Ref<Scene> scene = PythonScriptEngine::GetCurrentSceneContext();
 		PR_CORE_ASSERT(scene, "没有激活的场景！");
 		const auto& entityMap = scene->GetEntityMap();
 		PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "无效的实体 ID！");

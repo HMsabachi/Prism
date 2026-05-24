@@ -5,9 +5,6 @@
 #include "Entity.h"
 #include "Components.h"
 
-#include "Scripting/ScriptEngineManager.h"
-#include "Scripting/ScriptObject.h"
-
 #include "Prism/Renderer/Renderer2D.h"
 #include "Prism/Renderer/SceneRenderer.h"
 #include "Prism/Renderer/Renderer.h"
@@ -25,6 +22,12 @@
 // PhysX
 #include "Prism/Physics/Physics3D.h"
 #include <PhysX/PxPhysicsAPI.h>
+
+#include "Scripting/CSharp/CSharpScriptStorage.h"
+#include "Scripting/Python/PythonScriptStorage.h"
+
+#include "Scripting/CSharp/CSharpScriptEngine.h"
+#include "Scripting/Python/PythonScriptEngine.h"
 
 namespace Prism
 {
@@ -55,25 +58,33 @@ namespace Prism
 
         virtual void BeginContact(b2Contact* contact) override
         {
-            Entity& a = *(Entity*)contact->GetFixtureA()->GetBody()->GetUserData().pointer;
-            Entity& b = *(Entity*)contact->GetFixtureB()->GetBody()->GetUserData().pointer;
+            UUID aID = (UUID)contact->GetFixtureA()->GetBody()->GetUserData().pointer;
+            UUID bID = (UUID)contact->GetFixtureB()->GetBody()->GetUserData().pointer;
 
             if (CurrentScene)
             {
-                CurrentScene->OnCollision2DBegin(a);
-                CurrentScene->OnCollision2DBegin(b);
+                auto itA = CurrentScene->m_EntityIDMap.find(aID);
+                auto itB = CurrentScene->m_EntityIDMap.find(bID);
+                if (itA != CurrentScene->m_EntityIDMap.end())
+                    CurrentScene->OnCollision2DBegin(itA->second);
+                if (itB != CurrentScene->m_EntityIDMap.end())
+                    CurrentScene->OnCollision2DBegin(itB->second);
             }
         }
 
         virtual void EndContact(b2Contact* contact) override
         {
-            Entity& a = *(Entity*)contact->GetFixtureA()->GetBody()->GetUserData().pointer;
-            Entity& b = *(Entity*)contact->GetFixtureB()->GetBody()->GetUserData().pointer;
+            UUID aID = (UUID)contact->GetFixtureA()->GetBody()->GetUserData().pointer;
+            UUID bID = (UUID)contact->GetFixtureB()->GetBody()->GetUserData().pointer;
 
             if (CurrentScene)
             {
-                CurrentScene->OnCollision2DEnd(a);
-                CurrentScene->OnCollision2DEnd(b);
+                auto itA = CurrentScene->m_EntityIDMap.find(aID);
+                auto itB = CurrentScene->m_EntityIDMap.find(bID);
+                if (itA != CurrentScene->m_EntityIDMap.end())
+                    CurrentScene->OnCollision2DEnd(itA->second);
+                if (itB != CurrentScene->m_EntityIDMap.end())
+                    CurrentScene->OnCollision2DEnd(itB->second);
             }
         }
     };
@@ -100,16 +111,31 @@ namespace Prism
         }
 
         s_ActiveScenes[m_SceneID] = this;
+        m_CSharpScriptStorage = new CSharpScriptStorage();
+        m_PythonScriptStorage = new PythonScriptStorage();
         Init();
+
+        // Always-active component lifecycle signals
+        m_Registry.on_construct<CSharpScriptComponent>().connect<&Scene::OnCSharpScriptComponentConstruct>(this);
+        m_Registry.on_destroy<CSharpScriptComponent>().connect<&Scene::OnCSharpScriptComponentDestroy>(this);
+        m_Registry.on_construct<PythonScriptComponent>().connect<&Scene::OnPythonScriptComponentConstruct>(this);
+        m_Registry.on_destroy<PythonScriptComponent>().connect<&Scene::OnPythonScriptComponentDestroy>(this);
     }
 
     Scene::~Scene()
     {
         OnShutdown();
-        delete[] m_PhysicsBodyEntityBuffer;
-        m_PhysicsBodyEntityBuffer = nullptr;
-        delete[] m_Physics3DBodyEntityBuffer;
-        m_Physics3DBodyEntityBuffer = nullptr;
+        delete m_CSharpScriptStorage;
+        m_CSharpScriptStorage = nullptr;
+        delete m_PythonScriptStorage;
+        m_PythonScriptStorage = nullptr;
+
+        // Disconnect always-active signals
+        m_Registry.on_construct<CSharpScriptComponent>().disconnect(this);
+        m_Registry.on_destroy<CSharpScriptComponent>().disconnect(this);
+        m_Registry.on_construct<PythonScriptComponent>().disconnect(this);
+        m_Registry.on_destroy<PythonScriptComponent>().disconnect(this);
+
         m_Registry.clear();
         s_ActiveScenes.erase(m_SceneID);
     }
@@ -124,19 +150,33 @@ namespace Prism
 
     void Scene::OnUpdate()
     {
-        // Script OnUpdate (per-frame) via ScriptStorage
+        float ts = Time::GetDeltaTime();
+
+        // C# Script OnUpdate
         {
-            auto view = m_Registry.view<ScriptsComponent>();
+            auto view = m_Registry.view<CSharpScriptComponent>();
             for (auto entity : view)
             {
-                Entity e = { entity, this };
-                auto& scripts = e.GetComponent<ScriptsComponent>().Scripts;
-                for (auto& script : scripts)
-                {
-                    auto* group = m_ScriptStorage.FindGroup(e.GetUUID(), script.ModuleName);
-                    if (group && group->Instance)
-                            group->Instance->TryInvokeMethod("OnUpdate");
-                }
+                auto& comp = m_Registry.get<CSharpScriptComponent>(entity);
+                if (!comp.ScriptID)
+                    continue;
+                auto& entry = CSharpScriptEngine::GetEntityScriptStorage(*m_CSharpScriptStorage, comp.ScriptID);
+                if (entry.Instance.IsValid())
+                    entry.Instance.TryInvokeMethod("OnUpdate", ts);
+            }
+        }
+
+        // Python Script OnUpdate
+        {
+            auto view = m_Registry.view<PythonScriptComponent>();
+            for (auto entity : view)
+            {
+                auto& comp = m_Registry.get<PythonScriptComponent>(entity);
+                if (!comp.ScriptID)
+                    continue;
+                auto& entry = PythonScriptEngine::GetEntityScriptStorage(*m_PythonScriptStorage, comp.ScriptID);
+                if (entry.Instance.IsValid())
+                    entry.Instance.Invoke<void>("OnUpdate");
             }
         }
     }
@@ -207,19 +247,31 @@ namespace Prism
             }
         }
 
-        // Script OnFixedUpdate via ScriptStorage
+        // C# Script OnFixedUpdate
         {
-            auto view = m_Registry.view<ScriptsComponent>();
+            auto view = m_Registry.view<CSharpScriptComponent>();
             for (auto entity : view)
             {
-                Entity e = { entity, this };
-                auto& scripts = e.GetComponent<ScriptsComponent>().Scripts;
-                for (auto& script : scripts)
-                {
-                    auto* group = m_ScriptStorage.FindGroup(e.GetUUID(), script.ModuleName);
-                    if (group && group->Instance)
-                            group->Instance->TryInvokeMethod("OnFixedUpdate");
-                }
+                auto& comp = m_Registry.get<CSharpScriptComponent>(entity);
+                if (!comp.ScriptID)
+                    continue;
+                auto& entry = CSharpScriptEngine::GetEntityScriptStorage(*m_CSharpScriptStorage, comp.ScriptID);
+                if (entry.Instance.IsValid())
+                    entry.Instance.TryInvokeMethod("OnFixedUpdate", ts);
+            }
+        }
+
+        // Python Script OnFixedUpdate
+        {
+            auto view = m_Registry.view<PythonScriptComponent>();
+            for (auto entity : view)
+            {
+                auto& comp = m_Registry.get<PythonScriptComponent>(entity);
+                if (!comp.ScriptID)
+                    continue;
+                auto& entry = PythonScriptEngine::GetEntityScriptStorage(*m_PythonScriptStorage, comp.ScriptID);
+                if (entry.Instance.IsValid())
+                    entry.Instance.Invoke<void>("OnFixedUpdate");
             }
         }
     }
@@ -329,116 +381,73 @@ namespace Prism
     }
     void Scene::OnRuntimeStart()
     {
-        ScriptEngineManager::SetSceneContext(this);
+        CSharpScriptEngine::SetSceneContext(this);
+        PythonScriptEngine::SetSceneContext(this);
 
-        // Initialize script groups and instantiate entity classes
+        // C#: Call OnCreate on already-instantiated scripts (instances created via serialization or editor)
         {
-            auto view = m_Registry.view<ScriptsComponent>();
+            auto view = m_Registry.view<CSharpScriptComponent>();
             for (auto entity : view)
             {
-                Entity e = { entity, this };
-                auto& scripts = e.GetComponent<ScriptsComponent>().Scripts;
-                for (auto& script : scripts)
-                {
-                    auto* engine = ScriptEngineManager::Get(script.Language);
-                    if (engine && engine->ModuleExists(script.ModuleName))
-                    {
-                        // Create ScriptGroup in storage
-                        auto& entityStorage = m_ScriptStorage.GetOrCreateEntity(e.GetUUID());
-                        auto& group = entityStorage.Groups[script.ModuleName];
-                        group.EntityID = e.GetUUID();
-                        group.ModuleName = script.ModuleName;
-
-                        engine->InitScriptEntity(e, group);
-                        engine->InstantiateEntityClass(group);
-                        if (group.Instance)
-                            group.Instance->TryInvokeMethod("OnCreate");
-                    }
-                }
+                auto& comp = m_Registry.get<CSharpScriptComponent>(entity);
+                if (!comp.ScriptID)
+                    continue;
+                auto& entry = CSharpScriptEngine::GetEntityScriptStorage(*m_CSharpScriptStorage, comp.ScriptID);
+                if (entry.Instance.IsValid())
+                    entry.Instance.TryInvokeMethod("OnCreate");
             }
         }
 
-        // Box2D physics
+        // Python: Call OnCreate on already-instantiated scripts
+        {
+            auto view = m_Registry.view<PythonScriptComponent>();
+            for (auto entity : view)
+            {
+                auto& comp = m_Registry.get<PythonScriptComponent>(entity);
+                if (!comp.ScriptID)
+                    continue;
+                auto& entry = PythonScriptEngine::GetEntityScriptStorage(*m_PythonScriptStorage, comp.ScriptID);
+                if (entry.Instance.IsValid())
+                    entry.Instance.Invoke<void>("OnCreate");
+            }
+        }
+
+        // --- Connect runtime component lifecycle signals ---
+        // These handle dynamic component additions/removals during play mode.
+        // Signals are disconnected in OnRuntimeStop().
+        m_Registry.on_construct<RigidBody2DComponent>().connect<&Scene::OnRigidBody2DComponentConstruct>(this);
+        m_Registry.on_destroy<RigidBody2DComponent>().connect<&Scene::OnRigidBody2DComponentDestroy>(this);
+        m_Registry.on_construct<BoxCollider2DComponent>().connect<&Scene::OnBoxCollider2DComponentConstruct>(this);
+        m_Registry.on_construct<CircleCollider2DComponent>().connect<&Scene::OnCircleCollider2DComponentConstruct>(this);
+        m_Registry.on_construct<RigidBodyComponent>().connect<&Scene::OnRigidBodyComponentConstruct>(this);
+        m_Registry.on_destroy<RigidBodyComponent>().connect<&Scene::OnRigidBodyComponentDestroy>(this);
+
+        // --- Initial batch sync for existing entities ---
+        // entt signals only fire for future construct/destroy events, so we must
+        // manually iterate existing components to create their runtime physics bodies.
+
+        // Box2D bodies
         {
             auto view = m_Registry.view<RigidBody2DComponent>();
-            m_PhysicsBodyEntityBuffer = new Entity[view.size()];
-            uint32_t physicsBodyEntityBufferIndex = 0;
             for (auto entity : view)
-            {
-                Entity e = { entity, this };
-                auto& tc = e.Transform();
-                auto& rigidBody2D = m_Registry.get<RigidBody2DComponent>(entity);
-
-                b2BodyDef bodyDef;
-                if (rigidBody2D.BodyType == RigidBody2DComponent::Type::Static)
-                    bodyDef.type = b2_staticBody;
-                else if (rigidBody2D.BodyType == RigidBody2DComponent::Type::Dynamic)
-                    bodyDef.type = b2_dynamicBody;
-                else if (rigidBody2D.BodyType == RigidBody2DComponent::Type::Kinematic)
-                    bodyDef.type = b2_kinematicBody;
-                bodyDef.position.Set(tc.Position.x, tc.Position.y);
-                bodyDef.angle = glm::eulerAngles(tc.Rotation).z;
-
-                b2Body* body = m_Registry.get<Box2DWorldComponent>(m_SceneEntity).World->CreateBody(&bodyDef);
-                body->SetFixedRotation(rigidBody2D.FixedRotation);
-                Entity* entityStorage = &m_PhysicsBodyEntityBuffer[physicsBodyEntityBufferIndex++];
-                *entityStorage = e;
-                body->GetUserData().pointer = (uintptr_t)entityStorage;
-                rigidBody2D.RuntimeBody = body;
-            }
+                OnRigidBody2DComponentConstruct(m_Registry, entity);
         }
 
+        // Box2D box colliders
         {
             auto view = m_Registry.view<BoxCollider2DComponent>();
             for (auto entity : view)
-            {
-                Entity e = { entity, this };
-
-                auto& boxCollider2D = m_Registry.get<BoxCollider2DComponent>(entity);
-                if (e.HasComponent<RigidBody2DComponent>())
-                {
-                    auto& rigidBody2D = e.GetComponent<RigidBody2DComponent>();
-                    PR_CORE_ASSERT(rigidBody2D.RuntimeBody);
-                    b2Body* body = static_cast<b2Body*>(rigidBody2D.RuntimeBody);
-
-                    b2PolygonShape polygonShape;
-                    polygonShape.SetAsBox(boxCollider2D.Size.x, boxCollider2D.Size.y);
-
-                    b2FixtureDef fixtureDef;
-                    fixtureDef.shape = &polygonShape;
-                    fixtureDef.density = boxCollider2D.Density;
-                    fixtureDef.friction = boxCollider2D.Friction;
-                    body->CreateFixture(&fixtureDef);
-                }
-            }
+                OnBoxCollider2DComponentConstruct(m_Registry, entity);
         }
 
+        // Box2D circle colliders
         {
             auto view = m_Registry.view<CircleCollider2DComponent>();
             for (auto entity : view)
-            {
-                Entity e = { entity, this };
-
-                auto& circleCollider2D = m_Registry.get<CircleCollider2DComponent>(entity);
-                if (e.HasComponent<RigidBody2DComponent>())
-                {
-                    auto& rigidBody2D = e.GetComponent<RigidBody2DComponent>();
-                    PR_CORE_ASSERT(rigidBody2D.RuntimeBody);
-                    b2Body* body = static_cast<b2Body*>(rigidBody2D.RuntimeBody);
-
-                    b2CircleShape circleShape;
-                    circleShape.m_radius = circleCollider2D.Radius;
-
-                    b2FixtureDef fixtureDef;
-                    fixtureDef.shape = &circleShape;
-                    fixtureDef.density = circleCollider2D.Density;
-                    fixtureDef.friction = circleCollider2D.Friction;
-                    body->CreateFixture(&fixtureDef);
-                }
-            }
+                OnCircleCollider2DComponentConstruct(m_Registry, entity);
         }
 
-        // PhysX 3D physics
+        // PhysX 3D physics: initial sync
         {
             Physics3D::SetCollisionScene(this);
             auto physxView = m_Registry.view<PhysXSceneComponent>();
@@ -448,23 +457,8 @@ namespace Prism
 
                 // Create rigid body actors
                 auto rigidBodyView = m_Registry.view<RigidBodyComponent>();
-                m_Physics3DBodyEntityBuffer = new Entity[rigidBodyView.size()];
-                uint32_t physics3DBodyEntityBufferIndex = 0;
-
                 for (auto entity : rigidBodyView)
-                {
-                    Entity e = { entity, this };
-                    auto& rb = m_Registry.get<RigidBodyComponent>(entity);
-
-                    physx::PxRigidActor* actor = Physics3D::CreateAndAddActor(physxScene, rb, e.Transform().GetTransform());
-                    if (actor)
-                    {
-                        Entity* entityStorage = &m_Physics3DBodyEntityBuffer[physics3DBodyEntityBufferIndex++];
-                        *entityStorage = e;
-                        actor->userData = entityStorage;
-                        rb.RuntimeActor = actor;
-                    }
-                }
+                    OnRigidBodyComponentConstruct(m_Registry, entity);
 
                 // Box colliders
                 auto boxView = m_Registry.view<BoxColliderComponent>();
@@ -633,20 +627,32 @@ namespace Prism
 
     void Scene::OnRuntimeStop()
     {
+        // Disconnect runtime signals (prevent callbacks during teardown)
+        m_Registry.on_construct<RigidBody2DComponent>().disconnect(this);
+        m_Registry.on_destroy<RigidBody2DComponent>().disconnect(this);
+        m_Registry.on_construct<BoxCollider2DComponent>().disconnect(this);
+        m_Registry.on_construct<CircleCollider2DComponent>().disconnect(this);
+        m_Registry.on_construct<RigidBodyComponent>().disconnect(this);
+        m_Registry.on_destroy<RigidBodyComponent>().disconnect(this);
+
         // Clear physics collision scene pointers
         s_Box2DContactListener.CurrentScene = nullptr;
         Physics3D::SetCollisionScene(nullptr);
 
-        // Cleanup script runtime instances
+        // Cleanup C# script runtime instances (call OnDestroy, then clear storage)
         {
-            for (auto& [entityID, entityStorage] : m_ScriptStorage.GetEntities())
-            {
-                for (auto& [moduleName, group] : entityStorage.Groups)
-                {
-                    group.Instance.reset();
-                }
-            }
-            m_ScriptStorage.Clear();
+            for (auto& [id, entry] : m_CSharpScriptStorage->EntityStorage)
+                if (entry.Instance.IsValid())
+                    entry.Instance.TryInvokeMethod("OnDestroy");
+            m_CSharpScriptStorage->Clear();
+        }
+
+        // Cleanup Python script runtime instances (call OnDestroy, then clear storage)
+        {
+            for (auto& [id, entry] : m_PythonScriptStorage->EntityStorage)
+                if (entry.Instance.IsValid())
+                    entry.Instance.Invoke<void>("OnDestroy");
+            m_PythonScriptStorage->Clear();
         }
 
         // Release PhysX scene
@@ -670,11 +676,6 @@ namespace Prism
                 m_Registry.get<RigidBodyComponent>(entity).RuntimeActor = nullptr;
         }
 
-        delete[] m_Physics3DBodyEntityBuffer;
-        m_Physics3DBodyEntityBuffer = nullptr;
-
-        delete[] m_PhysicsBodyEntityBuffer;
-        m_PhysicsBodyEntityBuffer = nullptr;
         m_IsPlaying = false;
     }
 
@@ -753,20 +754,15 @@ namespace Prism
 
     void Scene::DestroyEntity(Entity entity)
     {
-        if (entity.HasComponent<ScriptsComponent>())
-        {
-            // Clean up this entity's script groups from ScriptStorage
-            auto* entityStorage = m_ScriptStorage.FindEntity(entity.GetUUID());
-            if (entityStorage)
-            {
-                for (auto& [moduleName, group] : entityStorage->Groups)
-                {
-                    group.Instance.reset();
-                }
-            }
-            m_ScriptStorage.RemoveEntity(entity.GetUUID());
-        }
+        if (!entity)
+            return;
 
+        // Trigger on_destroy handlers for script components while entity is still intact,
+        // so callbacks can safely access remaining components (IDComponent, TransformComponent).
+        m_Registry.remove<CSharpScriptComponent>(entity.m_EntityHandle);
+        m_Registry.remove<PythonScriptComponent>(entity.m_EntityHandle);
+
+        // Destroy entity — on_destroy signals for physics (runtime-only) fire automatically.
         m_Registry.destroy(entity.m_EntityHandle);
     }
 
@@ -793,6 +789,173 @@ namespace Prism
         }
     }
 
+    // ============================================================
+    // Component lifecycle callbacks (entt signal handlers)
+    // ============================================================
+
+    // --- Script: CSharpScriptComponent ---
+
+    void Scene::OnCSharpScriptComponentConstruct(entt::registry& registry, entt::entity entity)
+    {
+        // TODO: Create C# script instance when component is added during runtime
+    }
+
+    void Scene::OnCSharpScriptComponentDestroy(entt::registry& registry, entt::entity entity)
+    {
+        auto& comp = registry.get<CSharpScriptComponent>(entity);
+        if (comp.ScriptID)
+        {
+            auto& entry = CSharpScriptEngine::GetEntityScriptStorage(*m_CSharpScriptStorage, comp.ScriptID);
+            if (entry.Instance.IsValid())
+                entry.Instance.TryInvokeMethod("OnDestroy");
+            m_CSharpScriptStorage->Remove(comp.ScriptID);
+            comp.ScriptID = 0;
+        }
+    }
+
+    // --- Script: PythonScriptComponent ---
+
+    void Scene::OnPythonScriptComponentConstruct(entt::registry& registry, entt::entity entity)
+    {
+        // TODO: Create Python script instance when component is added during runtime
+    }
+
+    void Scene::OnPythonScriptComponentDestroy(entt::registry& registry, entt::entity entity)
+    {
+        auto& comp = registry.get<PythonScriptComponent>(entity);
+        if (comp.ScriptID)
+        {
+            auto& entry = PythonScriptEngine::GetEntityScriptStorage(*m_PythonScriptStorage, comp.ScriptID);
+            if (entry.Instance.IsValid())
+                entry.Instance.Invoke<void>("OnDestroy");
+            m_PythonScriptStorage->Remove(comp.ScriptID);
+            comp.ScriptID = 0;
+        }
+    }
+
+    // --- Box2D 2D: RigidBody2DComponent ---
+
+    void Scene::OnRigidBody2DComponentConstruct(entt::registry& registry, entt::entity entity)
+    {
+        Entity e = { entity, this };
+        auto& tc = e.Transform();
+        auto& rigidBody2D = registry.get<RigidBody2DComponent>(entity);
+        auto& world = registry.get<Box2DWorldComponent>(m_SceneEntity).World;
+
+        b2BodyDef bodyDef;
+        if (rigidBody2D.BodyType == RigidBody2DComponent::Type::Static)
+            bodyDef.type = b2_staticBody;
+        else if (rigidBody2D.BodyType == RigidBody2DComponent::Type::Dynamic)
+            bodyDef.type = b2_dynamicBody;
+        else if (rigidBody2D.BodyType == RigidBody2DComponent::Type::Kinematic)
+            bodyDef.type = b2_kinematicBody;
+        bodyDef.position.Set(tc.Position.x, tc.Position.y);
+        bodyDef.angle = glm::eulerAngles(tc.Rotation).z;
+
+        b2Body* body = world->CreateBody(&bodyDef);
+        body->SetFixedRotation(rigidBody2D.FixedRotation);
+        body->GetUserData().pointer = (uintptr_t)e.GetUUID();
+        rigidBody2D.RuntimeBody = body;
+    }
+
+    void Scene::OnRigidBody2DComponentDestroy(entt::registry& registry, entt::entity entity)
+    {
+        auto& rigidBody2D = registry.get<RigidBody2DComponent>(entity);
+        if (rigidBody2D.RuntimeBody)
+        {
+            auto& world = registry.get<Box2DWorldComponent>(m_SceneEntity).World;
+            world->DestroyBody(static_cast<b2Body*>(rigidBody2D.RuntimeBody));
+            rigidBody2D.RuntimeBody = nullptr;
+        }
+    }
+
+    // --- Box2D 2D: BoxCollider2DComponent ---
+
+    void Scene::OnBoxCollider2DComponentConstruct(entt::registry& registry, entt::entity entity)
+    {
+        Entity e = { entity, this };
+        auto& boxCollider2D = registry.get<BoxCollider2DComponent>(entity);
+        if (e.HasComponent<RigidBody2DComponent>())
+        {
+            auto& rigidBody2D = e.GetComponent<RigidBody2DComponent>();
+            PR_CORE_ASSERT(rigidBody2D.RuntimeBody);
+            b2Body* body = static_cast<b2Body*>(rigidBody2D.RuntimeBody);
+
+            b2PolygonShape polygonShape;
+            polygonShape.SetAsBox(boxCollider2D.Size.x, boxCollider2D.Size.y);
+
+            b2FixtureDef fixtureDef;
+            fixtureDef.shape = &polygonShape;
+            fixtureDef.density = boxCollider2D.Density;
+            fixtureDef.friction = boxCollider2D.Friction;
+            body->CreateFixture(&fixtureDef);
+        }
+    }
+
+    // --- Box2D 2D: CircleCollider2DComponent ---
+
+    void Scene::OnCircleCollider2DComponentConstruct(entt::registry& registry, entt::entity entity)
+    {
+        Entity e = { entity, this };
+        auto& circleCollider2D = registry.get<CircleCollider2DComponent>(entity);
+        if (e.HasComponent<RigidBody2DComponent>())
+        {
+            auto& rigidBody2D = e.GetComponent<RigidBody2DComponent>();
+            PR_CORE_ASSERT(rigidBody2D.RuntimeBody);
+            b2Body* body = static_cast<b2Body*>(rigidBody2D.RuntimeBody);
+
+            b2CircleShape circleShape;
+            circleShape.m_radius = circleCollider2D.Radius;
+
+            b2FixtureDef fixtureDef;
+            fixtureDef.shape = &circleShape;
+            fixtureDef.density = circleCollider2D.Density;
+            fixtureDef.friction = circleCollider2D.Friction;
+            body->CreateFixture(&fixtureDef);
+        }
+    }
+
+    // --- PhysX 3D: RigidBodyComponent ---
+
+    void Scene::OnRigidBodyComponentConstruct(entt::registry& registry, entt::entity entity)
+    {
+        auto physxView = registry.view<PhysXSceneComponent>();
+        if (physxView.empty())
+            return;
+
+        physx::PxScene* physxScene = registry.get<PhysXSceneComponent>(physxView.front()).World;
+        if (!physxScene)
+            return;
+
+        Entity e = { entity, this };
+        auto& rb = registry.get<RigidBodyComponent>(entity);
+
+        physx::PxRigidActor* actor = Physics3D::CreateAndAddActor(physxScene, rb, e.Transform().GetTransform());
+        if (actor)
+        {
+            actor->userData = (void*)(uintptr_t)e.GetUUID();
+            rb.RuntimeActor = actor;
+        }
+    }
+
+    void Scene::OnRigidBodyComponentDestroy(entt::registry& registry, entt::entity entity)
+    {
+        auto& rb = registry.get<RigidBodyComponent>(entity);
+        if (!rb.RuntimeActor)
+            return;
+
+        auto physxView = registry.view<PhysXSceneComponent>();
+        if (!physxView.empty())
+        {
+            physx::PxScene* pxScene = registry.get<PhysXSceneComponent>(physxView.front()).World;
+            if (pxScene)
+                pxScene->removeActor(*static_cast<physx::PxRigidActor*>(rb.RuntimeActor));
+        }
+
+        static_cast<physx::PxRigidActor*>(rb.RuntimeActor)->release();
+        rb.RuntimeActor = nullptr;
+    }
+
     void Scene::DuplicateEntity(Entity entity)
     {
         Entity newEntity;
@@ -804,13 +967,8 @@ namespace Prism
         CopyComponentIfExists<TransformComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<MeshComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<MaterialComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        CopyComponentIfExists<ScriptsComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        if (newEntity.HasComponent<ScriptsComponent>())
-        {
-            auto& scripts = newEntity.GetComponent<ScriptsComponent>().Scripts;
-            for (auto& script : scripts)
-                ScriptEngineManager::OnScriptAdded(newEntity, script, m_ScriptStorage);
-        }
+        CopyComponentIfExists<CSharpScriptComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<PythonScriptComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<CameraComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<SpriteRendererComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<RigidBody2DComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
@@ -838,6 +996,14 @@ namespace Prism
         return Entity{};
     }
 
+    Entity Scene::TryGetEntityByUUID(UUID uuid)
+    {
+        auto it = m_EntityIDMap.find(uuid);
+        if (it != m_EntityIDMap.end())
+            return it->second;
+        return {};
+    }
+
     // Copy to runtime
     void Scene::CopyTo(Ref<Scene>& target)
     {
@@ -863,7 +1029,8 @@ namespace Prism
         CopyComponent<TransformComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<MeshComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<MaterialComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<ScriptsComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<CSharpScriptComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<PythonScriptComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<CameraComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<SpriteRendererComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<RigidBody2DComponent>(target->m_Registry, m_Registry, enttMap);
@@ -876,24 +1043,6 @@ namespace Prism
         CopyComponent<CapsuleColliderComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<MeshColliderComponent>(target->m_Registry, m_Registry, enttMap);
 
-        // Copy script field data via ScriptStorage
-        {
-            auto targetView = target->m_Registry.view<ScriptsComponent>();
-            for (auto targetEntity : targetView)
-            {
-                Entity e = { targetEntity, target.Raw() };
-                auto& scripts = e.GetComponent<ScriptsComponent>().Scripts;
-                for (auto& script : scripts)
-                    ScriptEngineManager::OnScriptAdded(e, script, target->m_ScriptStorage);
-            }
-        }
-        // Copy stored field values from source (editor) to target (runtime)
-        for (auto& [entityUUID, entityStorage] : m_ScriptStorage.GetEntities())
-        {
-            for (auto& [moduleName, group] : entityStorage.Groups)
-                target->m_ScriptStorage.CopyGroupDataFrom(m_ScriptStorage, entityUUID, entityUUID, moduleName);
-        }
-
         target->SetPhysics2DGravity(GetPhysics2DGravity());
     }
 
@@ -903,29 +1052,51 @@ namespace Prism
 
     void Scene::OnCollisionBegin(Entity entity)
     {
-        if (!entity.HasComponent<ScriptsComponent>())
-            return;
-        auto& scripts = entity.GetComponent<ScriptsComponent>().Scripts;
-        for (auto& script : scripts)
+        if (entity.HasComponent<CSharpScriptComponent>())
         {
-            auto* group = m_ScriptStorage.FindGroup(entity.GetUUID(), script.ModuleName);
-            if (!group || !group->Instance)
-                continue;
-            group->Instance->TryInvokeMethod("OnCollisionBegin", 0.0f);
+            auto& comp = entity.GetComponent<CSharpScriptComponent>();
+            if (comp.ScriptID)
+            {
+                auto& entry = CSharpScriptEngine::GetEntityScriptStorage(*m_CSharpScriptStorage, comp.ScriptID);
+                if (entry.Instance.IsValid())
+                    entry.Instance.TryInvokeMethod("OnCollisionBegin", 0.0f);
+            }
+        }
+
+        if (entity.HasComponent<PythonScriptComponent>())
+        {
+            auto& comp = entity.GetComponent<PythonScriptComponent>();
+            if (comp.ScriptID)
+            {
+                auto& entry = PythonScriptEngine::GetEntityScriptStorage(*m_PythonScriptStorage, comp.ScriptID);
+                if (entry.Instance.IsValid())
+                    entry.Instance.Invoke<void>("OnCollisionBegin", 0.0f);
+            }
         }
     }
 
     void Scene::OnCollisionEnd(Entity entity)
     {
-        if (!entity.HasComponent<ScriptsComponent>())
-            return;
-        auto& scripts = entity.GetComponent<ScriptsComponent>().Scripts;
-        for (auto& script : scripts)
+        if (entity.HasComponent<CSharpScriptComponent>())
         {
-            auto* group = m_ScriptStorage.FindGroup(entity.GetUUID(), script.ModuleName);
-            if (!group || !group->Instance)
-                continue;
-            group->Instance->TryInvokeMethod("OnCollisionEnd", 0.0f);
+            auto& comp = entity.GetComponent<CSharpScriptComponent>();
+            if (comp.ScriptID)
+            {
+                auto& entry = CSharpScriptEngine::GetEntityScriptStorage(*m_CSharpScriptStorage, comp.ScriptID);
+                if (entry.Instance.IsValid())
+                    entry.Instance.TryInvokeMethod("OnCollisionEnd", 0.0f);
+            }
+        }
+
+        if (entity.HasComponent<PythonScriptComponent>())
+        {
+            auto& comp = entity.GetComponent<PythonScriptComponent>();
+            if (comp.ScriptID)
+            {
+                auto& entry = PythonScriptEngine::GetEntityScriptStorage(*m_PythonScriptStorage, comp.ScriptID);
+                if (entry.Instance.IsValid())
+                    entry.Instance.Invoke<void>("OnCollisionEnd", 0.0f);
+            }
         }
     }
 
