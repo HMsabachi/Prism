@@ -161,6 +161,8 @@ namespace Prism
                 auto& comp = m_Registry.get<CSharpScriptComponent>(entity);
                 for (auto& binding : comp.Behaviours)
                 {
+                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnUpdate))
+                        continue;
                     auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
                     if (obj && obj->IsValid() && obj->GetPropertyValue<Rolky::Bool32>("Enabled"))
                         obj->InvokeMethod("OnUpdate");
@@ -177,6 +179,8 @@ namespace Prism
                 auto& comp = m_Registry.get<PythonScriptComponent>(entity);
                 for (auto& binding : comp.Behaviours)
                 {
+                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnUpdate))
+                        continue;
                     auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
                     if (obj && obj->IsValid() && obj->GetField<bool>("enabled"))
                         obj->Invoke<void>("OnUpdate");
@@ -193,6 +197,8 @@ namespace Prism
                 auto& comp = m_Registry.get<CSharpScriptComponent>(entity);
                 for (auto& binding : comp.Behaviours)
                 {
+                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::LateUpdate))
+                        continue;
                     auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
                     if (obj && obj->IsValid() && obj->GetPropertyValue<Rolky::Bool32>("Enabled"))
                         obj->InvokeMethod("LateUpdate");
@@ -209,6 +215,8 @@ namespace Prism
                 auto& comp = m_Registry.get<PythonScriptComponent>(entity);
                 for (auto& binding : comp.Behaviours)
                 {
+                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::LateUpdate))
+                        continue;
                     auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
                     if (obj && obj->IsValid() && obj->GetField<bool>("enabled"))
                         obj->Invoke<void>("LateUpdate");
@@ -292,6 +300,8 @@ namespace Prism
                 auto& comp = m_Registry.get<CSharpScriptComponent>(entity);
                 for (auto& binding : comp.Behaviours)
                 {
+                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnFixedUpdate))
+                        continue;
                     auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
                     if (obj && obj->IsValid() && obj->GetPropertyValue<Rolky::Bool32>("Enabled"))
                         obj->InvokeMethod("OnFixedUpdate");
@@ -308,6 +318,8 @@ namespace Prism
                 auto& comp = m_Registry.get<PythonScriptComponent>(entity);
                 for (auto& binding : comp.Behaviours)
                 {
+                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnFixedUpdate))
+                        continue;
                     auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
                     if (obj && obj->IsValid() && obj->GetField<bool>("enabled"))
                         obj->Invoke<void>("OnFixedUpdate");
@@ -442,6 +454,8 @@ namespace Prism
                 // PASS 2: Awake
                 for (auto& binding : comp.Behaviours)
                 {
+                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::Awake))
+                        continue;
                     auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
                     if (obj && obj->IsValid())
                         obj->InvokeMethod("Awake");
@@ -449,6 +463,8 @@ namespace Prism
                 // PASS 3: OnCreate (= Unity Start)
                 for (auto& binding : comp.Behaviours)
                 {
+                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnCreate))
+                        continue;
                     auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
                     if (obj && obj->IsValid())
                         obj->InvokeMethod("OnCreate");
@@ -456,6 +472,8 @@ namespace Prism
                 // PASS 4: OnEnable (only if Enabled=true)
                 for (auto& binding : comp.Behaviours)
                 {
+                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnEnable))
+                        continue;
                     auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
                     if (obj && obj->IsValid() && obj->GetPropertyValue<Rolky::Bool32>("Enabled"))
                         obj->InvokeMethod("OnEnable");
@@ -481,6 +499,8 @@ namespace Prism
                 // PASS 2: Awake
                 for (auto& binding : comp.Behaviours)
                 {
+                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::Awake))
+                        continue;
                     auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
                     if (obj && obj->IsValid())
                         obj->Invoke<void>("Awake");
@@ -488,6 +508,8 @@ namespace Prism
                 // PASS 3: OnCreate (= Unity Start)
                 for (auto& binding : comp.Behaviours)
                 {
+                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnCreate))
+                        continue;
                     auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
                     if (obj && obj->IsValid())
                         obj->Invoke<void>("OnCreate");
@@ -495,6 +517,8 @@ namespace Prism
                 // PASS 4: OnEnable (only if enabled=true)
                 for (auto& binding : comp.Behaviours)
                 {
+                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnEnable))
+                        continue;
                     auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
                     if (obj && obj->IsValid() && obj->GetField<bool>("enabled"))
                         obj->Invoke<void>("OnEnable");
@@ -741,9 +765,10 @@ namespace Prism
                     auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
                     if (obj && obj->IsValid())
                     {
-                        if (obj->GetPropertyValue<Rolky::Bool32>("Enabled"))
+                        if (obj->GetPropertyValue<Rolky::Bool32>("Enabled") && (binding.LifecycleMask & (uint16_t)LifecycleMethod::OnDisable))
                             obj->InvokeMethod("OnDisable");
-                        obj->InvokeMethod("OnDestroy");
+                        if (binding.LifecycleMask & (uint16_t)LifecycleMethod::OnDestroy)
+                            obj->InvokeMethod("OnDestroy");
                     }
                 }
                 comp.Behaviours.clear();
@@ -763,9 +788,10 @@ namespace Prism
                     auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
                     if (obj && obj->IsValid())
                     {
-                        if (obj->GetField<bool>("enabled"))
+                        if (obj->GetField<bool>("enabled") && (binding.LifecycleMask & (uint16_t)LifecycleMethod::OnDisable))
                             obj->Invoke<void>("OnDisable");
-                        obj->Invoke<void>("OnDestroy");
+                        if (binding.LifecycleMask & (uint16_t)LifecycleMethod::OnDestroy)
+                            obj->Invoke<void>("OnDestroy");
                     }
                 }
                 comp.Behaviours.clear();
@@ -1026,6 +1052,8 @@ namespace Prism
             auto& comp = entity.GetComponent<CSharpScriptComponent>();
             for (auto& binding : comp.Behaviours)
             {
+                if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnCollisionBegin))
+                    continue;
                 auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
                 if (obj && obj->IsValid())
                     obj->TryInvokeMethod("OnCollisionBegin", 0.0f);
@@ -1037,6 +1065,8 @@ namespace Prism
             auto& comp = entity.GetComponent<PythonScriptComponent>();
             for (auto& binding : comp.Behaviours)
             {
+                if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnCollisionBegin))
+                    continue;
                 auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
                 if (obj && obj->IsValid())
                     obj->Invoke<void>("OnCollisionBegin", 0.0f);
@@ -1053,6 +1083,8 @@ namespace Prism
             auto& comp = entity.GetComponent<CSharpScriptComponent>();
             for (auto& binding : comp.Behaviours)
             {
+                if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnCollisionEnd))
+                    continue;
                 auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
                 if (obj && obj->IsValid())
                     obj->TryInvokeMethod("OnCollisionEnd", 0.0f);
@@ -1064,6 +1096,8 @@ namespace Prism
             auto& comp = entity.GetComponent<PythonScriptComponent>();
             for (auto& binding : comp.Behaviours)
             {
+                if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnCollisionEnd))
+                    continue;
                 auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
                 if (obj && obj->IsValid())
                     obj->Invoke<void>("OnCollisionEnd", 0.0f);
@@ -1122,6 +1156,8 @@ namespace Prism
         // Destroy all Behaviour instances first
         for (auto& binding : comp.Behaviours)
         {
+            if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnDestroy))
+                continue;
             auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
             if (obj && obj->IsValid())
                 obj->InvokeMethod("OnDestroy");
@@ -1160,6 +1196,8 @@ namespace Prism
         // Destroy all Behaviour instances first
         for (auto& binding : comp.Behaviours)
         {
+            if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnDestroy))
+                continue;
             auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
             if (obj && obj->IsValid())
                 obj->Invoke<void>("OnDestroy");

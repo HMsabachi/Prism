@@ -10,7 +10,7 @@
 namespace Prism
 {
 
-    enum class ScriptFieldType : uint8_t
+    enum class ScriptFieldType : uint16_t
     {
         None = 0,
         Float, Double,
@@ -54,12 +54,27 @@ namespace Prism
         Buffer DefaultValue;
     };
 
+    enum class LifecycleMethod : uint16_t
+    {
+        Awake           = BIT(0),
+        OnEnable        = BIT(1),
+        OnDisable       = BIT(2),
+        OnCreate        = BIT(3),
+        OnUpdate        = BIT(4),
+        LateUpdate      = BIT(5),
+        OnFixedUpdate   = BIT(6),
+        OnDestroy       = BIT(7),
+        OnCollisionBegin = BIT(8),
+        OnCollisionEnd  = BIT(9),
+    };
+
     struct PRISM_API ScriptClassMetadata
     {
         UUID ScriptID;
         std::string FullName;
         std::string ModuleName;
         std::string ClassName;
+        uint16_t LifecycleMask = 0;
         std::unordered_map<uint32_t, ScriptFieldMetadata> Fields;  // key = FNV hash of field name
     };
 

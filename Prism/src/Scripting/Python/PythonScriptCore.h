@@ -111,6 +111,7 @@ namespace Prism::Python {
         std::vector<FieldInfo> GetFields() const;  // __annotations__ + 默认值
 
         bool HasMethod(const char* name) const;
+        bool HasMethodWithArity(const char* name, int userArgCount) const;
 
         using AnnotationMap = std::unordered_map<std::string, ScriptRef>;
         AnnotationMap GetAnnotations() const;

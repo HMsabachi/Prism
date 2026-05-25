@@ -8,6 +8,7 @@
 #include "Prism/Scene/Components.h"
 
 #include "Scripting/Python/PythonScriptEngine.h"
+#include "Scripting/Python/PythonScriptMetaRegistry.h"
 #include <glm/gtc/type_ptr.hpp>
 
 namespace Prism {
@@ -135,6 +136,48 @@ namespace Prism::Script
 		return Python::BoolToValue(false).Detach();
 	}
 
+	Python::ScriptValue* Prism_Entity_AddBehaviour(Python::ScriptValue* self, Python::ScriptValue* args)
+	{
+		Python::ScriptRef argsRef(args);
+		Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+		std::string moduleName = Python::ValueToString(Python::GetTupleElement(argsRef, 1));
+		std::string className = Python::ValueToString(Python::GetTupleElement(argsRef, 2));
+
+		UUID sceneID = PythonScriptEngine::GetCurrentSceneContext()->GetUUID();
+		UUID behaviourID = UUID();
+
+		Python::ScriptModule mod = Python::ScriptModule::Import(moduleName.c_str());
+		PR_CORE_ASSERT(mod.IsValid(), "Python module not found!");
+		Python::ScriptClass cls = Python::ScriptClass::From(mod, className.c_str());
+		PR_CORE_ASSERT(cls.IsValid(), "Python class not found!");
+		Python::ScriptObject obj = cls.CreateInstance();
+		PR_CORE_ASSERT(obj.IsValid(), "Failed to create instance!");
+
+		UUID entityUUID = entity.GetUUID();
+		Python::ScriptObject* entityObj = PythonScriptEngine::GetScriptObject(sceneID, entityUUID);
+		if (entityObj)
+			obj.SetAttribute("entity", entityObj->GetRef());
+
+		auto& sceneMap = PythonScriptEngine::s_PythonScriptObjects[sceneID];
+		auto [it, inserted] = sceneMap.emplace(behaviourID, std::move(obj));
+		PR_CORE_ASSERT(inserted, "BehaviourID collision!");
+
+		auto& comp = entity.GetComponent<PythonScriptComponent>();
+		auto& binding = comp.Behaviours.emplace_back();
+		binding.BehaviourID = behaviourID;
+		binding.ModuleName = moduleName;
+		binding.ClassName = className;
+		if (auto* meta = PythonScriptMetaRegistry::GetClassMetadata(moduleName + "." + className))
+			binding.LifecycleMask = meta->LifecycleMask;
+
+		it->second.Invoke<void>("Awake");
+		it->second.Invoke<void>("OnCreate");
+		if (it->second.GetField<bool>("enabled"))
+			it->second.Invoke<void>("OnEnable");
+
+		return it->second.GetRef().Detach();
+	}
+
 #pragma endregion
 
 #pragma region TransformComponent
@@ -189,6 +232,7 @@ namespace Prism::Script
 		PR_PYTHON_FUNCTION(Prism_Entity_SetTransform, "SetTransform(entityID, matTuple)");
 		PR_PYTHON_FUNCTION(Prism_Entity_CreateComponent, "CreateComponent(entityID, typeName)");
 		PR_PYTHON_FUNCTION(Prism_Entity_HasComponent, "HasComponent(entityID, typeName) -> bool");
+		PR_PYTHON_FUNCTION(Prism_Entity_AddBehaviour, "AddBehaviour(entityID, moduleName, className) -> object");
 
 		// TransformComponent
 		PR_PYTHON_FUNCTION(Prism_TransformComponent_GetPosition, "GetPosition(entityID) -> (x, y, z)");

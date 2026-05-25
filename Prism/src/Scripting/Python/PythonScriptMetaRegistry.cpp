@@ -1,6 +1,7 @@
 #include "prpch.h"
 #include "PythonScriptMetaRegistry.h"
 #include "Prism/Core/Log.h"
+#include <Prism/Core/Hash.h>
 
 #include <filesystem>
 #include <algorithm>
@@ -15,18 +16,9 @@ namespace Prism
     std::unordered_map<std::string, UUID> PythonScriptMetaRegistry::s_FullNameToID;
     bool PythonScriptMetaRegistry::s_Initialized = false;
 
-    static constexpr uint64_t FNV1aBasis = 14695981039346656037ULL;
-    static constexpr uint64_t FNV1aPrime = 1099511628211ULL;
-
     UUID PythonScriptMetaRegistry::GenerateScriptID(const std::string& str)
     {
-        uint64_t hash = FNV1aBasis;
-        for (char c : str)
-        {
-            hash ^= static_cast<uint64_t>(c);
-            hash *= FNV1aPrime;
-        }
-        return UUID(hash);
+        return UUID(Hash::GenerateFNVHash64(str));
     }
 
     void PythonScriptMetaRegistry::ReadPythonDefaultFieldValue(ScriptFieldMetadata& meta,
@@ -160,6 +152,34 @@ namespace Prism
                     ReadPythonDefaultFieldValue(fieldMeta, tempInstance, field.Name);
 
                 classMeta.Fields[fieldHash] = std::move(fieldMeta);
+            }
+
+            // Scan lifecycle methods with signature matching
+            {
+                auto checkMethod = [&](const char* name, int userArgCount) {
+                    return cls.HasMethodWithArity(name, userArgCount);
+                };
+
+                if (checkMethod("Awake", 0))
+                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::Awake;
+                if (checkMethod("OnEnable", 0))
+                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnEnable;
+                if (checkMethod("OnDisable", 0))
+                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnDisable;
+                if (checkMethod("OnCreate", 0))
+                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnCreate;
+                if (checkMethod("OnUpdate", 0))
+                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnUpdate;
+                if (checkMethod("LateUpdate", 0))
+                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::LateUpdate;
+                if (checkMethod("OnFixedUpdate", 0))
+                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnFixedUpdate;
+                if (checkMethod("OnDestroy", 0))
+                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnDestroy;
+                if (checkMethod("OnCollisionBegin", 1))
+                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnCollisionBegin;
+                if (checkMethod("OnCollisionEnd", 1))
+                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnCollisionEnd;
             }
         }
     }

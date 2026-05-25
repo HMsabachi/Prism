@@ -2,6 +2,8 @@
 #include "CSharpScriptMetaRegistry.h"
 #include "CSharpScriptEngine.h"
 
+#include <Prism/Core/Hash.h>
+
 #include <Rolky/ManagedObject.hpp>
 #include <Rolky/String.hpp>
 #include <glm/glm.hpp>
@@ -18,18 +20,9 @@ namespace Prism
     Rolky::Type* CSharpScriptMetaRegistry::s_BehaviourType = nullptr;
     bool CSharpScriptMetaRegistry::s_Initialized = false;
 
-    static constexpr uint64_t FNV1aBasis = 14695981039346656037ULL;
-    static constexpr uint64_t FNV1aPrime = 1099511628211ULL;
-
     UUID CSharpScriptMetaRegistry::GenerateScriptID(const std::string& str)
     {
-        uint64_t hash = FNV1aBasis;
-        for (char c : str)
-        {
-            hash ^= static_cast<uint64_t>(c);
-            hash *= FNV1aPrime;
-        }
-        return UUID(hash);
+        return UUID(Hash::GenerateFNVHash64(str));
     }
 
     ScriptFieldType CSharpScriptMetaRegistry::GetFieldTypeFromManagedType(Rolky::Type* type)
@@ -194,6 +187,48 @@ namespace Prism
                     ReadDefaultFieldValue(fieldMeta, tempInstance, fieldNameStr);
 
                 classMeta.Fields[fieldHash] = std::move(fieldMeta);
+            }
+
+            // Scan lifecycle methods with signature matching
+            {
+                auto checkMethod = [&](const char* name, int expectedParamCount,
+                                        const char* expectedParamType) -> bool {
+                    for (auto& method : type.GetMethods())
+                    {
+                        std::string methodName = method.GetName();
+                        if (methodName != name) continue;
+                        auto& params = method.GetParameterTypes();
+                        if ((int)params.size() != expectedParamCount) continue;
+                        if (expectedParamCount > 0 && expectedParamType)
+                        {
+                            std::string pn = params[0]->GetFullName();
+                            if (pn != expectedParamType) continue;
+                        }
+                        return true;
+                    }
+                    return false;
+                };
+
+                if (checkMethod("Awake", 0, nullptr))
+                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::Awake;
+                if (checkMethod("OnEnable", 0, nullptr))
+                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnEnable;
+                if (checkMethod("OnDisable", 0, nullptr))
+                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnDisable;
+                if (checkMethod("OnCreate", 0, nullptr))
+                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnCreate;
+                if (checkMethod("OnUpdate", 0, nullptr))
+                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnUpdate;
+                if (checkMethod("LateUpdate", 0, nullptr))
+                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::LateUpdate;
+                if (checkMethod("OnFixedUpdate", 0, nullptr))
+                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnFixedUpdate;
+                if (checkMethod("OnDestroy", 0, nullptr))
+                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnDestroy;
+                if (checkMethod("OnCollisionBegin", 1, "System.Single"))
+                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnCollisionBegin;
+                if (checkMethod("OnCollisionEnd", 1, "System.Single"))
+                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnCollisionEnd;
             }
 
             tempInstance.Destroy();

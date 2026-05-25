@@ -31,12 +31,12 @@ namespace Example
             m_MeshMaterial.Set("u_Metalness", 0.0f);
         }
 
-        public override void OnCollisionBegin(float data)
+        public void OnCollisionBegin(float data)
         {
             m_CollisionCounter++;
         }
 
-        public override void OnCollisionEnd(float data)
+        public void OnCollisionEnd(float data)
         {
             m_CollisionCounter--;
         }

@@ -8,24 +8,12 @@ namespace Prism
 {
     public class Entity
     {
-        public ulong ID { get; internal set; }
+        private ulong m_ID;
+        public ulong ID { get { return m_ID; } internal set { m_ID = value; Log.Trace("Created Entity {0}", ID); } }
 
-        public Entity() 
-        { 
-            ID = 0; 
-            Log.Trace("Created Entity {0}", ID); 
-        }
-
-        internal Entity(ulong id)
-        {
-            ID = id;
-            Log.Trace("Created Entity {0}", ID);
-        }
-
-        ~Entity()
-        {
-            Log.Trace("Destroyed Entity {0}", ID);
-        }
+        public Entity() => ID = 0;
+        internal Entity(ulong id) => ID = id;
+        ~Entity() => Log.Trace("Destroyed Entity {0}", ID);
 
         public TransformComponent Transform => GetComponent<TransformComponent>();
 
@@ -46,10 +34,25 @@ namespace Prism
         }
         public T CreateComponent<T>() where T : Component, new()
         {
-            unsafe { InternalCalls.Prism_Entity_CreateComponent(ID, typeof(T));}
-            T component = new T();
-            component.Entity = this;
-            return component;
+            if (typeof(T).IsSubclassOf(typeof(Behaviour)))
+            {
+                unsafe
+                {
+                    NativeString className = typeof(T).FullName;
+                    IntPtr handle = InternalCalls.Prism_Entity_AddBehaviour(ID, className);
+                    if (handle == IntPtr.Zero) return null;
+                    T behaviour = (T)GCHandle.FromIntPtr(handle).Target;
+                    behaviour.Entity = this;
+                    return behaviour;
+                }
+            }
+            else
+            {
+                unsafe { InternalCalls.Prism_Entity_CreateComponent(ID, typeof(T)); }
+                T component = new T();
+                component.Entity = this;
+                return component;
+            }
         }
         public T GetComponent<T>() where T : Component, new()
         {

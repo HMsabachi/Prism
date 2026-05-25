@@ -26,14 +26,11 @@ namespace Prism
         static void Initialize();
         static void Shutdown();
 
-        // 双重 map: SceneID → (ScriptID → ScriptObject)
         static std::unordered_map<UUID, std::unordered_map<UUID, Python::ScriptObject>> s_PythonScriptObjects;
 
-        // 创建脚本对象, 使用外部传入的 ScriptID, 存入 s_PythonScriptObjects + storage
         template<typename... TArgs>
         static UUID Instantiate(UUID scriptID, std::string_view className, PythonScriptStorage& storage, TArgs&&... args);
 
-        // Storage lookup (takes storage reference)
         static PythonEntityScriptStorage& GetEntityScriptStorage(PythonScriptStorage& storage, UUID scriptID);
 
         static UUID AddBehaviour(Entity& entity, PythonBehaviourBinding& binding);
@@ -52,7 +49,6 @@ namespace Prism
         static bool s_Initialized;
     };
 
-    // Template: import module, create instance, store in double map + storage
     template<typename... TArgs>
     UUID PythonScriptEngine::Instantiate(UUID scriptID, std::string_view className, PythonScriptStorage& storage, TArgs&&... /*args*/)
     {

@@ -328,6 +328,35 @@ namespace Prism::Python {
         return m_Ref.HasAttribute(name);
     }
 
+    bool ScriptClass::HasMethodWithArity(const char* name, int userArgCount) const
+    {
+        PyObject* pyCls = ToPy(m_Ref.Get());
+        if (!pyCls) return false;
+
+        PyObject* func = PyObject_GetAttrString(pyCls, name);
+        if (!func) { PyErr_Clear(); return false; }
+
+        bool ok = PyFunction_Check(func) || PyMethod_Check(func);
+        if (ok)
+        {
+            PyObject* code = PyObject_GetAttrString(func, "__code__");
+            if (code)
+            {
+                PyObject* coArgcount = PyObject_GetAttrString(code, "co_argcount");
+                ok = coArgcount && (PyLong_AsLong(coArgcount) == userArgCount + 1);
+                Py_XDECREF(coArgcount);
+                Py_XDECREF(code);
+            }
+            else
+            {
+                PyErr_Clear();
+                ok = false;
+            }
+        }
+        Py_DECREF(func);
+        return ok;
+    }
+
     std::string ScriptClass::GetName() const
     {
         if (!m_Ref.IsValid()) return {};

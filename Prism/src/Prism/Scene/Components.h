@@ -84,14 +84,16 @@ namespace Prism {
 	{
 		UUID BehaviourID = 0;
 		std::string ClassName;
+		uint16_t LifecycleMask = 0;
 		std::unordered_map<uint32_t, CSharpField> Fields;
 	};
 
 	struct PythonBehaviourBinding
 	{
 		UUID BehaviourID = 0;
-		std::string ClassName;     
-		std::string ModuleName;     
+		std::string ClassName;
+		std::string ModuleName;
+		uint16_t LifecycleMask = 0;
 		std::unordered_map<uint32_t, PythonField> Fields;
 	};
 

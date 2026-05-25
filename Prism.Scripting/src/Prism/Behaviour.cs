@@ -6,15 +6,19 @@ namespace Prism
     {
         public bool Enabled { get; set; } = true;
 
-        public virtual void Awake() { }
-        public virtual void OnEnable() { }
-        public virtual void OnDisable() { }
-        public virtual void OnCreate() { }
-        public virtual void OnUpdate() { }
-        public virtual void LateUpdate() { }
-        public virtual void OnFixedUpdate() { }
-        public virtual void OnDestroy() { }
-        public virtual void OnCollisionBegin(float data) { }
-        public virtual void OnCollisionEnd(float data) { }
+        public TransformComponent Transform => Entity.Transform;
+
+        public T GetComponent<T>() where T : Component, new()
+        {
+            return Entity.GetComponent<T>();
+        }
+        public bool HasComponent<T>() where T : Component, new()
+        {
+            return Entity.HasComponent<T>();
+        }
+        public T CreateComponent<T>() where T : Component, new()
+        {
+            return Entity.CreateComponent<T>();
+        }
     }
 }

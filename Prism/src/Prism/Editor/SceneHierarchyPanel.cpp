@@ -873,6 +873,7 @@ namespace Prism {
                                 CSharpBehaviourBinding binding;
                                 binding.BehaviourID = UUID();
                                 binding.ClassName = meta->FullName;
+                                binding.LifecycleMask = meta->LifecycleMask;
                                 for (auto& [hash, fieldMeta] : meta->Fields)
                                 {
                                     CSharpField field(fieldMeta.Name, fieldMeta.Type);
@@ -1004,6 +1005,7 @@ namespace Prism {
                                 binding.BehaviourID = UUID();
                                 binding.ClassName = meta->ClassName;
                                 binding.ModuleName = meta->ModuleName;
+                                binding.LifecycleMask = meta->LifecycleMask;
                                 for (auto& [hash, fieldMeta] : meta->Fields)
                                 {
                                     PythonField field(fieldMeta.Name, fieldMeta.Type);

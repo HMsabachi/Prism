@@ -102,15 +102,15 @@ Entities:
           Fields:
             - ID: 1693159688
               Name: HorizontalForce
-              Type: "\x01"
+              Type: 1
               Value: 80
             - ID: 868800460
               Name: JumpForce
-              Type: "\x01"
+              Type: 1
               Value: 220
             - ID: 414202020
               Name: MaxSpeed
-              Type: "\r"
+              Type: 13
               Value: [20, 20, 20]
     PythonScriptComponent:
       Behaviours:
@@ -132,11 +132,11 @@ Entities:
           Fields:
             - ID: 305488032
               Name: Speed
-              Type: "\x01"
+              Type: 1
               Value: 5.6
             - ID: 3277313775
               Name: DistanceFromPlayer
-              Type: "\x01"
+              Type: 1
               Value: 10.8
     PythonScriptComponent:
       Behaviours:

@@ -8,6 +8,7 @@
 #include "Prism/Scene/Components.h"
 
 #include "Scripting/CSharp/CSharpScriptEngine.h"
+#include "Scripting/CSharp/CSharpScriptMetaRegistry.h"
 #include "Prism/Renderer/Renderer.h"
 #include <glm/gtc/type_ptr.hpp>
 
@@ -146,6 +147,50 @@ namespace Prism {
 					return id;
 			}
 			return 0;
+		}
+
+		void* Prism_Entity_AddBehaviour(uint64_t entityID, Rolky::String className)
+		{
+			Entity entity = GetEntityFromEntityID(entityID);
+			std::string classNameStr = className;
+			Rolky::String::Free(className);
+
+			UUID sceneID = CSharpScriptEngine::GetCurrentSceneContext()->GetUUID();
+			UUID behaviourID = UUID();
+
+			auto type = CSharpScriptEngine::GetAppAssembly().GetType(classNameStr);
+			PR_CORE_ASSERT(type, "Class not found in app assembly!");
+			auto instance = type.CreateInstance();
+			PR_CORE_ASSERT(instance.IsValid(), "Failed to create instance!");
+
+			UUID entityUUID = entity.GetUUID();
+			auto* entityObj = CSharpScriptEngine::GetManagedObject(sceneID, entityUUID);
+			instance.SetPropertyValueRaw("Entity", entityObj);
+
+			auto& sceneMap = CSharpScriptEngine::s_ManagedObjects[sceneID];
+			auto [it, inserted] = sceneMap.emplace(behaviourID, std::move(instance));
+			PR_CORE_ASSERT(inserted, "BehaviourID collision!");
+
+			auto& comp = entity.GetComponent<CSharpScriptComponent>();
+			auto& binding = comp.Behaviours.emplace_back();
+			binding.BehaviourID = behaviourID;
+			binding.ClassName = classNameStr;
+			if (auto* meta = CSharpScriptMetaRegistry::GetClassMetadata(classNameStr))
+				binding.LifecycleMask = meta->LifecycleMask;
+
+			it->second.InvokeMethod("Awake");
+			it->second.InvokeMethod("OnCreate");
+			if (it->second.GetPropertyValue<Rolky::Bool32>("Enabled"))
+				it->second.InvokeMethod("OnEnable");
+
+			return it->second.m_Handle;
+		}
+
+		void Prism_Entity_RemoveBehaviour(uint64_t entityID, uint64_t behaviourID)
+		{
+			Entity entity = GetEntityFromEntityID(entityID);
+			UUID bid(behaviourID);
+			CSharpScriptEngine::RemoveBehaviour(entity, bid);
 		}
 
 

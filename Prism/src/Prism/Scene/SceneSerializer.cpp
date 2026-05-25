@@ -11,6 +11,10 @@
 #include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include <Prism/Core/Hash.h>
+#include "Scripting/CSharp/CSharpScriptMetaRegistry.h"
+#include "Scripting/Python/PythonScriptMetaRegistry.h"
+
 #include <iostream>
 #include <fstream>
 
@@ -154,15 +158,7 @@ namespace Prism {
         // ── FNV-1a hash for field name lookup ──
     static uint32_t HashFieldName(const std::string& name)
     {
-        constexpr uint64_t FNV1aBasis = 14695981039346656037ULL;
-        constexpr uint64_t FNV1aPrime = 1099511628211ULL;
-        uint64_t hash = FNV1aBasis;
-        for (char c : name)
-        {
-            hash ^= static_cast<uint64_t>(c);
-            hash *= FNV1aPrime;
-        }
-        return (uint32_t)hash;
+        return (uint32_t)Hash::GenerateFNVHash64(name);
     }
 
     static void SerializeEntity(YAML::Emitter& out, Entity entity, Scene* scene)
@@ -379,7 +375,7 @@ namespace Prism {
                         out << YAML::BeginMap;
                         out << YAML::Key << "ID" << YAML::Value << fieldID;
                         out << YAML::Key << "Name" << YAML::Value << field.GetName();
-                        out << YAML::Key << "Type" << YAML::Value << (uint8_t)field.GetType();
+                        out << YAML::Key << "Type" << YAML::Value << (uint16_t)field.GetType();
                         out << YAML::Key << "Value" << YAML::Value;
                         switch (field.GetType())
                         {
@@ -461,7 +457,7 @@ namespace Prism {
                         out << YAML::BeginMap;
                         out << YAML::Key << "ID" << YAML::Value << fieldID;
                         out << YAML::Key << "Name" << YAML::Value << field.GetName();
-                        out << YAML::Key << "Type" << YAML::Value << (uint8_t)field.GetType();
+                        out << YAML::Key << "Type" << YAML::Value << (uint16_t)field.GetType();
                         out << YAML::Key << "Value" << YAML::Value;
                         switch (field.GetType())
                         {
@@ -825,6 +821,8 @@ namespace Prism {
                             CSharpBehaviourBinding binding;
                             binding.BehaviourID = (UUID)bindingNode["ID"].as<uint64_t>();
                             binding.ClassName = bindingNode["ClassName"].as<std::string>();
+                            if (auto* meta = CSharpScriptMetaRegistry::GetClassMetadata(binding.ClassName))
+                                binding.LifecycleMask = meta->LifecycleMask;
 
                             auto fieldsNode = bindingNode["Fields"];
                             if (fieldsNode)
@@ -832,7 +830,7 @@ namespace Prism {
                                 for (auto fieldNode : fieldsNode)
                                 {
                                     std::string fieldName = fieldNode["Name"].as<std::string>();
-                                    ScriptFieldType fieldType = (ScriptFieldType)fieldNode["Type"].as<uint8_t>();
+                                    ScriptFieldType fieldType = (ScriptFieldType)fieldNode["Type"].as<uint16_t>();
                                     CSharpField field(fieldName, fieldType);
 
                                     if (fieldNode["Value"])
@@ -892,6 +890,25 @@ namespace Prism {
                                 }
                             }
 
+                            // Reconcile: rebuild fields from current metadata (script may have changed)
+                            if (auto* meta = CSharpScriptMetaRegistry::GetClassMetadata(binding.ClassName))
+                            {
+                                auto oldFields = std::move(binding.Fields);
+                                for (auto& [hash, fieldMeta] : meta->Fields)
+                                {
+                                    auto it = oldFields.find(hash);
+                                    if (it != oldFields.end() && it->second.GetType() == fieldMeta.Type)
+                                        binding.Fields[hash] = std::move(it->second);
+                                    else
+                                    {
+                                        CSharpField field(fieldMeta.Name, fieldMeta.Type);
+                                        if (fieldMeta.DefaultValue.Data && fieldMeta.DefaultValue.Size > 0)
+                                            field.SetBuffer(fieldMeta.DefaultValue);
+                                        binding.Fields[hash] = std::move(field);
+                                    }
+                                }
+                            }
+
                             comp.Behaviours.push_back(std::move(binding));
                         }
                     }
@@ -913,6 +930,8 @@ namespace Prism {
                             binding.BehaviourID = (UUID)bindingNode["ID"].as<uint64_t>();
                             binding.ClassName = bindingNode["ClassName"].as<std::string>();
                             binding.ModuleName = bindingNode["ModuleName"].as<std::string>();
+                            if (auto* meta = PythonScriptMetaRegistry::GetClassMetadata(binding.ModuleName + "." + binding.ClassName))
+                                binding.LifecycleMask = meta->LifecycleMask;
 
                             auto fieldsNode = bindingNode["Fields"];
                             if (fieldsNode)
@@ -920,7 +939,7 @@ namespace Prism {
                                 for (auto fieldNode : fieldsNode)
                                 {
                                     std::string fieldName = fieldNode["Name"].as<std::string>();
-                                    ScriptFieldType fieldType = (ScriptFieldType)fieldNode["Type"].as<uint8_t>();
+                                    ScriptFieldType fieldType = (ScriptFieldType)fieldNode["Type"].as<uint16_t>();
                                     PythonField field(fieldName, fieldType);
 
                                     if (fieldNode["Value"])
@@ -977,6 +996,25 @@ namespace Prism {
 
                                     uint32_t fieldHash = HashFieldName(fieldName);
                                     binding.Fields[fieldHash] = std::move(field);
+                                }
+                            }
+
+                            // Reconcile: rebuild fields from current metadata (script may have changed)
+                            if (auto* meta = PythonScriptMetaRegistry::GetClassMetadata(binding.ModuleName + "." + binding.ClassName))
+                            {
+                                auto oldFields = std::move(binding.Fields);
+                                for (auto& [hash, fieldMeta] : meta->Fields)
+                                {
+                                    auto it = oldFields.find(hash);
+                                    if (it != oldFields.end() && it->second.GetType() == fieldMeta.Type)
+                                        binding.Fields[hash] = std::move(it->second);
+                                    else
+                                    {
+                                        PythonField field(fieldMeta.Name, fieldMeta.Type);
+                                        if (fieldMeta.DefaultValue.Data && fieldMeta.DefaultValue.Size > 0)
+                                            field.SetBuffer(fieldMeta.DefaultValue);
+                                        binding.Fields[hash] = std::move(field);
+                                    }
                                 }
                             }
 
