@@ -13,11 +13,55 @@ namespace Prism {
 			: Data(nullptr), Size(0), ReadOnly(false)
 		{
 		}
-
 		Buffer(byte* data, uint32_t size)
 			: Data(data), Size(size), ReadOnly(false)
 		{
 		}
+        Buffer(const Buffer& other)
+            : Data(nullptr), Size(0), ReadOnly(false)
+        {
+            if (other.Data && other.Size > 0)
+            {
+                Data = new byte[other.Size];
+                Size = other.Size;
+                memcpy(Data, other.Data, Size);
+            }
+        }
+        Buffer(Buffer&& other) noexcept
+            : Data(other.Data), Size(other.Size), ReadOnly(other.ReadOnly)
+        {
+            other.Data = nullptr;
+            other.Size = 0;
+            other.ReadOnly = false;
+        }
+        void operator=(const Buffer& other)
+        {
+            if (this != &other)
+            {
+                Free();
+                if (other.Data && other.Size > 0)
+                {
+                    Data = new byte[other.Size];
+                    Size = other.Size;
+                    memcpy(Data, other.Data, Size);
+                }
+            }
+        }
+        void operator=(Buffer&& other) noexcept
+        {
+            if (this != &other)
+            {
+                Free();
+                Data = other.Data;
+                Size = other.Size;
+                ReadOnly = other.ReadOnly;
+                other.Data = nullptr;
+                other.Size = 0;
+                other.ReadOnly = false;
+            }
+        }
+
+
 		void SetReadOnly(bool readOnly) const { ReadOnly = readOnly; }
 
 		void Free()
@@ -61,12 +105,12 @@ namespace Prism {
 		}
 
 		template<typename T>
-		T& Read(uint32_t offset = 0)
+		T& Read(uint32_t offset = 0) const
 		{
 			return *(T*)(Data + offset);
 		}
 
-		void Write(void* data, uint32_t size, uint32_t offset = 0)
+		void Write(const void* data, uint32_t size, uint32_t offset = 0)
 		{
 			PR_CORE_ASSERT(!ReadOnly, "Cannot write to a read-only buffer! 无法写入只读缓冲区");
 			PR_CORE_ASSERT(offset + size <= Size, "Buffer overflow! 缓冲区溢出");

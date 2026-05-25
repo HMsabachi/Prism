@@ -20,23 +20,19 @@ namespace {
     inline PyObject* ToPy(Prism::Python::ScriptValue* v) { return reinterpret_cast<PyObject*>(v); }
     inline Prism::Python::ScriptValue* ToSV(PyObject* p) { return reinterpret_cast<Prism::Python::ScriptValue*>(p); }
 
-    // PyModuleDef 和 PyMethodDef 必须持久化到 Python 生命周期结束
-    // NativeModule 通常是栈对象，不能在其中存储
     struct PersistentModuleData
     {
         std::string Name;
         PyModuleDef Def;
         std::vector<PyMethodDef> Methods;
-        std::vector<std::string> MethodNames;  // keep entry.Name alive for PyMethodDef::ml_name
-        std::vector<std::string> MethodDocs;   // keep entry.Doc alive for PyMethodDef::ml_doc
+        std::vector<std::string> MethodNames;
+        std::vector<std::string> MethodDocs;
     };
     std::vector<std::unique_ptr<PersistentModuleData>> s_ModuleRegistry;
 
 } // anonymous namespace
 
 namespace Prism::Python {
-
-    // ─── GILGuard ─────────────────────────────────────────────────────────
 
     GILGuard::GILGuard()
         : m_State(reinterpret_cast<void*>(static_cast<uintptr_t>(PyGILState_Ensure())))
@@ -47,8 +43,6 @@ namespace Prism::Python {
     {
         PyGILState_Release(static_cast<PyGILState_STATE>(reinterpret_cast<uintptr_t>(m_State)));
     }
-
-    // ─── PyErrorSaver ─────────────────────────────────────────────────────
 
     PyErrorSaver::PyErrorSaver()
     {
@@ -108,8 +102,6 @@ namespace Prism::Python {
             Py_XDECREF(reinterpret_cast<PyObject*>(m_Tb));
         }
     }
-
-    // ─── ScriptRef ───────────────────────────────────────────────────────
 
     ScriptRef::~ScriptRef()
     {
@@ -207,8 +199,6 @@ namespace Prism::Python {
         return result;
     }
 
-    // ─── ScriptHost ──────────────────────────────────────────────────────
-
     bool ScriptHost::Initialize()
     {
         if (Py_IsInitialized())
@@ -218,7 +208,6 @@ namespace Prism::Python {
         if (!Py_IsInitialized())
             return false;
 
-        // 添加用户脚本搜索路径
         PyRun_SimpleString(
             "import sys\n"
             "import os\n"
@@ -241,8 +230,6 @@ namespace Prism::Python {
     {
         return Py_IsInitialized() != 0;
     }
-
-    // ─── ScriptModule ────────────────────────────────────────────────────
 
     ScriptModule ScriptModule::Import(const char* name)
     {
@@ -324,8 +311,6 @@ namespace Prism::Python {
         return names;
     }
 
-    // ─── ScriptClass ─────────────────────────────────────────────────────
-
     ScriptClass ScriptClass::From(const ScriptModule& mod, const char* name)
     {
         ScriptClass cls;
@@ -342,8 +327,6 @@ namespace Prism::Python {
     {
         return m_Ref.HasAttribute(name);
     }
-
-    // ── 运行时类型查询 ──────────────────────────────────────────────────────
 
     std::string ScriptClass::GetName() const
     {
@@ -384,7 +367,6 @@ namespace Prism::Python {
         }
         else
         {
-            // fallback: just __qualname__
             if (qualName && PyUnicode_Check(qualName))
             {
                 const char* qn = PyUnicode_AsUTF8(qualName);
@@ -409,8 +391,6 @@ namespace Prism::Python {
         return result == 1;
     }
 
-    // ── 字段反射 ────────────────────────────────────────────────────────────
-
     std::vector<ScriptClass::FieldInfo> ScriptClass::GetFields() const
     {
         std::vector<FieldInfo> fields;
@@ -421,16 +401,12 @@ namespace Prism::Python {
         PyErrorSaver saver;
         PyObject* pyCls = ToPy(m_Ref.Get());
 
-        // 1) 读 __annotations__ → 字段名到类型对象的映射
         PyObject* annotations = PyObject_GetAttrString(pyCls, "__annotations__");
         if (!annotations || !PyDict_Check(annotations))
         {
             Py_XDECREF(annotations);
             return fields;
         }
-
-        // 2) 获取类的 __dict__（用于检查默认值）
-        PyObject* clsDict = PyObject_GetAttrString(pyCls, "__dict__");
 
         fields.reserve(static_cast<size_t>(PyDict_Size(annotations)));
 
@@ -448,8 +424,6 @@ namespace Prism::Python {
             FieldInfo info;
             info.Name = fieldName;
 
-            // 类型标注转字符串
-            // annValue 通常是类型对象（如 <class 'float'>），取 __name__
             PyObject* typeNameAttr = PyObject_GetAttrString(annValue, "__name__");
             if (typeNameAttr && PyUnicode_Check(typeNameAttr))
             {
@@ -458,7 +432,6 @@ namespace Prism::Python {
             }
             else
             {
-                // fallback: str(annotation)
                 PyObject* strRepr = PyObject_Str(annValue);
                 if (strRepr && PyUnicode_Check(strRepr))
                 {
@@ -469,17 +442,16 @@ namespace Prism::Python {
             }
             Py_XDECREF(typeNameAttr);
 
-            // 检查类 __dict__ 中是否有默认值
-            if (clsDict && PyDict_Check(clsDict))
+            PyObject* defaultVal = PyObject_GetAttrString(pyCls, fieldName);
+            if (defaultVal)
             {
-                PyObject* defaultVal = PyDict_GetItemString(clsDict, fieldName);
-                info.HasDefault = (defaultVal != nullptr);
+                info.HasDefault = !(PyFunction_Check(defaultVal) || PyMethod_Check(defaultVal));
+                Py_DECREF(defaultVal);
             }
 
             fields.push_back(std::move(info));
         }
 
-        Py_XDECREF(clsDict);
         Py_XDECREF(annotations);
         return fields;
     }
@@ -532,8 +504,6 @@ namespace Prism::Python {
         }
         return obj;
     }
-
-    // ─── ScriptObject ────────────────────────────────────────────────────
 
     ScriptObject::ScriptObject(ScriptRef ref)
         : m_Ref(std::move(ref))
@@ -647,8 +617,6 @@ namespace Prism::Python {
         }
     }
 
-    // ─── 类型转换 ────────────────────────────────────────────────────────
-
     ScriptRef FloatToValue(float v)
     {
         return ScriptRef::Adopt(ToSV(PyFloat_FromDouble(v)));
@@ -759,8 +727,6 @@ namespace Prism::Python {
         }
         return result;
     }
-
-    // ─── NativeModule ────────────────────────────────────────────────────
 
     NativeModule::NativeModule(const char* name)
         : m_Name(name)

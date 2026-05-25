@@ -13,13 +13,11 @@
 namespace Prism
 {
 
-    // ── Static members ──
     std::unordered_map<UUID, ScriptClassMetadata> CSharpScriptMetaRegistry::s_Classes;
     std::unordered_map<std::string, UUID> CSharpScriptMetaRegistry::s_FullNameToID;
     Rolky::Type* CSharpScriptMetaRegistry::s_BehaviourType = nullptr;
     bool CSharpScriptMetaRegistry::s_Initialized = false;
 
-    // ── FNV-1a hash ──
     static constexpr uint64_t FNV1aBasis = 14695981039346656037ULL;
     static constexpr uint64_t FNV1aPrime = 1099511628211ULL;
 
@@ -34,7 +32,6 @@ namespace Prism
         return UUID(hash);
     }
 
-    // ── Type mapping ──
     ScriptFieldType CSharpScriptMetaRegistry::GetFieldTypeFromManagedType(Rolky::Type* type)
     {
         Rolky::ScopedString name = type->GetFullName();
@@ -47,7 +44,6 @@ namespace Prism
         if (nameStr == "System.Int64")                return ScriptFieldType::Int64;
         if (nameStr == "System.UInt64")               return ScriptFieldType::UInt64;
         if (nameStr == "System.Boolean")              return ScriptFieldType::Bool;
-        if (nameStr == "System.String")               return ScriptFieldType::String;
         if (nameStr == "Prism.Vector2" || nameStr == "System.Numerics.Vector2")     return ScriptFieldType::Vector2;
         if (nameStr == "Prism.Vector3" || nameStr == "System.Numerics.Vector3")     return ScriptFieldType::Vector3;
         if (nameStr == "Prism.Vector4" || nameStr == "System.Numerics.Vector4")     return ScriptFieldType::Vector4;
@@ -55,7 +51,6 @@ namespace Prism
         return ScriptFieldType::None;
     }
 
-    // ── Read default value from a temporary managed instance ──
     static void ReadDefaultFieldValue(ScriptFieldMetadata& meta, Rolky::ManagedObject& obj, const std::string& fieldName)
     {
         switch (meta.Type)
@@ -64,60 +59,70 @@ namespace Prism
             {
                 float val = obj.GetFieldValue<float>(fieldName);
                 meta.DefaultValue = Buffer::Copy(&val, sizeof(float));
+                PR_CSHARP_META_INFO("    默认值 {0} = {1}", fieldName, val);
                 break;
             }
             case ScriptFieldType::Double:
             {
                 double val = obj.GetFieldValue<double>(fieldName);
                 meta.DefaultValue = Buffer::Copy(&val, sizeof(double));
+                PR_CSHARP_META_INFO("    默认值 {0} = {1}", fieldName, val);
                 break;
             }
             case ScriptFieldType::Bool:
             {
                 bool val = obj.GetFieldValue<bool>(fieldName);
                 meta.DefaultValue = Buffer::Copy(&val, sizeof(bool));
+                PR_CSHARP_META_INFO("    默认值 {0} = {1}", fieldName, val ? "True" : "False");
                 break;
             }
             case ScriptFieldType::Int32:
             {
                 int32_t val = obj.GetFieldValue<int32_t>(fieldName);
                 meta.DefaultValue = Buffer::Copy(&val, sizeof(int32_t));
+                PR_CSHARP_META_INFO("    默认值 {0} = {1}", fieldName, val);
                 break;
             }
             case ScriptFieldType::UInt32:
             {
                 uint32_t val = obj.GetFieldValue<uint32_t>(fieldName);
                 meta.DefaultValue = Buffer::Copy(&val, sizeof(uint32_t));
+                PR_CSHARP_META_INFO("    默认值 {0} = {1}", fieldName, val);
                 break;
             }
             case ScriptFieldType::Int64:
             {
                 int64_t val = obj.GetFieldValue<int64_t>(fieldName);
                 meta.DefaultValue = Buffer::Copy(&val, sizeof(int64_t));
+                PR_CSHARP_META_INFO("    默认值 {0} = {1}", fieldName, val);
                 break;
             }
             case ScriptFieldType::UInt64:
             {
                 uint64_t val = obj.GetFieldValue<uint64_t>(fieldName);
                 meta.DefaultValue = Buffer::Copy(&val, sizeof(uint64_t));
+                PR_CSHARP_META_INFO("    默认值 {0} = {1}", fieldName, val);
                 break;
             }
             case ScriptFieldType::Vector2:
             {
                 glm::vec2 val = obj.GetFieldValue<glm::vec2>(fieldName);
                 meta.DefaultValue = Buffer::Copy(&val, sizeof(glm::vec2));
+                PR_CSHARP_META_INFO("    默认值 {0} = ({1}, {2})", fieldName, val.x, val.y);
                 break;
             }
             case ScriptFieldType::Vector3:
             {
                 glm::vec3 val = obj.GetFieldValue<glm::vec3>(fieldName);
                 meta.DefaultValue = Buffer::Copy(&val, sizeof(glm::vec3));
+                PR_CSHARP_META_INFO("    默认值 {0} = ({1}, {2}, {3})", fieldName, val.x, val.y, val.z);
                 break;
             }
             case ScriptFieldType::Vector4:
             {
                 glm::vec4 val = obj.GetFieldValue<glm::vec4>(fieldName);
                 meta.DefaultValue = Buffer::Copy(&val, sizeof(glm::vec4));
+                PR_CSHARP_META_INFO("    默认值 {0} = ({1}, {2}, {3}, {4})", fieldName, val.x, val.y, val.z, val.w);
                 break;
             }
             default:
@@ -125,7 +130,6 @@ namespace Prism
         }
     }
 
-    // ── Build cache for a single assembly ──
     void CSharpScriptMetaRegistry::BuildCacheForAssembly(Rolky::ManagedAssembly& assembly)
     {
         for (const auto& type : assembly.GetLocalTypes())
@@ -150,10 +154,13 @@ namespace Prism
 
             s_FullNameToID[nameStr] = scriptID;
 
+            PR_CSHARP_META_INFO("模块: {0}", classMeta.ModuleName);
+            PR_CSHARP_META_INFO("  类: {0} (ID={1})", nameStr, (uint64_t)scriptID);
+
             Rolky::ManagedObject tempInstance = type.CreateInstance();
             if (!tempInstance.IsValid())
             {
-                PR_CSHARP_META_WARN("无法创建 {0} 的临时实例，跳过字段缓存", nameStr);
+                PR_CSHARP_META_WARN("  无法创建临时实例: {0}", nameStr);
                 continue;
             }
 
@@ -170,10 +177,14 @@ namespace Prism
 
                 auto& fieldType = field.GetType();
                 ScriptFieldType prismFieldType = GetFieldTypeFromManagedType(&fieldType);
-                if (prismFieldType == ScriptFieldType::None && fieldNameStr.find("m_") != 0)
+                if (prismFieldType == ScriptFieldType::None)
+                {
+                    PR_CSHARP_META_WARN("  未知类型: {0}: {1}", fieldNameStr, fieldType.GetFullName().operator std::string());
                     continue;
+                }
 
                 uint32_t fieldHash = (uint32_t)(uint64_t)GenerateScriptID(fieldNameStr);
+                PR_CSHARP_META_INFO("    字段: {0} : {1}", fieldNameStr, (int)prismFieldType);
 
                 ScriptFieldMetadata fieldMeta;
                 fieldMeta.Name = fieldNameStr;
@@ -189,7 +200,6 @@ namespace Prism
         }
     }
 
-    // ── Public API ──
     void CSharpScriptMetaRegistry::Init()
     {
         if (s_Initialized)
@@ -219,6 +229,8 @@ namespace Prism
 
     void CSharpScriptMetaRegistry::BuildCache()
     {
+        PR_CSHARP_META_INFO("开始扫描 C# Behaviour 类...");
+
         auto& engineAssembly = CSharpScriptEngine::GetEngineAssembly();
         auto& behaviourType = engineAssembly.GetLocalType("Prism.Behaviour");
         s_BehaviourType = &behaviourType;
@@ -226,7 +238,7 @@ namespace Prism
         auto& appAssembly = CSharpScriptEngine::GetAppAssembly();
         BuildCacheForAssembly(appAssembly);
 
-        PR_CSHARP_META_INFO("缓存 {0} 个 Behaviour 类", s_Classes.size());
+        PR_CSHARP_META_INFO("扫描完成: {0} 个 Behaviour 类", s_Classes.size());
     }
 
     ScriptClassMetadata* CSharpScriptMetaRegistry::GetClassMetadata(UUID scriptID)

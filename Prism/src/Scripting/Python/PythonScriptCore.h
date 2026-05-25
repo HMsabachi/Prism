@@ -213,7 +213,6 @@ namespace Prism::Python {
         std::vector<FuncEntry> m_Functions;
     };
 
-    // 鈹€鈹€鈹€ 妯℃澘杈呭姪 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
 
     template<typename T>
     ScriptRef ToValue(T&& value)
@@ -223,8 +222,18 @@ namespace Prism::Python {
             return FloatToValue(static_cast<float>(value));
         else if constexpr (std::is_same_v<Raw, double>)
             return FloatToValue(static_cast<float>(value));
+        else if constexpr (std::is_same_v<Raw, int8_t>)
+            return IntToValue(static_cast<int32_t>(value));
+        else if constexpr (std::is_same_v<Raw, int16_t>)
+            return IntToValue(static_cast<int32_t>(value));
         else if constexpr (std::is_same_v<Raw, int32_t>)
             return IntToValue(value);
+        else if constexpr (std::is_same_v<Raw, int64_t>)
+            return IntToValue(static_cast<int32_t>(value));
+        else if constexpr (std::is_same_v<Raw, uint8_t>)
+            return UInt64ToValue(static_cast<uint64_t>(value));
+        else if constexpr (std::is_same_v<Raw, uint16_t>)
+            return UInt64ToValue(static_cast<uint64_t>(value));
         else if constexpr (std::is_same_v<Raw, uint32_t>)
             return UInt64ToValue(value);
         else if constexpr (std::is_same_v<Raw, uint64_t>)
@@ -247,8 +256,20 @@ namespace Prism::Python {
             return ValueToFloat(v);
         else if constexpr (std::is_same_v<Raw, double>)
             return static_cast<double>(ValueToFloat(v));
+        else if constexpr (std::is_same_v<Raw, int8_t>)
+            return static_cast<int8_t>(ValueToInt(v));
+        else if constexpr (std::is_same_v<Raw, int16_t>)
+            return static_cast<int16_t>(ValueToInt(v));
         else if constexpr (std::is_same_v<Raw, int32_t>)
             return ValueToInt(v);
+        else if constexpr (std::is_same_v<Raw, int64_t>)
+            return static_cast<int64_t>(ValueToInt(v));
+        else if constexpr (std::is_same_v<Raw, uint8_t>)
+            return static_cast<uint8_t>(ValueToUInt64(v));
+        else if constexpr (std::is_same_v<Raw, uint16_t>)
+            return static_cast<uint16_t>(ValueToUInt64(v));
+        else if constexpr (std::is_same_v<Raw, uint32_t>)
+            return static_cast<uint32_t>(ValueToUInt64(v));
         else if constexpr (std::is_same_v<Raw, uint64_t>)
             return ValueToUInt64(v);
         else if constexpr (std::is_same_v<Raw, std::string>)
@@ -282,8 +303,22 @@ namespace Prism::Python {
         ScriptRef val = GetAttribute(name);
         if constexpr (std::is_same_v<Raw, float>)
             return static_cast<T>(ValueToFloat(val));
+        else if constexpr (std::is_same_v<Raw, double>)
+            return static_cast<T>(static_cast<double>(ValueToFloat(val)));
+        else if constexpr (std::is_same_v<Raw, int8_t>)
+            return static_cast<T>(static_cast<int8_t>(ValueToInt(val)));
+        else if constexpr (std::is_same_v<Raw, int16_t>)
+            return static_cast<T>(static_cast<int16_t>(ValueToInt(val)));
         else if constexpr (std::is_same_v<Raw, int32_t>)
             return static_cast<T>(ValueToInt(val));
+        else if constexpr (std::is_same_v<Raw, int64_t>)
+            return static_cast<T>(static_cast<int64_t>(ValueToInt(val)));
+        else if constexpr (std::is_same_v<Raw, uint8_t>)
+            return static_cast<T>(static_cast<uint8_t>(ValueToUInt64(val)));
+        else if constexpr (std::is_same_v<Raw, uint16_t>)
+            return static_cast<T>(static_cast<uint16_t>(ValueToUInt64(val)));
+        else if constexpr (std::is_same_v<Raw, uint32_t>)
+            return static_cast<T>(static_cast<uint32_t>(ValueToUInt64(val)));
         else if constexpr (std::is_same_v<Raw, uint64_t>)
             return static_cast<T>(ValueToUInt64(val));
         else if constexpr (std::is_same_v<Raw, std::string>)

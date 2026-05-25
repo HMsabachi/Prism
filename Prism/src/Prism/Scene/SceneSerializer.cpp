@@ -374,27 +374,60 @@ namespace Prism {
                 {
                     out << YAML::Key << "Fields";
                     out << YAML::BeginSeq;
-                    for (auto& [hash, field] : binding.Fields)
+                    for (auto& [fieldID, field] : binding.Fields)
                     {
                         out << YAML::BeginMap;
+                        out << YAML::Key << "ID" << YAML::Value << fieldID;
                         out << YAML::Key << "Name" << YAML::Value << field.GetName();
                         out << YAML::Key << "Type" << YAML::Value << (uint8_t)field.GetType();
+                        out << YAML::Key << "Value" << YAML::Value;
                         switch (field.GetType())
                         {
-                            case ScriptFieldType::Float:
-                                out << YAML::Key << "Value" << YAML::Value << field.GetValue<float>();
-                                break;
-                            case ScriptFieldType::Int32:
-                                out << YAML::Key << "Value" << YAML::Value << field.GetValue<int32_t>();
-                                break;
-                            case ScriptFieldType::Bool:
-                                out << YAML::Key << "Value" << YAML::Value << field.GetValue<bool>();
-                                break;
-                            case ScriptFieldType::String:
-                                out << YAML::Key << "Value" << YAML::Value << field.GetStringValue();
-                                break;
-                            default:
-                                break;
+                        case ScriptFieldType::Float:
+                            out << field.GetValue<float>();
+                            break;
+                        case ScriptFieldType::Double:
+                            out << field.GetValue<double>();
+                            break;
+                        case ScriptFieldType::Bool:
+                            out << field.GetValue<bool>();
+                            break;
+                        case ScriptFieldType::Int8:
+                            out << field.GetValue<int8_t>();
+                            break;
+                        case ScriptFieldType::Int16:
+                            out << field.GetValue<int16_t>();
+                            break;
+                        case ScriptFieldType::Int32:
+                            out << field.GetValue<int32_t>();
+                            break;
+                        case ScriptFieldType::Int64:
+                            out << field.GetValue<int64_t>();
+                            break;
+                        case ScriptFieldType::UInt8:
+                            out << field.GetValue<uint8_t>();
+                            break;
+                        case ScriptFieldType::UInt16:
+                            out << field.GetValue<uint16_t>();
+                            break;
+                        case ScriptFieldType::UInt32:
+                            out << field.GetValue<uint32_t>();
+                            break;
+                        case ScriptFieldType::UInt64:
+                            out << field.GetValue<uint64_t>();
+                            break;
+                        case ScriptFieldType::Vector2:
+                            out << field.GetValue<glm::vec2>();
+                            break;
+                        case ScriptFieldType::Vector3:
+                            out << field.GetValue<glm::vec3>();
+                            break;
+                        case ScriptFieldType::Vector4:
+                            out << field.GetValue<glm::vec4>();
+                            break;
+                        case ScriptFieldType::Object:
+                            // TODO: Serialize object references (e.g. assets, entities)
+                            break;
                         }
                         out << YAML::EndMap;
                     }
@@ -423,27 +456,60 @@ namespace Prism {
                 {
                     out << YAML::Key << "Fields";
                     out << YAML::BeginSeq;
-                    for (auto& [hash, field] : binding.Fields)
+                    for (auto& [fieldID, field] : binding.Fields)
                     {
                         out << YAML::BeginMap;
+                        out << YAML::Key << "ID" << YAML::Value << fieldID;
                         out << YAML::Key << "Name" << YAML::Value << field.GetName();
                         out << YAML::Key << "Type" << YAML::Value << (uint8_t)field.GetType();
+                        out << YAML::Key << "Value" << YAML::Value;
                         switch (field.GetType())
                         {
-                            case ScriptFieldType::Float:
-                                out << YAML::Key << "Value" << YAML::Value << field.GetValue<float>();
-                                break;
-                            case ScriptFieldType::Int32:
-                                out << YAML::Key << "Value" << YAML::Value << field.GetValue<int32_t>();
-                                break;
-                            case ScriptFieldType::Bool:
-                                out << YAML::Key << "Value" << YAML::Value << field.GetValue<bool>();
-                                break;
-                            case ScriptFieldType::String:
-                                out << YAML::Key << "Value" << YAML::Value << field.GetStringValue();
-                                break;
-                            default:
-                                break;
+                        case ScriptFieldType::Float:
+                            out << field.GetValue<float>();
+                            break;
+                        case ScriptFieldType::Double:
+                            //out << field.GetValue<double>();
+                            break;
+                        case ScriptFieldType::Bool:
+                            out << field.GetValue<bool>();
+                            break;
+                        case ScriptFieldType::Int8:
+                            out << field.GetValue<int8_t>();
+                            break;
+                        case ScriptFieldType::Int16:
+                            out << field.GetValue<int16_t>();
+                            break;
+                        case ScriptFieldType::Int32:
+                            out << field.GetValue<int32_t>();
+                            break;
+                        case ScriptFieldType::Int64:
+                            out << field.GetValue<int64_t>();
+                            break;
+                        case ScriptFieldType::UInt8:
+                            out << field.GetValue<uint8_t>();
+                            break;
+                        case ScriptFieldType::UInt16:
+                            out << field.GetValue<uint16_t>();
+                            break;
+                        case ScriptFieldType::UInt32:
+                            out << field.GetValue<uint32_t>();
+                            break;
+                        case ScriptFieldType::UInt64:
+                            out << field.GetValue<uint64_t>();
+                            break;
+                        case ScriptFieldType::Vector2:
+                            //out << field.GetValue<glm::vec2>();
+                            break;
+                        case ScriptFieldType::Vector3:
+                            //out << field.GetValue<glm::vec3>();
+                            break;
+                        case ScriptFieldType::Vector4:
+                            //out << field.GetValue<glm::vec4>();
+                            break;
+                        case ScriptFieldType::Object:
+                            // TODO: Serialize object references (e.g. assets, entities)
+                            break;
                         }
                         out << YAML::EndMap;
                     }
@@ -771,22 +837,53 @@ namespace Prism {
 
                                     if (fieldNode["Value"])
                                     {
-                                        switch (fieldType)
+                                        switch (field.GetType())
                                         {
-                                            case ScriptFieldType::Float:
-                                                field.SetValue(fieldNode["Value"].as<float>());
-                                                break;
-                                            case ScriptFieldType::Int32:
-                                                field.SetValue(fieldNode["Value"].as<int32_t>());
-                                                break;
-                                            case ScriptFieldType::Bool:
-                                                field.SetValue(fieldNode["Value"].as<bool>());
-                                                break;
-                                            case ScriptFieldType::String:
-                                                field.SetStringValue(fieldNode["Value"].as<std::string>());
-                                                break;
-                                            default:
-                                                break;
+                                        case ScriptFieldType::Float:
+                                            field.SetValue(fieldNode["Value"].as<float>());
+                                            break;
+                                        case ScriptFieldType::Double:
+                                            field.SetValue(fieldNode["Value"].as<double>());
+                                            break;
+                                        case ScriptFieldType::Bool:
+                                            field.SetValue(fieldNode["Value"].as<bool>());
+                                            break;
+                                        case ScriptFieldType::Int8:
+                                            field.SetValue(fieldNode["Value"].as<int8_t>());
+                                            break;
+                                        case ScriptFieldType::Int16:
+                                            field.SetValue(fieldNode["Value"].as<int16_t>());
+                                            break;
+                                        case ScriptFieldType::Int32:
+                                            field.SetValue(fieldNode["Value"].as<int32_t>());
+                                            break;
+                                        case ScriptFieldType::Int64:
+                                            field.SetValue(fieldNode["Value"].as<int64_t>());
+                                            break;
+                                        case ScriptFieldType::UInt8:
+                                            field.SetValue(fieldNode["Value"].as<uint8_t>());
+                                            break;
+                                        case ScriptFieldType::UInt16:
+                                            field.SetValue(fieldNode["Value"].as<uint16_t>());
+                                            break;
+                                        case ScriptFieldType::UInt32:
+                                            field.SetValue(fieldNode["Value"].as<uint32_t>());
+                                            break;
+                                        case ScriptFieldType::UInt64:
+                                            field.SetValue(fieldNode["Value"].as<uint64_t>());
+                                            break;
+                                        case ScriptFieldType::Vector2:
+                                            field.SetValue(fieldNode["Value"].as<glm::vec2>());
+                                            break;
+                                        case ScriptFieldType::Vector3:
+                                            field.SetValue(fieldNode["Value"].as<glm::vec3>());
+                                            break;
+                                        case ScriptFieldType::Vector4:
+                                            field.SetValue(fieldNode["Value"].as<glm::vec4>());
+                                            break;
+                                        case ScriptFieldType::Object:
+                                            // TODO: Serialize object references (e.g. assets, entities)
+                                            break;
                                         }
                                     }
 
@@ -828,22 +925,53 @@ namespace Prism {
 
                                     if (fieldNode["Value"])
                                     {
-                                        switch (fieldType)
+                                        switch (field.GetType())
                                         {
-                                            case ScriptFieldType::Float:
-                                                field.SetValue(fieldNode["Value"].as<float>());
-                                                break;
-                                            case ScriptFieldType::Int32:
-                                                field.SetValue(fieldNode["Value"].as<int32_t>());
-                                                break;
-                                            case ScriptFieldType::Bool:
-                                                field.SetValue(fieldNode["Value"].as<bool>());
-                                                break;
-                                            case ScriptFieldType::String:
-                                                field.SetStringValue(fieldNode["Value"].as<std::string>());
-                                                break;
-                                            default:
-                                                break;
+                                        case ScriptFieldType::Float:
+                                            field.SetValue(fieldNode["Value"].as<float>());
+                                            break;
+                                        case ScriptFieldType::Double:
+                                            field.SetValue(fieldNode["Value"].as<double>());
+                                            break;
+                                        case ScriptFieldType::Bool:
+                                            field.SetValue(fieldNode["Value"].as<bool>());
+                                            break;
+                                        case ScriptFieldType::Int8:
+                                            field.SetValue(fieldNode["Value"].as<int8_t>());
+                                            break;
+                                        case ScriptFieldType::Int16:
+                                            field.SetValue(fieldNode["Value"].as<int16_t>());
+                                            break;
+                                        case ScriptFieldType::Int32:
+                                            field.SetValue(fieldNode["Value"].as<int32_t>());
+                                            break;
+                                        case ScriptFieldType::Int64:
+                                            field.SetValue(fieldNode["Value"].as<int64_t>());
+                                            break;
+                                        case ScriptFieldType::UInt8:
+                                            field.SetValue(fieldNode["Value"].as<uint8_t>());
+                                            break;
+                                        case ScriptFieldType::UInt16:
+                                            field.SetValue(fieldNode["Value"].as<uint16_t>());
+                                            break;
+                                        case ScriptFieldType::UInt32:
+                                            field.SetValue(fieldNode["Value"].as<uint32_t>());
+                                            break;
+                                        case ScriptFieldType::UInt64:
+                                            field.SetValue(fieldNode["Value"].as<uint64_t>());
+                                            break;
+                                        case ScriptFieldType::Vector2:
+                                            //field.SetValue(fieldNode["Value"].as<glm::vec2>());
+                                            break;
+                                        case ScriptFieldType::Vector3:
+                                            //field.SetValue(fieldNode["Value"].as<glm::vec3>());
+                                            break;
+                                        case ScriptFieldType::Vector4:
+                                            //field.SetValue(fieldNode["Value"].as<glm::vec4>());
+                                            break;
+                                        case ScriptFieldType::Object:
+                                            // TODO: Serialize object references (e.g. assets, entities)
+                                            break;
                                         }
                                     }
 

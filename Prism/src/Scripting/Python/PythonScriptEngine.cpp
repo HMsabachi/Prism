@@ -155,7 +155,7 @@ namespace Prism
         // Push field values from C++ buffer to Python instance
         for (auto& [hash, field] : binding.Fields)
         {
-            Buffer buf = field.GetBuffer();
+            Buffer& buf = field.GetBuffer();
             if (buf.Data && buf.Size > 0)
                 obj.SetFieldRaw(field.GetName().c_str(), buf.Data);
         }

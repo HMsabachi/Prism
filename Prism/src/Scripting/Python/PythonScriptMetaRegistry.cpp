@@ -11,12 +11,10 @@ namespace Prism
 #define PR_PYTHON_META_WARN(...)  PR_CORE_WARN("[Python Meta] "  __VA_ARGS__)
 #define PR_PYTHON_META_ERROR(...) PR_CORE_ERROR("[Python Meta] " __VA_ARGS__)
 
-    // ── Static members ──
     std::unordered_map<UUID, ScriptClassMetadata> PythonScriptMetaRegistry::s_Classes;
     std::unordered_map<std::string, UUID> PythonScriptMetaRegistry::s_FullNameToID;
     bool PythonScriptMetaRegistry::s_Initialized = false;
 
-    // ── FNV-1a hash (same algorithm as ScriptMetaRegistry) ──
     static constexpr uint64_t FNV1aBasis = 14695981039346656037ULL;
     static constexpr uint64_t FNV1aPrime = 1099511628211ULL;
 
@@ -31,7 +29,6 @@ namespace Prism
         return UUID(hash);
     }
 
-    // ── Read default value from a temporary Python instance ──
     void PythonScriptMetaRegistry::ReadPythonDefaultFieldValue(ScriptFieldMetadata& meta,
                                                                Python::ScriptObject& obj,
                                                                const std::string& fieldName)
@@ -42,18 +39,21 @@ namespace Prism
             {
                 float val = obj.GetField<float>(fieldName.c_str());
                 meta.DefaultValue = Buffer::Copy(&val, sizeof(float));
+                PR_PYTHON_META_INFO("    默认值 {0} = {1}", fieldName, val);
                 break;
             }
             case ScriptFieldType::Bool:
             {
                 bool val = obj.GetField<bool>(fieldName.c_str());
                 meta.DefaultValue = Buffer::Copy(&val, sizeof(bool));
+                PR_PYTHON_META_INFO("    默认值 {0} = {1}", fieldName, val ? "True" : "False");
                 break;
             }
             case ScriptFieldType::Int32:
             {
                 int32_t val = obj.GetField<int32_t>(fieldName.c_str());
                 meta.DefaultValue = Buffer::Copy(&val, sizeof(int32_t));
+                PR_PYTHON_META_INFO("    默认值 {0} = {1}", fieldName, val);
                 break;
             }
             case ScriptFieldType::UInt32:
@@ -61,14 +61,15 @@ namespace Prism
             {
                 uint64_t val = obj.GetField<uint64_t>(fieldName.c_str());
                 meta.DefaultValue = Buffer::Copy(&val, sizeof(uint64_t));
+                PR_PYTHON_META_INFO("    默认值 {0} = {1}", fieldName, val);
                 break;
             }
             case ScriptFieldType::Vector2:
             {
-                // Python 中 Vector2 是 2-float tuple
                 float vec[2];
                 obj.GetFieldRaw(fieldName.c_str(), vec);
                 meta.DefaultValue = Buffer::Copy(vec, sizeof(float) * 2);
+                PR_PYTHON_META_INFO("    默认值 {0} = ({1}, {2})", fieldName, vec[0], vec[1]);
                 break;
             }
             case ScriptFieldType::Vector3:
@@ -76,6 +77,7 @@ namespace Prism
                 float vec[3];
                 obj.GetFieldRaw(fieldName.c_str(), vec);
                 meta.DefaultValue = Buffer::Copy(vec, sizeof(float) * 3);
+                PR_PYTHON_META_INFO("    默认值 {0} = ({1}, {2}, {3})", fieldName, vec[0], vec[1], vec[2]);
                 break;
             }
             case ScriptFieldType::Vector4:
@@ -83,6 +85,7 @@ namespace Prism
                 float vec[4];
                 obj.GetFieldRaw(fieldName.c_str(), vec);
                 meta.DefaultValue = Buffer::Copy(vec, sizeof(float) * 4);
+                PR_PYTHON_META_INFO("    默认值 {0} = ({1}, {2}, {3}, {4})", fieldName, vec[0], vec[1], vec[2], vec[3]);
                 break;
             }
             default:
@@ -90,7 +93,6 @@ namespace Prism
         }
     }
 
-    // ── Scan a single module for Behaviour subclasses ──
     void PythonScriptMetaRegistry::ScanModule(Python::ScriptModule& mod, const std::string& moduleName,
                                               Python::ScriptClass& behaviourClass)
     {
@@ -98,7 +100,6 @@ namespace Prism
 
         for (const auto& name : names)
         {
-            // 跳过私有属性和非类属性
             if (!name.empty() && name[0] == '_')
                 continue;
 
@@ -106,7 +107,6 @@ namespace Prism
             if (!cls.IsValid())
                 continue;
 
-            // 检查是否 Behaviour 子类
             if (!cls.IsSubclassOf(behaviourClass))
                 continue;
 
@@ -114,29 +114,28 @@ namespace Prism
             if (fullName.empty())
                 fullName = moduleName + "." + name;
 
-            // 跳过框架类
             if (fullName.find("Prism.") == 0)
                 continue;
 
             UUID scriptID = GenerateScriptID(fullName);
 
-            // 去重
             if (s_Classes.find(scriptID) != s_Classes.end())
                 continue;
+
+            PR_PYTHON_META_INFO("模块: {0}", moduleName);
+            PR_PYTHON_META_INFO("  类: {0} (ID={1})", fullName, (uint64_t)scriptID);
 
             auto& classMeta = s_Classes[scriptID];
             classMeta.ScriptID = scriptID;
             classMeta.FullName = fullName;
             classMeta.ModuleName = moduleName;
             classMeta.ClassName = cls.GetName();
-
             s_FullNameToID[fullName] = scriptID;
 
-            // 创建临时实例读默认值
             Python::ScriptObject tempInstance = cls.CreateInstance();
             if (!tempInstance.IsValid())
             {
-                PR_PYTHON_META_WARN("无法创建 {0} 的临时实例，跳过字段缓存", fullName);
+                PR_PYTHON_META_WARN("  无法创建临时实例: {0}", fullName);
                 continue;
             }
 
@@ -145,9 +144,13 @@ namespace Prism
             {
                 ScriptFieldType fieldType = GetFieldTypeFromPythonAnnotation(field.TypeAnnotation);
                 if (fieldType == ScriptFieldType::None)
+                {
+                    PR_PYTHON_META_WARN("  未知类型标注: {0}: {1}", field.Name, field.TypeAnnotation);
                     continue;
+                }
 
                 uint32_t fieldHash = (uint32_t)(uint64_t)GenerateScriptID(field.Name);
+                PR_PYTHON_META_INFO("    字段: {0} : {1}", field.Name, field.TypeAnnotation);
 
                 ScriptFieldMetadata fieldMeta;
                 fieldMeta.Name = field.Name;
@@ -158,12 +161,9 @@ namespace Prism
 
                 classMeta.Fields[fieldHash] = std::move(fieldMeta);
             }
-
-            PR_PYTHON_META_INFO("  缓存类: {0} ({1} 个字段)", fullName, classMeta.Fields.size());
         }
     }
 
-    // ── Recursively scan directory for Python modules ──
     void PythonScriptMetaRegistry::ScanDirectory(const std::string& dirPath, const std::string& packagePrefix,
                                                  Python::ScriptClass& behaviourClass)
     {
@@ -176,7 +176,6 @@ namespace Prism
         {
             std::string filename = entry.path().filename().string();
 
-            // 跳过隐藏文件和框架目录
             if ((!filename.empty() && filename[0] == '.') || filename == "__pycache__")
                 continue;
             if (filename == "Prism" && packagePrefix.empty())
@@ -202,18 +201,15 @@ namespace Prism
             }
             else if (entry.is_directory())
             {
-                // 递归子目录（Python 包）
                 std::string subPrefix = packagePrefix.empty() ? filename : packagePrefix + "." + filename;
                 std::string subPkgPath = entry.path().string();
 
-                // 确认是 Python 包（有 __init__.py）
                 fs::path initPy = entry.path() / "__init__.py";
                 if (fs::exists(initPy))
                 {
-                    std::string pkgModuleName = subPrefix;
-                    Python::ScriptModule pkgMod = Python::ScriptModule::Import(pkgModuleName.c_str());
+                    Python::ScriptModule pkgMod = Python::ScriptModule::Import(subPrefix.c_str());
                     if (pkgMod.IsValid())
-                        ScanModule(pkgMod, pkgModuleName, behaviourClass);
+                        ScanModule(pkgMod, subPrefix, behaviourClass);
                 }
 
                 ScanDirectory(subPkgPath, subPrefix, behaviourClass);
@@ -221,7 +217,6 @@ namespace Prism
         }
     }
 
-    // ── Public API ──
     void PythonScriptMetaRegistry::Init()
     {
         if (s_Initialized)
@@ -252,7 +247,6 @@ namespace Prism
     {
         PR_PYTHON_META_INFO("开始扫描 Python Behaviour 类...");
 
-        // 1. 获取 Behaviour 类引用
         Python::ScriptModule prismMod = Python::ScriptModule::Import("Prism");
         if (!prismMod.IsValid())
         {
@@ -267,10 +261,9 @@ namespace Prism
             return;
         }
 
-        // 2. 扫描脚本目录
         ScanDirectory("Assets/scripts/Python", "", behaviourClass);
 
-        PR_PYTHON_META_INFO("缓存 {0} 个 Behaviour 类", s_Classes.size());
+        PR_PYTHON_META_INFO("扫描完成: {0} 个 Behaviour 类", s_Classes.size());
     }
 
     ScriptClassMetadata* PythonScriptMetaRegistry::GetClassMetadata(UUID scriptID)
@@ -282,9 +275,7 @@ namespace Prism
     ScriptClassMetadata* PythonScriptMetaRegistry::GetClassMetadata(const std::string& fullName)
     {
         auto it = s_FullNameToID.find(fullName);
-        if (it == s_FullNameToID.end())
-            return nullptr;
-        return GetClassMetadata(it->second);
+        return it != s_FullNameToID.end() ? GetClassMetadata(it->second) : nullptr;
     }
 
     std::vector<ScriptClassMetadata*> PythonScriptMetaRegistry::GetAllBehaviourClasses()

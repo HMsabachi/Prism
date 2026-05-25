@@ -90,8 +90,8 @@ namespace Prism {
 	struct PythonBehaviourBinding
 	{
 		UUID BehaviourID = 0;
-		std::string ClassName;       // Short class name (e.g. "SmokeTest")
-		std::string ModuleName;      // Python module path (e.g. "SmokeTest" or "SmokeTest.SubModule")
+		std::string ClassName;     
+		std::string ModuleName;     
 		std::unordered_map<uint32_t, PythonField> Fields;
 	};
 

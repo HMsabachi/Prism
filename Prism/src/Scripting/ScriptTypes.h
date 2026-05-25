@@ -17,10 +17,35 @@ namespace Prism
         Bool,
         Int8, Int16, Int32, Int64,
         UInt8, UInt16, UInt32, UInt64,
-        String,
         Vector2, Vector3, Vector4,
         Object
     };
+
+    inline uint64_t DataTypeSize(ScriptFieldType type)
+    {
+        switch (type)
+        {
+        case Prism::ScriptFieldType::None: PR_CORE_ASSERT(false, "未注册的类型");
+        case Prism::ScriptFieldType::Float: return sizeof(float);
+        case Prism::ScriptFieldType::Double: return sizeof(double);
+        case Prism::ScriptFieldType::Bool: return sizeof(bool);
+        case Prism::ScriptFieldType::Int8: return sizeof(int8_t);
+        case Prism::ScriptFieldType::Int16: return sizeof(int16_t);
+        case Prism::ScriptFieldType::Int32: return sizeof(int32_t);
+        case Prism::ScriptFieldType::Int64: return sizeof(int64_t);
+        case Prism::ScriptFieldType::UInt8: return sizeof(uint8_t);
+        case Prism::ScriptFieldType::UInt16: return sizeof(uint16_t);
+        case Prism::ScriptFieldType::UInt32: return sizeof(uint32_t);
+        case Prism::ScriptFieldType::UInt64: return sizeof(uint64_t);
+        case Prism::ScriptFieldType::Vector2: return sizeof(glm::vec2);
+        case Prism::ScriptFieldType::Vector3: return sizeof(glm::vec3);
+        case Prism::ScriptFieldType::Vector4: return sizeof(glm::vec4);
+        case Prism::ScriptFieldType::Object: return sizeof(void*);
+        default: PR_CORE_ASSERT(false, "未注册的类型");
+        }
+
+        return 0;
+    }
 
     struct PRISM_API ScriptFieldMetadata
     {

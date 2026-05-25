@@ -938,15 +938,6 @@ namespace Prism {
                                         field.SetValue(val);
                                     break;
                                 }
-                                case ScriptFieldType::String:
-                                {
-                                    std::string valStr = field.GetStringValue();
-                                    char buf[256] = {};
-                                    valStr.copy(buf, sizeof(buf) - 1);
-                                    if (ImGui::InputText(field.GetName().c_str(), buf, sizeof(buf)))
-                                        field.SetStringValue(std::string(buf));
-                                    break;
-                                }
                                 case ScriptFieldType::Vector2:
                                 {
                                     auto val = field.GetValue<glm::vec2>();
@@ -1078,15 +1069,6 @@ namespace Prism {
                                     int32_t val = field.GetValue<int32_t>();
                                     if (ImGui::DragInt(field.GetName().c_str(), &val))
                                         field.SetValue(val);
-                                    break;
-                                }
-                                case ScriptFieldType::String:
-                                {
-                                    std::string valStr = field.GetStringValue();
-                                    char buf[256] = {};
-                                    valStr.copy(buf, sizeof(buf) - 1);
-                                    if (ImGui::InputText(field.GetName().c_str(), buf, sizeof(buf)))
-                                        field.SetStringValue(std::string(buf));
                                     break;
                                 }
                                 // TODO: Python doesn't natively support Vector2/3/4 field types yet
