@@ -152,7 +152,7 @@ namespace Prism
     {
         float ts = Time::GetDeltaTime();
 
-        // C# Script OnUpdate — iterate Behaviours
+        // C# Script OnUpdate — iterate Behaviours (skip disabled)
         {
             auto view = m_Registry.view<CSharpScriptComponent>();
             UUID sceneID = GetUUID();
@@ -162,13 +162,13 @@ namespace Prism
                 for (auto& binding : comp.Behaviours)
                 {
                     auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
-                    if (obj && obj->IsValid())
+                    if (obj && obj->IsValid() && obj->GetPropertyValue<Rolky::Bool32>("Enabled"))
                         obj->InvokeMethod("OnUpdate");
                 }
             }
         }
 
-        // Python Script OnUpdate — iterate Behaviours
+        // Python Script OnUpdate — iterate Behaviours (skip disabled)
         {
             auto view = m_Registry.view<PythonScriptComponent>();
             UUID sceneID = GetUUID();
@@ -178,8 +178,40 @@ namespace Prism
                 for (auto& binding : comp.Behaviours)
                 {
                     auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
-                    if (obj && obj->IsValid())
+                    if (obj && obj->IsValid() && obj->GetField<bool>("enabled"))
                         obj->Invoke<void>("OnUpdate");
+                }
+            }
+        }
+
+        // C# Script LateUpdate — iterate Behaviours (skip disabled)
+        {
+            auto view = m_Registry.view<CSharpScriptComponent>();
+            UUID sceneID = GetUUID();
+            for (auto entity : view)
+            {
+                auto& comp = m_Registry.get<CSharpScriptComponent>(entity);
+                for (auto& binding : comp.Behaviours)
+                {
+                    auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
+                    if (obj && obj->IsValid() && obj->GetPropertyValue<Rolky::Bool32>("Enabled"))
+                        obj->InvokeMethod("LateUpdate");
+                }
+            }
+        }
+
+        // Python Script LateUpdate — iterate Behaviours (skip disabled)
+        {
+            auto view = m_Registry.view<PythonScriptComponent>();
+            UUID sceneID = GetUUID();
+            for (auto entity : view)
+            {
+                auto& comp = m_Registry.get<PythonScriptComponent>(entity);
+                for (auto& binding : comp.Behaviours)
+                {
+                    auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
+                    if (obj && obj->IsValid() && obj->GetField<bool>("enabled"))
+                        obj->Invoke<void>("LateUpdate");
                 }
             }
         }
@@ -251,7 +283,7 @@ namespace Prism
             }
         }
 
-        // C# Script OnFixedUpdate — iterate Behaviours
+        // C# Script OnFixedUpdate — iterate Behaviours (skip disabled)
         {
             auto view = m_Registry.view<CSharpScriptComponent>();
             UUID sceneID = GetUUID();
@@ -261,13 +293,13 @@ namespace Prism
                 for (auto& binding : comp.Behaviours)
                 {
                     auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
-                    if (obj && obj->IsValid())
+                    if (obj && obj->IsValid() && obj->GetPropertyValue<Rolky::Bool32>("Enabled"))
                         obj->InvokeMethod("OnFixedUpdate");
                 }
             }
         }
 
-        // Python Script OnFixedUpdate — iterate Behaviours
+        // Python Script OnFixedUpdate — iterate Behaviours (skip disabled)
         {
             auto view = m_Registry.view<PythonScriptComponent>();
             UUID sceneID = GetUUID();
@@ -277,7 +309,7 @@ namespace Prism
                 for (auto& binding : comp.Behaviours)
                 {
                     auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
-                    if (obj && obj->IsValid())
+                    if (obj && obj->IsValid() && obj->GetField<bool>("enabled"))
                         obj->Invoke<void>("OnFixedUpdate");
                 }
             }
@@ -392,7 +424,7 @@ namespace Prism
         CSharpScriptEngine::SetSceneContext(this);
         PythonScriptEngine::SetSceneContext(this);
 
-        // C#: Create Behaviour instances, then call OnCreate
+        // C#: Create Behaviour instances, then Awake → OnCreate → OnEnable
         {
             auto view = m_Registry.view<CSharpScriptComponent>();
             UUID sceneID = GetUUID();
@@ -400,22 +432,38 @@ namespace Prism
             {
                 Entity e = { entity, this };
                 auto& comp = m_Registry.get<CSharpScriptComponent>(entity);
+                // PASS 1: Create instances
                 for (auto& binding : comp.Behaviours)
                 {
                     auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
                     if (!obj || !obj->IsValid())
                         CSharpScriptEngine::AddBehaviour(e, binding);
                 }
+                // PASS 2: Awake
+                for (auto& binding : comp.Behaviours)
+                {
+                    auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
+                    if (obj && obj->IsValid())
+                        obj->InvokeMethod("Awake");
+                }
+                // PASS 3: OnCreate (= Unity Start)
                 for (auto& binding : comp.Behaviours)
                 {
                     auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
                     if (obj && obj->IsValid())
                         obj->InvokeMethod("OnCreate");
                 }
+                // PASS 4: OnEnable (only if Enabled=true)
+                for (auto& binding : comp.Behaviours)
+                {
+                    auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
+                    if (obj && obj->IsValid() && obj->GetPropertyValue<Rolky::Bool32>("Enabled"))
+                        obj->InvokeMethod("OnEnable");
+                }
             }
         }
 
-        // Python: Create Behaviour instances, then call OnCreate
+        // Python: Create Behaviour instances, then Awake → OnCreate → OnEnable
         {
             auto view = m_Registry.view<PythonScriptComponent>();
             UUID sceneID = GetUUID();
@@ -423,17 +471,33 @@ namespace Prism
             {
                 Entity e = { entity, this };
                 auto& comp = m_Registry.get<PythonScriptComponent>(entity);
+                // PASS 1: Create instances
                 for (auto& binding : comp.Behaviours)
                 {
                     auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
                     if (!obj || !obj->IsValid())
                         PythonScriptEngine::AddBehaviour(e, binding);
                 }
+                // PASS 2: Awake
+                for (auto& binding : comp.Behaviours)
+                {
+                    auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
+                    if (obj && obj->IsValid())
+                        obj->Invoke<void>("Awake");
+                }
+                // PASS 3: OnCreate (= Unity Start)
                 for (auto& binding : comp.Behaviours)
                 {
                     auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
                     if (obj && obj->IsValid())
                         obj->Invoke<void>("OnCreate");
+                }
+                // PASS 4: OnEnable (only if enabled=true)
+                for (auto& binding : comp.Behaviours)
+                {
+                    auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
+                    if (obj && obj->IsValid() && obj->GetField<bool>("enabled"))
+                        obj->Invoke<void>("OnEnable");
                 }
             }
         }
@@ -665,7 +729,7 @@ namespace Prism
         s_Box2DContactListener.CurrentScene = nullptr;
         Physics3D::SetCollisionScene(nullptr);
 
-        // Cleanup C# script runtime — call OnDestroy on Behaviours, then clear storage
+        // Cleanup C# script runtime — OnDisable → OnDestroy, then clear storage
         {
             auto view = m_Registry.view<CSharpScriptComponent>();
             UUID sceneID = GetUUID();
@@ -676,14 +740,18 @@ namespace Prism
                 {
                     auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
                     if (obj && obj->IsValid())
+                    {
+                        if (obj->GetPropertyValue<Rolky::Bool32>("Enabled"))
+                            obj->InvokeMethod("OnDisable");
                         obj->InvokeMethod("OnDestroy");
+                    }
                 }
                 comp.Behaviours.clear();
             }
             m_CSharpScriptStorage->Clear();
         }
 
-        // Cleanup Python script runtime — call OnDestroy on Behaviours, then clear storage
+        // Cleanup Python script runtime — OnDisable → OnDestroy, then clear storage
         {
             auto view = m_Registry.view<PythonScriptComponent>();
             UUID sceneID = GetUUID();
@@ -694,7 +762,11 @@ namespace Prism
                 {
                     auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
                     if (obj && obj->IsValid())
+                    {
+                        if (obj->GetField<bool>("enabled"))
+                            obj->Invoke<void>("OnDisable");
                         obj->Invoke<void>("OnDestroy");
+                    }
                 }
                 comp.Behaviours.clear();
             }

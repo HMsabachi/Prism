@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Example
 {
-    public class BasicController : Entity
+    public class BasicController : Behaviour
     {
         public float Speed;
         public float DistanceFromPlayer = 20.0F;
@@ -16,13 +16,13 @@ namespace Example
 
         public void OnCreate()
         {
-            m_PlayerEntity = FindEntityByTag("Player");
+            m_PlayerEntity = Entity.FindEntityByTag("Player");
         }
 
         public void OnUpdate()
         {
             float ts = Time.DeltaTime;
-            Matrix4 transform = GetTransform();
+            Matrix4 transform = Entity.GetTransform();
 
             Vector3 playerTranslation = m_PlayerEntity.GetTransform().Translation;
             Vector3 translation = transform.Translation;
@@ -30,7 +30,7 @@ namespace Example
             translation.Z = playerTranslation.Z + DistanceFromPlayer;
             translation.Y = Math.Max(translation.Y, 2.0f);
             transform.Translation = translation;
-            SetTransform(transform);
+            Entity.SetTransform(transform);
         }
 
 

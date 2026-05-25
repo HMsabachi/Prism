@@ -2,7 +2,7 @@ using Prism;
 
 namespace Example
 {
-    public class ScriptNoise : Entity
+    public class ScriptNoise : Behaviour
     {
         private void OnCreate()
         {

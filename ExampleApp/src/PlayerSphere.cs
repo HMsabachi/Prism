@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Example
 {
-    class PlayerSphere : Entity
+    class PlayerSphere : Behaviour
     {
         public float HorizontalForce = 10.0f;
         public float JumpForce = 10.0f;
@@ -31,18 +31,15 @@ namespace Example
             MeshComponent meshComponent = GetComponent<MeshComponent>();
             m_MeshMaterial = meshComponent.Mesh.GetMaterial(0);
             m_MeshMaterial.Set("u_Metalness", 0.0f);
-
-            AddCollisionBeginCallback(OnPlayerCollisionBegin);
-            AddCollisionEndCallback(OnPlayerCollisionEnd);
         }
 
-        void OnPlayerCollisionBegin(float value)
+        public override void OnCollisionBegin(float data)
         {
-            Log.Trace("PlayerSphere OnPlayerCollisionBegin {0}", value);
+            Log.Trace("PlayerSphere OnCollisionBegin {0}", data);
             m_CollisionCounter++;
         }
 
-        void OnPlayerCollisionEnd(float value)
+        public override void OnCollisionEnd(float data)
         {
             m_CollisionCounter--;
         }
@@ -79,9 +76,9 @@ namespace Example
 
             if (Input.IsKeyPressed(KeyCode.R))
             {
-                Matrix4 transform = GetTransform();
+                Matrix4 transform = Entity.GetTransform();
                 transform.Translation = new Vector3(0.0f);
-                SetTransform(transform);
+                Entity.SetTransform(transform);
             }
 
         }

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Example
 {
-    class RandomColor : Entity
+    class RandomColor : Behaviour
     {
         void OnCreate()
         {

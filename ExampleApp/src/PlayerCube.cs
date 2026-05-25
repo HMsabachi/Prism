@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Example
 {
-    class PlayerCube : Entity
+    class PlayerCube : Behaviour
     {
         public float HorizontalForce = 10.0f;
         public float JumpForce = 10.0f;
@@ -29,17 +29,14 @@ namespace Example
             MeshComponent meshComponent = GetComponent<MeshComponent>();
             m_MeshMaterial = meshComponent.Mesh.GetMaterial(0);
             m_MeshMaterial.Set("u_Metalness", 0.0f);
-
-            AddCollision2DBeginCallback(OnPlayerCollisionBegin);
-            AddCollision2DEndCallback(OnPlayerCollisionEnd);
         }
 
-        void OnPlayerCollisionBegin(float value)
+        public override void OnCollisionBegin(float data)
         {
             m_CollisionCounter++;
         }
 
-        void OnPlayerCollisionEnd(float value)
+        public override void OnCollisionEnd(float data)
         {
             m_CollisionCounter--;
         }

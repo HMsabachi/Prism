@@ -10,11 +10,6 @@ namespace Prism
     {
         public ulong ID { get; internal set; }
 
-        private Action<float>? m_Collision2DBeginCallbacks;
-        private Action<float>? m_Collision2DEndCallbacks;
-        private Action<float>? m_CollisionBeginCallbacks;
-        private Action<float>? m_CollisionEndCallbacks;
-
         public Entity() 
         { 
             ID = 0; 
@@ -31,12 +26,6 @@ namespace Prism
         {
             Log.Trace("Destroyed Entity {0}", ID);
         }
-
-        private void OnCreate() { }
-        private void OnDestroy() { }
-        private void OnUpdate() { }
-        private void OnFixedUpdate() { }
-
 
         public TransformComponent Transform => GetComponent<TransformComponent>();
 
@@ -85,47 +74,6 @@ namespace Prism
             }
         }
 
-        public void AddCollisionBeginCallback(Action<float> callback)
-        {
-            m_CollisionBeginCallbacks += callback;
-        }
-
-        public void AddCollisionEndCallback(Action<float> callback)
-        {
-            m_CollisionEndCallbacks += callback;
-        }
-
-        private void OnCollisionBegin(float data)
-        {
-            m_CollisionBeginCallbacks?.Invoke(data);
-        }
-
-        private void OnCollisionEnd(float data)
-        {
-            m_CollisionEndCallbacks?.Invoke(data);
-        }
-
-        public void AddCollision2DBeginCallback(Action<float> callback)
-        {
-            m_Collision2DBeginCallbacks += callback;
-        }
-
-        public void AddCollision2DEndCallback(Action<float> callback)
-        {
-            m_Collision2DEndCallbacks += callback;
-        }
-
-        private void OnCollision2DBegin(float data)
-        {
-            m_Collision2DBeginCallbacks?.Invoke(data);  
-        }
-
-        private void OnCollision2DEnd(float data)
-        {
-            m_Collision2DEndCallbacks?.Invoke(data);
-        }
-
-        // Entity lookup
         public static Entity FindEntityByTagStatic(string tag)
         {
             unsafe

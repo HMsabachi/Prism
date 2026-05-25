@@ -1,4 +1,4 @@
-﻿using Prism;
+using Prism;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Example
 {
-    class Sink : Entity
+    class Sink : Behaviour
     {
 
         public float SinkSpeed;
@@ -20,13 +20,13 @@ namespace Example
         void OnUpdate()
         {
             float ts = Time.DeltaTime;
-            Matrix4 transform = GetTransform();
+            Matrix4 transform = Entity.GetTransform();
             Vector3 translation = transform.Translation;
 
             translation.Y -= SinkSpeed * ts;
 
             transform.Translation = translation;
-            SetTransform(transform);
+            Entity.SetTransform(transform);
         }
 
     }

@@ -11,139 +11,6 @@ Environment:
     NormalBias: 0.1
     CascadeCount: 4
 Entities:
-  - Entity: 18306113171518048249
-    TagComponent:
-      Tag: Box
-    TransformComponent:
-      Position: [0, 0, 0]
-      Rotation: [1, 0, 0, 0]
-      Scale: [50, 1, 50]
-    ScriptsComponent:
-      - ModuleName: SmokeTest
-        Language: 1
-        StoredFields:
-          - Name: TestFloat
-            Type: 1
-            Data: 3.14
-          - Name: TestInt
-            Type: 2
-            Data: 42
-    MeshComponent:
-      AssetPath: assets\meshes\Cube1m.fbx
-    RigidBodyComponent:
-      BodyType: 0
-      Mass: 1
-      IsKinematic: false
-      LockPositionX: false
-      LockPositionY: false
-      LockPositionZ: false
-      LockRotationX: false
-      LockRotationY: false
-      LockRotationZ: false
-    PhysicsMaterialComponent:
-      StaticFriction: 1
-      DynamicFriction: 1
-      Bounciness: 0
-    BoxColliderComponent:
-      Size: [50, 1, 50]
-      Offset: [0, 0, 0]
-  - Entity: 5178862374589434728
-    TagComponent:
-      Tag: Camera
-    TransformComponent:
-      Position: [-21.740631, 9.706595, 15]
-      Rotation: [0.99991035, -0.013391121, 0, 0]
-      Scale: [1, 1, 1]
-    ScriptsComponent:
-      - ModuleName: Example.BasicController
-        Language: 0
-        StoredFields:
-          - Name: Speed
-            Type: 1
-            Data: 12
-          - Name: DistanceFromPlayer
-            Type: 1
-            Data: 15
-    CameraComponent:
-      Camera: some camera data...
-      Primary: true
-  - Entity: 14057422478420564497
-    TagComponent:
-      Tag: Player
-    TransformComponent:
-      Position: [-19.43363, 4.5087404, -1.9669533e-06]
-      Rotation: [1, 0, 0, 0]
-      Scale: [1, 1, 1]
-    ScriptsComponent:
-      - ModuleName: Example.PlayerSphere
-        Language: 0
-        StoredFields:
-          - Name: HorizontalForce
-            Type: 1
-            Data: 100
-          - Name: MaxSpeed
-            Type: 6
-            Data: [10, 10, 10]
-          - Name: JumpForce
-            Type: 1
-            Data: 203.8
-    MeshComponent:
-      AssetPath: assets\meshes\Sphere1m.fbx
-    RigidBodyComponent:
-      BodyType: 1
-      Mass: 1
-      IsKinematic: false
-      LockPositionX: false
-      LockPositionY: false
-      LockPositionZ: false
-      LockRotationX: true
-      LockRotationY: true
-      LockRotationZ: true
-    PhysicsMaterialComponent:
-      StaticFriction: 1
-      DynamicFriction: 1
-      Bounciness: 0
-    SphereColliderComponent:
-      Radius: 0.5
-  - Entity: 10169503531257462571
-    TagComponent:
-      Tag: Box
-    TransformComponent:
-      Position: [0, 1.5, 0]
-      Rotation: [1, 0, 0, 0]
-      Scale: [2, 2, 2]
-    ScriptsComponent:
-      - ModuleName: Example.PlayerSphere
-        Language: 0
-        StoredFields:
-          - Name: HorizontalForce
-            Type: 1
-            Data: 10
-          - Name: MaxSpeed
-            Type: 6
-            Data: [0, 0, 0]
-          - Name: JumpForce
-            Type: 1
-            Data: 10
-    MeshComponent:
-      AssetPath: assets\meshes\Cube1m.fbx
-    RigidBodyComponent:
-      BodyType: 1
-      Mass: 0.5
-      IsKinematic: false
-      LockPositionX: false
-      LockPositionY: false
-      LockPositionZ: false
-      LockRotationX: false
-      LockRotationY: false
-      LockRotationZ: false
-    PhysicsMaterialComponent:
-      StaticFriction: 1
-      DynamicFriction: 1
-      Bounciness: 0
-    BoxColliderComponent:
-      Size: [2, 2, 2]
-      Offset: [0, 0, 0]
   - Entity: 3509336336274569647
     TagComponent:
       Tag: Sphere
@@ -165,3 +32,144 @@ Entities:
       LockRotationZ: false
     MeshColliderComponent:
       AssetPath: E:\PrismEngine\Prism\PrismEditor\Assets\models\Sphere1m.fbx
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 10169503531257462571
+    TagComponent:
+      Tag: Box
+    TransformComponent:
+      Position: [0, 1.5, 0]
+      Rotation: [1, 0, 0, 0]
+      Scale: [2, 2, 2]
+    MeshComponent:
+      AssetPath: assets\meshes\Cube1m.fbx
+    RigidBodyComponent:
+      BodyType: 1
+      Mass: 0.5
+      IsKinematic: false
+      LockPositionX: false
+      LockPositionY: false
+      LockPositionZ: false
+      LockRotationX: false
+      LockRotationY: false
+      LockRotationZ: false
+    PhysicsMaterialComponent:
+      StaticFriction: 1
+      DynamicFriction: 1
+      Bounciness: 0
+    BoxColliderComponent:
+      Size: [2, 2, 2]
+      Offset: [0, 0, 0]
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 14057422478420564497
+    TagComponent:
+      Tag: Player
+    TransformComponent:
+      Position: [-19.43363, 4.5087404, -1.9669533e-06]
+      Rotation: [1, 0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshComponent:
+      AssetPath: assets\meshes\Sphere1m.fbx
+    RigidBodyComponent:
+      BodyType: 1
+      Mass: 1
+      IsKinematic: false
+      LockPositionX: false
+      LockPositionY: false
+      LockPositionZ: false
+      LockRotationX: true
+      LockRotationY: true
+      LockRotationZ: true
+    PhysicsMaterialComponent:
+      StaticFriction: 1
+      DynamicFriction: 1
+      Bounciness: 0
+    SphereColliderComponent:
+      Radius: 0.5
+    CSharpScriptComponent:
+      Behaviours:
+        - ID: 7703927552313077461
+          ClassName: Example.PlayerSphere
+          Fields:
+            - ID: 1693159688
+              Name: HorizontalForce
+              Type: "\x01"
+              Value: 80
+            - ID: 868800460
+              Name: JumpForce
+              Type: "\x01"
+              Value: 220
+            - ID: 414202020
+              Name: MaxSpeed
+              Type: "\r"
+              Value: [20, 20, 20]
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 5178862374589434728
+    TagComponent:
+      Tag: Camera
+    TransformComponent:
+      Position: [-21.740631, 9.706595, 15]
+      Rotation: [0.99991035, -0.013391121, 0, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera: some camera data...
+      Primary: true
+    CSharpScriptComponent:
+      Behaviours:
+        - ID: 5974780048155238521
+          ClassName: Example.BasicController
+          Fields:
+            - ID: 305488032
+              Name: Speed
+              Type: "\x01"
+              Value: 5.6
+            - ID: 3277313775
+              Name: DistanceFromPlayer
+              Type: "\x01"
+              Value: 10.8
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 18306113171518048249
+    TagComponent:
+      Tag: Box
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [1, 0, 0, 0]
+      Scale: [50, 1, 50]
+    MeshComponent:
+      AssetPath: assets\meshes\Cube1m.fbx
+    RigidBodyComponent:
+      BodyType: 0
+      Mass: 1
+      IsKinematic: false
+      LockPositionX: false
+      LockPositionY: false
+      LockPositionZ: false
+      LockRotationX: false
+      LockRotationY: false
+      LockRotationZ: false
+    PhysicsMaterialComponent:
+      StaticFriction: 1
+      DynamicFriction: 1
+      Bounciness: 0
+    BoxColliderComponent:
+      Size: [50, 1, 50]
+      Offset: [0, 0, 0]
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []

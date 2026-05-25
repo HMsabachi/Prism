@@ -13,6 +13,22 @@ namespace Prism
     {
         public Entity Entity { get; internal set; }
 
+        public TransformComponent Transform => Entity.Transform;
+
+        public T GetComponent<T>() where T : Component, new()
+        {
+            return Entity.GetComponent<T>();
+        }
+
+        public bool HasComponent<T>() where T : Component, new()
+        {
+            return Entity.HasComponent<T>();
+        }
+
+        public T CreateComponent<T>() where T : Component, new()
+        {
+            return Entity.CreateComponent<T>();
+        }
     }
 
     public class TagComponent : Component

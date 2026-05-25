@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Prism;
 namespace Example
 {
-    public class MapGenerator : Entity
+    public class MapGenerator : Behaviour
     {
         // [EditorSlider("MapWidth Custom Name", 2, 0, 1024)]
         public int MapWidth = 128;
@@ -59,7 +59,7 @@ namespace Example
             material.Set("u_AlbedoTexture", texture);
 
             TransformComponent transformComponent = GetComponent<TransformComponent>();
-            Vector3 position = GetTransform().Translation;
+            Vector3 position = Entity.GetTransform().Translation;
             transformComponent.Transform = Matrix4.Scale(new Vector3(10f, 1.0f, 10f)) * Matrix4.Translate(position);
         }
 
@@ -71,7 +71,7 @@ namespace Example
         private void OnUpdate()
         {
             float ts = Time.DeltaTime;
-            Matrix4 transform = GetTransform();
+            Matrix4 transform = Entity.GetTransform();
             Vector3 translation = transform.Translation;
             translation.Y += ts * Speed;
             if (Input.IsKeyPressed(KeyCode.Space))
@@ -79,7 +79,7 @@ namespace Example
                 translation.Y -= 10.0f;
             }
             transform.Translation = translation;
-            SetTransform(transform);
+            Entity.SetTransform(transform);
         }
     }
 }
