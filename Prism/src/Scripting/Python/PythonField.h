@@ -1,7 +1,7 @@
 #pragma once
 #include "Prism/Core/Buffer.h"
 #include "Scripting/ScriptTypes.h"
-#include "Scripting/Python/PythonScriptCore.h"
+#include "Scripting/Python/Interop/PythonScriptCore.h"
 #include <string>
 #include <cstring>
 

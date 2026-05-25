@@ -1,6 +1,6 @@
 #pragma once
 #include "ScriptTypes.h"
-#include "PythonScriptCore.h"
+#include "Scripting/Python/Interop/PythonScriptCore.h"
 
 #include <string>
 #include <unordered_map>

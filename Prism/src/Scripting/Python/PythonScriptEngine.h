@@ -1,5 +1,5 @@
 #pragma once
-#include "Scripting/Python/PythonScriptCore.h"
+#include "Scripting/Python/Interop/PythonScriptCore.h"
 #include "Prism/Core/Core.h"
 #include "Prism/Core/UUID.h"
 #include "Prism/Core/Ref.h"

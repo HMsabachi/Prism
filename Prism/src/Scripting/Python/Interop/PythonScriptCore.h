@@ -31,14 +31,14 @@ namespace Prism::Python {
         void* m_Tb;
     };
 
-    // RAII 鍖呰
+    // RAII 包装
     class ScriptRef
     {
     public:
         ScriptRef() = default;
         ~ScriptRef();
 
-        explicit ScriptRef(ScriptValue* value);		
+        explicit ScriptRef(ScriptValue* value);
         ScriptRef(const ScriptRef& other);
         ScriptRef(ScriptRef&& other) noexcept;
         ScriptRef& operator=(const ScriptRef& other);
@@ -48,7 +48,7 @@ namespace Prism::Python {
         bool IsNone() const;
 
         static ScriptRef Adopt(ScriptValue* value);
-        ScriptValue* Detach();						
+        ScriptValue* Detach();
         ScriptValue* Get() const { return m_Value; }
 
         ScriptRef GetAttribute(const char* name) const;
@@ -173,7 +173,7 @@ namespace Prism::Python {
         ScriptRef m_Ref;
     };
 
-    // 杞崲鍑芥暟
+    // 转换函数
     ScriptRef FloatToValue(float v);
     ScriptRef IntToValue(int32_t v);
     ScriptRef UInt64ToValue(uint64_t v);
@@ -187,12 +187,12 @@ namespace Prism::Python {
     std::string ValueToString(const ScriptRef& v);
     bool		ValueToBool(const ScriptRef& v);
 
-    // Tuple 鎿嶄綔
+    // Tuple 操作
     ScriptRef MakeTuple(const ScriptRef* elements, uint32_t count);
     uint32_t  GetTupleSize(const ScriptRef& tuple);
     ScriptRef GetTupleElement(const ScriptRef& tuple, uint32_t index);
 
-    // 鍘熺敓妯″潡娉ㄥ唽
+    // 原生模块注册
     using NativeFunction = ScriptValue* (*)(ScriptValue* self, ScriptValue* args);
 
     class NativeModule
@@ -337,4 +337,3 @@ namespace Prism::Python {
     }
 
 } // namespace Prism::Python
-

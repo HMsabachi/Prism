@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <filesystem>
 #include <memory>
 
 namespace {
@@ -203,18 +204,26 @@ namespace Prism::Python {
     {
         if (Py_IsInitialized())
             return true;
+        std::filesystem::path pythonHome = std::filesystem::absolute("../vendor/Python");
+        Py_SetPythonHome(pythonHome.wstring().c_str());
+
+        SetDllDirectoryW(pythonHome.wstring().c_str());
 
         Py_Initialize();
         if (!Py_IsInitialized())
             return false;
-
         PyRun_SimpleString(
-            "import sys\n"
-            "import os\n"
+            "import sys, os\n"
+
+            "vendor_site = r'E:/PrismEngine/Prism/vendor/Python/Lib/site-packages'\n"
+            "if vendor_site not in sys.path:\n"
+            "    sys.path.insert(0, vendor_site)\n"
+
             "scripts_path = os.path.abspath('Assets/scripts/Python')\n"
             "if scripts_path not in sys.path:\n"
             "    sys.path.insert(0, scripts_path)\n"
-            "print(f'[Python]{scripts_path}')\n"
+            "print(f'[Python] {scripts_path}')\n"
+            "import glm\n"
         );
 
         return true;

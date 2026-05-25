@@ -1,6 +1,6 @@
 #pragma once
 #include "Prism/Core/UUID.h"
-#include "Scripting/Python/PythonScriptCore.h"
+#include "Scripting/Python/Interop/PythonScriptCore.h"
 #include <unordered_map>
 
 namespace Prism {
