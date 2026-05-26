@@ -290,13 +290,6 @@ namespace Prism
     {
         if (!entity)
             return;
-
-        // Trigger on_destroy handlers for script components while entity is still intact,
-        // so callbacks can safely access remaining components (IDComponent, TransformComponent).
-        m_Registry.remove<CSharpScriptComponent>(entity.m_EntityHandle);
-        m_Registry.remove<PythonScriptComponent>(entity.m_EntityHandle);
-
-        // Destroy entity — on_destroy signals for physics (runtime-only) fire automatically.
         m_Registry.destroy(entity.m_EntityHandle);
     }
 

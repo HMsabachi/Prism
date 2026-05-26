@@ -47,7 +47,7 @@ namespace Prism
 namespace Prism
 {
     // Static members
-    Ref<Scene> PythonScriptEngine::s_SceneContext;
+    WeakRef<Scene> PythonScriptEngine::s_SceneContext;
     bool PythonScriptEngine::s_Initialized = false;
     std::unordered_map<UUID, std::unordered_map<UUID, Python::ScriptObject>> PythonScriptEngine::s_PythonScriptObjects;
 
@@ -94,12 +94,12 @@ namespace Prism
         return it->second;
     }
 
-    void PythonScriptEngine::SetSceneContext(const Ref<Scene>& scene)
+    void PythonScriptEngine::SetSceneContext(const WeakRef<Scene>& scene)
     {
         s_SceneContext = scene;
     }
 
-    const Ref<Scene>& PythonScriptEngine::GetCurrentSceneContext()
+    const WeakRef<Scene>& PythonScriptEngine::GetCurrentSceneContext()
     {
         return s_SceneContext;
     }
@@ -116,6 +116,8 @@ namespace Prism
     void PythonScriptEngine::RemoveScriptObject(PythonScriptStorage& storage, UUID scriptID)
     {
         auto sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
+        PR_CORE_ASSERT(sceneID, "没有场景上下文");
+
         auto sceneIt = s_PythonScriptObjects.find(sceneID);
         if (sceneIt != s_PythonScriptObjects.end())
         {
@@ -129,6 +131,8 @@ namespace Prism
     UUID PythonScriptEngine::AddBehaviour(Entity& entity, PythonBehaviourBinding& binding)
     {
         UUID sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
+        PR_CORE_ASSERT(sceneID, "没有场景上下文");
+
         UUID entityID = entity.GetUUID();
 
         Python::ScriptModule mod = Python::ScriptModule::Import(binding.ModuleName.c_str());
@@ -180,7 +184,7 @@ namespace Prism
     void PythonScriptEngine::RemoveBehaviour(Entity& entity, UUID behaviourID)
     {
         UUID sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
-
+        PR_CORE_ASSERT(sceneID, "没有场景上下文");
         // Clear field instances and remove binding
         auto& comp = entity.GetComponent<PythonScriptComponent>();
         for (auto& binding : comp.Behaviours)

@@ -29,7 +29,7 @@ namespace Prism
     // Static members
     std::unique_ptr<Rolky::HostInstance> CSharpScriptEngine::s_Host;
     std::unique_ptr<Rolky::AssemblyLoadContext> CSharpScriptEngine::s_LoadContext;
-    Ref<Scene> CSharpScriptEngine::s_SceneContext;
+    WeakRef<Scene> CSharpScriptEngine::s_SceneContext;
     Rolky::ManagedAssembly CSharpScriptEngine::s_EngineAssembly;
     Rolky::ManagedAssembly CSharpScriptEngine::s_AppAssembly;
     bool CSharpScriptEngine::s_Initialized = false;
@@ -83,6 +83,8 @@ namespace Prism
     void CSharpScriptEngine::RemoveManagedObject(CSharpScriptStorage& storage, UUID scriptID)
     {
         auto sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
+        PR_CORE_ASSERT(sceneID, "没有场景上下文");
+
         auto sceneIt = s_ManagedObjects.find(sceneID);
         if (sceneIt != s_ManagedObjects.end())
         {
@@ -91,11 +93,16 @@ namespace Prism
                 s_ManagedObjects.erase(sceneIt);
             storage.Remove(scriptID);
         }
+        else
+            PR_CORE_WARN("[C# Script] Attempted to remove managed object with scriptID {0} but no objects found for sceneID {1}", (uint64_t)scriptID, (uint64_t)sceneID);
+        
     }
 
     UUID CSharpScriptEngine::AddBehaviour(Entity& entity, CSharpBehaviourBinding& binding)
     {
         UUID sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
+        PR_CORE_ASSERT(sceneID, "没有场景上下文");
+
         UUID entityID = entity.GetUUID();
 
         auto* entityObj = GetManagedObject(sceneID, entityID);
@@ -145,6 +152,8 @@ namespace Prism
     void CSharpScriptEngine::RemoveBehaviour(Entity& entity, UUID behaviourID)
     {
         UUID sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
+        PR_CORE_ASSERT(sceneID, "没有场景上下文");
+
 
         auto* obj = GetManagedObject(sceneID, behaviourID);
 
@@ -202,12 +211,12 @@ namespace Prism
         s_AppAssembly = s_LoadContext->LoadAssembly(path);
     }
 
-    void CSharpScriptEngine::SetSceneContext(const Ref<Scene>& scene)
+    void CSharpScriptEngine::SetSceneContext(const WeakRef<Scene>& scene)
     {
         s_SceneContext = scene;
     }
 
-    const Ref<Scene>& CSharpScriptEngine::GetCurrentSceneContext()
+    const WeakRef<Scene>& CSharpScriptEngine::GetCurrentSceneContext()
     {
         return s_SceneContext;
     }

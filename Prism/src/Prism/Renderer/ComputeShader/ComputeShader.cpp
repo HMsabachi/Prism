@@ -1,4 +1,4 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "../Shader.h"
 #include "ComputeShader.h"
 #include "ComputeShaderParserData.h"

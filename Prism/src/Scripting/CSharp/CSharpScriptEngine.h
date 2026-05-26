@@ -18,14 +18,12 @@ namespace Prism
     class PRISM_API CSharpScriptEngine
     {
     public:
+        static std::unordered_map<UUID, std::unordered_map<UUID, Rolky::ManagedObject>> s_ManagedObjects;
+
         CSharpScriptEngine() = delete;
 
         static void Initialize();
         static void Shutdown();
-
-        // ===== 对象所有权 (双重 map: SceneID → (ScriptID → ManagedObject)) =====
-        static std::unordered_map<UUID, std::unordered_map<UUID, Rolky::ManagedObject>> s_ManagedObjects;
-
 
         template<typename... TArgs>
         static UUID Instantiate(std::string_view className, CSharpScriptStorage& storage, TArgs&&... args);
@@ -49,8 +47,8 @@ namespace Prism
         static void ReloadAssembly(const std::string& path);
 
         // Scene context
-        static void SetSceneContext(const Ref<Scene>& scene);
-        static const Ref<Scene>& GetCurrentSceneContext();
+        static void SetSceneContext(const WeakRef<Scene>& scene);
+        static const WeakRef<Scene>& GetCurrentSceneContext();
 
         static bool ModuleExists(const std::string& moduleName);
         static void OnImGuiRender();
@@ -61,7 +59,7 @@ namespace Prism
     private:
         static std::unique_ptr<Rolky::HostInstance> s_Host;
         static std::unique_ptr<Rolky::AssemblyLoadContext> s_LoadContext;
-        static Ref<Scene> s_SceneContext;
+        static WeakRef<Scene> s_SceneContext;
         static Rolky::ManagedAssembly s_EngineAssembly;
         static Rolky::ManagedAssembly s_AppAssembly;
         static bool s_Initialized;

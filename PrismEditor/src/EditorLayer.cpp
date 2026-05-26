@@ -126,7 +126,7 @@ namespace Prism
             m_EditorScene = Ref<Scene>::Create();
             UpdateWindowTitle("Untitled Scene");
             CSharpScriptEngine::SetSceneContext(m_EditorScene);
-        PythonScriptEngine::SetSceneContext(m_EditorScene);
+            PythonScriptEngine::SetSceneContext(m_EditorScene);
             m_SceneHierarchyPanel = CreateScope<SceneHierarchyPanel>(m_EditorScene);
             m_SceneHierarchyPanel->SetSelectionChangedCallback(std::bind(&EditorLayer::SelectEntity, this, std::placeholders::_1));
             m_SceneHierarchyPanel->SetEntityDeletedCallback(std::bind(&EditorLayer::OnEntityDeleted, this, std::placeholders::_1));

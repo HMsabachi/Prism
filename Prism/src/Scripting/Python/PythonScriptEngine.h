@@ -41,11 +41,11 @@ namespace Prism
         static void ReleaseAll();
 
         // Scene context
-        static void SetSceneContext(const Ref<Scene>& scene);
-        static const Ref<Scene>& GetCurrentSceneContext();
+        static void SetSceneContext(const WeakRef<Scene>& scene);
+        static const WeakRef<Scene>& GetCurrentSceneContext();
 
     private:
-        static Ref<Scene> s_SceneContext;
+        static WeakRef<Scene> s_SceneContext;
         static bool s_Initialized;
     };
 

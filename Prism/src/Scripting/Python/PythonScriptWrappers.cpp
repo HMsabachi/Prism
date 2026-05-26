@@ -23,7 +23,7 @@ namespace Prism::Script
 
     static Entity GetEntityFromEntityID(uint64_t entityID)
     {
-        Ref<Scene> scene = PythonScriptEngine::GetCurrentSceneContext();
+        WeakRef<Scene> scene = PythonScriptEngine::GetCurrentSceneContext();
         PR_CORE_ASSERT(scene, "没有激活的场景！");
         const auto& entityMap = scene->GetEntityMap();
         PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "无效的实体 ID！");
@@ -208,7 +208,7 @@ namespace Prism::Script
         Python::ScriptRef argsRef(args);
         std::string tag = Python::ValueToString(Python::GetTupleElement(argsRef, 0));
 
-        Ref<Scene> scene = PythonScriptEngine::GetCurrentSceneContext();
+        WeakRef<Scene> scene = PythonScriptEngine::GetCurrentSceneContext();
         Entity entity = scene->FindEntityByTag(tag);
         return Python::UInt64ToValue(entity ? (uint64_t)entity.GetUUID() : (uint64_t)0).Detach();
     }
