@@ -346,6 +346,19 @@ namespace Prism::Python {
         return cls;
     }
 
+    ScriptClass ScriptClass::FromRef(const ScriptRef& ref)
+    {
+        ScriptClass cls;
+        cls.m_Ref = ref;
+        return cls;
+    }
+
+    uint64_t ScriptClass::GetTypeId() const
+    {
+        // Python 类型对象的指针地址 = 唯一身份标识，等价于 Python id(cls)
+        return (uint64_t)(void*)m_Ref.Get();
+    }
+
     bool ScriptClass::HasMethod(const char* name) const
     {
         return m_Ref.HasAttribute(name);

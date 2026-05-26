@@ -5,15 +5,15 @@ class Vector4(glm.vec4):
     """4D vector backed by PyGLM for native performance."""
 
     @property
-    def magnitude(self):
+    def Magnitude(self):
         return glm.length(self)
 
     @property
-    def sqrMagnitude(self):
+    def SqrMagnitude(self):
         return glm.length2(self)
 
     @property
-    def normalized(self):
+    def Normalized(self):
         return Vector4(glm.normalize(self))
 
     def Normalize(self):

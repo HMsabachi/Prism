@@ -55,6 +55,8 @@ namespace Prism {
 
     void ScriptSystem::OnUpdate(float ts)
     {
+        CSharpScriptEngine::SetSceneContext(m_Scene);
+        PythonScriptEngine::SetSceneContext(m_Scene);
         // C# Script OnUpdate
         {
             auto view = m_Scene->GetAllEntitiesWith<CSharpScriptComponent>();
@@ -85,7 +87,7 @@ namespace Prism {
                     if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnUpdate))
                         continue;
                     auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
-                    if (obj && obj->IsValid() && obj->GetField<bool>("enabled"))
+                    if (obj && obj->IsValid() && obj->GetField<bool>("Enabled"))
                         obj->Invoke<void>("OnUpdate");
                 }
             }
@@ -121,7 +123,7 @@ namespace Prism {
                     if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::LateUpdate))
                         continue;
                     auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
-                    if (obj && obj->IsValid() && obj->GetField<bool>("enabled"))
+                    if (obj && obj->IsValid() && obj->GetField<bool>("Enabled"))
                         obj->Invoke<void>("LateUpdate");
                 }
             }
@@ -130,6 +132,8 @@ namespace Prism {
 
     void ScriptSystem::OnFixedUpdate(float ts)
     {
+        CSharpScriptEngine::SetSceneContext(m_Scene);
+        PythonScriptEngine::SetSceneContext(m_Scene);
         // C# Script OnFixedUpdate
         {
             auto view = m_Scene->GetAllEntitiesWith<CSharpScriptComponent>();
@@ -160,7 +164,7 @@ namespace Prism {
                     if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnFixedUpdate))
                         continue;
                     auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
-                    if (obj && obj->IsValid() && obj->GetField<bool>("enabled"))
+                    if (obj && obj->IsValid() && obj->GetField<bool>("Enabled"))
                         obj->Invoke<void>("OnFixedUpdate");
                 }
             }
@@ -256,7 +260,7 @@ namespace Prism {
                     if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnEnable))
                         continue;
                     auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
-                    if (obj && obj->IsValid() && obj->GetField<bool>("enabled"))
+                    if (obj && obj->IsValid() && obj->GetField<bool>("Enabled"))
                         obj->Invoke<void>("OnEnable");
                 }
             }
@@ -265,6 +269,8 @@ namespace Prism {
 
     void ScriptSystem::OnRuntimeStop()
     {
+        CSharpScriptEngine::SetSceneContext(m_Scene);
+        PythonScriptEngine::SetSceneContext(m_Scene);
         // Cleanup C# script runtime — OnDisable → OnDestroy, then clear storage
         {
             auto view = m_Scene->GetRegistry().view<CSharpScriptComponent>();
@@ -301,7 +307,7 @@ namespace Prism {
                     auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
                     if (obj && obj->IsValid())
                     {
-                        if (obj->GetField<bool>("enabled") && (binding.LifecycleMask & (uint16_t)LifecycleMethod::OnDisable))
+                        if (obj->GetField<bool>("Enabled") && (binding.LifecycleMask & (uint16_t)LifecycleMethod::OnDisable))
                             obj->Invoke<void>("OnDisable");
                         if (binding.LifecycleMask & (uint16_t)LifecycleMethod::OnDestroy)
                             obj->Invoke<void>("OnDestroy");
@@ -316,6 +322,9 @@ namespace Prism {
 
     void ScriptSystem::OnCollisionBegin(Entity entity)
     {
+        CSharpScriptEngine::SetSceneContext(m_Scene);
+        PythonScriptEngine::SetSceneContext(m_Scene);
+
         UUID sceneID = m_Scene->GetUUID();
 
         if (entity.HasComponent<CSharpScriptComponent>())
@@ -347,6 +356,9 @@ namespace Prism {
 
     void ScriptSystem::OnCollisionEnd(Entity entity)
     {
+        CSharpScriptEngine::SetSceneContext(m_Scene);
+        PythonScriptEngine::SetSceneContext(m_Scene);
+
         UUID sceneID = m_Scene->GetUUID();
 
         if (entity.HasComponent<CSharpScriptComponent>())

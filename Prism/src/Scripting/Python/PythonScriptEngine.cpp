@@ -9,6 +9,7 @@
 #include "Prism/Scene/Components.h"
 #include "Prism/Scene/Scene.h"
 #include "Prism/Scene/Entity.h"
+#include "Prism/Utilities/TypeInfo.h"
 
 #include <filesystem>
 #include <algorithm>
@@ -17,31 +18,42 @@
 
 namespace Prism
 {
-    std::unordered_map<std::string, std::function<void(Entity&)>> s_PythonCreateComponentFuncs;
-    std::unordered_map<std::string, std::function<bool(Entity&)>> s_PythonHasComponentFuncs;
+    std::unordered_map<uint64_t, std::function<void(Entity&)>> s_PythonCreateComponentFuncs;
+    std::unordered_map<uint64_t, std::function<bool(Entity&)>> s_PythonHasComponentFuncs;
 
-#define REGISTER_PYTHON_COMPONENT(T, Name) \
-    s_PythonCreateComponentFuncs[Name] = [](Entity& entity) { entity.AddComponent<T>(); }; \
-    s_PythonHasComponentFuncs[Name] = [](Entity& entity) { return entity.HasComponent<T>(); };
+    template<typename TComponent>
+    static void RegisterPythonComponent()
+    {
+        const TypeNameString& name = TypeInfo<TComponent, true>().Name();
+
+        // 获取 Python 组件类对象
+        Python::ScriptModule mod = Python::ScriptModule::Import("Prism.Component");
+        PR_CORE_ASSERT(mod.IsValid(), "Python module Prism.Component not found!");
+        Python::ScriptClass cls = Python::ScriptClass::From(mod, name.data());
+        PR_CORE_ASSERT(cls.IsValid(), "Python class {} not found in Prism.Component!", name);
+
+        // 用 Python 类型对象地址做 key（与 id(cls) 等效）
+        uint64_t typeId = cls.GetTypeId();
+        s_PythonCreateComponentFuncs[typeId] = [](Entity& e) { e.AddComponent<TComponent>(); };
+        s_PythonHasComponentFuncs[typeId] = [](Entity& e) { return e.HasComponent<TComponent>(); };
+    }
 
     static void RegisterPythonComponentTypes()
     {
-        REGISTER_PYTHON_COMPONENT(TagComponent,            "TagComponent");
-        REGISTER_PYTHON_COMPONENT(TransformComponent,       "TransformComponent");
-        REGISTER_PYTHON_COMPONENT(MeshComponent,            "MeshComponent");
-        REGISTER_PYTHON_COMPONENT(CameraComponent,          "CameraComponent");
-        REGISTER_PYTHON_COMPONENT(SpriteRendererComponent,  "SpriteRendererComponent");
-        REGISTER_PYTHON_COMPONENT(MaterialComponent,        "MaterialComponent");
-        REGISTER_PYTHON_COMPONENT(RigidBody2DComponent,     "RigidBody2DComponent");
-        REGISTER_PYTHON_COMPONENT(BoxCollider2DComponent,   "BoxCollider2DComponent");
-        REGISTER_PYTHON_COMPONENT(CircleCollider2DComponent,"CircleCollider2DComponent");
-        REGISTER_PYTHON_COMPONENT(RigidBodyComponent,       "RigidBodyComponent");
-        REGISTER_PYTHON_COMPONENT(BoxColliderComponent,     "BoxColliderComponent");
-        REGISTER_PYTHON_COMPONENT(SphereColliderComponent,  "SphereColliderComponent");
-        REGISTER_PYTHON_COMPONENT(CapsuleColliderComponent, "CapsuleColliderComponent");
+        RegisterPythonComponent<TagComponent>();
+        RegisterPythonComponent<TransformComponent>();
+        RegisterPythonComponent<MeshComponent>();
+        RegisterPythonComponent<CameraComponent>();
+        RegisterPythonComponent<SpriteRendererComponent>();
+        RegisterPythonComponent<MaterialComponent>();
+        RegisterPythonComponent<RigidBody2DComponent>();
+        RegisterPythonComponent<BoxCollider2DComponent>();
+        RegisterPythonComponent<CircleCollider2DComponent>();
+        RegisterPythonComponent<RigidBodyComponent>();
+        RegisterPythonComponent<BoxColliderComponent>();
+        RegisterPythonComponent<SphereColliderComponent>();
+        RegisterPythonComponent<CapsuleColliderComponent>();
     }
-
-#undef REGISTER_PYTHON_COMPONENT
 }
 
 namespace Prism
@@ -64,8 +76,8 @@ namespace Prism
             return;
         }
 
-        RegisterPythonComponentTypes();
         Script::RegisterPrismModule();
+        RegisterPythonComponentTypes();
 
         s_Initialized = true;
         PR_CORE_TRACE("[Python] Python 运行时已初始化");
@@ -166,7 +178,7 @@ namespace Prism
 
         Python::ScriptObject* entityObj = GetScriptObject(sceneID, entityID);
         if (entityObj)
-            obj.SetAttribute("entity", entityObj->GetRef());
+            obj.SetAttribute("Entity", entityObj->GetRef());
 
         UUID behaviourID = binding.BehaviourID;
         auto& sceneMap = s_PythonScriptObjects[sceneID];

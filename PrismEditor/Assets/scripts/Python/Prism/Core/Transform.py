@@ -9,55 +9,55 @@ class Transform:
         self._entity_id = entity_id
 
     @property
-    def position(self) -> Vector3:
-        return Vector3(_Prism.GetPosition(self._entity_id))
+    def Position(self) -> Vector3:
+        return Vector3(_Prism.Prism_TransformComponent_GetPosition(self._entity_id))
 
-    @position.setter
-    def position(self, value):
-        _Prism.SetPosition(self._entity_id, value)
-
-    @property
-    def rotation(self) -> Vector3:
-        return Vector3(_Prism.GetRotation(self._entity_id)) * (180.0 / 3.141592653589793)
-
-    @rotation.setter
-    def rotation(self, value):
-        _Prism.SetRotation(self._entity_id, value)
+    @Position.setter
+    def Position(self, value):
+        _Prism.Prism_TransformComponent_SetPosition(self._entity_id, value)
 
     @property
-    def scale(self) -> Vector3:
-        return Vector3(_Prism.GetScale(self._entity_id))
+    def Rotation(self) -> Vector3:
+        return Vector3(_Prism.Prism_TransformComponent_GetRotation(self._entity_id)) * (180.0 / 3.141592653589793)
 
-    @scale.setter
-    def scale(self, value):
-        _Prism.SetScale(self._entity_id, value)
+    @Rotation.setter
+    def Rotation(self, value):
+        _Prism.Prism_TransformComponent_SetRotation(self._entity_id, value)
 
     @property
-    def forward(self) -> Vector3:
+    def Scale(self) -> Vector3:
+        return Vector3(_Prism.Prism_TransformComponent_GetScale(self._entity_id))
+
+    @Scale.setter
+    def Scale(self, value):
+        _Prism.Prism_TransformComponent_SetScale(self._entity_id, value)
+
+    @property
+    def Forward(self) -> Vector3:
         from Prism.Math.Quaternion import Quaternion
-        r = self.rotation
+        r = self.Rotation
         q = Quaternion.Euler(r.x, r.y, r.z)
         return q * Vector3.Forward
 
     @property
-    def right(self) -> Vector3:
+    def Right(self) -> Vector3:
         from Prism.Math.Quaternion import Quaternion
-        r = self.rotation
+        r = self.Rotation
         q = Quaternion.Euler(r.x, r.y, r.z)
         return q * Vector3.Right
 
     @property
-    def up(self) -> Vector3:
+    def Up(self) -> Vector3:
         from Prism.Math.Quaternion import Quaternion
-        r = self.rotation
+        r = self.Rotation
         q = Quaternion.Euler(r.x, r.y, r.z)
         return q * Vector3.Up
 
     def SetPosition(self, x: float, y: float, z: float):
-        _Prism.SetPosition(self._entity_id, Vector3(x, y, z))
+        _Prism.Prism_TransformComponent_SetPosition(self._entity_id, Vector3(x, y, z))
 
     def SetRotation(self, x: float, y: float, z: float):
-        _Prism.SetRotation(self._entity_id, Vector3(x, y, z))
+        _Prism.Prism_TransformComponent_SetRotation(self._entity_id, Vector3(x, y, z))
 
     def SetScale(self, x: float, y: float, z: float):
-        _Prism.SetScale(self._entity_id, Vector3(x, y, z))
+        _Prism.Prism_TransformComponent_SetScale(self._entity_id, Vector3(x, y, z))

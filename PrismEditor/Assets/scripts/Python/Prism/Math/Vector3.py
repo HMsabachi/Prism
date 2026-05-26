@@ -6,39 +6,39 @@ class Vector3(glm.vec3):
     """3D vector backed by PyGLM for native performance."""
 
     @property
-    def magnitude(self):
+    def Magnitude(self):
         return glm.length(self)
 
     @property
-    def sqrMagnitude(self):
+    def SqrMagnitude(self):
         return glm.length2(self)
 
     @property
-    def normalized(self):
+    def Normalized(self):
         return Vector3(glm.normalize(self))
 
     @property
-    def xy(self):
+    def XY(self):
         return Vector2(self.x, self.y)
 
-    @xy.setter
-    def xy(self, v):
+    @XY.setter
+    def XY(self, v):
         self.x, self.y = v.x, v.y
 
     @property
-    def xz(self):
+    def XZ(self):
         return Vector2(self.x, self.z)
 
-    @xz.setter
-    def xz(self, v):
+    @XZ.setter
+    def XZ(self, v):
         self.x, self.z = v.x, v.y
 
     @property
-    def yz(self):
+    def YZ(self):
         return Vector2(self.y, self.z)
 
-    @yz.setter
-    def yz(self, v):
+    @YZ.setter
+    def YZ(self, v):
         self.y, self.z = v.x, v.y
 
     def Normalize(self):

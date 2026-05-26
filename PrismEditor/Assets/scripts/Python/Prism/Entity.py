@@ -1,5 +1,4 @@
 import PrismNative as _Prism
-from Prism.Behaviour import Behaviour
 from Prism.Core.Transform import Transform
 
 
@@ -9,33 +8,34 @@ class Entity:
         self._transform = None
 
     @property
-    def id(self) -> int:
+    def ID(self) -> int:
         return self._id
 
-    @id.setter
-    def id(self, value: int):
+    @ID.setter
+    def ID(self, value: int):
         self._id = value
 
     @property
-    def transform(self):
+    def Transform(self):
         if self._transform is None:
             self._transform = Transform(self._id)
         return self._transform
 
-    def HasComponent(self, type_name: str) -> bool:
-        return _Prism.HasComponent(self._id, type_name)
+    def HasComponent(self, cls) -> bool:
+        return _Prism.Prism_Entity_HasComponent(self._id, cls)
 
-    def GetComponent(self, type_name: str):
-        if self.HasComponent(type_name):
-            return type_name
+    def GetComponent(self, cls):
+        if self.HasComponent(cls):
+            component = cls()
+            component.Entity = self
+            return component
         return None
 
-    def create_component(self, cls):
+    def CreateComponent(self, cls):
         if issubclass(cls, Behaviour) and cls is not Behaviour:
-            return _Prism.AddBehaviour(self._id, cls.__module__, cls.__name__)
+            return _Prism.Prism_Entity_AddBehaviour(self._id, cls.__module__, cls.__name__)
         else:
-            type_name = f"{cls.__module__}.{cls.__name__}"
-            _Prism.CreateComponent(self._id, type_name)
+            _Prism.Prism_Entity_CreateComponent(self._id, cls)
             component = cls()
-            component.entity = self
+            component.Entity = self
             return component

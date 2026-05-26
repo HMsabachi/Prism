@@ -98,6 +98,12 @@ namespace Prism::Python {
         ScriptClass() = default;
         static ScriptClass From(const ScriptModule& mod, const char* name);
 
+        // 从已有 ScriptRef（PyObject*）构造，用于 wrapper 中接收 Python 传过来的类对象
+        static ScriptClass FromRef(const ScriptRef& ref);
+
+        // 获取 Python 类型唯一 ID（与 id(cls) 等效，封装在内部）
+        uint64_t GetTypeId() const;
+
         std::string GetName() const;
         std::string GetFullName() const;
         bool IsSubclassOf(const ScriptClass& other) const;

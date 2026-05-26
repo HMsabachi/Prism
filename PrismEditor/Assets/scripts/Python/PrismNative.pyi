@@ -35,18 +35,18 @@ def Prism_Entity_SetTransform(entityID: int, mat: tuple[float, float, float, flo
         mat: 16 个 float 组成的 tuple（列主序矩阵）
     """
 
-def Prism_Entity_CreateComponent(entityID: int, typeName: str) -> None:
+def Prism_Entity_CreateComponent(entityID: int, cls: type) -> None:
     """为实体创建组件
     Args:
         entityID: 实体 ID
-        typeName: 组件类型名称 (如 "TransformComponent", "MeshComponent")
+        cls: 组件类 (如 TagComponent, RigidBodyComponent)
     """
 
-def Prism_Entity_HasComponent(entityID: int, typeName: str) -> bool:
+def Prism_Entity_HasComponent(entityID: int, cls: type) -> bool:
     """检查实体是否拥有指定类型的组件
     Args:
         entityID: 实体 ID
-        typeName: 组件类型名称
+        cls: 组件类
     """
 
 def Prism_TransformComponent_GetPosition(entityID: int) -> tuple[float, float, float]:

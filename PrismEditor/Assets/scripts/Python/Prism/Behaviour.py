@@ -1,31 +1,32 @@
 from Prism.Component import Component
+from Prism.Entity import Entity as Ent
 
 
 class Behaviour(Component):
+    Entity: Ent = None  # 运行时由引擎设置，编辑器中为 None
     def __init__(self):
         super().__init__()
         self._enabled = True
 
     @property
-    def enabled(self) -> bool:
+    def Enabled(self) -> bool:
         return self._enabled
 
-    @enabled.setter
-    def enabled(self, value: bool):
+    @Enabled.setter
+    def Enabled(self, value: bool):
         self._enabled = value
 
     @property
-    def transform(self):
-        return self.entity.transform if self.entity else None
+    def Transform(self):
+        return self.Entity.Transform if self.Entity else None
 
-    def GetComponent(self, type_name: str):
-        return self.entity.GetComponent(type_name) if self.entity else None
+    def GetComponent(self, cls):
+        return self.Entity.GetComponent(cls) if self.Entity else None
 
-    def HasComponent(self, type_name: str) -> bool:
-        return self.entity.HasComponent(type_name) if self.entity else False
+    def HasComponent(self, cls) -> bool:
+        return self.Entity.HasComponent(cls) if self.Entity else False
 
-    def CreateComponent(self, type_name: str):
-        if self.entity:
-            return self.entity.create_component(type_name)
+    def CreateComponent(self, cls):
+        if self.Entity:
+            return self.Entity.CreateComponent(cls)
         return None
-

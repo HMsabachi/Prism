@@ -119,11 +119,6 @@ namespace Prism
         }
     }
 
-    public class ScriptComponent : Component
-    {
-        // TODO
-    }
-
     public class SpriteRendererComponent : Component
     {
         // TODO

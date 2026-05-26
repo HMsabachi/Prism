@@ -1,5 +1,8 @@
 import PrismNative as _Prism
-from Prism import Behaviour, Log, Input, Time, KeyCodes
+from Prism import (
+    Behaviour, Log, Input, Time, KeyCodes,
+    TagComponent, TransformComponent, MeshComponent, RigidBodyComponent,
+)
 from Prism.Math import Vector2, Vector3, Vector4, Quaternion, Mathf
 
 
@@ -72,25 +75,25 @@ class SmokeTest(Behaviour):
         Log.Info(f"[SmokeTest] ✓ Input API: Space={space}")
 
     def _TestEntity(self):
-        if self.entity is None:
-            Log.Warn("[SmokeTest] 跳过 Entity API: entity 未设置")
+        if self.Entity is None:
+            Log.Warn("[SmokeTest] 跳过 Entity API: Entity 未设置")
             return
 
-        eid = self.entity.id
+        eid = self.Entity.ID
 
-        hasTag = _Prism.Prism_Entity_HasComponent(eid, "TagComponent")
-        hasMesh = _Prism.Prism_Entity_HasComponent(eid, "MeshComponent")
-        hasRigid = _Prism.Prism_Entity_HasComponent(eid, "RigidBodyComponent")
+        hasTag = _Prism.Prism_Entity_HasComponent(eid, TagComponent)
+        hasMesh = _Prism.Prism_Entity_HasComponent(eid, MeshComponent)
+        hasRigid = _Prism.Prism_Entity_HasComponent(eid, RigidBodyComponent)
 
         Log.Info(f"[SmokeTest] ✓ Entity API: HasTag={hasTag}, HasMesh={hasMesh}, "
                  f"HasRigidBody={hasRigid}")
 
     def _TestTransform(self):
-        if self.entity is None:
-            Log.Warn("[SmokeTest] 跳过 Transform API: entity 未设置")
+        if self.Entity is None:
+            Log.Warn("[SmokeTest] 跳过 Transform API: Entity 未设置")
             return
 
-        eid = self.entity.id
+        eid = self.Entity.ID
 
         _Prism.Prism_TransformComponent_SetPosition(eid, (0.0, 0.0, 0.0))
 

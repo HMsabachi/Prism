@@ -13,9 +13,12 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/quaternion.hpp>
 
+#include <box2d/box2d.h>
+#include <PhysX/PxPhysicsAPI.h>
+
 namespace Prism {
-    extern std::unordered_map<std::string, std::function<void(Entity&)>> s_PythonCreateComponentFuncs;
-    extern std::unordered_map<std::string, std::function<bool(Entity&)>> s_PythonHasComponentFuncs;
+    extern std::unordered_map<uint64_t, std::function<void(Entity&)>> s_PythonCreateComponentFuncs;
+    extern std::unordered_map<uint64_t, std::function<bool(Entity&)>> s_PythonHasComponentFuncs;
 }
 
 namespace Prism::Script
@@ -139,9 +142,13 @@ namespace Prism::Script
     {
         Python::ScriptRef argsRef(args);
         Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
-        std::string typeName = Python::ValueToString(Python::GetTupleElement(argsRef, 1));
 
-        auto it = s_PythonCreateComponentFuncs.find(typeName);
+        // 接收 Python 类对象，通过 ScriptClass::GetTypeId() 获取类型 ID
+        Python::ScriptRef classObj = Python::GetTupleElement(argsRef, 1);
+        Python::ScriptClass cls = Python::ScriptClass::FromRef(classObj);
+        uint64_t typeId = cls.GetTypeId();
+
+        auto it = s_PythonCreateComponentFuncs.find(typeId);
         if (it != s_PythonCreateComponentFuncs.end())
             it->second(entity);
 
@@ -152,9 +159,13 @@ namespace Prism::Script
     {
         Python::ScriptRef argsRef(args);
         Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
-        std::string typeName = Python::ValueToString(Python::GetTupleElement(argsRef, 1));
 
-        auto it = s_PythonHasComponentFuncs.find(typeName);
+        // 接收 Python 类对象
+        Python::ScriptRef classObj = Python::GetTupleElement(argsRef, 1);
+        Python::ScriptClass cls = Python::ScriptClass::FromRef(classObj);
+        uint64_t typeId = cls.GetTypeId();
+
+        auto it = s_PythonHasComponentFuncs.find(typeId);
         if (it != s_PythonHasComponentFuncs.end())
             return Python::BoolToValue(it->second(entity)).Detach();
 
@@ -181,7 +192,7 @@ namespace Prism::Script
         UUID entityUUID = entity.GetUUID();
         Python::ScriptObject* entityObj = PythonScriptEngine::GetScriptObject(sceneID, entityUUID);
         if (entityObj)
-            obj.SetAttribute("entity", entityObj->GetRef());
+            obj.SetAttribute("Entity", entityObj->GetRef());
 
         auto& sceneMap = PythonScriptEngine::s_PythonScriptObjects[sceneID];
         auto [it, inserted] = sceneMap.emplace(behaviourID, std::move(obj));
@@ -288,15 +299,152 @@ namespace Prism::Script
         return Python::NoneValue().Detach();
     }
 
+#pragma region TagComponent
+
+    Python::ScriptValue* Prism_TagComponent_GetTag(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+        auto& tc = entity.GetComponent<TagComponent>();
+        return Python::StringToValue(tc.Tag).Detach();
+    }
+
+    Python::ScriptValue* Prism_TagComponent_SetTag(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+        std::string tag = Python::ValueToString(Python::GetTupleElement(argsRef, 1));
+        entity.GetComponent<TagComponent>().Tag = tag;
+        return Python::NoneValue().Detach();
+    }
+
+#pragma endregion
+
+#pragma region RigidBody2DComponent
+
+    Python::ScriptValue* Prism_RigidBody2DComponent_ApplyLinearImpulse(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+        Python::ScriptRef impulseObj = Python::GetTupleElement(argsRef, 1);
+        Python::ScriptRef offsetObj = Python::GetTupleElement(argsRef, 2);
+        bool wake = Python::ValueToBool(Python::GetTupleElement(argsRef, 3));
+
+        glm::vec2 impulse = Python::ValueToVec2(impulseObj);
+        glm::vec2 offset = Python::ValueToVec2(offsetObj);
+
+        auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
+        b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
+        body->ApplyLinearImpulse(b2Vec2(impulse.x, impulse.y), b2Vec2(offset.x, offset.y), wake);
+        return Python::NoneValue().Detach();
+    }
+
+    Python::ScriptValue* Prism_RigidBody2DComponent_GetLinearVelocity(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+
+        auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
+        b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
+        const b2Vec2& velocity = body->GetLinearVelocity();
+        return Python::Vec2ToValue(glm::vec2(velocity.x, velocity.y)).Detach();
+    }
+
+    Python::ScriptValue* Prism_RigidBody2DComponent_SetLinearVelocity(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+        Python::ScriptRef vecObj = Python::GetTupleElement(argsRef, 1);
+
+        glm::vec2 velocity = Python::ValueToVec2(vecObj);
+        auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
+        b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
+        body->SetLinearVelocity(b2Vec2(velocity.x, velocity.y));
+        return Python::NoneValue().Detach();
+    }
+
+#pragma endregion
+
+#pragma region RigidBodyComponent
+
+    Python::ScriptValue* Prism_RigidBodyComponent_AddForce(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+        Python::ScriptRef forceObj = Python::GetTupleElement(argsRef, 1);
+        int32_t forceMode = Python::ValueToInt(Python::GetTupleElement(argsRef, 2));
+
+        glm::vec3 force = Python::ValueToVec3(forceObj);
+        auto& rb = entity.GetComponent<RigidBodyComponent>();
+        if (rb.IsKinematic)
+        {
+            PR_CORE_WARN("Cannot add a force to a kinematic actor! EntityID({0})", (uint64_t)entity.GetUUID());
+            return Python::NoneValue().Detach();
+        }
+        physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
+        physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
+        PR_CORE_ASSERT(dynamicActor);
+        dynamicActor->addForce(physx::PxVec3(force.x, force.y, force.z), (physx::PxForceMode::Enum)forceMode);
+        return Python::NoneValue().Detach();
+    }
+
+    Python::ScriptValue* Prism_RigidBodyComponent_AddTorque(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+        Python::ScriptRef torqueObj = Python::GetTupleElement(argsRef, 1);
+        int32_t forceMode = Python::ValueToInt(Python::GetTupleElement(argsRef, 2));
+
+        glm::vec3 torque = Python::ValueToVec3(torqueObj);
+        auto& rb = entity.GetComponent<RigidBodyComponent>();
+        if (rb.IsKinematic)
+        {
+            PR_CORE_WARN("Cannot add torque to a kinematic actor! EntityID({0})", (uint64_t)entity.GetUUID());
+            return Python::NoneValue().Detach();
+        }
+        physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
+        physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
+        PR_CORE_ASSERT(dynamicActor);
+        dynamicActor->addTorque(physx::PxVec3(torque.x, torque.y, torque.z), (physx::PxForceMode::Enum)forceMode);
+        return Python::NoneValue().Detach();
+    }
+
+    Python::ScriptValue* Prism_RigidBodyComponent_GetLinearVelocity(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+
+        auto& rb = entity.GetComponent<RigidBodyComponent>();
+        physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
+        physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
+        PR_CORE_ASSERT(dynamicActor);
+        physx::PxVec3 velocity = dynamicActor->getLinearVelocity();
+        return Python::Vec3ToValue(glm::vec3(velocity.x, velocity.y, velocity.z)).Detach();
+    }
+
+    Python::ScriptValue* Prism_RigidBodyComponent_SetLinearVelocity(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+        Python::ScriptRef vecObj = Python::GetTupleElement(argsRef, 1);
+
+        glm::vec3 velocity = Python::ValueToVec3(vecObj);
+        auto& rb = entity.GetComponent<RigidBodyComponent>();
+        physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
+        physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
+        PR_CORE_ASSERT(dynamicActor);
+        dynamicActor->setLinearVelocity(physx::PxVec3(velocity.x, velocity.y, velocity.z));
+        return Python::NoneValue().Detach();
+    }
+
 #pragma endregion
 
     void RegisterPrismModule()
     {
         Python::NativeModule mod("PrismNative");
 
+#define PR_PYTHON_FUNCTION(func, doc) mod.AddFunction(#func, func, doc)
         // Log
-    #define PR_PYTHON_FUNCTION(func, doc) mod.AddFunction(#func, func, doc)
-
         PR_PYTHON_FUNCTION(Prism_Log_LogMessage, "Log(level, message)");
 
         // Time
@@ -321,6 +469,10 @@ namespace Prism::Script
         PR_PYTHON_FUNCTION(Prism_Entity_FindEntityByTag, "FindEntityByTag(tag) -> uint64");
         PR_PYTHON_FUNCTION(Prism_Entity_RemoveBehaviour, "RemoveBehaviour(entityID, behaviourID)");
 
+        // TagComponent
+        PR_PYTHON_FUNCTION(Prism_TagComponent_GetTag, "GetTag(entityID) -> string");
+        PR_PYTHON_FUNCTION(Prism_TagComponent_SetTag, "SetTag(entityID, tag)");
+
         // TransformComponent
         PR_PYTHON_FUNCTION(Prism_TransformComponent_GetPosition, "GetPosition(entityID) -> vec3");
         PR_PYTHON_FUNCTION(Prism_TransformComponent_SetPosition, "SetPosition(entityID, vec3)");
@@ -328,6 +480,17 @@ namespace Prism::Script
         PR_PYTHON_FUNCTION(Prism_TransformComponent_SetRotation, "SetRotation(entityID, vec3) degrees");
         PR_PYTHON_FUNCTION(Prism_TransformComponent_GetScale, "GetScale(entityID) -> vec3");
         PR_PYTHON_FUNCTION(Prism_TransformComponent_SetScale, "SetScale(entityID, vec3)");
+
+        // RigidBody2DComponent
+        PR_PYTHON_FUNCTION(Prism_RigidBody2DComponent_ApplyLinearImpulse, "ApplyLinearImpulse(entityID, impulse, offset, wake)");
+        PR_PYTHON_FUNCTION(Prism_RigidBody2DComponent_GetLinearVelocity, "GetLinearVelocity(entityID) -> vec2");
+        PR_PYTHON_FUNCTION(Prism_RigidBody2DComponent_SetLinearVelocity, "SetLinearVelocity(entityID, velocity)");
+
+        // RigidBodyComponent (3D)
+        PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_AddForce, "AddForce(entityID, force, forceMode)");
+        PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_AddTorque, "AddTorque(entityID, torque, forceMode)");
+        PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_GetLinearVelocity, "GetLinearVelocity(entityID) -> vec3");
+        PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_SetLinearVelocity, "SetLinearVelocity(entityID, velocity)");
 
         mod.Register();
 

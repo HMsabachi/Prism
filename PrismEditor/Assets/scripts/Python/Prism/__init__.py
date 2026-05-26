@@ -1,5 +1,22 @@
 # Prism 引擎 Python API
-from Prism.Component import Component
+from Prism.Component import (
+    Component,
+    TagComponent,
+    TransformComponent,
+    MeshComponent,
+    CameraComponent,
+    MaterialComponent,
+    ScriptComponent,
+    SpriteRendererComponent,
+    RigidBody2DComponent,
+    BoxCollider2DComponent,
+    CircleCollider2DComponent,
+    RigidBodyComponent,
+    BoxColliderComponent,
+    SphereColliderComponent,
+    CapsuleColliderComponent,
+    ForceMode,
+)
 from Prism.Entity import Entity
 from Prism.Behaviour import Behaviour
 from Prism.Core.Input import Input

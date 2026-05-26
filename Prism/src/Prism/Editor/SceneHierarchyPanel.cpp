@@ -971,7 +971,10 @@ namespace Prism {
                 }
 
                 if (pendingRemove)
+                {
+                    CSharpScriptEngine::SetSceneContext(m_Context);
                     CSharpScriptEngine::RemoveBehaviour(entity, pendingRemove);
+                }
 
                 ImGui::TreePop();
             }
@@ -1117,7 +1120,10 @@ namespace Prism {
                 }
 
                 if (pendingRemove)
+                {
+                    PythonScriptEngine::SetSceneContext(m_Context);
                     PythonScriptEngine::RemoveBehaviour(entity, pendingRemove);
+                }
 
                 ImGui::TreePop();
             }

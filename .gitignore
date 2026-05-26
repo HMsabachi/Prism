@@ -4,6 +4,8 @@
 .vscode/
 bin/
 bin-int/
+build/
+obj/
 Future/
 __pycache__/
 PrismEditor/Assets/scripts/net9.0
