@@ -8,6 +8,7 @@ build/
 obj/
 Future/
 __pycache__/
+**/__pycache__/
 PrismEditor/Assets/scripts/net9.0
 ExampleApp/obj/
 Prism.Scripting/obj/
@@ -15,6 +16,7 @@ Prism.Scripting/Prism.Scripting.csproj
 
 
 # Files
+**.pyc
 CLAUDE.md
 *.json
 *.user
@@ -32,3 +34,4 @@ CLAUDE.md
 /Prism/vendor/Rolky/Example/Example.Native/x64/Debug
 /Prism/vendor/Rolky/Rolky.Native/x64/Debug
 /Prism/vendor/Rolky/Tests/Testing.Native/x64/Debug
+
