@@ -84,6 +84,40 @@ class KeyCodes:
     F10 = 299
     F11 = 300
     F12 = 301
+    F13 = 302
+    F14 = 303
+    F15 = 304
+    F16 = 305
+    F17 = 306
+    F18 = 307
+    F19 = 308
+    F20 = 309
+    F21 = 310
+    F22 = 311
+    F23 = 312
+    F24 = 313
+    F25 = 314
+
+    World1 = 161
+    World2 = 162
+
+    KP0 = 320
+    KP1 = 321
+    KP2 = 322
+    KP3 = 323
+    KP4 = 324
+    KP5 = 325
+    KP6 = 326
+    KP7 = 327
+    KP8 = 328
+    KP9 = 329
+    KPDecimal = 330
+    KPDivide = 331
+    KPMultiply = 332
+    KPSubtract = 333
+    KPAdd = 334
+    KPEnter = 335
+    KPEqual = 336
 
     LeftShift = 340
     LeftControl = 341

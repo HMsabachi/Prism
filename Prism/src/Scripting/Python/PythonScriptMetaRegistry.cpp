@@ -48,6 +48,36 @@ namespace Prism
                 PR_PYTHON_META_INFO("    默认值 {0} = {1}", fieldName, val);
                 break;
             }
+            case ScriptFieldType::Int64:
+            {
+                int64_t val = obj.GetField<int64_t>(fieldName.c_str());
+                meta.DefaultValue = Buffer::Copy(&val, sizeof(int64_t));
+                PR_PYTHON_META_INFO("    默认值 {0} = {1}", fieldName, val);
+                break;
+            }
+            case ScriptFieldType::Int8:
+            case ScriptFieldType::Int16:
+            {
+                int32_t val = obj.GetField<int32_t>(fieldName.c_str());
+                meta.DefaultValue = Buffer::Copy(&val, sizeof(int32_t));
+                PR_PYTHON_META_INFO("    默认值 {0} = {1}", fieldName, val);
+                break;
+            }
+            case ScriptFieldType::UInt8:
+            case ScriptFieldType::UInt16:
+            {
+                uint64_t val = obj.GetField<uint64_t>(fieldName.c_str());
+                meta.DefaultValue = Buffer::Copy(&val, sizeof(uint64_t));
+                PR_PYTHON_META_INFO("    默认值 {0} = {1}", fieldName, val);
+                break;
+            }
+            case ScriptFieldType::Double:
+            {
+                double val = obj.GetField<double>(fieldName.c_str());
+                meta.DefaultValue = Buffer::Copy(&val, sizeof(double));
+                PR_PYTHON_META_INFO("    默认值 {0} = {1}", fieldName, val);
+                break;
+            }
             case ScriptFieldType::UInt32:
             case ScriptFieldType::UInt64:
             {

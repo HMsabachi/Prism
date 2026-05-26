@@ -1052,11 +1052,9 @@ namespace Prism {
                                 }
                                 case ScriptFieldType::Double:
                                 {
-                                    // Python doesn't natively support double; use buffer
-                                    float fval = field.GetValue<float>();
-                                    double dval = (double)fval;
-                                    if (ImGui::InputDouble(field.GetName().c_str(), &dval))
-                                        field.SetValue((float)dval);
+                                    double val = field.GetValue<double>();
+                                    if (ImGui::InputDouble(field.GetName().c_str(), &val))
+                                        field.SetValue(val);
                                     break;
                                 }
                                 case ScriptFieldType::Bool:
@@ -1066,17 +1064,48 @@ namespace Prism {
                                         field.SetValue(val);
                                     break;
                                 }
+                                case ScriptFieldType::Int8:
+                                case ScriptFieldType::Int16:
                                 case ScriptFieldType::Int32:
+                                case ScriptFieldType::Int64:
                                 {
-                                    int32_t val = field.GetValue<int32_t>();
+                                    int32_t val = (int32_t)field.GetValue<int64_t>();
                                     if (ImGui::DragInt(field.GetName().c_str(), &val))
+                                        field.SetValue((int64_t)val);
+                                    break;
+                                }
+                                case ScriptFieldType::UInt8:
+                                case ScriptFieldType::UInt16:
+                                case ScriptFieldType::UInt32:
+                                case ScriptFieldType::UInt64:
+                                {
+                                    uint64_t val = field.GetValue<uint64_t>();
+                                    int displayVal = (int)val;
+                                    if (ImGui::DragInt(field.GetName().c_str(), &displayVal))
+                                        field.SetValue((uint64_t)displayVal);
+                                    break;
+                                }
+                                case ScriptFieldType::Vector2:
+                                {
+                                    auto val = field.GetValue<glm::vec2>();
+                                    if (ImGui::DragFloat2(field.GetName().c_str(), glm::value_ptr(val), 0.1f))
                                         field.SetValue(val);
                                     break;
                                 }
-                                // TODO: Python doesn't natively support Vector2/3/4 field types yet
-                                case ScriptFieldType::Vector2:
                                 case ScriptFieldType::Vector3:
+                                {
+                                    auto val = field.GetValue<glm::vec3>();
+                                    if (ImGui::DragFloat3(field.GetName().c_str(), glm::value_ptr(val), 0.1f))
+                                        field.SetValue(val);
+                                    break;
+                                }
                                 case ScriptFieldType::Vector4:
+                                {
+                                    auto val = field.GetValue<glm::vec4>();
+                                    if (ImGui::DragFloat4(field.GetName().c_str(), glm::value_ptr(val), 0.1f))
+                                        field.SetValue(val);
+                                    break;
+                                }
                                 default:
                                     break;
                             }

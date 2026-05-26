@@ -136,6 +136,10 @@ namespace Prism
 
         void EditorLayer::OnDetach()
         {
+            if (m_SceneState == SceneState::Play)
+                OnSceneStop();
+             m_SceneHierarchyPanel = nullptr;
+             m_EditorScene = nullptr;
         }
 
         void EditorLayer::OnScenePlay()
@@ -165,7 +169,7 @@ namespace Prism
 
             m_SelectionContext.clear();
             CSharpScriptEngine::SetSceneContext(m_EditorScene);
-        PythonScriptEngine::SetSceneContext(m_EditorScene);
+            PythonScriptEngine::SetSceneContext(m_EditorScene);
             m_SceneHierarchyPanel->SetContext(m_EditorScene);
             UpdateWindowTitle("Untitled Scene");
         }

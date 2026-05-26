@@ -465,7 +465,7 @@ namespace Prism {
                             out << field.GetValue<float>();
                             break;
                         case ScriptFieldType::Double:
-                            //out << field.GetValue<double>();
+                            out << field.GetValue<double>();
                             break;
                         case ScriptFieldType::Bool:
                             out << field.GetValue<bool>();
@@ -495,13 +495,13 @@ namespace Prism {
                             out << field.GetValue<uint64_t>();
                             break;
                         case ScriptFieldType::Vector2:
-                            //out << field.GetValue<glm::vec2>();
+                            out << field.GetValue<glm::vec2>();
                             break;
                         case ScriptFieldType::Vector3:
-                            //out << field.GetValue<glm::vec3>();
+                            out << field.GetValue<glm::vec3>();
                             break;
                         case ScriptFieldType::Vector4:
-                            //out << field.GetValue<glm::vec4>();
+                            out << field.GetValue<glm::vec4>();
                             break;
                         case ScriptFieldType::Object:
                             // TODO: Serialize object references (e.g. assets, entities)
@@ -980,13 +980,13 @@ namespace Prism {
                                             field.SetValue(fieldNode["Value"].as<uint64_t>());
                                             break;
                                         case ScriptFieldType::Vector2:
-                                            //field.SetValue(fieldNode["Value"].as<glm::vec2>());
+                                            field.SetValue(fieldNode["Value"].as<glm::vec2>());
                                             break;
                                         case ScriptFieldType::Vector3:
-                                            //field.SetValue(fieldNode["Value"].as<glm::vec3>());
+                                            field.SetValue(fieldNode["Value"].as<glm::vec3>());
                                             break;
                                         case ScriptFieldType::Vector4:
-                                            //field.SetValue(fieldNode["Value"].as<glm::vec4>());
+                                            field.SetValue(fieldNode["Value"].as<glm::vec4>());
                                             break;
                                         case ScriptFieldType::Object:
                                             // TODO: Serialize object references (e.g. assets, entities)

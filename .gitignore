@@ -5,6 +5,7 @@
 bin/
 bin-int/
 Future/
+__pycache__/
 PrismEditor/Assets/scripts/net9.0
 ExampleApp/obj/
 Prism.Scripting/obj/

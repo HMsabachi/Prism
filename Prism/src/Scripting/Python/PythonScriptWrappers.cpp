@@ -9,6 +9,7 @@
 
 #include "Scripting/Python/PythonScriptEngine.h"
 #include "Scripting/Python/PythonScriptMetaRegistry.h"
+#include "Scripting/Python/Interop/PythonMathBridge.h"
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/quaternion.hpp>
 
@@ -64,6 +65,39 @@ namespace Prism::Script
         return Python::FloatToValue(Time::GetTime()).Detach();
     }
 
+    Python::ScriptValue* Prism_Time_GetUnscaledDeltaTime(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        return Python::FloatToValue(Time::GetUnscaledDeltaTime()).Detach();
+    }
+
+    Python::ScriptValue* Prism_Time_GetUnscaledTime(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        return Python::FloatToValue(Time::GetUnscaledTime()).Detach();
+    }
+
+    Python::ScriptValue* Prism_Time_GetFixedDeltaTime(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        return Python::FloatToValue(Time::GetFixedDeltaTime()).Detach();
+    }
+
+    Python::ScriptValue* Prism_Time_GetFrameCount(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        return Python::UInt64ToValue(static_cast<uint64_t>(Time::GetFrameCount())).Detach();
+    }
+
+    Python::ScriptValue* Prism_Time_GetTimeScale(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        return Python::FloatToValue(Time::GetTimeScale()).Detach();
+    }
+
+    Python::ScriptValue* Prism_Time_SetTimeScale(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        float scale = Python::ValueToFloat(Python::GetTupleElement(argsRef, 0));
+        Time::SetTimeScale(scale);
+        return Python::NoneValue().Detach();
+    }
+
 #pragma endregion
 
 #pragma region Input
@@ -86,26 +120,16 @@ namespace Prism::Script
         auto& tc = entity.GetComponent<TransformComponent>();
         glm::mat4 transform = tc.GetTransform();
 
-        // 返回 16 个 float 的 tuple
-        Python::ScriptRef elements[16];
-        const float* data = glm::value_ptr(transform);
-        for (int i = 0; i < 16; i++)
-            elements[i] = Python::FloatToValue(data[i]);
-
-        return Python::MakeTuple(elements, 16).Detach();
+        return Python::Mat4ToValue(transform).Detach();
     }
 
     Python::ScriptValue* Prism_Entity_SetTransform(Python::ScriptValue* self, Python::ScriptValue* args)
     {
         Python::ScriptRef argsRef(args);
         Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
-        Python::ScriptRef matTuple = Python::GetTupleElement(argsRef, 1);
+        Python::ScriptRef matObj = Python::GetTupleElement(argsRef, 1);
 
-        glm::mat4 transform;
-        float* data = glm::value_ptr(transform);
-        for (int i = 0; i < 16; i++)
-            data[i] = Python::ValueToFloat(Python::GetTupleElement(matTuple, i));
-
+        glm::mat4 transform = Python::ValueToMat4(matObj);
         auto& tc = entity.GetComponent<TransformComponent>();
         tc.SetTransform(transform);
         return Python::NoneValue().Detach();
@@ -179,6 +203,25 @@ namespace Prism::Script
         return it->second.GetRef().Detach();
     }
 
+    Python::ScriptValue* Prism_Entity_FindEntityByTag(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        std::string tag = Python::ValueToString(Python::GetTupleElement(argsRef, 0));
+
+        Ref<Scene> scene = PythonScriptEngine::GetCurrentSceneContext();
+        Entity entity = scene->FindEntityByTag(tag);
+        return Python::UInt64ToValue(entity ? (uint64_t)entity.GetUUID() : (uint64_t)0).Detach();
+    }
+
+    Python::ScriptValue* Prism_Entity_RemoveBehaviour(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+        UUID behaviourID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 1)));
+        PythonScriptEngine::RemoveBehaviour(entity, behaviourID);
+        return Python::NoneValue().Detach();
+    }
+
     Python::ScriptValue* Prism_TransformComponent_GetRotation(Python::ScriptValue* self, Python::ScriptValue* args)
     {
         Python::ScriptRef argsRef(args);
@@ -186,26 +229,17 @@ namespace Prism::Script
         auto& tc = entity.GetComponent<TransformComponent>();
         glm::vec3 euler = glm::eulerAngles(tc.Rotation);
 
-        Python::ScriptRef elements[3] = {
-            Python::FloatToValue(euler.x),
-            Python::FloatToValue(euler.y),
-            Python::FloatToValue(euler.z)
-        };
-        return Python::MakeTuple(elements, 3).Detach();
+        return Python::Vec3ToValue(euler).Detach();
     }
 
     Python::ScriptValue* Prism_TransformComponent_SetRotation(Python::ScriptValue* self, Python::ScriptValue* args)
     {
         Python::ScriptRef argsRef(args);
         Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
-        Python::ScriptRef rotTuple = Python::GetTupleElement(argsRef, 1);
+        Python::ScriptRef vecObj = Python::GetTupleElement(argsRef, 1);
 
+        glm::vec3 euler = Python::ValueToVec3(vecObj);
         auto& tc = entity.GetComponent<TransformComponent>();
-        glm::vec3 euler(
-            Python::ValueToFloat(Python::GetTupleElement(rotTuple, 0)),
-            Python::ValueToFloat(Python::GetTupleElement(rotTuple, 1)),
-            Python::ValueToFloat(Python::GetTupleElement(rotTuple, 2))
-        );
         tc.Rotation = glm::quat(glm::radians(euler));
         return Python::NoneValue().Detach();
     }
@@ -216,24 +250,17 @@ namespace Prism::Script
         Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
         auto& tc = entity.GetComponent<TransformComponent>();
 
-        Python::ScriptRef elements[3] = {
-            Python::FloatToValue(tc.Scale.x),
-            Python::FloatToValue(tc.Scale.y),
-            Python::FloatToValue(tc.Scale.z)
-        };
-        return Python::MakeTuple(elements, 3).Detach();
+        return Python::Vec3ToValue(tc.Scale).Detach();
     }
 
     Python::ScriptValue* Prism_TransformComponent_SetScale(Python::ScriptValue* self, Python::ScriptValue* args)
     {
         Python::ScriptRef argsRef(args);
         Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
-        Python::ScriptRef scaleTuple = Python::GetTupleElement(argsRef, 1);
+        Python::ScriptRef vecObj = Python::GetTupleElement(argsRef, 1);
 
         auto& tc = entity.GetComponent<TransformComponent>();
-        tc.Scale.x = Python::ValueToFloat(Python::GetTupleElement(scaleTuple, 0));
-        tc.Scale.y = Python::ValueToFloat(Python::GetTupleElement(scaleTuple, 1));
-        tc.Scale.z = Python::ValueToFloat(Python::GetTupleElement(scaleTuple, 2));
+        tc.Scale = Python::ValueToVec3(vecObj);
         return Python::NoneValue().Detach();
     }
 
@@ -247,24 +274,17 @@ namespace Prism::Script
         Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
         auto& tc = entity.GetComponent<TransformComponent>();
 
-        Python::ScriptRef elements[3] = {
-            Python::FloatToValue(tc.Position.x),
-            Python::FloatToValue(tc.Position.y),
-            Python::FloatToValue(tc.Position.z)
-        };
-        return Python::MakeTuple(elements, 3).Detach();
+        return Python::Vec3ToValue(tc.Position).Detach();
     }
 
     Python::ScriptValue* Prism_TransformComponent_SetPosition(Python::ScriptValue* self, Python::ScriptValue* args)
     {
         Python::ScriptRef argsRef(args);
         Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
-        Python::ScriptRef posTuple = Python::GetTupleElement(argsRef, 1);
+        Python::ScriptRef vecObj = Python::GetTupleElement(argsRef, 1);
 
         auto& tc = entity.GetComponent<TransformComponent>();
-        tc.Position.x = Python::ValueToFloat(Python::GetTupleElement(posTuple, 0));
-        tc.Position.y = Python::ValueToFloat(Python::GetTupleElement(posTuple, 1));
-        tc.Position.z = Python::ValueToFloat(Python::GetTupleElement(posTuple, 2));
+        tc.Position = Python::ValueToVec3(vecObj);
         return Python::NoneValue().Detach();
     }
 
@@ -282,24 +302,32 @@ namespace Prism::Script
         // Time
         PR_PYTHON_FUNCTION(Prism_Time_GetDeltaTime, "GetDeltaTime() -> float");
         PR_PYTHON_FUNCTION(Prism_Time_GetTime, "GetTime() -> float");
+        PR_PYTHON_FUNCTION(Prism_Time_GetUnscaledDeltaTime, "GetUnscaledDeltaTime() -> float");
+        PR_PYTHON_FUNCTION(Prism_Time_GetUnscaledTime, "GetUnscaledTime() -> float");
+        PR_PYTHON_FUNCTION(Prism_Time_GetFixedDeltaTime, "GetFixedDeltaTime() -> float");
+        PR_PYTHON_FUNCTION(Prism_Time_GetFrameCount, "GetFrameCount() -> uint64");
+        PR_PYTHON_FUNCTION(Prism_Time_GetTimeScale, "GetTimeScale() -> float");
+        PR_PYTHON_FUNCTION(Prism_Time_SetTimeScale, "SetTimeScale(scale)");
 
         // Input
         PR_PYTHON_FUNCTION(Prism_Input_IsKeyPressed, "IsKeyPressed(key) -> bool");
 
         // Entity
-        PR_PYTHON_FUNCTION(Prism_Entity_GetTransform, "GetTransform(entityID) -> tuple[16]");
-        PR_PYTHON_FUNCTION(Prism_Entity_SetTransform, "SetTransform(entityID, matTuple)");
+        PR_PYTHON_FUNCTION(Prism_Entity_GetTransform, "GetTransform(entityID) -> mat4");
+        PR_PYTHON_FUNCTION(Prism_Entity_SetTransform, "SetTransform(entityID, mat4)");
         PR_PYTHON_FUNCTION(Prism_Entity_CreateComponent, "CreateComponent(entityID, typeName)");
         PR_PYTHON_FUNCTION(Prism_Entity_HasComponent, "HasComponent(entityID, typeName) -> bool");
         PR_PYTHON_FUNCTION(Prism_Entity_AddBehaviour, "AddBehaviour(entityID, moduleName, className) -> object");
+        PR_PYTHON_FUNCTION(Prism_Entity_FindEntityByTag, "FindEntityByTag(tag) -> uint64");
+        PR_PYTHON_FUNCTION(Prism_Entity_RemoveBehaviour, "RemoveBehaviour(entityID, behaviourID)");
 
         // TransformComponent
-        PR_PYTHON_FUNCTION(Prism_TransformComponent_GetPosition, "GetPosition(entityID) -> (x, y, z)");
-        PR_PYTHON_FUNCTION(Prism_TransformComponent_SetPosition, "SetPosition(entityID, (x, y, z))");
-        PR_PYTHON_FUNCTION(Prism_TransformComponent_GetRotation, "GetRotation(entityID) -> (x, y, z) radians");
-        PR_PYTHON_FUNCTION(Prism_TransformComponent_SetRotation, "SetRotation(entityID, (x, y, z)) degrees");
-        PR_PYTHON_FUNCTION(Prism_TransformComponent_GetScale, "GetScale(entityID) -> (x, y, z)");
-        PR_PYTHON_FUNCTION(Prism_TransformComponent_SetScale, "SetScale(entityID, (x, y, z))");
+        PR_PYTHON_FUNCTION(Prism_TransformComponent_GetPosition, "GetPosition(entityID) -> vec3");
+        PR_PYTHON_FUNCTION(Prism_TransformComponent_SetPosition, "SetPosition(entityID, vec3)");
+        PR_PYTHON_FUNCTION(Prism_TransformComponent_GetRotation, "GetRotation(entityID) -> vec3 radians");
+        PR_PYTHON_FUNCTION(Prism_TransformComponent_SetRotation, "SetRotation(entityID, vec3) degrees");
+        PR_PYTHON_FUNCTION(Prism_TransformComponent_GetScale, "GetScale(entityID) -> vec3");
+        PR_PYTHON_FUNCTION(Prism_TransformComponent_SetScale, "SetScale(entityID, vec3)");
 
         mod.Register();
 

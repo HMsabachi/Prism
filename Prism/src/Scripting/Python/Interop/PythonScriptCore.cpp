@@ -1,5 +1,6 @@
 #include "prpch.h"
 #include "PythonScriptCore.h"
+#include "PythonMathBridge.h"
 #ifdef ERROR
 #undef ERROR
 #endif
@@ -236,6 +237,8 @@ namespace Prism::Python {
             "    sys.path.insert(0, scripts_path)\n"
             "print(f'[Python] {scripts_path}')\n"
         );
+
+        InitializeMathBridge();
 
         return true;
     }
@@ -608,17 +611,15 @@ namespace Prism::Python {
                         memcpy(buffer, str, (std::min)(len, (size_t)256));
                     }
                 }
-                else if (PyTuple_Check(val))
+                else
                 {
-                    Py_ssize_t sz = PyTuple_Size(val);
-                    for (Py_ssize_t i = 0; i < sz && i < 4; i++)
+                    // Buffer Protocol: 兼容 PyGLM vec2/3/4 等类型
+                    Py_buffer buf_info;
+                    if (PyObject_GetBuffer(val, &buf_info, PyBUF_SIMPLE) == 0)
                     {
-                        PyObject* elem = PyTuple_GetItem(val, i);
-                        if (PyFloat_Check(elem))
-                        {
-                            float f = (float)PyFloat_AS_DOUBLE(elem);
-                            memcpy((char*)buffer + i * sizeof(float), &f, sizeof(float));
-                        }
+                        size_t copySize = (std::min)(static_cast<size_t>(buf_info.len), static_cast<size_t>(256));
+                        std::memcpy(buffer, buf_info.buf, copySize);
+                        PyBuffer_Release(&buf_info);
                     }
                 }
 
@@ -644,12 +645,18 @@ namespace Prism::Python {
                     val = PyLong_FromLong(*(const int32_t*)buffer);
                 else if (PyUnicode_Check(existing))
                     val = PyUnicode_FromString((const char*)buffer);
-                else if (PyTuple_Check(existing))
+                else
                 {
-                    Py_ssize_t sz = PyTuple_Size(existing);
-                    val = PyTuple_New(sz);
-                    for (Py_ssize_t i = 0; i < sz; i++)
-                        PyTuple_SetItem(val, i, PyFloat_FromDouble(*(const float*)((const char*)buffer + i * sizeof(float))));
+                    // Buffer Protocol 写: PyGLM 对象支持可写 buffer
+                    Py_buffer buf_info;
+                    if (PyObject_GetBuffer(existing, &buf_info, PyBUF_WRITABLE) == 0)
+                    {
+                        size_t copySize = (std::min)(static_cast<size_t>(buf_info.len), static_cast<size_t>(256));
+                        std::memcpy(buf_info.buf, buffer, copySize);
+                        PyBuffer_Release(&buf_info);
+                        Py_XDECREF(existing);
+                        return; // 已就地修改，无需 SetAttr
+                    }
                 }
             }
             else
@@ -664,117 +671,6 @@ namespace Prism::Python {
                 Py_DECREF(val);
             }
         }
-    }
-
-    ScriptRef FloatToValue(float v)
-    {
-        return ScriptRef::Adopt(ToSV(PyFloat_FromDouble(v)));
-    }
-
-    ScriptRef IntToValue(int32_t v)
-    {
-        return ScriptRef::Adopt(ToSV(PyLong_FromLong(v)));
-    }
-
-    ScriptRef UInt64ToValue(uint64_t v)
-    {
-        return ScriptRef::Adopt(ToSV(PyLong_FromUnsignedLongLong(v)));
-    }
-
-    ScriptRef StringToValue(const std::string_view v)
-    {
-        return ScriptRef::Adopt(ToSV(PyUnicode_FromStringAndSize(v.data(), (Py_ssize_t)v.size())));
-    }
-
-    ScriptRef BoolToValue(bool v)
-    {
-        PyObject* val = v ? Py_True : Py_False;
-        Py_INCREF(val);
-        return ScriptRef::Adopt(ToSV(val));
-    }
-
-    ScriptRef NoneValue()
-    {
-        Py_INCREF(Py_None);
-        return ScriptRef::Adopt(ToSV(Py_None));
-    }
-
-    float ValueToFloat(const ScriptRef& v)
-    {
-        if (!v.IsValid() || v.IsNone()) return 0.0f;
-        GILGuard gil;
-        float result = (float)PyFloat_AsDouble(ToPy(v.Get()));
-        return result;
-    }
-
-    int32_t ValueToInt(const ScriptRef& v)
-    {
-        if (!v.IsValid() || v.IsNone()) return 0;
-        GILGuard gil;
-        int32_t result = (int32_t)PyLong_AsLong(ToPy(v.Get()));
-        return result;
-    }
-
-    uint64_t ValueToUInt64(const ScriptRef& v)
-    {
-        if (!v.IsValid() || v.IsNone()) return 0;
-        GILGuard gil;
-        uint64_t result = PyLong_AsUnsignedLongLong(ToPy(v.Get()));
-        return result;
-    }
-
-    std::string ValueToString(const ScriptRef& v)
-    {
-        if (!v.IsValid() || v.IsNone()) return {};
-        GILGuard gil;
-        const char* str = PyUnicode_AsUTF8(ToPy(v.Get()));
-        std::string result = str ? str : "";
-        return result;
-    }
-
-    bool ValueToBool(const ScriptRef& v)
-    {
-        if (!v.IsValid() || v.IsNone()) return false;
-        GILGuard gil;
-        bool result = Py_IsTrue(ToPy(v.Get()));
-        return result;
-    }
-
-    ScriptRef MakeTuple(const ScriptRef* elements, uint32_t count)
-    {
-        GILGuard gil;
-        PyObject* tuple = PyTuple_New((Py_ssize_t)count);
-        for (uint32_t i = 0; i < count; i++)
-        {
-            PyObject* item = ToPy(elements[i].Get());
-            Py_INCREF(item);
-            PyTuple_SetItem(tuple, (Py_ssize_t)i, item);
-        }
-        ScriptRef result = ScriptRef::Adopt(ToSV(tuple));
-        return result;
-    }
-
-    uint32_t GetTupleSize(const ScriptRef& tuple)
-    {
-        if (!tuple.IsValid()) return 0;
-        GILGuard gil;
-        uint32_t result = (uint32_t)PyTuple_Size(ToPy(tuple.Get()));
-        return result;
-    }
-
-    ScriptRef GetTupleElement(const ScriptRef& tuple, uint32_t index)
-    {
-        if (!tuple.IsValid()) return {};
-        GILGuard gil;
-        PyErrorSaver saver;
-        ScriptRef result;
-        PyObject* item = PyTuple_GetItem(ToPy(tuple.Get()), (Py_ssize_t)index);
-        if (item)
-        {
-            Py_INCREF(item);
-            result = ScriptRef::Adopt(ToSV(item));
-        }
-        return result;
     }
 
     NativeModule::NativeModule(const char* name)

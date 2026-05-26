@@ -1,5 +1,6 @@
 import PrismNative as _Prism
 from Prism import Behaviour, Log, Input, Time, KeyCodes
+from Prism.Math import Vector2, Vector3, Vector4, Quaternion, Mathf
 
 
 class SmokeTest(Behaviour):
@@ -7,6 +8,10 @@ class SmokeTest(Behaviour):
     # 公开字段
     TestFloat: float = 3.14
     TestInt: int = 42
+    TestVec2: Vector2 = Vector2(1.0, 2.0)
+    TestVec3: Vector3 = Vector3(1.0, 2.0, 3.0)
+    TestVec4: Vector4 = Vector4(1.0, 2.0, 3.0, 4.0)
+    TestQuat: Quaternion = Quaternion(0.0, 0.0, 0.0, 1.0)
 
     def __init__(self):
         super().__init__()
@@ -32,8 +37,8 @@ class SmokeTest(Behaviour):
 
     def OnUpdate(self):
         self._UpdateCount += 1
-        dt = Time.GetDeltaTime()
-        elapsed = Time.GetTime()
+        dt = Time.DeltaTime
+        elapsed = Time.Time
 
 
         if self._UpdateCount % 60 == 0:
@@ -56,8 +61,8 @@ class SmokeTest(Behaviour):
         Log.Info("[SmokeTest] ✓ Log API")
 
     def _TestTime(self):
-        dt = Time.GetDeltaTime()
-        t = Time.GetTime()
+        dt = Time.DeltaTime
+        t = Time.Time
         assert dt >= 0.0, f"DeltaTime 不应为负: {dt}"
         assert t >= 0.0, f"Time 不应为负: {t}"
         Log.Info(f"[SmokeTest] ✓ Time API: dt={dt:.6f}, time={t:.2f}")

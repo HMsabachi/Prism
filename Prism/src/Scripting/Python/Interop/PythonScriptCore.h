@@ -2,6 +2,8 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <glm/glm.hpp>
+#include "PythonMathBridge.h"
 
 namespace Prism::Python {
     struct ScriptValue;
@@ -76,11 +78,11 @@ namespace Prism::Python {
     public:
         ScriptModule() = default;
         static ScriptModule Import(const char* name);
-            static bool ModuleExists(const char* name);
+        static bool ModuleExists(const char* name);
 
         ScriptRef GetAttribute(const char* name) const;
         bool HasAttribute(const char* name) const;
-        std::vector<std::string> GetNames() const;  // dir(module)
+        std::vector<std::string> GetNames() const;
 
         bool IsValid() const { return m_Ref.IsValid(); }
 
@@ -96,19 +98,18 @@ namespace Prism::Python {
         ScriptClass() = default;
         static ScriptClass From(const ScriptModule& mod, const char* name);
 
-        // ── 运行时类型查询（仿 Rolky Type API）──
-        std::string GetName() const;        // __name__
-        std::string GetFullName() const;    // __module__ + "." + __qualname__
-        bool IsSubclassOf(const ScriptClass& other) const;  // issubclass()
+        std::string GetName() const;
+        std::string GetFullName() const;
+        bool IsSubclassOf(const ScriptClass& other) const;
 
         // ── 字段反射 ──
         struct FieldInfo
         {
             std::string Name;
-            std::string TypeAnnotation;  // 标注字符串，如 "float", "int", "Prism.Vector3"
+            std::string TypeAnnotation;
             bool HasDefault = false;
         };
-        std::vector<FieldInfo> GetFields() const;  // __annotations__ + 默认值
+        std::vector<FieldInfo> GetFields() const;
 
         bool HasMethod(const char* name) const;
         bool HasMethodWithArity(const char* name, int userArgCount) const;
@@ -140,9 +141,7 @@ namespace Prism::Python {
         TReturn Invoke(const char* method, TArgs&&... args)
         {
             if constexpr (std::is_same_v<TReturn, void>)
-            {
                 InvokeArgs(method, std::forward<TArgs>(args)...);
-            }
             else
             {
                 ScriptRef result = InvokeArgs(method, std::forward<TArgs>(args)...);
@@ -150,6 +149,7 @@ namespace Prism::Python {
             }
         }
 
+        // GetField<T> — 支持标量和 glm::vec2/3/4
         template<typename T>
         T GetField(const char* name) const;
         template<typename T>
@@ -162,7 +162,6 @@ namespace Prism::Python {
 
         ScriptRef GetRef() const { return m_Ref; }
 
-        // For PythonObject
         template<typename... TArgs>
         ScriptRef InvokeArgs(const char* method, TArgs&&... args);
         ScriptRef InvokeWithTuple(const char* method, const ScriptRef& tuple);
@@ -173,27 +172,7 @@ namespace Prism::Python {
         ScriptRef m_Ref;
     };
 
-    // 转换函数
-    ScriptRef FloatToValue(float v);
-    ScriptRef IntToValue(int32_t v);
-    ScriptRef UInt64ToValue(uint64_t v);
-    ScriptRef StringToValue(const std::string_view v);
-    ScriptRef BoolToValue(bool v);
-    ScriptRef NoneValue();
-
-    float		ValueToFloat(const ScriptRef& v);
-    int32_t		ValueToInt(const ScriptRef& v);
-    uint64_t	ValueToUInt64(const ScriptRef& v);
-    std::string ValueToString(const ScriptRef& v);
-    bool		ValueToBool(const ScriptRef& v);
-
-    // Tuple 操作
-    ScriptRef MakeTuple(const ScriptRef* elements, uint32_t count);
-    uint32_t  GetTupleSize(const ScriptRef& tuple);
-    ScriptRef GetTupleElement(const ScriptRef& tuple, uint32_t index);
-
-    // 原生模块注册
-    using NativeFunction = ScriptValue* (*)(ScriptValue* self, ScriptValue* args);
+    using NativeFunction = ScriptValue * (*)(ScriptValue* self, ScriptValue* args);
 
     class NativeModule
     {
@@ -214,7 +193,7 @@ namespace Prism::Python {
         std::vector<FuncEntry> m_Functions;
     };
 
-
+    // 转换模板 — 将 C++ 类型分派到 PythonMathBridge 的转换函数
     template<typename T>
     ScriptRef ToValue(T&& value)
     {
@@ -245,6 +224,12 @@ namespace Prism::Python {
             return StringToValue(std::string_view(value));
         else if constexpr (std::is_same_v<Raw, bool>)
             return BoolToValue(value);
+        else if constexpr (std::is_same_v<Raw, glm::vec2>)
+            return Vec2ToValue(value);
+        else if constexpr (std::is_same_v<Raw, glm::vec3>)
+            return Vec3ToValue(value);
+        else if constexpr (std::is_same_v<Raw, glm::vec4>)
+            return Vec4ToValue(value);
         else
             static_assert(false, "Unsupported type for Python conversion");
     }
@@ -277,10 +262,17 @@ namespace Prism::Python {
             return ValueToString(v);
         else if constexpr (std::is_same_v<Raw, bool>)
             return ValueToBool(v);
+        else if constexpr (std::is_same_v<Raw, glm::vec2>)
+            return ValueToVec2(v);
+        else if constexpr (std::is_same_v<Raw, glm::vec3>)
+            return ValueToVec3(v);
+        else if constexpr (std::is_same_v<Raw, glm::vec4>)
+            return ValueToVec4(v);
         else
             static_assert(false, "Unsupported type for Python return conversion");
     }
 
+    // ScriptObject 方法模板
     template<typename... TArgs>
     ScriptRef ScriptObject::InvokeArgs(const char* method, TArgs&&... args)
     {
@@ -302,6 +294,7 @@ namespace Prism::Python {
     {
         using Raw = std::decay_t<T>;
         ScriptRef val = GetAttribute(name);
+
         if constexpr (std::is_same_v<Raw, float>)
             return static_cast<T>(ValueToFloat(val));
         else if constexpr (std::is_same_v<Raw, double>)
@@ -326,6 +319,12 @@ namespace Prism::Python {
             return static_cast<T>(ValueToString(val));
         else if constexpr (std::is_same_v<Raw, bool>)
             return static_cast<T>(ValueToBool(val));
+        else if constexpr (std::is_same_v<Raw, glm::vec2>)
+            return static_cast<T>(ValueToVec2(val));
+        else if constexpr (std::is_same_v<Raw, glm::vec3>)
+            return static_cast<T>(ValueToVec3(val));
+        else if constexpr (std::is_same_v<Raw, glm::vec4>)
+            return static_cast<T>(ValueToVec4(val));
         else
             static_assert(false, "Unsupported type for Python field access");
     }
@@ -337,3 +336,5 @@ namespace Prism::Python {
     }
 
 } // namespace Prism::Python
+
+
