@@ -5,6 +5,7 @@
 #include "Prism/Core/LanguageManager.h"
 #include "Scripting/CSharp/CSharpScriptEngine.h"
 #include "Scripting/Python/PythonScriptEngine.h"
+#include "Prism/Scene/Systems/Physics2DSystem.h"
 
 PRISM_API void PrismConnectPhysXDebugger();
 
@@ -521,13 +522,12 @@ namespace Prism
             }
 
             {
-                float physics2DGravity = m_SceneState == SceneState::Edit ? m_EditorScene->GetPhysics2DGravity() : m_RuntimeScene->GetPhysics2DGravity();
-                if (Property(TR("Gravity"), physics2DGravity, -10000.0f, 10000.0f, PropertyFlag::DragProperty))
+                auto* scene = m_SceneState == SceneState::Edit ? m_EditorScene.Raw() : m_RuntimeScene.Raw();
+                if (auto* p2d = scene ? scene->GetSystem<Physics2DSystem>() : nullptr)
                 {
-                    if (m_SceneState == SceneState::Edit)
-                        m_EditorScene->SetPhysics2DGravity(physics2DGravity);
-                    else if (m_RuntimeScene)
-                        m_RuntimeScene->SetPhysics2DGravity(physics2DGravity);
+                    float physics2DGravity = p2d->GetGravity();
+                    if (Property(TR("Gravity"), physics2DGravity, -10000.0f, 10000.0f, PropertyFlag::DragProperty))
+                        p2d->SetGravity(physics2DGravity);
                 }
             }
             Property(TR("Exposure"), m_EditorCamera.GetExposure(), 0.0f, 5.0f, PropertyFlag::SliderProperty);

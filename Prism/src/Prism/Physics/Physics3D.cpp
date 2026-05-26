@@ -1,8 +1,8 @@
 #include "prpch.h"
 #include "Physics3D.h"
 #include "Prism/Scene/Scene.h"
-#include "Prism/Scene/Entity.h"
 #include "Prism/Scene/Components.h"
+#include "Prism/Scene/Entity.h"
 #include "Prism/Renderer/Mesh.h"
 
 #include <PhysX/PxPhysicsAPI.h>
@@ -63,6 +63,8 @@ namespace Prism
     }
 
     static Scene* s_PhysXCollisionScene = nullptr;
+    static Physics3D::CollisionCallback s_OnCollisionBegin;
+    static Physics3D::CollisionCallback s_OnCollisionEnd;
 
     class PhysXContactListener : public physx::PxSimulationEventCallback
     {
@@ -87,18 +89,14 @@ namespace Prism
             {
                 if (pairs[i].flags & physx::PxContactPairFlag::eACTOR_PAIR_HAS_FIRST_TOUCH)
                 {
-                    if (a)
-                        s_PhysXCollisionScene->OnCollisionBegin(a);
-                    if (b)
-                        s_PhysXCollisionScene->OnCollisionBegin(b);
+                    if (a && s_OnCollisionBegin) s_OnCollisionBegin(a);
+                    if (b && s_OnCollisionBegin) s_OnCollisionBegin(b);
                 }
 
                 if (pairs[i].flags & physx::PxContactPairFlag::eACTOR_PAIR_LOST_TOUCH)
                 {
-                    if (a)
-                        s_PhysXCollisionScene->OnCollisionEnd(a);
-                    if (b)
-                        s_PhysXCollisionScene->OnCollisionEnd(b);
+                    if (a && s_OnCollisionEnd) s_OnCollisionEnd(a);
+                    if (b && s_OnCollisionEnd) s_OnCollisionEnd(b);
                 }
             }
         }
@@ -331,5 +329,11 @@ namespace Prism
     void Physics3D::SetCollisionScene(Scene* scene)
     {
         s_PhysXCollisionScene = scene;
+    }
+
+    void Physics3D::SetCollisionCallbacks(CollisionCallback begin, CollisionCallback end)
+    {
+        s_OnCollisionBegin = std::move(begin);
+        s_OnCollisionEnd = std::move(end);
     }
 }

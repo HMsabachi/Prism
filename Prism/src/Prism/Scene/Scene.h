@@ -2,6 +2,9 @@
 #include "Prism/Core/UUID.h"
 
 #include <entt/entt.hpp>
+#include "Systems/ISystem.h"
+#include <vector>
+#include <memory>
 
 namespace Prism
 {
@@ -11,8 +14,6 @@ namespace Prism
     class TextureCube;
     class Texture2D;
     class EditorCamera;
-    struct CSharpScriptStorage;
-    struct PythonScriptStorage;
 }
 
 namespace Prism
@@ -96,18 +97,30 @@ namespace Prism
 
         void CopyTo(Ref<Scene>& target);
 
-        // Collision dispatch (called by physics contact listeners)
-        void OnCollision2DBegin(Entity entity);
-        void OnCollision2DEnd(Entity entity);
-        void OnCollisionBegin(Entity entity);
-        void OnCollisionEnd(Entity entity);
-
         UUID GetUUID() const { return m_SceneID; }
 
         static Ref<Scene> GetScene(UUID uuid);
 
-        float GetPhysics2DGravity() const;
-        void SetPhysics2DGravity(float gravity);
+        // System management
+        template<typename T, typename... Args>
+        T* AddSystem(Args&&... args)
+        {
+            auto system = std::make_unique<T>(std::forward<Args>(args)...);
+            T* ptr = system.get();
+            m_Systems.push_back(std::move(system));
+            return ptr;
+        }
+
+        template<typename T>
+        T* GetSystem()
+        {
+            for (auto& sys : m_Systems)
+                if (auto* ptr = dynamic_cast<T*>(sys.get()))
+                    return ptr;
+            return nullptr;
+        }
+
+        entt::registry& GetRegistry() { return m_Registry; }
 
         // Editor-specific
         void SetSelectedEntity(entt::entity entity) { m_SelectedEntity = entity; }
@@ -138,26 +151,13 @@ namespace Prism
 
         float m_SkyboxLod = 0.0f;
         bool m_IsPlaying = false;
-        CSharpScriptStorage* m_CSharpScriptStorage = nullptr;
-        PythonScriptStorage* m_PythonScriptStorage = nullptr;
 
-        // entt signal callbacks
-        void OnCSharpScriptComponentConstruct(entt::registry& registry, entt::entity entity);
-        void OnCSharpScriptComponentDestroy(entt::registry& registry, entt::entity entity);
-        void OnPythonScriptComponentConstruct(entt::registry& registry, entt::entity entity);
-        void OnPythonScriptComponentDestroy(entt::registry& registry, entt::entity entity);
-        void OnRigidBody2DComponentConstruct(entt::registry& registry, entt::entity entity);
-        void OnRigidBody2DComponentDestroy(entt::registry& registry, entt::entity entity);
-        void OnBoxCollider2DComponentConstruct(entt::registry& registry, entt::entity entity);
-        void OnCircleCollider2DComponentConstruct(entt::registry& registry, entt::entity entity);
-        void OnRigidBodyComponentConstruct(entt::registry& registry, entt::entity entity);
-        void OnRigidBodyComponentDestroy(entt::registry& registry, entt::entity entity);
+        std::vector<std::unique_ptr<ISystem>> m_Systems;
 
         friend class Entity;
         friend class SceneRenderer;
         friend class SceneHierarchyPanel;
         friend class SceneSerializer;
-        friend class ContactListener;
     };
 
 }

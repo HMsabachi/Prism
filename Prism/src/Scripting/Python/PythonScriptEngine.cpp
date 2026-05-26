@@ -181,10 +181,6 @@ namespace Prism
     {
         UUID sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
 
-        auto* obj = GetScriptObject(sceneID, behaviourID);
-        if (obj && obj->IsValid())
-            obj->Invoke<void>("OnDestroy");
-
         // Clear field instances and remove binding
         auto& comp = entity.GetComponent<PythonScriptComponent>();
         for (auto& binding : comp.Behaviours)

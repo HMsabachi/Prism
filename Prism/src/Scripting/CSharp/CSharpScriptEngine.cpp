@@ -147,8 +147,6 @@ namespace Prism
         UUID sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
 
         auto* obj = GetManagedObject(sceneID, behaviourID);
-        if (obj && obj->IsValid())
-            obj->InvokeMethod("OnDestroy");
 
         // Clear field instances and remove binding
         auto& comp = entity.GetComponent<CSharpScriptComponent>();

@@ -2,11 +2,13 @@
 #include "Prism/Core/Core.h"
 
 #include <PhysX/PxPhysicsAPI.h>
+#include <functional>
 
 namespace Prism
 {
-	struct RigidBodyComponent; 
-	class Mesh; 
+	struct RigidBodyComponent;
+	class Mesh;
+	class Entity;
 
 	enum class ForceMode : uint16_t
 	{
@@ -42,6 +44,10 @@ namespace Prism
 		static void SetCollisionFilters(physx::PxRigidActor* actor, uint32_t filterGroup, uint32_t filterMask);
 
 		static void SetCollisionScene(class Scene* scene);
+
+		using CollisionCallback = std::function<void(Entity)>;
+		static void SetCollisionCallbacks(CollisionCallback begin, CollisionCallback end);
+
 		static void ConnectToPhysXDebugger();
 		static void DisconnectFromPhysXDebugger();
 
