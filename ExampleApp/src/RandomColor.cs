@@ -9,21 +9,24 @@ namespace Example
 {
     class RandomColor : Behaviour
     {
-        void OnCreate()
+        Random random = new Random();
+        MaterialInstance material;
+        private void OnCreate()
         {
-            Random random = new Random();
-
             MeshComponent meshComponent = GetComponent<MeshComponent>();
-            MaterialInstance material = meshComponent.Mesh.GetMaterial(0);
+            material = meshComponent.Mesh.GetMaterial(0);
+            GenerateColor();
+        }
+        private void OnUpdate()
+        {
+
+        }
+        public void GenerateColor()
+        {
             float r = (float)random.NextDouble();
             float g = (float)random.NextDouble();
             float b = (float)random.NextDouble();
             material.Set("u_AlbedoColor", new Vector3(r, g, b));
-        }
-
-        void OnUpdate()
-        {
-
         }
     }
 }

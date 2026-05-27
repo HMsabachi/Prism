@@ -86,7 +86,7 @@ namespace Prism
     {
         float ts = Time::GetDeltaTime();
 
-        for (auto& system : m_Systems)
+        for (auto& [hash, system] : m_Systems)
             system->OnUpdate(ts);
     }
 
@@ -97,7 +97,7 @@ namespace Prism
 
         float ts = Time::GetFixedDeltaTime();
 
-        for (auto& system : m_Systems)
+        for (auto& [hash, system] : m_Systems)
             system->OnFixedUpdate(ts);
     }
 
@@ -206,7 +206,7 @@ namespace Prism
     }
     void Scene::OnRuntimeStart()
     {
-        for (auto& system : m_Systems)
+        for (auto& [hash, system] : m_Systems)
             system->OnRuntimeStart();
 
         m_IsPlaying = true;
@@ -214,7 +214,7 @@ namespace Prism
 
     void Scene::OnRuntimeStop()
     {
-        for (auto& system : m_Systems)
+        for (auto& [hash, system] : m_Systems)
             system->OnRuntimeStop();
 
         m_IsPlaying = false;

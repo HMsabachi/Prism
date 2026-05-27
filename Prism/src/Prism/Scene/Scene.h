@@ -1,9 +1,10 @@
-#pragma once
+﻿#pragma once
 #include "Prism/Core/UUID.h"
 
 #include <entt/entt.hpp>
 #include "Systems/ISystem.h"
-#include <vector>
+#include "Prism/Utilities/TypeInfo.h"
+#include <unordered_map>
 #include <memory>
 
 namespace Prism
@@ -102,22 +103,28 @@ namespace Prism
         static Ref<Scene> GetScene(UUID uuid);
 
         // System management
+        template<typename T>
+        static uint32_t GetSystemTypeHash()
+        {
+            static uint32_t hash = TypeInfo<T>().HashCode();
+            return hash;
+        }
+
         template<typename T, typename... Args>
         T* AddSystem(Args&&... args)
         {
+            uint32_t hash = GetSystemTypeHash<T>();
             auto system = std::make_unique<T>(std::forward<Args>(args)...);
             T* ptr = system.get();
-            m_Systems.push_back(std::move(system));
+            m_Systems[hash] = std::move(system);
             return ptr;
         }
 
         template<typename T>
-        T* GetSystem()
+        T* GetSystem() const
         {
-            for (auto& sys : m_Systems)
-                if (auto* ptr = dynamic_cast<T*>(sys.get()))
-                    return ptr;
-            return nullptr;
+            auto it = m_Systems.find(GetSystemTypeHash<T>());
+            return it != m_Systems.end() ? static_cast<T*>(it->second.get()) : nullptr;
         }
 
         entt::registry& GetRegistry() { return m_Registry; }
@@ -152,7 +159,7 @@ namespace Prism
         float m_SkyboxLod = 0.0f;
         bool m_IsPlaying = false;
 
-        std::vector<std::unique_ptr<ISystem>> m_Systems;
+        std::unordered_map<uint32_t, std::unique_ptr<ISystem>> m_Systems;
 
         friend class Entity;
         friend class SceneRenderer;

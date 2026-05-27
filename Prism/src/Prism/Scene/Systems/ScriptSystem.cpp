@@ -8,6 +8,8 @@
 #include "Scripting/Python/PythonScriptStorage.h"
 #include "Scripting/CSharp/CSharpScriptEngine.h"
 #include "Scripting/Python/PythonScriptEngine.h"
+#include "Scripting/CSharp/CSharpScriptMetaRegistry.h"
+#include "Scripting/Python/PythonScriptMetaRegistry.h"
 
 namespace Prism {
 
@@ -173,148 +175,61 @@ namespace Prism {
 
     void ScriptSystem::OnRuntimeStart()
     {
+        m_IsPlaying = true;
         CSharpScriptEngine::SetSceneContext(m_Scene);
         PythonScriptEngine::SetSceneContext(m_Scene);
 
-        // C#: Create Behaviour instances, then Awake → OnCreate → OnEnable
+        // C#: Instantiate each behaviour (create + Awake + OnCreate + OnEnable)
         {
             auto view = m_Scene->GetRegistry().view<CSharpScriptComponent>();
-            UUID sceneID = m_Scene->GetUUID();
             for (auto entity : view)
             {
                 Entity e = { entity, m_Scene };
                 auto& comp = m_Scene->GetRegistry().get<CSharpScriptComponent>(entity);
-                // Create instances
                 for (auto& binding : comp.Behaviours)
-                {
-                    auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
-                    if (!obj || !obj->IsValid())
-                        CSharpScriptEngine::AddBehaviour(e, binding);
-                }
-                // Awake
-                for (auto& binding : comp.Behaviours)
-                {
-                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::Awake))
-                        continue;
-                    auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
-                    if (obj && obj->IsValid())
-                        obj->InvokeMethod("Awake");
-                }
-                // OnCreate
-                for (auto& binding : comp.Behaviours)
-                {
-                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnCreate))
-                        continue;
-                    auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
-                    if (obj && obj->IsValid())
-                        obj->InvokeMethod("OnCreate");
-                }
-                // OnEnable
-                for (auto& binding : comp.Behaviours)
-                {
-                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnEnable))
-                        continue;
-                    auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
-                    if (obj && obj->IsValid() && obj->GetPropertyValue<Rolky::Bool32>("Enabled"))
-                        obj->InvokeMethod("OnEnable");
-                }
+                    InstantiateCSharpBehaviour(e, binding);
             }
         }
 
-        // Python: Create Behaviour instances, then Awake → OnCreate → OnEnable
+        // Python: Instantiate each behaviour (create + Awake + OnCreate + OnEnable)
         {
             auto view = m_Scene->GetRegistry().view<PythonScriptComponent>();
-            UUID sceneID = m_Scene->GetUUID();
             for (auto entity : view)
             {
                 Entity e = { entity, m_Scene };
                 auto& comp = m_Scene->GetRegistry().get<PythonScriptComponent>(entity);
-                // Create instances
                 for (auto& binding : comp.Behaviours)
-                {
-                    auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
-                    if (!obj || !obj->IsValid())
-                        PythonScriptEngine::AddBehaviour(e, binding);
-                }
-                // Awake
-                for (auto& binding : comp.Behaviours)
-                {
-                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::Awake))
-                        continue;
-                    auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
-                    if (obj && obj->IsValid())
-                        obj->Invoke<void>("Awake");
-                }
-                // OnCreate
-                for (auto& binding : comp.Behaviours)
-                {
-                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnCreate))
-                        continue;
-                    auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
-                    if (obj && obj->IsValid())
-                        obj->Invoke<void>("OnCreate");
-                }
-                // OnEnable 
-                for (auto& binding : comp.Behaviours)
-                {
-                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnEnable))
-                        continue;
-                    auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
-                    if (obj && obj->IsValid() && obj->GetField<bool>("Enabled"))
-                        obj->Invoke<void>("OnEnable");
-                }
+                    InstantiatePythonBehaviour(e, binding);
             }
         }
     }
 
     void ScriptSystem::OnRuntimeStop()
     {
+        m_IsPlaying = false;
         CSharpScriptEngine::SetSceneContext(m_Scene);
         PythonScriptEngine::SetSceneContext(m_Scene);
-        // Cleanup C# script runtime — OnDisable → OnDestroy, then clear storage
+
         {
             auto view = m_Scene->GetRegistry().view<CSharpScriptComponent>();
-            UUID sceneID = m_Scene->GetUUID();
             for (auto entity : view)
             {
+                Entity e = { entity, m_Scene };
                 auto& comp = m_Scene->GetRegistry().get<CSharpScriptComponent>(entity);
                 for (auto& binding : comp.Behaviours)
-                {
-                    auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
-                    if (obj && obj->IsValid())
-                    {
-                        if (obj->GetPropertyValue<Rolky::Bool32>("Enabled") && (binding.LifecycleMask & (uint16_t)LifecycleMethod::OnDisable))
-                            obj->InvokeMethod("OnDisable");
-                        if (binding.LifecycleMask & (uint16_t)LifecycleMethod::OnDestroy)
-                            obj->InvokeMethod("OnDestroy");
-                        Entity e = { entity, m_Scene };
-                        CSharpScriptEngine::RemoveBehaviour(e, binding.BehaviourID);
-                    }
-                }
+                    DestroyCSharpBehaviour(e, binding);
                 comp.Behaviours.clear();
             }
         }
 
-        // Cleanup Python script runtime — OnDisable → OnDestroy, then clear storage
         {
             auto view = m_Scene->GetRegistry().view<PythonScriptComponent>();
-            UUID sceneID = m_Scene->GetUUID();
             for (auto entity : view)
             {
+                Entity e = { entity, m_Scene };
                 auto& comp = m_Scene->GetRegistry().get<PythonScriptComponent>(entity);
                 for (auto& binding : comp.Behaviours)
-                {
-                    auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
-                    if (obj && obj->IsValid())
-                    {
-                        if (obj->GetField<bool>("Enabled") && (binding.LifecycleMask & (uint16_t)LifecycleMethod::OnDisable))
-                            obj->Invoke<void>("OnDisable");
-                        if (binding.LifecycleMask & (uint16_t)LifecycleMethod::OnDestroy)
-                            obj->Invoke<void>("OnDestroy");
-                        Entity e = { entity, m_Scene };
-                        PythonScriptEngine::RemoveBehaviour(e, binding.BehaviourID);
-                    }
-                }
+                    DestroyPythonBehaviour(e, binding);
                 comp.Behaviours.clear();
             }
         }
@@ -388,9 +303,223 @@ namespace Prism {
         }
     }
 
-    // ============================================================
-    // Component lifecycle callbacks (entt signal handlers)
-    // ============================================================
+    CSharpBehaviourBinding ScriptSystem::CreateCSharpBinding(UUID classID)
+    {
+        CSharpBehaviourBinding binding;
+        binding.BehaviourID = UUID();
+        binding.ClassID = classID;
+
+        if (auto* meta = CSharpScriptMetaRegistry::GetClassMetadata(classID))
+        {
+            binding.LifecycleMask = meta->LifecycleMask;
+            for (auto& [hash, fieldMeta] : meta->Fields)
+            {
+                CSharpField field(fieldMeta.Name, fieldMeta.Type);
+                if (fieldMeta.DefaultValue.Data && fieldMeta.DefaultValue.Size > 0)
+                    field.SetBuffer(fieldMeta.DefaultValue);
+                binding.Fields[hash] = std::move(field);
+            }
+        }
+        return binding;
+    }
+
+    PythonBehaviourBinding ScriptSystem::CreatePythonBinding(UUID classID)
+    {
+        PythonBehaviourBinding binding;
+        binding.BehaviourID = UUID();
+        binding.ClassID = classID;
+
+        if (auto* meta = PythonScriptMetaRegistry::GetClassMetadata(classID))
+        {
+            binding.LifecycleMask = meta->LifecycleMask;
+            for (auto& [hash, fieldMeta] : meta->Fields)
+            {
+                PythonField field(fieldMeta.Name, fieldMeta.Type);
+                if (fieldMeta.DefaultValue.Data && fieldMeta.DefaultValue.Size > 0)
+                    field.SetBuffer(fieldMeta.DefaultValue);
+                binding.Fields[hash] = std::move(field);
+            }
+        }
+        return binding;
+    }
+
+    void ScriptSystem::RegisterCSharpBinding(Entity entity, CSharpBehaviourBinding&& binding)
+    {
+        auto& comp = entity.GetComponent<CSharpScriptComponent>();
+        comp.Behaviours.push_back(std::move(binding));
+    }
+
+    void ScriptSystem::RegisterPythonBinding(Entity entity, PythonBehaviourBinding&& binding)
+    {
+        auto& comp = entity.GetComponent<PythonScriptComponent>();
+        comp.Behaviours.push_back(std::move(binding));
+    }
+
+    UUID ScriptSystem::AddCSharpBehaviour(Entity entity, UUID classID)
+    {
+        auto binding = CreateCSharpBinding(classID);
+        UUID behaviourID = binding.BehaviourID;
+        RegisterCSharpBinding(entity, std::move(binding));
+
+        if (m_IsPlaying)
+        {
+            auto& comp = entity.GetComponent<CSharpScriptComponent>();
+            InstantiateCSharpBehaviour(entity, comp.Behaviours.back());
+        }
+        return behaviourID;
+    }
+
+    UUID ScriptSystem::AddPythonBehaviour(Entity entity, UUID classID)
+    {
+        auto binding = CreatePythonBinding(classID);
+        UUID behaviourID = binding.BehaviourID;
+        RegisterPythonBinding(entity, std::move(binding));
+
+        if (m_IsPlaying)
+        {
+            auto& comp = entity.GetComponent<PythonScriptComponent>();
+            InstantiatePythonBehaviour(entity, comp.Behaviours.back());
+        }
+        return behaviourID;
+    }
+
+    void ScriptSystem::RemoveCSharpBehaviour(Entity entity, UUID behaviourID)
+    {
+        auto& comp = entity.GetComponent<CSharpScriptComponent>();
+        auto it = std::find_if(comp.Behaviours.begin(), comp.Behaviours.end(),
+            [behaviourID](const auto& b) { return b.BehaviourID == behaviourID; });
+        if (it == comp.Behaviours.end())
+            return;
+
+        if (m_IsPlaying)
+        {
+            CSharpScriptEngine::SetSceneContext(m_Scene);
+            UUID sceneID = m_Scene->GetUUID();
+            auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, behaviourID);
+            if (obj && obj->IsValid())
+            {
+                if ((it->LifecycleMask & (uint16_t)LifecycleMethod::OnDisable)
+                    && obj->GetPropertyValue<Rolky::Bool32>("Enabled"))
+                    obj->InvokeMethod("OnDisable");
+                if (it->LifecycleMask & (uint16_t)LifecycleMethod::OnDestroy)
+                    obj->InvokeMethod("OnDestroy");
+            }
+            for (auto& [hash, field] : it->Fields)
+                field.ClearInstance();
+            CSharpScriptEngine::s_ManagedObjects[sceneID].erase(behaviourID);
+        }
+
+        comp.Behaviours.erase(it);
+    }
+
+    void ScriptSystem::RemovePythonBehaviour(Entity entity, UUID behaviourID)
+    {
+        auto& comp = entity.GetComponent<PythonScriptComponent>();
+        auto it = std::find_if(comp.Behaviours.begin(), comp.Behaviours.end(),
+            [behaviourID](const auto& b) { return b.BehaviourID == behaviourID; });
+        if (it == comp.Behaviours.end())
+            return;
+
+        if (m_IsPlaying)
+        {
+            PythonScriptEngine::SetSceneContext(m_Scene);
+            UUID sceneID = m_Scene->GetUUID();
+            auto* obj = PythonScriptEngine::GetScriptObject(sceneID, behaviourID);
+            if (obj && obj->IsValid())
+            {
+                if ((it->LifecycleMask & (uint16_t)LifecycleMethod::OnDisable)
+                    && obj->GetField<bool>("Enabled"))
+                    obj->Invoke<void>("OnDisable");
+                if (it->LifecycleMask & (uint16_t)LifecycleMethod::OnDestroy)
+                    obj->Invoke<void>("OnDestroy");
+            }
+            for (auto& [hash, field] : it->Fields)
+                field.ClearInstance();
+            PythonScriptEngine::s_PythonScriptObjects[sceneID].erase(behaviourID);
+        }
+
+        comp.Behaviours.erase(it);
+    }
+
+    void ScriptSystem::InstantiateCSharpBehaviour(Entity entity, CSharpBehaviourBinding& binding)
+    {
+        CSharpScriptEngine::SetSceneContext(m_Scene);
+        UUID sceneID = m_Scene->GetUUID();
+        auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
+        if (!obj || !obj->IsValid())
+            CSharpScriptEngine::AddBehaviour(entity, binding);
+
+        obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
+        if (!obj || !obj->IsValid())
+            return;
+
+        if (binding.LifecycleMask & (uint16_t)LifecycleMethod::Awake)
+            obj->InvokeMethod("Awake");
+        if (binding.LifecycleMask & (uint16_t)LifecycleMethod::OnCreate)
+            obj->InvokeMethod("OnCreate");
+        if ((binding.LifecycleMask & (uint16_t)LifecycleMethod::OnEnable)
+            && obj->GetPropertyValue<Rolky::Bool32>("Enabled"))
+            obj->InvokeMethod("OnEnable");
+    }
+
+    void ScriptSystem::InstantiatePythonBehaviour(Entity entity, PythonBehaviourBinding& binding)
+    {
+        PythonScriptEngine::SetSceneContext(m_Scene);
+        UUID sceneID = m_Scene->GetUUID();
+        auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
+        if (!obj || !obj->IsValid())
+            PythonScriptEngine::AddBehaviour(entity, binding);
+
+        obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
+        if (!obj || !obj->IsValid())
+            return;
+
+        if (binding.LifecycleMask & (uint16_t)LifecycleMethod::Awake)
+            obj->Invoke<void>("Awake");
+        if (binding.LifecycleMask & (uint16_t)LifecycleMethod::OnCreate)
+            obj->Invoke<void>("OnCreate");
+        if ((binding.LifecycleMask & (uint16_t)LifecycleMethod::OnEnable)
+            && obj->GetField<bool>("Enabled"))
+            obj->Invoke<void>("OnEnable");
+    }
+
+    void ScriptSystem::DestroyCSharpBehaviour(Entity entity, CSharpBehaviourBinding& binding)
+    {
+        CSharpScriptEngine::SetSceneContext(m_Scene);
+        UUID sceneID = m_Scene->GetUUID();
+        auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
+        if (obj && obj->IsValid())
+        {
+            if ((binding.LifecycleMask & (uint16_t)LifecycleMethod::OnDisable)
+                && obj->GetPropertyValue<Rolky::Bool32>("Enabled"))
+                obj->InvokeMethod("OnDisable");
+            if (binding.LifecycleMask & (uint16_t)LifecycleMethod::OnDestroy)
+                obj->InvokeMethod("OnDestroy");
+        }
+        for (auto& [hash, field] : binding.Fields)
+            field.ClearInstance();
+        CSharpScriptEngine::s_ManagedObjects[sceneID].erase(binding.BehaviourID);
+    }
+
+    void ScriptSystem::DestroyPythonBehaviour(Entity entity, PythonBehaviourBinding& binding)
+    {
+        PythonScriptEngine::SetSceneContext(m_Scene);
+        UUID sceneID = m_Scene->GetUUID();
+        auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
+        if (obj && obj->IsValid())
+        {
+            if ((binding.LifecycleMask & (uint16_t)LifecycleMethod::OnDisable)
+                && obj->GetField<bool>("Enabled"))
+                obj->Invoke<void>("OnDisable");
+            if (binding.LifecycleMask & (uint16_t)LifecycleMethod::OnDestroy)
+                obj->Invoke<void>("OnDestroy");
+        }
+        for (auto& [hash, field] : binding.Fields)
+            field.ClearInstance();
+        PythonScriptEngine::s_PythonScriptObjects[sceneID].erase(binding.BehaviourID);
+    }
+
+    // Component lifecycle callbacks
 
     void ScriptSystem::OnCSharpScriptComponentConstruct(entt::registry& registry, entt::entity entity)
     {

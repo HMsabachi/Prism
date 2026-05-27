@@ -10,6 +10,7 @@
 #include "Scripting/CSharp/CSharpScriptEngine.h"
 #include "Scripting/Python/PythonScriptMetaRegistry.h"
 #include "Scripting/Python/PythonScriptEngine.h"
+#include "Prism/Scene/Systems/ScriptSystem.h"
 #include <assimp/scene.h>
 
 #include <glm/glm.hpp>
@@ -870,18 +871,8 @@ namespace Prism {
                         {
                             if (ImGui::MenuItem(meta->FullName.c_str()))
                             {
-                                CSharpBehaviourBinding binding;
-                                binding.BehaviourID = UUID();
-                                binding.ClassID = meta->ClassID;
-                                binding.LifecycleMask = meta->LifecycleMask;
-                                for (auto& [hash, fieldMeta] : meta->Fields)
-                                {
-                                    CSharpField field(fieldMeta.Name, fieldMeta.Type);
-                                    if (fieldMeta.DefaultValue.Data && fieldMeta.DefaultValue.Size > 0)
-                                        field.SetBuffer(fieldMeta.DefaultValue);
-                                    binding.Fields[hash] = std::move(field);
-                                }
-                                comp.Behaviours.push_back(std::move(binding));
+                                auto* ss = m_Context->GetSystem<ScriptSystem>();
+                                ss->AddCSharpBehaviour(m_SelectionContext, meta->ClassID);
                             }
                         }
                     }
@@ -971,8 +962,8 @@ namespace Prism {
 
                 if (pendingRemove)
                 {
-                    CSharpScriptEngine::SetSceneContext(m_Context);
-                    CSharpScriptEngine::RemoveBehaviour(entity, pendingRemove);
+                    auto* ss = m_Context->GetSystem<ScriptSystem>();
+                    ss->RemoveCSharpBehaviour(entity, pendingRemove);
                 }
 
                 ImGui::TreePop();
@@ -1003,18 +994,8 @@ namespace Prism {
                         {
                             if (ImGui::MenuItem(meta->FullName.c_str()))
                             {
-                                PythonBehaviourBinding binding;
-                                binding.BehaviourID = UUID();
-                                binding.ClassID = meta->ClassID;
-                                binding.LifecycleMask = meta->LifecycleMask;
-                                for (auto& [hash, fieldMeta] : meta->Fields)
-                                {
-                                    PythonField field(fieldMeta.Name, fieldMeta.Type);
-                                    if (fieldMeta.DefaultValue.Data && fieldMeta.DefaultValue.Size > 0)
-                                        field.SetBuffer(fieldMeta.DefaultValue);
-                                    binding.Fields[hash] = std::move(field);
-                                }
-                                comp.Behaviours.push_back(std::move(binding));
+                                auto* ss = m_Context->GetSystem<ScriptSystem>();
+                                ss->AddPythonBehaviour(entity, meta->ClassID);
                             }
                         }
                     }
@@ -1118,8 +1099,8 @@ namespace Prism {
 
                 if (pendingRemove)
                 {
-                    PythonScriptEngine::SetSceneContext(m_Context);
-                    PythonScriptEngine::RemoveBehaviour(entity, pendingRemove);
+                    auto* ss = m_Context->GetSystem<ScriptSystem>();
+                    ss->RemovePythonBehaviour(entity, pendingRemove);
                 }
 
                 ImGui::TreePop();

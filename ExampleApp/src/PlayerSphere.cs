@@ -22,6 +22,7 @@ namespace Example
         private bool Colliding => m_CollisionCounter > 0;
 
         private TransformComponent m_Transform;
+        private RandomColor randomColor;
 
         void OnCreate()
         {
@@ -31,18 +32,21 @@ namespace Example
             MeshComponent meshComponent = GetComponent<MeshComponent>();
             m_MeshMaterial = meshComponent.Mesh.GetMaterial(0);
             m_MeshMaterial.Set("u_Metalness", 0.0f);
-            CreateComponent<RandomColor>();
+            randomColor = CreateComponent<RandomColor>();
         }
 
         public void OnCollisionBegin(float data)
         {
-            Log.Trace("PlayerSphere OnCollisionBegin {0}", data);
             m_CollisionCounter++;
+            if (Colliding)
+                m_MeshMaterial.Set("u_AlbedoColor", new Vector3(1.0f, 0.0f, 0.0f));
         }
 
         public void OnCollisionEnd(float data)
         {
             m_CollisionCounter--;
+            if (!Colliding)
+                randomColor.GenerateColor();
         }
 
         void OnFixedUpdate()
@@ -67,10 +71,6 @@ namespace Example
 
             if (Colliding && Input.IsKeyPressed(KeyCode.Space))
                 m_PhysicsBody.AddForce(up * JumpForce);
-            if (Colliding)
-                m_MeshMaterial.Set("u_AlbedoColor", new Vector3(1.0f, 0.0f, 0.0f));
-            else
-                m_MeshMaterial.Set("u_AlbedoColor", new Vector3(0.8f, 0.8f, 0.8f));
             Vector3 linearVelocity = m_PhysicsBody.GetLinearVelocity();
             linearVelocity.Clamp(new Vector3(-MaxSpeed.X, -1000, -MaxSpeed.Z), MaxSpeed);
             m_PhysicsBody.SetLinearVelocity(linearVelocity);

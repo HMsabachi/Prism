@@ -14,6 +14,7 @@
 #include <Prism/Core/Hash.h>
 #include "Scripting/CSharp/CSharpScriptMetaRegistry.h"
 #include "Scripting/Python/PythonScriptMetaRegistry.h"
+#include "Prism/Scene/Systems/ScriptSystem.h"
 
 #include <iostream>
 #include <fstream>
@@ -817,18 +818,18 @@ namespace Prism {
                     {
                         for (auto bindingNode : behavioursNode)
                         {
-                            CSharpBehaviourBinding binding;
-                            binding.BehaviourID = (UUID)bindingNode["ID"].as<uint64_t>();
+                            UUID classID;
                             if (bindingNode["ClassID"])
-                                binding.ClassID = (UUID)bindingNode["ClassID"].as<uint64_t>();
+                                classID = (UUID)bindingNode["ClassID"].as<uint64_t>();
                             else if (bindingNode["ClassName"])
                             {
-                                // Backward compat: old format with ClassName string
                                 std::string className = bindingNode["ClassName"].as<std::string>();
-                                binding.ClassID = CSharpScriptMetaRegistry::GenerateClassID(className);
+                                classID = CSharpScriptMetaRegistry::GenerateClassID(className);
                             }
-                            if (auto* meta = CSharpScriptMetaRegistry::GetClassMetadata(binding.ClassID))
-                                binding.LifecycleMask = meta->LifecycleMask;
+
+                            auto* ss = m_Scene->GetSystem<ScriptSystem>();
+                            auto binding = ss->CreateCSharpBinding(classID);
+                            binding.BehaviourID = (UUID)bindingNode["ID"].as<uint64_t>();
 
                             auto fieldsNode = bindingNode["Fields"];
                             if (fieldsNode)
@@ -837,85 +838,63 @@ namespace Prism {
                                 {
                                     std::string fieldName = fieldNode["Name"].as<std::string>();
                                     ScriptFieldType fieldType = (ScriptFieldType)fieldNode["Type"].as<uint16_t>();
-                                    CSharpField field(fieldName, fieldType);
+                                    uint32_t fieldHash = HashFieldName(fieldName);
 
-                                    if (fieldNode["Value"])
+                                    auto it = binding.Fields.find(fieldHash);
+                                    if (it != binding.Fields.end() && it->second.GetType() == fieldType && fieldNode["Value"])
                                     {
-                                        switch (field.GetType())
+                                        switch (fieldType)
                                         {
                                         case ScriptFieldType::Float:
-                                            field.SetValue(fieldNode["Value"].as<float>());
+                                            it->second.SetValue(fieldNode["Value"].as<float>());
                                             break;
                                         case ScriptFieldType::Double:
-                                            field.SetValue(fieldNode["Value"].as<double>());
+                                            it->second.SetValue(fieldNode["Value"].as<double>());
                                             break;
                                         case ScriptFieldType::Bool:
-                                            field.SetValue(fieldNode["Value"].as<bool>());
+                                            it->second.SetValue(fieldNode["Value"].as<bool>());
                                             break;
                                         case ScriptFieldType::Int8:
-                                            field.SetValue(fieldNode["Value"].as<int8_t>());
+                                            it->second.SetValue(fieldNode["Value"].as<int8_t>());
                                             break;
                                         case ScriptFieldType::Int16:
-                                            field.SetValue(fieldNode["Value"].as<int16_t>());
+                                            it->second.SetValue(fieldNode["Value"].as<int16_t>());
                                             break;
                                         case ScriptFieldType::Int32:
-                                            field.SetValue(fieldNode["Value"].as<int32_t>());
+                                            it->second.SetValue(fieldNode["Value"].as<int32_t>());
                                             break;
                                         case ScriptFieldType::Int64:
-                                            field.SetValue(fieldNode["Value"].as<int64_t>());
+                                            it->second.SetValue(fieldNode["Value"].as<int64_t>());
                                             break;
                                         case ScriptFieldType::UInt8:
-                                            field.SetValue(fieldNode["Value"].as<uint8_t>());
+                                            it->second.SetValue(fieldNode["Value"].as<uint8_t>());
                                             break;
                                         case ScriptFieldType::UInt16:
-                                            field.SetValue(fieldNode["Value"].as<uint16_t>());
+                                            it->second.SetValue(fieldNode["Value"].as<uint16_t>());
                                             break;
                                         case ScriptFieldType::UInt32:
-                                            field.SetValue(fieldNode["Value"].as<uint32_t>());
+                                            it->second.SetValue(fieldNode["Value"].as<uint32_t>());
                                             break;
                                         case ScriptFieldType::UInt64:
-                                            field.SetValue(fieldNode["Value"].as<uint64_t>());
+                                            it->second.SetValue(fieldNode["Value"].as<uint64_t>());
                                             break;
                                         case ScriptFieldType::Vector2:
-                                            field.SetValue(fieldNode["Value"].as<glm::vec2>());
+                                            it->second.SetValue(fieldNode["Value"].as<glm::vec2>());
                                             break;
                                         case ScriptFieldType::Vector3:
-                                            field.SetValue(fieldNode["Value"].as<glm::vec3>());
+                                            it->second.SetValue(fieldNode["Value"].as<glm::vec3>());
                                             break;
                                         case ScriptFieldType::Vector4:
-                                            field.SetValue(fieldNode["Value"].as<glm::vec4>());
+                                            it->second.SetValue(fieldNode["Value"].as<glm::vec4>());
                                             break;
                                         case ScriptFieldType::Object:
-                                            // TODO: Serialize object references (e.g. assets, entities)
                                             break;
                                         }
                                     }
-
-                                    uint32_t fieldHash = HashFieldName(fieldName);
-                                    binding.Fields[fieldHash] = std::move(field);
                                 }
                             }
 
-                            // Reconcile: rebuild fields from current metadata (script may have changed)
-                            if (auto* meta = CSharpScriptMetaRegistry::GetClassMetadata(binding.ClassID))
-                            {
-                                auto oldFields = std::move(binding.Fields);
-                                for (auto& [hash, fieldMeta] : meta->Fields)
-                                {
-                                    auto it = oldFields.find(hash);
-                                    if (it != oldFields.end() && it->second.GetType() == fieldMeta.Type)
-                                        binding.Fields[hash] = std::move(it->second);
-                                    else
-                                    {
-                                        CSharpField field(fieldMeta.Name, fieldMeta.Type);
-                                        if (fieldMeta.DefaultValue.Data && fieldMeta.DefaultValue.Size > 0)
-                                            field.SetBuffer(fieldMeta.DefaultValue);
-                                        binding.Fields[hash] = std::move(field);
-                                    }
-                                }
-                            }
-
-                            comp.Behaviours.push_back(std::move(binding));
+                            ss->RegisterCSharpBinding(deserializedEntity, std::move(binding));
                         }
                     }
 
@@ -932,19 +911,19 @@ namespace Prism {
                     {
                         for (auto bindingNode : behavioursNode)
                         {
-                            PythonBehaviourBinding binding;
-                            binding.BehaviourID = (UUID)bindingNode["ID"].as<uint64_t>();
+                            UUID classID;
                             if (bindingNode["ClassID"])
-                                binding.ClassID = (UUID)bindingNode["ClassID"].as<uint64_t>();
+                                classID = (UUID)bindingNode["ClassID"].as<uint64_t>();
                             else if (bindingNode["ClassName"] && bindingNode["ModuleName"])
                             {
-                                // Backward compat: old format with ClassName + ModuleName strings
                                 std::string className = bindingNode["ClassName"].as<std::string>();
                                 std::string moduleName = bindingNode["ModuleName"].as<std::string>();
-                                binding.ClassID = PythonScriptMetaRegistry::GenerateClassID(moduleName + "." + className);
+                                classID = PythonScriptMetaRegistry::GenerateClassID(moduleName + "." + className);
                             }
-                            if (auto* meta = PythonScriptMetaRegistry::GetClassMetadata(binding.ClassID))
-                                binding.LifecycleMask = meta->LifecycleMask;
+
+                            auto* ss = m_Scene->GetSystem<ScriptSystem>();
+                            auto binding = ss->CreatePythonBinding(classID);
+                            binding.BehaviourID = (UUID)bindingNode["ID"].as<uint64_t>();
 
                             auto fieldsNode = bindingNode["Fields"];
                             if (fieldsNode)
@@ -953,85 +932,63 @@ namespace Prism {
                                 {
                                     std::string fieldName = fieldNode["Name"].as<std::string>();
                                     ScriptFieldType fieldType = (ScriptFieldType)fieldNode["Type"].as<uint16_t>();
-                                    PythonField field(fieldName, fieldType);
+                                    uint32_t fieldHash = HashFieldName(fieldName);
 
-                                    if (fieldNode["Value"])
+                                    auto it = binding.Fields.find(fieldHash);
+                                    if (it != binding.Fields.end() && it->second.GetType() == fieldType && fieldNode["Value"])
                                     {
-                                        switch (field.GetType())
+                                        switch (fieldType)
                                         {
                                         case ScriptFieldType::Float:
-                                            field.SetValue(fieldNode["Value"].as<float>());
+                                            it->second.SetValue(fieldNode["Value"].as<float>());
                                             break;
                                         case ScriptFieldType::Double:
-                                            field.SetValue(fieldNode["Value"].as<double>());
+                                            it->second.SetValue(fieldNode["Value"].as<double>());
                                             break;
                                         case ScriptFieldType::Bool:
-                                            field.SetValue(fieldNode["Value"].as<bool>());
+                                            it->second.SetValue(fieldNode["Value"].as<bool>());
                                             break;
                                         case ScriptFieldType::Int8:
-                                            field.SetValue(fieldNode["Value"].as<int8_t>());
+                                            it->second.SetValue(fieldNode["Value"].as<int8_t>());
                                             break;
                                         case ScriptFieldType::Int16:
-                                            field.SetValue(fieldNode["Value"].as<int16_t>());
+                                            it->second.SetValue(fieldNode["Value"].as<int16_t>());
                                             break;
                                         case ScriptFieldType::Int32:
-                                            field.SetValue(fieldNode["Value"].as<int32_t>());
+                                            it->second.SetValue(fieldNode["Value"].as<int32_t>());
                                             break;
                                         case ScriptFieldType::Int64:
-                                            field.SetValue(fieldNode["Value"].as<int64_t>());
+                                            it->second.SetValue(fieldNode["Value"].as<int64_t>());
                                             break;
                                         case ScriptFieldType::UInt8:
-                                            field.SetValue(fieldNode["Value"].as<uint8_t>());
+                                            it->second.SetValue(fieldNode["Value"].as<uint8_t>());
                                             break;
                                         case ScriptFieldType::UInt16:
-                                            field.SetValue(fieldNode["Value"].as<uint16_t>());
+                                            it->second.SetValue(fieldNode["Value"].as<uint16_t>());
                                             break;
                                         case ScriptFieldType::UInt32:
-                                            field.SetValue(fieldNode["Value"].as<uint32_t>());
+                                            it->second.SetValue(fieldNode["Value"].as<uint32_t>());
                                             break;
                                         case ScriptFieldType::UInt64:
-                                            field.SetValue(fieldNode["Value"].as<uint64_t>());
+                                            it->second.SetValue(fieldNode["Value"].as<uint64_t>());
                                             break;
                                         case ScriptFieldType::Vector2:
-                                            field.SetValue(fieldNode["Value"].as<glm::vec2>());
+                                            it->second.SetValue(fieldNode["Value"].as<glm::vec2>());
                                             break;
                                         case ScriptFieldType::Vector3:
-                                            field.SetValue(fieldNode["Value"].as<glm::vec3>());
+                                            it->second.SetValue(fieldNode["Value"].as<glm::vec3>());
                                             break;
                                         case ScriptFieldType::Vector4:
-                                            field.SetValue(fieldNode["Value"].as<glm::vec4>());
+                                            it->second.SetValue(fieldNode["Value"].as<glm::vec4>());
                                             break;
                                         case ScriptFieldType::Object:
-                                            // TODO: Serialize object references (e.g. assets, entities)
                                             break;
                                         }
                                     }
-
-                                    uint32_t fieldHash = HashFieldName(fieldName);
-                                    binding.Fields[fieldHash] = std::move(field);
                                 }
                             }
 
-                            // Reconcile: rebuild fields from current metadata (script may have changed)
-                            if (auto* meta = PythonScriptMetaRegistry::GetClassMetadata(binding.ClassID))
-                            {
-                                auto oldFields = std::move(binding.Fields);
-                                for (auto& [hash, fieldMeta] : meta->Fields)
-                                {
-                                    auto it = oldFields.find(hash);
-                                    if (it != oldFields.end() && it->second.GetType() == fieldMeta.Type)
-                                        binding.Fields[hash] = std::move(it->second);
-                                    else
-                                    {
-                                        PythonField field(fieldMeta.Name, fieldMeta.Type);
-                                        if (fieldMeta.DefaultValue.Data && fieldMeta.DefaultValue.Size > 0)
-                                            field.SetBuffer(fieldMeta.DefaultValue);
-                                        binding.Fields[hash] = std::move(field);
-                                    }
-                                }
-                            }
-
-                            comp.Behaviours.push_back(std::move(binding));
+                            ss->RegisterPythonBinding(deserializedEntity, std::move(binding));
                         }
                     }
 

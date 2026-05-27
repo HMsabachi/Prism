@@ -23,15 +23,34 @@ namespace Prism {
         void OnCollisionBegin(Entity entity);
         void OnCollisionEnd(Entity entity);
 
+        CSharpBehaviourBinding CreateCSharpBinding(UUID classID);
+        PythonBehaviourBinding CreatePythonBinding(UUID classID);
+
+        void RegisterCSharpBinding(Entity entity, CSharpBehaviourBinding&& binding);
+        void RegisterPythonBinding(Entity entity, PythonBehaviourBinding&& binding);
+
+        UUID AddCSharpBehaviour(Entity entity, UUID classID);
+        UUID AddPythonBehaviour(Entity entity, UUID classID);
+
+        void RemoveCSharpBehaviour(Entity entity, UUID behaviourID);
+        void RemovePythonBehaviour(Entity entity, UUID behaviourID);
+
     private:
         void OnCSharpScriptComponentConstruct(entt::registry& registry, entt::entity entity);
         void OnCSharpScriptComponentDestroy(entt::registry& registry, entt::entity entity);
         void OnPythonScriptComponentConstruct(entt::registry& registry, entt::entity entity);
         void OnPythonScriptComponentDestroy(entt::registry& registry, entt::entity entity);
 
+        void InstantiateCSharpBehaviour(Entity entity, CSharpBehaviourBinding& binding);
+        void InstantiatePythonBehaviour(Entity entity, PythonBehaviourBinding& binding);
+
+        void DestroyCSharpBehaviour(Entity entity, CSharpBehaviourBinding& binding);
+        void DestroyPythonBehaviour(Entity entity, PythonBehaviourBinding& binding);
+
         Scene* m_Scene;
         CSharpScriptStorage* m_CSharpScriptStorage = nullptr;
         PythonScriptStorage* m_PythonScriptStorage = nullptr;
+        bool m_IsPlaying = false;
     };
 
 }
