@@ -1,7 +1,7 @@
 #include "prpch.h"
 #include "CSharpScriptEngine.h"
 #include "CSharpScriptStorage.h"
-#include "ScriptEngineRegistry.h"
+#include "CSharpScriptEngineRegistry.h"
 #include "CSharpScriptMetaRegistry.h"
 #include "Prism/Scene/Scene.h"
 #include "Prism/Scene/Entity.h"
@@ -198,7 +198,7 @@ namespace Prism
         PR_PROFILE_FUNCTION();
         auto path = std::filesystem::absolute(assemblyPath).string();
         s_EngineAssembly = s_LoadContext->LoadAssembly(path);
-        ScriptEngineRegistry::RegisterAll();
+        CSharpScriptEngineRegistry::RegisterAll();
         auto initClass = s_EngineAssembly.GetType("Prism.Core");
         initClass.InvokeStaticMethod("Init");
     }

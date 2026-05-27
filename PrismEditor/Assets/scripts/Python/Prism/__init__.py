@@ -29,3 +29,11 @@ from Prism.Math.Vector3 import Vector3
 from Prism.Math.Vector4 import Vector4
 from Prism.Math.Quaternion import Quaternion
 from Prism.Math.Mathf import Mathf
+from Prism.Math.Noise import Noise
+from Prism.Math.Interpolate import Interpolate
+from Prism.Math.Matrix4 import Matrix4
+from Prism.Renderer.Color import Color
+from Prism.Renderer.Mesh import Mesh
+from Prism.Renderer.Material import Material, MaterialInstance
+from Prism.Renderer.Texture2D import Texture2D
+from Prism.Renderer.MeshFactory import MeshFactory

@@ -1,1 +1,5 @@
-# Prism Renderer API — 将在后续步骤中实现
+from Prism.Renderer.Color import Color
+from Prism.Renderer.Mesh import Mesh
+from Prism.Renderer.Material import Material, MaterialInstance
+from Prism.Renderer.Texture2D import Texture2D
+from Prism.Renderer.MeshFactory import MeshFactory

@@ -1,19 +1,21 @@
+from typing import Any
 from Prism.Component import Component
 from Prism.Entity import Entity as Ent
 
 
 class Behaviour(Component):
-    Entity: Ent = None  # 运行时由引擎设置，编辑器中为 None
+    Entity: Ent = None
+
     def __init__(self):
         super().__init__()
-        self._enabled = True
+        self._enabled: bool = True
 
     @property
     def Enabled(self) -> bool:
         return self._enabled
 
     @Enabled.setter
-    def Enabled(self, value: bool):
+    def Enabled(self, value: bool) -> None:
         self._enabled = value
 
     @property

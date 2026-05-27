@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <Rolky/Array.hpp>
 
 namespace Rolky

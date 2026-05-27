@@ -1,5 +1,5 @@
-﻿#include "prpch.h"
-#include "ScriptWrappers.h"
+#include "prpch.h"
+#include "CSharpScriptWrappers.h"
 #include "Prism/Core/Math/Noise.h"
 
 #include "Prism/Core/Input.h"

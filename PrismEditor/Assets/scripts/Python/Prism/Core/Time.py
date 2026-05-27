@@ -2,41 +2,38 @@ import PrismNative as _Prism
 
 
 class TimeMeta(type):
-    """Metaclass enabling Time.DeltaTime etc. as class-level properties (同 C# 静态属性)."""
-
     @property
-    def DeltaTime(cls):
+    def DeltaTime(cls) -> float:
         return _Prism.Prism_Time_GetDeltaTime()
 
     @property
-    def UnscaledDeltaTime(cls):
+    def UnscaledDeltaTime(cls) -> float:
         return _Prism.Prism_Time_GetUnscaledDeltaTime()
 
     @property
-    def Time(cls):
+    def Time(cls) -> float:
         return _Prism.Prism_Time_GetTime()
 
     @property
-    def UnscaledTime(cls):
+    def UnscaledTime(cls) -> float:
         return _Prism.Prism_Time_GetUnscaledTime()
 
     @property
-    def FixedDeltaTime(cls):
+    def FixedDeltaTime(cls) -> float:
         return _Prism.Prism_Time_GetFixedDeltaTime()
 
     @property
-    def FrameCount(cls):
+    def FrameCount(cls) -> int:
         return _Prism.Prism_Time_GetFrameCount()
 
     @property
-    def TimeScale(cls):
+    def TimeScale(cls) -> float:
         return _Prism.Prism_Time_GetTimeScale()
 
     @TimeScale.setter
-    def TimeScale(cls, value):
+    def TimeScale(cls, value: float) -> None:
         _Prism.Prism_Time_SetTimeScale(value)
 
 
 class Time(metaclass=TimeMeta):
-    """Python Time API — 用法同 C#: Time.DeltaTime, Time.TimeScale = 1.0"""
     pass

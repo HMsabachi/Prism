@@ -210,8 +210,8 @@ class PlayerSphere(Behaviour):
         # Vector3
         v = Vector3(1.0, 2.0, 3.0)
         assert abs(v.Magnitude - 3.741657) < 0.001
-        assert abs(Vector3.Dot(v, Vector3.Right) - 1.0) < 0.001
-        cross = Vector3.Cross(v, Vector3.Up)
+        assert abs(Mathf.Dot(v, Vector3.Right) - 1.0) < 0.001
+        cross = Mathf.Cross(v, Vector3.Up)
         assert abs(cross.x + 3.0) < 0.001
         n = v.Normalized
         assert abs(n.Magnitude - 1.0) < 0.001

@@ -54,7 +54,7 @@ premake5 xcode4        # macOS Xcode
 - C# 材质 API：`MaterialInstance.Set/GetMaterial`、`SetOverrideMaterial`、`SetKeyword/IsKeywordEnabled`
 - C# 端物理 API：`RigidBody2DComponent.ApplyLinearImpulse`、`RigidBodyComponent.AddForce/AddTorque`（2D/3D 物理）、碰撞回调（`AddCollisionBeginCallback` / `AddCollisionEndCallback`）
 - C# Entity API：`FindEntityByTag`、`HasComponent<T>`、`GetComponent<T>`、`CreateComponent<T>`
-- 示例脚本：MapGenerator（程序化地形）、PlayerCube（2D 物理控制）、PlayerCube3D / PlayerSphere（3D 物理控制）、BasicController（相机移动）、Sink（下沉平台）、RandomColor（随机颜色）
+- 示例脚本：MapGenerator（程序化地形）、PlayerCube（2D 物理）、PlayerSphere（3D 物理）、BasicController（相机跟随）、Sink（下沉平台）、RandomColor（随机颜色）等（已全部移植到 Python）
 
 ### Python 脚本系统（Entity-Behaviour 架构）
 - **Python 3.13** 嵌入式 CPython 运行时，Behaviour 子类自动注册为可挂载脚本组件
@@ -62,7 +62,12 @@ premake5 xcode4        # macOS Xcode
 - **完整生命周期**：`Awake` → `OnCreate` → `OnEnable` → `OnUpdate` → `LateUpdate` → `OnFixedUpdate` → `OnDisable` → `OnDestroy`
 - **碰撞回调**：`OnCollisionBegin` / `OnCollisionEnd` / `OnCollision2DBegin` / `OnCollision2DEnd`
 - `__annotations__` 类型注解自动暴露为编辑器公共字段（支持 float、int、bool、Vector2/3/4、Quaternion）
-- **`Prism` Python 包**分层封装引擎 API：Core（Input/Time/Log/KeyCodes）、Math（Vector2/3/4、Quaternion、Matrix4、Mathf）、Renderer（预留）、Scene（预留）
+- **API 与 C# 端对称**：
+  - Core：Input、Time、Log（format-string）、KeyCodes、Transform
+  - Math：Vector2/3/4（pyglm 继承 + 多构造函数 + 类型注解）、Quaternion、Matrix4、Mathf（含全部向量静态方法）、Noise、Interpolate
+  - Renderer：Mesh、Material、MaterialInstance、Texture2D、MeshFactory、Color
+  - Physics：RigidBody2D（ApplyLinearImpulse/LinearVelocity）、RigidBody（AddForce/AddTorque/LinearVelocity + ForceMode）
+  - Behaviour：GetComponent/HasComponent/CreateComponent、Entity.FindEntityByTag、GetTransform/SetTransform
 - **CPython C API 原生桥接**：`PrismNative` 动态注册模块调用 C++ 引擎函数
 - **PGLM 数学类型桥接**：`PythonMathBridge` 通过 Python Buffer Protocol 双向转换 glm ↔ pyglm 类型
 - Python 标准库完整内置（Lib/ + DLLs/）
@@ -133,18 +138,13 @@ Prism/
 │   │   ├── OpenGL/         # OpenGL 后端实现（Buffer、FBO、Shader、Texture、SSBO 等）
 │   │   └── Windows/        # Windows 平台层（GLFW 窗口、输入）
 │   ├── src/Scripting/      # 多语言脚本引擎
-│   │   ├── ScriptTypes.h   # 共享脚本类型定义（FieldType、LifecycleMethod、Metadata）
-│   │   ├── Utility/        # 脚本工具（ScriptType 类型映射）
-│   │   ├── CSharp/         # C++/C# 互操作引擎（Rolky、InternalCall 注册）
+│   │   ├── ScriptTypes.h   # 共享脚本类型定义
+│   │   ├── CSharp/         # C++/C# 互操作（Rolky、InternalCall）
 │   │   └── Python/         # Python 脚本引擎（CPython 嵌入、PrismNative 桥接）
-│   │       ├── Interop/    # Python C API RAII 封装
-│   │       │   ├── PythonScriptCore.h/.cpp  # ScriptHost、ScriptModule、ScriptClass、ScriptObject
-│   │       │   └── PythonMathBridge.h/.cpp  # glm ↔ pyglm 双向转换
-│   │       ├── PythonField.h             # 字段值绑定（Buffer + ScriptObject 指针）
-│   │       ├── PythonScriptEngine.h/.cpp  # Python 运行时生命周期管理
-│   │       ├── PythonScriptMetaRegistry.h/.cpp # 扫描 .py 文件注册 Behaviour 元数据
-│   │       ├── PythonScriptStorage.h/.cpp   # 场景级 Python 脚本实例存储
-│   │       └── PythonScriptWrappers.h/.cpp  # C++ 函数 → PrismNative Python 模块
+│   │       ├── Interop/    # Python C API RAII + glm ↔ pyglm 转换
+│   │       ├── PythonScriptEngine.h/.cpp
+│   │       ├── PythonScriptMetaRegistry.h/.cpp
+│   │       ├── PythonScriptWrappers.h/.cpp  # C++ → PrismNative 函数注册
 │
 ├── Prism.Scripting/        # C# 脚本层（.NET 9 托管程序集）
 │   └── src/Prism/
@@ -158,18 +158,20 @@ Prism/
 │
 ├── PrismEditor/            # 编辑器应用程序（ImGui + ImGuizmo）
 │   ├── src/                # PrismEditor.cpp、EditorLayer
-│   └── Assets/scripts/Python/  # Python 用户脚本包
-│       ├── Prism/          # 引擎 Python API（Entity、Behaviour、Core、Math）
-│       │   ├── Entity.py         # Entity 包装器（HasComponent/GetComponent/CreateComponent）
-│       │   ├── Behaviour.py      # Behaviour 基类（enabled、transform、GetComponent）
-│       │   ├── Component.py      # Component 基类
+│   └── Assets/scripts/Python/  # Python 用户脚本
+│       ├── Prism/          # 引擎 Python API
+│       │   ├── Entity.py         # Entity 包装器
+│       │   ├── Behaviour.py      # Behaviour 基类
+│       │   ├── Component.py      # Component 基类 + 全部组件实现
 │       │   ├── Core/             # Input、Time、Log、KeyCodes、Transform
-│       │   └── Math/             # Vector2/3/4、Quaternion、Mathf
+│       │   ├── Math/             # Vector2/3/4、Quaternion、Matrix4、Mathf、Noise、Interpolate
+│       │   ├── Renderer/         # Mesh、Material、MaterialInstance、Texture2D、MeshFactory、Color
+│       │   └── Scene/            # 预留
 │       ├── SmokeTest.py    # API 冒烟测试
-│       └── PrismNative.pyi # PrismNative 本机模块类型存根
+│       ├── PlayerSphere.py # 3D 物理测试
+│       └── (C# 示例脚本的 Python 移植版 *.py)
 │
-├── ExampleApp/             # C# 示例脚本项目
-│   └── src/                # Behaviour 子类示例：MapGenerator（程序化地形）、PlayerCube（2D 物理）、PlayerCube3D / PlayerSphere（3D 物理）、BasicController（相机移动）、Sink（下沉平台）、RandomColor（随机颜色）
+├── ExampleApp/             # C# 示例脚本项目（已全部移植到 Python）
 ├── SandBox/                # 旧版 C++ 示例（逐步淘汰）
 ├── vendor/                 # 第三方库
 │   └── Python/             # CPython 3.13 嵌入式运行时（include、libs、DLLs、Lib/）

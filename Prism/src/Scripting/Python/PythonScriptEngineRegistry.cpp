@@ -66,6 +66,9 @@ namespace Prism
 		PR_PYTHON_FUNCTION(Prism_Time_GetTimeScale, "GetTimeScale() -> float");
 		PR_PYTHON_FUNCTION(Prism_Time_SetTimeScale, "SetTimeScale(scale)");
 
+		// Math
+		PR_PYTHON_FUNCTION(Prism_Noise_PerlinNoise, "PerlinNoise(x, y) -> float");
+
 		// Input
 		PR_PYTHON_FUNCTION(Prism_Input_IsKeyPressed, "IsKeyPressed(key) -> bool");
 
@@ -102,8 +105,51 @@ namespace Prism
 		PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_GetLinearVelocity, "GetLinearVelocity(entityID) -> vec3");
 		PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_SetLinearVelocity, "SetLinearVelocity(entityID, velocity)");
 
+		// Mesh
+		PR_PYTHON_FUNCTION(Prism_Mesh_Constructor, "Mesh(cpp_handle, filepath)");
+		PR_PYTHON_FUNCTION(Prism_Mesh_Destructor, "~Mesh(cpp_handle)");
+		PR_PYTHON_FUNCTION(Prism_Mesh_GetMaterial, "GetMaterial(cpp_handle) -> handle");
+		PR_PYTHON_FUNCTION(Prism_Mesh_GetMaterialByIndex, "GetMaterialByIndex(cpp_handle, index) -> handle");
+		PR_PYTHON_FUNCTION(Prism_Mesh_GetMaterialCount, "GetMaterialCount(cpp_handle) -> int");
+		PR_PYTHON_FUNCTION(Prism_Mesh_SetMaterialByIndex, "SetMaterialByIndex(cpp_handle, index, materialHandle)");
+		PR_PYTHON_FUNCTION(Prism_Mesh_SetOverrideMaterial, "SetOverrideMaterial(cpp_handle, materialHandle)");
+		PR_PYTHON_FUNCTION(Prism_Mesh_GetOverrideMaterial, "GetOverrideMaterial(cpp_handle) -> handle");
+
+		// MeshFactory
+		PR_PYTHON_FUNCTION(Prism_MeshFactory_CreatePlane, "CreatePlane(width, height) -> handle");
+
+		// MeshComponent
+		PR_PYTHON_FUNCTION(Prism_MeshComponent_GetMesh, "GetMesh(entityID) -> handle");
+		PR_PYTHON_FUNCTION(Prism_MeshComponent_SetMesh, "SetMesh(entityID, handle)");
+
+		// Texture2D
+		PR_PYTHON_FUNCTION(Prism_Texture2D_Constructor, "Texture2D(cpp_handle, width, height)");
+		PR_PYTHON_FUNCTION(Prism_Texture2D_Destructor, "~Texture2D(cpp_handle)");
+		PR_PYTHON_FUNCTION(Prism_Texture2D_SetData, "SetData(cpp_handle, data)");
+
+		// Material
+		PR_PYTHON_FUNCTION(Prism_Material_Constructor, "Material(cpp_handle, shaderName)");
+		PR_PYTHON_FUNCTION(Prism_Material_Destructor, "~Material(cpp_handle)");
+		PR_PYTHON_FUNCTION(Prism_Material_SetFloat, "SetFloat(cpp_handle, uniform, value)");
+		PR_PYTHON_FUNCTION(Prism_Material_SetTexture, "SetTexture(cpp_handle, uniform, texHandle)");
+		PR_PYTHON_FUNCTION(Prism_Material_SetKeyword, "SetKeyword(cpp_handle, name, enabled)");
+		PR_PYTHON_FUNCTION(Prism_Material_IsKeywordEnabled, "IsKeywordEnabled(cpp_handle, name) -> bool");
+
+		// MaterialInstance
+		PR_PYTHON_FUNCTION(Prism_MaterialInstance_Constructor, "MaterialInstance(cpp_handle, parentHandle)");
+		PR_PYTHON_FUNCTION(Prism_MaterialInstance_Destructor, "~MaterialInstance(cpp_handle)");
+		PR_PYTHON_FUNCTION(Prism_MaterialInstance_SetFloat, "SetFloat(cpp_handle, uniform, value)");
+		PR_PYTHON_FUNCTION(Prism_MaterialInstance_SetVector3, "SetVector3(cpp_handle, uniform, vec3)");
+		PR_PYTHON_FUNCTION(Prism_MaterialInstance_SetVector4, "SetVector4(cpp_handle, uniform, vec4)");
+		PR_PYTHON_FUNCTION(Prism_MaterialInstance_SetTexture, "SetTexture(cpp_handle, uniform, texHandle)");
+		PR_PYTHON_FUNCTION(Prism_MaterialInstance_SetKeyword, "SetKeyword(cpp_handle, name, enabled)");
+		PR_PYTHON_FUNCTION(Prism_MaterialInstance_IsKeywordEnabled, "IsKeywordEnabled(cpp_handle, name) -> bool");
+
+		// MaterialComponent
+		PR_PYTHON_FUNCTION(Prism_MaterialComponent_GetMaterial, "GetMaterial(entityID) -> handle");
+		PR_PYTHON_FUNCTION(Prism_MaterialComponent_SetMaterial, "SetMaterial(entityID, handle)");
+
 		mod.Register();
-		// 注册所有组件类型
 		InitComponentTypes();
 		PR_CORE_TRACE("[Python] PrismNative 模块已注册");
 	}
