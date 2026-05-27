@@ -1,13 +1,13 @@
 import PrismNative as _Prism
 from Prism.Math.Vector2 import Vector2
 from Prism.Math.Vector3 import Vector3
-
+from Prism.Entity import Entity as Ent
 
 class Component:
     """所有组件的基类，持有所属 Entity 的引用。"""
-
+    Entity: "Ent" = None
     def __init__(self):
-        self.Entity = None
+        pass
 
 
 # ════════════════════════════════════════════

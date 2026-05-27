@@ -42,6 +42,8 @@ namespace Prism::Script
     Python::ScriptValue* Prism_Entity_FindEntityByTag(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Entity_RemoveBehaviour(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Entity_GetBehaviour(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_Behaviour_GetEnabled(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_Behaviour_SetEnabled(Python::ScriptValue* self, Python::ScriptValue* args);
 
     // TagComponent
     Python::ScriptValue* Prism_TagComponent_GetTag(Python::ScriptValue* self, Python::ScriptValue* args);

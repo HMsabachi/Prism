@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "ISystem.h"
 #include "Prism/Scene/Entity.h"
@@ -35,6 +35,9 @@ namespace Prism {
         void RemoveCSharpBehaviour(Entity entity, UUID behaviourID);
         void RemovePythonBehaviour(Entity entity, UUID behaviourID);
 
+        bool GetEnabled(UUID behaviourID);
+        void SetEnabled(UUID behaviourID, bool enabled);
+
     private:
         void OnCSharpScriptComponentConstruct(entt::registry& registry, entt::entity entity);
         void OnCSharpScriptComponentDestroy(entt::registry& registry, entt::entity entity);
@@ -51,7 +54,9 @@ namespace Prism {
         CSharpScriptStorage* m_CSharpScriptStorage = nullptr;
         PythonScriptStorage* m_PythonScriptStorage = nullptr;
         bool m_IsPlaying = false;
+
+        std::unordered_map<UUID, CSharpBehaviourBinding*> m_CSharpBindingMap;
+        std::unordered_map<UUID, PythonBehaviourBinding*> m_PythonBindingMap;
     };
 
 }
-

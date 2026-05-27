@@ -233,7 +233,7 @@ namespace Prism::Script
 
         auto& comp = entity.GetComponent<PythonScriptComponent>();
         UUID sceneID = PythonScriptEngine::GetCurrentSceneContext()->GetUUID();
-        for (auto& binding : comp.Behaviours)
+        for (auto& [bid, binding] : comp.Behaviours)
         {
             if (binding.ClassID == classID)
             {
@@ -284,6 +284,24 @@ namespace Prism::Script
 
         auto& tc = entity.GetComponent<TransformComponent>();
         tc.Scale = Python::ValueToVec3(vecObj);
+        return Python::NoneValue().Detach();
+    }
+
+    Python::ScriptValue* Prism_Behaviour_GetEnabled(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        uint64_t behaviourID = Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0));
+        auto* ss = PythonScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
+        return Python::BoolToValue(ss->GetEnabled(UUID(behaviourID))).Detach();
+    }
+
+    Python::ScriptValue* Prism_Behaviour_SetEnabled(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        uint64_t behaviourID = Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0));
+        bool enabled = Python::ValueToBool(Python::GetTupleElement(argsRef, 1));
+        auto* ss = PythonScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
+        ss->SetEnabled(UUID(behaviourID), enabled);
         return Python::NoneValue().Detach();
     }
 

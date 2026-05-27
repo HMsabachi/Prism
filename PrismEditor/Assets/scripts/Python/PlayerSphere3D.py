@@ -12,6 +12,7 @@ class PlayerSphere(Behaviour):
     HorizontalForce: float = 10.0
     JumpForce: float = 10.0
     MaxSpeed: Vector3 = Vector3(0, 0, 0)
+    IsEnabled: bool = True
 
     def OnCreate(self):
         self.m_PhysicsBody = self.GetComponent(RigidBodyComponent)
@@ -23,6 +24,7 @@ class PlayerSphere(Behaviour):
         self.randomColor = self.CreateComponent(RandomColor)
 
         self.m_CollisionCounter = 0
+        self.IsEnabled = self.Enabled
 
     @property
     def _colliding(self):

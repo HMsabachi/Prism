@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "Scene.h"
 
 #include "Prism/Events/Event.h"
@@ -302,7 +302,8 @@ namespace Prism
             entt::entity destEntity = enttMap.at(srcRegistry.get<IDComponent>(srcEntity).ID);
 
             auto& srcComponent = srcRegistry.get<T>(srcEntity);
-            auto& destComponent = dstRegistry.emplace_or_replace<T>(destEntity, srcComponent);
+            dstRegistry.remove<T>(destEntity);
+            dstRegistry.emplace<T>(destEntity, srcComponent);
         }
     }
 
@@ -312,7 +313,8 @@ namespace Prism
         if (registry.any_of<T>(src))
         {
             auto& srcComponent = registry.get<T>(src);
-            registry.emplace_or_replace<T>(dst, srcComponent);
+            registry.remove<T>(dst);
+            registry.emplace<T>(dst, srcComponent);
         }
     }
 

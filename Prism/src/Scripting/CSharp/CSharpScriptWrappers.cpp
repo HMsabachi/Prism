@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "CSharpScriptWrappers.h"
 #include "Prism/Core/Math/Noise.h"
 
@@ -182,7 +182,7 @@ namespace Prism {
 
             auto& comp = entity.GetComponent<CSharpScriptComponent>();
             UUID sceneID = CSharpScriptEngine::GetCurrentSceneContext()->GetUUID();
-            for (auto& binding : comp.Behaviours)
+            for (auto& [bid, binding] : comp.Behaviours)
             {
                 if (binding.ClassID == classID)
                 {
@@ -192,6 +192,18 @@ namespace Prism {
                 }
             }
             return nullptr;
+        }
+
+        bool Prism_Behaviour_GetEnabled(uint64_t behaviourID)
+        {
+            auto* ss = CSharpScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
+            return ss->GetEnabled(UUID(behaviourID));
+        }
+
+        void Prism_Behaviour_SetEnabled(uint64_t behaviourID, bool enabled)
+        {
+            auto* ss = CSharpScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
+            ss->SetEnabled(UUID(behaviourID), enabled);
         }
 
 

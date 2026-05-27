@@ -1,22 +1,23 @@
-from typing import Any
+import PrismNative as _Prism
 from Prism.Component import Component
 from Prism.Entity import Entity as Ent
 
 
 class Behaviour(Component):
     Entity: Ent = None
-
-    def __init__(self):
-        super().__init__()
-        self._enabled: bool = True
+    ID: int = 0
 
     @property
     def Enabled(self) -> bool:
-        return self._enabled
+        if self.ID == 0:
+            return True
+        return _Prism.Prism_Behaviour_GetEnabled(self.ID)
 
     @Enabled.setter
     def Enabled(self, value: bool) -> None:
-        self._enabled = value
+        if self.ID == 0:
+            return
+        _Prism.Prism_Behaviour_SetEnabled(self.ID, value)
 
     @property
     def Transform(self):

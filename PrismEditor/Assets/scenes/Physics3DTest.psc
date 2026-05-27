@@ -36,6 +36,12 @@ Entities:
       Behaviours:
         - ID: 2380484423919574403
           ClassID: 17473292295039821981
+          Enabled: true
+          Fields:
+            - ID: 3048789568
+              Name: ID
+              Type: 11
+              Value: 0
     PythonScriptComponent:
       Behaviours:
         []
@@ -69,6 +75,12 @@ Entities:
       Behaviours:
         - ID: 7801379288073613711
           ClassID: 17473292295039821981
+          Enabled: true
+          Fields:
+            - ID: 3048789568
+              Name: ID
+              Type: 11
+              Value: 0
     PythonScriptComponent:
       Behaviours:
         []
@@ -101,6 +113,7 @@ Entities:
       Behaviours:
         - ID: 7703927552313077461
           ClassID: 14697641082096727597
+          Enabled: true
           Fields:
             - ID: 1693159688
               Name: HorizontalForce
@@ -114,9 +127,32 @@ Entities:
               Name: MaxSpeed
               Type: 13
               Value: [20, 20, 20]
+            - ID: 3048789568
+              Name: ID
+              Type: 11
+              Value: 0
     PythonScriptComponent:
       Behaviours:
-        []
+        - ID: 8416391071943564156
+          ClassID: 16452152310796986188
+          Enabled: true
+          Fields:
+            - ID: 1693159688
+              Name: HorizontalForce
+              Type: 1
+              Value: 80
+            - ID: 868800460
+              Name: JumpForce
+              Type: 1
+              Value: 220
+            - ID: 414202020
+              Name: MaxSpeed
+              Type: 13
+              Value: [20, 20, 20]
+            - ID: 882838894
+              Name: IsEnabled
+              Type: 3
+              Value: true
   - Entity: 5178862374589434728
     TagComponent:
       Tag: Camera
@@ -131,6 +167,7 @@ Entities:
       Behaviours:
         - ID: 5974780048155238521
           ClassID: 502499430819245105
+          Enabled: true
           Fields:
             - ID: 305488032
               Name: Speed
@@ -140,6 +177,10 @@ Entities:
               Name: DistanceFromPlayer
               Type: 1
               Value: 10.8
+            - ID: 3048789568
+              Name: ID
+              Type: 11
+              Value: 0
     PythonScriptComponent:
       Behaviours:
         []
@@ -173,6 +214,12 @@ Entities:
       Behaviours:
         - ID: 12040501226740582726
           ClassID: 17473292295039821981
+          Enabled: true
+          Fields:
+            - ID: 3048789568
+              Name: ID
+              Type: 11
+              Value: 0
     PythonScriptComponent:
       Behaviours:
         []

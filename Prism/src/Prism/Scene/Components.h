@@ -85,6 +85,7 @@ namespace Prism {
 		UUID BehaviourID = 0;
 		UUID ClassID = 0;
 		uint16_t LifecycleMask = 0;
+		bool Enabled = true;
 		std::unordered_map<uint32_t, CSharpField> Fields;
 	};
 
@@ -93,19 +94,20 @@ namespace Prism {
 		UUID BehaviourID = 0;
 		UUID ClassID = 0;
 		uint16_t LifecycleMask = 0;
+		bool Enabled = true;
 		std::unordered_map<uint32_t, PythonField> Fields;
 	};
 
 	struct CSharpScriptComponent
 	{
 		UUID ScriptID = 0;
-		std::vector<CSharpBehaviourBinding> Behaviours;
+		std::unordered_map<UUID, CSharpBehaviourBinding> Behaviours;
 	};
 
 	struct PythonScriptComponent
 	{
 		UUID ScriptID = 0;
-		std::vector<PythonBehaviourBinding> Behaviours;
+		std::unordered_map<UUID, PythonBehaviourBinding> Behaviours;
 	};
 
 	struct CameraComponent

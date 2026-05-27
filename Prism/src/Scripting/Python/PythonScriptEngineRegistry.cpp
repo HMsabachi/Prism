@@ -81,6 +81,8 @@ namespace Prism
 		PR_PYTHON_FUNCTION(Prism_Entity_FindEntityByTag, "FindEntityByTag(tag) -> uint64");
 		PR_PYTHON_FUNCTION(Prism_Entity_RemoveBehaviour, "RemoveBehaviour(entityID, behaviourID)");
 		PR_PYTHON_FUNCTION(Prism_Entity_GetBehaviour, "GetBehaviour(entityID, cls) -> object");
+		PR_PYTHON_FUNCTION(Prism_Behaviour_GetEnabled, "GetEnabled(behaviourID) -> bool");
+		PR_PYTHON_FUNCTION(Prism_Behaviour_SetEnabled, "SetEnabled(behaviourID, enabled)");
 
 		// TagComponent
 		PR_PYTHON_FUNCTION(Prism_TagComponent_GetTag, "GetTag(entityID) -> string");

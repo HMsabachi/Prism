@@ -881,7 +881,7 @@ namespace Prism {
 
                 UUID pendingRemove = 0;
                 int idx = 0;
-                for (auto& binding : comp.Behaviours)
+                for (auto& [bid, binding] : comp.Behaviours)
                 {
                     ImGui::PushID(idx++);
                     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.2f, 0.2f, 0.6f));
@@ -896,6 +896,14 @@ namespace Prism {
 
                     if (ImGui::TreeNodeEx(shortName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
                     {
+                        {
+                            auto* ss = m_Context->GetSystem<ScriptSystem>();
+                            bool enabled = ss->GetEnabled(binding.BehaviourID);
+                            if (ImGui::Checkbox("Enabled", &enabled))
+                                ss->SetEnabled(binding.BehaviourID, enabled);
+                            ImGui::Separator();
+                        }
+
                         for (auto& [hash, field] : binding.Fields)
                         {
                             ImGui::PushID(hash);
@@ -1004,7 +1012,7 @@ namespace Prism {
 
                 UUID pendingRemove = 0;
                 int idx = 0;
-                for (auto& binding : comp.Behaviours)
+                for (auto& [bid, binding] : comp.Behaviours)
                 {
                     ImGui::PushID(idx++);
                     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.2f, 0.2f, 0.6f));
@@ -1019,6 +1027,14 @@ namespace Prism {
 
                     if (ImGui::TreeNodeEx(shortName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
                     {
+                        {
+                            auto* ss = m_Context->GetSystem<ScriptSystem>();
+                            bool enabled = ss->GetEnabled(binding.BehaviourID);
+                            if (ImGui::Checkbox("Enabled", &enabled))
+                                ss->SetEnabled(binding.BehaviourID, enabled);
+                            ImGui::Separator();
+                        }
+
                         for (auto& [hash, field] : binding.Fields)
                         {
                             ImGui::PushID(hash);

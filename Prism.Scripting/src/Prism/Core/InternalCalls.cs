@@ -79,6 +79,8 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<UInt64, NativeString, IntPtr> Prism_Entity_AddBehaviour;
         internal static delegate* unmanaged[Cdecl]<UInt64, ReflectionType, IntPtr> Prism_Entity_GetBehaviour;
         internal static delegate* unmanaged[Cdecl]<UInt64, UInt64, void> Prism_Entity_RemoveBehaviour;
+        internal static delegate* unmanaged[Cdecl]<UInt64, bool> Prism_Behaviour_GetEnabled;
+        internal static delegate* unmanaged[Cdecl]<UInt64, bool, void> Prism_Behaviour_SetEnabled;
 
         // TransformComponent
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_TransformComponent_GetPosition;

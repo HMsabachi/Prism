@@ -4,6 +4,8 @@ from Prism.Core.Transform import Transform
 
 
 class Entity:
+    _id: int
+    _transform: Optional[Transform]
     def __init__(self, entity_id: int = 0):
         self._id: int = entity_id
         self._transform: Optional[Transform] = None

@@ -159,26 +159,18 @@ namespace Prism
     {
         UUID sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
         PR_CORE_ASSERT(sceneID, "没有场景上下文");
-        // Clear field instances and remove binding
         auto& comp = entity.GetComponent<PythonScriptComponent>();
-        for (auto& binding : comp.Behaviours)
+        auto it = comp.Behaviours.find(behaviourID);
+        if (it != comp.Behaviours.end())
         {
-            if (binding.BehaviourID == behaviourID)
-            {
-                for (auto& [hash, field] : binding.Fields)
-                    field.ClearInstance();
-                break;
-            }
+            for (auto& [hash, field] : it->second.Fields)
+                field.ClearInstance();
+            comp.Behaviours.erase(it);
         }
 
         auto sceneIt = s_PythonScriptObjects.find(sceneID);
         if (sceneIt != s_PythonScriptObjects.end())
             sceneIt->second.erase(behaviourID);
-
-        comp.Behaviours.erase(
-            std::remove_if(comp.Behaviours.begin(), comp.Behaviours.end(),
-                [behaviourID](const auto& b) { return b.BehaviourID == behaviourID; }),
-            comp.Behaviours.end());
 
         PR_CORE_INFO("[Python] Removed behaviour {0} from entity {1}", (uint64_t)behaviourID, (uint64_t)entity.GetUUID());
     }
