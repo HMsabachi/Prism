@@ -15,9 +15,6 @@ namespace Prism
     class Scene;
     template<typename T> class Ref;
 
-    extern std::unordered_map<uint64_t, std::function<void(Entity&)>> s_PythonCreateComponentFuncs;
-    extern std::unordered_map<uint64_t, std::function<bool(Entity&)>> s_PythonHasComponentFuncs;
-
     class PRISM_API PythonScriptEngine
     {
     public:

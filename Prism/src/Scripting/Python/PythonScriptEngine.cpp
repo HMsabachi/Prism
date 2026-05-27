@@ -1,60 +1,16 @@
 #include "prpch.h"
 #include "PythonScriptEngine.h"
+#include "PythonScriptEngineRegistry.h"
 #include "PythonScriptStorage.h"
-#include "PythonScriptWrappers.h"
 #include "PythonScriptMetaRegistry.h"
 
 #include <Python.h>
 
-#include "Prism/Scene/Components.h"
 #include "Prism/Scene/Scene.h"
-#include "Prism/Scene/Entity.h"
-#include "Prism/Utilities/TypeInfo.h"
 
 #include <filesystem>
 #include <algorithm>
 #include <imgui.h>
-#include <functional>
-
-namespace Prism
-{
-    std::unordered_map<uint64_t, std::function<void(Entity&)>> s_PythonCreateComponentFuncs;
-    std::unordered_map<uint64_t, std::function<bool(Entity&)>> s_PythonHasComponentFuncs;
-
-    template<typename TComponent>
-    static void RegisterPythonComponent()
-    {
-        const TypeNameString& name = TypeInfo<TComponent, true>().Name();
-
-        // 获取 Python 组件类对象
-        Python::ScriptModule mod = Python::ScriptModule::Import("Prism.Component");
-        PR_CORE_ASSERT(mod.IsValid(), "Python module Prism.Component not found!");
-        Python::ScriptClass cls = Python::ScriptClass::From(mod, name.data());
-        PR_CORE_ASSERT(cls.IsValid(), "Python class {} not found in Prism.Component!", name);
-
-        // 用 Python 类型对象地址做 key（与 id(cls) 等效）
-        uint64_t typeId = cls.GetTypeId();
-        s_PythonCreateComponentFuncs[typeId] = [](Entity& e) { e.AddComponent<TComponent>(); };
-        s_PythonHasComponentFuncs[typeId] = [](Entity& e) { return e.HasComponent<TComponent>(); };
-    }
-
-    static void RegisterPythonComponentTypes()
-    {
-        RegisterPythonComponent<TagComponent>();
-        RegisterPythonComponent<TransformComponent>();
-        RegisterPythonComponent<MeshComponent>();
-        RegisterPythonComponent<CameraComponent>();
-        RegisterPythonComponent<SpriteRendererComponent>();
-        RegisterPythonComponent<MaterialComponent>();
-        RegisterPythonComponent<RigidBody2DComponent>();
-        RegisterPythonComponent<BoxCollider2DComponent>();
-        RegisterPythonComponent<CircleCollider2DComponent>();
-        RegisterPythonComponent<RigidBodyComponent>();
-        RegisterPythonComponent<BoxColliderComponent>();
-        RegisterPythonComponent<SphereColliderComponent>();
-        RegisterPythonComponent<CapsuleColliderComponent>();
-    }
-}
 
 namespace Prism
 {
@@ -76,8 +32,7 @@ namespace Prism
             return;
         }
 
-        Script::RegisterPrismModule();
-        RegisterPythonComponentTypes();
+        PythonScriptEngineRegistry::RegisterAll();
 
         s_Initialized = true;
         PR_CORE_TRACE("[Python] Python 运行时已初始化");
