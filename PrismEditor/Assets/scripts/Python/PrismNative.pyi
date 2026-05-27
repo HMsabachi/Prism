@@ -49,6 +49,15 @@ def Prism_Entity_HasComponent(entityID: int, cls: type) -> bool:
         cls: 组件类
     """
 
+def Prism_Entity_GetBehaviour(entityID: int, cls: type) -> object:
+    """获取实体上已存在的 Behaviour 实例
+    Args:
+        entityID: 实体 ID
+        cls: Behaviour 类
+    Returns:
+        已存在的 Behaviour 对象，不存在则返回 None
+    """
+
 def Prism_TransformComponent_GetPosition(entityID: int) -> tuple[float, float, float]:
     """获取实体的位置
     Args:

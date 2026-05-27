@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "PythonScriptMetaRegistry.h"
 #include "Prism/Core/Log.h"
 #include <Prism/Core/Hash.h>
@@ -13,10 +13,10 @@ namespace Prism
 #define PR_PYTHON_META_ERROR(...) PR_CORE_ERROR("[Python Meta] " __VA_ARGS__)
 
     std::unordered_map<UUID, ScriptClassMetadata> PythonScriptMetaRegistry::s_Classes;
-    std::unordered_map<std::string, UUID> PythonScriptMetaRegistry::s_FullNameToID;
+    std::unordered_map<UUID, std::string> PythonScriptMetaRegistry::s_ClassIDToFullName;
     bool PythonScriptMetaRegistry::s_Initialized = false;
 
-    UUID PythonScriptMetaRegistry::GenerateScriptID(const std::string& str)
+    UUID PythonScriptMetaRegistry::GenerateClassID(const std::string& str)
     {
         return UUID(Hash::GenerateFNVHash64(str));
     }
@@ -139,20 +139,20 @@ namespace Prism
             if (fullName.find("Prism.") == 0)
                 continue;
 
-            UUID scriptID = GenerateScriptID(fullName);
+            UUID classID = GenerateClassID(fullName);
 
-            if (s_Classes.find(scriptID) != s_Classes.end())
+            if (s_Classes.find(classID) != s_Classes.end())
                 continue;
 
             PR_PYTHON_META_INFO("模块: {0}", moduleName);
-            PR_PYTHON_META_INFO("  类: {0} (ID={1})", fullName, (uint64_t)scriptID);
+            PR_PYTHON_META_INFO("  类: {0} (ID={1})", fullName, (uint64_t)classID);
 
-            auto& classMeta = s_Classes[scriptID];
-            classMeta.ScriptID = scriptID;
+            auto& classMeta = s_Classes[classID];
+            classMeta.ClassID = classID;
             classMeta.FullName = fullName;
             classMeta.ModuleName = moduleName;
             classMeta.ClassName = cls.GetName();
-            s_FullNameToID[fullName] = scriptID;
+            s_ClassIDToFullName[classID] = fullName;
 
             Python::ScriptObject tempInstance = cls.CreateInstance();
             if (!tempInstance.IsValid())
@@ -171,7 +171,7 @@ namespace Prism
                     continue;
                 }
 
-                uint32_t fieldHash = (uint32_t)(uint64_t)GenerateScriptID(field.Name);
+                uint32_t fieldHash = (uint32_t)(uint64_t)GenerateClassID(field.Name);
                 PR_PYTHON_META_INFO("    字段: {0} : {1}", field.Name, field.TypeAnnotation);
 
                 ScriptFieldMetadata fieldMeta;
@@ -289,7 +289,7 @@ namespace Prism
         }
 
         s_Classes.clear();
-        s_FullNameToID.clear();
+        s_ClassIDToFullName.clear();
         s_Initialized = false;
     }
 
@@ -316,16 +316,15 @@ namespace Prism
         PR_PYTHON_META_INFO("扫描完成: {0} 个 Behaviour 类", s_Classes.size());
     }
 
-    ScriptClassMetadata* PythonScriptMetaRegistry::GetClassMetadata(UUID scriptID)
+    ScriptClassMetadata* PythonScriptMetaRegistry::GetClassMetadata(UUID classID)
     {
-        auto it = s_Classes.find(scriptID);
+        auto it = s_Classes.find(classID);
         return it != s_Classes.end() ? &it->second : nullptr;
     }
 
     ScriptClassMetadata* PythonScriptMetaRegistry::GetClassMetadata(const std::string& fullName)
     {
-        auto it = s_FullNameToID.find(fullName);
-        return it != s_FullNameToID.end() ? GetClassMetadata(it->second) : nullptr;
+        return GetClassMetadata(GenerateClassID(fullName));
     }
 
     std::vector<ScriptClassMetadata*> PythonScriptMetaRegistry::GetAllBehaviourClasses()

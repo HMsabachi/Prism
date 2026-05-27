@@ -83,7 +83,7 @@ namespace Prism {
 	struct CSharpBehaviourBinding
 	{
 		UUID BehaviourID = 0;
-		std::string ClassName;
+		UUID ClassID = 0;
 		uint16_t LifecycleMask = 0;
 		std::unordered_map<uint32_t, CSharpField> Fields;
 	};
@@ -91,8 +91,7 @@ namespace Prism {
 	struct PythonBehaviourBinding
 	{
 		UUID BehaviourID = 0;
-		std::string ClassName;
-		std::string ModuleName;
+		UUID ClassID = 0;
 		uint16_t LifecycleMask = 0;
 		std::unordered_map<uint32_t, PythonField> Fields;
 	};

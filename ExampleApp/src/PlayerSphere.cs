@@ -1,4 +1,4 @@
-using Prism;
+﻿using Prism;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,6 +31,7 @@ namespace Example
             MeshComponent meshComponent = GetComponent<MeshComponent>();
             m_MeshMaterial = meshComponent.Mesh.GetMaterial(0);
             m_MeshMaterial.Set("u_Metalness", 0.0f);
+            CreateComponent<RandomColor>();
         }
 
         public void OnCollisionBegin(float data)

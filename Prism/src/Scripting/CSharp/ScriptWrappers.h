@@ -55,6 +55,7 @@ namespace Prism
 		uint64_t Prism_Entity_FindEntityByTag(Rolky::String tag);
 		void* Prism_Entity_AddBehaviour(uint64_t entityID, Rolky::String className);
 		void Prism_Entity_RemoveBehaviour(uint64_t entityID, uint64_t behaviourID);
+		void* Prism_Entity_GetBehaviour(uint64_t entityID, Rolky::ReflectionType type);
 
 		// TransformComponent
 		void Prism_TransformComponent_GetPosition(uint64_t entityID, glm::vec3* outPosition);

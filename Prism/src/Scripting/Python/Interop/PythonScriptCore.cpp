@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "PythonScriptCore.h"
 #include "PythonMathBridge.h"
 #ifdef ERROR
@@ -406,6 +406,22 @@ namespace Prism::Python {
             if (s) result = s;
         }
         Py_XDECREF(nameAttr);
+        return result;
+    }
+
+    std::string ScriptClass::GetModuleName() const
+    {
+        if (!m_Ref.IsValid()) return {};
+        GILGuard gil;
+        PyObject* pyCls = ToPy(m_Ref.Get());
+        PyObject* modAttr = PyObject_GetAttrString(pyCls, "__module__");
+        std::string result;
+        if (modAttr && PyUnicode_Check(modAttr))
+        {
+            const char* s = PyUnicode_AsUTF8(modAttr);
+            if (s) result = s;
+        }
+        Py_XDECREF(modAttr);
         return result;
     }
 

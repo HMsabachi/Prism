@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "ScriptWrappers.h"
 #include "Prism/Core/Math/Noise.h"
 
@@ -174,8 +174,8 @@ namespace Prism {
 			auto& comp = entity.GetComponent<CSharpScriptComponent>();
 			auto& binding = comp.Behaviours.emplace_back();
 			binding.BehaviourID = behaviourID;
-			binding.ClassName = classNameStr;
-			if (auto* meta = CSharpScriptMetaRegistry::GetClassMetadata(classNameStr))
+			binding.ClassID = CSharpScriptMetaRegistry::GenerateClassID(classNameStr);
+			if (auto* meta = CSharpScriptMetaRegistry::GetClassMetadata(binding.ClassID))
 				binding.LifecycleMask = meta->LifecycleMask;
 
 			it->second.InvokeMethod("Awake");
@@ -191,6 +191,26 @@ namespace Prism {
 			Entity entity = GetEntityFromEntityID(entityID);
 			UUID bid(behaviourID);
 			CSharpScriptEngine::RemoveBehaviour(entity, bid);
+		}
+
+		void* Prism_Entity_GetBehaviour(uint64_t entityID, Rolky::ReflectionType type)
+		{
+			Entity entity = GetEntityFromEntityID(entityID);
+			Rolky::Type mType = type;
+			UUID classID = CSharpScriptMetaRegistry::GenerateClassID(mType.GetFullName());
+
+			auto& comp = entity.GetComponent<CSharpScriptComponent>();
+			UUID sceneID = CSharpScriptEngine::GetCurrentSceneContext()->GetUUID();
+			for (auto& binding : comp.Behaviours)
+			{
+				if (binding.ClassID == classID)
+				{
+					auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
+					if (obj)
+						return obj->m_Handle;
+				}
+			}
+			return nullptr;
 		}
 
 

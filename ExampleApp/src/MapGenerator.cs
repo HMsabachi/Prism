@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -41,7 +41,6 @@ namespace Example
             texture.SetData(colorMap);
 
             Log.Trace("HasComponent - TransformComponent = {0}", HasComponent<TransformComponent>());
-            Log.Trace("HasComponent - ScriptComponent = {0}", HasComponent<ScriptComponent>());
             Log.Trace("HasComponent - MeshComponent = {0}", HasComponent<MeshComponent>());
 
             MeshComponent meshComponent = GetComponent<MeshComponent>();

@@ -872,7 +872,7 @@ namespace Prism {
                             {
                                 CSharpBehaviourBinding binding;
                                 binding.BehaviourID = UUID();
-                                binding.ClassName = meta->FullName;
+                                binding.ClassID = meta->ClassID;
                                 binding.LifecycleMask = meta->LifecycleMask;
                                 for (auto& [hash, fieldMeta] : meta->Fields)
                                 {
@@ -899,10 +899,9 @@ namespace Prism {
                     ImGui::PopStyleColor();
                     ImGui::SameLine();
 
-                    std::string shortName = binding.ClassName;
-                    auto dotPos = shortName.rfind('.');
-                    if (dotPos != std::string::npos)
-                        shortName = shortName.substr(dotPos + 1);
+                    std::string shortName;
+                    if (auto* meta = CSharpScriptMetaRegistry::GetClassMetadata(binding.ClassID))
+                        shortName = meta->ClassName;
 
                     if (ImGui::TreeNodeEx(shortName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
                     {
@@ -1006,8 +1005,7 @@ namespace Prism {
                             {
                                 PythonBehaviourBinding binding;
                                 binding.BehaviourID = UUID();
-                                binding.ClassName = meta->ClassName;
-                                binding.ModuleName = meta->ModuleName;
+                                binding.ClassID = meta->ClassID;
                                 binding.LifecycleMask = meta->LifecycleMask;
                                 for (auto& [hash, fieldMeta] : meta->Fields)
                                 {
@@ -1034,10 +1032,9 @@ namespace Prism {
                     ImGui::PopStyleColor();
                     ImGui::SameLine();
 
-                    std::string shortName = binding.ClassName;
-                    auto dotPos = shortName.rfind('.');
-                    if (dotPos != std::string::npos)
-                        shortName = shortName.substr(dotPos + 1);
+                    std::string shortName;
+                    if (auto* meta = PythonScriptMetaRegistry::GetClassMetadata(binding.ClassID))
+                        shortName = meta->ClassName;
 
                     if (ImGui::TreeNodeEx(shortName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
                     {

@@ -70,7 +70,7 @@ namespace Prism
 
     struct PRISM_API ScriptClassMetadata
     {
-        UUID ScriptID;
+        UUID ClassID;
         std::string FullName;
         std::string ModuleName;
         std::string ClassName;

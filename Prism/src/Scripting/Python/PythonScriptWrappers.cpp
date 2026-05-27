@@ -172,16 +172,14 @@ namespace Prism::Script
     {
         Python::ScriptRef argsRef(args);
         Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
-        std::string moduleName = Python::ValueToString(Python::GetTupleElement(argsRef, 1));
-        std::string className = Python::ValueToString(Python::GetTupleElement(argsRef, 2));
+        Python::ScriptClass cls = Python::ScriptClass::FromRef(Python::GetTupleElement(argsRef, 1));
+        PR_CORE_ASSERT(cls.IsValid(), "Python class not found!");
+        std::string moduleName = cls.GetModuleName();
+        std::string className = cls.GetName();
 
         UUID sceneID = PythonScriptEngine::GetCurrentSceneContext()->GetUUID();
         UUID behaviourID = UUID();
 
-        Python::ScriptModule mod = Python::ScriptModule::Import(moduleName.c_str());
-        PR_CORE_ASSERT(mod.IsValid(), "Python module not found!");
-        Python::ScriptClass cls = Python::ScriptClass::From(mod, className.c_str());
-        PR_CORE_ASSERT(cls.IsValid(), "Python class not found!");
         Python::ScriptObject obj = cls.CreateInstance();
         PR_CORE_ASSERT(obj.IsValid(), "Failed to create instance!");
 
@@ -197,9 +195,8 @@ namespace Prism::Script
         auto& comp = entity.GetComponent<PythonScriptComponent>();
         auto& binding = comp.Behaviours.emplace_back();
         binding.BehaviourID = behaviourID;
-        binding.ModuleName = moduleName;
-        binding.ClassName = className;
-        if (auto* meta = PythonScriptMetaRegistry::GetClassMetadata(moduleName + "." + className))
+        binding.ClassID = PythonScriptMetaRegistry::GenerateClassID(moduleName + "." + className);
+        if (auto* meta = PythonScriptMetaRegistry::GetClassMetadata(binding.ClassID))
             binding.LifecycleMask = meta->LifecycleMask;
 
         it->second.Invoke<void>("Awake");
@@ -226,6 +223,27 @@ namespace Prism::Script
         Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
         UUID behaviourID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 1)));
         PythonScriptEngine::RemoveBehaviour(entity, behaviourID);
+        return Python::NoneValue().Detach();
+    }
+
+    Python::ScriptValue* Prism_Entity_GetBehaviour(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+        Python::ScriptClass cls = Python::ScriptClass::FromRef(Python::GetTupleElement(argsRef, 1));
+        UUID classID = PythonScriptMetaRegistry::GenerateClassID(cls.GetFullName());
+
+        auto& comp = entity.GetComponent<PythonScriptComponent>();
+        UUID sceneID = PythonScriptEngine::GetCurrentSceneContext()->GetUUID();
+        for (auto& binding : comp.Behaviours)
+        {
+            if (binding.ClassID == classID)
+            {
+                auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
+                if (obj)
+                    return obj->GetRef().Detach();
+            }
+        }
         return Python::NoneValue().Detach();
     }
 

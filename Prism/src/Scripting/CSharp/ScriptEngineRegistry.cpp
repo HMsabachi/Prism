@@ -81,6 +81,7 @@ namespace Prism
 		PR_ADD_INTERNAL_CALL(Prism_Entity_FindEntityByTag);
 		PR_ADD_INTERNAL_CALL(Prism_Entity_AddBehaviour);
 		PR_ADD_INTERNAL_CALL(Prism_Entity_RemoveBehaviour);
+		PR_ADD_INTERNAL_CALL(Prism_Entity_GetBehaviour);
 		// Mesh
 		PR_ADD_INTERNAL_CALL(Prism_MeshComponent_GetMesh);
 		PR_ADD_INTERNAL_CALL(Prism_MeshComponent_SetMesh);

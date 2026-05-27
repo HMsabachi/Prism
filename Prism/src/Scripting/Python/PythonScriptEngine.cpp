@@ -102,24 +102,31 @@ namespace Prism
 
         UUID entityID = entity.GetUUID();
 
-        Python::ScriptModule mod = Python::ScriptModule::Import(binding.ModuleName.c_str());
-        if (!mod.IsValid())
+        auto* meta = PythonScriptMetaRegistry::GetClassMetadata(binding.ClassID);
+        if (!meta)
         {
-            PR_CORE_ERROR("[Python] Cannot add behaviour: module not found {0}", binding.ModuleName);
+            PR_CORE_ERROR("[Python] Cannot add behaviour: class metadata not found for ClassID {0}", (uint64_t)binding.ClassID);
             return 0;
         }
 
-        Python::ScriptClass cls = Python::ScriptClass::From(mod, binding.ClassName.c_str());
+        Python::ScriptModule mod = Python::ScriptModule::Import(meta->ModuleName.c_str());
+        if (!mod.IsValid())
+        {
+            PR_CORE_ERROR("[Python] Cannot add behaviour: module not found {0}", meta->ModuleName);
+            return 0;
+        }
+
+        Python::ScriptClass cls = Python::ScriptClass::From(mod, meta->ClassName.c_str());
         if (!cls.IsValid())
         {
-            PR_CORE_ERROR("[Python] Cannot add behaviour: class {0} not found in {1}", binding.ClassName, binding.ModuleName);
+            PR_CORE_ERROR("[Python] Cannot add behaviour: class {0} not found in {1}", meta->ClassName, meta->ModuleName);
             return 0;
         }
 
         Python::ScriptObject obj = cls.CreateInstance();
         if (!obj.IsValid())
         {
-            PR_CORE_ERROR("[Python] Failed to create instance of {0}", binding.ClassName);
+            PR_CORE_ERROR("[Python] Failed to create instance of {0}", meta->ClassName);
             return 0;
         }
 
@@ -144,7 +151,7 @@ namespace Prism
         for (auto& [hash, field] : binding.Fields)
             field.SetInstance(&it->second);
 
-        PR_CORE_INFO("[Python] Added behaviour {0} ({1}) to entity {2}", binding.ClassName, (uint64_t)behaviourID, (uint64_t)entityID);
+        PR_CORE_INFO("[Python] Added behaviour {0} ({1}) to entity {2}", meta->ClassName, (uint64_t)behaviourID, (uint64_t)entityID);
         return behaviourID;
     }
 

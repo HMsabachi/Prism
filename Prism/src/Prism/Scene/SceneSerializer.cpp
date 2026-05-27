@@ -365,7 +365,7 @@ namespace Prism {
             {
                 out << YAML::BeginMap;
                 out << YAML::Key << "ID" << YAML::Value << (uint64_t)binding.BehaviourID;
-                out << YAML::Key << "ClassName" << YAML::Value << binding.ClassName;
+                out << YAML::Key << "ClassID" << YAML::Value << (uint64_t)binding.ClassID;
                 if (!binding.Fields.empty())
                 {
                     out << YAML::Key << "Fields";
@@ -446,8 +446,7 @@ namespace Prism {
             {
                 out << YAML::BeginMap;
                 out << YAML::Key << "ID" << YAML::Value << (uint64_t)binding.BehaviourID;
-                out << YAML::Key << "ClassName" << YAML::Value << binding.ClassName;
-                out << YAML::Key << "ModuleName" << YAML::Value << binding.ModuleName;
+                out << YAML::Key << "ClassID" << YAML::Value << (uint64_t)binding.ClassID;
                 if (!binding.Fields.empty())
                 {
                     out << YAML::Key << "Fields";
@@ -820,8 +819,15 @@ namespace Prism {
                         {
                             CSharpBehaviourBinding binding;
                             binding.BehaviourID = (UUID)bindingNode["ID"].as<uint64_t>();
-                            binding.ClassName = bindingNode["ClassName"].as<std::string>();
-                            if (auto* meta = CSharpScriptMetaRegistry::GetClassMetadata(binding.ClassName))
+                            if (bindingNode["ClassID"])
+                                binding.ClassID = (UUID)bindingNode["ClassID"].as<uint64_t>();
+                            else if (bindingNode["ClassName"])
+                            {
+                                // Backward compat: old format with ClassName string
+                                std::string className = bindingNode["ClassName"].as<std::string>();
+                                binding.ClassID = CSharpScriptMetaRegistry::GenerateClassID(className);
+                            }
+                            if (auto* meta = CSharpScriptMetaRegistry::GetClassMetadata(binding.ClassID))
                                 binding.LifecycleMask = meta->LifecycleMask;
 
                             auto fieldsNode = bindingNode["Fields"];
@@ -891,7 +897,7 @@ namespace Prism {
                             }
 
                             // Reconcile: rebuild fields from current metadata (script may have changed)
-                            if (auto* meta = CSharpScriptMetaRegistry::GetClassMetadata(binding.ClassName))
+                            if (auto* meta = CSharpScriptMetaRegistry::GetClassMetadata(binding.ClassID))
                             {
                                 auto oldFields = std::move(binding.Fields);
                                 for (auto& [hash, fieldMeta] : meta->Fields)
@@ -928,9 +934,16 @@ namespace Prism {
                         {
                             PythonBehaviourBinding binding;
                             binding.BehaviourID = (UUID)bindingNode["ID"].as<uint64_t>();
-                            binding.ClassName = bindingNode["ClassName"].as<std::string>();
-                            binding.ModuleName = bindingNode["ModuleName"].as<std::string>();
-                            if (auto* meta = PythonScriptMetaRegistry::GetClassMetadata(binding.ModuleName + "." + binding.ClassName))
+                            if (bindingNode["ClassID"])
+                                binding.ClassID = (UUID)bindingNode["ClassID"].as<uint64_t>();
+                            else if (bindingNode["ClassName"] && bindingNode["ModuleName"])
+                            {
+                                // Backward compat: old format with ClassName + ModuleName strings
+                                std::string className = bindingNode["ClassName"].as<std::string>();
+                                std::string moduleName = bindingNode["ModuleName"].as<std::string>();
+                                binding.ClassID = PythonScriptMetaRegistry::GenerateClassID(moduleName + "." + className);
+                            }
+                            if (auto* meta = PythonScriptMetaRegistry::GetClassMetadata(binding.ClassID))
                                 binding.LifecycleMask = meta->LifecycleMask;
 
                             auto fieldsNode = bindingNode["Fields"];
@@ -1000,7 +1013,7 @@ namespace Prism {
                             }
 
                             // Reconcile: rebuild fields from current metadata (script may have changed)
-                            if (auto* meta = PythonScriptMetaRegistry::GetClassMetadata(binding.ModuleName + "." + binding.ClassName))
+                            if (auto* meta = PythonScriptMetaRegistry::GetClassMetadata(binding.ClassID))
                             {
                                 auto oldFields = std::move(binding.Fields);
                                 for (auto& [hash, fieldMeta] : meta->Fields)

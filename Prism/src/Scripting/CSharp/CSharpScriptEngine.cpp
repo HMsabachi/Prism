@@ -112,17 +112,24 @@ namespace Prism
             return 0;
         }
 
-        auto type = GetAppAssembly().GetType(binding.ClassName);
+        auto* meta = CSharpScriptMetaRegistry::GetClassMetadata(binding.ClassID);
+        if (!meta)
+        {
+            PR_CORE_ERROR("[C# Script] Cannot add behaviour: class metadata not found for ClassID {0}", (uint64_t)binding.ClassID);
+            return 0;
+        }
+
+        auto type = GetAppAssembly().GetType(meta->FullName);
         if (!type)
         {
-            PR_CORE_ERROR("[C# Script] Class not found in app assembly: {0}", binding.ClassName);
+            PR_CORE_ERROR("[C# Script] Class not found in app assembly: {0}", meta->FullName);
             return 0;
         }
 
         auto instance = type.CreateInstance();
         if (!instance.IsValid())
         {
-            PR_CORE_ERROR("[C# Script] Failed to create instance of {0}", binding.ClassName);
+            PR_CORE_ERROR("[C# Script] Failed to create instance of {0}", meta->FullName);
             return 0;
         }
 
@@ -145,7 +152,7 @@ namespace Prism
         for (auto& [hash, field] : binding.Fields)
             field.SetInstance(&it->second);
 
-        PR_CORE_INFO("[C# Script] Added behaviour {0} ({1}) to entity {2}", binding.ClassName, (uint64_t)behaviourID, (uint64_t)entityID);
+        PR_CORE_INFO("[C# Script] Added behaviour {0} ({1}) to entity {2}", meta->ClassName, (uint64_t)behaviourID, (uint64_t)entityID);
         return behaviourID;
     }
 

@@ -8,7 +8,7 @@
 #include <type_traits>
 #include <string>
 
-//#include "Prism/Core/Hash.h"
+#include "Prism/Core/Hash.h"
 
 namespace Prism {
 
@@ -80,7 +80,7 @@ namespace Prism {
 
 		TypeNameString Name() { return m_DemangledName; }
 		const TypeNameString& Name() const { return m_DemangledName; }
-		//uint32_t HashCode() const { return Hash::GenerateFNVHash(m_DemangledName.data()); }
+		uint32_t HashCode() const { return Hash::GenerateFNVHash(m_DemangledName.data()); }
 
 	private:
 		TypeNameString m_DemangledName;

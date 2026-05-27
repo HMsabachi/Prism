@@ -105,6 +105,7 @@ namespace Prism::Python {
         uint64_t GetTypeId() const;
 
         std::string GetName() const;
+        std::string GetModuleName() const;
         std::string GetFullName() const;
         bool IsSubclassOf(const ScriptClass& other) const;
 

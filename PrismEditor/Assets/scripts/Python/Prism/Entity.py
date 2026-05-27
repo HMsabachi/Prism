@@ -22,9 +22,13 @@ class Entity:
         return self._transform
 
     def HasComponent(self, cls) -> bool:
+        if issubclass(cls, Behaviour) and cls is not Behaviour:
+            return _Prism.Prism_Entity_GetBehaviour(self._id, cls) is not None
         return _Prism.Prism_Entity_HasComponent(self._id, cls)
 
     def GetComponent(self, cls):
+        if issubclass(cls, Behaviour) and cls is not Behaviour:
+            return _Prism.Prism_Entity_GetBehaviour(self._id, cls)
         if self.HasComponent(cls):
             component = cls()
             component.Entity = self
@@ -33,7 +37,7 @@ class Entity:
 
     def CreateComponent(self, cls):
         if issubclass(cls, Behaviour) and cls is not Behaviour:
-            return _Prism.Prism_Entity_AddBehaviour(self._id, cls.__module__, cls.__name__)
+            return _Prism.Prism_Entity_AddBehaviour(self._id, cls)
         else:
             _Prism.Prism_Entity_CreateComponent(self._id, cls)
             component = cls()

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -30,6 +30,10 @@ namespace Prism
         }
         public bool HasComponent<T>() where T : Component, new()
         {
+            if (typeof(T).IsSubclassOf(typeof(Behaviour)))
+            {
+                unsafe { return InternalCalls.Prism_Entity_GetBehaviour(ID, typeof(T)) != IntPtr.Zero; }
+            }
             unsafe { return InternalCalls.Prism_Entity_HasComponent(ID, typeof(T)); }
         }
         public T CreateComponent<T>() where T : Component, new()
@@ -56,6 +60,15 @@ namespace Prism
         }
         public T GetComponent<T>() where T : Component, new()
         {
+            if (typeof(T).IsSubclassOf(typeof(Behaviour)))
+            {
+                unsafe
+                {
+                    IntPtr handle = InternalCalls.Prism_Entity_GetBehaviour(ID, typeof(T));
+                    if (handle == IntPtr.Zero) return null;
+                    return (T)GCHandle.FromIntPtr(handle).Target;
+                }
+            }
             if (HasComponent<T>())
             {
                 T component = new T();
