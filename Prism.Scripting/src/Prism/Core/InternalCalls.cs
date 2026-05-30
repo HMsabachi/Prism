@@ -22,12 +22,12 @@ namespace Prism
         // Math
         internal static delegate* unmanaged[Cdecl]<float, float, float> Prism_Noise_PerlinNoise;
         // Input
-        internal static delegate* unmanaged[Cdecl]<KeyCode, bool> Prism_Input_IsKeyPressed;
+        internal static delegate* unmanaged[Cdecl]<KeyCode, Bool32> Prism_Input_IsKeyPressed;
         // Entity
         internal static delegate* unmanaged[Cdecl]<UInt64, Matrix4*, void> Prism_Entity_GetTransform;
         internal static delegate* unmanaged[Cdecl]<UInt64, Matrix4*, void> Prism_Entity_SetTransform;
         internal static delegate* unmanaged[Cdecl]<UInt64, ReflectionType, void> Prism_Entity_CreateComponent;
-        internal static delegate* unmanaged[Cdecl]<UInt64, ReflectionType, bool> Prism_Entity_HasComponent;
+        internal static delegate* unmanaged[Cdecl]<UInt64, ReflectionType, Bool32> Prism_Entity_HasComponent;
         // Mesh
         internal static delegate* unmanaged[Cdecl]<UInt64, IntPtr> Prism_MeshComponent_GetMesh;
         internal static delegate* unmanaged[Cdecl]<UInt64, IntPtr, void> Prism_MeshComponent_SetMesh;
@@ -58,13 +58,13 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, IntPtr, void> Prism_MaterialInstance_SetVector3;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, IntPtr, void> Prism_MaterialInstance_SetVector4;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, IntPtr, void> Prism_MaterialInstance_SetTexture;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, bool, void> Prism_Material_SetKeyword;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, bool> Prism_Material_IsKeywordEnabled;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, bool, void> Prism_MaterialInstance_SetKeyword;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, bool> Prism_MaterialInstance_IsKeywordEnabled;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, Bool32, void> Prism_Material_SetKeyword;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, Bool32> Prism_Material_IsKeywordEnabled;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, Bool32, void> Prism_MaterialInstance_SetKeyword;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, Bool32> Prism_MaterialInstance_IsKeywordEnabled;
 
         // RigidBody2DComponent
-        internal static delegate* unmanaged[Cdecl]<UInt64, Vector2*, Vector2*, bool, void> Prism_RigidBody2DComponent_ApplyLinearImpulse;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector2*, Vector2*, Bool32, void> Prism_RigidBody2DComponent_ApplyLinearImpulse;
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector2*, void> Prism_RigidBody2DComponent_GetLinearVelocity;
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector2*, void> Prism_RigidBody2DComponent_SetLinearVelocity;
 
@@ -79,8 +79,8 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<UInt64, NativeString, IntPtr> Prism_Entity_AddBehaviour;
         internal static delegate* unmanaged[Cdecl]<UInt64, ReflectionType, IntPtr> Prism_Entity_GetBehaviour;
         internal static delegate* unmanaged[Cdecl]<UInt64, UInt64, void> Prism_Entity_RemoveBehaviour;
-        internal static delegate* unmanaged[Cdecl]<UInt64, bool> Prism_Behaviour_GetEnabled;
-        internal static delegate* unmanaged[Cdecl]<UInt64, bool, void> Prism_Behaviour_SetEnabled;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Bool32> Prism_Behaviour_GetEnabled;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Bool32, void> Prism_Behaviour_SetEnabled;
 
         // TransformComponent
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_TransformComponent_GetPosition;

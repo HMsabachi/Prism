@@ -1,6 +1,6 @@
 from Prism import (
     Behaviour, Entity, Input, KeyCodes,
-    RigidBodyComponent,
+    RigidBodyComponent, Log
 )
 from Prism.Math import Vector3
 
@@ -55,7 +55,7 @@ class FPSPlayer(Behaviour):
         if self._camera_entity is None:
             return
 
-        # TODO: This workflow needs to be improved. (Will be fixed by object parenting)
+        # TODO: 这个工作流程需要改进（将通过对象父子关系解决）
         camera_transform = self._camera_entity.GetTransform()
         camera_translation = camera_transform.Translation
         player_translation = self.Entity.GetTransform().Translation

@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "CSharpScriptEngineRegistry.h"
 #include "CSharpScriptEngine.h"
 #include "CSharpScriptWrappers.h"
@@ -14,7 +14,7 @@
 namespace Prism
 {
     std::unordered_map<Rolky::TypeId, std::function<void(Entity&)>> s_CreateComponentFuncs;
-    std::unordered_map<Rolky::TypeId, std::function<bool(Entity&)>> s_HasComponentFuncs;
+    std::unordered_map<Rolky::TypeId, std::function<Rolky::Bool32(Entity&)>> s_HasComponentFuncs;
 
     template<typename TComponent>
     static void RegisterManagedComponent()
@@ -27,7 +27,7 @@ namespace Prism
         if (type)
         {
             s_CreateComponentFuncs[type.GetTypeId()] = [](Entity& entity) { entity.AddComponent<TComponent>(); };
-            s_HasComponentFuncs[type.GetTypeId()] = [](Entity& entity) { return entity.HasComponent<TComponent>(); };
+            s_HasComponentFuncs[type.GetTypeId()] = [](Entity& entity) { return (Rolky::Bool32)entity.HasComponent<TComponent>(); };
         }
         else
         {

@@ -20,9 +20,11 @@
 #include <box2d/box2d.h>
 #include <PhysX/PxPhysicsAPI.h>
 
+// Node: 在C#端Bool类型为4字节的Rolky::Bool32，而不是C++的bool类型，因此在这里使用Rolky::Bool32来保持一致性。
+
 namespace Prism {
     extern std::unordered_map<Rolky::TypeId, std::function<void(Entity&)>> s_CreateComponentFuncs;
-    extern std::unordered_map<Rolky::TypeId, std::function<bool(Entity&)>> s_HasComponentFuncs;
+    extern std::unordered_map<Rolky::TypeId, std::function<Rolky::Bool32(Entity&)>> s_HasComponentFuncs;
 }
 
 namespace Prism {
@@ -90,7 +92,7 @@ namespace Prism {
 #pragma endregion
 
 #pragma region Input
-        bool Prism_Input_IsKeyPressed(KeyCode key)
+        Rolky::Bool32 Prism_Input_IsKeyPressed(KeyCode key)
         {
             return Input::IsKeyPressed(key);
         }
@@ -126,11 +128,11 @@ namespace Prism {
             s_CreateComponentFuncs[mType.GetTypeId()](entity);
         }
 
-        bool Prism_Entity_HasComponent(uint64_t entityID, Rolky::ReflectionType type)
+        Rolky::Bool32 Prism_Entity_HasComponent(uint64_t entityID, Rolky::ReflectionType type)
         {
             Entity entity = GetEntityFromEntityID(entityID);
             Rolky::Type mType = type;
-            bool result = s_HasComponentFuncs[mType.GetTypeId()](entity);
+            Rolky::Bool32 result = s_HasComponentFuncs[mType.GetTypeId()](entity);
             return result;
         }
 
@@ -194,13 +196,13 @@ namespace Prism {
             return nullptr;
         }
 
-        bool Prism_Behaviour_GetEnabled(uint64_t behaviourID)
+        Rolky::Bool32 Prism_Behaviour_GetEnabled(uint64_t behaviourID)
         {
             auto* ss = CSharpScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
             return ss->GetEnabled(UUID(behaviourID));
         }
 
-        void Prism_Behaviour_SetEnabled(uint64_t behaviourID, bool enabled)
+        void Prism_Behaviour_SetEnabled(uint64_t behaviourID, Rolky::Bool32 enabled)
         {
             auto* ss = CSharpScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
             ss->SetEnabled(UUID(behaviourID), enabled);
@@ -390,7 +392,7 @@ namespace Prism {
 #pragma endregion
 
 #pragma region RigidBody2DComponent
-        void Prism_RigidBody2DComponent_ApplyLinearImpulse(uint64_t entityID, glm::vec2* impulse, glm::vec2* offset, bool wake)
+        void Prism_RigidBody2DComponent_ApplyLinearImpulse(uint64_t entityID, glm::vec2* impulse, glm::vec2* offset, Rolky::Bool32 wake)
         {
             Entity entity = GetEntityFromEntityID(entityID);
             auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
@@ -545,7 +547,7 @@ namespace Prism {
             uniform.Free(uniform);
         }
 
-        void Prism_Material_SetKeyword(Ref<Material>* _this, Rolky::String name, bool enabled)
+        void Prism_Material_SetKeyword(Ref<Material>* _this, Rolky::String name, Rolky::Bool32 enabled)
         {
             Ref<Material>& instance = *(Ref<Material>*)_this;
             std::string kwName = name;
@@ -553,7 +555,7 @@ namespace Prism {
             instance->SetKeyword(kwName, enabled);
         }
 
-        bool Prism_Material_IsKeywordEnabled(Ref<Material>* _this, Rolky::String name)
+        Rolky::Bool32 Prism_Material_IsKeywordEnabled(Ref<Material>* _this, Rolky::String name)
         {
             Ref<Material>& instance = *(Ref<Material>*)_this;
             std::string kwName = name;
@@ -561,7 +563,7 @@ namespace Prism {
             return instance->IsKeywordEnabled(kwName);
         }
 
-        void Prism_MaterialInstance_SetKeyword(Ref<MaterialInstance>* _this, Rolky::String name, bool enabled)
+        void Prism_MaterialInstance_SetKeyword(Ref<MaterialInstance>* _this, Rolky::String name, Rolky::Bool32 enabled)
         {
             Ref<MaterialInstance>& instance = *(Ref<MaterialInstance>*)_this;
             std::string kwName = name;
@@ -569,7 +571,7 @@ namespace Prism {
             instance->SetKeyword(kwName, enabled);
         }
 
-        bool Prism_MaterialInstance_IsKeywordEnabled(Ref<MaterialInstance>* _this, Rolky::String name)
+        Rolky::Bool32 Prism_MaterialInstance_IsKeywordEnabled(Ref<MaterialInstance>* _this, Rolky::String name)
         {
             Ref<MaterialInstance>& instance = *(Ref<MaterialInstance>*)_this;
             std::string kwName = name;
