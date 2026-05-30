@@ -26,7 +26,7 @@ class Entity:
 
     from Prism.Math.Matrix4 import Matrix4
     def GetTransform(self) -> "Matrix4":
-        return Matrix4(_Prism.Prism_Entity_GetTransform(self._id))
+        return self.Matrix4(_Prism.Prism_Entity_GetTransform(self._id))
 
     def SetTransform(self, transform: "Matrix4") -> None:
         _Prism.Prism_Entity_SetTransform(self._id, transform)

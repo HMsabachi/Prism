@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "Application.h"
 
 #include "Log.h"
@@ -177,6 +177,7 @@ namespace Prism
             timer = 0.0f;
             fps1 = fps0;
         }
+        ImGui::Text("LiveReferenceCount: %d", RefUtils::GetLiveReferenceCount());
         ImGui::Text("Fps: %d", fps1);
         ImGui::End();
     }

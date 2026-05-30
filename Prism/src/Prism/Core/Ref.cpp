@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "Ref.h"
 
 namespace Prism
@@ -28,6 +28,13 @@ namespace Prism
             PR_CORE_ASSERT(instance);
             return s_LiveReferences.find(instance) != s_LiveReferences.end();
         }
+
+        size_t PRISM_API GetLiveReferenceCount()
+        {
+            //std::scoped_lock<std::mutex> lock(s_LiveReferenceMutex);
+            return s_LiveReferences.size();
+        }
+
     }
 
 }

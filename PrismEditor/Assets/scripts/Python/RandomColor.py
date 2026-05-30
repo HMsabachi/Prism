@@ -15,6 +15,7 @@ class RandomColor(Behaviour):
         pass
 
     def GenerateColor(self):
+        if not self.Enabled: return
         r = self.random.random()
         g = self.random.random()
         b = self.random.random()

@@ -23,6 +23,7 @@ namespace Example
         }
         public void GenerateColor()
         {
+            if (!Enabled) return;
             float r = (float)random.NextDouble();
             float g = (float)random.NextDouble();
             float b = (float)random.NextDouble();

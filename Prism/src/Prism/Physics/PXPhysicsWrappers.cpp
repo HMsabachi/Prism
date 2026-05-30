@@ -3,6 +3,8 @@
 #include "Physics.h"
 #include "Prism/Renderer/Mesh.h"
 
+#include <glm/gtx/rotate_vector.hpp>
+
 #include <PhysX/extensions/PxDefaultCpuDispatcher.h>
 #include <PhysX/extensions/PxRigidBodyExt.h>
 #include <PhysX/pvd/PxPvdTransport.h>
@@ -114,7 +116,7 @@ namespace Prism {
         float colliderHeight = collider.Height;
 
         if (size.x != 0.0F)
-            colliderRadius *= size.x;
+            colliderRadius *= (size.x / 2.0F);
 
         if (size.y != 0.0F)
             colliderHeight *= size.y;
@@ -139,8 +141,8 @@ namespace Prism {
 
     physx::PxConvexMesh* PXPhysicsWrappers::CreateConvexMesh(MeshColliderComponent& collider)
     {
-        const auto& vertices = collider.CollisionMesh->GetStaticVertices();
-        const auto& indices = collider.CollisionMesh->GetIndices();
+        // TODO: Save cooked mesh once processed
+        std::vector<Vertex> vertices = collider.CollisionMesh->GetStaticVertices();
 
         physx::PxConvexMeshDesc convexDesc;
         convexDesc.points.count = vertices.size();
@@ -194,7 +196,7 @@ namespace Prism {
                 uint32_t vI0 = vertCounter;
                 for (uint32_t vI = 0; vI < polygon.mNbVerts; vI++)
                 {
-                    collisionVertices[vertCounter].Position = FromPhysXVector(convexVertices[convexIndices[polygon.mIndexBase + vI]]);
+                    collisionVertices[vertCounter].Position = glm::rotate(FromPhysXVector(convexVertices[convexIndices[polygon.mIndexBase + vI]]), glm::radians(90.0F), { 1, 0, 0});
                     vertCounter++;
                 }
 
