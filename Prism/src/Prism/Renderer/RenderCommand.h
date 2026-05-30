@@ -7,11 +7,11 @@
 
 namespace Prism
 {
-	class PRISM_API RenderCommand
-	{
-	public:
+    class PRISM_API RenderCommand
+    {
+    public:
 
-	public:
-		static unsigned int Clear(void* datablock);
-	};
+    public:
+        static unsigned int Clear(void* datablock);
+    };
 }

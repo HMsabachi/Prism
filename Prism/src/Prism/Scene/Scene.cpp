@@ -10,6 +10,7 @@
 #include "Prism/Renderer/Renderer.h"
 
 #include "Prism/Editor/EditorCamera.h"
+#include "Systems/Physics3DSystem.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
@@ -45,10 +46,8 @@ namespace Prism
 
         AddSystem<ScriptSystem>(this);
 
-        if (!isEditorScene)
-        {
-            AddSystem<Physics3DSystem>(this);
-        }
+        auto* physics3D = AddSystem<Physics3DSystem>(this);
+
 
         Init();
 
@@ -134,6 +133,14 @@ namespace Prism
                 SceneRenderer::SubmitMesh(meshComponent, transformComponent.GetTransform(), overrideMaterial);
             }
         }
+
+        // Collider visualization (Editor only)
+        {
+            auto* physicsSystem = GetSystem<Physics3DSystem>();
+            if (physicsSystem)
+                physicsSystem->SubmitColliderMeshes();
+        }
+
         SceneRenderer::EndScene();
         /////////////////////////////////////////////////////////////////////
 
@@ -182,6 +189,14 @@ namespace Prism
                     SceneRenderer::SubmitMesh(meshComponent, transformComponent.GetTransform(), overrideMaterial);
             }
         }
+
+        // Collider visualization (Editor only)
+        {
+            auto* physicsSystem = GetSystem<Physics3DSystem>();
+            if (physicsSystem)
+                physicsSystem->SubmitColliderMeshes();
+        }
+
         SceneRenderer::EndScene();
         /////////////////////////////////////////////////////////////////////
 

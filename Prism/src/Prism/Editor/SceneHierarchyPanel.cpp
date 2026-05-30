@@ -5,6 +5,9 @@
 
 #include "Prism/Core/Application.h"
 #include "Prism/Renderer/Mesh.h"
+#include "Prism/Renderer/MeshFactory.h"
+#include "Prism/Physics/PXPhysicsWrappers.h"
+#include "Prism/Utilities/FileSystem.h"
 #include "Prism/Core/LanguageManager.h"
 #include "Scripting/CSharp/CSharpScriptMetaRegistry.h"
 #include "Scripting/CSharp/CSharpScriptEngine.h"
@@ -151,7 +154,8 @@ namespace Prism {
                     {
                         if (ImGui::Button(TR("Box Collider")))
                         {
-                            m_SelectionContext.AddComponent<BoxColliderComponent>();
+                            auto& component = m_SelectionContext.AddComponent<BoxColliderComponent>();
+                            component.DebugMesh = MeshFactory::CreateBox(component.Size);
                             ImGui::CloseCurrentPopup();
                         }
                     }
@@ -159,7 +163,8 @@ namespace Prism {
                     {
                         if (ImGui::Button(TR("Sphere Collider")))
                         {
-                            m_SelectionContext.AddComponent<SphereColliderComponent>();
+                            auto& component = m_SelectionContext.AddComponent<SphereColliderComponent>();
+                            component.DebugMesh = MeshFactory::CreateSphere(component.Radius);
                             ImGui::CloseCurrentPopup();
                         }
                     }
@@ -167,7 +172,8 @@ namespace Prism {
                     {
                         if (ImGui::Button(TR("Capsule Collider")))
                         {
-                            m_SelectionContext.AddComponent<CapsuleColliderComponent>();
+                            auto& component = m_SelectionContext.AddComponent<CapsuleColliderComponent>();
+                            component.DebugMesh = MeshFactory::CreateCapsule(component.Radius, component.Height);
                             ImGui::CloseCurrentPopup();
                         }
                     }
@@ -620,7 +626,7 @@ namespace Prism {
                 {
                     std::string file = Application::Get().OpenFile();
                     if (!file.empty())
-                        mc.Mesh = Ref<Mesh>::Create(file);
+                        mc.Mesh = Ref<Mesh>::Create(FileSystem::GetRelativePath(file));
                 }
                 ImGui::NextColumn();
                 ImGui::Columns(1);
@@ -803,7 +809,10 @@ namespace Prism {
         DrawComponent<BoxColliderComponent>(TR("Box Collider"), entity, [](auto& component)
             {
                 BeginPropertyGrid();
-                Property(TR("Size"), component.Size);
+                if (Property(TR("Size"), component.Size))
+                {
+                    component.DebugMesh = MeshFactory::CreateBox(component.Size);
+                }
                 Property(TR("Offset"), component.Offset);
                 Property(TR("Is Trigger"), component.IsTrigger);
                 EndPropertyGrid();
@@ -812,7 +821,10 @@ namespace Prism {
         DrawComponent<SphereColliderComponent>(TR("Sphere Collider"), entity, [](auto& component)
             {
                 BeginPropertyGrid();
-                Property(TR("Radius"), component.Radius);
+                if (Property(TR("Radius"), component.Radius))
+                {
+                    component.DebugMesh = MeshFactory::CreateSphere(component.Radius);
+                }
                 Property(TR("Is Trigger"), component.IsTrigger);
                 EndPropertyGrid();
             });
@@ -820,14 +832,25 @@ namespace Prism {
         DrawComponent<CapsuleColliderComponent>(TR("Capsule Collider"), entity, [](auto& component)
             {
                 BeginPropertyGrid();
-                Property(TR("Radius"), component.Radius);
-                Property(TR("Height"), component.Height);
+                bool changed = false;
+
+                if (Property(TR("Radius"), component.Radius))
+                    changed = true;
+
+                if (Property(TR("Height"), component.Height))
+                    changed = true;
+
+                if (changed)
+                {
+                    component.DebugMesh = MeshFactory::CreateCapsule(component.Radius, component.Height);
+                }
                 Property(TR("Is Trigger"), component.IsTrigger);
                 EndPropertyGrid();
             });
 
         DrawComponent<MeshColliderComponent>(TR("Mesh Collider"), entity, [](auto& component)
             {
+                BeginPropertyGrid();
                 ImGui::Columns(3);
                 ImGui::SetColumnWidth(0, 100);
                 ImGui::SetColumnWidth(1, 300);
@@ -845,12 +868,16 @@ namespace Prism {
                 {
                     std::string file = Application::Get().OpenFile();
                     if (!file.empty())
-                        component.CollisionMesh = Ref<Mesh>::Create(file);
+                    {
+                        component.CollisionMesh = Ref<Mesh>::Create(FileSystem::GetRelativePath(file));
+                        PXPhysicsWrappers::CreateConvexMesh(component);
+                    }
                 }
                 ImGui::NextColumn();
                 ImGui::Columns(1);
 
                 Property(TR("Is Trigger"), component.IsTrigger);
+                EndPropertyGrid();
             });
 
         // CSharpScriptComponent

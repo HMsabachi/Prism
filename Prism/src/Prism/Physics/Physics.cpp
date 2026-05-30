@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "Physics.h"
 #include "PXPhysicsWrappers.h"
 #include "PhysicsUtil.h"
@@ -63,29 +63,32 @@ namespace Prism {
         // Physics Material
         physx::PxMaterial* material = PXPhysicsWrappers::CreateMaterial(e.GetComponent<PhysicsMaterialComponent>());
 
+        auto& transform = e.Transform();
+        glm::vec3 scale = transform.Scale;
+
         // Add all colliders
         if (e.HasComponent<BoxColliderComponent>())
         {
             BoxColliderComponent& collider = e.GetComponent<BoxColliderComponent>();
-            PXPhysicsWrappers::AddBoxCollider(*actor, *material, collider);
+            PXPhysicsWrappers::AddBoxCollider(*actor, *material, collider, scale);
         }
 
         if (e.HasComponent<SphereColliderComponent>())
         {
             SphereColliderComponent& collider = e.GetComponent<SphereColliderComponent>();
-            PXPhysicsWrappers::AddSphereCollider(*actor, *material, collider);
+            PXPhysicsWrappers::AddSphereCollider(*actor, *material, collider, scale);
         }
 
         if (e.HasComponent<CapsuleColliderComponent>())
         {
             CapsuleColliderComponent& collider = e.GetComponent<CapsuleColliderComponent>();
-            PXPhysicsWrappers::AddCapsuleCollider(*actor, *material, collider);
+            PXPhysicsWrappers::AddCapsuleCollider(*actor, *material, collider, scale);
         }
 
         if (e.HasComponent<MeshColliderComponent>())
         {
             MeshColliderComponent& collider = e.GetComponent<MeshColliderComponent>();
-            PXPhysicsWrappers::AddMeshCollider(*actor, *material, collider);
+            PXPhysicsWrappers::AddMeshCollider(*actor, *material, collider, scale);
         }
 
         // Set collision filters

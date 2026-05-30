@@ -15,6 +15,8 @@ namespace Prism {
         void OnRuntimeStart() override;
         void OnRuntimeStop() override;
 
+        void SubmitColliderMeshes();
+
     private:
         Scene* m_Scene;
     };

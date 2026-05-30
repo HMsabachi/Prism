@@ -239,6 +239,9 @@ namespace Prism {
 
 		bool IsTrigger = false;
 
+		// The mesh that will be drawn in the editor to show the collision bounds
+		Ref<Mesh> DebugMesh;
+
 		BoxColliderComponent() = default;
 		BoxColliderComponent(const BoxColliderComponent& other) = default;
 	};
@@ -247,6 +250,9 @@ namespace Prism {
 	{
 		float Radius = 0.5f;
 		bool IsTrigger = false;
+
+		// The mesh that will be drawn in the editor to show the collision bounds
+		Ref<Mesh> DebugMesh;
 
 		SphereColliderComponent() = default;
 		SphereColliderComponent(const SphereColliderComponent& other) = default;
@@ -258,6 +264,8 @@ namespace Prism {
 		float Height = 1.0F;
 		bool IsTrigger = false;
 
+		Ref<Mesh> DebugMesh;
+
 		CapsuleColliderComponent() = default;
 		CapsuleColliderComponent(const CapsuleColliderComponent& other) = default;
 	};
@@ -265,6 +273,7 @@ namespace Prism {
 	struct MeshColliderComponent
 	{
 		Ref<Mesh> CollisionMesh;
+		Ref<Mesh> ProcessedMesh;
 		bool IsTrigger = false;
 
 		MeshColliderComponent() = default;

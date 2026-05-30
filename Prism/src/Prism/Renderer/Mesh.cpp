@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "Mesh.h"
 #include "Prism/Renderer/Renderer.h"
 
@@ -29,710 +29,737 @@ namespace Prism {
 #define PR_MESH_LOG(...)
 #endif
 
-	glm::mat4 Mat4FromAssimpMat4(const aiMatrix4x4& matrix)
-	{
-		glm::mat4 result;
-		result[0][0] = matrix.a1; result[1][0] = matrix.a2; result[2][0] = matrix.a3; result[3][0] = matrix.a4;
-		result[0][1] = matrix.b1; result[1][1] = matrix.b2; result[2][1] = matrix.b3; result[3][1] = matrix.b4;
-		result[0][2] = matrix.c1; result[1][2] = matrix.c2; result[2][2] = matrix.c3; result[3][2] = matrix.c4;
-		result[0][3] = matrix.d1; result[1][3] = matrix.d2; result[2][3] = matrix.d3; result[3][3] = matrix.d4;
-		return result;
-	}
+    glm::mat4 Mat4FromAssimpMat4(const aiMatrix4x4& matrix)
+    {
+        glm::mat4 result;
+        result[0][0] = matrix.a1; result[1][0] = matrix.a2; result[2][0] = matrix.a3; result[3][0] = matrix.a4;
+        result[0][1] = matrix.b1; result[1][1] = matrix.b2; result[2][1] = matrix.b3; result[3][1] = matrix.b4;
+        result[0][2] = matrix.c1; result[1][2] = matrix.c2; result[2][2] = matrix.c3; result[3][2] = matrix.c4;
+        result[0][3] = matrix.d1; result[1][3] = matrix.d2; result[2][3] = matrix.d3; result[3][3] = matrix.d4;
+        return result;
+    }
 
-	static const uint32_t s_MeshImportFlags =
-			aiProcess_CalcTangentSpace |        // 创建切线和副切线
-			aiProcess_Triangulate |             // 将所有面转换为三角形
-			aiProcess_SortByPType |             // 将所有点、线和面分开
-			aiProcess_GenNormals |              // 如果模型没有法线则创建法线
-			aiProcess_GenUVCoords |             // 如果模型没有纹理坐标则创建纹理坐标
-			aiProcess_OptimizeMeshes |          // 优化网格
-			aiProcess_ValidateDataStructure;    // 验证数据结构
+    static const uint32_t s_MeshImportFlags =
+            aiProcess_CalcTangentSpace |        // 创建切线和副切线
+            aiProcess_Triangulate |             // 将所有面转换为三角形
+            aiProcess_SortByPType |             // 将所有点、线和面分开
+            aiProcess_GenNormals |              // 如果模型没有法线则创建法线
+            aiProcess_GenUVCoords |             // 如果模型没有纹理坐标则创建纹理坐标
+            aiProcess_OptimizeMeshes |          // 优化网格
+            aiProcess_ValidateDataStructure;    // 验证数据结构
 
-	struct LogStream : public Assimp::LogStream
-	{
-		static void Initialize()
-		{
-			if (Assimp::DefaultLogger::isNullLogger())
-			{
-				Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
-				Assimp::DefaultLogger::get()->attachStream(new LogStream, Assimp::Logger::Err | Assimp::Logger::Warn);
-			}
-		}
+    struct LogStream : public Assimp::LogStream
+    {
+        static void Initialize()
+        {
+            if (Assimp::DefaultLogger::isNullLogger())
+            {
+                Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
+                Assimp::DefaultLogger::get()->attachStream(new LogStream, Assimp::Logger::Err | Assimp::Logger::Warn);
+            }
+        }
 
-		void write(const char* message) override
-		{
-			PR_CORE_ERROR("Assimp error: {0}", message);
-		}
-	};
+        void write(const char* message) override
+        {
+            PR_CORE_ERROR("Assimp error: {0}", message);
+        }
+    };
 
 
 
-	Mesh::Mesh(const std::string& filename)
-		: m_FilePath(filename)
-	{
-		LogStream::Initialize();
+    Mesh::Mesh(const std::string& filename)
+        : m_FilePath(filename)
+    {
+        LogStream::Initialize();
 
-		PR_CORE_INFO("Loading mesh: {0}", filename.c_str());
+        PR_CORE_INFO("Loading mesh: {0}", filename.c_str());
 
-		m_Importer = std::make_unique<Assimp::Importer>();
+        m_Importer = std::make_unique<Assimp::Importer>();
 
-		const aiScene* scene = m_Importer->ReadFile(filename, s_MeshImportFlags);
-		if (!scene || !scene->HasMeshes())
-			PR_CORE_ERROR("读取: {0} 模型文件失败", filename);
+        const aiScene* scene = m_Importer->ReadFile(filename, s_MeshImportFlags);
+        if (!scene || !scene->HasMeshes())
+            PR_CORE_ERROR("读取: {0} 模型文件失败", filename);
 
-		m_Scene = scene;
+        m_Scene = scene;
 
-		m_IsAnimated = scene->mAnimations != nullptr;
-		m_MeshShader = m_IsAnimated ? Renderer::GetShaderLibrary()->Get("Custom/SimplePBR_Animated") : Renderer::GetShaderLibrary()->Get("Custom/SimplePBR_Static");
-		m_BaseMaterial = Ref<Material>::Create(m_MeshShader);
-		// m_MaterialInstance = Ref<MaterialInstance>::Create(m_BaseMaterial);
-		m_InverseTransform = glm::inverse(Mat4FromAssimpMat4(scene->mRootNode->mTransformation));
+        m_IsAnimated = scene->mAnimations != nullptr;
+        m_MeshShader = m_IsAnimated ? Renderer::GetShaderLibrary()->Get("Custom/SimplePBR_Animated") : Renderer::GetShaderLibrary()->Get("Custom/SimplePBR_Static");
+        m_BaseMaterial = Ref<Material>::Create(m_MeshShader);
+        // m_MaterialInstance = Ref<MaterialInstance>::Create(m_BaseMaterial);
+        m_InverseTransform = glm::inverse(Mat4FromAssimpMat4(scene->mRootNode->mTransformation));
 
-		uint32_t vertexCount = 0;
-		uint32_t indexCount = 0;
+        uint32_t vertexCount = 0;
+        uint32_t indexCount = 0;
 
-		m_Submeshes.reserve(scene->mNumMeshes);
-		for (size_t m = 0; m < scene->mNumMeshes; m++)
-		{
-			aiMesh* mesh = scene->mMeshes[m];
+        m_Submeshes.reserve(scene->mNumMeshes);
+        for (size_t m = 0; m < scene->mNumMeshes; m++)
+        {
+            aiMesh* mesh = scene->mMeshes[m];
 
-			Submesh& submesh = m_Submeshes.emplace_back();
-			submesh.BaseVertex = vertexCount;
-			submesh.BaseIndex = indexCount;
-			submesh.MaterialIndex = mesh->mMaterialIndex;
-			submesh.IndexCount = mesh->mNumFaces * 3;
-			submesh.MeshName = mesh->mName.C_Str();
+            Submesh& submesh = m_Submeshes.emplace_back();
+            submesh.BaseVertex = vertexCount;
+            submesh.BaseIndex = indexCount;
+            submesh.MaterialIndex = mesh->mMaterialIndex;
+            submesh.IndexCount = mesh->mNumFaces * 3;
+            submesh.MeshName = mesh->mName.C_Str();
 
-			vertexCount += mesh->mNumVertices;
-			indexCount += submesh.IndexCount;
+            vertexCount += mesh->mNumVertices;
+            indexCount += submesh.IndexCount;
 
-			PR_CORE_ASSERT(mesh->HasPositions(), "Meshes require positions.");
-			PR_CORE_ASSERT(mesh->HasNormals(), "Meshes require normals.");
+            PR_CORE_ASSERT(mesh->HasPositions(), "Meshes require positions.");
+            PR_CORE_ASSERT(mesh->HasNormals(), "Meshes require normals.");
 
-			// Vertices
-			if (m_IsAnimated)
-			{
-				for (size_t i = 0; i < mesh->mNumVertices; i++)
-				{
-					AnimatedVertex vertex;
-					vertex.Position = { mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z };
-					vertex.Normal = { mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z };
+            // Vertices
+            if (m_IsAnimated)
+            {
+                for (size_t i = 0; i < mesh->mNumVertices; i++)
+                {
+                    AnimatedVertex vertex;
+                    vertex.Position = { mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z };
+                    vertex.Normal = { mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z };
 
-					if (mesh->HasTangentsAndBitangents())
-					{
-						vertex.Tangent = { mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z };
-						vertex.Binormal = { mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z };
-					}
+                    if (mesh->HasTangentsAndBitangents())
+                    {
+                        vertex.Tangent = { mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z };
+                        vertex.Binormal = { mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z };
+                    }
 
-					if (mesh->HasTextureCoords(0))
-						vertex.Texcoord = { mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y };
+                    if (mesh->HasTextureCoords(0))
+                        vertex.Texcoord = { mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y };
 
-					m_AnimatedVertices.push_back(vertex);
-				}
-			}
-			else
-			{
-				auto& aabb = submesh.BoundingBox;
-				aabb.Min = { FLT_MAX, FLT_MAX, FLT_MAX };
-				aabb.Max = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
-				for (size_t i = 0; i < mesh->mNumVertices; i++)
-				{
-					Vertex vertex;
-					vertex.Position = { mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z };
-					vertex.Normal = { mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z };
-					aabb.Min.x = glm::min(vertex.Position.x, aabb.Min.x);
-					aabb.Min.y = glm::min(vertex.Position.y, aabb.Min.y);
-					aabb.Min.z = glm::min(vertex.Position.z, aabb.Min.z);
-					aabb.Max.x = glm::max(vertex.Position.x, aabb.Max.x);
-					aabb.Max.y = glm::max(vertex.Position.y, aabb.Max.y);
-					aabb.Max.z = glm::max(vertex.Position.z, aabb.Max.z);
+                    m_AnimatedVertices.push_back(vertex);
+                }
+            }
+            else
+            {
+                auto& aabb = submesh.BoundingBox;
+                aabb.Min = { FLT_MAX, FLT_MAX, FLT_MAX };
+                aabb.Max = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
+                for (size_t i = 0; i < mesh->mNumVertices; i++)
+                {
+                    Vertex vertex;
+                    vertex.Position = { mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z };
+                    vertex.Normal = { mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z };
+                    aabb.Min.x = glm::min(vertex.Position.x, aabb.Min.x);
+                    aabb.Min.y = glm::min(vertex.Position.y, aabb.Min.y);
+                    aabb.Min.z = glm::min(vertex.Position.z, aabb.Min.z);
+                    aabb.Max.x = glm::max(vertex.Position.x, aabb.Max.x);
+                    aabb.Max.y = glm::max(vertex.Position.y, aabb.Max.y);
+                    aabb.Max.z = glm::max(vertex.Position.z, aabb.Max.z);
 
-					if (mesh->HasTangentsAndBitangents())
-					{
-						vertex.Tangent = { mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z };
-						vertex.Binormal = { mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z };
-					}
+                    if (mesh->HasTangentsAndBitangents())
+                    {
+                        vertex.Tangent = { mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z };
+                        vertex.Binormal = { mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z };
+                    }
 
-					if (mesh->HasTextureCoords(0))
-						vertex.Texcoord = { mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y };
+                    if (mesh->HasTextureCoords(0))
+                        vertex.Texcoord = { mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y };
 
-					m_StaticVertices.push_back(vertex);
-				}
-			}
+                    m_StaticVertices.push_back(vertex);
+                }
+            }
 
-			// Indices
-			for (size_t i = 0; i < mesh->mNumFaces; i++)
-			{
-				PR_CORE_ASSERT(mesh->mFaces[i].mNumIndices == 3, "Must have 3 indices.");
-				Index index = { mesh->mFaces[i].mIndices[0], mesh->mFaces[i].mIndices[1], mesh->mFaces[i].mIndices[2] };
-				m_Indices.push_back(index);
+            // Indices
+            for (size_t i = 0; i < mesh->mNumFaces; i++)
+            {
+                PR_CORE_ASSERT(mesh->mFaces[i].mNumIndices == 3, "Must have 3 indices.");
+                Index index = { mesh->mFaces[i].mIndices[0], mesh->mFaces[i].mIndices[1], mesh->mFaces[i].mIndices[2] };
+                m_Indices.push_back(index);
 
-				if (!m_IsAnimated)
-					m_TriangleCache[m].emplace_back(m_StaticVertices[index.V1 + submesh.BaseVertex],
-						m_StaticVertices[index.V2 + submesh.BaseVertex],
-						m_StaticVertices[index.V3 + submesh.BaseVertex]);
+                if (!m_IsAnimated)
+                    m_TriangleCache[m].emplace_back(m_StaticVertices[index.V1 + submesh.BaseVertex],
+                        m_StaticVertices[index.V2 + submesh.BaseVertex],
+                        m_StaticVertices[index.V3 + submesh.BaseVertex]);
 
-			}
+            }
 
-		}
-		TraverseNodes(scene->mRootNode);
-		// Bones
-		if (m_IsAnimated)
-		{
-			for (size_t m = 0; m < scene->mNumMeshes; m++)
-			{
-				aiMesh* mesh = scene->mMeshes[m];
-				Submesh& submesh = m_Submeshes[m];
+        }
+        TraverseNodes(scene->mRootNode);
+        // Bones
+        if (m_IsAnimated)
+        {
+            for (size_t m = 0; m < scene->mNumMeshes; m++)
+            {
+                aiMesh* mesh = scene->mMeshes[m];
+                Submesh& submesh = m_Submeshes[m];
 
-				for (size_t i = 0; i < mesh->mNumBones; i++)
-				{
-					aiBone* bone = mesh->mBones[i];
-					std::string boneName(bone->mName.data);
-					int boneIndex = 0;
+                for (size_t i = 0; i < mesh->mNumBones; i++)
+                {
+                    aiBone* bone = mesh->mBones[i];
+                    std::string boneName(bone->mName.data);
+                    int boneIndex = 0;
 
-					if (m_BoneMapping.find(boneName) == m_BoneMapping.end())
-					{
-						// Allocate an index for a new bone
-						boneIndex = m_BoneCount;
-						m_BoneCount++;
-						BoneInfo bi;
-						m_BoneInfo.push_back(bi);
-						m_BoneInfo[boneIndex].BoneOffset = Mat4FromAssimpMat4(bone->mOffsetMatrix);
-						m_BoneMapping[boneName] = boneIndex;
-					}
-					else
-					{
-						PR_MESH_LOG("Found existing bone in map");
-						boneIndex = m_BoneMapping[boneName];
-					}
+                    if (m_BoneMapping.find(boneName) == m_BoneMapping.end())
+                    {
+                        // Allocate an index for a new bone
+                        boneIndex = m_BoneCount;
+                        m_BoneCount++;
+                        BoneInfo bi;
+                        m_BoneInfo.push_back(bi);
+                        m_BoneInfo[boneIndex].BoneOffset = Mat4FromAssimpMat4(bone->mOffsetMatrix);
+                        m_BoneMapping[boneName] = boneIndex;
+                    }
+                    else
+                    {
+                        PR_MESH_LOG("Found existing bone in map");
+                        boneIndex = m_BoneMapping[boneName];
+                    }
 
-					for (size_t j = 0; j < bone->mNumWeights; j++)
-					{
-						int VertexID = submesh.BaseVertex + bone->mWeights[j].mVertexId;
-						float Weight = bone->mWeights[j].mWeight;
-						m_AnimatedVertices[VertexID].AddBoneData(boneIndex, Weight);
-					}
-				}
-			}
-		}
+                    for (size_t j = 0; j < bone->mNumWeights; j++)
+                    {
+                        int VertexID = submesh.BaseVertex + bone->mWeights[j].mVertexId;
+                        float Weight = bone->mWeights[j].mWeight;
+                        m_AnimatedVertices[VertexID].AddBoneData(boneIndex, Weight);
+                    }
+                }
+            }
+        }
 
-		// Materials
-		if (scene->HasMaterials())
-		{
-			m_Textures.resize(scene->mNumMaterials);
-			m_Materials.resize(scene->mNumMaterials);
-			for (uint32_t i = 0; i < scene->mNumMaterials; i++)
-			{
-				auto aiMaterial = scene->mMaterials[i];
-				auto aiMaterialName = aiMaterial->GetName();
+        // Materials
+        if (scene->HasMaterials())
+        {
+            m_Textures.resize(scene->mNumMaterials);
+            m_Materials.resize(scene->mNumMaterials);
+            for (uint32_t i = 0; i < scene->mNumMaterials; i++)
+            {
+                auto aiMaterial = scene->mMaterials[i];
+                auto aiMaterialName = aiMaterial->GetName();
 
-				auto mi = Ref<MaterialInstance>::Create(m_BaseMaterial, aiMaterialName.C_Str());
-				m_Materials[i] = mi;
+                auto mi = Ref<MaterialInstance>::Create(m_BaseMaterial, aiMaterialName.C_Str());
+                m_Materials[i] = mi;
 
-				PR_MESH_LOG("Material Name = {0}; Index = {1}", aiMaterialName.data, i);
-				aiString aiTexPath;
-				uint32_t textureCount = aiMaterial->GetTextureCount(aiTextureType_DIFFUSE);
-				PR_MESH_LOG("  TextureCount = {0}", textureCount);
+                PR_MESH_LOG("Material Name = {0}; Index = {1}", aiMaterialName.data, i);
+                aiString aiTexPath;
+                uint32_t textureCount = aiMaterial->GetTextureCount(aiTextureType_DIFFUSE);
+                PR_MESH_LOG("  TextureCount = {0}", textureCount);
 
-				aiColor3D aiColor;
-				aiMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, aiColor);
-				float shininess, metalness;
-				if (aiMaterial->Get(AI_MATKEY_SHININESS, shininess) != aiReturn_SUCCESS)
-					shininess = 80.0f; // Default value
+                aiColor3D aiColor;
+                aiMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, aiColor);
+                float shininess, metalness;
+                if (aiMaterial->Get(AI_MATKEY_SHININESS, shininess) != aiReturn_SUCCESS)
+                    shininess = 80.0f; // Default value
 
-				if (aiMaterial->Get(AI_MATKEY_REFLECTIVITY, metalness) != aiReturn_SUCCESS)
-					metalness = 0.0f;
+                if (aiMaterial->Get(AI_MATKEY_REFLECTIVITY, metalness) != aiReturn_SUCCESS)
+                    metalness = 0.0f;
 
-				float roughness = 1.0f - glm::sqrt(shininess / 100.0f);
-				PR_MESH_LOG("    COLOR = {0}, {1}, {2}", aiColor.r, aiColor.g, aiColor.b);
-				PR_MESH_LOG("    ROUGHNESS = {0}", roughness);
-				bool hasAlbedoMap = aiMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &aiTexPath) == AI_SUCCESS;
-				if (hasAlbedoMap)
-				{
-					// TODO: Temp - this should be handled by Prism's filesystem
-					std::filesystem::path path = filename;
-					auto parentPath = path.parent_path();
-					parentPath /= std::string(aiTexPath.data);
-					std::string texturePath = parentPath.string();
+                float roughness = 1.0f - glm::sqrt(shininess / 100.0f);
+                PR_MESH_LOG("    COLOR = {0}, {1}, {2}", aiColor.r, aiColor.g, aiColor.b);
+                PR_MESH_LOG("    ROUGHNESS = {0}", roughness);
+                bool hasAlbedoMap = aiMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &aiTexPath) == AI_SUCCESS;
+                if (hasAlbedoMap)
+                {
+                    // TODO: Temp - this should be handled by Prism's filesystem
+                    std::filesystem::path path = filename;
+                    auto parentPath = path.parent_path();
+                    parentPath /= std::string(aiTexPath.data);
+                    std::string texturePath = parentPath.string();
 
-					PR_MESH_LOG("  Albedp map path = {0}", texturePath);
-					auto texture = Texture2D::Create(texturePath, true);
-					if (texture->Loaded())
-					{
-						m_Textures[i] = texture;
-						mi->Set("u_AlbedoTexture", m_Textures[i]);
-						mi->SetKeyword("ALBEDO_MAP", true);
-					}
-					else
-					{
-						PR_CORE_ERROR("Could not load texture: {0}", texturePath);
-						// 倒退回反照率颜色
-						mi->Set("u_AlbedoColor", glm::vec3{ aiColor.r, aiColor.g, aiColor.b });
-					}
-				}
-				else
-				{
-					mi->Set("u_AlbedoColor", glm::vec3{ aiColor.r, aiColor.g, aiColor.b });
-					PR_CORE_TRACE("  No albedo map");
-				}
+                    PR_MESH_LOG("  Albedp map path = {0}", texturePath);
+                    auto texture = Texture2D::Create(texturePath, true);
+                    if (texture->Loaded())
+                    {
+                        m_Textures[i] = texture;
+                        mi->Set("u_AlbedoTexture", m_Textures[i]);
+                        mi->SetKeyword("ALBEDO_MAP", true);
+                    }
+                    else
+                    {
+                        PR_CORE_ERROR("Could not load texture: {0}", texturePath);
+                        // 倒退回反照率颜色
+                        mi->Set("u_AlbedoColor", glm::vec3{ aiColor.r, aiColor.g, aiColor.b });
+                    }
+                }
+                else
+                {
+                    mi->Set("u_AlbedoColor", glm::vec3{ aiColor.r, aiColor.g, aiColor.b });
+                    PR_CORE_TRACE("  No albedo map");
+                }
 
-				// Normal maps
-				mi->SetKeyword("NORMAL_MAP", false);
-				if (aiMaterial->GetTexture(aiTextureType_NORMALS, 0, &aiTexPath) == AI_SUCCESS)
-				{
-					// TODO: Temp - this should be handled by Prism's filesystem
-					std::filesystem::path path = filename;
-					auto parentPath = path.parent_path();
-					parentPath /= std::string(aiTexPath.data);
-					std::string texturePath = parentPath.string();
+                // Normal maps
+                mi->SetKeyword("NORMAL_MAP", false);
+                if (aiMaterial->GetTexture(aiTextureType_NORMALS, 0, &aiTexPath) == AI_SUCCESS)
+                {
+                    // TODO: Temp - this should be handled by Prism's filesystem
+                    std::filesystem::path path = filename;
+                    auto parentPath = path.parent_path();
+                    parentPath /= std::string(aiTexPath.data);
+                    std::string texturePath = parentPath.string();
 
-					PR_MESH_LOG("    Normal map path = {0}", texturePath);
-					auto texture = Texture2D::Create(texturePath);
-					if (texture->Loaded())
-					{
-						mi->Set("u_NormalTexture", texture);
-						mi->SetKeyword("NORMAL_MAP", true);
-					}
-					else
-					{
-						PR_CORE_ERROR("  Could not load texture: {0}", texturePath);
-					}
-				}
-				else
-				{
-					PR_MESH_LOG("Mesh has no normal map");
-				}
+                    PR_MESH_LOG("    Normal map path = {0}", texturePath);
+                    auto texture = Texture2D::Create(texturePath);
+                    if (texture->Loaded())
+                    {
+                        mi->Set("u_NormalTexture", texture);
+                        mi->SetKeyword("NORMAL_MAP", true);
+                    }
+                    else
+                    {
+                        PR_CORE_ERROR("  Could not load texture: {0}", texturePath);
+                    }
+                }
+                else
+                {
+                    PR_MESH_LOG("Mesh has no normal map");
+                }
 
-				// Roughness map
-				// mi->Set("u_Roughness", 1.0f);
-				// mi->Set("u_RoughnessTexToggle", 0.0f);
-				if (aiMaterial->GetTexture(aiTextureType_SHININESS, 0, &aiTexPath) == AI_SUCCESS)
-				{
-					// TODO: Temp - this should be handled by Prism's filesystem
-					std::filesystem::path path = filename;
-					auto parentPath = path.parent_path();
-					parentPath /= std::string(aiTexPath.data);
-					std::string texturePath = parentPath.string();
-					PR_MESH_LOG("    Roughness map path = {0}", texturePath);
+                // Roughness map
+                // mi->Set("u_Roughness", 1.0f);
+                // mi->Set("u_RoughnessTexToggle", 0.0f);
+                if (aiMaterial->GetTexture(aiTextureType_SHININESS, 0, &aiTexPath) == AI_SUCCESS)
+                {
+                    // TODO: Temp - this should be handled by Prism's filesystem
+                    std::filesystem::path path = filename;
+                    auto parentPath = path.parent_path();
+                    parentPath /= std::string(aiTexPath.data);
+                    std::string texturePath = parentPath.string();
+                    PR_MESH_LOG("    Roughness map path = {0}", texturePath);
 
-					auto texture = Texture2D::Create(texturePath);
-					if (texture->Loaded())
-					{
-						PR_MESH_LOG("  Roughness map path = {0}", texturePath);
-						mi->Set("u_RoughnessTexture", texture);
-						mi->SetKeyword("ROUGHNESS_MAP", true);
-					}
-					else
-					{
-						PR_CORE_ERROR("  Could not load texture: {0}", texturePath);
-					}
-				}
-				else
-				{
-					PR_MESH_LOG("  No roughness texture");
-					mi->Set("u_Roughness", roughness);
-				}
+                    auto texture = Texture2D::Create(texturePath);
+                    if (texture->Loaded())
+                    {
+                        PR_MESH_LOG("  Roughness map path = {0}", texturePath);
+                        mi->Set("u_RoughnessTexture", texture);
+                        mi->SetKeyword("ROUGHNESS_MAP", true);
+                    }
+                    else
+                    {
+                        PR_CORE_ERROR("  Could not load texture: {0}", texturePath);
+                    }
+                }
+                else
+                {
+                    PR_MESH_LOG("  No roughness texture");
+                    mi->Set("u_Roughness", roughness);
+                }
 
 
 #if 0
-				if (aiMaterial->Get("$raw.ReflectionFactor|file", aiPTI_String, 0, aiTexPath) == AI_SUCCESS)
-				{
-					// TODO: Temp - this should be handled by Prism's filesystem
-					std::filesystem::path path = filename;
-					auto parentPath = path.parent_path();
-					parentPath /= std::string(aiTexPath.data);
-					std::string texturePath = parentPath.string();
+                if (aiMaterial->Get("$raw.ReflectionFactor|file", aiPTI_String, 0, aiTexPath) == AI_SUCCESS)
+                {
+                    // TODO: Temp - this should be handled by Prism's filesystem
+                    std::filesystem::path path = filename;
+                    auto parentPath = path.parent_path();
+                    parentPath /= std::string(aiTexPath.data);
+                    std::string texturePath = parentPath.string();
 
-					auto texture = Texture2D::Create(texturePath);
-					if (texture->Loaded())
-					{
-						PR_MESH_LOG("  Metalness map path = {0}", texturePath);
-						mi->Set("u_MetalnessTexture", texture);
-						mi->Set("u_MetalnessTexToggle", 1.0f);
-					}
-					else
-					{
-						PR_CORE_ERROR("Could not load texture: {0}", texturePath);
-					}
-				}
-				else
-				{
-					PR_MESH_LOG("  No metalness texture");
-					mi->Set("u_Metalness", metalness);
-				}
+                    auto texture = Texture2D::Create(texturePath);
+                    if (texture->Loaded())
+                    {
+                        PR_MESH_LOG("  Metalness map path = {0}", texturePath);
+                        mi->Set("u_MetalnessTexture", texture);
+                        mi->Set("u_MetalnessTexToggle", 1.0f);
+                    }
+                    else
+                    {
+                        PR_CORE_ERROR("Could not load texture: {0}", texturePath);
+                    }
+                }
+                else
+                {
+                    PR_MESH_LOG("  No metalness texture");
+                    mi->Set("u_Metalness", metalness);
+                }
 #endif
 
-				bool metalnessTextureFound = false;
-				for (uint32_t i = 0; i < aiMaterial->mNumProperties; i++)
-				{
-					auto prop = aiMaterial->mProperties[i];
+                bool metalnessTextureFound = false;
+                for (uint32_t i = 0; i < aiMaterial->mNumProperties; i++)
+                {
+                    auto prop = aiMaterial->mProperties[i];
 #if DEBUG_PRINT_ALL_PROPS
-					PR_MESH_LOG("Material Property:");
-					PR_MESH_LOG("  Name = {0}", prop->mKey.data);
-					PR_MESH_LOG("  Type = {0}", prop->mType);
-					PR_MESH_LOG("  Size = {0}", prop->mDataLength);
-					float data = *(float*)prop->mData;
-					PR_MESH_LOG("  Value = {0}", data);
+                    PR_MESH_LOG("Material Property:");
+                    PR_MESH_LOG("  Name = {0}", prop->mKey.data);
+                    PR_MESH_LOG("  Type = {0}", prop->mType);
+                    PR_MESH_LOG("  Size = {0}", prop->mDataLength);
+                    float data = *(float*)prop->mData;
+                    PR_MESH_LOG("  Value = {0}", data);
 
-					switch (prop->mSemantic)
-					{
-					case aiTextureType_NONE:
-						PR_MESH_LOG("  Semantic = aiTextureType_NONE");
-						break;
-					case aiTextureType_DIFFUSE:
-						PR_MESH_LOG("  Semantic = aiTextureType_DIFFUSE");
-						break;
-					case aiTextureType_SPECULAR:
-						PR_MESH_LOG("  Semantic = aiTextureType_SPECULAR");
-						break;
-					case aiTextureType_AMBIENT:
-						PR_MESH_LOG("  Semantic = aiTextureType_AMBIENT");
-						break;
-					case aiTextureType_EMISSIVE:
-						PR_MESH_LOG("  Semantic = aiTextureType_EMISSIVE");
-						break;
-					case aiTextureType_HEIGHT:
-						PR_MESH_LOG("  Semantic = aiTextureType_HEIGHT");
-						break;
-					case aiTextureType_NORMALS:
-						PR_MESH_LOG("  Semantic = aiTextureType_NORMALS");
-						break;
-					case aiTextureType_SHININESS:
-						PR_MESH_LOG("  Semantic = aiTextureType_SHININESS");
-						break;
-					case aiTextureType_OPACITY:
-						PR_MESH_LOG("  Semantic = aiTextureType_OPACITY");
-						break;
-					case aiTextureType_DISPLACEMENT:
-						PR_MESH_LOG("  Semantic = aiTextureType_DISPLACEMENT");
-						break;
-					case aiTextureType_LIGHTMAP:
-						PR_MESH_LOG("  Semantic = aiTextureType_LIGHTMAP");
-						break;
-					case aiTextureType_REFLECTION:
-						PR_MESH_LOG("  Semantic = aiTextureType_REFLECTION");
-						break;
-					case aiTextureType_UNKNOWN:
-						PR_MESH_LOG("  Semantic = aiTextureType_UNKNOWN");
-						break;
-					}
+                    switch (prop->mSemantic)
+                    {
+                    case aiTextureType_NONE:
+                        PR_MESH_LOG("  Semantic = aiTextureType_NONE");
+                        break;
+                    case aiTextureType_DIFFUSE:
+                        PR_MESH_LOG("  Semantic = aiTextureType_DIFFUSE");
+                        break;
+                    case aiTextureType_SPECULAR:
+                        PR_MESH_LOG("  Semantic = aiTextureType_SPECULAR");
+                        break;
+                    case aiTextureType_AMBIENT:
+                        PR_MESH_LOG("  Semantic = aiTextureType_AMBIENT");
+                        break;
+                    case aiTextureType_EMISSIVE:
+                        PR_MESH_LOG("  Semantic = aiTextureType_EMISSIVE");
+                        break;
+                    case aiTextureType_HEIGHT:
+                        PR_MESH_LOG("  Semantic = aiTextureType_HEIGHT");
+                        break;
+                    case aiTextureType_NORMALS:
+                        PR_MESH_LOG("  Semantic = aiTextureType_NORMALS");
+                        break;
+                    case aiTextureType_SHININESS:
+                        PR_MESH_LOG("  Semantic = aiTextureType_SHININESS");
+                        break;
+                    case aiTextureType_OPACITY:
+                        PR_MESH_LOG("  Semantic = aiTextureType_OPACITY");
+                        break;
+                    case aiTextureType_DISPLACEMENT:
+                        PR_MESH_LOG("  Semantic = aiTextureType_DISPLACEMENT");
+                        break;
+                    case aiTextureType_LIGHTMAP:
+                        PR_MESH_LOG("  Semantic = aiTextureType_LIGHTMAP");
+                        break;
+                    case aiTextureType_REFLECTION:
+                        PR_MESH_LOG("  Semantic = aiTextureType_REFLECTION");
+                        break;
+                    case aiTextureType_UNKNOWN:
+                        PR_MESH_LOG("  Semantic = aiTextureType_UNKNOWN");
+                        break;
+                    }
 #endif
 
-					if (prop->mType == aiPTI_String)
-					{
-						uint32_t strLength = *(uint32_t*)prop->mData;
-						std::string str(prop->mData + 4, strLength);
+                    if (prop->mType == aiPTI_String)
+                    {
+                        uint32_t strLength = *(uint32_t*)prop->mData;
+                        std::string str(prop->mData + 4, strLength);
 
-						std::string key = prop->mKey.data;
-						if (key == "$raw.ReflectionFactor|file")
-						{
-							metalnessTextureFound = true;
+                        std::string key = prop->mKey.data;
+                        if (key == "$raw.ReflectionFactor|file")
+                        {
+                            metalnessTextureFound = true;
 
-							// TODO: Temp - this should be handled by Prism's filesystem
-							std::filesystem::path path = filename;
-							auto parentPath = path.parent_path();
-							parentPath /= str;
-							std::string texturePath = parentPath.string();
+                            // TODO: Temp - this should be handled by Prism's filesystem
+                            std::filesystem::path path = filename;
+                            auto parentPath = path.parent_path();
+                            parentPath /= str;
+                            std::string texturePath = parentPath.string();
 
-							PR_MESH_LOG("    Metalness map path = {0}", texturePath);
-							auto texture = Texture2D::Create(texturePath);
-							if (texture->Loaded())
-							{
-								mi->Set("u_MetalnessTexture", texture);
-								mi->SetKeyword("METALNESS_MAP", true);
-							}
-							else
-							{
-								PR_CORE_ERROR("  Could not load texture: {0}", texturePath);
-								mi->Set("u_Metalness", metalness);
-								mi->SetKeyword("METALNESS_MAP", false);
-							}
-							break;
-						}
-					}
-				}
-				if (!metalnessTextureFound)
-				{
-					PR_MESH_LOG("    No metalness map");
+                            PR_MESH_LOG("    Metalness map path = {0}", texturePath);
+                            auto texture = Texture2D::Create(texturePath);
+                            if (texture->Loaded())
+                            {
+                                mi->Set("u_MetalnessTexture", texture);
+                                mi->SetKeyword("METALNESS_MAP", true);
+                            }
+                            else
+                            {
+                                PR_CORE_ERROR("  Could not load texture: {0}", texturePath);
+                                mi->Set("u_Metalness", metalness);
+                                mi->SetKeyword("METALNESS_MAP", false);
+                            }
+                            break;
+                        }
+                    }
+                }
+                if (!metalnessTextureFound)
+                {
+                    PR_MESH_LOG("    No metalness map");
 
-					mi->Set("u_Metalness", metalness);
-					mi->SetKeyword("METALNESS_MAP", false);
-				}
-			}
-			PR_MESH_LOG("------------------------------");
-		}
+                    mi->Set("u_Metalness", metalness);
+                    mi->SetKeyword("METALNESS_MAP", false);
+                }
+            }
+            PR_MESH_LOG("------------------------------");
+        }
 
-		VertexBufferLayout vertexLayout;
-		if (m_IsAnimated)
-		{
-			m_VertexBuffer = VertexBuffer::Create(m_AnimatedVertices.data(), m_AnimatedVertices.size() * sizeof(AnimatedVertex));
-			vertexLayout = {
-				{ ShaderDataType::Float3, "a_Position" , VertexSemantic::Position},
-				{ ShaderDataType::Float3, "a_Normal" , VertexSemantic::Normal},
-				{ ShaderDataType::Float3, "a_Tangent", VertexSemantic::Tangent },
-				{ ShaderDataType::Float3, "a_Binormal", VertexSemantic::Binormal },
-				{ ShaderDataType::Float2, "a_TexCoord", VertexSemantic::TexCoord0 },
-				{ ShaderDataType::Int4, "a_BoneIDs", VertexSemantic::BoneIndices },
-				{ ShaderDataType::Float4, "a_BoneWeights", VertexSemantic::BoneWeights },
-			};
-			m_VertexBuffer->SetLayout(vertexLayout);
-		}
-		else
-		{
-			m_VertexBuffer = VertexBuffer::Create(m_StaticVertices.data(), m_StaticVertices.size() * sizeof(Vertex));
-			vertexLayout = {
-				{ ShaderDataType::Float3, "a_Position" , VertexSemantic::Position},
-				{ ShaderDataType::Float3, "a_Normal" , VertexSemantic::Normal},
-				{ ShaderDataType::Float3, "a_Tangent", VertexSemantic::Tangent },
-				{ ShaderDataType::Float3, "a_Binormal", VertexSemantic::Binormal },
-				{ ShaderDataType::Float2, "a_TexCoord", VertexSemantic::TexCoord0 },
-			};
-			m_VertexBuffer->SetLayout(vertexLayout);
-		}
+        VertexBufferLayout vertexLayout;
+        if (m_IsAnimated)
+        {
+            m_VertexBuffer = VertexBuffer::Create(m_AnimatedVertices.data(), m_AnimatedVertices.size() * sizeof(AnimatedVertex));
+            vertexLayout = {
+                { ShaderDataType::Float3, "a_Position" , VertexSemantic::Position},
+                { ShaderDataType::Float3, "a_Normal" , VertexSemantic::Normal},
+                { ShaderDataType::Float3, "a_Tangent", VertexSemantic::Tangent },
+                { ShaderDataType::Float3, "a_Binormal", VertexSemantic::Binormal },
+                { ShaderDataType::Float2, "a_TexCoord", VertexSemantic::TexCoord0 },
+                { ShaderDataType::Int4, "a_BoneIDs", VertexSemantic::BoneIndices },
+                { ShaderDataType::Float4, "a_BoneWeights", VertexSemantic::BoneWeights },
+            };
+            m_VertexBuffer->SetLayout(vertexLayout);
+        }
+        else
+        {
+            m_VertexBuffer = VertexBuffer::Create(m_StaticVertices.data(), m_StaticVertices.size() * sizeof(Vertex));
+            vertexLayout = {
+                { ShaderDataType::Float3, "a_Position" , VertexSemantic::Position},
+                { ShaderDataType::Float3, "a_Normal" , VertexSemantic::Normal},
+                { ShaderDataType::Float3, "a_Tangent", VertexSemantic::Tangent },
+                { ShaderDataType::Float3, "a_Binormal", VertexSemantic::Binormal },
+                { ShaderDataType::Float2, "a_TexCoord", VertexSemantic::TexCoord0 },
+            };
+            m_VertexBuffer->SetLayout(vertexLayout);
+        }
 
-		m_IndexBuffer = IndexBuffer::Create(m_Indices.data(), m_Indices.size() * sizeof(Index));
+        m_IndexBuffer = IndexBuffer::Create(m_Indices.data(), m_Indices.size() * sizeof(Index));
 
-		PipelineSpecification pipelineSpec;
-		pipelineSpec.Layout = vertexLayout;
-		m_Pipeline = Pipeline::Create(pipelineSpec);
-	}
+        PipelineSpecification pipelineSpec;
+        pipelineSpec.Layout = vertexLayout;
+        m_Pipeline = Pipeline::Create(pipelineSpec);
+    }
 
-	Mesh::~Mesh()
-	{
-	}
+    Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<Index>& indices)
+        : m_StaticVertices(vertices), m_Indices(indices), m_IsAnimated(false)
+    {
+        Submesh submesh;
+        submesh.BaseVertex = 0;
+        submesh.BaseIndex = 0;
+        submesh.IndexCount = indices.size() * 3;
+        submesh.Transform = glm::mat4(1.0F);
+        m_Submeshes.push_back(submesh);
+
+        m_VertexBuffer = VertexBuffer::Create(m_StaticVertices.data(), m_StaticVertices.size() * sizeof(Vertex));
+        m_IndexBuffer = IndexBuffer::Create(m_Indices.data(), m_Indices.size() * sizeof(Index));
+
+        VertexBufferLayout vertexLayout = {
+            { ShaderDataType::Float3, "a_Position", VertexSemantic::Position },
+            { ShaderDataType::Float3, "a_Normal", VertexSemantic::Normal },
+            { ShaderDataType::Float3, "a_Tangent", VertexSemantic::Tangent },
+            { ShaderDataType::Float3, "a_Binormal", VertexSemantic::Binormal },
+            { ShaderDataType::Float2, "a_TexCoord", VertexSemantic::TexCoord0 },
+        };
+        m_VertexBuffer->SetLayout(vertexLayout);
+
+        PipelineSpecification pipelineSpec;
+        pipelineSpec.Layout = vertexLayout;
+        m_Pipeline = Pipeline::Create(pipelineSpec);
+    }
+
+    Mesh::~Mesh()
+    {
+    }
 #pragma region 骨骼动画相关
-	static std::string LevelToSpaces(uint32_t level)
-	{
-		std::string result = "";
-		for (uint32_t i = 0; i < level; i++)
-			result += "--";
-		return result;
-	}
+    static std::string LevelToSpaces(uint32_t level)
+    {
+        std::string result = "";
+        for (uint32_t i = 0; i < level; i++)
+            result += "--";
+        return result;
+    }
 
-	void Mesh::TraverseNodes(aiNode* node, const glm::mat4& parentTransform, uint32_t level)
-	{
-		glm::mat4 transform = parentTransform * Mat4FromAssimpMat4(node->mTransformation);
-		for (uint32_t i = 0; i < node->mNumMeshes; i++)
-		{
-			uint32_t mesh = node->mMeshes[i];
-			auto& submesh = m_Submeshes[mesh];
-			submesh.NodeName = node->mName.C_Str();
-			submesh.Transform = transform;
-		}
-		// PR_MESH_LOG("{0} {1}", LevelToSpaces(level), node->mName.C_Str());
+    void Mesh::TraverseNodes(aiNode* node, const glm::mat4& parentTransform, uint32_t level)
+    {
+        glm::mat4 transform = parentTransform * Mat4FromAssimpMat4(node->mTransformation);
+        for (uint32_t i = 0; i < node->mNumMeshes; i++)
+        {
+            uint32_t mesh = node->mMeshes[i];
+            auto& submesh = m_Submeshes[mesh];
+            submesh.NodeName = node->mName.C_Str();
+            submesh.Transform = transform;
+        }
+        // PR_MESH_LOG("{0} {1}", LevelToSpaces(level), node->mName.C_Str());
 
-		for (uint32_t i = 0; i < node->mNumChildren; i++)
-			TraverseNodes(node->mChildren[i], transform, level + 1);
-	}
-	uint32_t Mesh::FindPosition(float AnimationTime, const aiNodeAnim* pNodeAnim)
-	{
-		for (uint32_t i = 0; i < pNodeAnim->mNumPositionKeys - 1; i++)
-		{
-			if (AnimationTime < (float)pNodeAnim->mPositionKeys[i + 1].mTime)
-				return i;
-		}
+        for (uint32_t i = 0; i < node->mNumChildren; i++)
+            TraverseNodes(node->mChildren[i], transform, level + 1);
+    }
+    uint32_t Mesh::FindPosition(float AnimationTime, const aiNodeAnim* pNodeAnim)
+    {
+        for (uint32_t i = 0; i < pNodeAnim->mNumPositionKeys - 1; i++)
+        {
+            if (AnimationTime < (float)pNodeAnim->mPositionKeys[i + 1].mTime)
+                return i;
+        }
 
-		return 0;
-	}
-	uint32_t Mesh::FindRotation(float AnimationTime, const aiNodeAnim* pNodeAnim)
-	{
-		PR_CORE_ASSERT(pNodeAnim->mNumRotationKeys > 0);
+        return 0;
+    }
+    uint32_t Mesh::FindRotation(float AnimationTime, const aiNodeAnim* pNodeAnim)
+    {
+        PR_CORE_ASSERT(pNodeAnim->mNumRotationKeys > 0);
 
-		for (uint32_t i = 0; i < pNodeAnim->mNumRotationKeys - 1; i++)
-		{
-			if (AnimationTime < (float)pNodeAnim->mRotationKeys[i + 1].mTime)
-				return i;
-		}
+        for (uint32_t i = 0; i < pNodeAnim->mNumRotationKeys - 1; i++)
+        {
+            if (AnimationTime < (float)pNodeAnim->mRotationKeys[i + 1].mTime)
+                return i;
+        }
 
-		return 0;
-	}
-
-
-	uint32_t Mesh::FindScaling(float AnimationTime, const aiNodeAnim* pNodeAnim)
-	{
-		PR_CORE_ASSERT(pNodeAnim->mNumScalingKeys > 0);
-
-		for (uint32_t i = 0; i < pNodeAnim->mNumScalingKeys - 1; i++)
-		{
-			if (AnimationTime < (float)pNodeAnim->mScalingKeys[i + 1].mTime)
-				return i;
-		}
-
-		return 0;
-	}
+        return 0;
+    }
 
 
-	glm::vec3 Mesh::InterpolateTranslation(float animationTime, const aiNodeAnim* nodeAnim)
-	{
-		if (nodeAnim->mNumPositionKeys == 1)
-		{
-			// No interpolation necessary for single value
-			auto v = nodeAnim->mPositionKeys[0].mValue;
-			return { v.x, v.y, v.z };
-		}
+    uint32_t Mesh::FindScaling(float AnimationTime, const aiNodeAnim* pNodeAnim)
+    {
+        PR_CORE_ASSERT(pNodeAnim->mNumScalingKeys > 0);
 
-		uint32_t PositionIndex = FindPosition(animationTime, nodeAnim);
-		uint32_t NextPositionIndex = (PositionIndex + 1);
-		PR_CORE_ASSERT(NextPositionIndex < nodeAnim->mNumPositionKeys);
-		float DeltaTime = (float)(nodeAnim->mPositionKeys[NextPositionIndex].mTime - nodeAnim->mPositionKeys[PositionIndex].mTime);
-		float Factor = glm::clamp((animationTime - (float)nodeAnim->mPositionKeys[PositionIndex].mTime) / DeltaTime, 0.0f, 1.0f);
-		const aiVector3D& Start = nodeAnim->mPositionKeys[PositionIndex].mValue;
-		const aiVector3D& End = nodeAnim->mPositionKeys[NextPositionIndex].mValue;
-		aiVector3D Delta = End - Start;
-		auto aiVec = Start + Factor * Delta;
-		return { aiVec.x, aiVec.y, aiVec.z };
-	}
+        for (uint32_t i = 0; i < pNodeAnim->mNumScalingKeys - 1; i++)
+        {
+            if (AnimationTime < (float)pNodeAnim->mScalingKeys[i + 1].mTime)
+                return i;
+        }
+
+        return 0;
+    }
 
 
-	glm::quat Mesh::InterpolateRotation(float animationTime, const aiNodeAnim* nodeAnim)
-	{
-		if (nodeAnim->mNumRotationKeys == 1)
-		{
-			// No interpolation necessary for single value
-			auto v = nodeAnim->mRotationKeys[0].mValue;
-			return glm::quat(v.w, v.x, v.y, v.z);
-		}
+    glm::vec3 Mesh::InterpolateTranslation(float animationTime, const aiNodeAnim* nodeAnim)
+    {
+        if (nodeAnim->mNumPositionKeys == 1)
+        {
+            // No interpolation necessary for single value
+            auto v = nodeAnim->mPositionKeys[0].mValue;
+            return { v.x, v.y, v.z };
+        }
 
-		uint32_t RotationIndex = FindRotation(animationTime, nodeAnim);
-		uint32_t NextRotationIndex = (RotationIndex + 1);
-		PR_CORE_ASSERT(NextRotationIndex < nodeAnim->mNumRotationKeys);
-		float DeltaTime = (float)(nodeAnim->mRotationKeys[NextRotationIndex].mTime - nodeAnim->mRotationKeys[RotationIndex].mTime);
-		float Factor = glm::clamp((animationTime - (float)nodeAnim->mRotationKeys[RotationIndex].mTime) / DeltaTime, 0.0f, 1.0f);
-		const aiQuaternion& StartRotationQ = nodeAnim->mRotationKeys[RotationIndex].mValue;
-		const aiQuaternion& EndRotationQ = nodeAnim->mRotationKeys[NextRotationIndex].mValue;
-		auto q = aiQuaternion();
-		aiQuaternion::Interpolate(q, StartRotationQ, EndRotationQ, Factor);
-		q = q.Normalize();
-		return glm::quat(q.w, q.x, q.y, q.z);
-	}
+        uint32_t PositionIndex = FindPosition(animationTime, nodeAnim);
+        uint32_t NextPositionIndex = (PositionIndex + 1);
+        PR_CORE_ASSERT(NextPositionIndex < nodeAnim->mNumPositionKeys);
+        float DeltaTime = (float)(nodeAnim->mPositionKeys[NextPositionIndex].mTime - nodeAnim->mPositionKeys[PositionIndex].mTime);
+        float Factor = glm::clamp((animationTime - (float)nodeAnim->mPositionKeys[PositionIndex].mTime) / DeltaTime, 0.0f, 1.0f);
+        const aiVector3D& Start = nodeAnim->mPositionKeys[PositionIndex].mValue;
+        const aiVector3D& End = nodeAnim->mPositionKeys[NextPositionIndex].mValue;
+        aiVector3D Delta = End - Start;
+        auto aiVec = Start + Factor * Delta;
+        return { aiVec.x, aiVec.y, aiVec.z };
+    }
 
 
-	glm::vec3 Mesh::InterpolateScale(float animationTime, const aiNodeAnim* nodeAnim)
-	{
-		if (nodeAnim->mNumScalingKeys == 1)
-		{
-			// No interpolation necessary for single value
-			auto v = nodeAnim->mScalingKeys[0].mValue;
-			return { v.x, v.y, v.z };
-		}
+    glm::quat Mesh::InterpolateRotation(float animationTime, const aiNodeAnim* nodeAnim)
+    {
+        if (nodeAnim->mNumRotationKeys == 1)
+        {
+            // No interpolation necessary for single value
+            auto v = nodeAnim->mRotationKeys[0].mValue;
+            return glm::quat(v.w, v.x, v.y, v.z);
+        }
 
-		uint32_t index = FindScaling(animationTime, nodeAnim);
-		uint32_t nextIndex = (index + 1);
-		PR_CORE_ASSERT(nextIndex < nodeAnim->mNumScalingKeys);
-		float deltaTime = (float)(nodeAnim->mScalingKeys[nextIndex].mTime - nodeAnim->mScalingKeys[index].mTime);
-		float factor = glm::clamp((animationTime - (float)nodeAnim->mScalingKeys[index].mTime) / deltaTime, 0.0f, 1.0f);
-		const auto& start = nodeAnim->mScalingKeys[index].mValue;
-		const auto& end = nodeAnim->mScalingKeys[nextIndex].mValue;
-		auto delta = end - start;
-		auto aiVec = start + factor * delta;
-		return { aiVec.x, aiVec.y, aiVec.z };
-	}
+        uint32_t RotationIndex = FindRotation(animationTime, nodeAnim);
+        uint32_t NextRotationIndex = (RotationIndex + 1);
+        PR_CORE_ASSERT(NextRotationIndex < nodeAnim->mNumRotationKeys);
+        float DeltaTime = (float)(nodeAnim->mRotationKeys[NextRotationIndex].mTime - nodeAnim->mRotationKeys[RotationIndex].mTime);
+        float Factor = glm::clamp((animationTime - (float)nodeAnim->mRotationKeys[RotationIndex].mTime) / DeltaTime, 0.0f, 1.0f);
+        const aiQuaternion& StartRotationQ = nodeAnim->mRotationKeys[RotationIndex].mValue;
+        const aiQuaternion& EndRotationQ = nodeAnim->mRotationKeys[NextRotationIndex].mValue;
+        auto q = aiQuaternion();
+        aiQuaternion::Interpolate(q, StartRotationQ, EndRotationQ, Factor);
+        q = q.Normalize();
+        return glm::quat(q.w, q.x, q.y, q.z);
+    }
 
-	void Mesh::ReadNodeHierarchy(float AnimationTime, const aiNode* pNode, const glm::mat4& parentTransform)
-	{
-		std::string name(pNode->mName.data);
-		const aiAnimation* animation = m_Scene->mAnimations[0];
-		glm::mat4 nodeTransform(Mat4FromAssimpMat4(pNode->mTransformation));
-		const aiNodeAnim* nodeAnim = FindNodeAnim(animation, name);
 
-		if (nodeAnim)
-		{
-			glm::vec3 translation = InterpolateTranslation(AnimationTime, nodeAnim);
-			glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(translation.x, translation.y, translation.z));
+    glm::vec3 Mesh::InterpolateScale(float animationTime, const aiNodeAnim* nodeAnim)
+    {
+        if (nodeAnim->mNumScalingKeys == 1)
+        {
+            // No interpolation necessary for single value
+            auto v = nodeAnim->mScalingKeys[0].mValue;
+            return { v.x, v.y, v.z };
+        }
 
-			glm::quat rotation = InterpolateRotation(AnimationTime, nodeAnim);
-			glm::mat4 rotationMatrix = glm::toMat4(rotation);
+        uint32_t index = FindScaling(animationTime, nodeAnim);
+        uint32_t nextIndex = (index + 1);
+        PR_CORE_ASSERT(nextIndex < nodeAnim->mNumScalingKeys);
+        float deltaTime = (float)(nodeAnim->mScalingKeys[nextIndex].mTime - nodeAnim->mScalingKeys[index].mTime);
+        float factor = glm::clamp((animationTime - (float)nodeAnim->mScalingKeys[index].mTime) / deltaTime, 0.0f, 1.0f);
+        const auto& start = nodeAnim->mScalingKeys[index].mValue;
+        const auto& end = nodeAnim->mScalingKeys[nextIndex].mValue;
+        auto delta = end - start;
+        auto aiVec = start + factor * delta;
+        return { aiVec.x, aiVec.y, aiVec.z };
+    }
 
-			glm::vec3 scale = InterpolateScale(AnimationTime, nodeAnim);
-			glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(scale.x, scale.y, scale.z));
+    void Mesh::ReadNodeHierarchy(float AnimationTime, const aiNode* pNode, const glm::mat4& parentTransform)
+    {
+        std::string name(pNode->mName.data);
+        const aiAnimation* animation = m_Scene->mAnimations[0];
+        glm::mat4 nodeTransform(Mat4FromAssimpMat4(pNode->mTransformation));
+        const aiNodeAnim* nodeAnim = FindNodeAnim(animation, name);
 
-			nodeTransform = translationMatrix * rotationMatrix * scaleMatrix;
-		}
+        if (nodeAnim)
+        {
+            glm::vec3 translation = InterpolateTranslation(AnimationTime, nodeAnim);
+            glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(translation.x, translation.y, translation.z));
 
-		glm::mat4 transform = parentTransform * nodeTransform;
+            glm::quat rotation = InterpolateRotation(AnimationTime, nodeAnim);
+            glm::mat4 rotationMatrix = glm::toMat4(rotation);
 
-		if (m_BoneMapping.find(name) != m_BoneMapping.end())
-		{
-			uint32_t BoneIndex = m_BoneMapping[name];
-			m_BoneInfo[BoneIndex].FinalTransformation = m_InverseTransform * transform * m_BoneInfo[BoneIndex].BoneOffset;
-		}
+            glm::vec3 scale = InterpolateScale(AnimationTime, nodeAnim);
+            glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(scale.x, scale.y, scale.z));
 
-		for (uint32_t i = 0; i < pNode->mNumChildren; i++)
-			ReadNodeHierarchy(AnimationTime, pNode->mChildren[i], transform);
-	}
+            nodeTransform = translationMatrix * rotationMatrix * scaleMatrix;
+        }
 
-	const aiNodeAnim* Mesh::FindNodeAnim(const aiAnimation* animation, const std::string& nodeName)
-	{
-		for (uint32_t i = 0; i < animation->mNumChannels; i++)
-		{
-			const aiNodeAnim* nodeAnim = animation->mChannels[i];
-			if (std::string(nodeAnim->mNodeName.data) == nodeName)
-				return nodeAnim;
-		}
-		return nullptr;
-	}
-	void Mesh::BoneTransform(float time)
-	{
-		ReadNodeHierarchy(time, m_Scene->mRootNode, glm::mat4(1.0f));
-		m_BoneTransforms.resize(m_BoneCount);
-		for (size_t i = 0; i < m_BoneCount; i++)
-			m_BoneTransforms[i] = m_BoneInfo[i].FinalTransformation;
-	}
+        glm::mat4 transform = parentTransform * nodeTransform;
+
+        if (m_BoneMapping.find(name) != m_BoneMapping.end())
+        {
+            uint32_t BoneIndex = m_BoneMapping[name];
+            m_BoneInfo[BoneIndex].FinalTransformation = m_InverseTransform * transform * m_BoneInfo[BoneIndex].BoneOffset;
+        }
+
+        for (uint32_t i = 0; i < pNode->mNumChildren; i++)
+            ReadNodeHierarchy(AnimationTime, pNode->mChildren[i], transform);
+    }
+
+    const aiNodeAnim* Mesh::FindNodeAnim(const aiAnimation* animation, const std::string& nodeName)
+    {
+        for (uint32_t i = 0; i < animation->mNumChannels; i++)
+        {
+            const aiNodeAnim* nodeAnim = animation->mChannels[i];
+            if (std::string(nodeAnim->mNodeName.data) == nodeName)
+                return nodeAnim;
+        }
+        return nullptr;
+    }
+    void Mesh::BoneTransform(float time)
+    {
+        ReadNodeHierarchy(time, m_Scene->mRootNode, glm::mat4(1.0f));
+        m_BoneTransforms.resize(m_BoneCount);
+        for (size_t i = 0; i < m_BoneCount; i++)
+            m_BoneTransforms[i] = m_BoneInfo[i].FinalTransformation;
+    }
 #pragma endregion
 
-	void Mesh::OnUpdate(float ts)
-	{
-		if (m_IsAnimated)
-		{
-			if (m_AnimationPlaying)
-			{
-				m_WorldTime += ts;
+    void Mesh::OnUpdate(float ts)
+    {
+        if (m_IsAnimated)
+        {
+            if (m_AnimationPlaying)
+            {
+                m_WorldTime += ts;
 
-				float ticksPerSecond = (float)(m_Scene->mAnimations[0]->mTicksPerSecond != 0 ? m_Scene->mAnimations[0]->mTicksPerSecond : 25.0f) * m_TimeMultiplier;
-				m_AnimationTime += ts * ticksPerSecond;
-				m_AnimationTime = fmod(m_AnimationTime, (float)m_Scene->mAnimations[0]->mDuration);
-			}
+                float ticksPerSecond = (float)(m_Scene->mAnimations[0]->mTicksPerSecond != 0 ? m_Scene->mAnimations[0]->mTicksPerSecond : 25.0f) * m_TimeMultiplier;
+                m_AnimationTime += ts * ticksPerSecond;
+                m_AnimationTime = fmod(m_AnimationTime, (float)m_Scene->mAnimations[0]->mDuration);
+            }
 
-			// TODO: We only need to recalc bones if rendering has been requested at the current animation frame
-			BoneTransform(m_AnimationTime);
-		}
-	}
+            // TODO: We only need to recalc bones if rendering has been requested at the current animation frame
+            BoneTransform(m_AnimationTime);
+        }
+    }
 
-	void Mesh::DumpVertexBuffer()
-	{
-		// TODO: Convert to ImGui
-		PR_MESH_LOG("------------------------------------------------------");
-		PR_MESH_LOG("Vertex Buffer Dump");
-		PR_MESH_LOG("Mesh: {0}", m_FilePath);
-		if (m_IsAnimated)
-		{
-			for (size_t i = 0; i < m_AnimatedVertices.size(); i++)
-			{
-				auto& vertex = m_AnimatedVertices[i];
-				PR_MESH_LOG("Vertex: {0}", i);
-				PR_MESH_LOG("Position: {0}, {1}, {2}", vertex.Position.x, vertex.Position.y, vertex.Position.z);
-				PR_MESH_LOG("Normal: {0}, {1}, {2}", vertex.Normal.x, vertex.Normal.y, vertex.Normal.z);
-				PR_MESH_LOG("Binormal: {0}, {1}, {2}", vertex.Binormal.x, vertex.Binormal.y, vertex.Binormal.z);
-				PR_MESH_LOG("Tangent: {0}, {1}, {2}", vertex.Tangent.x, vertex.Tangent.y, vertex.Tangent.z);
-				PR_MESH_LOG("TexCoord: {0}, {1}", vertex.Texcoord.x, vertex.Texcoord.y);
-				PR_MESH_LOG("--");
-			}
-		}
-		else
-		{
-			for (size_t i = 0; i < m_StaticVertices.size(); i++)
-			{
-				auto& vertex = m_StaticVertices[i];
-				PR_MESH_LOG("Vertex: {0}", i);
-				PR_MESH_LOG("Position: {0}, {1}, {2}", vertex.Position.x, vertex.Position.y, vertex.Position.z);
-				PR_MESH_LOG("Normal: {0}, {1}, {2}", vertex.Normal.x, vertex.Normal.y, vertex.Normal.z);
-				PR_MESH_LOG("Binormal: {0}, {1}, {2}", vertex.Binormal.x, vertex.Binormal.y, vertex.Binormal.z);
-				PR_MESH_LOG("Tangent: {0}, {1}, {2}", vertex.Tangent.x, vertex.Tangent.y, vertex.Tangent.z);
-				PR_MESH_LOG("TexCoord: {0}, {1}", vertex.Texcoord.x, vertex.Texcoord.y);
-				PR_MESH_LOG("--");
-			}
-		}
-		PR_MESH_LOG("------------------------------------------------------");
-	}
+    void Mesh::DumpVertexBuffer()
+    {
+        // TODO: Convert to ImGui
+        PR_MESH_LOG("------------------------------------------------------");
+        PR_MESH_LOG("Vertex Buffer Dump");
+        PR_MESH_LOG("Mesh: {0}", m_FilePath);
+        if (m_IsAnimated)
+        {
+            for (size_t i = 0; i < m_AnimatedVertices.size(); i++)
+            {
+                auto& vertex = m_AnimatedVertices[i];
+                PR_MESH_LOG("Vertex: {0}", i);
+                PR_MESH_LOG("Position: {0}, {1}, {2}", vertex.Position.x, vertex.Position.y, vertex.Position.z);
+                PR_MESH_LOG("Normal: {0}, {1}, {2}", vertex.Normal.x, vertex.Normal.y, vertex.Normal.z);
+                PR_MESH_LOG("Binormal: {0}, {1}, {2}", vertex.Binormal.x, vertex.Binormal.y, vertex.Binormal.z);
+                PR_MESH_LOG("Tangent: {0}, {1}, {2}", vertex.Tangent.x, vertex.Tangent.y, vertex.Tangent.z);
+                PR_MESH_LOG("TexCoord: {0}, {1}", vertex.Texcoord.x, vertex.Texcoord.y);
+                PR_MESH_LOG("--");
+            }
+        }
+        else
+        {
+            for (size_t i = 0; i < m_StaticVertices.size(); i++)
+            {
+                auto& vertex = m_StaticVertices[i];
+                PR_MESH_LOG("Vertex: {0}", i);
+                PR_MESH_LOG("Position: {0}, {1}, {2}", vertex.Position.x, vertex.Position.y, vertex.Position.z);
+                PR_MESH_LOG("Normal: {0}, {1}, {2}", vertex.Normal.x, vertex.Normal.y, vertex.Normal.z);
+                PR_MESH_LOG("Binormal: {0}, {1}, {2}", vertex.Binormal.x, vertex.Binormal.y, vertex.Binormal.z);
+                PR_MESH_LOG("Tangent: {0}, {1}, {2}", vertex.Tangent.x, vertex.Tangent.y, vertex.Tangent.z);
+                PR_MESH_LOG("TexCoord: {0}, {1}", vertex.Texcoord.x, vertex.Texcoord.y);
+                PR_MESH_LOG("--");
+            }
+        }
+        PR_MESH_LOG("------------------------------------------------------");
+    }
 
 }

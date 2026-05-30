@@ -130,6 +130,7 @@ namespace Prism
 
         // Editor-specific
         void SetSelectedEntity(entt::entity entity) { m_SelectedEntity = entity; }
+        entt::entity GetSelectedEntity() const { return m_SelectedEntity; }
     private:
         UUID m_SceneID;
         entt::entity m_SceneEntity;

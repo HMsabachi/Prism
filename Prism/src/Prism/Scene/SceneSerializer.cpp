@@ -1,10 +1,14 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "SceneSerializer.h"
 
 #include "Entity.h"
 #include "Components.h"
 
 #include "yaml-cpp/yaml.h"
+
+#include "Prism/Renderer/MeshFactory.h"
+#include "Prism/Physics/PXPhysicsWrappers.h"
+#include "Prism/Utilities/FileSystem.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
@@ -199,7 +203,7 @@ namespace Prism {
             out << YAML::BeginMap; // MeshComponent
 
             auto mesh = entity.GetComponent<MeshComponent>().Mesh;
-            out << YAML::Key << "AssetPath" << YAML::Value << mesh->GetFilePath();
+            out << YAML::Key << "AssetPath" << YAML::Value << FileSystem::GetRelativePath(mesh->GetFilePath());
 
             out << YAML::EndMap; // MeshComponent
         }
@@ -356,7 +360,7 @@ namespace Prism {
 
             auto& mcComponent = entity.GetComponent<MeshColliderComponent>();
             if (mcComponent.CollisionMesh)
-                out << YAML::Key << "AssetPath" << YAML::Value << mcComponent.CollisionMesh->GetFilePath();
+                out << YAML::Key << "AssetPath" << YAML::Value << FileSystem::GetRelativePath(mcComponent.CollisionMesh->GetFilePath());
             out << YAML::Key << "IsTrigger" << YAML::Value << mcComponent.IsTrigger;
 
             out << YAML::EndMap; // MeshColliderComponent
@@ -534,7 +538,7 @@ namespace Prism {
         out << YAML::Key << "Environment";
         out << YAML::Value;
         out << YAML::BeginMap; // Environment
-        out << YAML::Key << "AssetPath" << YAML::Value << scene->GetEnvironment().FilePath;
+        out << YAML::Key << "AssetPath" << YAML::Value << FileSystem::GetRelativePath(scene->GetEnvironment().FilePath);
         const auto& light = scene->GetLight();
         out << YAML::Key << "Light" << YAML::Value;
         out << YAML::BeginMap; // Light
@@ -786,6 +790,7 @@ namespace Prism {
                     component.Size = boxColliderComponent["Size"].as<glm::vec3>();
                     component.Offset = boxColliderComponent["Offset"].as<glm::vec3>();
                     component.IsTrigger = boxColliderComponent["IsTrigger"] ? boxColliderComponent["IsTrigger"].as<bool>() : false;
+                    component.DebugMesh = MeshFactory::CreateBox(component.Size);
 
                     PR_CORE_INFO("  BoxColliderComponent: Size={0},{1},{2}, Offset={3},{4},{5}", component.Size.x, component.Size.y, component.Size.z, component.Offset.x, component.Offset.y, component.Offset.z);
                 }
@@ -796,6 +801,7 @@ namespace Prism {
                     auto& component = deserializedEntity.AddComponent<SphereColliderComponent>();
                     component.Radius = sphereColliderComponent["Radius"].as<float>();
                     component.IsTrigger = sphereColliderComponent["IsTrigger"] ? sphereColliderComponent["IsTrigger"].as<bool>() : false;
+                    component.DebugMesh = MeshFactory::CreateSphere(component.Radius);
 
                     PR_CORE_INFO("  SphereColliderComponent: Radius={0}", component.Radius);
                 }
@@ -807,6 +813,7 @@ namespace Prism {
                     component.Radius = capsuleColliderComponent["Radius"].as<float>();
                     component.Height = capsuleColliderComponent["Height"].as<float>();
                     component.IsTrigger = capsuleColliderComponent["IsTrigger"] ? capsuleColliderComponent["IsTrigger"].as<bool>() : false;
+                    component.DebugMesh = MeshFactory::CreateCapsule(component.Radius, component.Height);
 
                     PR_CORE_INFO("  CapsuleColliderComponent: Radius={0}, Height={1}", component.Radius, component.Height);
                 }
@@ -817,8 +824,9 @@ namespace Prism {
                     std::string meshPath = meshColliderComponent["AssetPath"].as<std::string>();
                     auto& component = deserializedEntity.AddComponent<MeshColliderComponent>(Ref<Mesh>::Create(meshPath));
                     component.IsTrigger = meshColliderComponent["IsTrigger"] ? meshColliderComponent["IsTrigger"].as<bool>() : false;
+                    PXPhysicsWrappers::CreateConvexMesh(component);
 
-                    PR_CORE_INFO("  MeshColliderComponent: AssetPath={0}", meshPath);
+                    PR_CORE_INFO("  MeshColliderComponent: AssetPath={0}", FileSystem::GetRelativePath(meshPath));
                 }
 
                 // CSharpScriptComponent — deserialize Behaviours

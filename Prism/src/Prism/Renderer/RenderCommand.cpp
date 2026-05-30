@@ -5,18 +5,18 @@
 namespace Prism
 {
 
-	unsigned int RenderCommand::Clear(void* datablock)
-	{
-		float* data = (float*)datablock;
+    unsigned int RenderCommand::Clear(void* datablock)
+    {
+        float* data = (float*)datablock;
 
-		float r = *data++;
-		float g = *data++;
-		float b = *data++;
-		float a = *data;
+        float r = *data++;
+        float g = *data++;
+        float b = *data++;
+        float a = *data;
 
-		RendererAPI::Clear(r, g, b, a);
+        RendererAPI::Clear(r, g, b, a);
 
-		return sizeof(float) * 4;
-	}
+        return sizeof(float) * 4;
+    }
 
 }

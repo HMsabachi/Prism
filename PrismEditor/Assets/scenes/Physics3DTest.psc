@@ -36,7 +36,7 @@ Entities:
       DynamicFriction: 1
       Bounciness: 0
     BoxColliderComponent:
-      Size: [50, 1, 50]
+      Size: [1, 1, 1]
       Offset: [0, 0, 0]
       IsTrigger: false
     CSharpScriptComponent:
@@ -179,7 +179,7 @@ Entities:
       DynamicFriction: 1
       Bounciness: 0
     BoxColliderComponent:
-      Size: [2, 2, 2]
+      Size: [1, 1, 1]
       Offset: [0, 0, 0]
       IsTrigger: false
     CSharpScriptComponent:
@@ -203,7 +203,7 @@ Entities:
       Rotation: [1, 0, 0, 0]
       Scale: [0.022940006, 0.022940006, 0.022940006]
     MeshComponent:
-      AssetPath: E:\PrismEngine\Prism\PrismEditor\Assets\models\Sphere1m.fbx
+      AssetPath: Assets\models\Sphere1m.fbx
     RigidBodyComponent:
       BodyType: 1
       Mass: 1
@@ -216,7 +216,7 @@ Entities:
         LockRotationY: false
         LockRotationZ: false
     MeshColliderComponent:
-      AssetPath: E:\PrismEngine\Prism\PrismEditor\Assets\models\Sphere1m.fbx
+      AssetPath: Assets\models\Sphere1m.fbx
       IsTrigger: false
     CSharpScriptComponent:
       Behaviours:
