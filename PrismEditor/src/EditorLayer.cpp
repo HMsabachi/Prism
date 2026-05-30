@@ -9,6 +9,8 @@
 
 PRISM_API void PrismConnectPhysXDebugger();
 
+#include "Prism/Physics/Physics3D.h"
+
 #include <filesystem>
 
 namespace Prism
@@ -123,7 +125,7 @@ namespace Prism
             // 语言设置
             LanguageManager::Get().LoadLanguage("Assets/Lang/en-US.yml");
 
-            m_EditorScene = Ref<Scene>::Create();
+            m_EditorScene = Ref<Scene>::Create("EditorScene", true);
             UpdateWindowTitle("Untitled Scene");
             CSharpScriptEngine::SetSceneContext(m_EditorScene);
             PythonScriptEngine::SetSceneContext(m_EditorScene);

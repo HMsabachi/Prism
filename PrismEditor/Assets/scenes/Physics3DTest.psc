@@ -11,30 +11,36 @@ Environment:
     NormalBias: 0.1
     CascadeCount: 4
 Entities:
-  - Entity: 3509336336274569647
+  - Entity: 18306113171518048249
     TagComponent:
-      Tag: Sphere
+      Tag: Box
     TransformComponent:
-      Position: [0.57714844, 3.7860096, -9.399623]
+      Position: [0, 0, 0]
       Rotation: [1, 0, 0, 0]
-      Scale: [0.022940006, 0.022940006, 0.022940006]
+      Scale: [50, 1, 50]
     MeshComponent:
-      AssetPath: E:\PrismEngine\Prism\PrismEditor\Assets\models\Sphere1m.fbx
+      AssetPath: assets\meshes\Cube1m.fbx
     RigidBodyComponent:
-      BodyType: 1
+      BodyType: 0
       Mass: 1
       IsKinematic: false
-      LockPositionX: false
-      LockPositionY: false
-      LockPositionZ: false
-      LockRotationX: false
-      LockRotationY: false
-      LockRotationZ: false
-    MeshColliderComponent:
-      AssetPath: E:\PrismEngine\Prism\PrismEditor\Assets\models\Sphere1m.fbx
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: false
+        LockRotationY: false
+        LockRotationZ: false
+    PhysicsMaterialComponent:
+      StaticFriction: 1
+      DynamicFriction: 1
+      Bounciness: 0
+    BoxColliderComponent:
+      Size: [50, 1, 50]
+      Offset: [0, 0, 0]
     CSharpScriptComponent:
       Behaviours:
-        - ID: 2380484423919574403
+        - ID: 12040501226740582726
           ClassID: 17473292295039821981
           Enabled: true
           Fields:
@@ -45,38 +51,30 @@ Entities:
     PythonScriptComponent:
       Behaviours:
         []
-  - Entity: 10169503531257462571
+  - Entity: 5178862374589434728
     TagComponent:
-      Tag: Box
+      Tag: Camera
     TransformComponent:
-      Position: [0, 1.5, 0]
-      Rotation: [1, 0, 0, 0]
-      Scale: [2, 2, 2]
-    MeshComponent:
-      AssetPath: assets\meshes\Cube1m.fbx
-    RigidBodyComponent:
-      BodyType: 1
-      Mass: 0.5
-      IsKinematic: false
-      LockPositionX: false
-      LockPositionY: false
-      LockPositionZ: false
-      LockRotationX: false
-      LockRotationY: false
-      LockRotationZ: false
-    PhysicsMaterialComponent:
-      StaticFriction: 1
-      DynamicFriction: 1
-      Bounciness: 0
-    BoxColliderComponent:
-      Size: [2, 2, 2]
-      Offset: [0, 0, 0]
+      Position: [-21.740631, 9.706595, 15]
+      Rotation: [0.99991035, -0.013391121, 0, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera: some camera data...
+      Primary: true
     CSharpScriptComponent:
       Behaviours:
-        - ID: 7801379288073613711
-          ClassID: 17473292295039821981
+        - ID: 5974780048155238521
+          ClassID: 502499430819245105
           Enabled: true
           Fields:
+            - ID: 305488032
+              Name: Speed
+              Type: 1
+              Value: 5.6
+            - ID: 3277313775
+              Name: DistanceFromPlayer
+              Type: 1
+              Value: 10.8
             - ID: 3048789568
               Name: ID
               Type: 11
@@ -97,12 +95,13 @@ Entities:
       BodyType: 1
       Mass: 1
       IsKinematic: false
-      LockPositionX: false
-      LockPositionY: false
-      LockPositionZ: false
-      LockRotationX: true
-      LockRotationY: true
-      LockRotationZ: true
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: true
+        LockRotationY: true
+        LockRotationZ: true
     PhysicsMaterialComponent:
       StaticFriction: 1
       DynamicFriction: 1
@@ -135,7 +134,7 @@ Entities:
       Behaviours:
         - ID: 8416391071943564156
           ClassID: 16452152310796986188
-          Enabled: true
+          Enabled: false
           Fields:
             - ID: 1693159688
               Name: HorizontalForce
@@ -153,30 +152,39 @@ Entities:
               Name: IsEnabled
               Type: 3
               Value: true
-  - Entity: 5178862374589434728
+  - Entity: 10169503531257462571
     TagComponent:
-      Tag: Camera
+      Tag: Box
     TransformComponent:
-      Position: [-21.740631, 9.706595, 15]
-      Rotation: [0.99991035, -0.013391121, 0, 0]
-      Scale: [1, 1, 1]
-    CameraComponent:
-      Camera: some camera data...
-      Primary: true
+      Position: [0, 1.5, 0]
+      Rotation: [1, 0, 0, 0]
+      Scale: [2, 2, 2]
+    MeshComponent:
+      AssetPath: assets\meshes\Cube1m.fbx
+    RigidBodyComponent:
+      BodyType: 1
+      Mass: 0.5
+      IsKinematic: false
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: false
+        LockRotationY: false
+        LockRotationZ: false
+    PhysicsMaterialComponent:
+      StaticFriction: 1
+      DynamicFriction: 1
+      Bounciness: 0
+    BoxColliderComponent:
+      Size: [2, 2, 2]
+      Offset: [0, 0, 0]
     CSharpScriptComponent:
       Behaviours:
-        - ID: 5974780048155238521
-          ClassID: 502499430819245105
+        - ID: 7801379288073613711
+          ClassID: 17473292295039821981
           Enabled: true
           Fields:
-            - ID: 305488032
-              Name: Speed
-              Type: 1
-              Value: 5.6
-            - ID: 3277313775
-              Name: DistanceFromPlayer
-              Type: 1
-              Value: 10.8
             - ID: 3048789568
               Name: ID
               Type: 11
@@ -184,35 +192,31 @@ Entities:
     PythonScriptComponent:
       Behaviours:
         []
-  - Entity: 18306113171518048249
+  - Entity: 3509336336274569647
     TagComponent:
-      Tag: Box
+      Tag: Sphere
     TransformComponent:
-      Position: [0, 0, 0]
+      Position: [0.57714844, 3.7860096, -9.399623]
       Rotation: [1, 0, 0, 0]
-      Scale: [50, 1, 50]
+      Scale: [0.022940006, 0.022940006, 0.022940006]
     MeshComponent:
-      AssetPath: assets\meshes\Cube1m.fbx
+      AssetPath: E:\PrismEngine\Prism\PrismEditor\Assets\models\Sphere1m.fbx
     RigidBodyComponent:
-      BodyType: 0
+      BodyType: 1
       Mass: 1
       IsKinematic: false
-      LockPositionX: false
-      LockPositionY: false
-      LockPositionZ: false
-      LockRotationX: false
-      LockRotationY: false
-      LockRotationZ: false
-    PhysicsMaterialComponent:
-      StaticFriction: 1
-      DynamicFriction: 1
-      Bounciness: 0
-    BoxColliderComponent:
-      Size: [50, 1, 50]
-      Offset: [0, 0, 0]
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: false
+        LockRotationY: false
+        LockRotationZ: false
+    MeshColliderComponent:
+      AssetPath: E:\PrismEngine\Prism\PrismEditor\Assets\models\Sphere1m.fbx
     CSharpScriptComponent:
       Behaviours:
-        - ID: 12040501226740582726
+        - ID: 2380484423919574403
           ClassID: 17473292295039821981
           Enabled: true
           Fields:

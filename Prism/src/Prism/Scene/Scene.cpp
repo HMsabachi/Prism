@@ -35,17 +35,22 @@ namespace Prism
         UUID SceneID;
     };
 
-    Scene::Scene(const std::string& debugName)
+    Scene::Scene(const std::string& debugName, bool isEditorScene)
         : m_DebugName(debugName)
     {
         m_SceneEntity = m_Registry.create();
         m_Registry.emplace<SceneComponent>(m_SceneEntity, m_SceneID);
 
         s_ActiveScenes[m_SceneID] = this;
-        Init();
 
         AddSystem<ScriptSystem>(this);
-        AddSystem<Physics3DSystem>(this);
+
+        if (!isEditorScene)
+        {
+            AddSystem<Physics3DSystem>(this);
+        }
+
+        Init();
 
         auto* p2d = AddSystem<Physics2DSystem>(this);
         p2d->OnCollisionBegin = [this](uint64_t id) {
@@ -68,8 +73,6 @@ namespace Prism
 
     Scene::~Scene()
     {
-        OnShutdown();
-
         m_Registry.clear();
         s_ActiveScenes.erase(m_SceneID);
     }
@@ -218,10 +221,6 @@ namespace Prism
             system->OnRuntimeStop();
 
         m_IsPlaying = false;
-    }
-
-    void Scene::OnShutdown()
-    {
     }
 
     void Scene::SetViewportSize(uint32_t width, uint32_t height)

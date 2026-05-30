@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <unordered_map>
 #include <memory>
 #include "Prism/Core/Core.h"
@@ -24,9 +24,6 @@ namespace Prism
 
         static void Initialize();
         static void Shutdown();
-
-        template<typename... TArgs>
-        static UUID Instantiate(std::string_view className, CSharpScriptStorage& storage, TArgs&&... args);
 
         template<typename... TArgs>
         static UUID InstantiateEngine(UUID scriptID, std::string_view className, CSharpScriptStorage& storage, TArgs&&... args);
@@ -65,22 +62,6 @@ namespace Prism
         static bool s_Initialized;
     };
 
-    // ── Template implementation ──
-
-    template<typename... TArgs>
-    UUID CSharpScriptEngine::Instantiate(std::string_view className, CSharpScriptStorage& storage, TArgs&&... args)
-    {
-        auto type = GetAppAssembly().GetType(className);
-        PR_CORE_ASSERT(type, "Class not found in app assembly!");
-        auto instance = type->CreateInstance(std::forward<TArgs>(args)...);
-        UUID scriptID = UUID();
-        auto sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
-        auto& sceneMap = s_ManagedObjects[sceneID];
-        auto [it, inserted] = sceneMap.emplace(scriptID, std::move(instance));
-        PR_CORE_ASSERT(inserted, "ScriptID collision in s_ManagedObjects!");
-        storage.Store(scriptID, &it->second);
-        return scriptID;
-    }
 
     // 从 engine assembly 创建框架类 (如 Prism.Entity), 使用外部传入的 ScriptID
     template<typename... TArgs>

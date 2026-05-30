@@ -1,11 +1,6 @@
 #pragma once
 
 #include "ISystem.h"
-#include <entt/entt.hpp>
-
-namespace physx {
-    class PxScene;
-}
 
 namespace Prism {
 
@@ -21,11 +16,7 @@ namespace Prism {
         void OnRuntimeStop() override;
 
     private:
-        void OnRigidBodyConstruct(entt::registry& registry, entt::entity entity);
-        void OnRigidBodyDestroy(entt::registry& registry, entt::entity entity);
-
         Scene* m_Scene;
-        physx::PxScene* m_PhysxScene = nullptr;
     };
 
 }

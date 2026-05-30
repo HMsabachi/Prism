@@ -42,11 +42,10 @@ namespace Prism
     class PRISM_API Scene : public RefCounted
     {
     public:
-        Scene(const std::string& debugName = "Scene");
+        Scene(const std::string& debugName = "Scene", bool isEditorScene = false);
         ~Scene();
 
         void Init();
-        void OnShutdown();
 
         void OnUpdate();
         void OnFixedUpdate();

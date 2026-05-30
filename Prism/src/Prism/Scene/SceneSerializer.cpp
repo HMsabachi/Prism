@@ -285,12 +285,15 @@ namespace Prism {
             out << YAML::Key << "BodyType" << YAML::Value << (int)rbComponent.BodyType;
             out << YAML::Key << "Mass" << YAML::Value << rbComponent.Mass;
             out << YAML::Key << "IsKinematic" << YAML::Value << rbComponent.IsKinematic;
+            out << YAML::Key << "Constraints";
+            out << YAML::BeginMap; // Constraints
             out << YAML::Key << "LockPositionX" << YAML::Value << rbComponent.LockPositionX;
             out << YAML::Key << "LockPositionY" << YAML::Value << rbComponent.LockPositionY;
             out << YAML::Key << "LockPositionZ" << YAML::Value << rbComponent.LockPositionZ;
             out << YAML::Key << "LockRotationX" << YAML::Value << rbComponent.LockRotationX;
             out << YAML::Key << "LockRotationY" << YAML::Value << rbComponent.LockRotationY;
             out << YAML::Key << "LockRotationZ" << YAML::Value << rbComponent.LockRotationZ;
+            out << YAML::EndMap; // Constraints
 
             out << YAML::EndMap; // RigidBodyComponent
         }
@@ -751,12 +754,12 @@ namespace Prism {
                     component.BodyType = (RigidBodyComponent::Type)rigidBodyComponent["BodyType"].as<int>();
                     component.Mass = rigidBodyComponent["Mass"] ? rigidBodyComponent["Mass"].as<float>() : 1.0f;
                     component.IsKinematic = rigidBodyComponent["IsKinematic"] ? rigidBodyComponent["IsKinematic"].as<bool>() : false;
-                    component.LockPositionX = rigidBodyComponent["LockPositionX"] ? rigidBodyComponent["LockPositionX"].as<bool>() : false;
-                    component.LockPositionY = rigidBodyComponent["LockPositionY"] ? rigidBodyComponent["LockPositionY"].as<bool>() : false;
-                    component.LockPositionZ = rigidBodyComponent["LockPositionZ"] ? rigidBodyComponent["LockPositionZ"].as<bool>() : false;
-                    component.LockRotationX = rigidBodyComponent["LockRotationX"] ? rigidBodyComponent["LockRotationX"].as<bool>() : false;
-                    component.LockRotationY = rigidBodyComponent["LockRotationY"] ? rigidBodyComponent["LockRotationY"].as<bool>() : false;
-                    component.LockRotationZ = rigidBodyComponent["LockRotationZ"] ? rigidBodyComponent["LockRotationZ"].as<bool>() : false;
+                    component.LockPositionX = rigidBodyComponent["Constraints"]["LockPositionX"].as<bool>();
+                    component.LockPositionY = rigidBodyComponent["Constraints"]["LockPositionY"].as<bool>();
+                    component.LockPositionZ = rigidBodyComponent["Constraints"]["LockPositionZ"].as<bool>();
+                    component.LockRotationX = rigidBodyComponent["Constraints"]["LockRotationX"].as<bool>();
+                    component.LockRotationY = rigidBodyComponent["Constraints"]["LockRotationY"].as<bool>();
+                    component.LockRotationZ = rigidBodyComponent["Constraints"]["LockRotationZ"].as<bool>();
 
                     PR_CORE_INFO("  RigidBodyComponent: Type={0}, Mass={1}", (int)component.BodyType, component.Mass);
                 }

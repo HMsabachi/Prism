@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Scripting/Python/Interop/PythonScriptCore.h"
 #include "Prism/Core/Core.h"
 #include "Prism/Core/UUID.h"
