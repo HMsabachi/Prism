@@ -38,6 +38,7 @@ Entities:
     BoxColliderComponent:
       Size: [50, 1, 50]
       Offset: [0, 0, 0]
+      IsTrigger: false
     CSharpScriptComponent:
       Behaviours:
         - ID: 12040501226740582726
@@ -108,6 +109,7 @@ Entities:
       Bounciness: 0
     SphereColliderComponent:
       Radius: 0.5
+      IsTrigger: false
     CSharpScriptComponent:
       Behaviours:
         - ID: 7703927552313077461
@@ -179,6 +181,7 @@ Entities:
     BoxColliderComponent:
       Size: [2, 2, 2]
       Offset: [0, 0, 0]
+      IsTrigger: false
     CSharpScriptComponent:
       Behaviours:
         - ID: 7801379288073613711
@@ -214,6 +217,7 @@ Entities:
         LockRotationZ: false
     MeshColliderComponent:
       AssetPath: E:\PrismEngine\Prism\PrismEditor\Assets\models\Sphere1m.fbx
+      IsTrigger: false
     CSharpScriptComponent:
       Behaviours:
         - ID: 2380484423919574403

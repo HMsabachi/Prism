@@ -66,6 +66,8 @@ namespace Prism
         OnDestroy       = BIT(7),
         OnCollisionBegin = BIT(8),
         OnCollisionEnd  = BIT(9),
+        OnTriggerBegin  = BIT(10),
+        OnTriggerEnd    = BIT(11),
     };
 
     struct PRISM_API ScriptClassMetadata

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Prism/Core/Core.h"
 #include "Prism/Scene/Entity.h"
@@ -26,7 +26,7 @@ namespace Prism {
         glm::vec3 Gravity = { 0.0F, -9.81F, 0.0F };
     };
 
-    class PRISM_API Physics3D
+    class PRISM_API Physics
     {
     public:
         static void Init();
@@ -43,7 +43,9 @@ namespace Prism {
         static void DisconnectVisualDebugger();
 
         using CollisionCallback = std::function<void(Entity)>;
+        using TriggerCallback = std::function<void(Entity)>;
         static void SetCollisionCallbacks(CollisionCallback begin, CollisionCallback end);
+        static void SetTriggerCallbacks(TriggerCallback begin, TriggerCallback end);
     };
 
 }

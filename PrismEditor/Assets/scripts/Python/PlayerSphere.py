@@ -98,6 +98,12 @@ class PlayerSphere(Behaviour):
         self._collision_counter -= 1
         Log.Trace(f"[PlayerSphere] OnCollisionEnd: {collision_id}")
 
+    def OnTriggerBegin(self, value: float):
+        Log.Info(f"[PlayerSphere] OnTriggerBegin: {value}")
+
+    def OnTriggerEnd(self, value: float):
+        Log.Info(f"[PlayerSphere] OnTriggerEnd: {value}")
+
 
     def _TestCore(self):
         """测试 Log / Input / Time / KeyCodes"""

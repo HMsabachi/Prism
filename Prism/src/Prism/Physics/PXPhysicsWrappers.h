@@ -29,6 +29,6 @@ namespace Prism
         static void DisconnectVisualDebugger();
 
     private:
-        friend class Physics3D;
+        friend class Physics;
     };
 }

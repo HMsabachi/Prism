@@ -1,6 +1,6 @@
 from Prism import (
     Behaviour, Input, Time, KeyCodes,
-    RigidBodyComponent, MeshComponent, TransformComponent,
+    RigidBodyComponent, MeshComponent, TransformComponent, Log
 )
 from Prism.Math import Vector3
 from Prism.Math.Matrix4 import Matrix4
@@ -39,6 +39,12 @@ class PlayerSphere(Behaviour):
         self.m_CollisionCounter -= 1
         if not self._colliding:
             self.randomColor.GenerateColor()
+
+    def OnTriggerBegin(self, value: float):
+        Log.Info(f"[PlayerSphere3D] OnTriggerBegin: {value}")
+
+    def OnTriggerEnd(self, value: float):
+        Log.Info(f"[PlayerSphere3D] OnTriggerEnd: {value}")
 
     def OnFixedUpdate(self):
         movementForce = self.HorizontalForce

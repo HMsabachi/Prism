@@ -805,6 +805,7 @@ namespace Prism {
                 BeginPropertyGrid();
                 Property(TR("Size"), component.Size);
                 Property(TR("Offset"), component.Offset);
+                Property(TR("Is Trigger"), component.IsTrigger);
                 EndPropertyGrid();
             });
 
@@ -812,6 +813,7 @@ namespace Prism {
             {
                 BeginPropertyGrid();
                 Property(TR("Radius"), component.Radius);
+                Property(TR("Is Trigger"), component.IsTrigger);
                 EndPropertyGrid();
             });
 
@@ -820,6 +822,7 @@ namespace Prism {
                 BeginPropertyGrid();
                 Property(TR("Radius"), component.Radius);
                 Property(TR("Height"), component.Height);
+                Property(TR("Is Trigger"), component.IsTrigger);
                 EndPropertyGrid();
             });
 
@@ -846,6 +849,8 @@ namespace Prism {
                 }
                 ImGui::NextColumn();
                 ImGui::Columns(1);
+
+                Property(TR("Is Trigger"), component.IsTrigger);
             });
 
         // CSharpScriptComponent

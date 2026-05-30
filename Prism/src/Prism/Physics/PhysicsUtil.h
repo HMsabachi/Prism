@@ -15,6 +15,7 @@ namespace Prism {
     class Scene;
 
     void SetContactCallbacks(const std::function<void(Entity)>& onBegin, const std::function<void(Entity)>& onEnd);
+    void SetContactTriggerCallbacks(const std::function<void(Entity)>& onBegin, const std::function<void(Entity)>& onEnd);
 
     physx::PxTransform ToPhysXTransform(const glm::mat4& matrix);
     physx::PxMat44 ToPhysXMatrix(const glm::mat4& matrix);

@@ -12,7 +12,7 @@
 
 #include "Scripting/CSharp/CSharpScriptEngine.h"
 #include "Scripting/Python/PythonScriptEngine.h"
-#include "Prism/Physics/Physics3D.h"
+#include "Prism/Physics/Physics.h"
 
 
 #include <imgui.h>
@@ -58,7 +58,7 @@ namespace Prism
         // 初始化PrismShader解释器
         ShaderParser::Init("Assets/Shaders/Include");
         // 初始化 PhysX 物理引擎
-        Physics3D::Init();
+        Physics::Init();
         // 初始化渲染器 Initialize Renderer
         Renderer::Init();
         Renderer::WaitAndRender();
@@ -129,7 +129,7 @@ namespace Prism
         m_LayerStack.Shutdown();
         CSharpScriptEngine::Shutdown();
         PythonScriptEngine::Shutdown();
-        Physics3D::Shutdown();
+        Physics::Shutdown();
     }
 
     void Application::RenderImGui()

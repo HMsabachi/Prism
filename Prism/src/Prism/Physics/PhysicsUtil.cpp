@@ -7,11 +7,19 @@ namespace Prism {
 
     static std::function<void(Entity)> s_OnCollisionBegin;
     static std::function<void(Entity)> s_OnCollisionEnd;
+    static std::function<void(Entity)> s_OnTriggerBegin;
+    static std::function<void(Entity)> s_OnTriggerEnd;
 
     void SetContactCallbacks(const std::function<void(Entity)>& onBegin, const std::function<void(Entity)>& onEnd)
     {
         s_OnCollisionBegin = onBegin;
         s_OnCollisionEnd = onEnd;
+    }
+
+    void SetContactTriggerCallbacks(const std::function<void(Entity)>& onBegin, const std::function<void(Entity)>& onEnd)
+    {
+        s_OnTriggerBegin = onBegin;
+        s_OnTriggerEnd = onEnd;
     }
 
     physx::PxTransform ToPhysXTransform(const glm::mat4& matrix)
@@ -125,7 +133,20 @@ namespace Prism {
 
     void ContactListener::onTrigger(physx::PxTriggerPair* pairs, physx::PxU32 count)
     {
-        PX_UNUSED(pairs);
+        Entity& a = *(Entity*)pairs->triggerActor->userData;
+        Entity& b = *(Entity*)pairs->otherActor->userData;
+
+        if (pairs->status & physx::PxPairFlag::eNOTIFY_TOUCH_FOUND)
+        {
+            if (s_OnTriggerBegin) s_OnTriggerBegin(a);
+            if (s_OnTriggerBegin) s_OnTriggerBegin(b);
+        }
+        else if (pairs->status & physx::PxPairFlag::eNOTIFY_TOUCH_LOST)
+        {
+            if (s_OnTriggerEnd) s_OnTriggerEnd(a);
+            if (s_OnTriggerEnd) s_OnTriggerEnd(b);
+        }
+
         PX_UNUSED(count);
     }
 

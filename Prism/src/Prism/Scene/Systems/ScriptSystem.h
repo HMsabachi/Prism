@@ -22,6 +22,8 @@ namespace Prism {
 
         void OnCollisionBegin(Entity entity);
         void OnCollisionEnd(Entity entity);
+        void OnTriggerBegin(Entity entity);
+        void OnTriggerEnd(Entity entity);
 
         CSharpBehaviourBinding CreateCSharpBinding(UUID classID);
         PythonBehaviourBinding CreatePythonBinding(UUID classID);

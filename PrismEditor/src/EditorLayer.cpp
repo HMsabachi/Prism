@@ -9,7 +9,7 @@
 
 PRISM_API void PrismConnectPhysXDebugger();
 
-#include "Prism/Physics/Physics3D.h"
+#include "Prism/Physics/Physics.h"
 
 #include <filesystem>
 

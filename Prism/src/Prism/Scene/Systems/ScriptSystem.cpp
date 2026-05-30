@@ -314,6 +314,74 @@ namespace Prism {
         }
     }
 
+    void ScriptSystem::OnTriggerBegin(Entity entity)
+    {
+        CSharpScriptEngine::SetSceneContext(m_Scene);
+        PythonScriptEngine::SetSceneContext(m_Scene);
+
+        UUID sceneID = m_Scene->GetUUID();
+
+        if (entity.HasComponent<CSharpScriptComponent>())
+        {
+            auto& comp = entity.GetComponent<CSharpScriptComponent>();
+            for (auto& [bid, binding] : comp.Behaviours)
+            {
+                if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnTriggerBegin))
+                    continue;
+                auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
+                if (obj && obj->IsValid())
+                    obj->TryInvokeMethod("OnTriggerBegin", 0.0f);
+            }
+        }
+
+        if (entity.HasComponent<PythonScriptComponent>())
+        {
+            auto& comp = entity.GetComponent<PythonScriptComponent>();
+            for (auto& [bid, binding] : comp.Behaviours)
+            {
+                if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnTriggerBegin))
+                    continue;
+                auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
+                if (obj && obj->IsValid())
+                    obj->Invoke<void>("OnTriggerBegin", 0.0f);
+            }
+        }
+    }
+
+    void ScriptSystem::OnTriggerEnd(Entity entity)
+    {
+        CSharpScriptEngine::SetSceneContext(m_Scene);
+        PythonScriptEngine::SetSceneContext(m_Scene);
+
+        UUID sceneID = m_Scene->GetUUID();
+
+        if (entity.HasComponent<CSharpScriptComponent>())
+        {
+            auto& comp = entity.GetComponent<CSharpScriptComponent>();
+            for (auto& [bid, binding] : comp.Behaviours)
+            {
+                if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnTriggerEnd))
+                    continue;
+                auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
+                if (obj && obj->IsValid())
+                    obj->TryInvokeMethod("OnTriggerEnd", 0.0f);
+            }
+        }
+
+        if (entity.HasComponent<PythonScriptComponent>())
+        {
+            auto& comp = entity.GetComponent<PythonScriptComponent>();
+            for (auto& [bid, binding] : comp.Behaviours)
+            {
+                if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnTriggerEnd))
+                    continue;
+                auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
+                if (obj && obj->IsValid())
+                    obj->Invoke<void>("OnTriggerEnd", 0.0f);
+            }
+        }
+    }
+
     CSharpBehaviourBinding ScriptSystem::CreateCSharpBinding(UUID classID)
     {
         CSharpBehaviourBinding binding;

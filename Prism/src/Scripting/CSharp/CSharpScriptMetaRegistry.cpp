@@ -229,6 +229,10 @@ namespace Prism
                     classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnCollisionBegin;
                 if (checkMethod("OnCollisionEnd", 1, "System.Single"))
                     classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnCollisionEnd;
+                if (checkMethod("OnTriggerBegin", 1, "System.Single"))
+                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnTriggerBegin;
+                if (checkMethod("OnTriggerEnd", 1, "System.Single"))
+                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnTriggerEnd;
             }
 
             tempInstance.Destroy();

@@ -49,6 +49,16 @@ namespace Example
                 randomColor.GenerateColor();
         }
 
+        public void OnTriggerBegin(float data)
+        {
+            Log.Debug("OnTriggerBegin");
+        }
+
+        public void OnTriggerEnd(float data)
+        {
+            Log.Debug("OnTriggerEnd");
+        }
+
         void OnFixedUpdate()
         {
             float movementForce = HorizontalForce;

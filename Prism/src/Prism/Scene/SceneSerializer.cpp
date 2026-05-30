@@ -319,6 +319,7 @@ namespace Prism {
             auto& bcComponent = entity.GetComponent<BoxColliderComponent>();
             out << YAML::Key << "Size" << YAML::Value << bcComponent.Size;
             out << YAML::Key << "Offset" << YAML::Value << bcComponent.Offset;
+            out << YAML::Key << "IsTrigger" << YAML::Value << bcComponent.IsTrigger;
 
             out << YAML::EndMap; // BoxColliderComponent
         }
@@ -330,6 +331,7 @@ namespace Prism {
 
             auto& scComponent = entity.GetComponent<SphereColliderComponent>();
             out << YAML::Key << "Radius" << YAML::Value << scComponent.Radius;
+            out << YAML::Key << "IsTrigger" << YAML::Value << scComponent.IsTrigger;
 
             out << YAML::EndMap; // SphereColliderComponent
         }
@@ -342,6 +344,7 @@ namespace Prism {
             auto& ccComponent = entity.GetComponent<CapsuleColliderComponent>();
             out << YAML::Key << "Radius" << YAML::Value << ccComponent.Radius;
             out << YAML::Key << "Height" << YAML::Value << ccComponent.Height;
+            out << YAML::Key << "IsTrigger" << YAML::Value << ccComponent.IsTrigger;
 
             out << YAML::EndMap; // CapsuleColliderComponent
         }
@@ -354,6 +357,7 @@ namespace Prism {
             auto& mcComponent = entity.GetComponent<MeshColliderComponent>();
             if (mcComponent.CollisionMesh)
                 out << YAML::Key << "AssetPath" << YAML::Value << mcComponent.CollisionMesh->GetFilePath();
+            out << YAML::Key << "IsTrigger" << YAML::Value << mcComponent.IsTrigger;
 
             out << YAML::EndMap; // MeshColliderComponent
         }
@@ -781,6 +785,7 @@ namespace Prism {
                     auto& component = deserializedEntity.AddComponent<BoxColliderComponent>();
                     component.Size = boxColliderComponent["Size"].as<glm::vec3>();
                     component.Offset = boxColliderComponent["Offset"].as<glm::vec3>();
+                    component.IsTrigger = boxColliderComponent["IsTrigger"] ? boxColliderComponent["IsTrigger"].as<bool>() : false;
 
                     PR_CORE_INFO("  BoxColliderComponent: Size={0},{1},{2}, Offset={3},{4},{5}", component.Size.x, component.Size.y, component.Size.z, component.Offset.x, component.Offset.y, component.Offset.z);
                 }
@@ -790,6 +795,7 @@ namespace Prism {
                 {
                     auto& component = deserializedEntity.AddComponent<SphereColliderComponent>();
                     component.Radius = sphereColliderComponent["Radius"].as<float>();
+                    component.IsTrigger = sphereColliderComponent["IsTrigger"] ? sphereColliderComponent["IsTrigger"].as<bool>() : false;
 
                     PR_CORE_INFO("  SphereColliderComponent: Radius={0}", component.Radius);
                 }
@@ -800,6 +806,7 @@ namespace Prism {
                     auto& component = deserializedEntity.AddComponent<CapsuleColliderComponent>();
                     component.Radius = capsuleColliderComponent["Radius"].as<float>();
                     component.Height = capsuleColliderComponent["Height"].as<float>();
+                    component.IsTrigger = capsuleColliderComponent["IsTrigger"] ? capsuleColliderComponent["IsTrigger"].as<bool>() : false;
 
                     PR_CORE_INFO("  CapsuleColliderComponent: Radius={0}, Height={1}", component.Radius, component.Height);
                 }
@@ -808,7 +815,8 @@ namespace Prism {
                 if (meshColliderComponent)
                 {
                     std::string meshPath = meshColliderComponent["AssetPath"].as<std::string>();
-                    deserializedEntity.AddComponent<MeshColliderComponent>(Ref<Mesh>::Create(meshPath));
+                    auto& component = deserializedEntity.AddComponent<MeshColliderComponent>(Ref<Mesh>::Create(meshPath));
+                    component.IsTrigger = meshColliderComponent["IsTrigger"] ? meshColliderComponent["IsTrigger"].as<bool>() : false;
 
                     PR_CORE_INFO("  MeshColliderComponent: AssetPath={0}", meshPath);
                 }

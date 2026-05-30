@@ -1,5 +1,5 @@
-﻿#include "prpch.h"
-#include "Physics3D.h"
+#include "prpch.h"
+#include "Physics.h"
 #include "PXPhysicsWrappers.h"
 #include "PhysicsUtil.h"
 
@@ -7,7 +7,7 @@
 
 PRISM_API void PrismConnectPhysXDebugger()
 {
-    Prism::Physics3D::ConnectVisualDebugger();
+    Prism::Physics::ConnectVisualDebugger();
 }
 
 namespace Prism {
@@ -17,23 +17,23 @@ namespace Prism {
     static Entity* s_EntityStorageBuffer = nullptr;
     static int s_EntityStorageBufferPosition = 0;
 
-    void Physics3D::Init()
+    void Physics::Init()
     {
         PXPhysicsWrappers::Initialize();
     }
 
-    void Physics3D::Shutdown()
+    void Physics::Shutdown()
     {
         PXPhysicsWrappers::Shutdown();
     }
 
-    void Physics3D::CreateScene(const SceneParams& params)
+    void Physics::CreateScene(const SceneParams& params)
     {
         PR_CORE_ASSERT(s_Scene == nullptr, "Scene already has a Physics Scene!");
         s_Scene = PXPhysicsWrappers::CreateScene(params);
     }
 
-    void Physics3D::CreateActor(Entity e, int entityCount)
+    void Physics::CreateActor(Entity e, int entityCount)
     {
         if (!e.HasComponent<RigidBodyComponent>())
         {
@@ -101,7 +101,7 @@ namespace Prism {
         s_Scene->addActor(*actor);
     }
 
-    void Physics3D::Simulate()
+    void Physics::Simulate()
     {
         constexpr float stepSize = 0.016666660f;
         s_Scene->simulate(stepSize);
@@ -126,7 +126,7 @@ namespace Prism {
         }
     }
 
-    void Physics3D::DestroyScene()
+    void Physics::DestroyScene()
     {
         if (s_EntityStorageBuffer)
         {
@@ -143,19 +143,24 @@ namespace Prism {
         }
     }
 
-    void Physics3D::ConnectVisualDebugger()
+    void Physics::ConnectVisualDebugger()
     {
         PXPhysicsWrappers::ConnectVisualDebugger();
     }
 
-    void Physics3D::DisconnectVisualDebugger()
+    void Physics::DisconnectVisualDebugger()
     {
         PXPhysicsWrappers::DisconnectVisualDebugger();
     }
 
-    void Physics3D::SetCollisionCallbacks(CollisionCallback begin, CollisionCallback end)
+    void Physics::SetCollisionCallbacks(CollisionCallback begin, CollisionCallback end)
     {
         SetContactCallbacks(begin, end);
+    }
+
+    void Physics::SetTriggerCallbacks(TriggerCallback begin, TriggerCallback end)
+    {
+        SetContactTriggerCallbacks(begin, end);
     }
 
 }
