@@ -376,7 +376,6 @@ namespace Prism {
             for (auto& [bid, binding] : comp.Behaviours)
             {
                 out << YAML::BeginMap;
-                out << YAML::Key << "ID" << YAML::Value << (uint64_t)binding.BehaviourID;
                 out << YAML::Key << "ClassID" << YAML::Value << (uint64_t)binding.ClassID;
                 out << YAML::Key << "Enabled" << YAML::Value << binding.Enabled;
                 if (!binding.Fields.empty())
@@ -458,7 +457,6 @@ namespace Prism {
             for (auto& [bid, binding] : comp.Behaviours)
             {
                 out << YAML::BeginMap;
-                out << YAML::Key << "ID" << YAML::Value << (uint64_t)binding.BehaviourID;
                 out << YAML::Key << "ClassID" << YAML::Value << (uint64_t)binding.ClassID;
                 out << YAML::Key << "Enabled" << YAML::Value << binding.Enabled;
                 if (!binding.Fields.empty())
@@ -850,7 +848,6 @@ namespace Prism {
 
                             auto* ss = m_Scene->GetSystem<ScriptSystem>();
                             auto binding = ss->CreateCSharpBinding(classID);
-                            binding.BehaviourID = (UUID)bindingNode["ID"].as<uint64_t>();
                             if (bindingNode["Enabled"])
                                 binding.Enabled = bindingNode["Enabled"].as<bool>();
 
@@ -946,7 +943,6 @@ namespace Prism {
 
                             auto* ss = m_Scene->GetSystem<ScriptSystem>();
                             auto binding = ss->CreatePythonBinding(classID);
-                            binding.BehaviourID = (UUID)bindingNode["ID"].as<uint64_t>();
                             if (bindingNode["Enabled"])
                                 binding.Enabled = bindingNode["Enabled"].as<bool>();
 

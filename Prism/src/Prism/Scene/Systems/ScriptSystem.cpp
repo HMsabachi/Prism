@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "ScriptSystem.h"
 #include "../Scene.h"
 #include "../Entity.h"
@@ -675,8 +675,14 @@ namespace Prism {
         auto& comp = registry.get<CSharpScriptComponent>(entity);
         comp.ScriptID = entityID;
 
-        for (auto& [bid, binding] : comp.Behaviours)
-            m_CSharpBindingMap[bid] = &binding;
+        auto oldBehaviours = std::move(comp.Behaviours);
+        for (auto& [bid, binding] : oldBehaviours)
+        {
+            UUID newBehaviourId = {};
+            comp.Behaviours[newBehaviourId] = std::move(binding);
+            comp.Behaviours[newBehaviourId].BehaviourID = newBehaviourId;
+            m_CSharpBindingMap[newBehaviourId] = &comp.Behaviours[newBehaviourId];
+        }
     }
 
     void ScriptSystem::OnCSharpScriptComponentDestroy(entt::registry& registry, entt::entity entity)
@@ -707,8 +713,14 @@ namespace Prism {
         auto& comp = registry.get<PythonScriptComponent>(entity);
         comp.ScriptID = entityID;
 
-        for (auto& [bid, binding] : comp.Behaviours)
-            m_PythonBindingMap[bid] = &binding;
+        auto oldBehaviours = std::move(comp.Behaviours);
+        for (auto& [bid, binding] : oldBehaviours)
+        {
+            UUID newBehaviourId = {};
+            comp.Behaviours[newBehaviourId] = std::move(binding);
+            comp.Behaviours[newBehaviourId].BehaviourID = newBehaviourId;
+            m_PythonBindingMap[newBehaviourId] = &comp.Behaviours[newBehaviourId];
+        }
     }
 
     void ScriptSystem::OnPythonScriptComponentDestroy(entt::registry& registry, entt::entity entity)

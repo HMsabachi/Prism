@@ -86,6 +86,7 @@ namespace Prism
 
     void Scene::OnUpdate()
     {
+        PR_PROFILE_FUNCTION();
         float ts = Time::GetDeltaTime();
 
         for (auto& [hash, system] : m_Systems)
@@ -96,6 +97,7 @@ namespace Prism
     {
         if (!Time::ShouldFixedUpdate())
             return;
+        PR_PROFILE_FUNCTION();
 
         float ts = Time::GetFixedDeltaTime();
 

@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "CSharpScriptEngine.h"
 #include "CSharpScriptStorage.h"
 #include "CSharpScriptEngineRegistry.h"
@@ -94,7 +94,7 @@ namespace Prism
             storage.Remove(scriptID);
         }
         else
-            PR_CORE_WARN("[C# Script] Attempted to remove managed object with scriptID {0} but no objects found for sceneID {1}", (uint64_t)scriptID, (uint64_t)sceneID);
+            PR_CORE_WARN("[CSharp] Attempted to remove managed object with scriptID {0} but no objects found for sceneID {1}", (uint64_t)scriptID, (uint64_t)sceneID);
         
     }
 
@@ -108,28 +108,28 @@ namespace Prism
         auto* entityObj = GetManagedObject(sceneID, entityID);
         if (!entityObj)
         {
-            PR_CORE_ERROR("[C# Script] Cannot add behaviour: Entity managed object not found for {0}", (uint64_t)entityID);
+            PR_CORE_ERROR("[CSharp] Cannot add behaviour: Entity managed object not found for {0}", (uint64_t)entityID);
             return 0;
         }
 
         auto* meta = CSharpScriptMetaRegistry::GetClassMetadata(binding.ClassID);
         if (!meta)
         {
-            PR_CORE_ERROR("[C# Script] Cannot add behaviour: class metadata not found for ClassID {0}", (uint64_t)binding.ClassID);
+            PR_CORE_ERROR("[CSharp] Cannot add behaviour: class metadata not found for ClassID {0}", (uint64_t)binding.ClassID);
             return 0;
         }
 
         auto type = GetAppAssembly().GetType(meta->FullName);
         if (!type)
         {
-            PR_CORE_ERROR("[C# Script] Class not found in app assembly: {0}", meta->FullName);
+            PR_CORE_ERROR("[CSharp] Class not found in app assembly: {0}", meta->FullName);
             return 0;
         }
 
         auto instance = type.CreateInstance();
         if (!instance.IsValid())
         {
-            PR_CORE_ERROR("[C# Script] Failed to create instance of {0}", meta->FullName);
+            PR_CORE_ERROR("[CSharp] Failed to create instance of {0}", meta->FullName);
             return 0;
         }
 
@@ -152,7 +152,7 @@ namespace Prism
         for (auto& [hash, field] : binding.Fields)
             field.SetInstance(&it->second);
 
-        PR_CORE_INFO("[C# Script] Added behaviour {0} ({1}) to entity {2}", meta->ClassName, (uint64_t)behaviourID, (uint64_t)entityID);
+        PR_CORE_INFO("[CSharp] Added behaviour {0} ({1}) to entity {2}", meta->ClassName, (uint64_t)behaviourID, (uint64_t)entityID);
         return behaviourID;
     }
 
@@ -177,7 +177,7 @@ namespace Prism
         if (sceneIt != s_ManagedObjects.end())
             sceneIt->second.erase(behaviourID);
 
-        PR_CORE_INFO("[C# Script] Removed behaviour {0} from entity {1}", (uint64_t)behaviourID, (uint64_t)entity.GetUUID());
+        PR_CORE_INFO("[CSharp] Removed behaviour {0} from entity {1}", (uint64_t)behaviourID, (uint64_t)entity.GetUUID());
     }
 
     void CSharpScriptEngine::ReleaseAll()
