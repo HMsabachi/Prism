@@ -10,7 +10,6 @@
 #include "Prism/Renderer/Renderer.h"
 
 #include "Prism/Editor/EditorCamera.h"
-#include "Systems/Physics3DSystem.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>

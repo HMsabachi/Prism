@@ -45,4 +45,16 @@ namespace Prism
 		return y;
 	}
 
+	void WindowsInput::SetCursorModeImpl(CursorMode mode)
+	{
+		auto window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL + (int)mode);
+	}
+
+	CursorMode WindowsInput::GetCursorModeImpl()
+	{
+		auto window = static_cast<GLFWwindow*>(Application::Get().GetWindow().GetNativeWindow());
+		return (CursorMode)(glfwGetInputMode(window, GLFW_CURSOR) - GLFW_CURSOR_NORMAL);
+	}
+
 }

@@ -14,6 +14,9 @@ namespace Prism
 		virtual std::pair<float, float> GetMousePositionImpl() override;
 		virtual float GetMouseXImpl() override;
 		virtual float GetMouseYImpl() override;
+
+		virtual void SetCursorModeImpl(CursorMode mode) override;
+		virtual CursorMode GetCursorModeImpl() override;
 	};
 
 }

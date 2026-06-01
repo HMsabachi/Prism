@@ -1,4 +1,4 @@
-using Prism;
+﻿using Prism;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -191,6 +191,11 @@ namespace Prism
         public void SetLinearVelocity(Vector3 velocity)
         {
             unsafe { InternalCalls.Prism_RigidBodyComponent_SetLinearVelocity(Entity.ID, &velocity); }
+        }
+
+        public void Rotate(Vector3 rotation)
+        {
+            unsafe { InternalCalls.Prism_RigidBodyComponent_Rotate(Entity.ID, &rotation); }
         }
     }
 

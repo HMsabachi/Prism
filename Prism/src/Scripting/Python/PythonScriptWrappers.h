@@ -32,6 +32,9 @@ namespace Prism::Script
 
     // Input
     Python::ScriptValue* Prism_Input_IsKeyPressed(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_Input_GetMousePosition(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_Input_SetCursorMode(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_Input_GetCursorMode(Python::ScriptValue* self, Python::ScriptValue* args);
 
     // Entity
     Python::ScriptValue* Prism_Entity_GetTransform(Python::ScriptValue* self, Python::ScriptValue* args);
@@ -67,6 +70,7 @@ namespace Prism::Script
     Python::ScriptValue* Prism_RigidBodyComponent_AddTorque(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_RigidBodyComponent_GetLinearVelocity(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_RigidBodyComponent_SetLinearVelocity(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_RigidBodyComponent_Rotate(Python::ScriptValue* self, Python::ScriptValue* args);
 
     // Mesh
     Python::ScriptValue* Prism_Mesh_Constructor(Python::ScriptValue* self, Python::ScriptValue* args);

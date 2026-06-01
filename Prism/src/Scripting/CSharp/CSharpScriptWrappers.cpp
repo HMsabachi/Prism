@@ -19,6 +19,7 @@
 
 #include <box2d/box2d.h>
 #include <PhysX/PxPhysicsAPI.h>
+#include "Prism/Physics/PhysicsUtil.h"
 
 // Node: 在C#端Bool类型为4字节的Rolky::Bool32，而不是C++的bool类型，因此在这里使用Rolky::Bool32来保持一致性。
 
@@ -95,6 +96,22 @@ namespace Prism {
         Rolky::Bool32 Prism_Input_IsKeyPressed(KeyCode key)
         {
             return Input::IsKeyPressed(key);
+        }
+
+        void Prism_Input_GetMousePosition(glm::vec2* outPosition)
+        {
+            auto [x, y] = Input::GetMousePosition();
+            *outPosition = { x, y };
+        }
+
+        void Prism_Input_SetCursorMode(CursorMode mode)
+        {
+            Input::SetCursorMode(mode);
+        }
+
+        CursorMode Prism_Input_GetCursorMode()
+        {
+            return Input::GetCursorMode();
         }
 #pragma endregion
 
@@ -475,6 +492,21 @@ namespace Prism {
             physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
             PR_CORE_ASSERT(dynamicActor);
             dynamicActor->setLinearVelocity(physx::PxVec3(velocity->x, velocity->y, velocity->z));
+        }
+
+        void Prism_RigidBodyComponent_Rotate(uint64_t entityID, glm::vec3* rotation)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            auto& rb = entity.GetComponent<RigidBodyComponent>();
+
+            physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
+            physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
+            PR_CORE_ASSERT(dynamicActor);
+
+            glm::mat4 transform = FromPhysXTransform(dynamicActor->getGlobalPose());
+            transform *= glm::toMat4(glm::quat(glm::radians(*rotation)));
+
+            dynamicActor->setGlobalPose(ToPhysXTransform(transform));
         }
 
 #pragma endregion

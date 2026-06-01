@@ -71,6 +71,9 @@ namespace Prism
 
 		// Input
 		PR_PYTHON_FUNCTION(Prism_Input_IsKeyPressed, "IsKeyPressed(key) -> bool");
+		PR_PYTHON_FUNCTION(Prism_Input_GetMousePosition, "GetMousePosition() -> vec2");
+		PR_PYTHON_FUNCTION(Prism_Input_SetCursorMode, "SetCursorMode(mode)");
+		PR_PYTHON_FUNCTION(Prism_Input_GetCursorMode, "GetCursorMode() -> int");
 
 		// Entity
 		PR_PYTHON_FUNCTION(Prism_Entity_GetTransform, "GetTransform(entityID) -> mat4");
@@ -106,6 +109,7 @@ namespace Prism
 		PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_AddTorque, "AddTorque(entityID, torque, forceMode)");
 		PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_GetLinearVelocity, "GetLinearVelocity(entityID) -> vec3");
 		PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_SetLinearVelocity, "SetLinearVelocity(entityID, velocity)");
+		PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_Rotate, "Rotate(entityID, rotation)");
 
 		// Mesh
 		PR_PYTHON_FUNCTION(Prism_Mesh_Constructor, "Mesh(cpp_handle, filepath)");

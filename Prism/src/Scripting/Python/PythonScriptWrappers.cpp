@@ -18,6 +18,7 @@
 
 #include <box2d/box2d.h>
 #include <PhysX/PxPhysicsAPI.h>
+#include "Prism/Physics/PhysicsUtil.h"
 
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/Material.h"
@@ -125,6 +126,25 @@ namespace Prism::Script
         Python::ScriptRef argsRef(args);
         KeyCode key = static_cast<KeyCode>(Python::ValueToInt(Python::GetTupleElement(argsRef, 0)));
         return Python::BoolToValue(Input::IsKeyPressed(key)).Detach();
+    }
+
+    Python::ScriptValue* Prism_Input_GetMousePosition(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        auto [x, y] = Input::GetMousePosition();
+        return Python::Vec2ToValue(glm::vec2(x, y)).Detach();
+    }
+
+    Python::ScriptValue* Prism_Input_SetCursorMode(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        CursorMode mode = static_cast<CursorMode>(Python::ValueToInt(Python::GetTupleElement(argsRef, 0)));
+        Input::SetCursorMode(mode);
+        return Python::NoneValue().Detach();
+    }
+
+    Python::ScriptValue* Prism_Input_GetCursorMode(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        return Python::IntToValue(static_cast<int>(Input::GetCursorMode())).Detach();
     }
 
 #pragma endregion
@@ -464,6 +484,25 @@ namespace Prism::Script
         physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
         PR_CORE_ASSERT(dynamicActor);
         dynamicActor->setLinearVelocity(physx::PxVec3(velocity.x, velocity.y, velocity.z));
+        return Python::NoneValue().Detach();
+    }
+
+    Python::ScriptValue* Prism_RigidBodyComponent_Rotate(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+        Python::ScriptRef vecObj = Python::GetTupleElement(argsRef, 1);
+        glm::vec3 rotation = Python::ValueToVec3(vecObj);
+
+        auto& rb = entity.GetComponent<RigidBodyComponent>();
+        physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
+        physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
+        PR_CORE_ASSERT(dynamicActor);
+
+        glm::mat4 transform = FromPhysXTransform(dynamicActor->getGlobalPose());
+        transform *= glm::toMat4(glm::quat(glm::radians(rotation)));
+
+        dynamicActor->setGlobalPose(ToPhysXTransform(transform));
         return Python::NoneValue().Detach();
     }
 

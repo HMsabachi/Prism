@@ -14,6 +14,7 @@ namespace Prism
     class Material;
     class MaterialInstance;
     enum class KeyCode : uint16_t;
+    enum class CursorMode;
 }
 
 namespace Prism
@@ -47,6 +48,9 @@ namespace Prism
         float Prism_Noise_PerlinNoise(float x, float y);
         // Input
         Rolky::Bool32 Prism_Input_IsKeyPressed(KeyCode key);
+        void Prism_Input_GetMousePosition(glm::vec2* outPosition);
+        void Prism_Input_SetCursorMode(CursorMode mode);
+        CursorMode Prism_Input_GetCursorMode();
         // Entity
         void Prism_Entity_GetTransform(uint64_t entityID, glm::mat4* outTransform);
         void Prism_Entity_SetTransform(uint64_t entityID, glm::mat4* inTransform);
@@ -100,6 +104,7 @@ namespace Prism
         void Prism_RigidBodyComponent_AddTorque(uint64_t entityID, glm::vec3* torque, int32_t forceMode);
         void Prism_RigidBodyComponent_GetLinearVelocity(uint64_t entityID, glm::vec3* outVelocity);
         void Prism_RigidBodyComponent_SetLinearVelocity(uint64_t entityID, glm::vec3* velocity);
+        void Prism_RigidBodyComponent_Rotate(uint64_t entityID, glm::vec3* rotation);
 
         // Material
         Ref<Material>* Prism_Material_Constructor(Rolky::String shaderName);

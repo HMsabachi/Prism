@@ -73,6 +73,9 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_Noise_PerlinNoise);
         // Input
         PR_ADD_INTERNAL_CALL(Prism_Input_IsKeyPressed);
+        PR_ADD_INTERNAL_CALL(Prism_Input_GetMousePosition);
+        PR_ADD_INTERNAL_CALL(Prism_Input_SetCursorMode);
+        PR_ADD_INTERNAL_CALL(Prism_Input_GetCursorMode);
         // Entity
         PR_ADD_INTERNAL_CALL(Prism_Entity_GetTransform);
         PR_ADD_INTERNAL_CALL(Prism_Entity_SetTransform);
@@ -115,6 +118,7 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_AddTorque);
         PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_GetLinearVelocity);
         PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_SetLinearVelocity);
+        PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_Rotate);
         // Texture2D
         PR_ADD_INTERNAL_CALL(Prism_Texture2D_Constructor);
         PR_ADD_INTERNAL_CALL(Prism_Texture2D_Destructor);
