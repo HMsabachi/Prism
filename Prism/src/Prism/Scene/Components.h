@@ -207,6 +207,7 @@ namespace Prism {
         Type BodyType = Type::Static;
         float Mass = 1.0F;
         bool IsKinematic = false;
+        uint32_t Layer = 0;
 
         bool LockPositionX = false;
         bool LockPositionY = false;

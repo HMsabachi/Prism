@@ -31,8 +31,11 @@ class FPSPlayer(Behaviour):
         self._cameraTransform = self._cameraEntity.GetComponent(TransformComponent)
 
         self._cameraRotationX = 0.0
+        self._rotationY = 0.0
 
         self._lastMousePosition = Input.GetMousePosition()
+
+        self._rotationY = self._transform.Rotation.y
 
         Input.SetCursorMode(CursorMode.Locked)
 
@@ -54,40 +57,38 @@ class FPSPlayer(Behaviour):
     def UpdateRotation(self, ts: float):
         currentMousePosition = Input.GetMousePosition()
         delta = self._lastMousePosition - currentMousePosition
-        self._rigidBody.Rotate(Vector3(0.0, delta.x * self.MouseSensitivity, 0.0) * ts)
+        self._rotationY += delta.x * self.MouseSensitivity * ts
+        # self._transform.Rotation = Vector3(0.0, self._rotationY, 0.0)
 
         if delta.y != 0.0:
             self._cameraRotationX += delta.y * self.MouseSensitivity * ts
-            #self._cameraRotationX = Mathf.Clamp(self._cameraRotationX, -80.0, 80.0)
-            self._cameraTransform.Rotation = Vector3(self._cameraRotationX, 0.0, 0.0)
+            self._cameraRotationX = Mathf.Clamp(self._cameraRotationX, -80.0, 80.0)
 
         self._lastMousePosition = currentMousePosition
 
     def UpdateMovement(self):
         if Input.IsKeyPressed(KeyCodes.W):
-            self._rigidBody.AddForce(self._transform.Forward * self._currentSpeed)
+            self._rigidBody.AddForce(self._cameraTransform.Forward * self._currentSpeed)
         elif Input.IsKeyPressed(KeyCodes.S):
-            self._rigidBody.AddForce(self._transform.Forward * -self._currentSpeed)
+            self._rigidBody.AddForce(self._cameraTransform.Forward * -self._currentSpeed)
 
         if Input.IsKeyPressed(KeyCodes.A):
-            self._rigidBody.AddForce(self._transform.Right * -self._currentSpeed)
+            self._rigidBody.AddForce(self._cameraTransform.Right * -self._currentSpeed)
         elif Input.IsKeyPressed(KeyCodes.D):
-            self._rigidBody.AddForce(self._transform.Right * self._currentSpeed)
+            self._rigidBody.AddForce(self._cameraTransform.Right * self._currentSpeed)
 
         if Input.IsKeyPressed(KeyCodes.Space) and self.Colliding:
             self._rigidBody.AddForce(Vector3.Up * self.JumpForce)
 
     def UpdateCameraTransform(self):
-        # Matrix4 — get a copy, modify Translation, write back
-        cameraTransform = self._cameraTransform.Transform
+        cameraPosition = self._cameraTransform.Position
         translation = self._transform.Transform.Translation
-        cameraTransform.Translation = Vector3(translation.x, translation.y + 1.5, translation.z)
-        self._cameraTransform.Transform = cameraTransform
+        cameraPosition.x = translation.x
+        cameraPosition.z = translation.z
+        cameraPosition.y = translation.y + 1.5
+        self._cameraTransform.Position = cameraPosition
 
-        # Rotation — compose player yaw with camera pitch/roll
-        playerRotation = self._transform.Rotation
-        camRotation = self._cameraTransform.Rotation
-        self._cameraTransform.Rotation = Vector3(camRotation.x, playerRotation.y, camRotation.z)
+        self._cameraTransform.Rotation = Vector3(self._cameraRotationX, self._rotationY, 0.0)
 
     def OnCollisionBegin(self, collision_id: float):
         self._collisionCounter += 1

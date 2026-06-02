@@ -103,6 +103,8 @@ namespace Prism
         bool m_ViewportPanelMouseOver = false;
         bool m_ViewportPanelFocused = false;
         bool m_ReloadScriptOnPlay = false;
+
+        bool m_ShowPhysicsSettings = false;
         std::string m_SceneFilePath;
 
         enum class SceneState

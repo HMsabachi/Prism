@@ -47,7 +47,7 @@ namespace Prism {
         void Prism_Log_LogMessage(LogLevel level, Rolky::String inFormattedMessage)
         {
             std::string message = inFormattedMessage;
-            message = "[CSharp]: " + message;
+            message = "[CSharp] " + message;
             switch (level)
             {
             case LogLevel::Trace:
@@ -503,10 +503,12 @@ namespace Prism {
             physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
             PR_CORE_ASSERT(dynamicActor);
 
-            glm::mat4 transform = FromPhysXTransform(dynamicActor->getGlobalPose());
-            transform *= glm::toMat4(glm::quat(glm::radians(*rotation)));
+            physx::PxTransform transform = dynamicActor->getGlobalPose();
+            transform.q *= (physx::PxQuat(glm::radians(rotation->x), { 1.0F, 0.0F, 0.0F })
+                * physx::PxQuat(glm::radians(rotation->y), { 0.0F, 1.0F, 0.0F })
+                * physx::PxQuat(glm::radians(rotation->z), { 0.0F, 0.0F, 1.0F }));
 
-            dynamicActor->setGlobalPose(ToPhysXTransform(transform));
+            dynamicActor->setGlobalPose(transform);
         }
 
 #pragma endregion

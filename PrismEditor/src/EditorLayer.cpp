@@ -10,6 +10,7 @@
 PRISM_API void PrismConnectPhysXDebugger();
 
 #include "Prism/Physics/Physics.h"
+#include "Prism/Editor/PhysicsSettingsWindow.h"
 
 #include <filesystem>
 
@@ -728,6 +729,13 @@ namespace Prism
                     ImGui::EndMenu();
                 }
 
+                if (ImGui::BeginMenu(TR("Edit")))
+                {
+                    ImGui::MenuItem(TR("Physics Settings"), nullptr, &m_ShowPhysicsSettings);
+
+                    ImGui::EndMenu();
+                }
+
                 if (ImGui::BeginMenu("Debug"))
                 {
                     if (ImGui::MenuItem("Connect To PVD"))
@@ -836,6 +844,8 @@ namespace Prism
             ImGui::End();
             CSharpScriptEngine::OnImGuiRender();
             //PythonScriptEngine::OnImGuiRender();
+
+            PhysicsSettingsWindow::OnImGuiRender(&m_ShowPhysicsSettings);
 
             ImGui::End();
         #endif

@@ -212,6 +212,7 @@ namespace Prism
     {
         for (auto* sys : m_SystemOrder) sys->OnRuntimeStart();
         m_IsPlaying = true;
+        Time::ShouldFixedUpdate();
     }
 
     void Scene::OnRuntimeStop()

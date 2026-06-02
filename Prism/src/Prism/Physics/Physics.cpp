@@ -12,6 +12,177 @@ PRISM_API void PrismConnectPhysXDebugger()
 
 namespace Prism {
 
+    std::vector<PhysicsLayer> PhysicsLayerManager::s_Layers;
+    std::unordered_map<uint32_t, std::vector<PhysicsLayer>> PhysicsLayerManager::s_LayerCollisions;
+    PhysicsLayer PhysicsLayerManager::s_NullLayer = { 0, "NULL", 0, -1 };
+
+    template<typename T, typename ConditionFunction>
+    static bool RemoveIfExists(std::vector<T>& vector, ConditionFunction condition)
+    {
+        for (typename std::vector<T>::iterator it = vector.begin(); it != vector.end(); ++it)
+        {
+            if (condition(*it))
+            {
+                vector.erase(it);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    uint32_t PhysicsLayerManager::AddLayer(const std::string& name, bool setCollisions)
+    {
+        uint32_t layerId = GetNextLayerID();
+        PhysicsLayer layer = { layerId, name, BIT(layerId) };
+        s_Layers.push_back(layer);
+
+        s_LayerCollisions[layerId] = std::vector<PhysicsLayer>();
+        s_LayerCollisions[layerId].reserve(1);
+
+        if (setCollisions)
+        {
+            for (const auto& layer2 : s_Layers)
+            {
+                SetLayerCollision(layer.LayerID, layer2.LayerID, true);
+            }
+        }
+
+        return layer.LayerID;
+    }
+
+    void PhysicsLayerManager::RemoveLayer(uint32_t layerId)
+    {
+        if (!IsLayerValid(layerId))
+            return;
+
+        PhysicsLayer& layerInfo = GetLayer(layerId);
+
+        for (auto& kv : s_LayerCollisions)
+        {
+            if (kv.first == layerId)
+                continue;
+
+            if (RemoveIfExists<PhysicsLayer>(kv.second, [&](const PhysicsLayer& layer) { return layer.LayerID == layerId; }))
+            {
+                GetLayer(kv.first).CollidesWith &= ~layerInfo.BitValue;
+            }
+        }
+
+        s_LayerCollisions.erase(layerId);
+
+        RemoveIfExists<PhysicsLayer>(s_Layers, [&](const PhysicsLayer& layer) { return layer.LayerID == layerId; });
+    }
+
+    void PhysicsLayerManager::SetLayerCollision(uint32_t layerId, uint32_t otherLayer, bool collides)
+    {
+        if (ShouldCollide(layerId, otherLayer) && collides)
+            return;
+
+        PhysicsLayer& layerInfo = GetLayer(layerId);
+        PhysicsLayer& otherLayerInfo = GetLayer(otherLayer);
+
+        if (collides)
+        {
+            s_LayerCollisions[layerId].push_back(otherLayerInfo);
+            layerInfo.CollidesWith |= otherLayerInfo.BitValue;
+
+            if (layerId == otherLayer)
+                return;
+
+            s_LayerCollisions[otherLayer].push_back(layerInfo);
+            otherLayerInfo.CollidesWith |= layerInfo.BitValue;
+        }
+        else
+        {
+            RemoveIfExists(s_LayerCollisions[layerId], [&](const PhysicsLayer& layer) { return layer.LayerID == otherLayer; });
+            layerInfo.CollidesWith &= ~otherLayerInfo.BitValue;
+
+            RemoveIfExists(s_LayerCollisions[otherLayer], [&](const PhysicsLayer& layer) { return layer.LayerID == layerId; });
+            otherLayerInfo.CollidesWith &= ~layerInfo.BitValue;
+        }
+    }
+
+    const std::vector<PhysicsLayer>& PhysicsLayerManager::GetLayerCollisions(uint32_t layerId)
+    {
+        PR_CORE_ASSERT(s_LayerCollisions.find(layerId) != s_LayerCollisions.end());
+        return s_LayerCollisions[layerId];
+    }
+
+    PhysicsLayer& PhysicsLayerManager::GetLayer(uint32_t layerId)
+    {
+        for (auto& layer : s_Layers)
+        {
+            if (layer.LayerID == layerId)
+            {
+                return layer;
+            }
+        }
+
+        return s_NullLayer;
+    }
+
+    PhysicsLayer& PhysicsLayerManager::GetLayer(const std::string& layerName)
+    {
+        for (auto& layer : s_Layers)
+        {
+            if (layer.Name == layerName)
+            {
+                return layer;
+            }
+        }
+
+        return s_NullLayer;
+    }
+
+    bool PhysicsLayerManager::ShouldCollide(uint32_t layer1, uint32_t layer2)
+    {
+        for (const auto& collidingLayer : s_LayerCollisions[layer1])
+        {
+            if (collidingLayer.LayerID == layer2)
+                return true;
+        }
+
+        return false;
+    }
+
+    bool PhysicsLayerManager::IsLayerValid(uint32_t layerId)
+    {
+        for (const auto& layer : s_Layers)
+        {
+            if (layer.LayerID == layerId)
+                return true;
+        }
+
+        return false;
+    }
+
+    void PhysicsLayerManager::ClearLayers()
+    {
+        s_Layers.clear();
+        s_LayerCollisions.clear();
+    }
+
+    uint32_t PhysicsLayerManager::GetNextLayerID()
+    {
+        int32_t lastId = -1;
+
+        for (const auto& layer : s_Layers)
+        {
+            if (lastId != -1)
+            {
+                if (layer.LayerID != lastId + 1)
+                {
+                    return lastId + 1;
+                }
+            }
+
+            lastId = layer.LayerID;
+        }
+
+        return s_Layers.size();
+    }
+
     static physx::PxScene* s_Scene = nullptr;
     static std::vector<Entity> s_SimulatedEntities;
     static Entity* s_EntityStorageBuffer = nullptr;
@@ -20,6 +191,7 @@ namespace Prism {
     void Physics::Init()
     {
         PXPhysicsWrappers::Initialize();
+        PhysicsLayerManager::AddLayer("Default");
     }
 
     void Physics::Shutdown()
@@ -92,14 +264,7 @@ namespace Prism {
         }
 
         // Set collision filters
-        if (rigidbody.BodyType == RigidBodyComponent::Type::Static)
-        {
-            PXPhysicsWrappers::SetCollisionFilters(*actor, (uint32_t)FilterGroup::Static, (uint32_t)FilterGroup::All);
-        }
-        else if (rigidbody.BodyType == RigidBodyComponent::Type::Dynamic)
-        {
-            PXPhysicsWrappers::SetCollisionFilters(*actor, (uint32_t)FilterGroup::Dynamic, (uint32_t)FilterGroup::All);
-        }
+        PXPhysicsWrappers::SetCollisionFilters(*actor, rigidbody.Layer);
 
         s_Scene->addActor(*actor);
     }

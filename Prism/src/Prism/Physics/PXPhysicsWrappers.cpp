@@ -66,11 +66,16 @@ namespace Prism {
         return actor;
     }
 
-    void PXPhysicsWrappers::SetCollisionFilters(const physx::PxRigidActor& actor, uint32_t actorGroup, uint32_t filters)
+    void PXPhysicsWrappers::SetCollisionFilters(const physx::PxRigidActor& actor, uint32_t physicsLayer)
     {
+        const PhysicsLayer& layerInfo = PhysicsLayerManager::GetLayer(physicsLayer);
+
+        if (layerInfo.CollidesWith == 0)
+            return;
+
         physx::PxFilterData filterData;
-        filterData.word0 = actorGroup;
-        filterData.word1 = filters;
+        filterData.word0 = layerInfo.BitValue;
+        filterData.word1 = layerInfo.CollidesWith;
 
         const physx::PxU32 numShapes = actor.getNbShapes();
 

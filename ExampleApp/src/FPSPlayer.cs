@@ -19,6 +19,7 @@ namespace Example
 
         private Vector2 m_LastMousePosition;
         private float m_CameraRotationX = 0.0F;
+        private float m_RotationY = 0.0F;
 
         private int m_CollisionCounter = 0;
         private bool Colliding => m_CollisionCounter > 0;
@@ -34,6 +35,8 @@ namespace Example
             m_CameraTransform = m_CameraEntity.GetComponent<TransformComponent>();
 
             m_LastMousePosition = Input.GetMousePosition();
+
+            m_RotationY = m_Transform.Rotation.Y;
 
             Input.SetCursorMode(CursorMode.Locked);
         }
@@ -58,13 +61,13 @@ namespace Example
             float ts = Time.DeltaTime;
             Vector2 currentMousePosition = Input.GetMousePosition();
             Vector2 delta = m_LastMousePosition - currentMousePosition;
-            m_RigidBody.Rotate(new Vector3(0.0F, delta.X * MouseSensitivity, 0.0F) * ts);
+            m_RotationY += delta.X * MouseSensitivity * ts;
+            //m_Transform.Rotation = new Vector3(0.0F, m_RotationY, 0.0F);
 
             if (delta.Y != 0.0F)
             {
                 m_CameraRotationX += delta.Y * MouseSensitivity * ts;
                 m_CameraRotationX = Mathf.Clamp(m_CameraRotationX, -80.0F, 80.0F);
-                m_CameraTransform.Rotation = new Vector3(m_CameraRotationX, 0.0F, 0.0F);
             }
 
             m_LastMousePosition = currentMousePosition;
@@ -73,14 +76,14 @@ namespace Example
         private void UpdateMovement()
         {
             if (Input.IsKeyPressed(KeyCode.W))
-                m_RigidBody.AddForce(m_Transform.Forward * m_CurrentSpeed);
+                m_RigidBody.AddForce(m_CameraTransform.Forward * m_CurrentSpeed);
             else if (Input.IsKeyPressed(KeyCode.S))
-                m_RigidBody.AddForce(m_Transform.Forward * -m_CurrentSpeed);
+                m_RigidBody.AddForce(m_CameraTransform.Forward * -m_CurrentSpeed);
 
             if (Input.IsKeyPressed(KeyCode.A))
-                m_RigidBody.AddForce(m_Transform.Right * -m_CurrentSpeed);
+                m_RigidBody.AddForce(m_CameraTransform.Right * -m_CurrentSpeed);
             else if (Input.IsKeyPressed(KeyCode.D))
-                m_RigidBody.AddForce(m_Transform.Right * m_CurrentSpeed);
+                m_RigidBody.AddForce(m_CameraTransform.Right * m_CurrentSpeed);
 
             if (Input.IsKeyPressed(KeyCode.Space) && Colliding)
                 m_RigidBody.AddForce(Vector3.Up * JumpForce);
@@ -97,9 +100,7 @@ namespace Example
             cameraTranslation.Y = translation.Y + 1.5F;
             m_CameraTransform.Position = cameraTranslation;
 
-            Vector3 cameraRotation = m_Transform.Rotation;
-            cameraRotation.XZ = m_CameraTransform.Rotation.XZ;
-            m_CameraTransform.Rotation = cameraRotation;
+            m_CameraTransform.Rotation = new Vector3(m_CameraRotationX, m_RotationY, 0.0F);
         }
 
         public void OnCollisionBegin(float data)

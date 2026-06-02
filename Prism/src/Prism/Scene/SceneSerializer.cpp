@@ -7,6 +7,7 @@
 #include "yaml-cpp/yaml.h"
 
 #include "Prism/Renderer/MeshFactory.h"
+#include "Prism/Physics/Physics.h"
 #include "Prism/Physics/PXPhysicsWrappers.h"
 #include "Prism/Utilities/FileSystem.h"
 
@@ -289,6 +290,7 @@ namespace Prism {
             out << YAML::Key << "BodyType" << YAML::Value << (int)rbComponent.BodyType;
             out << YAML::Key << "Mass" << YAML::Value << rbComponent.Mass;
             out << YAML::Key << "IsKinematic" << YAML::Value << rbComponent.IsKinematic;
+            out << YAML::Key << "Layer" << YAML::Value << rbComponent.Layer;
             out << YAML::Key << "Constraints";
             out << YAML::BeginMap; // Constraints
             out << YAML::Key << "LockPositionX" << YAML::Value << rbComponent.LockPositionX;
@@ -561,6 +563,29 @@ namespace Prism {
         out << YAML::Key << "Scene";
         out << YAML::Value << "Scene Name";
         SerializeEnvironment(out, m_Scene);
+
+        out << YAML::Key << "PhysicsLayers";
+        out << YAML::Value << YAML::BeginSeq;
+        for (uint32_t i = 0; i < PhysicsLayerManager::GetLayerCount(); i++)
+        {
+            const PhysicsLayer& layer = PhysicsLayerManager::GetLayer(i);
+
+            out << YAML::BeginMap;
+            out << YAML::Key << "Name" << YAML::Value << layer.Name;
+
+            out << YAML::Key << "CollidesWith" << YAML::Value;
+            out << YAML::BeginSeq;
+            for (const auto& collisionLayer : PhysicsLayerManager::GetLayerCollisions(layer.LayerID))
+            {
+                out << YAML::BeginMap;
+                out << YAML::Key << "Name" << YAML::Value << collisionLayer.Name;
+                out << YAML::EndMap;
+            }
+            out << YAML::EndSeq;
+            out << YAML::EndMap;
+        }
+        out << YAML::EndSeq;
+
         out << YAML::Key << "Entities";
         out << YAML::Value << YAML::BeginSeq;
         for (auto entityID : m_Scene->m_Registry.view<entt::entity>())
@@ -617,6 +642,32 @@ namespace Prism {
                 m_Scene->SetShadowBias(shadowNode["Bias"].as<float>());
                 m_Scene->SetShadowNormalBias(shadowNode["NormalBias"].as<float>());
                 m_Scene->SetCascadeCount(shadowNode["CascadeCount"].as<uint32_t>());
+            }
+        }
+
+        auto physicsLayers = data["PhysicsLayers"];
+        if (physicsLayers)
+        {
+            PhysicsLayerManager::ClearLayers();
+
+            for (auto layer : physicsLayers)
+            {
+                PhysicsLayerManager::AddLayer(layer["Name"].as<std::string>(), false);
+            }
+
+            for (auto layer : physicsLayers)
+            {
+                const PhysicsLayer& layerInfo = PhysicsLayerManager::GetLayer(layer["Name"].as<std::string>());
+
+                auto collidesWith = layer["CollidesWith"];
+                if (collidesWith)
+                {
+                    for (auto collisionLayer : collidesWith)
+                    {
+                        const auto& otherLayer = PhysicsLayerManager::GetLayer(collisionLayer["Name"].as<std::string>());
+                        PhysicsLayerManager::SetLayerCollision(layerInfo.LayerID, otherLayer.LayerID, true);
+                    }
+                }
             }
         }
 
@@ -760,6 +811,7 @@ namespace Prism {
                     component.BodyType = (RigidBodyComponent::Type)rigidBodyComponent["BodyType"].as<int>();
                     component.Mass = rigidBodyComponent["Mass"] ? rigidBodyComponent["Mass"].as<float>() : 1.0f;
                     component.IsKinematic = rigidBodyComponent["IsKinematic"] ? rigidBodyComponent["IsKinematic"].as<bool>() : false;
+                    component.Layer = rigidBodyComponent["Layer"] ? rigidBodyComponent["Layer"].as<uint32_t>() : 0;
                     component.LockPositionX = rigidBodyComponent["Constraints"]["LockPositionX"].as<bool>();
                     component.LockPositionY = rigidBodyComponent["Constraints"]["LockPositionY"].as<bool>();
                     component.LockPositionZ = rigidBodyComponent["Constraints"]["LockPositionZ"].as<bool>();

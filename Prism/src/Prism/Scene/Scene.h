@@ -123,7 +123,8 @@ namespace Prism
         template<typename T>
         T* GetSystem() const
         {
-            auto it = m_Systems.find(GetSystemTypeHash<T>());
+            uint32_t hash = GetSystemTypeHash<T>();
+            auto it = m_Systems.find(hash);
             return it != m_Systems.end() ? static_cast<T*>(it->second.get()) : nullptr;
         }
 

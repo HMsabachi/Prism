@@ -44,7 +44,7 @@ namespace Prism::Script
         Python::ScriptRef argsRef(args);
         LogLevel level = static_cast<LogLevel>(Python::ValueToInt(Python::GetTupleElement(argsRef, 0)));
         std::string message = Python::ValueToString(Python::GetTupleElement(argsRef, 1));
-        message = "[Python]: " + message;
+        message = "[Python] " + message;
 
         switch (level)
         {
@@ -499,10 +499,12 @@ namespace Prism::Script
         physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
         PR_CORE_ASSERT(dynamicActor);
 
-        glm::mat4 transform = FromPhysXTransform(dynamicActor->getGlobalPose());
-        transform *= glm::toMat4(glm::quat(glm::radians(rotation)));
+        physx::PxTransform transform = dynamicActor->getGlobalPose();
+        transform.q *= (physx::PxQuat(glm::radians(rotation.x), { 1.0F, 0.0F, 0.0F })
+            * physx::PxQuat(glm::radians(rotation.y), { 0.0F, 1.0F, 0.0F })
+            * physx::PxQuat(glm::radians(rotation.z), { 0.0F, 0.0F, 1.0F }));
 
-        dynamicActor->setGlobalPose(ToPhysXTransform(transform));
+        dynamicActor->setGlobalPose(transform);
         return Python::NoneValue().Detach();
     }
 

@@ -7,6 +7,7 @@
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/MeshFactory.h"
 #include "Prism/Physics/PXPhysicsWrappers.h"
+#include "Prism/Physics/Physics.h"
 #include "Prism/Utilities/FileSystem.h"
 #include "Prism/Core/LanguageManager.h"
 #include "Scripting/CSharp/CSharpScriptMetaRegistry.h"
@@ -760,6 +761,30 @@ namespace Prism {
                         if (ImGui::Selectable(bodyTypeStrings[i], is_selected))
                         {
                             component.BodyType = (RigidBodyComponent::Type)i;
+                        }
+                        if (is_selected)
+                            ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
+
+                // Layer has been removed, set to Default layer
+                if (!PhysicsLayerManager::IsLayerValid(component.Layer))
+                    component.Layer = 0;
+
+                uint32_t currentLayer = component.Layer;
+                const PhysicsLayer& layerInfo = PhysicsLayerManager::GetLayer(currentLayer);
+                ImGui::TextUnformatted(TR("Layer"));
+                ImGui::SameLine();
+                if (ImGui::BeginCombo("##LayerSelection", layerInfo.Name.c_str()))
+                {
+                    for (const auto& layer : PhysicsLayerManager::GetLayers())
+                    {
+                        bool is_selected = (currentLayer == layer.LayerID);
+                        if (ImGui::Selectable(layer.Name.c_str(), is_selected))
+                        {
+                            currentLayer = layer.LayerID;
+                            component.Layer = layer.LayerID;
                         }
                         if (is_selected)
                             ImGui::SetItemDefaultFocus();
