@@ -7,7 +7,7 @@
 #include "yaml-cpp/yaml.h"
 
 #include "Prism/Renderer/MeshFactory.h"
-#include "Prism/Physics/Physics.h"
+#include "Prism/Physics/PhysicsLayer.h"
 #include "Prism/Physics/PXPhysicsWrappers.h"
 #include "Prism/Utilities/FileSystem.h"
 

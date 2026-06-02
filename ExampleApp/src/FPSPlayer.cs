@@ -75,6 +75,12 @@ namespace Example
 
         private void UpdateMovement()
         {
+            /*
+             *
+             * Physics.Raycast(Vector3 origin, Vector3 direction, float maxDistance, out RaycastHitInfo hitInfo);
+             *
+             */
+
             if (Input.IsKeyPressed(KeyCode.W))
                 m_RigidBody.AddForce(m_CameraTransform.Forward * m_CurrentSpeed);
             else if (Input.IsKeyPressed(KeyCode.S))

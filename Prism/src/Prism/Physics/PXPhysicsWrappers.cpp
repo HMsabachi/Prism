@@ -1,6 +1,7 @@
 ﻿#include "prpch.h"
 #include "PXPhysicsWrappers.h"
 #include "Physics.h"
+#include "PhysicsLayer.h"
 #include "Prism/Renderer/Mesh.h"
 
 #include <glm/gtx/rotate_vector.hpp>

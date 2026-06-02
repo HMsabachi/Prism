@@ -1,6 +1,6 @@
 ﻿#include "prpch.h"
 #include "PhysicsSettingsWindow.h"
-#include "Prism/Physics/Physics.h"
+#include "Prism/Physics/PhysicsLayer.h"
 
 #include "imgui.h"
 
@@ -47,6 +47,8 @@ namespace Prism {
 			ImGui::EndPopup();
 		}
 
+		uint32_t buttonId = 1;
+
 		for (const auto& layer : PhysicsLayerManager::GetLayers())
 		{
 			if (ImGui::Button(layer.Name.c_str()))
@@ -57,10 +59,12 @@ namespace Prism {
 			if (layer.Name != "Default")
 			{
 				ImGui::SameLine();
+				ImGui::PushID(buttonId++);
 				if (ImGui::Button("X"))
 				{
 					PhysicsLayerManager::RemoveLayer(layer.LayerID);
 				}
+				ImGui::PopID();
 			}
 		}
 	}

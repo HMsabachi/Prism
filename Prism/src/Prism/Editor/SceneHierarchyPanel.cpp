@@ -7,7 +7,7 @@
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/MeshFactory.h"
 #include "Prism/Physics/PXPhysicsWrappers.h"
-#include "Prism/Physics/Physics.h"
+#include "Prism/Physics/PhysicsLayer.h"
 #include "Prism/Utilities/FileSystem.h"
 #include "Prism/Core/LanguageManager.h"
 #include "Scripting/CSharp/CSharpScriptMetaRegistry.h"

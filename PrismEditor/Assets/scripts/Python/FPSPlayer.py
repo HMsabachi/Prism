@@ -67,6 +67,9 @@ class FPSPlayer(Behaviour):
         self._lastMousePosition = currentMousePosition
 
     def UpdateMovement(self):
+        """
+        Physics.Raycast(Vector3 origin, Vector3 direction, float maxDistance, out RaycastHitInfo hitInfo)
+        """
         if Input.IsKeyPressed(KeyCodes.W):
             self._rigidBody.AddForce(self._cameraTransform.Forward * self._currentSpeed)
         elif Input.IsKeyPressed(KeyCodes.S):
