@@ -283,7 +283,7 @@ namespace Prism::Script
 
         glm::vec3 euler = Python::ValueToVec3(vecObj);
         auto& tc = entity.GetComponent<TransformComponent>();
-        tc.Rotation = glm::quat(glm::radians(euler));
+        tc.SetRotation(glm::quat(glm::radians(euler)));
         return Python::NoneValue().Detach();
     }
 
@@ -303,7 +303,7 @@ namespace Prism::Script
         Python::ScriptRef vecObj = Python::GetTupleElement(argsRef, 1);
 
         auto& tc = entity.GetComponent<TransformComponent>();
-        tc.Scale = Python::ValueToVec3(vecObj);
+        tc.SetScale(Python::ValueToVec3(vecObj));
         return Python::NoneValue().Detach();
     }
 
@@ -345,7 +345,7 @@ namespace Prism::Script
         Python::ScriptRef vecObj = Python::GetTupleElement(argsRef, 1);
 
         auto& tc = entity.GetComponent<TransformComponent>();
-        tc.Position = Python::ValueToVec3(vecObj);
+        tc.SetPosition(Python::ValueToVec3(vecObj));
         return Python::NoneValue().Detach();
     }
 

@@ -20,9 +20,9 @@ namespace Prism {
         Physics::DestroyScene();
     }
 
-    void Physics3DSystem::OnFixedUpdate(float /*ts*/)
+    void Physics3DSystem::OnFixedUpdate(float dt)
     {
-        Physics::Simulate();
+        Physics::Step(dt);
     }
 
     void Physics3DSystem::OnRuntimeStart()

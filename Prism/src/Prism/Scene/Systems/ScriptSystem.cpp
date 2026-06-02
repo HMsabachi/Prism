@@ -54,11 +54,11 @@ namespace Prism {
         PythonScriptEngine::s_PythonScriptObjects.erase(currentSceneID);
     }
 
-    void ScriptSystem::OnUpdate(float ts)
+    void ScriptSystem::OnUpdate(float dt)
     {
         CSharpScriptEngine::SetSceneContext(m_Scene);
         PythonScriptEngine::SetSceneContext(m_Scene);
-        // C# Script OnUpdate
+
         {
             auto view = m_Scene->GetAllEntitiesWith<CSharpScriptComponent>();
             UUID sceneID = m_Scene->GetUUID();
@@ -67,10 +67,8 @@ namespace Prism {
                 auto& comp = m_Scene->GetRegistry().get<CSharpScriptComponent>(entity);
                 for (auto& [bid, binding] : comp.Behaviours)
                 {
-                    if (!binding.Enabled)
-                        continue;
-                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnUpdate))
-                        continue;
+                    if (!binding.Enabled) continue;
+                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnUpdate)) continue;
                     auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
                     if (obj && obj->IsValid())
                         obj->InvokeMethod("OnUpdate");
@@ -78,7 +76,6 @@ namespace Prism {
             }
         }
 
-        // Python Script OnUpdate
         {
             auto view = m_Scene->GetAllEntitiesWith<PythonScriptComponent>();
             UUID sceneID = m_Scene->GetUUID();
@@ -87,18 +84,21 @@ namespace Prism {
                 auto& comp = m_Scene->GetRegistry().get<PythonScriptComponent>(entity);
                 for (auto& [bid, binding] : comp.Behaviours)
                 {
-                    if (!binding.Enabled)
-                        continue;
-                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnUpdate))
-                        continue;
+                    if (!binding.Enabled) continue;
+                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnUpdate)) continue;
                     auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
                     if (obj && obj->IsValid())
                         obj->Invoke<void>("OnUpdate");
                 }
             }
         }
+    }
 
-        // C# Script LateUpdate
+    void ScriptSystem::OnLateUpdate(float dt)
+    {
+        CSharpScriptEngine::SetSceneContext(m_Scene);
+        PythonScriptEngine::SetSceneContext(m_Scene);
+
         {
             auto view = m_Scene->GetAllEntitiesWith<CSharpScriptComponent>();
             UUID sceneID = m_Scene->GetUUID();
@@ -107,10 +107,8 @@ namespace Prism {
                 auto& comp = m_Scene->GetRegistry().get<CSharpScriptComponent>(entity);
                 for (auto& [bid, binding] : comp.Behaviours)
                 {
-                    if (!binding.Enabled)
-                        continue;
-                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::LateUpdate))
-                        continue;
+                    if (!binding.Enabled) continue;
+                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::LateUpdate)) continue;
                     auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
                     if (obj && obj->IsValid())
                         obj->InvokeMethod("LateUpdate");
@@ -118,7 +116,6 @@ namespace Prism {
             }
         }
 
-        // Python Script LateUpdate
         {
             auto view = m_Scene->GetAllEntitiesWith<PythonScriptComponent>();
             UUID sceneID = m_Scene->GetUUID();
@@ -127,10 +124,8 @@ namespace Prism {
                 auto& comp = m_Scene->GetRegistry().get<PythonScriptComponent>(entity);
                 for (auto& [bid, binding] : comp.Behaviours)
                 {
-                    if (!binding.Enabled)
-                        continue;
-                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::LateUpdate))
-                        continue;
+                    if (!binding.Enabled) continue;
+                    if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::LateUpdate)) continue;
                     auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
                     if (obj && obj->IsValid())
                         obj->Invoke<void>("LateUpdate");
@@ -139,7 +134,7 @@ namespace Prism {
         }
     }
 
-    void ScriptSystem::OnFixedUpdate(float ts)
+    void ScriptSystem::OnFixedUpdate(float dt)
     {
         CSharpScriptEngine::SetSceneContext(m_Scene);
         PythonScriptEngine::SetSceneContext(m_Scene);

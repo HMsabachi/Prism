@@ -40,7 +40,6 @@ namespace Example
 
         void OnUpdate()
         {
-            float ts = Time.DeltaTime;
 
             if (Input.IsKeyPressed(KeyCode.Escape) && Input.GetCursorMode() == CursorMode.Locked)
             {
@@ -49,13 +48,14 @@ namespace Example
 
             m_CurrentSpeed = Input.IsKeyPressed(KeyCode.LeftControl) ? RunSpeed : WalkingSpeed;
 
-            UpdateRotation(ts);
+            UpdateRotation();
             UpdateMovement();
             UpdateCameraTransform();
         }
 
-        private void UpdateRotation(float ts)
+        private void UpdateRotation()
         {
+            float ts = Time.DeltaTime;
             Vector2 currentMousePosition = Input.GetMousePosition();
             Vector2 delta = m_LastMousePosition - currentMousePosition;
             m_RigidBody.Rotate(new Vector3(0.0F, delta.X * MouseSensitivity, 0.0F) * ts);
@@ -63,7 +63,7 @@ namespace Example
             if (delta.Y != 0.0F)
             {
                 m_CameraRotationX += delta.Y * MouseSensitivity * ts;
-                //m_CameraRotationX = Mathf.Clamp(m_CameraRotationX, -80.0F, 80.0F);
+                m_CameraRotationX = Mathf.Clamp(m_CameraRotationX, -80.0F, 80.0F);
                 m_CameraTransform.Rotation = new Vector3(m_CameraRotationX, 0.0F, 0.0F);
             }
 
@@ -84,16 +84,18 @@ namespace Example
 
             if (Input.IsKeyPressed(KeyCode.Space) && Colliding)
                 m_RigidBody.AddForce(Vector3.Up * JumpForce);
+            var linearVelocity = m_RigidBody.LinearVelocity;
+            linearVelocity.Clamp(new Vector3(-m_CurrentSpeed, -m_CurrentSpeed, -m_CurrentSpeed), new Vector3(m_CurrentSpeed, m_CurrentSpeed, m_CurrentSpeed));
+            m_RigidBody.LinearVelocity = linearVelocity;
         }
 
         private void UpdateCameraTransform()
         {
-            Matrix4 cameraTransform = m_CameraTransform.Transform;
-            Vector3 cameraTranslation = cameraTransform.Translation;
+            Vector3 cameraTranslation = m_CameraTransform.Position;
             Vector3 translation = m_Transform.Transform.Translation;
             cameraTranslation.XZ = translation.XZ;
             cameraTranslation.Y = translation.Y + 1.5F;
-            m_CameraTransform.Transform = m_Transform.Transform;
+            m_CameraTransform.Position = cameraTranslation;
 
             Vector3 cameraRotation = m_Transform.Rotation;
             cameraRotation.XZ = m_CameraTransform.Rotation.XZ;

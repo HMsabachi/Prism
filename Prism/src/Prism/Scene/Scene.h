@@ -5,6 +5,7 @@
 #include "Systems/ISystem.h"
 #include "Prism/Utilities/TypeInfo.h"
 #include <unordered_map>
+#include <vector>
 #include <memory>
 
 namespace Prism
@@ -48,7 +49,6 @@ namespace Prism
         void Init();
 
         void OnUpdate();
-        void OnFixedUpdate();
         void OnRenderRuntime();
         void OnRenderEditor(const EditorCamera& editorCamera);
         void OnEvent(Event& e);
@@ -116,6 +116,7 @@ namespace Prism
             auto system = std::make_unique<T>(std::forward<Args>(args)...);
             T* ptr = system.get();
             m_Systems[hash] = std::move(system);
+            m_SystemOrder.push_back(ptr);
             return ptr;
         }
 
@@ -160,6 +161,7 @@ namespace Prism
         bool m_IsPlaying = false;
 
         std::unordered_map<uint32_t, std::unique_ptr<ISystem>> m_Systems;
+        std::vector<ISystem*> m_SystemOrder;                                
 
         friend class Entity;
         friend class SceneRenderer;

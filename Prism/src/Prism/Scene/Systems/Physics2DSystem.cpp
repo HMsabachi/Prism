@@ -3,6 +3,7 @@
 #include "../Scene.h"
 #include "../Entity.h"
 #include "../Components.h"
+#include "ScriptSystem.h"
 
 #include <box2d/box2d.h>
 
@@ -10,37 +11,35 @@ namespace Prism {
 
     class Physics2DSystem::ContactListener : public b2ContactListener {
     public:
-        Physics2DSystem* System = nullptr;
+        static void RouteCollision(Scene* scene, uint64_t entityID, bool begin)
+        {
+            auto it = scene->GetEntityMap().find(entityID);
+            if (it != scene->GetEntityMap().end())
+            {
+                auto* ss = scene->GetSystem<ScriptSystem>();
+                if (!ss) return;
+                if (begin) ss->OnCollisionBegin(it->second);
+                else       ss->OnCollisionEnd(it->second);
+            }
+        }
 
         void BeginContact(b2Contact* contact) override
         {
             uint64_t aID = (uint64_t)contact->GetFixtureA()->GetBody()->GetUserData().pointer;
             uint64_t bID = (uint64_t)contact->GetFixtureB()->GetBody()->GetUserData().pointer;
-
-            if (System)
-            {
-                if (System->OnCollisionBegin)
-                {
-                    System->OnCollisionBegin(aID);
-                    System->OnCollisionBegin(bID);
-                }
-            }
+            RouteCollision(m_Scene, aID, true);
+            RouteCollision(m_Scene, bID, true);
         }
 
         void EndContact(b2Contact* contact) override
         {
             uint64_t aID = (uint64_t)contact->GetFixtureA()->GetBody()->GetUserData().pointer;
             uint64_t bID = (uint64_t)contact->GetFixtureB()->GetBody()->GetUserData().pointer;
-
-            if (System)
-            {
-                if (System->OnCollisionEnd)
-                {
-                    System->OnCollisionEnd(aID);
-                    System->OnCollisionEnd(bID);
-                }
-            }
+            RouteCollision(m_Scene, aID, false);
+            RouteCollision(m_Scene, bID, false);
         }
+
+        Scene* m_Scene = nullptr;
     };
 
     Physics2DSystem::Physics2DSystem(Scene* scene)
@@ -48,7 +47,7 @@ namespace Prism {
         , m_World(std::make_unique<b2World>(b2Vec2{ 0.0f, -9.8f }))
         , m_Listener(std::make_unique<ContactListener>())
     {
-        m_Listener->System = this;
+        m_Listener->m_Scene = scene;
         m_World->SetContactListener(m_Listener.get());
     }
 
@@ -59,21 +58,6 @@ namespace Prism {
         int32_t velocityIterations = 6;
         int32_t positionIterations = 2;
         m_World->Step(ts, velocityIterations, positionIterations);
-
-        auto view = m_Scene->GetAllEntitiesWith<RigidBody2DComponent>();
-        for (auto entity : view)
-        {
-            Entity e = { entity, m_Scene };
-            auto& tc = e.Transform();
-            auto& rb2d = e.GetComponent<RigidBody2DComponent>();
-            b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
-            if (!body) continue;
-
-            auto& position = body->GetPosition();
-            tc.Position.x = position.x;
-            tc.Position.y = position.y;
-            tc.Rotation = glm::quat({ 0.0f, 0.0f, body->GetAngle() });
-        }
     }
 
     void Physics2DSystem::OnRuntimeStart()

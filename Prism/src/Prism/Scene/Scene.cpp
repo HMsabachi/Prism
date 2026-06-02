@@ -19,6 +19,7 @@
 #include "Systems/Physics2DSystem.h"
 #include "Systems/Physics3DSystem.h"
 #include "Systems/ScriptSystem.h"
+#include "Systems/TransformSyncSystem.h"
 
 #include "Scripting/CSharp/CSharpScriptEngine.h"
 #include "Scripting/Python/PythonScriptEngine.h"
@@ -44,29 +45,11 @@ namespace Prism
         s_ActiveScenes[m_SceneID] = this;
 
         AddSystem<ScriptSystem>(this);
-
-        auto* physics3D = AddSystem<Physics3DSystem>(this);
-
+        AddSystem<TransformSyncSystem>(this);
+        AddSystem<Physics3DSystem>(this);
+        AddSystem<Physics2DSystem>(this);
 
         Init();
-
-        auto* p2d = AddSystem<Physics2DSystem>(this);
-        p2d->OnCollisionBegin = [this](uint64_t id) {
-            auto it = m_EntityIDMap.find(id);
-            if (it != m_EntityIDMap.end())
-            {
-                auto* ss = GetSystem<ScriptSystem>();
-                if (ss) ss->OnCollisionBegin(it->second);
-            }
-        };
-        p2d->OnCollisionEnd = [this](uint64_t id) {
-            auto it = m_EntityIDMap.find(id);
-            if (it != m_EntityIDMap.end())
-            {
-                auto* ss = GetSystem<ScriptSystem>();
-                if (ss) ss->OnCollisionEnd(it->second);
-            }
-        };
     }
 
     Scene::~Scene()
@@ -86,22 +69,24 @@ namespace Prism
     void Scene::OnUpdate()
     {
         PR_PROFILE_FUNCTION();
-        float ts = Time::GetDeltaTime();
+        float dt = Time::GetDeltaTime();
+        
 
-        for (auto& [hash, system] : m_Systems)
-            system->OnUpdate(ts);
-    }
+        for (auto* sys : m_SystemOrder) sys->OnEarlyUpdate(dt);
 
-    void Scene::OnFixedUpdate()
-    {
-        if (!Time::ShouldFixedUpdate())
-            return;
-        PR_PROFILE_FUNCTION();
+        if (Time::ShouldFixedUpdate())
+        {
+            float fixedDt = Time::GetFixedDeltaTime();
+            PR_PROFILE_SCOPE("FixedUpdate");
+            for (auto* sys : m_SystemOrder) sys->OnFixedUpdate(fixedDt);
+        }
 
-        float ts = Time::GetFixedDeltaTime();
-
-        for (auto& [hash, system] : m_Systems)
-            system->OnFixedUpdate(ts);
+        for (auto* sys : m_SystemOrder) sys->OnPreUpdate(dt);
+        for (auto* sys : m_SystemOrder) sys->OnUpdate(dt);
+        for (auto* sys : m_SystemOrder) sys->OnPreLateUpdate(dt);
+        for (auto* sys : m_SystemOrder) sys->OnLateUpdate(dt);
+        for (auto* sys : m_SystemOrder) sys->OnPostLateUpdate(dt);
+        for (auto* sys : m_SystemOrder) sys->OnImGuiRender();
     }
 
     void Scene::OnRenderRuntime()
@@ -225,17 +210,13 @@ namespace Prism
     }
     void Scene::OnRuntimeStart()
     {
-        for (auto& [hash, system] : m_Systems)
-            system->OnRuntimeStart();
-
+        for (auto* sys : m_SystemOrder) sys->OnRuntimeStart();
         m_IsPlaying = true;
     }
 
     void Scene::OnRuntimeStop()
     {
-        for (auto& [hash, system] : m_Systems)
-            system->OnRuntimeStop();
-
+        for (auto* sys : m_SystemOrder) sys->OnRuntimeStop();
         m_IsPlaying = false;
     }
 

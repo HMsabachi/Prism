@@ -104,29 +104,10 @@ namespace Prism {
         s_Scene->addActor(*actor);
     }
 
-    void Physics::Simulate()
+    void Physics::Step(float dt)
     {
-        constexpr float stepSize = 0.016666660f;
-        s_Scene->simulate(stepSize);
+        s_Scene->simulate(dt);
         s_Scene->fetchResults(true);
-
-        for (Entity& e : s_SimulatedEntities)
-        {
-            auto& tc = e.Transform();
-            RigidBodyComponent& rb = e.GetComponent<RigidBodyComponent>();
-            physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
-
-            if (rb.BodyType == RigidBodyComponent::Type::Dynamic)
-            {
-                physx::PxTransform pxTransform = actor->getGlobalPose();
-                tc.Position = glm::vec3(pxTransform.p.x, pxTransform.p.y, pxTransform.p.z);
-                tc.Rotation = glm::quat(pxTransform.q.w, pxTransform.q.x, pxTransform.q.y, pxTransform.q.z);
-            }
-            else if (rb.BodyType == RigidBodyComponent::Type::Static)
-            {
-                actor->setGlobalPose(ToPhysXTransform(tc.GetTransform()));
-            }
-        }
     }
 
     void Physics::DestroyScene()

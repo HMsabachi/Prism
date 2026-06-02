@@ -15,8 +15,9 @@ namespace Prism {
         explicit ScriptSystem(Scene* scene);
         ~ScriptSystem() override;
 
-        void OnUpdate(float ts) override;
-        void OnFixedUpdate(float ts) override;
+        void OnFixedUpdate(float dt) override;
+        void OnUpdate(float dt) override;
+        void OnLateUpdate(float dt) override;
         void OnRuntimeStart() override;
         void OnRuntimeStop() override;
 

@@ -253,21 +253,21 @@ namespace Prism {
         {
             Entity entity = GetEntityFromEntityID(entityID);
             auto& transformComponent = entity.GetComponent<TransformComponent>();
-            transformComponent.Position = inPosition;
+            transformComponent.SetPosition(inPosition);
         }
 
         void Prism_TransformComponent_SetRotation(uint64_t entityID, glm::vec3 inRotation)
         {
             Entity entity = GetEntityFromEntityID(entityID);
             auto& transformComponent = entity.GetComponent<TransformComponent>();
-            transformComponent.Rotation = glm::quat(glm::radians(inRotation));
+            transformComponent.SetRotation(glm::quat(glm::radians(inRotation)));
         }
 
         void Prism_TransformComponent_SetScale(uint64_t entityID, glm::vec3 inScale)
         {
             Entity entity = GetEntityFromEntityID(entityID);
             auto& transformComponent = entity.GetComponent<TransformComponent>();
-            transformComponent.Scale = inScale;
+            transformComponent.SetScale(inScale);
         }
 
 #pragma endregion

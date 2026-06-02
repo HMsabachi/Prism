@@ -35,7 +35,7 @@ namespace Prism {
         static void CreateScene(const SceneParams& params);
         static void CreateActor(Entity e, int entityCount);
 
-        static void Simulate();
+        static void Step(float dt);
 
         static void DestroyScene();
 

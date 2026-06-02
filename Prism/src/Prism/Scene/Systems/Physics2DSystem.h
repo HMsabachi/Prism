@@ -25,9 +25,6 @@ namespace Prism {
         float GetGravity() const;
         void SetGravity(float gravity);
 
-        std::function<void(uint64_t)> OnCollisionBegin;
-        std::function<void(uint64_t)> OnCollisionEnd;
-
     private:
         class ContactListener;
         void OnRigidBody2DConstruct(entt::registry& registry, entt::entity entity);

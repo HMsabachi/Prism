@@ -129,7 +129,7 @@ namespace Prism
         }
 
         // Derived direction vectors from current rotation
-        public Vector3 Forward => new Quaternion(Rotation * MathF.PI / 180f) * -Vector3.Forward;
+        public Vector3 Forward => new Quaternion(Rotation * MathF.PI / 180f) * Vector3.Forward;
         public Vector3 Right => new Quaternion(Rotation * MathF.PI / 180f) * Vector3.Right;
         public Vector3 Up => new Quaternion(Rotation * MathF.PI / 180f) * Vector3.Up;
     }

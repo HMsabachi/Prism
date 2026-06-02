@@ -60,12 +60,6 @@ namespace Prism
 		TransformComponent& Transform() { return m_Scene->m_Registry.get<TransformComponent>(m_EntityHandle); }
 		const TransformComponent& Transform() const { return m_Scene->m_Registry.get<TransformComponent>(m_EntityHandle); }
 
-#pragma region Set Transform
-		void SetPosition(const glm::vec3& position);
-		void SetRotation(const glm::vec3& rotation);
-		void SetScale(const glm::vec3& scale);
-#pragma endregion
-
 
 		operator uint32_t () const { return (uint32_t)m_EntityHandle; }
 		operator entt::entity() const { return m_EntityHandle; }

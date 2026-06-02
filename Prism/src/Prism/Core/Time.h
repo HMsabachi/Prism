@@ -18,6 +18,7 @@ namespace Prism
 		static float GetTime() noexcept { return s_Time; }
 		static float GetUnscaledTime() noexcept { return s_UnscaledTime; }
 		static float GetFixedDeltaTime() noexcept { return s_ActualFixedDeltaTime; }
+        static float GetFixedTimestep() noexcept { return s_FixedDeltaTime; }
 		static long long GetFrameCount() noexcept { return s_FrameCount; }
 		static bool ShouldFixedUpdate();
 	public:

@@ -77,7 +77,7 @@ class TransformComponent(Component):
         from Prism.Math.Quaternion import Quaternion
         r = self.Rotation
         q = Quaternion.Euler(r.x, r.y, r.z)
-        return q * -Vector3.Forward
+        return q * Vector3.Forward
 
     @property
     def Right(self):
