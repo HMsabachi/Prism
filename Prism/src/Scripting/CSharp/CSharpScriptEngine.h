@@ -6,6 +6,7 @@
 #include "Prism/Core/Ref.h"
 #include "Prism/Core/Log.h"
 #include "Prism/Scene/Entity.h"
+#include "Prism/Utilities/Delegate.h"
 #include "CSharpScriptStorage.h"
 
 #include <Rolky/HostInstance.hpp>
@@ -15,9 +16,20 @@ namespace Prism
 {
     class Scene;
 
+    // ── AssemblyData 指针封装（避免 ManagedAssembly 值拷贝导致的悬空指针）──
+    struct AssemblyData
+    {
+        Rolky::ManagedAssembly* Assembly = nullptr;
+    };
+
+
     class PRISM_API CSharpScriptEngine
     {
     public:
+        // ── 热重载回调 ──
+        using ReloadDelegate = Delegate<>;
+        using ReloadCallbackToken = ReloadDelegate::Token;
+
         static std::unordered_map<UUID, std::unordered_map<UUID, Rolky::ManagedObject>> s_ManagedObjects;
 
         CSharpScriptEngine() = delete;
@@ -35,13 +47,19 @@ namespace Prism
         static UUID AddBehaviour(Entity& entity, CSharpBehaviourBinding& binding);
         static void RemoveBehaviour(Entity& entity, UUID behaviourID);
 
-        // Storage lookup (takes storage reference)
+        // Storage lookup
         static CSharpEntityScriptStorage& GetEntityScriptStorage(CSharpScriptStorage& storage, UUID scriptID);
 
         // Assembly management
         static void LoadEngineAssembly(const std::string& path);
         static void LoadAppAssembly(const std::string& path);
-        static void ReloadAssembly(const std::string& path);
+        static void ReloadAppAssembly(const std::string& appAssemblyPath);
+
+        // Callback registration
+        static ReloadCallbackToken RegisterPreUnloadCallback(ReloadDelegate::FuncType callback);
+        static void               UnregisterPreUnloadCallback(ReloadCallbackToken token);
+        static ReloadCallbackToken RegisterPostReloadCallback(ReloadDelegate::FuncType callback);
+        static void               UnregisterPostReloadCallback(ReloadCallbackToken token);
 
         // Scene context
         static void SetSceneContext(const WeakRef<Scene>& scene);
@@ -54,12 +72,20 @@ namespace Prism
         static Rolky::ManagedAssembly& GetAppAssembly();
 
     private:
+        static void UnloadCurrentContext();
+        static void ReloadContextAndEngineAssembly();
+
         static std::unique_ptr<Rolky::HostInstance> s_Host;
         static std::unique_ptr<Rolky::AssemblyLoadContext> s_LoadContext;
         static WeakRef<Scene> s_SceneContext;
-        static Rolky::ManagedAssembly s_EngineAssembly;
-        static Rolky::ManagedAssembly s_AppAssembly;
+        static Scope<AssemblyData> s_EngineAssemblyData;
+        static Scope<AssemblyData> s_AppAssemblyData;
         static bool s_Initialized;
+
+        static ReloadDelegate s_PreUnloadCallbacks;
+        static ReloadDelegate s_PostReloadCallbacks;
+
+        static std::string s_EngineAssemblyPath;
     };
 
 
@@ -80,5 +106,3 @@ namespace Prism
     }
 
 }
-
-

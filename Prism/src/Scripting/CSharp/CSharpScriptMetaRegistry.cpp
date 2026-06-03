@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "CSharpScriptMetaRegistry.h"
 #include "CSharpScriptEngine.h"
 
@@ -268,6 +268,18 @@ namespace Prism
 
     void CSharpScriptMetaRegistry::BuildCache()
     {
+        
+        if (!s_Classes.empty())
+        {
+            for (auto& [id, classMeta] : s_Classes)
+                for (auto& [hash, fieldMeta] : classMeta.Fields)
+                    if (fieldMeta.DefaultValue)
+                        fieldMeta.DefaultValue.Free();
+            s_Classes.clear();
+            s_ClassIDToFullName.clear();
+            s_BehaviourType = nullptr;
+        }
+
         PR_CSHARP_META_INFO("开始扫描 C# Behaviour 类...");
 
         auto& engineAssembly = CSharpScriptEngine::GetEngineAssembly();

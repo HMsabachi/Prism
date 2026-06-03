@@ -11,6 +11,8 @@
 #include <imgui.h>
 
 #include <Rolky/HostInstance.hpp>
+#include <Rolky/GC.hpp>
+#include <Rolky/TypeCache.hpp>
 
 namespace Prism
 {
@@ -30,10 +32,13 @@ namespace Prism
     std::unique_ptr<Rolky::HostInstance> CSharpScriptEngine::s_Host;
     std::unique_ptr<Rolky::AssemblyLoadContext> CSharpScriptEngine::s_LoadContext;
     WeakRef<Scene> CSharpScriptEngine::s_SceneContext;
-    Rolky::ManagedAssembly CSharpScriptEngine::s_EngineAssembly;
-    Rolky::ManagedAssembly CSharpScriptEngine::s_AppAssembly;
+    Scope<AssemblyData> CSharpScriptEngine::s_EngineAssemblyData;
+    Scope<AssemblyData> CSharpScriptEngine::s_AppAssemblyData;
     bool CSharpScriptEngine::s_Initialized = false;
     std::unordered_map<UUID, std::unordered_map<UUID, Rolky::ManagedObject>> CSharpScriptEngine::s_ManagedObjects;
+    CSharpScriptEngine::ReloadDelegate CSharpScriptEngine::s_PreUnloadCallbacks;
+    CSharpScriptEngine::ReloadDelegate CSharpScriptEngine::s_PostReloadCallbacks;
+    std::string CSharpScriptEngine::s_EngineAssemblyPath;
 
     void CSharpScriptEngine::Initialize()
     {
@@ -51,16 +56,13 @@ namespace Prism
 
     void CSharpScriptEngine::Shutdown()
     {
-        s_ManagedObjects.clear();
-        if (s_Host && s_LoadContext)
-            s_Host->UnloadAssemblyLoadContext(*s_LoadContext);
+        UnloadCurrentContext();
         if (s_Host)
         {
             s_Host->Shutdown();
             s_Host.reset();
         }
         s_SceneContext = nullptr;
-        s_LoadContext = nullptr;
         s_Initialized = false;
     }
 
@@ -133,7 +135,6 @@ namespace Prism
             return 0;
         }
 
-        // Push field values from C++ buffer to C# instance
         for (auto& [hash, field] : binding.Fields)
         {
             Buffer buf = field.GetBuffer();
@@ -148,7 +149,6 @@ namespace Prism
         auto [it, inserted] = sceneMap.emplace(behaviourID, std::move(instance));
         PR_CORE_ASSERT(inserted, "BehaviourID collision in s_ManagedObjects!");
 
-        // Bind fields to the now-stable managed object
         for (auto& [hash, field] : binding.Fields)
             field.SetInstance(&it->second);
 
@@ -188,10 +188,20 @@ namespace Prism
     void CSharpScriptEngine::LoadEngineAssembly(const std::string& assemblyPath)
     {
         PR_PROFILE_FUNCTION();
-        auto path = std::filesystem::absolute(assemblyPath).string();
-        s_EngineAssembly = s_LoadContext->LoadAssembly(path);
+        s_EngineAssemblyPath = std::filesystem::absolute(assemblyPath).string();
+        s_EngineAssemblyData = CreateScope<AssemblyData>();
+        s_EngineAssemblyData->Assembly = &s_LoadContext->LoadAssembly(s_EngineAssemblyPath);
+
+        if (s_EngineAssemblyData->Assembly->GetLoadStatus() != Rolky::AssemblyLoadStatus::Success)
+        {
+            PR_CORE_ERROR("[CSharp] Failed to load engine assembly: {0}", s_EngineAssemblyPath);
+            return;
+        }
+
         CSharpScriptEngineRegistry::RegisterAll();
-        auto initClass = s_EngineAssembly.GetType("Prism.Core");
+        s_EngineAssemblyData->Assembly->UploadInternalCalls();
+
+        auto& initClass = s_EngineAssemblyData->Assembly->GetLocalType("Prism.Core");
         initClass.InvokeStaticMethod("Init");
     }
 
@@ -199,15 +209,35 @@ namespace Prism
     {
         PR_PROFILE_FUNCTION();
         auto path = std::filesystem::absolute(assemblyPath).string();
-        s_AppAssembly = s_LoadContext->LoadAssembly(path);
+        s_AppAssemblyData = CreateScope<AssemblyData>();
+        s_AppAssemblyData->Assembly = &s_LoadContext->LoadAssembly(path);
+
+        if (s_AppAssemblyData->Assembly->GetLoadStatus() != Rolky::AssemblyLoadStatus::Success)
+        {
+            PR_CORE_ERROR("[CSharp] Failed to load app assembly: {0}", path);
+            return;
+        }
+
+        CSharpScriptMetaRegistry::Init();
         CSharpScriptMetaRegistry::BuildCache();
     }
 
-    void CSharpScriptEngine::ReloadAssembly(const std::string& assemblyPath)
+    void CSharpScriptEngine::ReloadAppAssembly(const std::string& appAssemblyPath)
     {
         PR_PROFILE_FUNCTION();
-        auto path = std::filesystem::absolute(assemblyPath).string();
-        s_AppAssembly = s_LoadContext->LoadAssembly(path);
+        PR_CORE_INFO("[CSharp] Reloading assemblies...");
+
+        s_PreUnloadCallbacks();
+
+        UnloadCurrentContext();
+
+        ReloadContextAndEngineAssembly();
+        LoadEngineAssembly(s_EngineAssemblyPath);
+        LoadAppAssembly(appAssemblyPath);
+
+        s_PostReloadCallbacks();
+
+        PR_CORE_INFO("[CSharp] Assembly reload complete.");
     }
 
     void CSharpScriptEngine::SetSceneContext(const WeakRef<Scene>& scene)
@@ -222,17 +252,22 @@ namespace Prism
 
     bool CSharpScriptEngine::ModuleExists(const std::string& moduleName)
     {
-        return s_AppAssembly.GetType(moduleName) ? true : false;
+        return s_AppAssemblyData && s_AppAssemblyData->Assembly
+            && s_AppAssemblyData->Assembly->GetLocalType(moduleName);
     }
 
     Rolky::ManagedAssembly& CSharpScriptEngine::GetEngineAssembly()
     {
-        return s_EngineAssembly;
+        PR_CORE_ASSERT(s_EngineAssemblyData && s_EngineAssemblyData->Assembly,
+                       "Engine assembly not loaded!");
+        return *s_EngineAssemblyData->Assembly;
     }
 
     Rolky::ManagedAssembly& CSharpScriptEngine::GetAppAssembly()
     {
-        return s_AppAssembly;
+        PR_CORE_ASSERT(s_AppAssemblyData && s_AppAssemblyData->Assembly,
+                       "App assembly not loaded!");
+        return *s_AppAssemblyData->Assembly;
     }
 
     void CSharpScriptEngine::OnImGuiRender()
@@ -240,6 +275,56 @@ namespace Prism
         ImGui::Begin("Script Engine Debug");
         ImGui::Text("C# Engine Initialized: %s", s_Initialized ? "Yes" : "No");
         ImGui::End();
+    }
+
+    CSharpScriptEngine::ReloadCallbackToken CSharpScriptEngine::RegisterPreUnloadCallback(ReloadDelegate::FuncType cb)
+    {
+        return s_PreUnloadCallbacks.Add(std::move(cb));
+    }
+
+    void CSharpScriptEngine::UnregisterPreUnloadCallback(ReloadCallbackToken token)
+    {
+        s_PreUnloadCallbacks.Remove(token);
+    }
+
+    CSharpScriptEngine::ReloadCallbackToken CSharpScriptEngine::RegisterPostReloadCallback(ReloadDelegate::FuncType cb)
+    {
+        return s_PostReloadCallbacks.Add(std::move(cb));
+    }
+
+    void CSharpScriptEngine::UnregisterPostReloadCallback(ReloadCallbackToken token)
+    {
+        s_PostReloadCallbacks.Remove(token);
+    }
+
+    // ── ALC 生命周期 ──
+    void CSharpScriptEngine::UnloadCurrentContext()
+    {
+        s_ManagedObjects.clear();
+        CSharpScriptMetaRegistry::Shutdown();
+        s_EngineAssemblyData.reset();
+        s_AppAssemblyData.reset();
+
+        if (s_Host && s_LoadContext)
+        {
+            s_Host->UnloadAssemblyLoadContext(*s_LoadContext);
+            s_LoadContext.reset();
+        }
+
+        Rolky::TypeCache::Get().Clear();
+
+        Rolky::GC::Collect();
+        Rolky::GC::WaitForPendingFinalizers();
+        Rolky::GC::Collect();
+        Rolky::GC::WaitForPendingFinalizers();
+        Rolky::GC::Collect();
+    }
+
+    void CSharpScriptEngine::ReloadContextAndEngineAssembly()
+    {
+        PR_CORE_ASSERT(s_Host, "Host must remain alive during reload!");
+        s_LoadContext = std::make_unique<Rolky::AssemblyLoadContext>(
+            std::move(s_Host->CreateAssemblyLoadContext("PrismLoadContext")));
     }
 
 }

@@ -299,6 +299,17 @@ namespace Prism
 
     void PythonScriptMetaRegistry::BuildCache()
     {
+        // 允许重建：先清理旧缓存
+        if (!s_Classes.empty())
+        {
+            for (auto& [id, classMeta] : s_Classes)
+                for (auto& [hash, fieldMeta] : classMeta.Fields)
+                    if (fieldMeta.DefaultValue)
+                        fieldMeta.DefaultValue.Free();
+            s_Classes.clear();
+            s_ClassIDToFullName.clear();
+        }
+
         PR_PYTHON_META_INFO("开始扫描 Python Behaviour 类...");
 
         Python::ScriptModule prismMod = Python::ScriptModule::Import("Prism");

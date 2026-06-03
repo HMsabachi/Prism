@@ -213,6 +213,7 @@ namespace Prism
 					}
 				}
 				Renderer::Submit([submesh, material]() {
+                    PR_PROFILE_SCOPE("DrawCall With Submesh");
 					glDrawElementsBaseVertex(GL_TRIANGLES, submesh.IndexCount, GL_UNSIGNED_INT, (void*)(sizeof(uint32_t) * submesh.BaseIndex), submesh.BaseVertex);
 				});
 			}

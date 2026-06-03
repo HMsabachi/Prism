@@ -1,6 +1,7 @@
 from typing import Optional
 import PrismNative as _Prism
 from Prism.Core.Transform import Transform
+from Prism.Core import Log
 
 
 class Entity:
@@ -10,6 +11,9 @@ class Entity:
         self._id: int = entity_id
         self._transform: Optional[Transform] = None
 
+    def __del__(self):
+        Log.Trace("Destroyed Entity {}", self._id)
+
     @property
     def ID(self) -> int:
         return self._id
@@ -17,6 +21,7 @@ class Entity:
     @ID.setter
     def ID(self, value: int) -> None:
         self._id = value
+        Log.Trace("Created Entity {}", self._id)
 
     @property
     def Transform(self) -> "Transform":

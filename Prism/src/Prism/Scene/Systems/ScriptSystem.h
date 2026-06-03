@@ -2,6 +2,8 @@
 
 #include "ISystem.h"
 #include "Prism/Scene/Entity.h"
+#include "Scripting/CSharp/CSharpScriptEngine.h"
+#include "Scripting/Python/PythonScriptEngine.h"
 #include <entt/entt.hpp>
 
 namespace Prism {
@@ -53,6 +55,12 @@ namespace Prism {
         void DestroyCSharpBehaviour(Entity entity, CSharpBehaviourBinding& binding);
         void DestroyPythonBehaviour(Entity entity, PythonBehaviourBinding& binding);
 
+        // ── 热重载回调 ──
+        void OnCSharpPreUnload();
+        void OnCSharpPostReload();
+        void OnPythonPreUnload();
+        void OnPythonPostReload();
+
         Scene* m_Scene;
         CSharpScriptStorage* m_CSharpScriptStorage = nullptr;
         PythonScriptStorage* m_PythonScriptStorage = nullptr;
@@ -60,6 +68,14 @@ namespace Prism {
 
         std::unordered_map<UUID, CSharpBehaviourBinding*> m_CSharpBindingMap;
         std::unordered_map<UUID, PythonBehaviourBinding*> m_PythonBindingMap;
+
+        // ── 热重载状态 ──
+        CSharpScriptEngine::ReloadCallbackToken m_CSharpPreUnloadToken = 0;
+        CSharpScriptEngine::ReloadCallbackToken m_CSharpPostReloadToken = 0;
+        PythonScriptEngine::ReloadCallbackToken m_PythonPreUnloadToken = 0;
+        PythonScriptEngine::ReloadCallbackToken m_PythonPostReloadToken = 0;
+        std::unordered_map<UUID, CSharpScriptComponent> m_SavedCSharpComponents;
+        std::unordered_map<UUID, PythonScriptComponent> m_SavedPythonComponents;
     };
 
 }

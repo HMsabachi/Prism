@@ -88,8 +88,6 @@ namespace Prism
 
 	void OpenGLStateCache::Apply(const ShaderCommand& newCommand)
 	{
-		PR_PROFILE_FUNCTION();
-
 		ApplyBlendIfChanged(newCommand);
 		ApplyCullIfChanged(newCommand);
 		ApplyDepthIfChanged(newCommand);

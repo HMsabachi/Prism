@@ -24,10 +24,22 @@ namespace Prism {
         registry.on_destroy<CSharpScriptComponent>().connect<&ScriptSystem::OnCSharpScriptComponentDestroy>(this);
         registry.on_construct<PythonScriptComponent>().connect<&ScriptSystem::OnPythonScriptComponentConstruct>(this);
         registry.on_destroy<PythonScriptComponent>().connect<&ScriptSystem::OnPythonScriptComponentDestroy>(this);
+
+
+        m_CSharpPreUnloadToken  = CSharpScriptEngine::RegisterPreUnloadCallback([this]() { OnCSharpPreUnload(); });
+        m_CSharpPostReloadToken = CSharpScriptEngine::RegisterPostReloadCallback([this]() { OnCSharpPostReload(); });
+
+        m_PythonPreUnloadToken  = PythonScriptEngine::RegisterPreUnloadCallback([this]() { OnPythonPreUnload(); });
+        m_PythonPostReloadToken = PythonScriptEngine::RegisterPostReloadCallback([this]() { OnPythonPostReload(); });
     }
 
     ScriptSystem::~ScriptSystem()
     {
+        CSharpScriptEngine::UnregisterPreUnloadCallback(m_CSharpPreUnloadToken);
+        CSharpScriptEngine::UnregisterPostReloadCallback(m_CSharpPostReloadToken);
+        PythonScriptEngine::UnregisterPreUnloadCallback(m_PythonPreUnloadToken);
+        PythonScriptEngine::UnregisterPostReloadCallback(m_PythonPostReloadToken);
+
         auto& registry = m_Scene->GetRegistry();
         registry.on_construct<CSharpScriptComponent>().disconnect(this);
         registry.on_destroy<CSharpScriptComponent>().disconnect(this);
@@ -56,6 +68,7 @@ namespace Prism {
 
     void ScriptSystem::OnUpdate(float dt)
     {
+        PR_PROFILE_FUNCTION();
         CSharpScriptEngine::SetSceneContext(m_Scene);
         PythonScriptEngine::SetSceneContext(m_Scene);
 
@@ -96,6 +109,7 @@ namespace Prism {
 
     void ScriptSystem::OnLateUpdate(float dt)
     {
+        PR_PROFILE_FUNCTION();
         CSharpScriptEngine::SetSceneContext(m_Scene);
         PythonScriptEngine::SetSceneContext(m_Scene);
 
@@ -136,6 +150,7 @@ namespace Prism {
 
     void ScriptSystem::OnFixedUpdate(float dt)
     {
+        PR_PROFILE_FUNCTION();
         CSharpScriptEngine::SetSceneContext(m_Scene);
         PythonScriptEngine::SetSceneContext(m_Scene);
         // C# Script OnFixedUpdate
@@ -671,12 +686,39 @@ namespace Prism {
         comp.ScriptID = entityID;
 
         auto oldBehaviours = std::move(comp.Behaviours);
-        for (auto& [bid, binding] : oldBehaviours)
+        for (auto& [oldBid, oldBinding] : oldBehaviours)
         {
-            UUID newBehaviourId = {};
-            comp.Behaviours[newBehaviourId] = std::move(binding);
-            comp.Behaviours[newBehaviourId].BehaviourID = newBehaviourId;
-            m_CSharpBindingMap[newBehaviourId] = &comp.Behaviours[newBehaviourId];
+            auto* classMeta = CSharpScriptMetaRegistry::GetClassMetadata(oldBinding.ClassID);
+            if (!classMeta)
+            {
+                PR_CORE_WARN("[ScriptSystem] Class (ID={0}) removed, dropping behaviour", (uint64_t)oldBinding.ClassID);
+                for (auto& [hash, field] : oldBinding.Fields)
+                    if (field.GetBuffer().Data)
+                        const_cast<Buffer&>(field.GetBuffer()).Free();
+                continue;
+            }
+            auto newBinding = CreateCSharpBinding(oldBinding.ClassID);
+            newBinding.Enabled = oldBinding.Enabled;
+            for (auto& [hash, newField] : newBinding.Fields)
+            {
+                auto oldIt = oldBinding.Fields.find(hash);
+                if (oldIt != oldBinding.Fields.end() &&
+                    oldIt->second.GetType() == newField.GetType() &&
+                    oldIt->second.GetBuffer().Data)
+                {
+                    newField.SetBuffer(oldIt->second.GetBuffer());
+                }
+            }
+            for (auto& [hash, oldField] : oldBinding.Fields)
+            {
+                if (!newBinding.Fields.contains(hash) && oldField.GetBuffer().Data)
+                    const_cast<Buffer&>(oldField.GetBuffer()).Free();
+            }
+
+            UUID newBid = {};
+            comp.Behaviours[newBid] = std::move(newBinding);
+            comp.Behaviours[newBid].BehaviourID = newBid;
+            m_CSharpBindingMap[newBid] = &comp.Behaviours[newBid];
         }
     }
 
@@ -703,18 +745,51 @@ namespace Prism {
         Entity e = { entity, m_Scene };
         if (!e.HasComponent<IDComponent>())
             return;
+
         uint64_t entityID = (uint64_t)e.GetComponent<IDComponent>().ID;
         PythonScriptEngine::Instantiate(entityID, "Prism.Entity", *m_PythonScriptStorage);
         auto& comp = registry.get<PythonScriptComponent>(entity);
         comp.ScriptID = entityID;
 
+
         auto oldBehaviours = std::move(comp.Behaviours);
-        for (auto& [bid, binding] : oldBehaviours)
+
+        for (auto& [oldBid, oldBinding] : oldBehaviours)
         {
-            UUID newBehaviourId = {};
-            comp.Behaviours[newBehaviourId] = std::move(binding);
-            comp.Behaviours[newBehaviourId].BehaviourID = newBehaviourId;
-            m_PythonBindingMap[newBehaviourId] = &comp.Behaviours[newBehaviourId];
+            auto* classMeta = PythonScriptMetaRegistry::GetClassMetadata(oldBinding.ClassID);
+            if (!classMeta)
+            {
+                PR_CORE_WARN("[ScriptSystem] Python class (ID={0}) removed, dropping behaviour", (uint64_t)oldBinding.ClassID);
+                for (auto& [hash, field] : oldBinding.Fields)
+                    if (field.GetBuffer().Data)
+                        const_cast<Buffer&>(field.GetBuffer()).Free();
+                continue;
+            }
+
+            auto newBinding = CreatePythonBinding(oldBinding.ClassID);
+            newBinding.Enabled = oldBinding.Enabled;
+
+            for (auto& [hash, newField] : newBinding.Fields)
+            {
+                auto oldIt = oldBinding.Fields.find(hash);
+                if (oldIt != oldBinding.Fields.end() &&
+                    oldIt->second.GetType() == newField.GetType() &&
+                    oldIt->second.GetBuffer().Data)
+                {
+                    newField.SetBuffer(oldIt->second.GetBuffer());
+                }
+            }
+
+            for (auto& [hash, oldField] : oldBinding.Fields)
+            {
+                if (!newBinding.Fields.contains(hash) && oldField.GetBuffer().Data)
+                    const_cast<Buffer&>(oldField.GetBuffer()).Free();
+            }
+
+            UUID newBid = {};
+            comp.Behaviours[newBid] = std::move(newBinding);
+            comp.Behaviours[newBid].BehaviourID = newBid;
+            m_PythonBindingMap[newBid] = &comp.Behaviours[newBid];
         }
     }
 
@@ -733,6 +808,64 @@ namespace Prism {
             PythonScriptEngine::RemoveScriptObject(*m_PythonScriptStorage, comp.ScriptID);
             comp.ScriptID = 0;
         }
+    }
+
+    void ScriptSystem::OnCSharpPreUnload()
+    {
+        auto& registry = m_Scene->GetRegistry();
+        auto view = registry.view<CSharpScriptComponent>();
+        for (auto e : view)
+        {
+            Entity entity = { e, m_Scene };
+            m_SavedCSharpComponents[entity.GetUUID()] = std::move(view.get<CSharpScriptComponent>(e));
+        }
+        registry.clear<CSharpScriptComponent>();
+        m_CSharpBindingMap.clear();
+    }
+
+    void ScriptSystem::OnCSharpPostReload()
+    {
+        CSharpScriptEngine::SetSceneContext(m_Scene);
+
+        auto& registry = m_Scene->GetRegistry();
+        for (auto& [entityUUID, savedComp] : m_SavedCSharpComponents)
+        {
+            Entity entity = m_Scene->TryGetEntityByUUID(entityUUID);
+            if (!entity) continue;
+            registry.emplace<CSharpScriptComponent>((entt::entity)entity, std::move(savedComp));
+        }
+        m_SavedCSharpComponents.clear();
+    }
+
+
+    void ScriptSystem::OnPythonPreUnload()
+    {
+        auto& registry = m_Scene->GetRegistry();
+        auto view = registry.view<PythonScriptComponent>();
+
+        for (auto e : view)
+        {
+            Entity entity = { e, m_Scene };
+            m_SavedPythonComponents[entity.GetUUID()] = std::move(view.get<PythonScriptComponent>(e));
+        }
+
+        registry.clear<PythonScriptComponent>();
+        m_PythonBindingMap.clear();
+    }
+
+
+    void ScriptSystem::OnPythonPostReload()
+    {
+        PythonScriptEngine::SetSceneContext(m_Scene);
+
+        auto& registry = m_Scene->GetRegistry();
+        for (auto& [entityUUID, savedComp] : m_SavedPythonComponents)
+        {
+            Entity entity = m_Scene->TryGetEntityByUUID(entityUUID);
+            if (!entity) continue;
+            registry.emplace<PythonScriptComponent>((entt::entity)entity, std::move(savedComp));
+        }
+        m_SavedPythonComponents.clear();
     }
 
 }

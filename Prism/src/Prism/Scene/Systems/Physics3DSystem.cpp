@@ -22,6 +22,7 @@ namespace Prism {
 
     void Physics3DSystem::OnFixedUpdate(float dt)
     {
+        PR_PROFILE_FUNCTION();
         Physics::Step(dt);
     }
 

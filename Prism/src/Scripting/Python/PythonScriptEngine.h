@@ -5,10 +5,10 @@
 #include "Prism/Core/Ref.h"
 #include "Prism/Core/Log.h"
 #include "Prism/Scene/Entity.h"
+#include "Prism/Utilities/Delegate.h"
 #include "PythonScriptStorage.h"
 #include <unordered_map>
 #include <memory>
-#include <functional>
 
 namespace Prism
 {
@@ -18,6 +18,10 @@ namespace Prism
     class PRISM_API PythonScriptEngine
     {
     public:
+        // ── 热重载回调 ──
+        using ReloadDelegate = Delegate<>;
+        using ReloadCallbackToken = ReloadDelegate::Token;
+
         PythonScriptEngine() = delete;
 
         static void Initialize();
@@ -37,13 +41,22 @@ namespace Prism
         static void RemoveScriptObject(PythonScriptStorage& storage, UUID scriptID);
         static void ReleaseAll();
 
-        // Scene context
+        static void ReloadPythonScripts();
+
+        static ReloadCallbackToken RegisterPreUnloadCallback(ReloadDelegate::FuncType callback);
+        static void UnregisterPreUnloadCallback(ReloadCallbackToken token);
+        static ReloadCallbackToken RegisterPostReloadCallback(ReloadDelegate::FuncType callback);
+        static void UnregisterPostReloadCallback(ReloadCallbackToken token);
+
         static void SetSceneContext(const WeakRef<Scene>& scene);
         static const WeakRef<Scene>& GetCurrentSceneContext();
 
     private:
         static WeakRef<Scene> s_SceneContext;
         static bool s_Initialized;
+
+        static ReloadDelegate s_PreUnloadCallbacks;
+        static ReloadDelegate s_PostReloadCallbacks;
     };
 
     template<typename... TArgs>
@@ -70,7 +83,7 @@ namespace Prism
         auto& sceneMap = s_PythonScriptObjects[sceneID];
         auto [it, inserted] = sceneMap.emplace(scriptID, std::move(obj));
         PR_CORE_ASSERT(inserted, "ScriptID collision in s_PythonScriptObjects!");
-        it->second.SetField<uint64_t>("_id", (uint64_t)scriptID);
+        it->second.SetField<uint64_t>("ID", (uint64_t)scriptID);
         storage.Store(scriptID, &it->second);
         return scriptID;
     }

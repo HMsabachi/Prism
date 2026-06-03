@@ -8,7 +8,7 @@ from Prism.Core.Time import Time
 
 
 class FPSPlayer(Behaviour):
-    """Python FPS 玩家控制器 — 逻辑与 C# FPSPlayer 一致."""
+    """Python FPS 玩家控制器"""
 
     WalkingSpeed: float = 10.0
     RunSpeed: float = 20.0

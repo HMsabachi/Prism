@@ -152,8 +152,8 @@ namespace Prism
 
             m_SceneState = SceneState::Play;
 
-            if (m_ReloadScriptOnPlay)
-                CSharpScriptEngine::ReloadAssembly("assets/scripts/ExampleApp.dll");
+            //if (m_ReloadScriptOnPlay)
+                //CSharpScriptEngine::ReloadAppAssembly("assets/scripts/ExampleApp.dll");
 
             m_RuntimeScene = Ref<Scene>::Create();
             m_EditorScene->CopyTo(m_RuntimeScene);
@@ -723,8 +723,11 @@ namespace Prism
 
                 if (ImGui::BeginMenu(TR("Script")))
                 {
-                    if (ImGui::MenuItem(TR("Reload C# Assembly")))
-                        CSharpScriptEngine::ReloadAssembly("assets/scripts/ExampleApp.dll");
+                    if (ImGui::MenuItem(TR("Reload Assembly")))
+                    {
+                        CSharpScriptEngine::ReloadAppAssembly("assets/scripts/net9.0/ExampleApp.dll");
+                        PythonScriptEngine::ReloadPythonScripts();
+                    }
                     ImGui::MenuItem(TR("Reload assembly on play"), nullptr, &m_ReloadScriptOnPlay);
                     ImGui::EndMenu();
                 }

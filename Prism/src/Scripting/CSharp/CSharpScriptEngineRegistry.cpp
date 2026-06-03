@@ -54,6 +54,8 @@ namespace Prism
 
     void CSharpScriptEngineRegistry::RegisterAll()
     {
+        s_CreateComponentFuncs.clear();
+        s_HasComponentFuncs.clear();
         InitComponentTypes();
         auto& engineAssembly = CSharpScriptEngine::GetEngineAssembly();
 #define PR_ADD_INTERNAL_CALL(func) engineAssembly.AddInternalCall("Prism.InternalCalls", #func, (void*)&func)

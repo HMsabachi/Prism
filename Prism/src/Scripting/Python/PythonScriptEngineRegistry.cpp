@@ -49,6 +49,9 @@ namespace Prism
 
 	void PythonScriptEngineRegistry::RegisterAll()
 	{
+		s_PythonCreateComponentFuncs.clear();
+		s_PythonHasComponentFuncs.clear();
+
 		using namespace Prism::Script;
 		Python::NativeModule mod("PrismNative");
 

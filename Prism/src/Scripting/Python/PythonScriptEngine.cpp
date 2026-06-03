@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "PythonScriptEngine.h"
 #include "PythonScriptEngineRegistry.h"
 #include "PythonScriptStorage.h"
@@ -18,6 +18,8 @@ namespace Prism
     WeakRef<Scene> PythonScriptEngine::s_SceneContext;
     bool PythonScriptEngine::s_Initialized = false;
     std::unordered_map<UUID, std::unordered_map<UUID, Python::ScriptObject>> PythonScriptEngine::s_PythonScriptObjects;
+    PythonScriptEngine::ReloadDelegate PythonScriptEngine::s_PreUnloadCallbacks;
+    PythonScriptEngine::ReloadDelegate PythonScriptEngine::s_PostReloadCallbacks;
 
     void PythonScriptEngine::Initialize()
     {
@@ -178,5 +180,42 @@ namespace Prism
     void PythonScriptEngine::ReleaseAll()
     {
         s_PythonScriptObjects.clear();
+    }
+
+    // ── 回调注册/解绑 ──
+    PythonScriptEngine::ReloadCallbackToken PythonScriptEngine::RegisterPreUnloadCallback(ReloadDelegate::FuncType cb)
+    {
+        return s_PreUnloadCallbacks.Add(std::move(cb));
+    }
+    void PythonScriptEngine::UnregisterPreUnloadCallback(ReloadCallbackToken token)
+    {
+        s_PreUnloadCallbacks.Remove(token);
+    }
+    PythonScriptEngine::ReloadCallbackToken PythonScriptEngine::RegisterPostReloadCallback(ReloadDelegate::FuncType cb)
+    {
+        return s_PostReloadCallbacks.Add(std::move(cb));
+    }
+    void PythonScriptEngine::UnregisterPostReloadCallback(ReloadCallbackToken token)
+    {
+        s_PostReloadCallbacks.Remove(token);
+    }
+
+    void PythonScriptEngine::ReloadPythonScripts()
+    {
+        PR_CORE_INFO("[Python] Reloading scripts...");
+
+        s_PreUnloadCallbacks();
+
+        s_PythonScriptObjects.clear();
+        PythonScriptMetaRegistry::Shutdown();
+        Python::ScriptHost::Shutdown();
+
+        Python::ScriptHost::Initialize();
+        PythonScriptEngineRegistry::RegisterAll();
+        PythonScriptMetaRegistry::BuildCache();
+
+        s_PostReloadCallbacks();
+
+        PR_CORE_INFO("[Python] Script reload complete.");
     }
 }

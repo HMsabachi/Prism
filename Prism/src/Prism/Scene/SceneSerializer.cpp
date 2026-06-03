@@ -879,11 +879,11 @@ namespace Prism {
                     PR_CORE_INFO("  MeshColliderComponent: AssetPath={0}", FileSystem::GetRelativePath(meshPath));
                 }
 
-                // CSharpScriptComponent — deserialize Behaviours
+                // CSharpScriptComponent — 从 YAML 直接构建，OnConstruct 统一做 Meta 验证
                 auto csharpScriptComponent = entity["CSharpScriptComponent"];
                 if (csharpScriptComponent)
                 {
-                    auto& comp = deserializedEntity.GetComponent<CSharpScriptComponent>();
+                    CSharpScriptComponent comp;
                     auto behavioursNode = csharpScriptComponent["Behaviours"];
                     if (behavioursNode)
                     {
@@ -898,8 +898,9 @@ namespace Prism {
                                 classID = CSharpScriptMetaRegistry::GenerateClassID(className);
                             }
 
-                            auto* ss = m_Scene->GetSystem<ScriptSystem>();
-                            auto binding = ss->CreateCSharpBinding(classID);
+                            CSharpBehaviourBinding binding;
+                            binding.BehaviourID = UUID();
+                            binding.ClassID = classID;
                             if (bindingNode["Enabled"])
                                 binding.Enabled = bindingNode["Enabled"].as<bool>();
 
@@ -912,72 +913,46 @@ namespace Prism {
                                     ScriptFieldType fieldType = (ScriptFieldType)fieldNode["Type"].as<uint16_t>();
                                     uint32_t fieldHash = HashFieldName(fieldName);
 
-                                    auto it = binding.Fields.find(fieldHash);
-                                    if (it != binding.Fields.end() && it->second.GetType() == fieldType && fieldNode["Value"])
+                                    CSharpField field(fieldName, fieldType);
+                                    if (fieldNode["Value"])
                                     {
                                         switch (fieldType)
                                         {
-                                        case ScriptFieldType::Float:
-                                            it->second.SetValue(fieldNode["Value"].as<float>());
-                                            break;
-                                        case ScriptFieldType::Double:
-                                            it->second.SetValue(fieldNode["Value"].as<double>());
-                                            break;
-                                        case ScriptFieldType::Bool:
-                                            it->second.SetValue(fieldNode["Value"].as<bool>());
-                                            break;
-                                        case ScriptFieldType::Int8:
-                                            it->second.SetValue(fieldNode["Value"].as<int8_t>());
-                                            break;
-                                        case ScriptFieldType::Int16:
-                                            it->second.SetValue(fieldNode["Value"].as<int16_t>());
-                                            break;
-                                        case ScriptFieldType::Int32:
-                                            it->second.SetValue(fieldNode["Value"].as<int32_t>());
-                                            break;
-                                        case ScriptFieldType::Int64:
-                                            it->second.SetValue(fieldNode["Value"].as<int64_t>());
-                                            break;
-                                        case ScriptFieldType::UInt8:
-                                            it->second.SetValue(fieldNode["Value"].as<uint8_t>());
-                                            break;
-                                        case ScriptFieldType::UInt16:
-                                            it->second.SetValue(fieldNode["Value"].as<uint16_t>());
-                                            break;
-                                        case ScriptFieldType::UInt32:
-                                            it->second.SetValue(fieldNode["Value"].as<uint32_t>());
-                                            break;
-                                        case ScriptFieldType::UInt64:
-                                            it->second.SetValue(fieldNode["Value"].as<uint64_t>());
-                                            break;
-                                        case ScriptFieldType::Vector2:
-                                            it->second.SetValue(fieldNode["Value"].as<glm::vec2>());
-                                            break;
-                                        case ScriptFieldType::Vector3:
-                                            it->second.SetValue(fieldNode["Value"].as<glm::vec3>());
-                                            break;
-                                        case ScriptFieldType::Vector4:
-                                            it->second.SetValue(fieldNode["Value"].as<glm::vec4>());
-                                            break;
-                                        case ScriptFieldType::Object:
-                                            break;
+                                        case ScriptFieldType::Float:   field.SetValue(fieldNode["Value"].as<float>()); break;
+                                        case ScriptFieldType::Double:  field.SetValue(fieldNode["Value"].as<double>()); break;
+                                        case ScriptFieldType::Bool:    field.SetValue(fieldNode["Value"].as<bool>()); break;
+                                        case ScriptFieldType::Int8:    field.SetValue(fieldNode["Value"].as<int8_t>()); break;
+                                        case ScriptFieldType::Int16:   field.SetValue(fieldNode["Value"].as<int16_t>()); break;
+                                        case ScriptFieldType::Int32:   field.SetValue(fieldNode["Value"].as<int32_t>()); break;
+                                        case ScriptFieldType::Int64:   field.SetValue(fieldNode["Value"].as<int64_t>()); break;
+                                        case ScriptFieldType::UInt8:   field.SetValue(fieldNode["Value"].as<uint8_t>()); break;
+                                        case ScriptFieldType::UInt16:  field.SetValue(fieldNode["Value"].as<uint16_t>()); break;
+                                        case ScriptFieldType::UInt32:  field.SetValue(fieldNode["Value"].as<uint32_t>()); break;
+                                        case ScriptFieldType::UInt64:  field.SetValue(fieldNode["Value"].as<uint64_t>()); break;
+                                        case ScriptFieldType::Vector2: field.SetValue(fieldNode["Value"].as<glm::vec2>()); break;
+                                        case ScriptFieldType::Vector3: field.SetValue(fieldNode["Value"].as<glm::vec3>()); break;
+                                        case ScriptFieldType::Vector4: field.SetValue(fieldNode["Value"].as<glm::vec4>()); break;
+                                        case ScriptFieldType::Object: break;
+                                        default: break;
                                         }
                                     }
+                                    binding.Fields[fieldHash] = std::move(field);
                                 }
                             }
-
-                            ss->RegisterCSharpBinding(deserializedEntity, std::move(binding));
+                            comp.Behaviours[binding.BehaviourID] = std::move(binding);
                         }
                     }
-
-                    PR_CORE_INFO("  CSharpScriptComponent: {0} Behaviours loaded", comp.Behaviours.size());
+                    auto& registry = m_Scene->GetRegistry();
+                    registry.remove<CSharpScriptComponent>((entt::entity)deserializedEntity);
+                    registry.emplace<CSharpScriptComponent>((entt::entity)deserializedEntity, std::move(comp));
+                    PR_CORE_INFO("  CSharpScriptComponent: loaded");
                 }
 
-                // PythonScriptComponent — deserialize Behaviours
+                // PythonScriptComponent — 从 YAML 直接构建，OnConstruct 统一做 Meta 验证
                 auto pythonScriptComponent = entity["PythonScriptComponent"];
                 if (pythonScriptComponent)
                 {
-                    auto& comp = deserializedEntity.GetComponent<PythonScriptComponent>();
+                    PythonScriptComponent comp;
                     auto behavioursNode = pythonScriptComponent["Behaviours"];
                     if (behavioursNode)
                     {
@@ -993,8 +968,9 @@ namespace Prism {
                                 classID = PythonScriptMetaRegistry::GenerateClassID(moduleName + "." + className);
                             }
 
-                            auto* ss = m_Scene->GetSystem<ScriptSystem>();
-                            auto binding = ss->CreatePythonBinding(classID);
+                            PythonBehaviourBinding binding;
+                            binding.BehaviourID = UUID();
+                            binding.ClassID = classID;
                             if (bindingNode["Enabled"])
                                 binding.Enabled = bindingNode["Enabled"].as<bool>();
 
@@ -1007,65 +983,39 @@ namespace Prism {
                                     ScriptFieldType fieldType = (ScriptFieldType)fieldNode["Type"].as<uint16_t>();
                                     uint32_t fieldHash = HashFieldName(fieldName);
 
-                                    auto it = binding.Fields.find(fieldHash);
-                                    if (it != binding.Fields.end() && it->second.GetType() == fieldType && fieldNode["Value"])
+                                    PythonField field(fieldName, fieldType);
+                                    if (fieldNode["Value"])
                                     {
                                         switch (fieldType)
                                         {
-                                        case ScriptFieldType::Float:
-                                            it->second.SetValue(fieldNode["Value"].as<float>());
-                                            break;
-                                        case ScriptFieldType::Double:
-                                            it->second.SetValue(fieldNode["Value"].as<double>());
-                                            break;
-                                        case ScriptFieldType::Bool:
-                                            it->second.SetValue(fieldNode["Value"].as<bool>());
-                                            break;
-                                        case ScriptFieldType::Int8:
-                                            it->second.SetValue(fieldNode["Value"].as<int8_t>());
-                                            break;
-                                        case ScriptFieldType::Int16:
-                                            it->second.SetValue(fieldNode["Value"].as<int16_t>());
-                                            break;
-                                        case ScriptFieldType::Int32:
-                                            it->second.SetValue(fieldNode["Value"].as<int32_t>());
-                                            break;
-                                        case ScriptFieldType::Int64:
-                                            it->second.SetValue(fieldNode["Value"].as<int64_t>());
-                                            break;
-                                        case ScriptFieldType::UInt8:
-                                            it->second.SetValue(fieldNode["Value"].as<uint8_t>());
-                                            break;
-                                        case ScriptFieldType::UInt16:
-                                            it->second.SetValue(fieldNode["Value"].as<uint16_t>());
-                                            break;
-                                        case ScriptFieldType::UInt32:
-                                            it->second.SetValue(fieldNode["Value"].as<uint32_t>());
-                                            break;
-                                        case ScriptFieldType::UInt64:
-                                            it->second.SetValue(fieldNode["Value"].as<uint64_t>());
-                                            break;
-                                        case ScriptFieldType::Vector2:
-                                            it->second.SetValue(fieldNode["Value"].as<glm::vec2>());
-                                            break;
-                                        case ScriptFieldType::Vector3:
-                                            it->second.SetValue(fieldNode["Value"].as<glm::vec3>());
-                                            break;
-                                        case ScriptFieldType::Vector4:
-                                            it->second.SetValue(fieldNode["Value"].as<glm::vec4>());
-                                            break;
-                                        case ScriptFieldType::Object:
-                                            break;
+                                        case ScriptFieldType::Float:   field.SetValue(fieldNode["Value"].as<float>()); break;
+                                        case ScriptFieldType::Double:  field.SetValue(fieldNode["Value"].as<double>()); break;
+                                        case ScriptFieldType::Bool:    field.SetValue(fieldNode["Value"].as<bool>()); break;
+                                        case ScriptFieldType::Int8:    field.SetValue(fieldNode["Value"].as<int8_t>()); break;
+                                        case ScriptFieldType::Int16:   field.SetValue(fieldNode["Value"].as<int16_t>()); break;
+                                        case ScriptFieldType::Int32:   field.SetValue(fieldNode["Value"].as<int32_t>()); break;
+                                        case ScriptFieldType::Int64:   field.SetValue(fieldNode["Value"].as<int64_t>()); break;
+                                        case ScriptFieldType::UInt8:   field.SetValue(fieldNode["Value"].as<uint8_t>()); break;
+                                        case ScriptFieldType::UInt16:  field.SetValue(fieldNode["Value"].as<uint16_t>()); break;
+                                        case ScriptFieldType::UInt32:  field.SetValue(fieldNode["Value"].as<uint32_t>()); break;
+                                        case ScriptFieldType::UInt64:  field.SetValue(fieldNode["Value"].as<uint64_t>()); break;
+                                        case ScriptFieldType::Vector2: field.SetValue(fieldNode["Value"].as<glm::vec2>()); break;
+                                        case ScriptFieldType::Vector3: field.SetValue(fieldNode["Value"].as<glm::vec3>()); break;
+                                        case ScriptFieldType::Vector4: field.SetValue(fieldNode["Value"].as<glm::vec4>()); break;
+                                        case ScriptFieldType::Object: break;
+                                        default: break;
                                         }
                                     }
+                                    binding.Fields[fieldHash] = std::move(field);
                                 }
                             }
-
-                            ss->RegisterPythonBinding(deserializedEntity, std::move(binding));
+                            comp.Behaviours[binding.BehaviourID] = std::move(binding);
                         }
                     }
-
-                    PR_CORE_INFO("  PythonScriptComponent: {0} Behaviours loaded", comp.Behaviours.size());
+                    auto& registry = m_Scene->GetRegistry();
+                    registry.remove<PythonScriptComponent>((entt::entity)deserializedEntity);
+                    registry.emplace<PythonScriptComponent>((entt::entity)deserializedEntity, std::move(comp));
+                    PR_CORE_INFO("  PythonScriptComponent: loaded");
                 }
             }
         }

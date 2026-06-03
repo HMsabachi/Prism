@@ -16,7 +16,6 @@ class RandomColor(Behaviour):
         self._timer += Time.DeltaTime
         if self._timer >= 1.0:
             self._timer = 0.0
-            Log.Info(f"当前BehaviourID: {self.ID}")
             self.GenerateColor()
         pass
 
