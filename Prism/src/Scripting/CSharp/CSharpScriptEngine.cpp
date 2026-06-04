@@ -13,6 +13,8 @@
 #include <Rolky/HostInstance.hpp>
 #include <Rolky/GC.hpp>
 #include <Rolky/TypeCache.hpp>
+#include <Rolky/ScriptSolution.hpp>
+#include <Rolky/Builder.hpp>
 
 namespace Prism
 {
@@ -51,6 +53,32 @@ namespace Prism
         s_Host = std::make_unique<Rolky::HostInstance>();
         s_Host->Initialize(setting);
         s_LoadContext = std::make_unique<Rolky::AssemblyLoadContext>(std::move(s_Host->CreateAssemblyLoadContext("PrismLoadContext")));
+
+        {
+            Rolky::ScriptSolution sln;
+            sln.Name = "Game";
+            sln.Directory = "Assets/scripts/CSharp";
+            sln.OutputDirectory = "Assets/scripts/CSharp/Build";
+
+            auto& game = sln.AddProject("Game");
+            game.References = {
+                "../net9.0/Prism.Scripting.dll",
+                "../net9.0/Rolky.Managed.dll"
+            };
+            sln.Generate();
+            Rolky::BuildManager builder;
+            builder.SetLogsDirectory("Assets/scripts/CSharp/Logs");
+
+            if (builder.Build(sln, "Debug"))
+            {
+                PR_CORE_INFO("[CSharp] Test build succeeded.");
+            }
+            else
+            {
+                PR_CORE_WARN("[CSharp] Test build failed. Check Assets/scripts/CSharp/Logs/msbuild_log.txt");
+            }
+        }
+
         s_Initialized = true;
     }
 

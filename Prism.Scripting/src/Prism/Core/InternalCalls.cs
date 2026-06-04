@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 
 using Rolky.Managed.Interop;
@@ -6,7 +6,7 @@ using Rolky.Managed.Interop;
 namespace Prism
 {
 
-
+#pragma warning disable CS0649
     internal static unsafe class InternalCalls
     {
         internal static delegate* unmanaged[Cdecl]<Log.LogLevel, NativeString, void> Prism_Log_LogMessage;
@@ -94,6 +94,6 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector3, void> Prism_TransformComponent_SetRotation;
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector3, void> Prism_TransformComponent_SetScale;
 
-
     }
+#pragma warning restore CS0649
 }

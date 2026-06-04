@@ -9,10 +9,12 @@ using System.Threading.Tasks;
 
 namespace Prism
 {
+#pragma warning disable CS8618
     public abstract class Component
     {
         public Entity Entity { get; internal set; }
     }
+#pragma warning restore CS8618
 
     public class TagComponent : Component
     {

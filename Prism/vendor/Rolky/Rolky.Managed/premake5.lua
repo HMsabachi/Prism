@@ -27,3 +27,10 @@
         files {
             "Source/**.cs"
         }
+
+        links {
+            "../vendor/Roslyn/Microsoft.CodeAnalysis.dll",
+            "../vendor/Roslyn/Microsoft.CodeAnalysis.CSharp.dll",
+            "../vendor/Roslyn/Microsoft.CodeAnalysis.Analyzers.dll",
+            "../vendor/Roslyn/Microsoft.CodeAnalysis.CSharp.Analyzers.dll",
+        }
