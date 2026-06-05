@@ -15,11 +15,13 @@ sln.Directory = "Assets/Scripts";
 sln.OutputDirectory = "Assets/Scripts/Build";
 
 auto& game = sln.AddProject("Game");
+game.SourceFiles = { "Player.cs", "Enemy/" };  // 文件或目录，目录会递归搜 *.cs
 game.References = { "Prism.Scripting.dll", "Rolky.Managed.dll" };
 game.Defines = { "PR_DEBUG" };
 
 auto& core = sln.AddProject("Prism.Scripting");
 core.Directory = "Engine/API";
+core.SourceFiles = { "src/" };
 core.References = { "Rolky.Managed.dll" };
 game.Dependencies = { &core };
 ```
@@ -54,6 +56,7 @@ sln.Directory = "Assets/Scripts";
 sln.OutputDirectory = "Assets/Scripts/Build";
 
 auto& game = sln.AddProject("Game");
+game.SourceFiles = { "Player.cs", "Enemy/" };
 game.References = {
     "Assets/Scripts/Prism.Scripting.dll",
     "Assets/Scripts/Rolky.Managed.dll"

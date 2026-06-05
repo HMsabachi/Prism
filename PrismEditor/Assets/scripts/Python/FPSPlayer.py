@@ -45,6 +45,9 @@ class FPSPlayer(Behaviour):
         if Input.IsKeyPressed(KeyCodes.Escape) and Input.GetCursorMode() == CursorMode.Locked:
             Input.SetCursorMode(CursorMode.Normal)
 
+        # if Input.IsMouseButtonPressed(MouseButton.Left) and Input.GetCursorMode() == CursorMode.Normal:
+        #     Input.SetCursorMode(CursorMode.Locked)
+
         self._currentSpeed = (
             self.RunSpeed if Input.IsKeyPressed(KeyCodes.LeftControl)
             else self.WalkingSpeed
@@ -67,9 +70,18 @@ class FPSPlayer(Behaviour):
         self._lastMousePosition = currentMousePosition
 
     def UpdateMovement(self):
-        """
-        Physics.Raycast(Vector3 origin, Vector3 direction, float maxDistance, out RaycastHitInfo hitInfo)
-        """
+        from Prism.Physics.Physics import Physics, RaycastHit
+
+        if Input.IsKeyPressed(KeyCodes.H):
+            origin = self._cameraTransform.Transform.Translation + (self._cameraTransform.Forward * 5.0)
+            hit = RaycastHit()
+            if Physics.Raycast(origin, self._cameraTransform.Forward, 20.0, hit):
+                entity = Entity.FindEntityByID(hit.EntityID)
+                if entity is not None:
+                    mesh = entity.GetComponent(MeshComponent)
+                    if mesh is not None and mesh.Mesh is not None:
+                        mesh.Mesh.GetMaterial(0).Set("u_Metalness", 1.0)
+
         if Input.IsKeyPressed(KeyCodes.W):
             self._rigidBody.AddForce(self._cameraTransform.Forward * self._currentSpeed)
         elif Input.IsKeyPressed(KeyCodes.S):

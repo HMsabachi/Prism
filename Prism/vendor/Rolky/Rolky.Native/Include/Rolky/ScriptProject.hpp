@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <string>
 #include <vector>
@@ -11,6 +11,7 @@ namespace Rolky {
         std::string Directory;
         std::string OutputDirectory;
         std::vector<std::string> References;
+        std::vector<std::string> SourceFiles;
         std::vector<std::string> Defines;
         std::vector<ScriptProject*> Dependencies;
         bool AllowUnsafe = true;

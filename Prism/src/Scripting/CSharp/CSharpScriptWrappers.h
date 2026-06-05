@@ -13,8 +13,11 @@ namespace Prism
     class Texture2D;
     class Material;
     class MaterialInstance;
+    struct RaycastHit;
     enum class KeyCode : uint16_t;
+    enum class MouseButton : uint16_t;
     enum class CursorMode;
+
 }
 
 namespace Prism
@@ -51,6 +54,7 @@ namespace Prism
         void Prism_Input_GetMousePosition(glm::vec2* outPosition);
         void Prism_Input_SetCursorMode(CursorMode mode);
         CursorMode Prism_Input_GetCursorMode();
+        Rolky::Bool32 Prism_Input_IsMouseButtonPressed(MouseButton button);
         // Entity
         void Prism_Entity_GetTransform(uint64_t entityID, glm::mat4* outTransform);
         void Prism_Entity_SetTransform(uint64_t entityID, glm::mat4* inTransform);
@@ -105,6 +109,9 @@ namespace Prism
         void Prism_RigidBodyComponent_GetLinearVelocity(uint64_t entityID, glm::vec3* outVelocity);
         void Prism_RigidBodyComponent_SetLinearVelocity(uint64_t entityID, glm::vec3* velocity);
         void Prism_RigidBodyComponent_Rotate(uint64_t entityID, glm::vec3* rotation);
+
+        // Physics
+        Rolky::Bool32 Prism_Physics_Raycast(glm::vec3* origin, glm::vec3* direction, float maxDistance, RaycastHit* hit);
 
         // Material
         Ref<Material>* Prism_Material_Constructor(Rolky::String shaderName);

@@ -23,6 +23,7 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<float, float, float> Prism_Noise_PerlinNoise;
         // Input
         internal static delegate* unmanaged[Cdecl]<KeyCode, Bool32> Prism_Input_IsKeyPressed;
+        internal static delegate* unmanaged[Cdecl]<MouseButton, Bool32> Prism_Input_IsMouseButtonPressed;
         internal static delegate* unmanaged[Cdecl]<Vector2*, void> Prism_Input_GetMousePosition;
         internal static delegate* unmanaged[Cdecl]<CursorMode, void> Prism_Input_SetCursorMode;
         internal static delegate* unmanaged[Cdecl]<CursorMode> Prism_Input_GetCursorMode;
@@ -77,6 +78,9 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_RigidBodyComponent_GetLinearVelocity;
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_RigidBodyComponent_SetLinearVelocity;
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_RigidBodyComponent_Rotate;
+
+        // Physics
+        internal static delegate* unmanaged[Cdecl]<Vector3*, Vector3*, float, RaycastHit*, Bool32> Prism_Physics_Raycast;
 
         // Entity
         internal static delegate* unmanaged[Cdecl]<NativeString, UInt64> Prism_Entity_FindEntityByTag;

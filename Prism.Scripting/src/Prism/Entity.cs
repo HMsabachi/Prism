@@ -101,5 +101,11 @@ namespace Prism
                 return new Entity(entityID);
             }
         }
+
+        public static Entity FindEntityByID(ulong entityID)
+        {
+            // TODO: Verify the entity id
+            return new Entity(entityID);
+        }
     }
 }

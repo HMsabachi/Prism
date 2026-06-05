@@ -18,14 +18,14 @@ namespace Rolky {
         return project;
     }
 
-    ScriptProject* ScriptSolution::GetProject(std::string_view name)
+    ScriptProject& ScriptSolution::GetProject(std::string_view name)
     {
         for (auto& p : Projects)
         {
             if (p.Name == name)
-                return &p;
+                return p;
         }
-        return nullptr;
+        throw std::runtime_error("Project not found");
     }
 
     void ScriptSolution::Generate()
@@ -57,6 +57,14 @@ namespace Rolky {
                 defines << p.Defines[j];
             }
             d.Defines = String::New(defines.str());
+
+            std::ostringstream sources;
+            for (size_t j = 0; j < p.SourceFiles.size(); j++)
+            {
+                if (j > 0) sources << ";";
+                sources << p.SourceFiles[j];
+            }
+            d.SourceFiles = String::New(sources.str());
         }
 
         ScopedString dir = String::New(Directory);

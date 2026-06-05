@@ -32,9 +32,10 @@ public class ScriptProject
         foreach (var refPath in References)
         {
             var refName = Path.GetFileNameWithoutExtension(refPath);
+            var relRef = Path.GetRelativePath(Directory, Path.GetFullPath(refPath));
             refsXml += $@"
     <Reference Include=""{refName}"">
-      <HintPath>{refPath}</HintPath>
+      <HintPath>{relRef}</HintPath>
       <Private>false</Private>
     </Reference>";
         }
@@ -47,27 +48,47 @@ public class ScriptProject
     </ProjectReference>";
         }
 
+        var outputPath = string.IsNullOrEmpty(OutputDirectory)
+            ? "" : Path.GetRelativePath(Directory, OutputDirectory);
+
         var definesStr = Defines.Count > 0
             ? $"<DefineConstants>{string.Join(";", Defines)}</DefineConstants>" : "";
 
-        var sourcesXml = "";
-        if (SourceFiles.Count > 0)
+        var expandedSources = new List<string>();
+        foreach (var src in SourceFiles)
         {
-            sourcesXml = "    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>";
-            foreach (var file in SourceFiles)
-                sourcesXml += $"\n    <Compile Include=\"{file}\" />";
+            var fullPath = Path.GetFullPath(src);
+            if (System.IO.File.Exists(fullPath))
+            {
+                expandedSources.Add(src);
+            }
+            else if (System.IO.Directory.Exists(fullPath))
+            {
+                foreach (var file in System.IO.Directory.GetFiles(fullPath, "*.cs", SearchOption.AllDirectories))
+                {
+                    var rel = Path.GetRelativePath(Directory, file);
+                    expandedSources.Add(rel);
+                }
+            }
         }
+
+        var defaultCompile = SourceFiles.Count > 0 ? "false" : "true";
+
+        var sourcesXml = "";
+        foreach (var file in expandedSources)
+            sourcesXml += $"\n    <Compile Include=\"{file}\" />";
 
         var csproj = $@"<Project Sdk=""Microsoft.NET.Sdk"">
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>{TargetFramework}</TargetFramework>
-    <OutputPath>{OutputDirectory}</OutputPath>
+    <OutputPath>{outputPath}</OutputPath>
     <AllowUnsafeBlocks>{(AllowUnsafe ? "true" : "false")}</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <EnableDefaultCompileItems>{defaultCompile}</EnableDefaultCompileItems>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     {definesStr}
   </PropertyGroup>

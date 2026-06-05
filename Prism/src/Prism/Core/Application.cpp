@@ -119,8 +119,12 @@ namespace Prism
     {
         CSharpScriptEngine::Initialize();
         CSharpScriptEngine::LoadEngineAssembly("Assets/scripts/net9.0/Prism.Scripting.dll");
+#ifdef PR_DEBUG
         CSharpScriptEngine::LoadAppAssembly("Assets/scripts/net9.0/ExampleApp.dll");
-
+#else
+        CSharpScriptEngine::BuildAssembly();
+        CSharpScriptEngine::LoadAppAssembly("Assets/scripts/net9.0/Game.dll");
+#endif
         PythonScriptEngine::Initialize();
     }
 

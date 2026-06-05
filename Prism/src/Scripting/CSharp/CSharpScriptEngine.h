@@ -57,9 +57,9 @@ namespace Prism
 
         // Callback registration
         static ReloadCallbackToken RegisterPreUnloadCallback(ReloadDelegate::FuncType callback);
-        static void               UnregisterPreUnloadCallback(ReloadCallbackToken token);
+        static void UnregisterPreUnloadCallback(ReloadCallbackToken token);
         static ReloadCallbackToken RegisterPostReloadCallback(ReloadDelegate::FuncType callback);
-        static void               UnregisterPostReloadCallback(ReloadCallbackToken token);
+        static void UnregisterPostReloadCallback(ReloadCallbackToken token);
 
         // Scene context
         static void SetSceneContext(const WeakRef<Scene>& scene);
@@ -70,6 +70,8 @@ namespace Prism
 
         static Rolky::ManagedAssembly& GetEngineAssembly();
         static Rolky::ManagedAssembly& GetAppAssembly();
+
+        static void BuildAssembly();
 
     private:
         static void UnloadCurrentContext();

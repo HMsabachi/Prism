@@ -26,6 +26,14 @@ namespace Prism {
         glm::vec3 Gravity = { 0.0F, -9.81F, 0.0F };
     };
 
+    struct RaycastHit
+    {
+        uint64_t EntityID;
+        glm::vec3 Position;
+        glm::vec3 Normal;
+        float Distance;
+    };
+
     class PRISM_API Physics
     {
     public:
@@ -38,6 +46,8 @@ namespace Prism {
         static void Step(float dt);
 
         static void DestroyScene();
+
+        static void* GetPhysicsScene();
 
         static void ConnectVisualDebugger();
         static void DisconnectVisualDebugger();

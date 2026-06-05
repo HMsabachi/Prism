@@ -3,6 +3,7 @@
 #include "Prism/Core/Math/Noise.h"
 
 #include "Prism/Core/Input.h"
+#include "Prism/Physics/PXPhysicsWrappers.h"
 #include "Prism/Scene/Scene.h"
 #include "Prism/Scene/Entity.h"
 #include "Prism/Scene/Components.h"
@@ -112,6 +113,11 @@ namespace Prism {
         CursorMode Prism_Input_GetCursorMode()
         {
             return Input::GetCursorMode();
+        }
+
+        Rolky::Bool32 Prism_Input_IsMouseButtonPressed(MouseButton button)
+        {
+            return Input::IsMouseButtonPressed(button);
         }
 #pragma endregion
 
@@ -615,6 +621,12 @@ namespace Prism {
 
 #pragma endregion
 
+#pragma region Physics
+        Rolky::Bool32 Prism_Physics_Raycast(glm::vec3* origin, glm::vec3* direction, float maxDistance, RaycastHit* hit)
+        {
+            return PXPhysicsWrappers::Raycast(*origin, *direction, maxDistance, hit);
+        }
+#pragma endregion
 
     }
 }

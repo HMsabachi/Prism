@@ -221,6 +221,29 @@ namespace Prism {
         return mesh;
     }
 
+    bool PXPhysicsWrappers::Raycast(const glm::vec3& origin, const glm::vec3& direction, float maxDistance, RaycastHit* hit)
+    {
+        physx::PxScene* scene = static_cast<physx::PxScene*>(Physics::GetPhysicsScene());
+        physx::PxRaycastBuffer hitInfo;
+        bool result = scene->raycast(ToPhysXVector(origin), ToPhysXVector(glm::normalize(direction)), maxDistance, hitInfo);
+
+        if (result)
+        {
+            Entity& entity = *(Entity*)hitInfo.block.actor->userData;
+
+            // NOTE: This should never be the case...
+            if (!entity)
+                PR_CORE_ASSERT(false, "Physics body with no Entity?");
+
+            hit->EntityID = entity.GetUUID();
+            hit->Position = FromPhysXVector(hitInfo.block.position);
+            hit->Normal = FromPhysXVector(hitInfo.block.normal);
+            hit->Distance = hitInfo.block.distance;
+        }
+
+        return result;
+    }
+
     physx::PxMaterial* PXPhysicsWrappers::CreateMaterial(const PhysicsMaterialComponent& material)
     {
         return s_Physics->createMaterial(material.StaticFriction, material.DynamicFriction, material.Bounciness);

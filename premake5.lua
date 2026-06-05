@@ -220,7 +220,7 @@ project "PrismEditor"
         "Prism/src",
         "Prism/vendor",
         "%{IncludeDir.glm}",
-            "%{IncludeDir.nethost}",
+        "%{IncludeDir.nethost}",
         "%{IncludeDir.entt}",
         "%{IncludeDir.Rolky}",
         "%{IncludeDir.Python}",
@@ -353,4 +353,11 @@ project "ExampleApp"
     {
         "Prism.Scripting"
     }
+
+    filter "configurations:Release"
+        local ScriptSrc = path.getabsolute("ExampleApp/src")
+        postbuildcommands
+        {
+            '{COPYDIR} "' .. ScriptSrc .. '" "%{wks.location}/bin/Release-windows-x86_64/PrismEditor/Assets/Scripts/CSharp/src"'
+        }
 group ""

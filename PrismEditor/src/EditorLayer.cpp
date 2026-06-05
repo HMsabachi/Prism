@@ -725,7 +725,12 @@ namespace Prism
                 {
                     if (ImGui::MenuItem(TR("Reload Assembly")))
                     {
+#ifdef PR_DEBUG
                         CSharpScriptEngine::ReloadAppAssembly("assets/scripts/net9.0/ExampleApp.dll");
+#else
+                        CSharpScriptEngine::BuildAssembly();
+                        CSharpScriptEngine::ReloadAppAssembly("assets/scripts/net9.0/Game.dll");
+#endif
                         PythonScriptEngine::ReloadPythonScripts();
                     }
                     ImGui::MenuItem(TR("Reload assembly on play"), nullptr, &m_ReloadScriptOnPlay);

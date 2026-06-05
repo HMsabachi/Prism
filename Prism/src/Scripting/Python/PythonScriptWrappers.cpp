@@ -7,6 +7,8 @@
 #include "Prism/Scene/Scene.h"
 #include "Prism/Scene/Entity.h"
 #include "Prism/Scene/Components.h"
+#include "Prism/Physics/PXPhysicsWrappers.h"
+#include "Prism/Physics/Physics.h"
 
 #include "Scripting/Python/PythonScriptEngine.h"
 #include "Prism/Scene/Systems/ScriptSystem.h"
@@ -140,6 +142,13 @@ namespace Prism::Script
         CursorMode mode = static_cast<CursorMode>(Python::ValueToInt(Python::GetTupleElement(argsRef, 0)));
         Input::SetCursorMode(mode);
         return Python::NoneValue().Detach();
+    }
+
+    Python::ScriptValue* Prism_Input_IsMouseButtonPressed(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        MouseButton button = static_cast<MouseButton>(Python::ValueToInt(Python::GetTupleElement(argsRef, 0)));
+        return Python::BoolToValue(Input::IsMouseButtonPressed(button)).Detach();
     }
 
     Python::ScriptValue* Prism_Input_GetCursorMode(Python::ScriptValue* self, Python::ScriptValue* args)
@@ -508,6 +517,29 @@ namespace Prism::Script
         return Python::NoneValue().Detach();
     }
 
+#pragma endregion
+
+#pragma region Physics
+    Python::ScriptValue* Prism_Physics_Raycast(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        glm::vec3 origin = Python::ValueToVec3(Python::GetTupleElement(argsRef, 0));
+        glm::vec3 direction = Python::ValueToVec3(Python::GetTupleElement(argsRef, 1));
+        float maxDistance = Python::ValueToFloat(Python::GetTupleElement(argsRef, 2));
+
+        RaycastHit hit;
+        if (PXPhysicsWrappers::Raycast(origin, direction, maxDistance, &hit))
+        {
+            Python::ScriptRef elements[4];
+            elements[0] = Python::UInt64ToValue(hit.EntityID);
+            elements[1] = Python::Vec3ToValue(hit.Position);
+            elements[2] = Python::Vec3ToValue(hit.Normal);
+            elements[3] = Python::FloatToValue(hit.Distance);
+            return Python::MakeTuple(elements, 4).Detach();
+        }
+
+        return Python::NoneValue().Detach();
+    }
 #pragma endregion
 
 #pragma region Mesh

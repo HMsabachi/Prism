@@ -68,3 +68,8 @@ class Entity:
         if eid:
             return Entity(eid)
         return None
+
+    @staticmethod
+    def FindEntityByID(entity_id: int) -> Optional["Entity"]:
+        # TODO: Verify the entity id
+        return Entity(entity_id)

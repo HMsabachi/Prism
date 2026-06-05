@@ -49,6 +49,11 @@ namespace Example
                 Input.SetCursorMode(CursorMode.Normal);
             }
 
+            /*if (Input.IsMouseButtonPressed(MouseButton.Left) && Input.GetCursorMode() == CursorMode.Normal)
+            {
+                Input.SetCursorMode(CursorMode.Locked);
+            }*/
+
             m_CurrentSpeed = Input.IsKeyPressed(KeyCode.LeftControl) ? RunSpeed : WalkingSpeed;
 
             UpdateRotation();
@@ -75,11 +80,13 @@ namespace Example
 
         private void UpdateMovement()
         {
-            /*
-             *
-             * Physics.Raycast(Vector3 origin, Vector3 direction, float maxDistance, out RaycastHitInfo hitInfo);
-             *
-             */
+            RaycastHit hitInfo;
+            if (Input.IsKeyPressed(KeyCode.H) && Physics.Raycast(m_CameraTransform.Transform.Translation + (m_CameraTransform.Forward * 5.0F), m_CameraTransform.Forward, 20.0F, out hitInfo))
+            {
+                var entity = Entity.FindEntityByID(hitInfo.EntityID);
+                var mesh = entity?.GetComponent<MeshComponent>()?.Mesh;
+                mesh?.GetMaterial(0)?.Set("u_Metalness", 1.0f);
+            }
 
             if (Input.IsKeyPressed(KeyCode.W))
                 m_RigidBody.AddForce(m_CameraTransform.Forward * m_CurrentSpeed);

@@ -125,6 +125,11 @@ namespace Prism {
         }
     }
 
+    void* Physics::GetPhysicsScene()
+    {
+        return s_Scene;
+    }
+
     void Physics::ConnectVisualDebugger()
     {
         PXPhysicsWrappers::ConnectVisualDebugger();
