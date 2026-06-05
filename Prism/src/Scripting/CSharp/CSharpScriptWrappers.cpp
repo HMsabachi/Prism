@@ -4,6 +4,7 @@
 
 #include "Prism/Core/Input.h"
 #include "Prism/Physics/PXPhysicsWrappers.h"
+#include "Prism/Physics/Physics.h"
 #include "Prism/Scene/Scene.h"
 #include "Prism/Scene/Entity.h"
 #include "Prism/Scene/Components.h"
@@ -517,6 +518,41 @@ namespace Prism {
             dynamicActor->setGlobalPose(transform);
         }
 
+        uint32_t Prism_RigidBodyComponent_GetLayer(uint64_t entityID)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
+            auto& component = entity.GetComponent<RigidBodyComponent>();
+            return component.Layer;
+        }
+
+        float Prism_RigidBodyComponent_GetMass(uint64_t entityID)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
+            auto& component = entity.GetComponent<RigidBodyComponent>();
+
+            physx::PxRigidActor* actor = (physx::PxRigidActor*)component.RuntimeActor;
+            physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
+            PR_CORE_ASSERT(dynamicActor);
+
+            return dynamicActor->getMass();
+        }
+
+        void Prism_RigidBodyComponent_SetMass(uint64_t entityID, float mass)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
+            auto& component = entity.GetComponent<RigidBodyComponent>();
+
+            physx::PxRigidActor* actor = (physx::PxRigidActor*)component.RuntimeActor;
+            physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
+            PR_CORE_ASSERT(dynamicActor);
+
+            component.Mass = mass;
+            physx::PxRigidBodyExt::updateMassAndInertia(*dynamicActor, mass);
+        }
+
 #pragma endregion
 
 #pragma region Material
@@ -625,6 +661,150 @@ namespace Prism {
         Rolky::Bool32 Prism_Physics_Raycast(glm::vec3* origin, glm::vec3* direction, float maxDistance, RaycastHit* hit)
         {
             return PXPhysicsWrappers::Raycast(*origin, *direction, maxDistance, hit);
+        }
+
+        void Prism_Physics_OverlapBox(glm::vec3* origin, glm::vec3* halfSize, Rolky::Array<OverlapHitData>* outResults)
+        {
+            std::vector<physx::PxOverlapHit> buffer;
+            if (PXPhysicsWrappers::OverlapBox(*origin, *halfSize, buffer))
+            {
+                // TODO: Exclude MeshColliders for now
+                size_t count = buffer.size();
+                for (const auto& hit : buffer)
+                {
+                    Entity& entity = *(Entity*)hit.actor->userData;
+
+                    if (!entity.HasComponent<BoxColliderComponent>() && !entity.HasComponent<SphereColliderComponent>() && !entity.HasComponent<CapsuleColliderComponent>())
+                    {
+                        if (entity.HasComponent<MeshColliderComponent>())
+                            count--;
+                    }
+                }
+
+                auto results = Rolky::Array<OverlapHitData>::New(count);
+                uint32_t arrayIndex = 0;
+
+                for (const auto& hit : buffer)
+                {
+                    if (arrayIndex >= count)
+                        break;
+
+                    Entity& entity = *(Entity*)hit.actor->userData;
+
+                    if (entity.HasComponent<BoxColliderComponent>())
+                    {
+                        auto& bc = entity.GetComponent<BoxColliderComponent>();
+                        OverlapHitData data;
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 0; // Box
+                        data.IsTrigger = bc.IsTrigger;
+                        data.ShapeData[0] = bc.Size.x;
+                        data.ShapeData[1] = bc.Size.y;
+                        data.ShapeData[2] = bc.Size.z;
+                        data.ShapeData[3] = bc.Offset.x;
+                        data.ShapeData[4] = bc.Offset.y;
+                        data.ShapeData[5] = bc.Offset.z;
+                        results[arrayIndex++] = data;
+                    }
+                    else if (entity.HasComponent<SphereColliderComponent>())
+                    {
+                        auto& sc = entity.GetComponent<SphereColliderComponent>();
+                        OverlapHitData data;
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 1; // Sphere
+                        data.IsTrigger = sc.IsTrigger;
+                        data.ShapeData[0] = sc.Radius;
+                        memset(&data.ShapeData[1], 0, 5 * sizeof(float));
+                        results[arrayIndex++] = data;
+                    }
+                    else if (entity.HasComponent<CapsuleColliderComponent>())
+                    {
+                        auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+                        OverlapHitData data;
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 2; // Capsule
+                        data.IsTrigger = cc.IsTrigger;
+                        data.ShapeData[0] = cc.Radius;
+                        data.ShapeData[1] = cc.Height;
+                        memset(&data.ShapeData[2], 0, 4 * sizeof(float));
+                        results[arrayIndex++] = data;
+                    }
+                }
+
+                *outResults = results;
+            }
+        }
+
+        void Prism_Physics_OverlapSphere(glm::vec3* origin, float radius, Rolky::Array<OverlapHitData>* outResults)
+        {
+            std::vector<physx::PxOverlapHit> buffer;
+            if (PXPhysicsWrappers::OverlapSphere(*origin, radius, buffer))
+            {
+                // TODO: Exclude MeshColliders for now
+                size_t count = buffer.size();
+                for (const auto& hit : buffer)
+                {
+                    Entity& entity = *(Entity*)hit.actor->userData;
+
+                    if (!entity.HasComponent<BoxColliderComponent>() && !entity.HasComponent<SphereColliderComponent>() && !entity.HasComponent<CapsuleColliderComponent>())
+                    {
+                        if (entity.HasComponent<MeshColliderComponent>())
+                            count--;
+                    }
+                }
+
+                auto results = Rolky::Array<OverlapHitData>::New(count);
+                uint32_t arrayIndex = 0;
+
+                for (const auto& hit : buffer)
+                {
+                    if (arrayIndex >= count)
+                        break;
+
+                    Entity& entity = *(Entity*)hit.actor->userData;
+
+                    if (entity.HasComponent<BoxColliderComponent>())
+                    {
+                        auto& bc = entity.GetComponent<BoxColliderComponent>();
+                        OverlapHitData data;
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 0; // Box
+                        data.IsTrigger = bc.IsTrigger;
+                        data.ShapeData[0] = bc.Size.x;
+                        data.ShapeData[1] = bc.Size.y;
+                        data.ShapeData[2] = bc.Size.z;
+                        data.ShapeData[3] = bc.Offset.x;
+                        data.ShapeData[4] = bc.Offset.y;
+                        data.ShapeData[5] = bc.Offset.z;
+                        results[arrayIndex++] = data;
+                    }
+                    else if (entity.HasComponent<SphereColliderComponent>())
+                    {
+                        auto& sc = entity.GetComponent<SphereColliderComponent>();
+                        OverlapHitData data;
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 1; // Sphere
+                        data.IsTrigger = sc.IsTrigger;
+                        data.ShapeData[0] = sc.Radius;
+                        memset(&data.ShapeData[1], 0, 5 * sizeof(float));
+                        results[arrayIndex++] = data;
+                    }
+                    else if (entity.HasComponent<CapsuleColliderComponent>())
+                    {
+                        auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+                        OverlapHitData data;
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 2; // Capsule
+                        data.IsTrigger = cc.IsTrigger;
+                        data.ShapeData[0] = cc.Radius;
+                        data.ShapeData[1] = cc.Height;
+                        memset(&data.ShapeData[2], 0, 4 * sizeof(float));
+                        results[arrayIndex++] = data;
+                    }
+                }
+
+                *outResults = results;
+            }
         }
 #pragma endregion
 

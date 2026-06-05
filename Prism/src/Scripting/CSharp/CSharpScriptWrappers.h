@@ -9,6 +9,7 @@ namespace Rolky
 
 namespace Prism
 {
+    struct OverlapHitData;
     class Mesh;
     class Texture2D;
     class Material;
@@ -109,9 +110,14 @@ namespace Prism
         void Prism_RigidBodyComponent_GetLinearVelocity(uint64_t entityID, glm::vec3* outVelocity);
         void Prism_RigidBodyComponent_SetLinearVelocity(uint64_t entityID, glm::vec3* velocity);
         void Prism_RigidBodyComponent_Rotate(uint64_t entityID, glm::vec3* rotation);
+        uint32_t Prism_RigidBodyComponent_GetLayer(uint64_t entityID);
+        float Prism_RigidBodyComponent_GetMass(uint64_t entityID);
+        void Prism_RigidBodyComponent_SetMass(uint64_t entityID, float mass);
 
         // Physics
         Rolky::Bool32 Prism_Physics_Raycast(glm::vec3* origin, glm::vec3* direction, float maxDistance, RaycastHit* hit);
+        void Prism_Physics_OverlapBox(glm::vec3* origin, glm::vec3* halfSize, Rolky::Array<OverlapHitData>* outResults);
+        void Prism_Physics_OverlapSphere(glm::vec3* origin, float radius, Rolky::Array<OverlapHitData>* outResults);
 
         // Material
         Ref<Material>* Prism_Material_Constructor(Rolky::String shaderName);

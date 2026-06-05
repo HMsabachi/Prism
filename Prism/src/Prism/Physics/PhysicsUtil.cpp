@@ -105,14 +105,24 @@ namespace Prism {
 
     void ContactListener::onWake(physx::PxActor** actors, physx::PxU32 count)
     {
-        PX_UNUSED(actors);
-        PX_UNUSED(count);
+        for (uint32_t i = 0; i < count; i++)
+        {
+            physx::PxActor& actor = *actors[i];
+            Entity& entity = *(Entity*)actor.userData;
+
+            PR_CORE_INFO("PhysX Actor waking up: ID: {0}, Name: {1}", entity.GetUUID(), entity.GetComponent<TagComponent>().Tag);
+        }
     }
 
     void ContactListener::onSleep(physx::PxActor** actors, physx::PxU32 count)
     {
-        PX_UNUSED(actors);
-        PX_UNUSED(count);
+        for (uint32_t i = 0; i < count; i++)
+        {
+            physx::PxActor& actor = *actors[i];
+            Entity& entity = *(Entity*)actor.userData;
+
+            PR_CORE_INFO("PhysX Actor going to sleep: ID: {0}, Name: {1}", entity.GetUUID(), entity.GetComponent<TagComponent>().Tag);
+        }
     }
 
     void ContactListener::onContact(const physx::PxContactPairHeader& pairHeader, const physx::PxContactPair* pairs, physx::PxU32 nbPairs)

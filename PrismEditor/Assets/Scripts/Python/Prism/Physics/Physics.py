@@ -2,6 +2,7 @@ from typing import Optional
 import PrismNative as _Prism
 from Prism.Math.Vector3 import Vector3
 from Prism.Entity import Entity
+from Prism.Physics.Collider import BoxCollider, SphereCollider, CapsuleCollider, Collider
 
 
 class RaycastHit:
@@ -28,3 +29,35 @@ class Physics:
             hit.Normal = normal
             hit.Distance = distance
         return True
+
+    @staticmethod
+    def OverlapBox(origin: Vector3, halfSize: Vector3) -> list[Collider]:
+        """Returns all Colliders overlapping a box at origin with half-extents halfSize."""
+        result = _Prism.Prism_Physics_OverlapBox(origin, halfSize)
+        if result is None:
+            return []
+        return [Physics._HitDataToCollider(d) for d in result]
+
+    @staticmethod
+    def OverlapSphere(origin: Vector3, radius: float) -> list[Collider]:
+        """Returns all Colliders overlapping a sphere at origin with given radius."""
+        result = _Prism.Prism_Physics_OverlapSphere(origin, radius)
+        if result is None:
+            return []
+        return [Physics._HitDataToCollider(d) for d in result]
+
+    @staticmethod
+    def _HitDataToCollider(data: tuple) -> Collider:
+        """Convert native overlap hit tuple to a Collider object."""
+        colliderType = data[1]
+        entityID = data[0]
+        isTrigger = data[2]
+        if colliderType == 0:  # Box
+            return BoxCollider(entityID, isTrigger,
+                Vector3(data[3], data[4], data[5]),
+                Vector3(data[6], data[7], data[8]))
+        elif colliderType == 1:  # Sphere
+            return SphereCollider(entityID, isTrigger, data[3])
+        elif colliderType == 2:  # Capsule
+            return CapsuleCollider(entityID, isTrigger, data[3], data[4])
+        return None

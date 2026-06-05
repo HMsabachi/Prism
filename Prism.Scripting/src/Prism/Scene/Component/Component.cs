@@ -199,6 +199,17 @@ namespace Prism
         {
             unsafe { InternalCalls.Prism_RigidBodyComponent_Rotate(Entity.ID, &rotation); }
         }
+
+        public float Mass
+        {
+            get { unsafe { return InternalCalls.Prism_RigidBodyComponent_GetMass(Entity.ID); } }
+            set { unsafe { InternalCalls.Prism_RigidBodyComponent_SetMass(Entity.ID, value); } }
+        }
+
+        public uint Layer
+        {
+            get { unsafe { return InternalCalls.Prism_RigidBodyComponent_GetLayer(Entity.ID); } }
+        }
     }
 
     public class BoxColliderComponent : Component

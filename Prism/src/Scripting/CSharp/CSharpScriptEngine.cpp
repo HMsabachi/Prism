@@ -20,7 +20,11 @@ namespace Prism
 {
     static void RolkyMessageCallback(std::string_view message, Rolky::MessageLevel level)
     {
-        if (level & Rolky::MessageLevel::Error) PR_CORE_ERROR("[Rolky] {0}", message);
+        if (level & Rolky::MessageLevel::Error)
+        {
+            PR_CORE_ERROR("[Rolky] {0}", message);
+            PR_CORE_ASSERT(false, "Rolky Error");
+        }
         else if (level & Rolky::MessageLevel::Warning) PR_CORE_WARN("[Rolky] {0}", message);
         else if (level & Rolky::MessageLevel::Info) PR_CORE_INFO("[Rolky] {0}", message);
         else PR_CORE_TRACE("[Rolky] {0}", message);
@@ -28,6 +32,7 @@ namespace Prism
     static void RolkyExceptionCallback(std::string_view message)
     {
         PR_CORE_ERROR("[Rolky] {0}", message);
+        PR_CORE_ASSERT(false, "Rolky exception");
     }
 
     // Static members

@@ -72,9 +72,14 @@ namespace Prism::Script
     Python::ScriptValue* Prism_RigidBodyComponent_GetLinearVelocity(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_RigidBodyComponent_SetLinearVelocity(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_RigidBodyComponent_Rotate(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_RigidBodyComponent_GetLayer(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_RigidBodyComponent_GetMass(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_RigidBodyComponent_SetMass(Python::ScriptValue* self, Python::ScriptValue* args);
 
     // Physics
     Python::ScriptValue* Prism_Physics_Raycast(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_Physics_OverlapBox(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_Physics_OverlapSphere(Python::ScriptValue* self, Python::ScriptValue* args);
 
     // Mesh
     Python::ScriptValue* Prism_Mesh_Constructor(Python::ScriptValue* self, Python::ScriptValue* args);

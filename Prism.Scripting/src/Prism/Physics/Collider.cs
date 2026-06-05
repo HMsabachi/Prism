@@ -1,76 +1,93 @@
-﻿using System;
+using System;
 using System.Numerics;
 
 namespace Prism
 {
+    public enum ColliderType
+    {
+        Box = 0,
+        Sphere = 1,
+        Capsule = 2,
+        Mesh = 3
+    }
+
     public class Collider
     {
-        public enum ColliderType
-        {
-            Box,
-            Sphere,
-            Capsule,
-            Mesh
-        }
-
-        public Entity ColliderEntity { get; protected set; }
         public ColliderType Type { get; protected set; }
+        public ulong EntityID { get; protected set; }
         public bool IsTrigger { get; protected set; }
+
+        public bool Is<T>() where T : Collider
+        {
+            if (typeof(T) == typeof(BoxCollider) && Type == ColliderType.Box)
+            {
+                return true;
+            }
+            else if (typeof(T) == typeof(SphereCollider) && Type == ColliderType.Sphere)
+            {
+                return true;
+            }
+            else if (typeof(T) == typeof(CapsuleCollider) && Type == ColliderType.Capsule)
+            {
+                return true;
+            }
+
+            return false;
+        }
     }
 
     public class BoxCollider : Collider
     {
-        public Vector3 Size { get; private set; }
-        public Vector3 Offset { get; private set; }
+        public Vector3 Size { get; protected set; }
+        public Vector3 Offset { get; protected set; }
 
-        internal BoxCollider(ulong entityID, Vector3 size, Vector3 offset, bool isTrigger)
+        internal BoxCollider(ulong entityID, bool isTrigger, Vector3 size, Vector3 offset)
         {
-            ColliderEntity = new Entity(entityID);
             Type = ColliderType.Box;
+            EntityID = entityID;
+            IsTrigger = isTrigger;
             Size = size;
             Offset = offset;
-            IsTrigger = isTrigger;
         }
     }
 
     public class SphereCollider : Collider
     {
-        public float Radius { get; private set; }
+        public float Radius { get; protected set; }
 
-        internal SphereCollider(ulong entityID, float radius, bool isTrigger)
+        internal SphereCollider(ulong entityID, bool isTrigger, float radius)
         {
-            ColliderEntity = new Entity(entityID);
             Type = ColliderType.Sphere;
-            Radius = radius;
+            EntityID = entityID;
             IsTrigger = isTrigger;
+            Radius = radius;
         }
     }
 
     public class CapsuleCollider : Collider
     {
-        public float Radius { get; private set; }
-        public float Height { get; private set; }
+        public float Radius { get; protected set; }
+        public float Height { get; protected set; }
 
-        internal CapsuleCollider(ulong entityID, float radius, float height, bool isTrigger)
+        internal CapsuleCollider(ulong entityID, bool isTrigger, float radius, float height)
         {
-            ColliderEntity = new Entity(entityID);
             Type = ColliderType.Capsule;
+            EntityID = entityID;
+            IsTrigger = isTrigger;
             Radius = radius;
             Height = height;
-            IsTrigger = isTrigger;
         }
     }
 
     public class MeshCollider : Collider
     {
-        public Mesh Mesh { get; private set; }
+        public Mesh Mesh { get; protected set; }
 
-        internal MeshCollider(ulong entityID, Mesh mesh, bool isTrigger)
+        internal MeshCollider(ulong entityID, bool isTrigger, string filepath)
         {
-            ColliderEntity = new Entity(entityID);
-            Type = ColliderType.Mesh;
-            Mesh = mesh;
+            EntityID = entityID;
             IsTrigger = isTrigger;
+            Mesh = new Mesh(filepath);
         }
     }
 }

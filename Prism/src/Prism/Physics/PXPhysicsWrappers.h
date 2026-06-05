@@ -25,6 +25,8 @@ namespace Prism
         static physx::PxMaterial* CreateMaterial(const PhysicsMaterialComponent& material);
 
         static bool Raycast(const glm::vec3& origin, const glm::vec3& direction, float maxDistance, RaycastHit* hit);
+        static bool OverlapBox(const glm::vec3& origin, const glm::vec3& halfSize, std::vector<physx::PxOverlapHit>& buffer);
+        static bool OverlapSphere(const glm::vec3& origin, float radius, std::vector<physx::PxOverlapHit>& buffer);
 
     private:
         static void Initialize();

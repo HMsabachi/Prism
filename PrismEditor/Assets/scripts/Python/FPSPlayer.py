@@ -1,7 +1,11 @@
-from Prism import (
-    Behaviour, Entity, Input, KeyCodes, CursorMode,
-    RigidBodyComponent, TransformComponent,
-)
+from Prism.Entity import Entity
+from Prism.Behaviour import Behaviour
+from Prism.Component import TransformComponent, RigidBodyComponent, MeshComponent
+from Prism.Physics.Collider import ColliderType, BoxCollider, SphereCollider, CapsuleCollider
+from Prism.Physics.Physics import Physics, RaycastHit
+from Prism.Core.Input import Input, CursorMode, MouseButton
+from Prism.Core.KeyCodes import KeyCodes
+from Prism.Core.Log import Log
 from Prism.Math import Vector2, Vector3
 from Prism.Math.Mathf import Mathf
 from Prism.Core.Time import Time
@@ -22,13 +26,12 @@ class FPSPlayer(Behaviour):
         return self._collisionCounter > 0
 
     def OnCreate(self):
-        self._transform = self.GetComponent(TransformComponent)
-        self._rigidBody = self.GetComponent(RigidBodyComponent)
+        self._transform: TransformComponent = self.GetComponent(TransformComponent)
+        self._rigidBody: RigidBodyComponent = self.GetComponent(RigidBodyComponent)
+        self._cameraEntity = Entity.FindEntityByTag("Camera")
+        self._cameraTransform: TransformComponent = self._cameraEntity.GetComponent(TransformComponent)
 
         self._currentSpeed = self.WalkingSpeed
-
-        self._cameraEntity = Entity.FindEntityByTag("Camera")
-        self._cameraTransform = self._cameraEntity.GetComponent(TransformComponent)
 
         self._cameraRotationX = 0.0
         self._rotationY = 0.0
@@ -39,7 +42,7 @@ class FPSPlayer(Behaviour):
 
         Input.SetCursorMode(CursorMode.Locked)
 
-    def OnUpdate(self):
+    def OnFixedUpdate(self):
         ts = Time.DeltaTime
 
         if Input.IsKeyPressed(KeyCodes.Escape) and Input.GetCursorMode() == CursorMode.Locked:
@@ -70,8 +73,6 @@ class FPSPlayer(Behaviour):
         self._lastMousePosition = currentMousePosition
 
     def UpdateMovement(self):
-        from Prism.Physics.Physics import Physics, RaycastHit
-
         if Input.IsKeyPressed(KeyCodes.H):
             origin = self._cameraTransform.Transform.Translation + (self._cameraTransform.Forward * 5.0)
             hit = RaycastHit()
@@ -81,6 +82,15 @@ class FPSPlayer(Behaviour):
                     mesh = entity.GetComponent(MeshComponent)
                     if mesh is not None and mesh.Mesh is not None:
                         mesh.Mesh.GetMaterial(0).Set("u_Metalness", 1.0)
+        if Input.IsKeyPressed(KeyCodes.L):
+            colliders = Physics.OverlapSphere(self._transform.Transform.Translation, 1.0)
+            Log.Trace("Overlap count: {}", len(colliders))
+            for c in colliders:
+                Log.Trace("EntityID: {}", c.EntityID)
+                Log.Trace("IsTrigger: {}", c.IsTrigger)
+                Log.Trace("IsBox: {}", c.IsBox())
+                Log.Trace("IsSphere: {}", c.IsSphere())
+                Log.Trace("IsCapsule: {}", c.IsCapsule())
 
         if Input.IsKeyPressed(KeyCodes.W):
             self._rigidBody.AddForce(self._cameraTransform.Forward * self._currentSpeed)
@@ -94,6 +104,8 @@ class FPSPlayer(Behaviour):
 
         if Input.IsKeyPressed(KeyCodes.Space) and self.Colliding:
             self._rigidBody.AddForce(Vector3.Up * self.JumpForce)
+        velocity = self._rigidBody.GetLinearVelocity()
+        velocity.Clamp(Vector3(-self._currentSpeed), Vector3(self._currentSpeed))
 
     def UpdateCameraTransform(self):
         cameraPosition = self._cameraTransform.Position

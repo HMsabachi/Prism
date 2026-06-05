@@ -19,7 +19,7 @@ from Prism.Component import (
 )
 from Prism.Entity import Entity
 from Prism.Behaviour import Behaviour
-from Prism.Core.Input import Input, CursorMode
+from Prism.Core.Input import Input, CursorMode, MouseButton
 from Prism.Core.Time import Time
 from Prism.Core.Log import Log
 from Prism.Core.KeyCodes import KeyCodes

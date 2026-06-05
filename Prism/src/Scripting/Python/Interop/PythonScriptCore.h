@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -126,12 +126,16 @@ namespace Prism::Python {
 
         ScriptObject CreateInstance() const;
 
+        template<typename... TArgs>
+        ScriptObject CreateInstance(TArgs&&... args) const;
+
         bool IsValid() const { return m_Ref.IsValid(); }
 
     private:
         friend class ScriptObject;
         explicit ScriptClass(ScriptRef ref) : m_Ref(std::move(ref)) {}
         ScriptRef m_Ref;
+        ScriptObject CreateInstanceInternal(const ScriptRef& tuple) const;
     };
 
     class ScriptObject
@@ -277,6 +281,21 @@ namespace Prism::Python {
             return ValueToVec4(v);
         else
             static_assert(false, "Unsupported type for Python return conversion");
+    }
+
+    template<typename... TArgs>
+    ScriptObject ScriptClass::CreateInstance(TArgs&&... args) const
+    {
+        if constexpr (sizeof...(TArgs) > 0)
+        {
+            ScriptRef pyArgs[] = { ToValue(std::forward<TArgs>(args))... };
+            ScriptRef tuple = MakeTuple(pyArgs, sizeof...(TArgs));
+            return CreateInstanceInternal(tuple);
+        }
+        else
+        {
+            return CreateInstance();
+        }
     }
 
     // ScriptObject 方法模板

@@ -517,6 +517,46 @@ namespace Prism::Script
         return Python::NoneValue().Detach();
     }
 
+    Python::ScriptValue* Prism_RigidBodyComponent_GetLayer(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+        PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
+        auto& component = entity.GetComponent<RigidBodyComponent>();
+        return Python::UInt64ToValue(component.Layer).Detach();
+    }
+
+    Python::ScriptValue* Prism_RigidBodyComponent_GetMass(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+        PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
+        auto& component = entity.GetComponent<RigidBodyComponent>();
+
+        physx::PxRigidActor* actor = (physx::PxRigidActor*)component.RuntimeActor;
+        physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
+        PR_CORE_ASSERT(dynamicActor);
+
+        return Python::FloatToValue(dynamicActor->getMass()).Detach();
+    }
+
+    Python::ScriptValue* Prism_RigidBodyComponent_SetMass(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+        float mass = Python::ValueToFloat(Python::GetTupleElement(argsRef, 1));
+        PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
+        auto& component = entity.GetComponent<RigidBodyComponent>();
+
+        physx::PxRigidActor* actor = (physx::PxRigidActor*)component.RuntimeActor;
+        physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
+        PR_CORE_ASSERT(dynamicActor);
+
+        component.Mass = mass;
+        physx::PxRigidBodyExt::updateMassAndInertia(*dynamicActor, mass);
+        return Python::NoneValue().Detach();
+    }
+
 #pragma endregion
 
 #pragma region Physics
@@ -536,6 +576,156 @@ namespace Prism::Script
             elements[2] = Python::Vec3ToValue(hit.Normal);
             elements[3] = Python::FloatToValue(hit.Distance);
             return Python::MakeTuple(elements, 4).Detach();
+        }
+
+        return Python::NoneValue().Detach();
+    }
+
+    Python::ScriptValue* Prism_Physics_OverlapBox(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        glm::vec3 origin = Python::ValueToVec3(Python::GetTupleElement(argsRef, 0));
+        glm::vec3 halfSize = Python::ValueToVec3(Python::GetTupleElement(argsRef, 1));
+
+        std::vector<physx::PxOverlapHit> buffer;
+        if (PXPhysicsWrappers::OverlapBox(origin, halfSize, buffer))
+        {
+            // TODO: Exclude MeshColliders for now
+            size_t count = buffer.size();
+            for (const auto& hit : buffer)
+            {
+                Entity& entity = *(Entity*)hit.actor->userData;
+                if (!entity.HasComponent<BoxColliderComponent>() && !entity.HasComponent<SphereColliderComponent>() && !entity.HasComponent<CapsuleColliderComponent>())
+                {
+                    if (entity.HasComponent<MeshColliderComponent>())
+                        count--;
+                }
+            }
+
+            Python::ScriptRef* elements = new Python::ScriptRef[count];
+            uint32_t arrayIndex = 0;
+
+            for (const auto& hit : buffer)
+            {
+                if (arrayIndex >= count) break;
+                Entity& entity = *(Entity*)hit.actor->userData;
+
+                if (entity.HasComponent<BoxColliderComponent>())
+                {
+                    auto& bc = entity.GetComponent<BoxColliderComponent>();
+                    Python::ScriptRef data[9];
+                    data[0] = Python::UInt64ToValue(entity.GetUUID());
+                    data[1] = Python::UInt64ToValue(0); // Box
+                    data[2] = Python::BoolToValue(bc.IsTrigger);
+                    data[3] = Python::FloatToValue(bc.Size.x);
+                    data[4] = Python::FloatToValue(bc.Size.y);
+                    data[5] = Python::FloatToValue(bc.Size.z);
+                    data[6] = Python::FloatToValue(bc.Offset.x);
+                    data[7] = Python::FloatToValue(bc.Offset.y);
+                    data[8] = Python::FloatToValue(bc.Offset.z);
+                    elements[arrayIndex++] = Python::MakeTuple(data, 9);
+                }
+                else if (entity.HasComponent<SphereColliderComponent>())
+                {
+                    auto& sc = entity.GetComponent<SphereColliderComponent>();
+                    Python::ScriptRef data[4];
+                    data[0] = Python::UInt64ToValue(entity.GetUUID());
+                    data[1] = Python::UInt64ToValue(1); // Sphere
+                    data[2] = Python::BoolToValue(sc.IsTrigger);
+                    data[3] = Python::FloatToValue(sc.Radius);
+                    elements[arrayIndex++] = Python::MakeTuple(data, 4);
+                }
+                else if (entity.HasComponent<CapsuleColliderComponent>())
+                {
+                    auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+                    Python::ScriptRef data[5];
+                    data[0] = Python::UInt64ToValue(entity.GetUUID());
+                    data[1] = Python::UInt64ToValue(2); // Capsule
+                    data[2] = Python::BoolToValue(cc.IsTrigger);
+                    data[3] = Python::FloatToValue(cc.Radius);
+                    data[4] = Python::FloatToValue(cc.Height);
+                    elements[arrayIndex++] = Python::MakeTuple(data, 5);
+                }
+            }
+
+            Python::ScriptRef tuple = Python::MakeTuple(elements, count);
+            delete[] elements;
+            return tuple.Detach();
+        }
+
+        return Python::NoneValue().Detach();
+    }
+
+    Python::ScriptValue* Prism_Physics_OverlapSphere(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        glm::vec3 origin = Python::ValueToVec3(Python::GetTupleElement(argsRef, 0));
+        float radius = Python::ValueToFloat(Python::GetTupleElement(argsRef, 1));
+
+        std::vector<physx::PxOverlapHit> buffer;
+        if (PXPhysicsWrappers::OverlapSphere(origin, radius, buffer))
+        {
+            // TODO: Exclude MeshColliders for now
+            size_t count = buffer.size();
+            for (const auto& hit : buffer)
+            {
+                Entity& entity = *(Entity*)hit.actor->userData;
+                if (!entity.HasComponent<BoxColliderComponent>() && !entity.HasComponent<SphereColliderComponent>() && !entity.HasComponent<CapsuleColliderComponent>())
+                {
+                    if (entity.HasComponent<MeshColliderComponent>())
+                        count--;
+                }
+            }
+
+            Python::ScriptRef* elements = new Python::ScriptRef[count];
+            uint32_t arrayIndex = 0;
+
+            for (const auto& hit : buffer)
+            {
+                if (arrayIndex >= count) break;
+                Entity& entity = *(Entity*)hit.actor->userData;
+
+                if (entity.HasComponent<BoxColliderComponent>())
+                {
+                    auto& bc = entity.GetComponent<BoxColliderComponent>();
+                    Python::ScriptRef data[9];
+                    data[0] = Python::UInt64ToValue(entity.GetUUID());
+                    data[1] = Python::UInt64ToValue(0); // Box
+                    data[2] = Python::BoolToValue(bc.IsTrigger);
+                    data[3] = Python::FloatToValue(bc.Size.x);
+                    data[4] = Python::FloatToValue(bc.Size.y);
+                    data[5] = Python::FloatToValue(bc.Size.z);
+                    data[6] = Python::FloatToValue(bc.Offset.x);
+                    data[7] = Python::FloatToValue(bc.Offset.y);
+                    data[8] = Python::FloatToValue(bc.Offset.z);
+                    elements[arrayIndex++] = Python::MakeTuple(data, 9);
+                }
+                else if (entity.HasComponent<SphereColliderComponent>())
+                {
+                    auto& sc = entity.GetComponent<SphereColliderComponent>();
+                    Python::ScriptRef data[4];
+                    data[0] = Python::UInt64ToValue(entity.GetUUID());
+                    data[1] = Python::UInt64ToValue(1); // Sphere
+                    data[2] = Python::BoolToValue(sc.IsTrigger);
+                    data[3] = Python::FloatToValue(sc.Radius);
+                    elements[arrayIndex++] = Python::MakeTuple(data, 4);
+                }
+                else if (entity.HasComponent<CapsuleColliderComponent>())
+                {
+                    auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+                    Python::ScriptRef data[5];
+                    data[0] = Python::UInt64ToValue(entity.GetUUID());
+                    data[1] = Python::UInt64ToValue(2); // Capsule
+                    data[2] = Python::BoolToValue(cc.IsTrigger);
+                    data[3] = Python::FloatToValue(cc.Radius);
+                    data[4] = Python::FloatToValue(cc.Height);
+                    elements[arrayIndex++] = Python::MakeTuple(data, 5);
+                }
+            }
+
+            Python::ScriptRef tuple = Python::MakeTuple(elements, count);
+            delete[] elements;
+            return tuple.Detach();
         }
 
         return Python::NoneValue().Detach();

@@ -122,8 +122,13 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_GetLinearVelocity);
         PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_SetLinearVelocity);
         PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_Rotate);
+        PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_GetLayer);
+        PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_GetMass);
+        PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_SetMass);
         // Physics
         PR_ADD_INTERNAL_CALL(Prism_Physics_Raycast);
+        PR_ADD_INTERNAL_CALL(Prism_Physics_OverlapBox);
+        PR_ADD_INTERNAL_CALL(Prism_Physics_OverlapSphere);
         // Texture2D
         PR_ADD_INTERNAL_CALL(Prism_Texture2D_Constructor);
         PR_ADD_INTERNAL_CALL(Prism_Texture2D_Destructor);

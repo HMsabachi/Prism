@@ -45,14 +45,10 @@ namespace Example
         {
 
             if (Input.IsKeyPressed(KeyCode.Escape) && Input.GetCursorMode() == CursorMode.Locked)
-            {
                 Input.SetCursorMode(CursorMode.Normal);
-            }
 
-            /*if (Input.IsMouseButtonPressed(MouseButton.Left) && Input.GetCursorMode() == CursorMode.Normal)
-            {
-                Input.SetCursorMode(CursorMode.Locked);
-            }*/
+            //if (Input.IsMouseButtonPressed(MouseButton.Left) && Input.GetCursorMode() == CursorMode.Normal)
+            //    Input.SetCursorMode(CursorMode.Locked);
 
             m_CurrentSpeed = Input.IsKeyPressed(KeyCode.LeftControl) ? RunSpeed : WalkingSpeed;
 
@@ -86,6 +82,21 @@ namespace Example
                 var entity = Entity.FindEntityByID(hitInfo.EntityID);
                 var mesh = entity?.GetComponent<MeshComponent>()?.Mesh;
                 mesh?.GetMaterial(0)?.Set("u_Metalness", 1.0f);
+            }
+
+            if (Input.IsKeyPressed(KeyCode.L))
+            {
+                Collider[] colliders = Physics.OverlapSphere(m_Transform.Transform.Translation, 1.0F);
+                Log.Trace(colliders.Length);
+
+                foreach (Collider c in colliders)
+                {
+                    Log.Trace("EntityID: {0}", c.EntityID);
+                    Log.Trace("IsTrigger: {0}", c.IsTrigger);
+                    Log.Trace("IsBox: {0}", c.Is<BoxCollider>());
+                    Log.Trace("IsSphere: {0}", c.Is<SphereCollider>());
+                    Log.Trace("IsCapsule: {0}", c.Is<CapsuleCollider>());
+                }
             }
 
             if (Input.IsKeyPressed(KeyCode.W))

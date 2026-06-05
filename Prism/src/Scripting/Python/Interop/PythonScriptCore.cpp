@@ -586,6 +586,27 @@ namespace Prism::Python {
         return obj;
     }
 
+    ScriptObject ScriptClass::CreateInstanceInternal(const ScriptRef& tuple) const
+    {
+        if (!m_Ref.IsValid())
+            return ScriptObject();
+
+        GILGuard gil;
+        PyErrorSaver saver;
+        ScriptObject obj;
+        PyObject* args = tuple.IsValid() ? ToPy(tuple.Get()) : nullptr;
+        PyObject* instance = PyObject_CallObject(ToPy(m_Ref.Get()), args);
+        if (instance)
+        {
+            obj.m_Ref = ScriptRef::Adopt(ToSV(instance));
+        }
+        else
+        {
+            saver.Log();
+        }
+        return obj;
+    }
+
     ScriptObject::ScriptObject(ScriptRef ref)
         : m_Ref(std::move(ref))
     {

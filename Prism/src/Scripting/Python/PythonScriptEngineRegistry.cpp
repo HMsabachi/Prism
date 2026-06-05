@@ -114,8 +114,13 @@ namespace Prism
         PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_GetLinearVelocity, "GetLinearVelocity(entityID) -> vec3");
         PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_SetLinearVelocity, "SetLinearVelocity(entityID, velocity)");
         PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_Rotate, "Rotate(entityID, rotation)");
+        PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_GetLayer, "GetLayer(entityID) -> uint");
+        PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_GetMass, "GetMass(entityID) -> float");
+        PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_SetMass, "SetMass(entityID, mass)");
         // Physics
         PR_PYTHON_FUNCTION(Prism_Physics_Raycast, "Raycast(origin, direction, maxDistance) -> (entityID, pos, normal, distance) or None");
+        PR_PYTHON_FUNCTION(Prism_Physics_OverlapBox, "OverlapBox(origin, halfSize) -> tuple of Collider or None");
+        PR_PYTHON_FUNCTION(Prism_Physics_OverlapSphere, "OverlapSphere(origin, radius) -> tuple of Collider or None");
 
         // Mesh
         PR_PYTHON_FUNCTION(Prism_Mesh_Constructor, "Mesh(cpp_handle, filepath)");

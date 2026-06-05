@@ -175,6 +175,9 @@ namespace Prism
             CSharpScriptEngine::SetSceneContext(m_EditorScene);
             PythonScriptEngine::SetSceneContext(m_EditorScene);
             m_SceneHierarchyPanel->SetContext(m_EditorScene);
+
+            Input::SetCursorMode(CursorMode::Normal);
+
             UpdateWindowTitle("Untitled Scene");
         }
 
