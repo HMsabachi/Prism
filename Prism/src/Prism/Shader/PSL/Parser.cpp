@@ -479,61 +479,80 @@ void Parser::ParseGLSLBlock(AST::GLSLCode& glsl)
     Consume(TokenType::LeftBrace, "期望 '{'");
     glsl.Loc = CurrentLoc();
     int depth = 1;
+    uint32_t nextID = 0;
+    uint32_t sharedStart = Current().Offset;
 
     while (!IsAtEnd() && depth > 0)
     {
         if (Check(TokenType::Hash))
         {
-            ParseGLSLDirective(glsl);
+            FlushSharedChunk(glsl.SharedSource, sharedStart);
+            ParseGLSLDirective(glsl, nextID++);
+            sharedStart = Current().Offset;
         }
         else if (Check(TokenType::AttributeKw))
         {
-            ParseGLSLAttribute(glsl.Attributes, (uint32_t)glsl.SharedSource.size());
+            FlushSharedChunk(glsl.SharedSource, sharedStart);
+            ParseGLSLAttribute(glsl, nextID++);
+            sharedStart = Current().Offset;
         }
         else if (Check(TokenType::VaryingKw))
         {
-            ParseGLSLVarying(glsl.Varyings, (uint32_t)glsl.SharedSource.size());
+            FlushSharedChunk(glsl.SharedSource, sharedStart);
+            ParseGLSLVarying(glsl, nextID++);
+            sharedStart = Current().Offset;
+
         }
         else if (Check(TokenType::VoidKw))
         {
+            FlushSharedChunk(glsl.SharedSource, sharedStart);
             ParserGLSLVoid(glsl);
+            sharedStart = Current().Offset;
+        }
+        else if (Check(TokenType::LeftBrace))
+        {
+            Advance();
+            depth++;
+        }
+        else if (Check(TokenType::RightBrace))
+        {
+            depth--;
+            if (depth == 0)
+            {
+                FlushSharedChunk(glsl.SharedSource, sharedStart);
+                break;
+            }
+            Advance();
         }
         else
         {
             Token t = Advance();
-            if (t.Is(TokenType::LeftBrace)) depth++;
-            else if (t.Is(TokenType::RightBrace))
-            {
-                depth--;
-                if (depth == 0) break;
-            }
-            AppendTokenText(glsl.SharedSource, t);
         }
     }
 }
 
-void Parser::ParseGLSLAttribute(std::vector<AST::VertexAttribute>& attrs, uint32_t insertPos)
+void Parser::ParseGLSLAttribute(AST::GLSLCode& glsl, uint32_t id)
 {
+    glsl.SharedSource += "[Prism::Insert:" + std::to_string(id) + "]";
     Advance();
-
     AST::VertexAttribute attr;
-    attr.InsertPos = insertPos;
+    attr.InsertID = id;
     attr.Loc = CurrentLoc();
     attr.Type = TokenStr(ConsumeType("期望 attribute 类型"));
     attr.Name = TokenStr(Consume(TokenType::Identifier, "期望 attribute 名称"));
     Consume(TokenType::Colon, "期望 ':'");
-    attr.Semantic = TokenStr(Consume(TokenType::Identifier, "期望语义名称"));
+    attr.Semantic = Prism::PSL::ParseVertexSemantic(TokenStr(Consume(TokenType::Identifier, "期望语义名称")));
     Consume(TokenType::Semicolon, "期望 ';'");
-
-    attrs.push_back(attr);
+    glsl.Attributes.push_back(attr);
 }
 
-void Parser::ParseGLSLVarying(std::vector<AST::VaryingBlock>& varyings, uint32_t insertPos)
+void Parser::ParseGLSLVarying(AST::GLSLCode& glsl, uint32_t id)
 {
+    glsl.SharedSource += "[Prism::Insert:" + std::to_string(id) + "]";
     Advance();
 
     AST::VaryingBlock block;
-    block.InsertPos = insertPos;
+    block.InsertID = id;
     block.Loc = CurrentLoc();
     std::string first = TokenStr(ConsumeType("期望类型或结构体名"));
 
@@ -571,25 +590,25 @@ void Parser::ParseGLSLVarying(std::vector<AST::VaryingBlock>& varyings, uint32_t
         Consume(TokenType::Semicolon, "期望 ';'");
     }
 
-    varyings.push_back(block);
+    glsl.Varyings.push_back(block);
 }
 
-void Parser::ParseGLSLDirective(AST::GLSLCode& glsl)
+void Parser::ParseGLSLDirective(AST::GLSLCode& glsl, uint32_t id)
 {
+    glsl.SharedSource += "[Prism::Insert:" + std::to_string(id) + "]";
     Advance();
-    uint32_t insertPos = (uint32_t)glsl.SharedSource.size();
 
     if (Check(TokenType::IncludeKw))
     {
         Advance();
-        glsl.Includes.push_back({TokenStr(Consume(TokenType::StringLiteral, "期望 include 路径")), insertPos, CurrentLoc()});
+        glsl.Includes.push_back({TokenStr(Consume(TokenType::StringLiteral, "期望 include 路径")), id, CurrentLoc()});
     }
     else if (Check(TokenType::PragmaKw))
     {
         Advance();
 
         AST::PragmaDef pragma;
-        pragma.InsertPos = insertPos;
+        pragma.InsertID = id;
         pragma.Loc = CurrentLoc();
         if (Check(TokenType::ShaderFeatureKw))
             { Advance(); pragma.IsShaderFeature = true; }
@@ -612,7 +631,6 @@ void Parser::ParserGLSLVoid(AST::GLSLCode& glsl)
     {
         bool isVert = next.Is(TokenType::VertKw);
         std::string& target = isVert ? glsl.Vertex.Source : glsl.Fragment.Source;
-        (isVert ? glsl.Vertex : glsl.Fragment).InsertPos = (uint32_t)glsl.SharedSource.size();
         (isVert ? glsl.Vertex : glsl.Fragment).Loc = CurrentLoc();
         Advance();
         Advance();
@@ -632,6 +650,17 @@ void Parser::ParserGLSLVoid(AST::GLSLCode& glsl)
             }
             AppendTokenText(target, ft);
         }
+    }
+}
+
+void Parser::FlushSharedChunk(std::string& out, uint32_t& start)
+{
+    uint32_t current = m_Stream.Current().Offset;
+    if (current > start)
+    {
+        auto view = m_Stream.GetSM().GetView(start, current - start);
+        out += std::string(m_Stream.GetSM().GetView(start, current - start));
+        start = current;
     }
 }
 

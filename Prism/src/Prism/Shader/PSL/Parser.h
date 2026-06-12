@@ -61,9 +61,10 @@ private:
 private:
     void ParserGLSLVoid(AST::GLSLCode& glsl);
 
-    void ParseGLSLAttribute(std::vector<AST::VertexAttribute>& attrs, uint32_t insertPos);
-    void ParseGLSLVarying(std::vector<AST::VaryingBlock>& varyings, uint32_t insertPos);
-    void ParseGLSLDirective(AST::GLSLCode& glsl);
+    void ParseGLSLAttribute(AST::GLSLCode& glsl, uint32_t id);
+    void ParseGLSLVarying(AST::GLSLCode& glsl, uint32_t id);
+    void ParseGLSLDirective(AST::GLSLCode& glsl, uint32_t id);
+    void FlushSharedChunk(std::string& out, uint32_t& start);
     void AppendTokenText(std::string& out, const Token& t);
     void SkipTo(TokenType type);
 

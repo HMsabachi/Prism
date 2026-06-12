@@ -5,6 +5,7 @@
 #include "Prism/Shader/PSL/SourceManager.h"
 #include "Prism/Shader/PSL/TokenStream.h"
 #include "Prism/Shader/PSL/Parser.h"
+#include "Prism/Shader/PSL/GLSLGenerator.h"
 
 namespace Prism
 {
@@ -547,6 +548,10 @@ namespace Prism
                     PR_CORE_INFO("[PSL测试]   Pass '{0}': Shared={1}B  Vert={2}B  Frag={3}B  Attrs={4}  Varyings={5}  Pragmas={6}  Includes={7}",
                         pass.Name, g.SharedSource.size(), g.Vertex.Source.size(), g.Fragment.Source.size(),
                         g.Attributes.size(), g.Varyings.size(), g.Pragmas.size(), g.Includes.size());
+                    auto output = PSL::GLSLGen::Generate(pass.Glsl, doc.Properties, testPath);
+                    auto vs = output.Vertex;
+                    PR_CORE_WARN("[PSL测试] Vertex shader code:\n{0}", vs);
+                    auto fs = output.Fragment;
                 }
                 PR_CORE_INFO("[PSL测试] ========================================");
             }

@@ -4,6 +4,7 @@
 #include "Prism/Shader/Property/PropertyType.h"
 #include "Prism/Shader/Pipeline/PipelineState.h"
 #include "Prism/Utilities/Variant.h"
+#include "Prism/Shader/Property/VertexType.h"
 
 #include <string>
 #include <vector>
@@ -17,9 +18,8 @@ struct VertexAttribute
 {
     std::string Type;
     std::string Name;
-    std::string Semantic;
-    uint32_t Location = 0;
-    uint32_t InsertPos = 0;
+    Prism::PSL::VertexSemantic Semantic;
+    uint32_t InsertID = 0;
     SourceLocation Loc;
 };
 
@@ -36,7 +36,7 @@ struct VaryingBlock
     std::string InstanceName;
     std::vector<VaryingMember> Members;
     std::string Type;
-    uint32_t InsertPos = 0;
+    uint32_t InsertID = 0;
     SourceLocation Loc;
 };
 
@@ -45,21 +45,20 @@ struct PragmaDef
     bool IsMultiCompile = false;
     bool IsShaderFeature = false;
     std::vector<std::string> Keywords;
-    uint32_t InsertPos = 0;
+    uint32_t InsertID = 0;
     SourceLocation Loc;
 };
 
 struct EntryPointSource
 {
     std::string Source;
-    uint32_t InsertPos = 0;
     SourceLocation Loc;
 };
 
 struct IncludeDef
 {
     std::string Path;
-    uint32_t InsertPos = 0;
+    uint32_t InsertID = 0;
     SourceLocation Loc;
 };
 
