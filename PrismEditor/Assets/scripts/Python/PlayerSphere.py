@@ -1,12 +1,10 @@
-from Prism import (
-    Behaviour, Input, Time, KeyCodes,
-    RigidBodyComponent, MeshComponent, TransformComponent, Log
-)
-from Prism.Math import Vector3
-from Prism.Math.Matrix4 import Matrix4
-from Prism.Renderer.Material import MaterialInstance
+from Prism.Prism import Behaviour
+from Prism.Core import *
+from Prism.Component import *
+from Prism.Math import *
+from Prism.Physics import *
+from Prism.Renderer import *
 from RandomColor import RandomColor
-
 
 class PlayerSphere(Behaviour):
     HorizontalForce: float = 10.0
@@ -15,36 +13,18 @@ class PlayerSphere(Behaviour):
     IsEnabled: bool = True
 
     def OnCreate(self):
-        self.m_PhysicsBody = self.GetComponent(RigidBodyComponent)
-        self.m_Transform = self.GetComponent(TransformComponent)
-
-        meshComponent = self.GetComponent(MeshComponent)
-        self.m_MeshMaterial = meshComponent.Mesh.GetMaterial(0)
+        self.m_PhysicsBody: RigidBodyComponent = self.GetComponent(RigidBodyComponent)
+        self.m_Transform: TransformComponent = self.GetComponent(TransformComponent)
+        meshComponent: MeshComponent = self.GetComponent(MeshComponent)
+        self.randomColor: RandomColor = self.CreateComponent(RandomColor)
+        self.m_MeshMaterial: MaterialInstance = meshComponent.Mesh.GetMaterial(0)
         self.m_MeshMaterial.Set("u_Metalness", 0.0)
-        self.randomColor = self.CreateComponent(RandomColor)
 
         self.m_CollisionCounter = 0
         self.IsEnabled = self.Enabled
-
-    @property
-    def _colliding(self):
-        return self.m_CollisionCounter > 0
-
-    def OnCollisionBegin(self, data):
-        self.m_CollisionCounter += 1
-        if self._colliding:
-            self.m_MeshMaterial.Set("u_AlbedoColor", Vector3(1.0, 0.0, 0.0))
-
-    def OnCollisionEnd(self, data):
-        self.m_CollisionCounter -= 1
-        if not self._colliding:
-            self.randomColor.GenerateColor()
-
-    def OnTriggerBegin(self, value: float):
-        Log.Info(f"[PlayerSphere3D] OnTriggerBegin: {value}")
-
-    def OnTriggerEnd(self, value: float):
-        Log.Info(f"[PlayerSphere3D] OnTriggerEnd: {value}")
+    
+    def OnUpdate(self):
+        self.Position = self.m_Transform.Position
 
     def OnFixedUpdate(self):
         movementForce = self.HorizontalForce
@@ -77,3 +57,23 @@ class PlayerSphere(Behaviour):
             transform = self.Entity.GetTransform()
             transform.Translation = Vector3(0.0, 0.0, 0.0)
             self.Entity.SetTransform(transform)
+    
+    @property
+    def _colliding(self):
+        return self.m_CollisionCounter > 0
+
+    def OnCollisionBegin(self, data):
+        self.m_CollisionCounter += 1
+        if self._colliding:
+            self.m_MeshMaterial.Set("u_AlbedoColor", Vector3(1.0, 0.0, 0.0))
+
+    def OnCollisionEnd(self, data):
+        self.m_CollisionCounter -= 1
+        if not self._colliding:
+            self.randomColor.GenerateColor()
+
+    def OnTriggerBegin(self, value: float):
+        Log.Info(f"[PlayerSphere3D] OnTriggerBegin: {value}")
+
+    def OnTriggerEnd(self, value: float):
+        Log.Info(f"[PlayerSphere3D] OnTriggerEnd: {value}")

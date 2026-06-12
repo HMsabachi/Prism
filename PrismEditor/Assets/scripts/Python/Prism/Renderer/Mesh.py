@@ -1,5 +1,5 @@
 import PrismNative as _Prism
-
+from Prism.Renderer.Material import MaterialInstance
 
 class Mesh:
     def __init__(self, filepath=""):
@@ -19,7 +19,7 @@ class Mesh:
         handle = _Prism.Prism_Mesh_GetMaterial(self._handle)
         return Material(handle) if handle else None
 
-    def GetMaterial(self, index):
+    def GetMaterial(self, index) -> 'MaterialInstance':
         from Prism.Renderer.Material import MaterialInstance
         handle = _Prism.Prism_Mesh_GetMaterialByIndex(self._handle, int(index))
         return MaterialInstance(handle) if handle else None

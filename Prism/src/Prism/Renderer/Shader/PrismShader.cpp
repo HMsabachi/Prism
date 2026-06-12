@@ -1,7 +1,10 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "PrismShader.h"
 #include "Prism/Renderer/Shader/Parser/ShaderParser.h"
 #include "Prism/Utilities/Utilities.h"
+#include "Prism/Shader/PSL/SourceManager.h"
+#include "Prism/Shader/PSL/TokenStream.h"
+#include "Prism/Shader/PSL/Parser.h"
 
 namespace Prism
 {
@@ -514,6 +517,46 @@ namespace Prism
             success++;
         }
         PR_CORE_INFO("Shader加载完成: {0} 个成功, {1} 个失败", success, failed);
+
+        // ====== 新 PSL 管线 ======
+        if (!m_Shaders.empty())
+        {
+            PSL::DiagnosticCollector diag;
+            auto& firstShader = m_Shaders.begin()->second;
+            std::string testPath = firstShader->GetFilePath();
+
+            PSL::SourceManager sm(testPath);
+            if (sm.IsValid())
+            {
+                PSL::TokenStream stream(sm, &diag);
+                PSL::Parser parser(stream, &diag);
+                auto doc = parser.ParseShader();
+
+                PR_CORE_INFO("[PSL测试] ========================================");
+                PR_CORE_INFO("[PSL测试] 文件: {0}", testPath);
+                PR_CORE_INFO("[PSL测试] Shader: {0}", doc.ShaderName);
+                PR_CORE_INFO("[PSL测试] Properties ({0}):", doc.Properties.size());
+                for (auto& p : doc.Properties)
+                    PR_CORE_INFO("[PSL测试]   {0} (\"{1}\") type={2}",
+                        p.Name, p.DisplayName, (int)p.Type);
+
+                PR_CORE_INFO("[PSL测试] Passes ({0}):", doc.Passes.size());
+                for (auto& pass : doc.Passes)
+                {
+                    auto& g = pass.Glsl;
+                    PR_CORE_INFO("[PSL测试]   Pass '{0}': Shared={1}B  Vert={2}B  Frag={3}B  Attrs={4}  Varyings={5}  Pragmas={6}  Includes={7}",
+                        pass.Name, g.SharedSource.size(), g.Vertex.Source.size(), g.Fragment.Source.size(),
+                        g.Attributes.size(), g.Varyings.size(), g.Pragmas.size(), g.Includes.size());
+                }
+                PR_CORE_INFO("[PSL测试] ========================================");
+            }
+            else
+            {
+                PR_CORE_ERROR("[PSL测试] SourceManager 无法打开: {0}", testPath);
+            }
+
+            diag.PrintAll();
+        }
     }
 
     const Ref<PrismShader>& ShaderLibrary::Get(const std::string& name) const

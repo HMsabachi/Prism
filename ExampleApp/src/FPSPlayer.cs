@@ -83,6 +83,12 @@ namespace Example
                 var mesh = entity?.GetComponent<MeshComponent>()?.Mesh;
                 mesh?.GetMaterial(0)?.Set("u_Metalness", 1.0f);
             }
+            if (Input.IsKeyPressed(KeyCode.G) && Physics.Raycast(m_CameraTransform.Transform.Translation + (m_CameraTransform.Forward * 5.0F), m_CameraTransform.Forward, 20.0F, out hitInfo))
+            {
+                var entity = Entity.FindEntityByID(hitInfo.EntityID);
+                var mesh = entity?.GetComponent<MeshComponent>()?.Mesh;
+                mesh?.GetMaterial(0)?.Set("u_Metalness", 0.0f);
+            }
 
             if (Input.IsKeyPressed(KeyCode.L))
             {

@@ -4,6 +4,8 @@
 #include "../Entity.h"
 #include "../Components.h"
 
+#include <Rolky/GC.hpp>
+
 #include "Scripting/CSharp/CSharpScriptStorage.h"
 #include "Scripting/Python/PythonScriptStorage.h"
 #include "Scripting/CSharp/CSharpScriptEngine.h"
@@ -64,6 +66,7 @@ namespace Prism {
         UUID currentSceneID = m_Scene->GetUUID();
         CSharpScriptEngine::s_ManagedObjects.erase(currentSceneID);
         PythonScriptEngine::s_PythonScriptObjects.erase(currentSceneID);
+        Rolky::GC::Collect();
     }
 
     void ScriptSystem::OnUpdate(float dt)

@@ -79,7 +79,7 @@ class FPSPlayer(Behaviour):
             if Physics.Raycast(origin, self._cameraTransform.Forward, 20.0, hit):
                 entity = Entity.FindEntityByID(hit.EntityID)
                 if entity is not None:
-                    mesh = entity.GetComponent(MeshComponent)
+                    mesh: MeshComponent = entity.GetComponent(MeshComponent)
                     if mesh is not None and mesh.Mesh is not None:
                         mesh.Mesh.GetMaterial(0).Set("u_Metalness", 1.0)
         if Input.IsKeyPressed(KeyCodes.L):
