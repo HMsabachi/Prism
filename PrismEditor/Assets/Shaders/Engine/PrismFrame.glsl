@@ -1,6 +1,4 @@
 // PerFrame UBO — binding=0
-// 引擎运行时每帧更新一次
-
 struct Prism_Light
 {
     vec3 Direction;

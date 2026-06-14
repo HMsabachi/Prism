@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 
 #include "Prism/Renderer/Pipeline.h"
-#include "Prism/Renderer/Buffer/Buffer.h"
+#include "Prism/Renderer/Buffer/VertexBuffer.h"
 #include "Prism/Renderer/Buffer/IndexBuffer.h"
 #include "Prism/Renderer/Shader/PrismShader.h"
 #include "Prism/Renderer/Material.h"

@@ -25,6 +25,9 @@ public:
     AST::ShaderDocument ParseShader();
 
 private:
+    void ParseMaterialLayout(AST::ShaderDocument& doc);
+
+private:
     // Token 流辅助
     Token& Current();
     Token PeekToken(int offset = 1);
@@ -47,16 +50,18 @@ private:
     int TokenInt(const Token& t) const;
 
     // PSL 结构
-    void ParseProperties(std::vector<AST::PropertyDef>& properties);
-    AST::PropertyDef ParseProperty();
+    void ParseProperties(std::vector<AST::ShaderUniform>& uniforms);
+    AST::ShaderUniform ParseProperty();
     TypeDesc ParsePropertyType();
-    Variant ParseDefaultValue(const TypeDesc& type);
+    std::vector<Scalar> ParseDefaultValue(const TypeDesc& type);
     PipelineState ParseRenderCommand();
     void ParsePass(AST::PassDef& pass);
     void ParseTags(std::unordered_map<std::string, std::string>& tags);
 
     // GLSL 块
     void ParseGLSLBlock(AST::GLSLCode& glsl);
+
+    void BuildMaterialLayout(AST::ShaderDocument& doc);
 
 private:
     void ParserGLSLVoid(AST::GLSLCode& glsl);

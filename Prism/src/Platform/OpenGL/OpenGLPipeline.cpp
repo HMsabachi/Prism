@@ -2,7 +2,7 @@
 #include "OpenGLPipeline.h"
 
 #include "Prism/Renderer/Renderer.h"
-#include "Prism/Renderer/Buffer/Buffer.h"
+#include "Prism/Renderer/Buffer/VertexBuffer.h"
 
 #include <glad/glad.h>
 

@@ -77,7 +77,7 @@ namespace Prism {
 			memcpy(copy.Data, Data, Size);
 			return copy;
 		}
-		static Buffer Copy(void* data, uint64_t size)
+		static Buffer Copy(const void* data, uint64_t size)
 		{
 			Buffer buffer;
 			buffer.Allocate(size);
@@ -139,6 +139,22 @@ namespace Prism {
 		}
 
 		inline uint64_t GetSize() const { return Size; }
+	};
+
+	struct PRISM_API BufferSafe : public Buffer
+	{
+		~BufferSafe()
+		{
+			Free();
+		}
+
+		static BufferSafe Copy(const void* data, uint64_t size)
+		{
+			BufferSafe buffer;
+			buffer.Allocate(size);
+			memcpy(buffer.Data, data, size);
+			return buffer;
+		}
 	};
 
 }

@@ -1,5 +1,5 @@
 #pragma once
-#include "Prism/Renderer/Buffer/Buffer.h"
+#include "Prism/Renderer/Buffer/VertexBuffer.h"
 #include "Prism/Core/Buffer.h"
 
 namespace Prism

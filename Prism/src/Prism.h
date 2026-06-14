@@ -37,7 +37,7 @@
 #include "Prism/Renderer/SceneRenderer.h"
 
 #include "Prism/Renderer/Buffer/Framebuffer.h"
-#include "Prism/Renderer/Buffer/Buffer.h"
+#include "Prism/Renderer/Buffer/VertexBuffer.h"
 #include "Prism/Renderer/Buffer/ShaderStorageBuffer.h"
 
 #include "Prism/Renderer/Mesh.h"

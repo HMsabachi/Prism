@@ -1,6 +1,7 @@
 ﻿#include "prpch.h"
 #include "GLSLGenerator.h"
 #include "IncludeExpander.h"
+#include "Prism/Shader/Property/PropertyLayout.h"
 
 #include <algorithm>
 #include <fstream>
@@ -39,16 +40,14 @@ namespace Prism::PSL::GLSLGen
     }
     static void GenerateEngineHeader(std::string& source, const AST::GLSLCode& glsl)
     {
-        std::string line = "#line 1 \"" + std::string(BINDINGS_FILE) + "\"\n";
-        line += ExpandIncludesRecursive(BINDINGS_FILE, s_Setting.EngineRoot);
-        line += "#line 1 \"" + std::string(FRAME_UBO_MARKER) + "\"\n";
-        line += ExpandIncludesRecursive(FRAME_UBO_MARKER, s_Setting.EngineRoot);
-        line += "#line 1 \"" + std::string(OBJECT_UBO_MARKER) + "\"\n";
-        line += ExpandIncludesRecursive(OBJECT_UBO_MARKER, s_Setting.EngineRoot);
-        line += "#line 1 \"" + std::string(SHADOW_UBO_MARKER) + "\"\n";
-        line += ExpandIncludesRecursive(SHADOW_UBO_MARKER, s_Setting.EngineRoot);
-        line += "#line " + std::to_string(glsl.Loc.Line) + " \"" + std::string(glsl.Loc.FilePath) + "\"\n";
-        source = line + source;
+        source += "#line 1 \"" + std::string(BINDINGS_FILE) + "\"\n";
+        source += ExpandIncludesRecursive(BINDINGS_FILE, s_Setting.EngineRoot);
+        source += "#line 1 \"" + std::string(FRAME_UBO_MARKER) + "\"\n";
+        source += ExpandIncludesRecursive(FRAME_UBO_MARKER, s_Setting.EngineRoot);
+        source += "#line 1 \"" + std::string(OBJECT_UBO_MARKER) + "\"\n";
+        source += ExpandIncludesRecursive(OBJECT_UBO_MARKER, s_Setting.EngineRoot);
+        source += "#line 1 \"" + std::string(SHADOW_UBO_MARKER) + "\"\n";
+        source += ExpandIncludesRecursive(SHADOW_UBO_MARKER, s_Setting.EngineRoot);
     }
     static void GeneratePragma(std::string& source, const AST::PragmaDef& pragma)
     {
@@ -94,15 +93,40 @@ namespace Prism::PSL::GLSLGen
         source += line;
     }
 
-    Output PRISM_API Generate(const AST::GLSLCode& glsl, const std::vector<AST::PropertyDef>& properties, const std::string& filePath)
+    static void GeneratePropertyUniforms(std::string& source, const std::vector<AST::ShaderUniform>& uniforms)
     {
-        std::string sharedSource = glsl.SharedSource;
+        if (uniforms.empty())
+            return;
+        PropertyLayout layout;
+        for (const auto& uniform : uniforms)
+        {
+            if (PropertyTypeUtil::IsTextureType(uniform.Type))
+                continue;
+            layout.Add(uniform.Name, uniform.Type);
+        }
+        if (!layout.IsEmpty())
+        {
+            source += "layout(std140, binding = PRISM_BINDING_MATERIAL) uniform PrismMaterial\n{\n";
+            for (const auto& m : layout)
+                source += std::string("    ") + PropertyTypeUtil::ToGLSLType(m.Type) + " " + m.Name + ";\n";
+            source += "};\n\n";
+        }
+    }
+
+    Output PRISM_API Generate(const AST::GLSLCode& glsl, const std::vector<AST::ShaderUniform>& uniforms, const std::string& filePath)
+    {
         Output output{};
+ 
+        std::string sharedSource;
         GenerateEngineHeader(sharedSource, glsl);
+        GeneratePropertyUniforms(sharedSource, uniforms);
+        sharedSource += "#line " + std::to_string(glsl.Loc.Line) + " \"" + std::string(glsl.Loc.FilePath) + "\"\n";
+        sharedSource += glsl.SharedSource;
         for (const auto& pragma : glsl.Pragmas)
             GeneratePragma(sharedSource, pragma);
         for (const auto& include : glsl.Includes)
             GenerateInclude(sharedSource, include);
+
         output.Vertex = sharedSource;
         output.Fragment = sharedSource;
         GenerateVertexCode(output.Vertex, glsl);
@@ -115,4 +139,5 @@ namespace Prism::PSL::GLSLGen
     {
         s_Setting = setting;
     }
+
 } // namespace Prism::PSL

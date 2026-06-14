@@ -36,6 +36,13 @@ namespace Prism::PSL
 
         const char* ToGLSLType(PropertyType type);
 
+        inline bool IsTextureType(PropertyType type)
+        {
+            return type == PropertyType::Texture2D
+                || type == PropertyType::Texture2DMS
+                || type == PropertyType::TextureCube;
+        }
+
     } // namespace PropertyTypeUtil
 
 } // namespace Prism::PSL

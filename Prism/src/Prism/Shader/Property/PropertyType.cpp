@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "PropertyType.h"
 
 #include <cassert>
@@ -23,7 +23,7 @@ uint32_t Alignment(PropertyType type)
     case PropertyType::Vector4:
         return 16;
     case PropertyType::Range:
-        return 16; // { float value, min, max } → vec3 → 16
+        return 4;
     case PropertyType::Matrix3:
         return 16; // 3×vec4 → 48 bytes, aligned 16
     case PropertyType::Matrix4:
@@ -50,7 +50,7 @@ uint32_t Size(PropertyType type)
     case PropertyType::Vector3: return 12; // std140: vec3 = 12
     case PropertyType::Color:
     case PropertyType::Vector4: return 16;
-    case PropertyType::Range:   return 12; // {float value, min, max}
+    case PropertyType::Range:   return 4;
     case PropertyType::Matrix3: return 48; // 3×vec4
     case PropertyType::Matrix4: return 64; // 4×vec4
     case PropertyType::Texture2D:
@@ -73,7 +73,7 @@ const char* ToGLSLUniform(PropertyType type)
     case PropertyType::Vector3:    return "uniform vec3";
     case PropertyType::Color:
     case PropertyType::Vector4:    return "uniform vec4";
-    case PropertyType::Range:      return "uniform vec3"; // {value, min, max}
+    case PropertyType::Range:      return "uniform float";
     case PropertyType::Matrix3:    return "uniform mat3";
     case PropertyType::Matrix4:    return "uniform mat4";
     case PropertyType::Texture2D:  return "uniform sampler2D";
@@ -101,7 +101,7 @@ const char* ToGLSLType(PropertyType type)
     case PropertyType::Texture2D:  return "sampler2D";
     case PropertyType::Texture2DMS: return "sampler2DMS";
     case PropertyType::TextureCube: return "samplerCube";
-    case PropertyType::Range:      return "vec3";
+    case PropertyType::Range:      return "float";
     default: return "float";
     }
 }

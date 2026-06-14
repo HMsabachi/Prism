@@ -22,7 +22,7 @@ namespace GLSLGen
 
     Output PRISM_API Generate(
         const AST::GLSLCode& glsl,
-        const std::vector<AST::PropertyDef>& properties,
+        const std::vector<AST::ShaderUniform>& uniforms,
         const std::string& filePath
     );
 }

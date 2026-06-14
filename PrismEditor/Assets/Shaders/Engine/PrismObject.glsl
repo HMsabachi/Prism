@@ -1,5 +1,4 @@
 // PerObject UBO — binding=1
-// 引擎运行时每个物体更新一次
 
 const int PRISM_MAX_BONES = 128;
 

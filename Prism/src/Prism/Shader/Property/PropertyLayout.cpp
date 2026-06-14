@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "PropertyLayout.h"
 
 namespace Prism::PSL
@@ -8,6 +8,8 @@ PropertyLayout& PropertyLayout::Add(const std::string& name, PropertyType type, 
 {
     // std140 对齐偏移
     uint32_t align = PropertyTypeUtil::Alignment(type);
+    if (align > m_MaxAlignment)
+        m_MaxAlignment = align;
     uint32_t offset = m_TotalSize;
     if (offset % align != 0)
         offset += align - (offset % align);

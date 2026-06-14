@@ -1,5 +1,4 @@
-// 阴影采样器 + Poisson Disk + 阴影函数
-// 引擎运行时绑定
+// PrismShadow.glsl 
 
 layout(binding = PRISM_SHADOW_MAP0) uniform sampler2DShadow Prism_ShadowMap0;
 layout(binding = PRISM_SHADOW_MAP1) uniform sampler2DShadow Prism_ShadowMap1;

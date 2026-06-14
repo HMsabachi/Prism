@@ -536,8 +536,8 @@ namespace Prism
                 PR_CORE_INFO("[PSL测试] ========================================");
                 PR_CORE_INFO("[PSL测试] 文件: {0}", testPath);
                 PR_CORE_INFO("[PSL测试] Shader: {0}", doc.ShaderName);
-                PR_CORE_INFO("[PSL测试] Properties ({0}):", doc.Properties.size());
-                for (auto& p : doc.Properties)
+                PR_CORE_INFO("[PSL测试] Properties ({0}):", doc.Uniforms.size());
+                for (auto& p : doc.Uniforms)
                     PR_CORE_INFO("[PSL测试]   {0} (\"{1}\") type={2}",
                         p.Name, p.DisplayName, (int)p.Type);
 
@@ -548,7 +548,7 @@ namespace Prism
                     PR_CORE_INFO("[PSL测试]   Pass '{0}': Shared={1}B  Vert={2}B  Frag={3}B  Attrs={4}  Varyings={5}  Pragmas={6}  Includes={7}",
                         pass.Name, g.SharedSource.size(), g.Vertex.Source.size(), g.Fragment.Source.size(),
                         g.Attributes.size(), g.Varyings.size(), g.Pragmas.size(), g.Includes.size());
-                    auto output = PSL::GLSLGen::Generate(pass.Glsl, doc.Properties, testPath);
+                    auto output = PSL::GLSLGen::Generate(pass.Glsl, doc.Uniforms, testPath);
                     auto vs = output.Vertex;
                     PR_CORE_WARN("[PSL测试] Vertex shader code:\n{0}", vs);
                     auto fs = output.Fragment;

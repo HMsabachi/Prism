@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "PropertyType.h"
 
@@ -24,7 +24,13 @@ public:
 
     const Member* Find(const std::string& name) const;
     const std::vector<Member>& GetMembers() const { return m_Members; }
-    uint32_t GetTotalSize() const { return m_TotalSize; }
+    uint32_t GetMaxAlignment() const { return m_MaxAlignment; }
+    uint32_t GetTotalSize() const {
+        if (m_MaxAlignment == 0) return m_TotalSize;
+        uint32_t size = m_TotalSize;
+        uint32_t rem = size % m_MaxAlignment;
+        return (rem == 0) ? size : size + m_MaxAlignment - rem;
+    }
     bool IsEmpty() const { return m_Members.empty(); }
 
     using const_iterator = std::vector<Member>::const_iterator;
@@ -34,6 +40,7 @@ public:
 private:
     std::vector<Member> m_Members;
     uint32_t m_TotalSize = 0;
+    uint32_t m_MaxAlignment = 0;
 };
 
 } // namespace Prism::PSL

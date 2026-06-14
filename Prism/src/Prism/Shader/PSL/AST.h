@@ -3,13 +3,15 @@
 #include "Prism/Shader/ShaderCommon.h"
 #include "Prism/Shader/Property/PropertyType.h"
 #include "Prism/Shader/Pipeline/PipelineState.h"
-#include "Prism/Utilities/Variant.h"
+#include "Prism/Utilities/Scalar.h"
+#include "Prism/Shader/Property/PropertyLayout.h"
 #include "Prism/Shader/Property/VertexType.h"
 
 #include <string>
 #include <vector>
 #include <unordered_map>
 #include <optional>
+#include <cstdint>
 
 namespace Prism::PSL::AST
 {
@@ -75,14 +77,19 @@ struct GLSLCode
     std::vector<IncludeDef> Includes;
 };
 
-struct PropertyDef
+struct ShaderUniform
 {
     std::string Name;
     std::string DisplayName;
     PropertyType Type;
-    Variant DefaultValue;
+    std::vector<Scalar> DefaultValue;
+
+    float RangeMin = 0.0f, RangeMax = 0.0f;
     std::vector<std::string> EnumOptions;
-    SourceLocation Loc;
+
+    int32_t BufferOffset = 0;
+    int32_t BufferSize = 0;
+    int32_t TextureSlot = -1;
 };
 
 struct PassDef
@@ -97,7 +104,8 @@ struct ShaderDocument
 {
     std::string ShaderName;
     int LOD = 200;
-    std::vector<PropertyDef> Properties;
+    std::vector<ShaderUniform> Uniforms;
+    PropertyLayout MaterialLayout;
     std::optional<PipelineState> RenderState;
     std::vector<PassDef> Passes;
 };

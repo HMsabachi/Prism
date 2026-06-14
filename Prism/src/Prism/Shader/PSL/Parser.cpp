@@ -24,7 +24,7 @@ AST::ShaderDocument Parser::ParseShader()
         {
             Advance();
             Consume(TokenType::LeftBrace, "期望 '{'");
-            ParseProperties(doc.Properties);
+            ParseProperties(doc.Uniforms);
             Consume(TokenType::RightBrace, "期望 '}'");
         }
         else if (Check(TokenType::RenderCommandKw))
@@ -79,6 +79,8 @@ AST::ShaderDocument Parser::ParseShader()
     }
 
     Consume(TokenType::RightBrace, "期望 '}'");
+
+    ParseMaterialLayout(doc);
     return doc;
 }
 
@@ -167,13 +169,13 @@ int Parser::TokenInt(const Token& t) const
     return std::atoi(buf);
 }
 
-void Parser::ParseProperties(std::vector<AST::PropertyDef>& properties)
+void Parser::ParseProperties(std::vector<AST::ShaderUniform>& uniforms)
 {
     while (!IsAtEnd() && !Check(TokenType::RightBrace))
     {
         if (Check(TokenType::Identifier))
         {
-            properties.push_back(ParseProperty());
+            uniforms.push_back(ParseProperty());
         }
         else
         {
@@ -183,35 +185,27 @@ void Parser::ParseProperties(std::vector<AST::PropertyDef>& properties)
     }
 }
 
-AST::PropertyDef Parser::ParseProperty()
+AST::ShaderUniform Parser::ParseProperty()
 {
-    AST::PropertyDef prop;
-    prop.Name = TokenStr(Consume(TokenType::Identifier, "期望属性名"));
-    prop.Loc = CurrentLoc();
+    AST::ShaderUniform uniform;
+    uniform.Name = TokenStr(Consume(TokenType::Identifier, "期望属性名"));
 
     Consume(TokenType::LeftParen, "期望 '('");
-    prop.DisplayName = TokenStr(Consume(TokenType::StringLiteral, "期望显示名称"));
+    uniform.DisplayName = TokenStr(Consume(TokenType::StringLiteral, "期望显示名称"));
     Consume(TokenType::Comma, "期望 ','");
 
     TypeDesc desc = ParsePropertyType();
-    prop.Type = desc.Type;
-    prop.EnumOptions = std::move(desc.EnumOptions);
+    uniform.Type = desc.Type;
+    uniform.EnumOptions = std::move(desc.EnumOptions);
+    uniform.RangeMin = desc.RangeMin;
+    uniform.RangeMax = desc.RangeMax;
 
     Consume(TokenType::RightParen, "期望 ')'");
 
     Consume(TokenType::Equals, "期望 '='");
-    prop.DefaultValue = ParseDefaultValue(desc);
+    uniform.DefaultValue = ParseDefaultValue(desc);
 
-    if (prop.Type == PropertyType::Range)
-    {
-        Prism::Type::Range r;
-        r.min = desc.RangeMin;
-        r.max = desc.RangeMax;
-        r.value = prop.DefaultValue.Get<float>();
-        prop.DefaultValue.Set(r);
-    }
-
-    return prop;
+    return uniform;
 }
 
 TypeDesc Parser::ParsePropertyType()
@@ -272,37 +266,32 @@ TypeDesc Parser::ParsePropertyType()
     return desc;
 }
 
-Variant Parser::ParseDefaultValue(const TypeDesc& type)
+std::vector<Scalar> Parser::ParseDefaultValue(const TypeDesc& type)
 {
     // 元组: (x, y, z, w) — 用于 Color/Vector/Color3
-    auto ParseTuple = [this]() -> Variant {
-        std::vector<float> v;
+    auto ParseTuple = [this]() -> std::vector<Scalar> {
+        std::vector<Scalar> scalars;
         Consume(TokenType::LeftParen, "期望 '('");
-        v.push_back(TokenFloat(ConsumeNumber("期望数值")));
+        scalars.push_back(Scalar::FromFloat(TokenFloat(ConsumeNumber("期望数值"))));
         while (Check(TokenType::Comma))
         {
             Advance();
-            v.push_back(TokenFloat(ConsumeNumber("期望数值")));
+            scalars.push_back(Scalar::FromFloat(TokenFloat(ConsumeNumber("期望数值"))));
         }
         Consume(TokenType::RightParen, "期望 ')'");
-        Variant var;
-        if (v.size() == 4)      var.Set(glm::vec4{v[0], v[1], v[2], v[3]});
-        else if (v.size() == 3) var.Set(glm::vec3{v[0], v[1], v[2]});
-        else if (v.size() == 2) var.Set(glm::vec2{v[0], v[1]});
-        else                    var.Set(v[0]);
-        return var;
+        return scalars;
     };
 
     switch (type.Type)
     {
     case PropertyType::Bool:
-        { Variant v; v.Set(Consume(TokenType::TrueKw, "期望 true/false").Is(TokenType::TrueKw)); return v; }
+        return {Scalar::FromBool(Consume(TokenType::TrueKw, "期望 true/false").Is(TokenType::TrueKw))};
     case PropertyType::Float:
     case PropertyType::Range:
-        { Variant v; v.Set(TokenFloat(Advance())); return v; }
+        return {Scalar::FromFloat(TokenFloat(Advance()))};
     case PropertyType::Int:
     case PropertyType::Enum:
-        { Variant v; v.Set(TokenInt(Advance())); return v; }
+        return {Scalar::FromInt(TokenInt(Advance()))};
     case PropertyType::Color:
     case PropertyType::Color3:
     case PropertyType::Vector2:
@@ -311,15 +300,37 @@ Variant Parser::ParseDefaultValue(const TypeDesc& type)
         return ParseTuple();
     case PropertyType::Matrix3:
     case PropertyType::Matrix4:
-        { float f = TokenFloat(Advance()); Variant v; v.Set(f); return v; }
+        return {Scalar::FromFloat(TokenFloat(Advance()))};
     case PropertyType::Texture2D:
     case PropertyType::Texture2DMS:
     case PropertyType::TextureCube:
         Consume(TokenType::LeftBrace, "期望 '{}'");
         Consume(TokenType::RightBrace, "期望 '}'");
-        return Variant{};
+        return {};
     default:
-        return Variant{};
+        return {};
+    }
+}
+
+void Parser::ParseMaterialLayout(AST::ShaderDocument& doc)
+{
+    doc.MaterialLayout = PropertyLayout{};
+    for (auto& uniform : doc.Uniforms)
+    {
+        if (PropertyTypeUtil::IsTextureType(uniform.Type))
+            continue;
+        doc.MaterialLayout.Add(uniform.Name, uniform.Type);
+    }
+    for (auto& uniform : doc.Uniforms)
+    {
+        if (PropertyTypeUtil::IsTextureType(uniform.Type))
+            continue;
+        const auto* member = doc.MaterialLayout.Find(uniform.Name);
+        if (member)
+        {
+            uniform.BufferOffset = member->Offset;
+            uniform.BufferSize = member->Size;
+        }
     }
 }
 
@@ -531,6 +542,41 @@ void Parser::ParseGLSLBlock(AST::GLSLCode& glsl)
     }
 }
 
+void Parser::ParserGLSLVoid(AST::GLSLCode& glsl)
+{
+    Token next = PeekToken(1);
+    if (next.IsNot(TokenType::VertKw) && next.IsNot(TokenType::FragKw))
+        return;
+
+    bool isVert = next.Is(TokenType::VertKw);
+    (isVert ? glsl.Vertex : glsl.Fragment).Loc = CurrentLoc();
+
+    Advance(); // void
+    Advance(); // vert / frag
+    Consume(TokenType::LeftParen, "期望 '('");
+    Consume(TokenType::RightParen, "期望 ')'");
+    Token openBrace = Consume(TokenType::LeftBrace, "期望 '{'");
+
+    int funcDepth = 1;
+    while (!IsAtEnd() && funcDepth > 0)
+    {
+        Token ft = Advance();
+        if (ft.Is(TokenType::LeftBrace))
+            funcDepth++;
+        else if (ft.Is(TokenType::RightBrace))
+        {
+            funcDepth--;
+            if (funcDepth == 0)
+            {
+                std::string& target = isVert ? glsl.Vertex.Source : glsl.Fragment.Source;
+                uint32_t len = ft.Offset - openBrace.Offset + ft.Length;
+                target = std::string(m_Stream.GetSM().GetView(openBrace.Offset, len));
+                break;
+            }
+        }
+    }
+}
+
 void Parser::ParseGLSLAttribute(AST::GLSLCode& glsl, uint32_t id)
 {
     glsl.SharedSource += "[Prism::Insert:" + std::to_string(id) + "]";
@@ -624,35 +670,6 @@ void Parser::ParseGLSLDirective(AST::GLSLCode& glsl, uint32_t id)
             glsl.Pragmas.push_back(pragma);
     }
 }
-void Parser::ParserGLSLVoid(AST::GLSLCode& glsl)
-{
-    Token next = PeekToken(1);
-    if (next.Is(TokenType::VertKw) || next.Is(TokenType::FragKw))
-    {
-        bool isVert = next.Is(TokenType::VertKw);
-        std::string& target = isVert ? glsl.Vertex.Source : glsl.Fragment.Source;
-        (isVert ? glsl.Vertex : glsl.Fragment).Loc = CurrentLoc();
-        Advance();
-        Advance();
-        Consume(TokenType::LeftParen, "期望 '('");
-        Consume(TokenType::RightParen, "期望 ')'");
-        Consume(TokenType::LeftBrace, "期望 '{'");
-        target += "{\n";
-        int funcDepth = 1;
-        while (!IsAtEnd() && funcDepth > 0)
-        {
-            Token ft = Advance();
-            if (ft.Is(TokenType::LeftBrace)) funcDepth++;
-            else if (ft.Is(TokenType::RightBrace))
-            {
-                funcDepth--;
-                if (funcDepth == 0) { target += "}\n"; break; }
-            }
-            AppendTokenText(target, ft);
-        }
-    }
-}
-
 void Parser::FlushSharedChunk(std::string& out, uint32_t& start)
 {
     uint32_t current = m_Stream.Current().Offset;
