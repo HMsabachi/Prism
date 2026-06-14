@@ -1,6 +1,6 @@
-#pragma once
+﻿#pragma once
 
-namespace Prism
+namespace Prism::PSL
 {
     // 与 Assets/Shaders/Engine/Bindings.glsl 同步
 

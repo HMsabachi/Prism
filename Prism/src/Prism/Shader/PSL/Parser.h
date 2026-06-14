@@ -10,13 +10,6 @@
 namespace Prism::PSL
 {
 
-struct TypeDesc
-{
-    PropertyType Type = PropertyType::Float;
-    float RangeMin = 0, RangeMax = 1;
-    std::vector<std::string> EnumOptions;
-};
-
 class Parser
 {
 public:
@@ -52,8 +45,8 @@ private:
     // PSL 结构
     void ParseProperties(std::vector<AST::ShaderUniform>& uniforms);
     AST::ShaderUniform ParseProperty();
-    TypeDesc ParsePropertyType();
-    std::vector<Scalar> ParseDefaultValue(const TypeDesc& type);
+    void ParsePropertyType(AST::ShaderUniform& uniform);
+    std::vector<Scalar> ParseDefaultValue(PropertyType type);
     PipelineState ParseRenderCommand();
     void ParsePass(AST::PassDef& pass);
     void ParseTags(std::unordered_map<std::string, std::string>& tags);

@@ -193,22 +193,16 @@ AST::ShaderUniform Parser::ParseProperty()
     Consume(TokenType::LeftParen, "期望 '('");
     uniform.DisplayName = TokenStr(Consume(TokenType::StringLiteral, "期望显示名称"));
     Consume(TokenType::Comma, "期望 ','");
-
-    TypeDesc desc = ParsePropertyType();
-    uniform.Type = desc.Type;
-    uniform.EnumOptions = std::move(desc.EnumOptions);
-    uniform.RangeMin = desc.RangeMin;
-    uniform.RangeMax = desc.RangeMax;
-
+    ParsePropertyType(uniform);
     Consume(TokenType::RightParen, "期望 ')'");
 
     Consume(TokenType::Equals, "期望 '='");
-    uniform.DefaultValue = ParseDefaultValue(desc);
+    uniform.DefaultValue = ParseDefaultValue(uniform.Type);
 
     return uniform;
 }
 
-TypeDesc Parser::ParsePropertyType()
+void Parser::ParsePropertyType(AST::ShaderUniform& uniform)
 {
     static const std::unordered_map<TokenType, PropertyType> kTypeMap = {
         {TokenType::BoolKw,        PropertyType::Bool},
@@ -230,43 +224,41 @@ TypeDesc Parser::ParsePropertyType()
     if (it != kTypeMap.end())
     {
         Advance();
-        return {it->second};
+        uniform.Type = it->second;
+        return;
     }
-
-    TypeDesc desc;
 
     if (Check(TokenType::RangeKw))
     {
         Advance();
         Consume(TokenType::LeftParen, "Range 期望 '('");
-        desc.RangeMin = TokenFloat(ConsumeNumber("期望数值"));
+        uniform.RangeMin = TokenFloat(ConsumeNumber("期望数值"));
         Consume(TokenType::Comma, "期望 ','");
-        desc.RangeMax = TokenFloat(ConsumeNumber("期望数值"));
+        uniform.RangeMax = TokenFloat(ConsumeNumber("期望数值"));
         Consume(TokenType::RightParen, "期望 ')'");
-        desc.Type = PropertyType::Range;
-        return desc;
+        uniform.Type = PropertyType::Range;
+        return;
     }
 
     if (Check(TokenType::EnumKw))
     {
         Advance();
         Consume(TokenType::LeftParen, "Enum 期望 '('");
-        desc.EnumOptions.push_back(TokenStr(Consume(TokenType::Identifier, "期望选项")));
+        uniform.EnumOptions.push_back(TokenStr(Consume(TokenType::Identifier, "期望选项")));
         while (Check(TokenType::Comma))
         {
             Advance();
-            desc.EnumOptions.push_back(TokenStr(Consume(TokenType::Identifier, "期望选项")));
+            uniform.EnumOptions.push_back(TokenStr(Consume(TokenType::Identifier, "期望选项")));
         }
         Consume(TokenType::RightParen, "期望 ')'");
-        desc.Type = PropertyType::Enum;
-        return desc;
+        uniform.Type = PropertyType::Enum;
+        return;
     }
 
     Error("未知属性类型");
-    return desc;
 }
 
-std::vector<Scalar> Parser::ParseDefaultValue(const TypeDesc& type)
+std::vector<Scalar> Parser::ParseDefaultValue(PropertyType type)
 {
     // 元组: (x, y, z, w) — 用于 Color/Vector/Color3
     auto ParseTuple = [this]() -> std::vector<Scalar> {
@@ -282,7 +274,7 @@ std::vector<Scalar> Parser::ParseDefaultValue(const TypeDesc& type)
         return scalars;
     };
 
-    switch (type.Type)
+    switch (type)
     {
     case PropertyType::Bool:
         return {Scalar::FromBool(Consume(TokenType::TrueKw, "期望 true/false").Is(TokenType::TrueKw))};
@@ -315,19 +307,18 @@ std::vector<Scalar> Parser::ParseDefaultValue(const TypeDesc& type)
 void Parser::ParseMaterialLayout(AST::ShaderDocument& doc)
 {
     doc.MaterialLayout = PropertyLayout{};
+    uint32_t nextTexSlot = 0;
+
     for (auto& uniform : doc.Uniforms)
     {
         if (PropertyTypeUtil::IsTextureType(uniform.Type))
-            continue;
-        doc.MaterialLayout.Add(uniform.Name, uniform.Type);
-    }
-    for (auto& uniform : doc.Uniforms)
-    {
-        if (PropertyTypeUtil::IsTextureType(uniform.Type))
-            continue;
-        const auto* member = doc.MaterialLayout.Find(uniform.Name);
-        if (member)
         {
+            uniform.TextureSlot = nextTexSlot++;
+        }
+        else
+        {
+            doc.MaterialLayout.Add(uniform.Name, uniform.Type);
+            const auto* member = doc.MaterialLayout.Find(uniform.Name);
             uniform.BufferOffset = member->Offset;
             uniform.BufferSize = member->Size;
         }

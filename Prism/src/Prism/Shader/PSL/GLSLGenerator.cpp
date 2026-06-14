@@ -2,6 +2,7 @@
 #include "GLSLGenerator.h"
 #include "IncludeExpander.h"
 #include "Prism/Shader/Property/PropertyLayout.h"
+#include "Prism/Shader/PSL/PrismBindings.h"
 
 #include <algorithm>
 #include <fstream>
@@ -40,6 +41,7 @@ namespace Prism::PSL::GLSLGen
     }
     static void GenerateEngineHeader(std::string& source, const AST::GLSLCode& glsl)
     {
+        source += "#version 450 core\n";
         source += "#line 1 \"" + std::string(BINDINGS_FILE) + "\"\n";
         source += ExpandIncludesRecursive(BINDINGS_FILE, s_Setting.EngineRoot);
         source += "#line 1 \"" + std::string(FRAME_UBO_MARKER) + "\"\n";
@@ -95,20 +97,28 @@ namespace Prism::PSL::GLSLGen
 
     static void GeneratePropertyUniforms(std::string& source, const std::vector<AST::ShaderUniform>& uniforms)
     {
-        if (uniforms.empty())
-            return;
-        PropertyLayout layout;
+        std::string uboBody;
         for (const auto& uniform : uniforms)
         {
             if (PropertyTypeUtil::IsTextureType(uniform.Type))
-                continue;
-            layout.Add(uniform.Name, uniform.Type);
+            {
+                source += "layout(binding = ";
+                source += std::to_string(PRISM_BINDING_TEXTURE + uniform.TextureSlot);
+                source += ") ";
+                source += PropertyTypeUtil::ToGLSLUniform(uniform.Type);
+                source += " " + uniform.Name + ";\n";
+            }
+            else
+            {
+                uboBody += "    ";
+                uboBody += PropertyTypeUtil::ToGLSLType(uniform.Type);
+                uboBody += " " + uniform.Name + ";\n";
+            }
         }
-        if (!layout.IsEmpty())
+        if (!uboBody.empty())
         {
             source += "layout(std140, binding = PRISM_BINDING_MATERIAL) uniform PrismMaterial\n{\n";
-            for (const auto& m : layout)
-                source += std::string("    ") + PropertyTypeUtil::ToGLSLType(m.Type) + " " + m.Name + ";\n";
+            source += uboBody;
             source += "};\n\n";
         }
     }

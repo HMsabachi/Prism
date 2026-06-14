@@ -120,6 +120,13 @@ float Prism_GetShadow(vec3 worldPos, float viewDepth)
         if (cascade == 2) return Prism_ShadowSample(Prism_ShadowMap2, projCoords, bias, texelSize, 1.5);
         return Prism_ShadowSample(Prism_ShadowMap3, projCoords, bias, texelSize, 1.5);
 }
+layout(binding = 16) uniform sampler2D u_BRDFLUTTexture;
+layout(binding = 17) uniform sampler2D u_AlbedoTexture;
+layout(binding = 18) uniform sampler2D u_NormalTexture;
+layout(binding = 19) uniform sampler2D u_MetalnessTexture;
+layout(binding = 20) uniform sampler2D u_RoughnessTexture;
+layout(binding = 21) uniform samplerCube u_EnvRadianceTex;
+layout(binding = 22) uniform samplerCube u_EnvIrradianceTex;
 layout(std140, binding = PRISM_BINDING_MATERIAL) uniform PrismMaterial
 {
     vec3 u_Color;
