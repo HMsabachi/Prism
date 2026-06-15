@@ -311,63 +311,63 @@ namespace Prism
             return 0.0f;
         }
 
-        void EditorLayer::DrawMaterialProperty(const PropertyDeclaration& prop, MaterialInstance& materialInstance)
+        void EditorLayer::DrawMaterialProperty(const PSL::AST::ShaderUniform& uni, MaterialInstance& materialInstance)
         {
-            const auto& name = prop.GetName();
-            const auto& displayName = prop.GetDisplayName();
+            const auto& name = uni.Name;
+            const auto& displayName = uni.DisplayName.empty() ? uni.Name : uni.DisplayName;
 
-            switch (prop.GetType())
+            switch (uni.Type)
             {
-            case PropertyDeclarationType::Float:
+            case PSL::PropertyType::Float:
             {
                 auto& value = materialInstance.Get<float>(name);
                 Property(displayName, value);
                 break;
             }
-            case PropertyDeclarationType::Range:
+            case PSL::PropertyType::Range:
             {
-                auto& range = materialInstance.Get<Type::Range>(name);
-                Property(displayName, range.value, range.min, range.max, PropertyFlag::SliderProperty);
+                auto& value = materialInstance.Get<float>(name);
+                Property(displayName, value, uni.RangeMin, uni.RangeMax, PropertyFlag::SliderProperty);
                 break;
             }
-            case PropertyDeclarationType::Color:
-            case PropertyDeclarationType::Color3:
+            case PSL::PropertyType::Color:
+            case PSL::PropertyType::Color3:
             {
                 auto& color = materialInstance.Get<glm::vec3>(name);
                 Property(displayName, color, PropertyFlag::ColorProperty);
                 break;
             }
-            case PropertyDeclarationType::Vector2:
+            case PSL::PropertyType::Vector2:
             {
                 auto& vec2 = materialInstance.Get<glm::vec2>(name);
                 Property(displayName, vec2);
                 break;
             }
-            case PropertyDeclarationType::Vector3:
+            case PSL::PropertyType::Vector3:
             {
                 auto& vec3 = materialInstance.Get<glm::vec3>(name);
                 Property(displayName, vec3);
                 break;
             }
-            case PropertyDeclarationType::Vector4:
+            case PSL::PropertyType::Vector4:
             {
                 auto& vec4 = materialInstance.Get<glm::vec4>(name);
                 Property(displayName, vec4);
                 break;
             }
-            case PropertyDeclarationType::Int:
+            case PSL::PropertyType::Int:
             {
                 auto& value = materialInstance.Get<Type::Int>(name);
                 Property(displayName, value);
                 break;
             }
-            case PropertyDeclarationType::Bool:
+            case PSL::PropertyType::Bool:
             {
                 bool& b = materialInstance.Get<Type::Bool>(name);
                 Property(displayName, b);
                 break;
             }
-            case PropertyDeclarationType::Texture2D:
+            case PSL::PropertyType::Texture2D:
             {
                 Ref<Texture2D> texture = materialInstance.TryGetResource<Texture2D>(name);
                 if (Property(displayName, texture, m_CheckerboardTex->GetRendererID()))
@@ -378,12 +378,14 @@ namespace Prism
                 }
                 break;
             }
-            case PropertyDeclarationType::TextureCube:
+            case PSL::PropertyType::TextureCube:
             {
                 Ref<TextureCube> texture = materialInstance.TryGetResource<TextureCube>(name);
                 Property(displayName, texture, m_CheckerboardTex->GetRendererID());
                 break;
             }
+            default:
+                break;
             }
         }
 
@@ -826,10 +828,10 @@ namespace Prism
                             }
 
                             ImGui::Columns(2);
-                            auto& decl = materialInstance->GetShader()->GetDeclaration();
-                            for (const auto& prop : decl)
+                            auto& uniforms = materialInstance->GetShader()->GetUniforms();
+                            for (const auto& uni : uniforms)
                             {
-                                DrawMaterialProperty(prop, *materialInstance);
+                                DrawMaterialProperty(uni, *materialInstance);
                             }
                             ImGui::Columns(1);
 

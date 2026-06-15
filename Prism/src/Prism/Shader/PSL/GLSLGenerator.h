@@ -5,6 +5,7 @@
 
 #include <string>
 #include <vector>
+#include <unordered_set>
 #include <sstream>
 
 namespace Prism::PSL
@@ -23,7 +24,8 @@ namespace GLSLGen
     Output PRISM_API Generate(
         const AST::GLSLCode& glsl,
         const std::vector<AST::ShaderUniform>& uniforms,
-        const std::string& filePath
+        const std::string& filePath,
+        const std::vector<std::string>& activeKeywords = {}
     );
 }
 

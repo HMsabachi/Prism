@@ -64,9 +64,6 @@ Shader "Custom/SimplePBR_Animated"
                 attribute ivec4 a_BoneIndices : BONEINDICES;
                 attribute vec4 a_BoneWeights : BONEWEIGHTS;
 
-                const int MAX_BONES = 100;
-                uniform mat4 u_BoneTransforms[100];
-
 
                 VARYING VertexOutput
                 {
@@ -82,10 +79,10 @@ Shader "Custom/SimplePBR_Animated"
                 {
                     mat4 u_ViewProjectionMatrix = Prism_ViewProjection;
                     mat4 u_ModelMatrix = Prism_Model;
-                    mat4 boneTransform = u_BoneTransforms[a_BoneIndices[0]] * a_BoneWeights[0];
-                    boneTransform += u_BoneTransforms[a_BoneIndices[1]] * a_BoneWeights[1];
-                    boneTransform += u_BoneTransforms[a_BoneIndices[2]] * a_BoneWeights[2];
-                    boneTransform += u_BoneTransforms[a_BoneIndices[3]] * a_BoneWeights[3];
+                    mat4 boneTransform = Prism_Bones[a_BoneIndices[0]] * a_BoneWeights[0];
+                    boneTransform += Prism_Bones[a_BoneIndices[1]] * a_BoneWeights[1];
+                    boneTransform += Prism_Bones[a_BoneIndices[2]] * a_BoneWeights[2];
+                    boneTransform += Prism_Bones[a_BoneIndices[3]] * a_BoneWeights[3];
 
                     vec4 localPosition = boneTransform * vec4(a_Position, 1.0);
 

@@ -1,6 +1,7 @@
 ﻿#include "prpch.h"
 #include "Parser.h"
 #include "Prism/Utilities/Utilities.h"
+#include "PrismBindings.h"
 
 namespace Prism::PSL
 {
@@ -296,6 +297,11 @@ std::vector<Scalar> Parser::ParseDefaultValue(PropertyType type)
     case PropertyType::Texture2D:
     case PropertyType::Texture2DMS:
     case PropertyType::TextureCube:
+        if (Check(TokenType::StringLiteral))
+        {
+            Advance(); Advance(); Advance();
+            return {};
+        }
         Consume(TokenType::LeftBrace, "期望 '{}'");
         Consume(TokenType::RightBrace, "期望 '}'");
         return {};
@@ -307,7 +313,7 @@ std::vector<Scalar> Parser::ParseDefaultValue(PropertyType type)
 void Parser::ParseMaterialLayout(AST::ShaderDocument& doc)
 {
     doc.MaterialLayout = PropertyLayout{};
-    uint32_t nextTexSlot = 0;
+    uint32_t nextTexSlot = PSL::PRISM_BINDING_TEXTURE;
 
     for (auto& uniform : doc.Uniforms)
     {
@@ -455,7 +461,9 @@ void Parser::ParsePass(AST::PassDef& pass)
         else if (Check(TokenType::GLSLKw))
         {
             Advance();
+            Consume(TokenType::LeftBrace, "期望 '{'");
             ParseGLSLBlock(pass.Glsl);
+            Consume(TokenType::RightBrace, "期望 '}'");
         }
         else
         {
@@ -478,7 +486,6 @@ void Parser::ParseTags(std::unordered_map<std::string, std::string>& tags)
 
 void Parser::ParseGLSLBlock(AST::GLSLCode& glsl)
 {
-    Consume(TokenType::LeftBrace, "期望 '{'");
     glsl.Loc = CurrentLoc();
     int depth = 1;
     uint32_t nextID = 0;
@@ -537,7 +544,10 @@ void Parser::ParserGLSLVoid(AST::GLSLCode& glsl)
 {
     Token next = PeekToken(1);
     if (next.IsNot(TokenType::VertKw) && next.IsNot(TokenType::FragKw))
+    {
+        Advance(); // void
         return;
+    }
 
     bool isVert = next.Is(TokenType::VertKw);
     (isVert ? glsl.Vertex : glsl.Fragment).Loc = CurrentLoc();
@@ -610,13 +620,13 @@ void Parser::ParseGLSLVarying(AST::GLSLCode& glsl, uint32_t id)
                 continue;
             }
             std::string memberType = TokenStr(ConsumeType("期望成员类型"));
-            std::string memberName = TokenStr(Consume(TokenType::Identifier, "期望成员名称"));
+            std::string memberName = TokenStr(Advance());
             Consume(TokenType::Semicolon, "期望 ';'");
             block.Members.push_back({ memberType, memberName });
         }
         Consume(TokenType::RightBrace, "期望 '}'");
 
-        block.InstanceName = TokenStr(Consume(TokenType::Identifier, "期望实例名称"));
+        block.InstanceName = TokenStr(Advance());
         Consume(TokenType::Semicolon, "期望 ';'");
     }
     else

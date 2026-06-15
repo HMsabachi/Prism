@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Prism/Core/Core.h"
 #include <cstdint>
 #include <string>

@@ -41,7 +41,6 @@ namespace Prism::PSL::GLSLGen
     }
     static void GenerateEngineHeader(std::string& source, const AST::GLSLCode& glsl)
     {
-        source += "#version 450 core\n";
         source += "#line 1 \"" + std::string(BINDINGS_FILE) + "\"\n";
         source += ExpandIncludesRecursive(BINDINGS_FILE, s_Setting.EngineRoot);
         source += "#line 1 \"" + std::string(FRAME_UBO_MARKER) + "\"\n";
@@ -50,6 +49,11 @@ namespace Prism::PSL::GLSLGen
         source += ExpandIncludesRecursive(OBJECT_UBO_MARKER, s_Setting.EngineRoot);
         source += "#line 1 \"" + std::string(SHADOW_UBO_MARKER) + "\"\n";
         source += ExpandIncludesRecursive(SHADOW_UBO_MARKER, s_Setting.EngineRoot);
+    }
+    static void GenerateDefines(std::string& source, const std::vector<std::string>& keywords)
+    {
+        for (const auto& kw : keywords)
+            source += "#define " + kw + "\n";
     }
     static void GeneratePragma(std::string& source, const AST::PragmaDef& pragma)
     {
@@ -61,11 +65,10 @@ namespace Prism::PSL::GLSLGen
         std::string line{}, prefix = isVertex ? "out " : "in ";
         if (varying.IsStruct)
         {
-            line += "struct " + varying.StructName + "\n{\n";
+            line += prefix + varying.StructName + "\n{\n";
             for (const auto& member : varying.Members)
                 line += "    " + member.Type + " " + member.Name + ";\n";
-            line += "};\n";
-            line += prefix + varying.StructName + " " + varying.InstanceName + ";\n";
+            line += "}" + varying.InstanceName + ";\n";
         }
         else
         {
@@ -76,6 +79,8 @@ namespace Prism::PSL::GLSLGen
     }
     static void GenerateVertexCode(std::string& source, const AST::GLSLCode& glsl)
     {
+        std::string head = "#version 450 core\n";
+        source = head + source;
         for (const auto& attr : glsl.Attributes)
             GenerateAttribute(source, attr);
         for (const auto& varying : glsl.Varyings)
@@ -87,6 +92,14 @@ namespace Prism::PSL::GLSLGen
     }
     static void GenerateFragmentCode(std::string& source, const AST::GLSLCode& glsl)
     {
+        std::string head = "#version 450 core\n";
+        head += "layout(location = 0) out vec4 FragColor;\n";
+        source = head + source;
+        for (const auto& attr : glsl.Attributes)
+        {
+            std::string line = "#line " + std::to_string(attr.Loc.Line) + " \"" + std::string(attr.Loc.FilePath) + "\"\n";
+            replaceInsert(source, line, attr.InsertID);
+        }
         for (const auto& varying : glsl.Varyings)
             GenerateVarying(source, varying, false);
         std::string line = "#line " + std::to_string(glsl.Fragment.Loc.Line - 1) + " \"" + std::string(glsl.Fragment.Loc.FilePath) + "\"\n";
@@ -117,18 +130,19 @@ namespace Prism::PSL::GLSLGen
         }
         if (!uboBody.empty())
         {
-            source += "layout(std140, binding = PRISM_BINDING_MATERIAL) uniform PrismMaterial\n{\n";
+            source += "layout(std140, binding = 2) uniform PrismMaterial\n{\n";
             source += uboBody;
             source += "};\n\n";
         }
     }
 
-    Output PRISM_API Generate(const AST::GLSLCode& glsl, const std::vector<AST::ShaderUniform>& uniforms, const std::string& filePath)
+    Output PRISM_API Generate(const AST::GLSLCode& glsl, const std::vector<AST::ShaderUniform>& uniforms, const std::string& filePath, const std::vector<std::string>& activeKeywords)
     {
         Output output{};
- 
+
         std::string sharedSource;
         GenerateEngineHeader(sharedSource, glsl);
+        GenerateDefines(sharedSource, activeKeywords);
         GeneratePropertyUniforms(sharedSource, uniforms);
         sharedSource += "#line " + std::to_string(glsl.Loc.Line) + " \"" + std::string(glsl.Loc.FilePath) + "\"\n";
         sharedSource += glsl.SharedSource;

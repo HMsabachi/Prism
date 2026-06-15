@@ -54,7 +54,7 @@ namespace Prism
 			k.groupSizeX = kernel.numThreads[0];
 			k.groupSizeY = kernel.numThreads[1];
 			k.groupSizeZ = kernel.numThreads[2];
-			k.shader.Reset(Shader::Create(m_Name, kernel.source));
+			k.shader.Reset(Shader::Create(kernel.source));
 			m_Kernels.push_back(k);
 		}
 	}

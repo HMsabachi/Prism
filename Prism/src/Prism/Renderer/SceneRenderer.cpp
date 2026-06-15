@@ -6,6 +6,7 @@
 #include "Shader/GlobalUniforms.h"
 #include "Renderer.h"
 #include "Renderer2D.h"
+#include "Prism/Shader/PSL/PrismBindings.h"
 #include "Prism/Renderer/Camera/Camera.h"
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -34,6 +35,7 @@ namespace Prism
 
         Ref<Texture2D> BRDFLUT;
         Ref<PrismShader> CompositeShader;
+        Ref<Material> CompositeMaterial;
 
         Ref<RenderPass> GeoPass;
         Ref<RenderPass> CompositePass;
@@ -86,6 +88,7 @@ namespace Prism
         s_Data.CompositePass = RenderPass::Create(compRenderPassSpec);
 
         s_Data.CompositeShader = Renderer::GetShaderLibrary()->Get("Custom/SceneComposite");
+        s_Data.CompositeMaterial = Material::Create(s_Data.CompositeShader);
         s_Data.BRDFLUT = Texture2D::Create("Assets/Textures/BRDF_LUT.tga");
 
         // Grid
@@ -291,7 +294,7 @@ namespace Prism
         if (s_Data.ActiveScene && s_Data.ActiveScene->IsShadowEnabled())
         {
             for (int i = 0; i < 4; i++)
-                s_Data.ShadowFBOs[i]->BindDepthTexture(10 + i);
+                s_Data.ShadowFBOs[i]->BindDepthTexture(PSL::PRISM_SHADOW_MAP0 + i);
         }
         // Render entities
         for (auto& dc : s_Data.DrawList)
@@ -423,10 +426,10 @@ namespace Prism
 #if 1
         PR_PROFILE_FUNCTION();
         Renderer::BeginRenderPass(s_Data.CompositePass);
-        s_Data.CompositeShader->Bind();
-        s_Data.CompositeShader->SetFloat("u_Exposure", s_Data.SceneData.SceneCamera.Camera.GetExposure());
-        s_Data.CompositeShader->SetInt("u_TextureSamples", s_Data.GeoPass->GetSpecification().TargetFramebuffer->GetSpecification().Samples);
-        s_Data.GeoPass->GetSpecification().TargetFramebuffer->BindTexture();
+        s_Data.CompositeMaterial->Set("u_Exposure", s_Data.SceneData.SceneCamera.Camera.GetExposure());
+        s_Data.CompositeMaterial->Set("u_TextureSamples", (int)s_Data.GeoPass->GetSpecification().TargetFramebuffer->GetSpecification().Samples);
+        s_Data.CompositeMaterial->Bind();
+        s_Data.GeoPass->GetSpecification().TargetFramebuffer->BindTexture(PSL::PRISM_BINDING_TEXTURE);
         Renderer::SubmitFullscreenQuad(nullptr);
         Renderer::EndRenderPass();
 #endif
@@ -564,10 +567,10 @@ namespace Prism
     {
         auto& camera = s_Data.SceneData.SceneCamera;
         auto& sceneUniforms = s_Data.SceneData.SceneUniforms;
-        const auto& framebufferSpec = s_Data.GeoPass->GetSpecification().TargetFramebuffer->GetSpecification();
+        //const auto& framebufferSpec = s_Data.GeoPass->GetSpecification().TargetFramebuffer->GetSpecification();
         glm::vec3 cameraPosition = glm::inverse(s_Data.SceneData.SceneCamera.ViewMatrix)[3];
         auto viewProjection = s_Data.SceneData.SceneCamera.Camera.GetProjectionMatrix() * s_Data.SceneData.SceneCamera.ViewMatrix;
-        sceneUniforms.AspectRatio = (float)framebufferSpec.Width / (float)framebufferSpec.Height;
+        //sceneUniforms.AspectRatio = (float)framebufferSpec.Width / (float)framebufferSpec.Height;
         sceneUniforms.CameraPosition = cameraPosition;
         sceneUniforms.DeltaTime = Prism::Time::GetDeltaTime();
         sceneUniforms.Projection = camera.Camera.GetProjectionMatrix();

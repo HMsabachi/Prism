@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "Renderer2D.h"
 #include "Texture.h"
 
@@ -8,6 +8,9 @@
 #include "Prism/Renderer/Shader.h"
 #include "Prism/Renderer/Renderer.h"
 #include "Shader/GlobalUniforms.h"
+#include "Buffer/ObjectUniformBuffer.h"
+
+#include "Prism/Shader/PSL/PrismBindings.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -72,12 +75,14 @@ namespace Prism
         Renderer2D::Statistics Stats;
 
         PrismGlobalsUBO SceneUniforms;
+        ObjectUniformBuffer ObjectUBO;
     };
 
     static Renderer2DData s_Data;
 
     void Renderer2D::Init()
     {
+        s_Data.ObjectUBO.Init();
         {
             PipelineSpecification pipelineSpec;
             pipelineSpec.Layout = {
@@ -177,10 +182,12 @@ namespace Prism
         {
             s_Data.QuadVertexBuffer->SetData(s_Data.QuadVertexBufferBase, dataSize);
 
-            s_Data.TextureShader->Bind();
+            s_Data.TextureShader->GetOriginalShader()->Bind();
+            s_Data.ObjectUBO.Upload();
+            s_Data.ObjectUBO.Bind();
 
             for (uint32_t i = 0; i < s_Data.TextureSlotIndex; i++)
-                s_Data.TextureSlots[i]->Bind(i);
+                s_Data.TextureSlots[i]->Bind(PSL::PRISM_BINDING_TEXTURE + i);
 
             s_Data.QuadPipeline->Bind();
             s_Data.QuadIndexBuffer->Bind();
@@ -193,7 +200,9 @@ namespace Prism
         {
             s_Data.LineVertexBuffer->SetData(s_Data.LineVertexBufferBase, dataSize);
 
-            s_Data.LineShader->Bind();
+            s_Data.LineShader->GetOriginalShader()->Bind();
+            s_Data.ObjectUBO.Upload();
+            s_Data.ObjectUBO.Bind();
 
             s_Data.LinePipeline->Bind();
             s_Data.LineIndexBuffer->Bind();

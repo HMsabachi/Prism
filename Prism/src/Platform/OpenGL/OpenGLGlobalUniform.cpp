@@ -32,9 +32,9 @@ namespace Prism
     void OpenGLGlobalUniform::UpdateGlobalUniformBuffer(const PrismGlobalsUBO& globalUniforms) const
     {
         Renderer::Submit([=]() {
-			glBindBuffer(GL_UNIFORM_BUFFER, m_GlobalUBO);
-			glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(PrismGlobalsUBO), &globalUniforms);
-			glBindBuffer(GL_UNIFORM_BUFFER, 0);
+            glBindBuffer(GL_UNIFORM_BUFFER, m_GlobalUBO);
+            glBufferSubData(GL_UNIFORM_BUFFER, 0, sizeof(PrismGlobalsUBO), &globalUniforms);
+            glBindBuffer(GL_UNIFORM_BUFFER, 0);
         });
     }
 }

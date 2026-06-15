@@ -1,127 +1,101 @@
 #pragma once
 #include "Prism/Core/Core.h"
 #include "Prism/Renderer/Shader.h"
-#include "ShaderPropertyDeclaration.h"
 #include "ShaderCommand.h"
 #include "ShaderVariant.h"
-#include "Prism/Renderer/Shader/Parser/ShaderParserData.h"
+#include "Prism/Shader/PSL/AST.h"
 #include <functional>
 #include <unordered_map>
 
 namespace Prism
 {
-	using ShaderReloadedCallback = std::function<void()>;
+    using ShaderReloadedCallback = std::function<void()>;
 
-	struct ShaderPass
-	{
-		Ref<Shader> Program;
-		ShaderCommand Command;
-		std::string Name;
-		std::unordered_map<std::string, std::string> Tags;
-	};
+    struct ShaderPass
+    {
+        Ref<Shader> Program;
+        ShaderCommand Command;
+        std::string Name;
+        std::unordered_map<std::string, std::string> Tags;
+    };
 
-	class PRISM_API PrismShader : public RefCounted
-	{
-	public:
-		static Ref<PrismShader> Create(const std::string& path);
-		static Ref<PrismShader> CreateFromString(const std::string& source);
+    class PRISM_API PrismShader : public RefCounted
+    {
+    public:
+        static Ref<PrismShader> Create(const std::string& path);
+        static Ref<PrismShader> CreateFromString(const std::string& source);
 
-		Ref<Shader> GetOriginalShader() const;
+        Ref<Shader> GetOriginalShader() const;
 
-	public:
-		PrismShader(const std::string& path);
-		PrismShader();
-		~PrismShader();
+    public:
+        PrismShader(const std::string& path);
+        PrismShader();
+        ~PrismShader();
 
-		void Reload();
-		void Load(const std::string& source);
+        void Reload();
+        void Load(const std::string& source);
 
-	public:
-		void Bind();
-		void SetProperty(const Buffer& buffer);
+    public:
+        void AddShaderReloadedCallback(const ShaderReloadedCallback& callback);
+        const std::string& GetFilePath() const { return m_FilePath; }
+        const std::string& GetName() const { return m_Name; }
 
-		void AddShaderReloadedCallback(const ShaderReloadedCallback& callback);
-		const std::string& GetFilePath() const { return m_FilePath; }
-		const std::string& GetName() const { return m_Name; }
+        // Property metadata
+        const std::vector<PSL::AST::ShaderUniform>& GetUniforms() const { return m_Uniforms; }
+        const PSL::AST::ShaderUniform* FindUniform(const std::string& name) const;
+        const PSL::PropertyLayout& GetMaterialLayout() const { return m_MaterialLayout; }
 
-		const PropertyBufferDeclaration& GetDeclaration() const { return m_Declaration; }
-		const Buffer& GetDefaultValueBuffer() const { return m_DefaultValueBuffer; }
-		const ShaderCommand& GetShaderCommand() const;
+        // Multi-Pass API
+        uint32_t GetPassCount() const { return (uint32_t)m_Passes.size(); }
+        const ShaderPass& GetPass(uint32_t index) const { return m_Passes[index]; }
 
-		// --- Multi-Pass API ---
-		uint32_t GetPassCount() const { return (uint32_t)m_Passes.size(); }
-		const ShaderPass& GetPass(uint32_t index) const { return m_Passes[index]; }
-		void BindPass(uint32_t passIndex);
+        // Keyword / Variant API
+        const std::vector<ShaderKeyword>& GetKeywords() const { return m_Keywords; }
+        uint8_t GetKeywordIndex(const std::string& name) const;
+        bool IsKeywordDefined(const std::string& name) const;
+        Ref<Shader> GetVariant(KeywordMask mask) const;
+        Ref<Shader> GetPassProgram(uint32_t passIndex, KeywordMask mask) const;
 
-		template<typename T>
-		const T& GetDefaultValue(const std::string& name) const
-		{
-			const PropertyDeclaration* decl = m_Declaration.FindProperty(name);
-			PR_CORE_ASSERT(decl, "Property {0} not found in shader!", name);
-			return *(const T*)(m_DefaultValueBuffer.Data + decl->GetOffset());
-		}
-		uint32_t GetTextureSlot(const std::string& name) const;
+    private:
+        void CompilePasses(const PSL::AST::ShaderDocument& doc);
+        void CompileVariants(const PSL::AST::ShaderDocument& doc);
+        std::vector<std::string> KeywordsForMask(KeywordMask mask) const;
 
-	public: // Keyword / Variant API
-		const std::vector<ShaderKeyword>& GetKeywords() const { return m_Keywords; }
-		uint8_t GetKeywordIndex(const std::string& name) const;
-		bool IsKeywordDefined(const std::string& name) const;
-		Ref<Shader> GetVariant(KeywordMask mask) const;
-		Ref<Shader> GetPassProgram(uint32_t passIndex, KeywordMask mask) const;
+    private:
+        std::string m_Name;
+        std::string m_FilePath;
 
-	public:
-		void SetMat4FromRenderThread(const std::string& name, const glm::mat4& value);
-		void SetInt(const std::string& name, int value);
-		void SetIntArray(const std::string& name, int* values, uint32_t size);
-		void SetFloat(const std::string& name, float value);
-		void SetVec3(const std::string& name, const glm::vec3& value);
-		void SetVec4(const std::string& name, const glm::vec4& value);
-		void SetMat4(const std::string& name, const glm::mat4& value);
+        std::vector<ShaderPass> m_Passes;
+        std::vector<PSL::AST::GLSLCode> m_PassGLSL;
+        Ref<Shader> m_Shader;
 
-	private:
-		void PackDefaultValues(const std::vector<PropertyDescriptor>& properties);
+        std::vector<PSL::AST::ShaderUniform> m_Uniforms;
+        PSL::PropertyLayout m_MaterialLayout;
 
-	private:
-		std::string m_Name;
-		std::string m_FilePath;
+        std::vector<ShaderReloadedCallback> m_ReloadedCallbacks;
 
-		// Multi-Pass: each pass has its own Shader program + command
-		std::vector<ShaderPass> m_Passes;
+        std::vector<ShaderKeyword> m_Keywords;
+        mutable std::unordered_map<KeywordMask, Ref<Shader>> m_VariantCache;
 
-		// 单 Pass 快捷引用（指向 m_Passes[0].Program），向后兼容
-		Ref<Shader> m_Shader;
+    public:
+        static std::vector<Ref<PrismShader>> s_AllShaders;
+    };
 
-		PropertyBufferDeclaration m_Declaration;
-		Buffer m_DefaultValueBuffer;
-		uint32_t m_NextTexSlot = 0;
+    class PRISM_API ShaderLibrary : public RefCounted
+    {
+    public:
+        ShaderLibrary() = default;
+        ~ShaderLibrary() = default;
 
-		std::vector<ShaderReloadedCallback> m_ReloadedCallbacks;
+        void Add(const Ref<PrismShader>& shader);
+        void Load(const std::string& path);
+        void Load(const std::string& name, const std::string& path);
+        void LoadAll(const std::string& directory);
 
-		// Keyword / Variant data
-		std::vector<ShaderKeyword> m_Keywords;
-		std::unordered_map<KeywordMask, ShaderVariant> m_Variants;
-		std::vector<std::string> m_VertexShaderSources;
-		std::vector<std::string> m_FragmentShaderSources;
-
-	public:
-		static std::vector<Ref<PrismShader>> s_AllShaders;
-	};
-
-	class PRISM_API ShaderLibrary : public RefCounted
-	{
-	public:
-		ShaderLibrary() = default;
-		~ShaderLibrary() = default;
-
-		void Add(const Ref<PrismShader>& shader);
-		void Load(const std::string& path);
-		void Load(const std::string& name, const std::string& path);
-		void LoadAll(const std::string& directory);
-
-		const Ref<PrismShader>& Get(const std::string& name) const;
-		const std::unordered_map<std::string, Ref<PrismShader>>& GetAll() const;
-	private:
-		std::unordered_map<std::string, Ref<PrismShader>> m_Shaders;
-	};
+        const Ref<PrismShader>& Get(const std::string& name) const;
+        const std::unordered_map<std::string, Ref<PrismShader>>& GetAll() const;
+    private:
+        std::unordered_map<std::string, Ref<PrismShader>> m_Shaders;
+    };
 
 }

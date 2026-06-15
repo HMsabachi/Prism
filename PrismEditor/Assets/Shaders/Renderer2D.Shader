@@ -29,7 +29,7 @@ Shader "Prism/Renderer2D"
                 attribute float a_TexIndex : INDEX0;
                 attribute float a_TilingFactor : OTHER0;
 
-                uniform sampler2D u_Textures[32];
+                layout(binding = 16) uniform sampler2D u_Textures[32];
 
                 VARYING VertexOutput
                 {
@@ -51,7 +51,7 @@ Shader "Prism/Renderer2D"
 
                 void frag()
                 {
-                    FragColor = texture(u_Textures[int(vs_Output.TexIndex)], vs_Output.TexCoord * vs_Output.TilingFactor) * vs_Output.Color;
+                    FragColor = texture(u_Textures[int(0)], vs_Output.TexCoord * vs_Output.TilingFactor) * vs_Output.Color;
                 }
             }
         }

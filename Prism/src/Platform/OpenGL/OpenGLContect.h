@@ -8,15 +8,15 @@ struct GLFWwindow;
 
 namespace Prism
 {
-	class PRISM_API OpenGLContext : public GraphicsContext
-	{
-	public:
-		OpenGLContext(GLFWwindow* windowHandle);
+    class PRISM_API OpenGLContext : public GraphicsContext
+    {
+    public:
+        OpenGLContext(GLFWwindow* windowHandle);
 
-		virtual void Init() override;
-		virtual void SwapBuffers() override;
-	private:
-		GLFWwindow* m_WindowHandle;
-	};
+        virtual void Init() override;
+        virtual void SwapBuffers() override;
+    private:
+        GLFWwindow* m_WindowHandle;
+    };
 }
 

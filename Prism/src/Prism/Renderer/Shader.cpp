@@ -1,49 +1,24 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "Shader.h"
 
 #include "Platform/OpenGL/OpenGLShader.h"
 
-namespace Prism 
+namespace Prism
 {
     std::vector<Shader*> Shader::s_AllShaders;
 
-    Shader* Shader::Create(const std::string& filepath)
+    Shader* Shader::Create(const std::string& vertexSource, const std::string& fragmentSource)
     {
-        Shader* result = nullptr;
-        switch (RendererAPI::Current())
-        {
-        case RendererAPIType::None: return nullptr;
-        case RendererAPIType::OpenGL: result = new OpenGLShader(filepath);
-        }
+        auto* result = new OpenGLShader(vertexSource, fragmentSource);
         s_AllShaders.push_back(result);
         return result;
     }
 
-    Shader* Shader::Create(const std::string& name, const std::string& vertexShader, const std::string& fragmentShader)
+    Shader* Shader::Create(const std::string& computeSource)
     {
-        Shader* result = nullptr;
-        std::string source = "#type vertex\n" + vertexShader + "#type fragment\n" + fragmentShader;
-        switch (RendererAPI::Current())
-        {
-        case RendererAPIType::None: return nullptr;
-        case RendererAPIType::OpenGL: result = new OpenGLShader(name, source);
-        }
+        auto* result = new OpenGLShader(computeSource);
         s_AllShaders.push_back(result);
         return result;
     }
-
-    Shader* Shader::Create(const std::string& name, const std::string& computeShader)
-    {
-        Shader* result = nullptr;
-        std::string source = "#type compute\n" + computeShader;
-        switch (RendererAPI::Current())
-        {
-        case RendererAPIType::None: return nullptr;
-        case RendererAPIType::OpenGL: result = new OpenGLShader(name, source);
-        }
-        s_AllShaders.push_back(result);
-        return result;
-    }
-
 
 }

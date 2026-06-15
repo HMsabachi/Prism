@@ -37,7 +37,7 @@ namespace Prism
         void ShowBoundingBoxes(bool show, bool onTop = false);
         void UpdateWindowTitle(const std::string& sceneName);
         void SelectEntity(Entity entity);
-        void DrawMaterialProperty(const PropertyDeclaration& prop, MaterialInstance& materialInstance);
+        void DrawMaterialProperty(const PSL::AST::ShaderUniform& uni, MaterialInstance& materialInstance);
 
         void OpenScene();
         void SaveScene();
