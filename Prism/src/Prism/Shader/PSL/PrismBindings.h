@@ -13,5 +13,7 @@ namespace Prism::PSL
     constexpr int PRISM_SHADOW_MAP2 = 5;
     constexpr int PRISM_SHADOW_MAP3 = 6;
 
+    constexpr int PRISM_GEOMETRY_PASS_TEXTURE = 7;
+
     constexpr int PRISM_BINDING_TEXTURE = 16;
 }

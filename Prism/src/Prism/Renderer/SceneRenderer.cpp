@@ -3,7 +3,7 @@
 
 #include "ComputeShader/ComputeShader.h"
 
-#include "Shader/GlobalUniforms.h"
+#include "Buffer/FrameUniformBuffer.h"
 #include "Renderer.h"
 #include "Renderer2D.h"
 #include "Prism/Shader/PSL/PrismBindings.h"
@@ -13,7 +13,6 @@
 
 namespace Prism
 {
-    static void UpdateGlobalsUBO();
     static void UpdateShadowData();
 
     static constexpr uint32_t SHADOW_MAP_SIZE = 2048;
@@ -29,7 +28,6 @@ namespace Prism
             Ref<MaterialInstance> SkyboxMaterial;
             Environment SceneEnvironment;
             Light ActiveLight;
-            PrismGlobalsUBO SceneUniforms;
 
         } SceneData;
 
@@ -58,6 +56,10 @@ namespace Prism
         // Shadow
         Ref<Framebuffer> ShadowFBOs[4];
         Ref<MaterialInstance> ShadowDepthMaterial;
+
+        uint32_t CascadeCount = 0;
+        glm::mat4 ShadowMatrices[4]{};
+        glm::vec4 CascadeSplits{};
 
         SceneRendererOptions Options;
     };
@@ -138,7 +140,17 @@ namespace Prism
         if (s_Data.ActiveScene->IsShadowEnabled())
             UpdateShadowData();
 
-        UpdateGlobalsUBO();
+        auto& cam = s_Data.SceneData.SceneCamera;
+        auto& frameUBO = Renderer::GetFrameUBO();
+        frameUBO.SetViewProjection(cam.Camera.GetProjectionMatrix() * cam.ViewMatrix);
+        frameUBO.SetView(cam.ViewMatrix);
+        frameUBO.SetProjection(cam.Camera.GetProjectionMatrix());
+        frameUBO.SetCameraPosition(glm::inverse(cam.ViewMatrix)[3]);
+        frameUBO.SetTime(Prism::Time::GetTime(), Prism::Time::GetDeltaTime());
+        frameUBO.SetLight(0, s_Data.SceneData.ActiveLight.Direction,
+            s_Data.SceneData.ActiveLight.Radiance, s_Data.SceneData.ActiveLight.Multiplier);
+        frameUBO.Upload();
+        frameUBO.Bind();
     }
 
     void SceneRenderer::EndScene()
@@ -241,8 +253,7 @@ namespace Prism
         if (s_Data.DrawList.empty())
             return;
 
-        auto& sceneUniforms = s_Data.SceneData.SceneUniforms;
-        uint32_t cascadeCount = (uint32_t)sceneUniforms.ShadowParams.z;
+        uint32_t cascadeCount = s_Data.CascadeCount;
         if (cascadeCount == 0 || cascadeCount > 4)
             return;
 
@@ -255,7 +266,7 @@ namespace Prism
             Renderer::Submit([]() { glClear(GL_DEPTH_BUFFER_BIT); });
 
             s_Data.ShadowDepthMaterial->Bind();
-            shadowProgram->SetMat4("u_LightVP", sceneUniforms.ShadowMatrices[cascade]);
+            shadowProgram->SetMat4("u_LightVP", s_Data.ShadowMatrices[cascade]);
 
             for (auto& dc : s_Data.DrawList)
                 Renderer::SubmitMesh(dc.Mesh, dc.Transform, s_Data.ShadowDepthMaterial);
@@ -426,10 +437,10 @@ namespace Prism
 #if 1
         PR_PROFILE_FUNCTION();
         Renderer::BeginRenderPass(s_Data.CompositePass);
+        s_Data.GeoPass->GetSpecification().TargetFramebuffer->BindTexture(PSL::PRISM_GEOMETRY_PASS_TEXTURE);
         s_Data.CompositeMaterial->Set("u_Exposure", s_Data.SceneData.SceneCamera.Camera.GetExposure());
-        s_Data.CompositeMaterial->Set("u_TextureSamples", (int)s_Data.GeoPass->GetSpecification().TargetFramebuffer->GetSpecification().Samples);
+        s_Data.CompositeMaterial->Set("Prism_GeometryPassTextureSamples", (int)s_Data.GeoPass->GetSpecification().TargetFramebuffer->GetSpecification().Samples);
         s_Data.CompositeMaterial->Bind();
-        s_Data.GeoPass->GetSpecification().TargetFramebuffer->BindTexture(PSL::PRISM_BINDING_TEXTURE);
         Renderer::SubmitFullscreenQuad(nullptr);
         Renderer::EndRenderPass();
 #endif
@@ -473,8 +484,8 @@ namespace Prism
     {
         auto& camera = s_Data.SceneData.SceneCamera;
         auto& light = s_Data.ActiveScene->GetLight();
-        auto& sceneUniforms = s_Data.SceneData.SceneUniforms;
         uint32_t cascadeCount = glm::clamp(s_Data.ActiveScene->GetCascadeCount(), 1u, 4u);
+        s_Data.CascadeCount = cascadeCount;
 
         // 提取相机参数
         auto& proj = camera.Camera.GetProjectionMatrix();
@@ -495,8 +506,8 @@ namespace Prism
             splits[i] = logSplit * splitLambda + uniSplit * (1.0f - splitLambda);
         }
 
-        sceneUniforms.CascadeSplits = glm::vec4(splits[0], splits[1], splits[2], splits[3]);
-        sceneUniforms.ShadowParams = glm::vec4(
+        s_Data.CascadeSplits = glm::vec4(splits[0], splits[1], splits[2], splits[3]);
+        glm::vec4 shadowParams = glm::vec4(
             s_Data.ActiveScene->GetShadowBias(),
             s_Data.ActiveScene->GetShadowNormalBias(),
             (float)cascadeCount, 0.0f
@@ -557,29 +568,14 @@ namespace Prism
             // 最终正交投影矩阵
             glm::mat4 lightOrtho = glm::ortho(minX, maxX, minY, maxY, -maxZ, -minZ);
 
-            sceneUniforms.ShadowMatrices[cascade] = lightOrtho * lightView;
+            s_Data.ShadowMatrices[cascade] = lightOrtho * lightView;
 
             prevSplit = nextSplit;
         }
-    }
 
-    static void UpdateGlobalsUBO()
-    {
-        auto& camera = s_Data.SceneData.SceneCamera;
-        auto& sceneUniforms = s_Data.SceneData.SceneUniforms;
-        //const auto& framebufferSpec = s_Data.GeoPass->GetSpecification().TargetFramebuffer->GetSpecification();
-        glm::vec3 cameraPosition = glm::inverse(s_Data.SceneData.SceneCamera.ViewMatrix)[3];
-        auto viewProjection = s_Data.SceneData.SceneCamera.Camera.GetProjectionMatrix() * s_Data.SceneData.SceneCamera.ViewMatrix;
-        //sceneUniforms.AspectRatio = (float)framebufferSpec.Width / (float)framebufferSpec.Height;
-        sceneUniforms.CameraPosition = cameraPosition;
-        sceneUniforms.DeltaTime = Prism::Time::GetDeltaTime();
-        sceneUniforms.Projection = camera.Camera.GetProjectionMatrix();
-        sceneUniforms.View = camera.ViewMatrix;
-        sceneUniforms.ViewProjection = viewProjection;
-        sceneUniforms.InverseViewProjection = glm::inverse(sceneUniforms.ViewProjection);
-        float time = Prism::Time::GetTime();
-        sceneUniforms.Time = glm::vec4(time * 0.2f, time, time * 2, time * 3);
-        sceneUniforms.Lights[0] = s_Data.SceneData.ActiveLight;
-        GlobalUniforms::UpdateGlobalUniform(sceneUniforms);
+        auto& frameUBO = Renderer::GetFrameUBO();
+        frameUBO.SetShadowMatrices(s_Data.ShadowMatrices, cascadeCount);
+        frameUBO.SetCascadeSplits(s_Data.CascadeSplits);
+        frameUBO.SetShadowParams(shadowParams);
     }
 }

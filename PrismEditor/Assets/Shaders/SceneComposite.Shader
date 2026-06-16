@@ -4,9 +4,8 @@ Shader "Custom/SceneComposite"
     // ==================== Properties（材质参数） ====================
     Properties
     {
-        u_Texture("输入纹理", Texture2DMS) = {}
         u_Exposure("曝光度", Float) = 1.0
-        u_TextureSamples("纹理采样数", Int) = 8
+        Prism_GeometryPassTextureSamples("纹理采样数", Int) = 8
     }
     SubShader
     {
@@ -48,11 +47,11 @@ Shader "Custom/SceneComposite"
                     const float gamma     = 2.2;
                     const float pureWhite = 1.0;
 
-                    ivec2 texSize = textureSize(u_Texture);
+                    ivec2 texSize = textureSize(Prism_GeometryPassTexture);
                     ivec2 texCoord = ivec2(vs_Output.TexCoord * texSize);
-                    vec4 msColor = MultiSampleTexture(u_Texture, texCoord, u_TextureSamples);
+                    vec4 msColor = MultiSampleTexture(Prism_GeometryPassTexture, texCoord, Prism_GeometryPassTextureSamples);
 
-                    vec3 color = msColor.rgb * u_Exposure;//texture(u_Texture, vs_Output.TexCoord).rgb * u_Exposure;
+                    vec3 color = msColor.rgb * u_Exposure;//texture(Prism_GeometryPassTexture, vs_Output.TexCoord).rgb * u_Exposure;
                     // Reinhard tonemapping operator.
                     float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
                     float mappedLuminance = (luminance * (1.0 + luminance / (pureWhite * pureWhite))) / (1.0 + luminance);

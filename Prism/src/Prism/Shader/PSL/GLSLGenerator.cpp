@@ -16,6 +16,7 @@ namespace Prism::PSL::GLSLGen
     static const char* FRAME_UBO_MARKER = "PrismFrame.glsl";
     static const char* OBJECT_UBO_MARKER = "PrismObject.glsl";
     static const char* SHADOW_UBO_MARKER = "PrismShadow.glsl";
+    static const char* ENGINE_TEXTURES_MARKER = "PrismEngineTextures.glsl";
     static void replaceInsert(std::string& source, const std::string& replacement, uint32_t id)
     {
         std::string marker = "[Prism::Insert:" + std::to_string(id) + "]";
@@ -49,6 +50,8 @@ namespace Prism::PSL::GLSLGen
         source += ExpandIncludesRecursive(OBJECT_UBO_MARKER, s_Setting.EngineRoot);
         source += "#line 1 \"" + std::string(SHADOW_UBO_MARKER) + "\"\n";
         source += ExpandIncludesRecursive(SHADOW_UBO_MARKER, s_Setting.EngineRoot);
+        source += "#line 1 \"" + std::string(ENGINE_TEXTURES_MARKER) + "\"\n";
+        source += ExpandIncludesRecursive(ENGINE_TEXTURES_MARKER, s_Setting.EngineRoot);
     }
     static void GenerateDefines(std::string& source, const std::vector<std::string>& keywords)
     {
@@ -79,7 +82,8 @@ namespace Prism::PSL::GLSLGen
     }
     static void GenerateVertexCode(std::string& source, const AST::GLSLCode& glsl)
     {
-        std::string head = "#version 450 core\n";
+        std::string head = "// " + std::string(glsl.Loc.FilePath) + "\n";
+        head += "#version 450 core\n";
         source = head + source;
         for (const auto& attr : glsl.Attributes)
             GenerateAttribute(source, attr);
@@ -92,7 +96,8 @@ namespace Prism::PSL::GLSLGen
     }
     static void GenerateFragmentCode(std::string& source, const AST::GLSLCode& glsl)
     {
-        std::string head = "#version 450 core\n";
+        std::string head = "// " + std::string(glsl.Loc.FilePath) +"\n";
+        head += "#version 450 core\n";
         head += "layout(location = 0) out vec4 FragColor;\n";
         source = head + source;
         for (const auto& attr : glsl.Attributes)
@@ -116,7 +121,7 @@ namespace Prism::PSL::GLSLGen
             if (PropertyTypeUtil::IsTextureType(uniform.Type))
             {
                 source += "layout(binding = ";
-                source += std::to_string(PRISM_BINDING_TEXTURE + uniform.TextureSlot);
+                source += std::to_string(uniform.TextureSlot);
                 source += ") ";
                 source += PropertyTypeUtil::ToGLSLUniform(uniform.Type);
                 source += " " + uniform.Name + ";\n";

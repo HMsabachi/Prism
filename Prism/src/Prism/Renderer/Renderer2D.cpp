@@ -7,7 +7,6 @@
 #include "Prism/Renderer/Buffer/IndexBuffer.h"
 #include "Prism/Renderer/Shader.h"
 #include "Prism/Renderer/Renderer.h"
-#include "Shader/GlobalUniforms.h"
 #include "Buffer/ObjectUniformBuffer.h"
 
 #include "Prism/Shader/PSL/PrismBindings.h"
@@ -16,8 +15,6 @@
 
 namespace Prism
 {
-    static void UpdateGlobalsUBO();
-
     struct QuadVertex
     {
         glm::vec3 Position;
@@ -74,7 +71,6 @@ namespace Prism
 
         Renderer2D::Statistics Stats;
 
-        PrismGlobalsUBO SceneUniforms;
         ObjectUniformBuffer ObjectUBO;
     };
 

@@ -156,6 +156,11 @@ namespace Prism
 
     bool OpenGLShader::UniformLocationCache(const std::string& name)
     {
+        if (!m_RendererID)
+        {
+            PR_CORE_WARN("Shader not compiled");
+            return false;
+        }
         auto it = m_UniformLocationCache.find(name);
         if (it == m_UniformLocationCache.end())
         {

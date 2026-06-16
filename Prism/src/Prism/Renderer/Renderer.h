@@ -12,6 +12,7 @@ namespace Prism
     class Camera;
     class MaterialInstance;
     class Mesh;
+    class FrameUniformBuffer;
 }
 
 namespace Prism
@@ -65,5 +66,6 @@ namespace Prism
     static void DrawAABB(Ref<Mesh> mesh, const glm::mat4& transform, const glm::vec4& color = glm::vec4(1.0f));
     public:
         static RenderCommandQueue& GetRenderCommandQueue();
+        static FrameUniformBuffer& GetFrameUBO();
     };
 }

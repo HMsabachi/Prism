@@ -1,7 +1,7 @@
-// PerFrame UBO — binding=0
 struct Prism_Light
 {
     vec3 Direction;
+    float pad1;       
     vec3 Radiance;
     float Multiplier;
 };
@@ -18,10 +18,11 @@ layout(std140, binding = PRISM_BINDING_FRAME) uniform PrismFrame
 
     vec4 Prism_Time;
     vec3 Prism_CameraPosition;
-
     float Prism_DeltaTime;
-    float Prism_AspectRatio;
+
     vec2  Prism_Resolution;
+    float Prism_AspectRatio;
+    float Prism_pad0; 
 
     Prism_Light Prism_Lights[PRISM_MAX_LIGHTS];
 

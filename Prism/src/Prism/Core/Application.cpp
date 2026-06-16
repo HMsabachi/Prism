@@ -8,7 +8,6 @@
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Renderer2D.h"
 #include "Prism/Renderer/Buffer/Framebuffer.h"
-#include "Prism/Renderer/Shader/Parser/ShaderParser.h"
 
 #include "Scripting/CSharp/CSharpScriptEngine.h"
 #include "Scripting/Python/PythonScriptEngine.h"
@@ -55,8 +54,6 @@ namespace Prism
         // 初始化ImGui层 Initialize ImGui Layer
         m_ImGuiLayer = new ImGuiLayer("ImGui");
         PushOverlay(m_ImGuiLayer);
-        // 初始化PrismShader解释器
-        ShaderParser::Init("Assets/Shaders/Include");
         // 初始化 PhysX 物理引擎
         Physics::Init();
         // 初始化渲染器 Initialize Renderer

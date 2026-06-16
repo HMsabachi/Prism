@@ -127,24 +127,34 @@ namespace Prism
 	}
 	namespace File
 	{
-		std::string ReadFile(const std::string& filePath)
-		{
-			std::string result;
-			std::ifstream in(filePath, std::ios::in, std::ios::binary);
-			if (in)
-			{
-				in.seekg(0, std::ios::end);
-				result.resize(in.tellg());
-				in.seekg(0, std::ios::beg);
-				in.read(&result[0], result.size());
-			}
-			else
-			{
-				PR_CORE_WARN("Could not open file '{0}'", filePath);
-			}
-			in.close();
-			return result;
-		}
+        std::string ReadFile(const std::string& filePath)
+        {
+            std::ifstream in(filePath, std::ios::in | std::ios::binary);
+
+            if (!in)
+            {
+                PR_CORE_WARN("Could not open file '{0}'", filePath);
+                return {};
+            }
+
+
+            in.seekg(0, std::ios::end);
+
+            size_t size = (size_t)in.tellg();
+
+
+            std::string result(size, '\0');
+
+
+            in.seekg(0, std::ios::beg);
+
+
+            if (size > 0)
+                in.read(result.data(), size);
+
+
+            return result;
+        }
 
 	}
 

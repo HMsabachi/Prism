@@ -2,7 +2,7 @@
 #include "Renderer.h"
 #include "RenderCommand.h"
 #include "Shader/PrismShader.h"
-#include "Shader/GlobalUniforms.h"
+#include "Buffer/FrameUniformBuffer.h"
 
 #include "SceneRenderer.h"
 #include "RendererAPI.h"
@@ -26,6 +26,7 @@ namespace Prism
         Ref<IndexBuffer> m_FullscreenQuadIndexBuffer;
         Ref<Pipeline> m_FullscreenQuadPipeline;
         ObjectUniformBuffer m_ObjectUBO;
+        FrameUniformBuffer m_FrameUBO;
     };
 
     static RendererData s_Data;
@@ -33,12 +34,12 @@ namespace Prism
     void Renderer::Init()
     {
         s_Data.m_ShaderLibrary = Ref<ShaderLibrary>::Create();
-        s_Data.m_ObjectUBO.Init();
         Renderer::Submit([]() { RendererAPI::Init(); });
+        s_Data.m_ObjectUBO.Init();
+        s_Data.m_FrameUBO.Init();
 
         Renderer::GetShaderLibrary()->LoadAll("Assets/Shaders");
 
-        GlobalUniforms::Init();
         SceneRenderer::Init();
 
         // Create fullscreen quad
@@ -260,6 +261,11 @@ namespace Prism
     RenderCommandQueue& Renderer::GetRenderCommandQueue()
     {
         return s_Data.m_CommandQueue;
+    }
+
+    FrameUniformBuffer& Renderer::GetFrameUBO()
+    {
+        return s_Data.m_FrameUBO;
     }
 
 }

@@ -89,9 +89,8 @@ namespace Prism
     {
 		for (size_t i = 0; i < m_Textures.size(); i++)
         {
-			auto& texture = m_Textures[i];
-			if (texture)
-				texture->Bind(i);
+            if (m_Textures[i])
+                m_Textures[i]->Bind((uint32_t)i + PSL::PRISM_BINDING_TEXTURE);
         }
     }
 
@@ -247,7 +246,7 @@ namespace Prism
         for (size_t i = 0; i < m_Textures.size(); i++)
         {
             if (m_Textures[i])
-                m_Textures[i]->Bind((uint32_t)i);
+                m_Textures[i]->Bind((uint32_t)i + PSL::PRISM_BINDING_TEXTURE);
         }
     }
 

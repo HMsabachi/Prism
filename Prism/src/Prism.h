@@ -23,7 +23,7 @@
 // ---Renderer-
 #include "Prism/Renderer/Shader/PrismShader.h"
 #include "Prism/Renderer/ComputeShader/ComputeShader.h"
-#include "Prism/Renderer/Shader/GlobalUniforms.h"
+#include "Prism/Renderer/Buffer/FrameUniformBuffer.h"
 
 // --- Prism Render API ------------------------------
 #include "Prism/Renderer/Renderer.h"

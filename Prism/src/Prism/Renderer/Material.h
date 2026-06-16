@@ -4,6 +4,7 @@
 #include "Prism/Renderer/Buffer/UniformBuffer.h"
 #include <unordered_set>
 #include "Texture.h"
+#include "Prism/Shader/PSL/PrismBindings.h"
 
 namespace Prism
 {
@@ -40,7 +41,7 @@ namespace Prism
         {
             auto* uni = m_Shader->FindUniform(name);
             if (!uni || uni->TextureSlot < 0) { PR_CORE_WARN("Material::Set - texture uniform '{0}' not found", name); return; }
-            uint32_t slot = (uint32_t)uni->TextureSlot;
+            uint32_t slot = (uint32_t)uni->TextureSlot - PSL::PRISM_BINDING_TEXTURE;
             if (m_Textures.size() <= slot)
                 m_Textures.resize(slot + 1);
             m_Textures[slot] = texture;
@@ -49,7 +50,7 @@ namespace Prism
         {
             auto* uni = m_Shader->FindUniform(name);
             if (!uni || uni->TextureSlot < 0) { PR_CORE_WARN("Material::Set - texture uniform '{0}' not found", name); return; }
-            uint32_t slot = (uint32_t)uni->TextureSlot;
+            uint32_t slot = (uint32_t)uni->TextureSlot - PSL::PRISM_BINDING_TEXTURE;
             if (m_Textures.size() <= slot)
                 m_Textures.resize(slot + 1);
             m_Textures[slot] = texture;
@@ -69,7 +70,7 @@ namespace Prism
         {
             auto* uni = m_Shader->FindUniform(name);
             if (!uni || uni->TextureSlot < 0) { PR_CORE_WARN("Material::GetResource - texture '{0}' not found", name); return nullptr; }
-            uint32_t slot = (uint32_t)uni->TextureSlot;
+            uint32_t slot = (uint32_t)uni->TextureSlot - PSL::PRISM_BINDING_TEXTURE;
             if (slot >= m_Textures.size()) return nullptr;
             return m_Textures[slot];
         }
@@ -124,7 +125,7 @@ namespace Prism
         {
             auto* uni = m_Material->m_Shader->FindUniform(name);
             if (!uni || uni->TextureSlot < 0) { PR_CORE_WARN("MaterialInstance::Set - texture '{0}' not found", name); return; }
-            uint32_t slot = (uint32_t)uni->TextureSlot;
+            uint32_t slot = (uint32_t)uni->TextureSlot - PSL::PRISM_BINDING_TEXTURE;
             if (m_Textures.size() <= slot)
                 m_Textures.resize(slot + 1);
             m_Textures[slot] = texture;
@@ -158,7 +159,7 @@ namespace Prism
         {
             auto* uni = m_Material->m_Shader->FindUniform(name);
             if (!uni || uni->TextureSlot < 0) { PR_CORE_WARN("MaterialInstance::GetResource - texture '{0}' not found", name); return nullptr; }
-            uint32_t slot = (uint32_t)uni->TextureSlot;
+            uint32_t slot = (uint32_t)uni->TextureSlot - PSL::PRISM_BINDING_TEXTURE;
             if (slot >= m_Textures.size()) return nullptr;
             return m_Textures[slot];
         }
@@ -168,7 +169,7 @@ namespace Prism
         {
             auto* uni = m_Material->m_Shader->FindUniform(name);
             if (!uni || uni->TextureSlot < 0) return nullptr;
-            uint32_t slot = (uint32_t)uni->TextureSlot;
+            uint32_t slot = (uint32_t)uni->TextureSlot - PSL::PRISM_BINDING_TEXTURE;
             if (slot >= m_Textures.size()) return nullptr;
             return m_Textures[slot];
         }
