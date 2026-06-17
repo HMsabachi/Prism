@@ -13,3 +13,6 @@
 [submodule "Prism/vendor/FastNoise"]
 	path = Prism/vendor/FastNoise
 	url = https://github.com/Auburn/FastNoiseLite.git
+[submodule "Prism/vendor/PrismShaderCompiler"]
+	path = Prism/vendor/PrismShaderCompiler
+	url = git@github.com:HMsabachi/PrismShaderCompiler.git
