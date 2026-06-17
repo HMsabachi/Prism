@@ -54,7 +54,7 @@ Shader "Custom/SimplePBR_Animated"
                 #pragma shader_feature NORMAL_MAP
                 #pragma shader_feature METALNESS_MAP
                 #pragma shader_feature ROUGHNESS_MAP
-                #include "PrismBuiltin.glsl"
+                #include "PrismCommon.glsl"
                 #include "PrismPBR.glsl"
                 attribute vec3 a_Position : POSITION;
                 attribute vec3 a_Normal : NORMAL;

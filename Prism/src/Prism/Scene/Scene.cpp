@@ -62,7 +62,7 @@ namespace Prism
     {
 #if 1
         auto skyboxShader = Renderer::GetShaderLibrary()->Get("Custom/Skybox");
-        m_SkyboxMaterial = MaterialInstance::Create(Material::Create(skyboxShader));
+        m_SkyboxMaterial = Material::Create(skyboxShader);
 #endif
     }
 
@@ -103,7 +103,7 @@ namespace Prism
         SceneCamera& camera = cameraEntity.GetComponent<CameraComponent>();
         camera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
 
-        m_SkyboxMaterial->Set("u_TextureLod", m_SkyboxLod);
+        m_SkyboxMaterial->SetFloat("u_TextureLod", m_SkyboxLod);
 
         auto group = m_Registry.group<MeshComponent>(entt::get<TransformComponent>);
         SceneRenderer::BeginScene(this, { camera, cameraViewMatrix });
@@ -115,7 +115,7 @@ namespace Prism
                 meshComponent.Mesh->OnUpdate(ts);
 
                 // TODO: Should we render (logically)
-                Ref<MaterialInstance> overrideMaterial = m_Registry.any_of<MaterialComponent>(entity) ? m_Registry.get<MaterialComponent>(entity).Material : nullptr;
+                Ref<Material> overrideMaterial = m_Registry.any_of<MaterialComponent>(entity) ? m_Registry.get<MaterialComponent>(entity).material : nullptr;
                 SceneRenderer::SubmitMesh(meshComponent, transformComponent.GetTransform(), overrideMaterial);
             }
         }
@@ -155,7 +155,7 @@ namespace Prism
         // RENDER 3D SCENE
         /////////////////////////////////////////////////////////////////////
         float ts = Time::GetDeltaTime();
-        m_SkyboxMaterial->Set("u_TextureLod", m_SkyboxLod);
+        m_SkyboxMaterial->SetFloat("u_TextureLod", m_SkyboxLod);
 
         auto group = m_Registry.group<MeshComponent>(entt::get<TransformComponent>);
         SceneRenderer::BeginScene(this, { editorCamera, editorCamera.GetViewMatrix() });
@@ -168,7 +168,7 @@ namespace Prism
 
                 // TODO: Should we render (logically)
 
-                Ref<MaterialInstance> overrideMaterial = m_Registry.any_of<MaterialComponent>(entity) ? m_Registry.get<MaterialComponent>(entity).Material : nullptr;
+                Ref<Material> overrideMaterial = m_Registry.any_of<MaterialComponent>(entity) ? m_Registry.get<MaterialComponent>(entity).material : nullptr;
                 if (m_SelectedEntity == entity)
                     SceneRenderer::SubmitSelectedMesh(meshComponent, transformComponent.GetTransform());
                 else
@@ -236,7 +236,7 @@ namespace Prism
     void Scene::SetSkybox(const Ref<TextureCube>& skybox)
     {
         m_SkyboxTexture = skybox;
-        m_SkyboxMaterial->Set("u_Texture", skybox);
+        m_SkyboxMaterial->SetTexture("u_Texture", skybox);
     }
 
     Entity Scene::GetMainCameraEntity()

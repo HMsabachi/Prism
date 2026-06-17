@@ -128,7 +128,7 @@ layout(std140, binding = 2) uniform PrismMaterial
 };
 
 #line 25 "Assets/Shaders/Collider.Shader"
-#line 1 "PrismBuiltin.glsl"
+#line 1 "PrismCommon.glsl"
 //
 
 #line 27 "Assets/Shaders/Collider.Shader"
@@ -272,7 +272,7 @@ layout(std140, binding = 2) uniform PrismMaterial
 };
 
 #line 25 "Assets/Shaders/Collider.Shader"
-#line 1 "PrismBuiltin.glsl"
+#line 1 "PrismCommon.glsl"
 //
 
 #line 27 "Assets/Shaders/Collider.Shader"

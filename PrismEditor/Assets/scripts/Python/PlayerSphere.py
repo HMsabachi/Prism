@@ -17,7 +17,7 @@ class PlayerSphere(Behaviour):
         self.m_Transform: TransformComponent = self.GetComponent(TransformComponent)
         meshComponent: MeshComponent = self.GetComponent(MeshComponent)
         self.randomColor: RandomColor = self.CreateComponent(RandomColor)
-        self.m_MeshMaterial: MaterialInstance = meshComponent.Mesh.GetMaterial(0)
+        self.m_MeshMaterial: Material = meshComponent.Mesh.GetMaterial(0)
         self.m_MeshMaterial.Set("u_Metalness", 0.0)
 
         self.m_CollisionCounter = 0

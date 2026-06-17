@@ -6,8 +6,6 @@ from Prism.Math import Vector2, Vector3, Vector4
 from Prism.Math.Mathf import Mathf
 from Prism.Math.Matrix4 import Matrix4
 from Prism.Renderer import Color, Texture2D, MeshFactory
-from Prism.Renderer.Material import MaterialInstance
-
 import Noise as NoiseUtil
 
 

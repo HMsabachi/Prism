@@ -49,7 +49,7 @@ Shader "Custom/Toon"
             GLSL
             {
                 #pragma shader_feature MAIN_TEXTURE NORMAL_MAP
-                #include "PrismBuiltin.glsl"
+                #include "PrismCommon.glsl"
 
                 attribute vec3 a_Position : POSITION;
                 attribute vec3 a_Normal : NORMAL;
@@ -153,7 +153,7 @@ Shader "Custom/Toon"
             Name "Outline"
             GLSL
             {
-                #include "PrismBuiltin.glsl"
+                #include "PrismCommon.glsl"
 
                 attribute vec3 a_Position : POSITION;
                 attribute vec3 a_Normal : NORMAL;

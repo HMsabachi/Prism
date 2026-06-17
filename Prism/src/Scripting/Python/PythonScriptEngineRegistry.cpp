@@ -148,19 +148,11 @@ namespace Prism
         PR_PYTHON_FUNCTION(Prism_Material_Constructor, "Material(cpp_handle, shaderName)");
         PR_PYTHON_FUNCTION(Prism_Material_Destructor, "~Material(cpp_handle)");
         PR_PYTHON_FUNCTION(Prism_Material_SetFloat, "SetFloat(cpp_handle, uniform, value)");
+        PR_PYTHON_FUNCTION(Prism_Material_SetVector3, "SetVector3(cpp_handle, uniform, vec3)");
+        PR_PYTHON_FUNCTION(Prism_Material_SetVector4, "SetVector4(cpp_handle, uniform, vec4)");
         PR_PYTHON_FUNCTION(Prism_Material_SetTexture, "SetTexture(cpp_handle, uniform, texHandle)");
         PR_PYTHON_FUNCTION(Prism_Material_SetKeyword, "SetKeyword(cpp_handle, name, enabled)");
         PR_PYTHON_FUNCTION(Prism_Material_IsKeywordEnabled, "IsKeywordEnabled(cpp_handle, name) -> bool");
-
-        // MaterialInstance
-        PR_PYTHON_FUNCTION(Prism_MaterialInstance_Constructor, "MaterialInstance(cpp_handle, parentHandle)");
-        PR_PYTHON_FUNCTION(Prism_MaterialInstance_Destructor, "~MaterialInstance(cpp_handle)");
-        PR_PYTHON_FUNCTION(Prism_MaterialInstance_SetFloat, "SetFloat(cpp_handle, uniform, value)");
-        PR_PYTHON_FUNCTION(Prism_MaterialInstance_SetVector3, "SetVector3(cpp_handle, uniform, vec3)");
-        PR_PYTHON_FUNCTION(Prism_MaterialInstance_SetVector4, "SetVector4(cpp_handle, uniform, vec4)");
-        PR_PYTHON_FUNCTION(Prism_MaterialInstance_SetTexture, "SetTexture(cpp_handle, uniform, texHandle)");
-        PR_PYTHON_FUNCTION(Prism_MaterialInstance_SetKeyword, "SetKeyword(cpp_handle, name, enabled)");
-        PR_PYTHON_FUNCTION(Prism_MaterialInstance_IsKeywordEnabled, "IsKeywordEnabled(cpp_handle, name) -> bool");
 
         // MaterialComponent
         PR_PYTHON_FUNCTION(Prism_MaterialComponent_GetMaterial, "GetMaterial(entityID) -> handle");

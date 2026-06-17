@@ -14,7 +14,7 @@ namespace Example
 
         public Vector2 Velocity = new Vector2();
         private RigidBody2DComponent m_PhysicsBody;
-        private MaterialInstance m_MeshMaterial;
+        private Material m_MeshMaterial;
 
         private int m_CollisionCounter = 0;
 

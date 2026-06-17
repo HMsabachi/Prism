@@ -12,7 +12,7 @@ namespace Prism
 {
     struct Event;
     class Entity;
-    class MaterialInstance;
+    class Material;
     class TextureCube;
     class Texture2D;
     class EditorCamera;
@@ -154,7 +154,7 @@ namespace Prism
 
         Environment m_Environment;
         Ref<TextureCube> m_SkyboxTexture;
-        Ref<MaterialInstance> m_SkyboxMaterial;
+        Ref<Material> m_SkyboxMaterial;
 
         entt::entity m_SelectedEntity;
 

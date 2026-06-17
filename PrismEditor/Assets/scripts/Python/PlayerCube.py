@@ -3,7 +3,7 @@ from Prism import (
     RigidBody2DComponent, MeshComponent,
 )
 from Prism.Math import Vector2, Vector3
-from Prism.Renderer.Material import MaterialInstance
+from Prism.Renderer.Material import Material
 
 
 class PlayerCube(Behaviour):

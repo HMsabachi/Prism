@@ -107,19 +107,11 @@ namespace Prism::Script
     Python::ScriptValue* Prism_Material_Constructor(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Material_Destructor(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Material_SetFloat(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_Material_SetVector3(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_Material_SetVector4(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Material_SetTexture(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Material_SetKeyword(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Material_IsKeywordEnabled(Python::ScriptValue* self, Python::ScriptValue* args);
-
-    // MaterialInstance
-    Python::ScriptValue* Prism_MaterialInstance_Constructor(Python::ScriptValue* self, Python::ScriptValue* args);
-    Python::ScriptValue* Prism_MaterialInstance_Destructor(Python::ScriptValue* self, Python::ScriptValue* args);
-    Python::ScriptValue* Prism_MaterialInstance_SetFloat(Python::ScriptValue* self, Python::ScriptValue* args);
-    Python::ScriptValue* Prism_MaterialInstance_SetVector3(Python::ScriptValue* self, Python::ScriptValue* args);
-    Python::ScriptValue* Prism_MaterialInstance_SetVector4(Python::ScriptValue* self, Python::ScriptValue* args);
-    Python::ScriptValue* Prism_MaterialInstance_SetTexture(Python::ScriptValue* self, Python::ScriptValue* args);
-    Python::ScriptValue* Prism_MaterialInstance_SetKeyword(Python::ScriptValue* self, Python::ScriptValue* args);
-    Python::ScriptValue* Prism_MaterialInstance_IsKeywordEnabled(Python::ScriptValue* self, Python::ScriptValue* args);
 
     // MaterialComponent
     Python::ScriptValue* Prism_MaterialComponent_GetMaterial(Python::ScriptValue* self, Python::ScriptValue* args);

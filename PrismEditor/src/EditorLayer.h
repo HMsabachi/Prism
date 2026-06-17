@@ -37,7 +37,7 @@ namespace Prism
         void ShowBoundingBoxes(bool show, bool onTop = false);
         void UpdateWindowTitle(const std::string& sceneName);
         void SelectEntity(Entity entity);
-        void DrawMaterialProperty(const PSL::AST::ShaderUniform& uni, MaterialInstance& materialInstance);
+        void DrawMaterialProperty(const PSL::AST::ShaderUniform& uni, Material& material);
 
         void OpenScene();
         void SaveScene();
@@ -62,8 +62,8 @@ namespace Prism
 
         float GetSnapValue();
     private:
-        std::vector<Ref<MaterialInstance>> m_MetalSphereMaterialInstances;
-        std::vector<Ref<MaterialInstance>> m_DielectricSphereMaterialInstances;
+        std::vector<Ref<Material>> m_MetalSphereMaterialInstances;
+        std::vector<Ref<Material>> m_DielectricSphereMaterialInstances;
     private:
         Scope<SceneHierarchyPanel> m_SceneHierarchyPanel;
 

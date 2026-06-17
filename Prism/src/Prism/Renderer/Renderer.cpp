@@ -162,7 +162,7 @@ namespace Prism
 
     
 
-    void Renderer::SubmitQuad(Ref<MaterialInstance> material, const glm::mat4& transform)
+    void Renderer::SubmitQuad(Ref<Material> material, const glm::mat4& transform)
     {
         bool depthTest = true;
         if (material)
@@ -177,7 +177,7 @@ namespace Prism
         s_Data.m_FullscreenQuadIndexBuffer->Bind();
         Renderer::DrawIndexed(6, PrimitiveType::Triangles, depthTest);
     }
-    void Renderer::SubmitFullscreenQuad(Ref<MaterialInstance> material)
+    void Renderer::SubmitFullscreenQuad(Ref<Material> material)
     {
         bool depthTest = true;
         if (material)
@@ -187,7 +187,7 @@ namespace Prism
         s_Data.m_FullscreenQuadIndexBuffer->Bind();
         Renderer::DrawIndexed(6, PrimitiveType::Triangles, depthTest);
     }
-    void Renderer::SubmitMesh(Ref<Mesh> mesh, const glm::mat4& transform, Ref<MaterialInstance> overrideMaterial)
+    void Renderer::SubmitMesh(Ref<Mesh> mesh, const glm::mat4& transform, Ref<Material> overrideMaterial)
     {
         mesh->m_VertexBuffer->Bind();
         mesh->m_Pipeline->Bind();
@@ -210,7 +210,7 @@ namespace Prism
                 if (p == 0)
                     material->Bind();
                 else
-                    material->BindPass(p);
+                    material->Bind(p);
 
                 Renderer::Submit([submesh, material]() {
                     PR_PROFILE_SCOPE("DrawCall With Submesh");

@@ -51,7 +51,7 @@ Shader "Custom/SimplePBR_Static"
             GLSL
             {
                 #pragma shader_feature ALBEDO_MAP NORMAL_MAP METALNESS_MAP ROUGHNESS_MAP
-                #include "PrismBuiltin.glsl"
+                #include "PrismCommon.glsl"
                 #include "PrismPBR.glsl"
                 attribute vec3 a_Position : POSITION;
                 attribute vec3 a_Normal : NORMAL;

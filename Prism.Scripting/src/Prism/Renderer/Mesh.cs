@@ -28,15 +28,15 @@ namespace Prism
             }
         }
 
-        public MaterialInstance GetMaterial(int index)
+        public Material GetMaterial(int index)
         {
             unsafe
             {
-                return new MaterialInstance(InternalCalls.Prism_Mesh_GetMaterialByIndex(m_UnmanagedInstance, index));
+                return new Material(InternalCalls.Prism_Mesh_GetMaterialByIndex(m_UnmanagedInstance, index));
             }
         }
 
-        public void SetMaterial(int index, MaterialInstance material)
+        public void SetMaterial(int index, Material material)
         {
             unsafe
             {
@@ -44,7 +44,7 @@ namespace Prism
             }
         }
 
-        public void SetOverrideMaterial(MaterialInstance material)
+        public void SetOverrideMaterial(Material material)
         {
             unsafe
             {
@@ -52,12 +52,12 @@ namespace Prism
             }
         }
 
-        public MaterialInstance GetOverrideMaterial()
+        public Material GetOverrideMaterial()
         {
             unsafe
             {
                 IntPtr ptr = InternalCalls.Prism_Mesh_GetOverrideMaterial(m_UnmanagedInstance);
-                return ptr != IntPtr.Zero ? new MaterialInstance(ptr) : null;
+                return ptr != IntPtr.Zero ? new Material(ptr) : null;
             }
         }
 

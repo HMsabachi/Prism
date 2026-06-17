@@ -21,7 +21,7 @@ Shader "Prism/Renderer2D"
 
             GLSL
             {
-                #include "PrismBuiltin.glsl"
+                #include "PrismCommon.glsl"
 
                 attribute vec3 a_Position : POSITION;
                 attribute vec4 a_Color : COLOR;

@@ -22,11 +22,18 @@ namespace Prism
     {
     }
 
+    void Material::WriteUniform(const std::string& name, const void* data, uint32_t size)
+    {
+        auto* uni = m_Shader->FindUniform(name);
+        if (!uni) { PR_CORE_WARN("Material - uniform '{0}' not found", name); return; }
+        m_PropertyBuffer.Write((const byte*)data, size, uni->BufferOffset);
+        m_Dirty = true;
+    }
+
     void Material::AllocateStorage()
     {
         auto& layout = m_Shader->GetMaterialLayout();
         uint32_t totalSize = layout.GetTotalSize();
-
         m_PropertyBuffer.Allocate(totalSize);
 
         for (auto& uni : m_Shader->GetUniforms())
@@ -38,10 +45,9 @@ namespace Prism
             if (size == 0) continue;
             if (!uni.DefaultValue.empty())
             {
-                const void* src = &uni.DefaultValue[0];
                 uint32_t copySize = (uint32_t)(uni.DefaultValue.size() * sizeof(Scalar));
                 if (copySize > size) copySize = size;
-                m_PropertyBuffer.Write((const byte*)src, copySize, offset);
+                m_PropertyBuffer.Write((const byte*)&uni.DefaultValue[0], copySize, offset);
             }
         }
 
@@ -61,16 +67,119 @@ namespace Prism
     void Material::OnShaderReloaded()
     {
         AllocateStorage();
-        for (auto mi : m_MaterialInstances)
-            mi->OnShaderReloaded();
     }
 
-    void Material::Bind()
+    void Material::SetShader(const Ref<PrismShader>& shader)
     {
-        BindPass(0);
+        m_Shader = shader;
+        m_Shader->AddShaderReloadedCallback(std::bind(&Material::OnShaderReloaded, this));
+        AllocateStorage();
+        m_KeywordMask = 0;
     }
 
-    void Material::BindPass(uint32_t passIndex)
+#pragma region Setters
+
+    void Material::SetFloat(const std::string& name, float value)
+    {
+        WriteUniform(name, &value, sizeof(float));
+    }
+
+    void Material::SetInt(const std::string& name, int value)
+    {
+        WriteUniform(name, &value, sizeof(int));
+    }
+
+    void Material::SetVec3(const std::string& name, const glm::vec3& value)
+    {
+        WriteUniform(name, &value, sizeof(glm::vec3));
+    }
+
+    void Material::SetVec4(const std::string& name, const glm::vec4& value)
+    {
+        WriteUniform(name, &value, sizeof(glm::vec4));
+    }
+
+    void Material::SetMatrix(const std::string& name, const glm::mat4& value)
+    {
+        WriteUniform(name, &value, sizeof(glm::mat4));
+    }
+
+    void Material::SetTexture(const std::string& name, const Ref<Texture2D>& texture)
+    {
+        auto* uni = m_Shader->FindUniform(name);
+        if (!uni || uni->TextureSlot < 0) { PR_CORE_WARN("Material::SetTexture - '{0}' not found", name); return; }
+        uint32_t slot = (uint32_t)uni->TextureSlot - PSL::PRISM_BINDING_TEXTURE;
+        if (m_Textures.size() <= slot) m_Textures.resize(slot + 1);
+        m_Textures[slot] = texture;
+    }
+
+    void Material::SetTexture(const std::string& name, const Ref<TextureCube>& texture)
+    {
+        auto* uni = m_Shader->FindUniform(name);
+        if (!uni || uni->TextureSlot < 0) { PR_CORE_WARN("Material::SetTexture - '{0}' not found", name); return; }
+        uint32_t slot = (uint32_t)uni->TextureSlot - PSL::PRISM_BINDING_TEXTURE;
+        if (m_Textures.size() <= slot) m_Textures.resize(slot + 1);
+        m_Textures[slot] = texture;
+    }
+
+#pragma endregion
+
+#pragma region Getters
+
+    float Material::GetFloat(const std::string& name) const
+    {
+        auto* uni = m_Shader->FindUniform(name);
+        if (!uni) return 0.0f;
+        return m_PropertyBuffer.Read<float>(uni->BufferOffset);
+    }
+
+    int Material::GetInt(const std::string& name) const
+    {
+        auto* uni = m_Shader->FindUniform(name);
+        if (!uni) return 0;
+        return m_PropertyBuffer.Read<int>(uni->BufferOffset);
+    }
+
+    glm::vec3 Material::GetVec3(const std::string& name) const
+    {
+        auto* uni = m_Shader->FindUniform(name);
+        if (!uni) return glm::vec3(0.0f);
+        return m_PropertyBuffer.Read<glm::vec3>(uni->BufferOffset);
+    }
+
+    glm::vec4 Material::GetVec4(const std::string& name) const
+    {
+        auto* uni = m_Shader->FindUniform(name);
+        if (!uni) return glm::vec4(0.0f);
+        return m_PropertyBuffer.Read<glm::vec4>(uni->BufferOffset);
+    }
+
+    Ref<Texture2D> Material::GetTexture2D(const std::string& name) const
+    {
+        auto* uni = m_Shader->FindUniform(name);
+        if (!uni || uni->TextureSlot < 0 || uni->Type != PSL::PropertyType::Texture2D) return nullptr;
+        uint32_t slot = (uint32_t)uni->TextureSlot - PSL::PRISM_BINDING_TEXTURE;
+        if (slot >= m_Textures.size()) return nullptr;
+        return m_Textures[slot].As<Texture2D>();
+    }
+
+    Ref<TextureCube> Material::GetTextureCube(const std::string& name) const
+    {
+        auto* uni = m_Shader->FindUniform(name);
+        if (!uni || uni->TextureSlot < 0 || uni->Type != PSL::PropertyType::TextureCube) return nullptr;
+        uint32_t slot = (uint32_t)uni->TextureSlot - PSL::PRISM_BINDING_TEXTURE;
+        if (slot >= m_Textures.size()) return nullptr;
+        return m_Textures[slot].As<TextureCube>();
+    }
+
+    bool Material::HasProperty(const std::string& name) const
+    {
+        return m_Shader->FindUniform(name) != nullptr;
+    }
+
+#pragma endregion
+
+    void Material::Bind(uint32_t passIndex)
     {
         Ref<Shader> program = m_Shader->GetPassProgram(passIndex, m_KeywordMask);
         program->Bind();
@@ -87,7 +196,7 @@ namespace Prism
 
     void Material::BindTextures()
     {
-		for (size_t i = 0; i < m_Textures.size(); i++)
+        for (size_t i = 0; i < m_Textures.size(); i++)
         {
             if (m_Textures[i])
                 m_Textures[i]->Bind((uint32_t)i + PSL::PRISM_BINDING_TEXTURE);
@@ -102,152 +211,15 @@ namespace Prism
             return;
         }
         uint8_t index = m_Shader->GetKeywordIndex(name);
-        if (enabled)
-            m_KeywordMask |= (KeywordMask(1) << index);
-        else
-            m_KeywordMask &= ~(KeywordMask(1) << index);
+        if (enabled) m_KeywordMask |= (KeywordMask(1) << index);
+        else         m_KeywordMask &= ~(KeywordMask(1) << index);
     }
 
     bool Material::IsKeywordEnabled(const std::string& name) const
     {
-        if (!m_Shader->IsKeywordDefined(name))
-            return false;
+        if (!m_Shader->IsKeywordDefined(name)) return false;
         uint8_t index = m_Shader->GetKeywordIndex(name);
         return (m_KeywordMask & (KeywordMask(1) << index)) != 0;
-    }
-
-    // MaterialInstance
-
-    Ref<MaterialInstance> MaterialInstance::Create(const Ref<Material>& material, const std::string& name)
-    {
-        return Ref<MaterialInstance>::Create(material, name);
-    }
-
-    MaterialInstance::MaterialInstance(const Ref<Material>& material, const std::string& name)
-        : m_Material(material), m_Name(name)
-    {
-        m_Material->m_MaterialInstances.insert(this);
-        m_KeywordMask = m_Material->m_KeywordMask;
-        AllocateStorage();
-    }
-
-    MaterialInstance::~MaterialInstance()
-    {
-        m_Material->m_MaterialInstances.erase(this);
-    }
-
-    void MaterialInstance::SetShader(const Ref<PrismShader>& shader)
-    {
-        m_Material->m_MaterialInstances.erase(this);
-        m_Material = Material::Create(shader);
-        m_Material->m_MaterialInstances.insert(this);
-        AllocateStorage();
-        m_OverriddenValues.clear();
-        m_KeywordMask = 0;
-    }
-
-    void MaterialInstance::OnShaderReloaded()
-    {
-        AllocateStorage();
-        m_OverriddenValues.clear();
-    }
-
-    void MaterialInstance::AllocateStorage()
-    {
-        auto& layout = m_Material->m_Shader->GetMaterialLayout();
-        uint32_t totalSize = layout.GetTotalSize();
-        m_PropertyBuffer.Allocate(totalSize);
-
-        for (auto& uni : m_Material->m_Shader->GetUniforms())
-        {
-            if (PSL::PropertyTypeUtil::IsTextureType(uni.Type))
-                continue;
-            uint32_t offset = (uint32_t)uni.BufferOffset;
-            uint32_t size = (uint32_t)uni.BufferSize;
-            if (size == 0) continue;
-            if (!uni.DefaultValue.empty())
-            {
-                const void* src = &uni.DefaultValue[0];
-                uint32_t copySize = (uint32_t)(uni.DefaultValue.size() * sizeof(Scalar));
-                if (copySize > size) copySize = size;
-                m_PropertyBuffer.Write((const byte*)src, copySize, offset);
-            }
-        }
-    }
-
-    void MaterialInstance::OnMaterialValueUpdated(const PSL::AST::ShaderUniform* uni)
-    {
-        if (m_OverriddenValues.find(uni->Name) == m_OverriddenValues.end())
-        {
-            auto& materialBuffer = m_Material->m_PropertyBuffer;
-            m_PropertyBuffer.Write(materialBuffer.Data + uni->BufferOffset, uni->BufferSize, uni->BufferOffset);
-        }
-    }
-
-    void MaterialInstance::SetKeyword(const std::string& name, bool enabled)
-    {
-        auto shader = m_Material->m_Shader;
-        if (!shader->IsKeywordDefined(name))
-        {
-            PR_CORE_WARN("Keyword '{0}' not defined in shader '{1}'", name, shader->GetName());
-            return;
-        }
-        uint8_t index = shader->GetKeywordIndex(name);
-        if (enabled)
-            m_KeywordMask |= (KeywordMask(1) << index);
-        else
-            m_KeywordMask &= ~(KeywordMask(1) << index);
-    }
-
-    bool MaterialInstance::IsKeywordEnabled(const std::string& name) const
-    {
-        auto shader = m_Material->m_Shader;
-        if (!shader->IsKeywordDefined(name))
-            return false;
-        uint8_t index = shader->GetKeywordIndex(name);
-        return (m_KeywordMask & (KeywordMask(1) << index)) != 0;
-    }
-
-    void MaterialInstance::Bind()
-    {
-        BindPass(0);
-    }
-
-    void MaterialInstance::BindPass(uint32_t passIndex)
-    {
-        auto shader = m_Material->m_Shader;
-        Ref<Shader> program = shader->GetPassProgram(passIndex, m_KeywordMask);
-        program->Bind();
-        program->ApplyCommand(shader->GetPass(passIndex).Command);
-
-        if (m_Material->m_Dirty)
-        {
-            m_Material->m_UniformBuffer->SetData(m_Material->m_PropertyBuffer);
-            m_Material->m_Dirty = false;
-        }
-
-        Buffer merged;
-        merged.Allocate(m_Material->m_PropertyBuffer.GetSize());
-        memcpy(merged.Data, m_Material->m_PropertyBuffer.Data, m_Material->m_PropertyBuffer.GetSize());
-        for (auto& key : m_OverriddenValues)
-        {
-            auto* uni = shader->FindUniform(key);
-            if (uni && !PSL::PropertyTypeUtil::IsTextureType(uni->Type))
-            {
-                merged.Write(m_PropertyBuffer.Data + uni->BufferOffset,
-                    uni->BufferSize, uni->BufferOffset);
-            }
-        }
-        m_Material->m_UniformBuffer->SetData(merged);
-
-        m_Material->m_UniformBuffer->Bind();
-
-        m_Material->BindTextures();
-        for (size_t i = 0; i < m_Textures.size(); i++)
-        {
-            if (m_Textures[i])
-                m_Textures[i]->Bind((uint32_t)i + PSL::PRISM_BINDING_TEXTURE);
-        }
     }
 
 }

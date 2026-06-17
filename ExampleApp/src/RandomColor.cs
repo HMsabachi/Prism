@@ -10,7 +10,7 @@ namespace Example
     class RandomColor : Behaviour
     {
         Random random = new Random();
-        MaterialInstance material;
+        Material material;
         private void OnCreate()
         {
             MeshComponent meshComponent = GetComponent<MeshComponent>();

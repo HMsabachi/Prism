@@ -139,17 +139,17 @@ namespace Prism {
 
     struct MaterialComponent
     {
-        Ref<MaterialInstance> Material;
+        Ref<Material> material;
 
         MaterialComponent() = default;
         MaterialComponent(const MaterialComponent& other)
-            : Material(other.Material) {
+            : material(other.material) {
         }
-        MaterialComponent(const Ref<MaterialInstance>& material)
-            : Material(material) {
+        MaterialComponent(const Ref<Material>& material)
+            : material(material) {
         }
 
-        operator Ref<Prism::MaterialInstance>() { return Material; }
+        operator Ref<Prism::Material>() { return material; }
     };
 
     struct RigidBody2DComponent

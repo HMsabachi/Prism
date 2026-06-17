@@ -136,11 +136,11 @@ namespace Prism {
         const std::vector<Submesh>& GetSubmeshes() const { return m_Submeshes; }
 
         Ref<PrismShader> GetMeshShader() { return m_MeshShader; }
-        Ref<Material> GetMaterial() { return m_BaseMaterial; }
-        void SetOverrideMaterial(const Ref<MaterialInstance>& material) { m_OverrideMaterial = material; }
-        Ref<MaterialInstance> GetOverrideMaterial() { return m_OverrideMaterial; }
-        void SetMaterial(uint32_t index, const Ref<MaterialInstance>& material) { PR_CORE_ASSERT(index < m_Materials.size()); m_Materials[index] = material; }
-        std::vector<Ref<MaterialInstance>>& GetMaterials() { return m_Materials; }
+        Ref<Material> GetMaterial() { return m_Materials.empty() ? nullptr : m_Materials[0]; }
+        void SetOverrideMaterial(const Ref<Material>& material) { m_OverrideMaterial = material; }
+        Ref<Material> GetOverrideMaterial() { return m_OverrideMaterial; }
+        void SetMaterial(uint32_t index, const Ref<Material>& material) { PR_CORE_ASSERT(index < m_Materials.size()); m_Materials[index] = material; }
+        std::vector<Ref<Material>>& GetMaterials() { return m_Materials; }
         const std::vector<Ref<Texture2D>>& GetTextures() const { return m_Textures; }
         const std::string& GetFilePath() const { return m_FilePath; }
 
@@ -183,11 +183,10 @@ namespace Prism {
 
         // Materials
         Ref<PrismShader> m_MeshShader;
-        Ref<Material> m_BaseMaterial;
-        Ref<MaterialInstance> m_OverrideMaterial;
+        Ref<Material> m_OverrideMaterial;
         std::vector<Ref<Texture2D>> m_Textures;
         std::vector<Ref<Texture2D>> m_NormalMaps;
-        std::vector<Ref<MaterialInstance>> m_Materials;
+        std::vector<Ref<Material>> m_Materials;
 
         std::unordered_map<uint32_t, std::vector<Triangle>> m_TriangleCache;
 

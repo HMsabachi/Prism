@@ -1,5 +1,4 @@
 import PrismNative as _Prism
-from Prism.Renderer.Material import MaterialInstance
 
 class Mesh:
     def __init__(self, filepath=""):
@@ -19,10 +18,10 @@ class Mesh:
         handle = _Prism.Prism_Mesh_GetMaterial(self._handle)
         return Material(handle) if handle else None
 
-    def GetMaterial(self, index) -> 'MaterialInstance':
-        from Prism.Renderer.Material import MaterialInstance
+    def GetMaterial(self, index):
+        from Prism.Renderer.Material import Material
         handle = _Prism.Prism_Mesh_GetMaterialByIndex(self._handle, int(index))
-        return MaterialInstance(handle) if handle else None
+        return Material(handle) if handle else None
 
     def GetMaterialCount(self):
         return _Prism.Prism_Mesh_GetMaterialCount(self._handle)
@@ -36,6 +35,6 @@ class Mesh:
         _Prism.Prism_Mesh_SetOverrideMaterial(self._handle, h)
 
     def GetOverrideMaterial(self):
-        from Prism.Renderer.Material import MaterialInstance
+        from Prism.Renderer.Material import Material
         handle = _Prism.Prism_Mesh_GetOverrideMaterial(self._handle)
-        return MaterialInstance(handle) if handle else None
+        return Material(handle) if handle else None

@@ -1,4 +1,4 @@
-#include "EditorProperty.h"
+﻿#include "EditorProperty.h"
 #include "Prism/Renderer/Texture.h"
 
 namespace Prism
@@ -113,7 +113,7 @@ namespace Prism
     }
 
     bool Property(const std::string& name, const Ref<Texture2D>& texture, uint32_t fallbackRendererID)
-    {
+     {
         ImGui::Text("%s", name.c_str());
         ImGui::NextColumn();
         ImGui::PushItemWidth(-1);
@@ -151,8 +151,7 @@ namespace Prism
         ImGui::PushItemWidth(-1);
 
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
-        uint32_t texID = texture ? texture->GetRendererID() : fallbackRendererID;
-        ImGui::Image((void*)texID, ImVec2(64, 64));
+        ImGui::Image((void*)(intptr_t)fallbackRendererID, ImVec2(64, 64));
         ImGui::PopStyleVar();
 
         if (ImGui::IsItemHovered() && texture)
@@ -161,7 +160,6 @@ namespace Prism
             ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
             ImGui::TextUnformatted(texture->GetPath().c_str());
             ImGui::PopTextWrapPos();
-            ImGui::Image((void*)texture->GetRendererID(), ImVec2(384, 384));
             ImGui::EndTooltip();
         }
 

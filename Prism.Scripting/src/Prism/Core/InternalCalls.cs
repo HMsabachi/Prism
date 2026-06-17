@@ -56,16 +56,10 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<IntPtr, void> Prism_Material_Destructor;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, float, void> Prism_Material_SetFloat;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, IntPtr, void> Prism_Material_SetTexture;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr> Prism_MaterialInstance_Constructor;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, void> Prism_MaterialInstance_Destructor;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, float, void> Prism_MaterialInstance_SetFloat;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, IntPtr, void> Prism_MaterialInstance_SetVector3;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, IntPtr, void> Prism_MaterialInstance_SetVector4;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, IntPtr, void> Prism_MaterialInstance_SetTexture;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, IntPtr, void> Prism_Material_SetVector3;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, IntPtr, void> Prism_Material_SetVector4;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, Bool32, void> Prism_Material_SetKeyword;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, Bool32> Prism_Material_IsKeywordEnabled;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, Bool32, void> Prism_MaterialInstance_SetKeyword;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, Bool32> Prism_MaterialInstance_IsKeywordEnabled;
 
         // RigidBody2DComponent
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector2*, Vector2*, Bool32, void> Prism_RigidBody2DComponent_ApplyLinearImpulse;

@@ -84,8 +84,6 @@ namespace Prism {
 
         m_IsAnimated = scene->mAnimations != nullptr;
         m_MeshShader = m_IsAnimated ? Renderer::GetShaderLibrary()->Get("Custom/SimplePBR_Animated") : Renderer::GetShaderLibrary()->Get("Custom/SimplePBR_Static");
-        m_BaseMaterial = Ref<Material>::Create(m_MeshShader);
-        // m_MaterialInstance = Ref<MaterialInstance>::Create(m_BaseMaterial);
         m_InverseTransform = glm::inverse(Mat4FromAssimpMat4(scene->mRootNode->mTransformation));
 
         uint32_t vertexCount = 0;
@@ -226,7 +224,8 @@ namespace Prism {
                 auto aiMaterial = scene->mMaterials[i];
                 auto aiMaterialName = aiMaterial->GetName();
 
-                auto mi = Ref<MaterialInstance>::Create(m_BaseMaterial, aiMaterialName.C_Str());
+                auto mi = Material::Create(m_MeshShader);
+                mi->SetName(aiMaterialName.C_Str());
                 m_Materials[i] = mi;
 
                 PR_MESH_LOG("Material Name = {0}; Index = {1}", aiMaterialName.data, i);
@@ -260,19 +259,19 @@ namespace Prism {
                     if (texture->Loaded())
                     {
                         m_Textures[i] = texture;
-                        mi->Set("u_AlbedoTexture", m_Textures[i]);
+                        mi->SetTexture("u_AlbedoTexture", m_Textures[i]);
                         mi->SetKeyword("ALBEDO_MAP", true);
                     }
                     else
                     {
                         PR_CORE_ERROR("Could not load texture: {0}", texturePath);
                         // 倒退回反照率颜色
-                        mi->Set("u_AlbedoColor", glm::vec3{ aiColor.r, aiColor.g, aiColor.b });
+                        mi->SetVec3("u_AlbedoColor", glm::vec3{ aiColor.r, aiColor.g, aiColor.b });
                     }
                 }
                 else
                 {
-                    mi->Set("u_AlbedoColor", glm::vec3{ aiColor.r, aiColor.g, aiColor.b });
+                    mi->SetVec3("u_AlbedoColor", glm::vec3{ aiColor.r, aiColor.g, aiColor.b });
                     PR_CORE_TRACE("  No albedo map");
                 }
 
@@ -290,7 +289,7 @@ namespace Prism {
                     auto texture = Texture2D::Create(texturePath);
                     if (texture->Loaded())
                     {
-                        mi->Set("u_NormalTexture", texture);
+                        mi->SetTexture("u_NormalTexture", texture);
                         mi->SetKeyword("NORMAL_MAP", true);
                     }
                     else
@@ -304,7 +303,7 @@ namespace Prism {
                 }
 
                 // Roughness map
-                // mi->Set("u_Roughness", 1.0f);
+                // mi->SetFloat("u_Roughness", 1.0f);
                 // mi->Set("u_RoughnessTexToggle", 0.0f);
                 if (aiMaterial->GetTexture(aiTextureType_SHININESS, 0, &aiTexPath) == AI_SUCCESS)
                 {
@@ -319,7 +318,7 @@ namespace Prism {
                     if (texture->Loaded())
                     {
                         PR_MESH_LOG("  Roughness map path = {0}", texturePath);
-                        mi->Set("u_RoughnessTexture", texture);
+                        mi->SetTexture("u_RoughnessTexture", texture);
                         mi->SetKeyword("ROUGHNESS_MAP", true);
                     }
                     else
@@ -330,7 +329,7 @@ namespace Prism {
                 else
                 {
                     PR_MESH_LOG("  No roughness texture");
-                    mi->Set("u_Roughness", roughness);
+                    mi->SetFloat("u_Roughness", roughness);
                 }
 
 
@@ -347,8 +346,8 @@ namespace Prism {
                     if (texture->Loaded())
                     {
                         PR_MESH_LOG("  Metalness map path = {0}", texturePath);
-                        mi->Set("u_MetalnessTexture", texture);
-                        mi->Set("u_MetalnessTexToggle", 1.0f);
+                        mi->SetTexture("u_MetalnessTexture", texture);
+                        mi->SetFloat("u_MetalnessTexToggle", 1.0f);
                     }
                     else
                     {
@@ -358,7 +357,7 @@ namespace Prism {
                 else
                 {
                     PR_MESH_LOG("  No metalness texture");
-                    mi->Set("u_Metalness", metalness);
+                    mi->SetFloat("u_Metalness", metalness);
                 }
 #endif
 
@@ -438,13 +437,13 @@ namespace Prism {
                             auto texture = Texture2D::Create(texturePath);
                             if (texture->Loaded())
                             {
-                                mi->Set("u_MetalnessTexture", texture);
+                                mi->SetTexture("u_MetalnessTexture", texture);
                                 mi->SetKeyword("METALNESS_MAP", true);
                             }
                             else
                             {
                                 PR_CORE_ERROR("  Could not load texture: {0}", texturePath);
-                                mi->Set("u_Metalness", metalness);
+                                mi->SetFloat("u_Metalness", metalness);
                                 mi->SetKeyword("METALNESS_MAP", false);
                             }
                             break;
@@ -455,7 +454,7 @@ namespace Prism {
                 {
                     PR_MESH_LOG("    No metalness map");
 
-                    mi->Set("u_Metalness", metalness);
+                    mi->SetFloat("u_Metalness", metalness);
                     mi->SetKeyword("METALNESS_MAP", false);
                 }
             }

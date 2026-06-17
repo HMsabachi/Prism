@@ -21,7 +21,7 @@ Shader "Test/MultiPass"
             Name "RedPass"
             GLSL
             {
-                #include "PrismBuiltin.glsl"
+                #include "PrismCommon.glsl"
 
                 attribute vec3 a_Position : POSITION;
                 attribute vec3 a_Normal : NORMAL;
@@ -52,7 +52,7 @@ Shader "Test/MultiPass"
             Name "GreenPass"
             GLSL
             {
-                #include "PrismBuiltin.glsl"
+                #include "PrismCommon.glsl"
 
                 attribute vec3 a_Position : POSITION;
                 attribute vec3 a_Normal : NORMAL;

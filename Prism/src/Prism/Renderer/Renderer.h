@@ -10,9 +10,9 @@ namespace Prism
 {
     class ShaderLibrary;
     class Camera;
-    class MaterialInstance;
     class Mesh;
     class FrameUniformBuffer;
+    class Material;
 }
 
 namespace Prism
@@ -57,9 +57,9 @@ namespace Prism
 
         static void WaitAndRender();	
 
-        static void SubmitQuad(Ref<MaterialInstance> material, const glm::mat4& transform = glm::mat4(1.0f));
-        static void SubmitFullscreenQuad(Ref<MaterialInstance> material);
-        static void SubmitMesh(Ref<Mesh> mesh, const glm::mat4& transform, Ref<MaterialInstance> overrideMaterial = nullptr);
+        static void SubmitQuad(Ref<Material> material, const glm::mat4& transform = glm::mat4(1.0f));
+        static void SubmitFullscreenQuad(Ref<Material> material);
+        static void SubmitMesh(Ref<Mesh> mesh, const glm::mat4& transform, Ref<Material> overrideMaterial = nullptr);
 
 
         static void DrawAABB(const AABB& aabb, const glm::mat4& transform, const glm::vec4& color = glm::vec4(1.0f,0.0f,0.0f,1.0f));

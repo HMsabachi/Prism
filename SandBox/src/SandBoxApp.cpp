@@ -54,12 +54,12 @@ public:
 		PR_TRACE(*m_GridShader);
 		//m_Mesh.reset(new Prism::Mesh("Assets/meshes/cerberus.fbx"));
 		m_Mesh.reset(new Prism::Mesh("Assets/models/m1911/m1911.fbx"));
-		m_MeshMaterial.reset(new Prism::MaterialInstance(m_Mesh->GetMaterial()));
+		m_MeshMaterial.reset(new Prism::Material(m_Mesh->GetMaterial()));
 		//m_SphereMesh.reset(new Prism::Mesh("Assets/models/Sphere.fbx"));
 		m_SphereMesh.reset(new Prism::Mesh("Assets/models/Sphere1m.fbx"));
 		m_PlaneMesh.reset(new Prism::Mesh("Assets/models/Plane1m.obj"));
 
-		m_GridMaterial = Prism::MaterialInstance::Create(Prism::Material::Create(m_GridShader));
+		m_GridMaterial = Prism::Material::Create(Prism::Material::Create(m_GridShader));
 		m_GridMaterial->Set("u_Scale", m_GridScale);
 		m_GridMaterial->Set("u_Res", m_GridSize);
 		// Editor
@@ -78,26 +78,26 @@ public:
 		float roughness = 0.0f;
 		for (int i = 0; i < 8; i++)
 		{
-			Prism::Ref<Prism::MaterialInstance> mi(new Prism::MaterialInstance(m_SphereMesh->GetMaterial()));
+			Prism::Ref<Prism::Material> mi(new Prism::Material(m_SphereMesh->GetMaterial()));
 			mi->Set("u_Metalness", 1.0f);
 			mi->Set("u_Roughness", roughness);
 			mi->Set("Prism_Model", translate(mat4(1.0f), vec3(x, 0.0f, 0.0f)));
 			x += 1.1f;
 			roughness += 0.15f;
-			m_MetalSphereMaterialInstances.push_back(mi);
+			m_MetalSphereMaterials.push_back(mi);
 		}
 
 		x = -4.0f;
 		roughness = 0.0f;
 		for (int i = 0; i < 8; i++)
 		{
-			Prism::Ref<Prism::MaterialInstance> mi(new Prism::MaterialInstance(m_SphereMesh->GetMaterial()));
+			Prism::Ref<Prism::Material> mi(new Prism::Material(m_SphereMesh->GetMaterial()));
 			mi->Set("u_Metalness", 0.0f);
 			mi->Set("u_Roughness", roughness);
 			mi->Set("Prism_Model", translate(mat4(1.0f), vec3(x, 1.2f, 0.0f)));
 			x += 1.1f;
 			roughness += 0.15f;
-			m_DielectricSphereMaterialInstances.push_back(mi);
+			m_DielectricSphereMaterials.push_back(mi);
 		}
 
 		// Create Quad
@@ -213,11 +213,11 @@ public:
 		{
 			for (int i = 0; i < 8; i++)
 			{
-				m_SphereMesh->Render(Time::GetDeltaTime(), glm::mat4(1.0f), m_MetalSphereMaterialInstances[i]);
+				m_SphereMesh->Render(Time::GetDeltaTime(), glm::mat4(1.0f), m_MetalSphereMaterials[i]);
 			}
 			for (int i = 0; i < 8; i++)
 			{
-				m_SphereMesh->Render(Time::GetDeltaTime(), glm::mat4(1.0f), m_DielectricSphereMaterialInstances[i]);
+				m_SphereMesh->Render(Time::GetDeltaTime(), glm::mat4(1.0f), m_DielectricSphereMaterials[i]);
 			}
 
 		}
@@ -653,10 +653,10 @@ private:
 private:
 	glm::vec3 m_ModelPosition = { 0.f, 0.0f, 0.0f };
 	float m_ModelRotation = 0.0f;
-	Prism::Ref<Prism::MaterialInstance> m_MeshMaterial;
-	Prism::Ref<Prism::MaterialInstance> m_GridMaterial;
-	std::vector<Prism::Ref<Prism::MaterialInstance>> m_MetalSphereMaterialInstances;
-	std::vector<Prism::Ref<Prism::MaterialInstance>> m_DielectricSphereMaterialInstances;
+	Prism::Ref<Prism::Material> m_MeshMaterial;
+	Prism::Ref<Prism::Material> m_GridMaterial;
+	std::vector<Prism::Ref<Prism::Material>> m_MetalSphereMaterials;
+	std::vector<Prism::Ref<Prism::Material>> m_DielectricSphereMaterials;
 
 	float m_GridScale = 16.025f, m_GridSize = 0.025f;
 	float m_MeshScale = 1.0f;

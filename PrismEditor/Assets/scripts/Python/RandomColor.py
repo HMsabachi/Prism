@@ -1,7 +1,6 @@
 import random
 from Prism import Behaviour, MeshComponent, Time, Log
 from Prism.Math import Vector3
-from Prism.Renderer.Material import MaterialInstance
 
 
 class RandomColor(Behaviour):

@@ -13,7 +13,7 @@ namespace Example
         public float JumpForce = 10.0f;
 
         private RigidBodyComponent m_PhysicsBody;
-        private MaterialInstance m_MeshMaterial;
+        private Material m_MeshMaterial;
 
         int m_CollisionCounter = 0;
 

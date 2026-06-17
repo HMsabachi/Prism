@@ -62,12 +62,12 @@ namespace Prism
             InternalCalls.Prism_MeshComponent_SetMesh(id, unmanagedInstance);
         }
 
-        public MaterialInstance GetMaterial(int index)
+        public Material GetMaterial(int index)
         {
             return Mesh.GetMaterial(index);
         }
 
-        public void SetMaterial(int index, MaterialInstance material)
+        public void SetMaterial(int index, Material material)
         {
             if (Mesh != null)
                 Mesh.SetMaterial(index, material);
@@ -78,13 +78,13 @@ namespace Prism
             return Mesh?.GetMaterialCount() ?? 0;
         }
 
-        public void SetOverrideMaterial(MaterialInstance material)
+        public void SetOverrideMaterial(Material material)
         {
             if (Mesh != null)
                 Mesh.SetOverrideMaterial(material);
         }
 
-        public MaterialInstance GetOverrideMaterial()
+        public Material GetOverrideMaterial()
         {
             return Mesh.GetOverrideMaterial();
         }
@@ -98,7 +98,7 @@ namespace Prism
 
     public class MaterialComponent : Component
     {
-        public MaterialInstance Material
+        public Material Material
         {
             get
             {
@@ -108,8 +108,8 @@ namespace Prism
                     ptr = InternalCalls.Prism_MaterialComponent_GetMaterial(Entity.ID);
                 }
                 if (ptr == IntPtr.Zero)
-                    throw new NullReferenceException("MaterialInstance Not Exists");
-                return new MaterialInstance(ptr);
+                    throw new NullReferenceException("Material Not Exists");
+                return new Material(ptr);
             }
             set
             {

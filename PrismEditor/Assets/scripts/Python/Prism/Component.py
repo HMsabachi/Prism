@@ -176,9 +176,9 @@ class MaterialComponent(Component):
 
     @property
     def Material(self):
-        from Prism.Renderer.Material import MaterialInstance
+        from Prism.Renderer.Material import Material
         handle = _Prism.Prism_MaterialComponent_GetMaterial(self.Entity._id)
-        return MaterialInstance(handle) if handle else None
+        return Material(handle) if handle else None
 
     @Material.setter
     def Material(self, value):

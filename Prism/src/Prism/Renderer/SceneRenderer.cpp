@@ -25,7 +25,7 @@ namespace Prism
             SceneRendererCamera SceneCamera;
 
             // Resources
-            Ref<MaterialInstance> SkyboxMaterial;
+            Ref<Material> SkyboxMaterial;
             Environment SceneEnvironment;
             Light ActiveLight;
 
@@ -41,7 +41,7 @@ namespace Prism
         struct DrawCommand
         {
             Ref<Mesh> Mesh;
-            Ref<MaterialInstance> Material;
+            Ref<Material> Material;
             glm::mat4 Transform;
         };
         std::vector<DrawCommand> DrawList;
@@ -49,13 +49,13 @@ namespace Prism
         std::vector<DrawCommand> ColliderDrawList;
 
         // Grid
-        Ref<MaterialInstance> GridMaterial;
-        Ref<MaterialInstance> OutlineMaterial;
-        Ref<MaterialInstance> ColliderMaterial;
+        Ref<Material> GridMaterial;
+        Ref<Material> OutlineMaterial;
+        Ref<Material> ColliderMaterial;
 
         // Shadow
         Ref<Framebuffer> ShadowFBOs[4];
-        Ref<MaterialInstance> ShadowDepthMaterial;
+        Ref<Material> ShadowDepthMaterial;
 
         uint32_t CascadeCount = 0;
         glm::mat4 ShadowMatrices[4]{};
@@ -95,17 +95,17 @@ namespace Prism
 
         // Grid
         auto gridShader = Renderer::GetShaderLibrary()->Get("Custom/Grid");
-        s_Data.GridMaterial = MaterialInstance::Create(Material::Create(gridShader));
+        s_Data.GridMaterial = Material::Create(gridShader);
         float gridScale = 16.025f, gridSize = 0.025f;
-        s_Data.GridMaterial->Set("u_Scale", gridScale);
-        s_Data.GridMaterial->Set("u_Res", gridSize);
+        s_Data.GridMaterial->SetFloat("u_Scale", gridScale);
+        s_Data.GridMaterial->SetFloat("u_Res", gridSize);
         // Outline
         auto outlineShader = Renderer::GetShaderLibrary()->Get("Standard/Outline");
-        s_Data.OutlineMaterial = MaterialInstance::Create(Material::Create(outlineShader));
+        s_Data.OutlineMaterial = Material::Create(outlineShader);
 
         // Collider
         auto colliderShader = Renderer::GetShaderLibrary()->Get("Debug/Collider");
-        s_Data.ColliderMaterial = MaterialInstance::Create(Material::Create(colliderShader));
+        s_Data.ColliderMaterial = Material::Create(colliderShader);
 
         // Shadow FBOs
         FramebufferSpecification shadowFBOSpec;
@@ -117,7 +117,7 @@ namespace Prism
 
         // Shadow depth material
         auto shadowShader = Renderer::GetShaderLibrary()->Get("Hidden/ShadowDepth");
-        s_Data.ShadowDepthMaterial = MaterialInstance::Create(Material::Create(shadowShader));
+        s_Data.ShadowDepthMaterial = Material::Create(shadowShader);
     }
 
     void SceneRenderer::SetViewportSize(uint32_t width, uint32_t height)
@@ -162,7 +162,7 @@ namespace Prism
         s_Data.ActiveScene = nullptr;
     }
 
-    void SceneRenderer::SubmitMesh(Ref<Mesh> mesh, const glm::mat4& transform, Ref<MaterialInstance> overrideMaterial)
+    void SceneRenderer::SubmitMesh(Ref<Mesh> mesh, const glm::mat4& transform, Ref<Material> overrideMaterial)
     {
         // TODO: Culling, sorting, etc.
 
@@ -279,7 +279,8 @@ namespace Prism
         // 描边相关
         bool outline = s_Data.SelectedMeshDrawList.size() > 0;
         bool collider = s_Data.ColliderDrawList.size() > 0;
-        //outline = false;
+        outline = false;
+        collider = false;
         if (outline || collider)
         {
             Renderer::Submit([]()
@@ -312,9 +313,9 @@ namespace Prism
         {
             auto baseMaterial = dc.Mesh->GetMaterial();
             // Environment
-            baseMaterial->Set("u_EnvRadianceTex", s_Data.SceneData.SceneEnvironment.RadianceMap);
-            baseMaterial->Set("u_EnvIrradianceTex", s_Data.SceneData.SceneEnvironment.IrradianceMap);
-            baseMaterial->Set("u_BRDFLUTTexture", s_Data.BRDFLUT);
+            baseMaterial->SetTexture("u_EnvRadianceTex", s_Data.SceneData.SceneEnvironment.RadianceMap);
+            baseMaterial->SetTexture("u_EnvIrradianceTex", s_Data.SceneData.SceneEnvironment.IrradianceMap);
+            baseMaterial->SetTexture("u_BRDFLUTTexture", s_Data.BRDFLUT);
 
             auto overrideMaterial = dc.Material ? dc.Material : dc.Mesh->GetOverrideMaterial();
             Renderer::SubmitMesh(dc.Mesh, dc.Transform, overrideMaterial);
@@ -332,9 +333,9 @@ namespace Prism
         {
             auto baseMaterial = dc.Mesh->GetMaterial();
             // Environment (TODO: don't do this per mesh)
-            baseMaterial->Set("u_EnvRadianceTex", s_Data.SceneData.SceneEnvironment.RadianceMap);
-            baseMaterial->Set("u_EnvIrradianceTex", s_Data.SceneData.SceneEnvironment.IrradianceMap);
-            baseMaterial->Set("u_BRDFLUTTexture", s_Data.BRDFLUT);
+            baseMaterial->SetTexture("u_EnvRadianceTex", s_Data.SceneData.SceneEnvironment.RadianceMap);
+            baseMaterial->SetTexture("u_EnvIrradianceTex", s_Data.SceneData.SceneEnvironment.IrradianceMap);
+            baseMaterial->SetTexture("u_BRDFLUTTexture", s_Data.BRDFLUT);
             auto overrideMaterial = nullptr; // dc.Material;
             Renderer::SubmitMesh(dc.Mesh, dc.Transform, overrideMaterial);
         }
@@ -349,7 +350,6 @@ namespace Prism
                     glLineWidth(10);
                     glEnable(GL_LINE_SMOOTH);
                     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-                    //glDisable(GL_DEPTH_TEST);
                 });
 
             // Draw outline here
@@ -373,7 +373,6 @@ namespace Prism
                     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
                     glStencilMask(0xff);
                     glStencilFunc(GL_ALWAYS, 1, 0xff);
-                    //glEnable(GL_DEPTH_TEST);
                 });
         }
 
@@ -438,8 +437,8 @@ namespace Prism
         PR_PROFILE_FUNCTION();
         Renderer::BeginRenderPass(s_Data.CompositePass);
         s_Data.GeoPass->GetSpecification().TargetFramebuffer->BindTexture(PSL::PRISM_GEOMETRY_PASS_TEXTURE);
-        s_Data.CompositeMaterial->Set("u_Exposure", s_Data.SceneData.SceneCamera.Camera.GetExposure());
-        s_Data.CompositeMaterial->Set("Prism_GeometryPassTextureSamples", (int)s_Data.GeoPass->GetSpecification().TargetFramebuffer->GetSpecification().Samples);
+        s_Data.CompositeMaterial->SetFloat("u_Exposure", s_Data.SceneData.SceneCamera.Camera.GetExposure());
+        s_Data.CompositeMaterial->SetInt("Prism_GeometryPassTextureSamples", (int)s_Data.GeoPass->GetSpecification().TargetFramebuffer->GetSpecification().Samples);
         s_Data.CompositeMaterial->Bind();
         Renderer::SubmitFullscreenQuad(nullptr);
         Renderer::EndRenderPass();

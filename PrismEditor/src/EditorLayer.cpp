@@ -311,7 +311,7 @@ namespace Prism
             return 0.0f;
         }
 
-        void EditorLayer::DrawMaterialProperty(const PSL::AST::ShaderUniform& uni, MaterialInstance& materialInstance)
+        void EditorLayer::DrawMaterialProperty(const PSL::AST::ShaderUniform& uni, Material& material)
         {
             const auto& name = uni.Name;
             const auto& displayName = uni.DisplayName.empty() ? uni.Name : uni.DisplayName;
@@ -320,68 +320,78 @@ namespace Prism
             {
             case PSL::PropertyType::Float:
             {
-                auto& value = materialInstance.Get<float>(name);
-                Property(displayName, value);
+                float value = material.GetFloat(name);
+                if (Property(displayName, value))
+                    material.SetFloat(name, value);
                 break;
             }
             case PSL::PropertyType::Range:
             {
-                auto& value = materialInstance.Get<float>(name);
-                Property(displayName, value, uni.RangeMin, uni.RangeMax, PropertyFlag::SliderProperty);
+                float value = material.GetFloat(name);
+                if (Property(displayName, value, uni.RangeMin, uni.RangeMax, PropertyFlag::SliderProperty))
+                    material.SetFloat(name, value);
                 break;
             }
             case PSL::PropertyType::Color:
             case PSL::PropertyType::Color3:
             {
-                auto& color = materialInstance.Get<glm::vec3>(name);
-                Property(displayName, color, PropertyFlag::ColorProperty);
+                glm::vec3 color = material.GetVec3(name);
+                if (Property(displayName, color, PropertyFlag::ColorProperty))
+                    material.SetVec3(name, color);
                 break;
             }
             case PSL::PropertyType::Vector2:
             {
-                auto& vec2 = materialInstance.Get<glm::vec2>(name);
-                Property(displayName, vec2);
+                glm::vec3 v = material.GetVec3(name);
+                glm::vec2 vec2(v.x, v.y);
+                if (Property(displayName, vec2))
+                    material.SetVec3(name, glm::vec3(vec2.x, vec2.y, v.z));
                 break;
             }
             case PSL::PropertyType::Vector3:
             {
-                auto& vec3 = materialInstance.Get<glm::vec3>(name);
-                Property(displayName, vec3);
+                glm::vec3 vec3 = material.GetVec3(name);
+                if (Property(displayName, vec3))
+                    material.SetVec3(name, vec3);
                 break;
             }
             case PSL::PropertyType::Vector4:
             {
-                auto& vec4 = materialInstance.Get<glm::vec4>(name);
-                Property(displayName, vec4);
+                glm::vec4 vec4 = material.GetVec4(name);
+                if (Property(displayName, vec4))
+                    material.SetVec4(name, vec4);
                 break;
             }
             case PSL::PropertyType::Int:
             {
-                auto& value = materialInstance.Get<Type::Int>(name);
-                Property(displayName, value);
+                int value = material.GetInt(name);
+                if (Property(displayName, value))
+                    material.SetInt(name, value);
                 break;
             }
             case PSL::PropertyType::Bool:
             {
-                bool& b = materialInstance.Get<Type::Bool>(name);
-                Property(displayName, b);
+                int value = material.GetInt(name);
+                bool b = (value != 0);
+                if (Property(displayName, b))
+                    material.SetInt(name, b ? 1 : 0);
                 break;
             }
             case PSL::PropertyType::Texture2D:
             {
-                Ref<Texture2D> texture = materialInstance.TryGetResource<Texture2D>(name);
-                if (Property(displayName, texture, m_CheckerboardTex->GetRendererID()))
+                auto texture2D = material.GetTexture2D(name);
+                if (Property(displayName, texture2D, m_CheckerboardTex->GetRendererID()))
                 {
                     std::string filename = Application::Get().OpenFile("");
                     if (!filename.empty())
-                        materialInstance.Set(name, Texture2D::Create(filename));
+                        material.SetTexture(name, Texture2D::Create(filename));
                 }
                 break;
             }
             case PSL::PropertyType::TextureCube:
             {
-                Ref<TextureCube> texture = materialInstance.TryGetResource<TextureCube>(name);
-                Property(displayName, texture, m_CheckerboardTex->GetRendererID());
+                auto textureCube = material.GetTextureCube(name);
+                Property(displayName, textureCube, m_CheckerboardTex->GetRendererID());
                 break;
             }
             default:
@@ -788,10 +798,10 @@ namespace Prism
                         static uint32_t selectedMaterialIndex = 0;
                         for (uint32_t i = 0; i < materials.size(); i++)
                         {
-                            auto& materialInstance = materials[i];
+                            auto& material = materials[i];
 
                             ImGuiTreeNodeFlags node_flags = (selectedMaterialIndex == i ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_Leaf;
-                            bool opened = ImGui::TreeNodeEx((void*)(&materialInstance), node_flags, materialInstance->GetName().c_str());
+                            bool opened = ImGui::TreeNodeEx((void*)(&material), node_flags, material->GetName().c_str());
                             if (ImGui::IsItemClicked())
                             {
                                 selectedMaterialIndex = i;
@@ -805,9 +815,9 @@ namespace Prism
                         // Selected material
                         if (selectedMaterialIndex < materials.size())
                         {
-                            auto& materialInstance = materials[selectedMaterialIndex];
+                            auto& material = materials[selectedMaterialIndex];
                             {
-                                auto currentShader = materialInstance->GetShader();
+                                auto currentShader = material->GetShader();
                                 std::string shaderName = currentShader->GetName();
                                 if (ImGui::BeginCombo("Shader", shaderName.c_str()))
                                 {
@@ -818,7 +828,7 @@ namespace Prism
                                         if (ImGui::Selectable(name.c_str(), isSelected))
                                         {
                                             if (shader != currentShader)
-                                                materialInstance->SetShader(shader);
+                                                material->SetShader(shader);
                                         }
                                         if (isSelected)
                                             ImGui::SetItemDefaultFocus();
@@ -828,15 +838,15 @@ namespace Prism
                             }
 
                             ImGui::Columns(2);
-                            auto& uniforms = materialInstance->GetShader()->GetUniforms();
+                            auto& uniforms = material->GetShader()->GetUniforms();
                             for (const auto& uni : uniforms)
                             {
-                                DrawMaterialProperty(uni, *materialInstance);
+                                DrawMaterialProperty(uni, *material);
                             }
                             ImGui::Columns(1);
 
                             // Keyword toggles
-                            auto shader = materialInstance->GetShader();
+                            auto shader = material->GetShader();
                             const auto& keywords = shader->GetKeywords();
                             if (!keywords.empty())
                             {
@@ -844,9 +854,9 @@ namespace Prism
                                 ImGui::Text(TR("Shader Keywords"));
                                 for (const auto& kw : keywords)
                                 {
-                                    bool enabled = materialInstance->IsKeywordEnabled(kw.Name);
+                                    bool enabled = material->IsKeywordEnabled(kw.Name);
                                     if (ImGui::Checkbox(kw.Name.c_str(), &enabled))
-                                        materialInstance->SetKeyword(kw.Name, enabled);
+                                        material->SetKeyword(kw.Name, enabled);
                                 }
                             }
                         }

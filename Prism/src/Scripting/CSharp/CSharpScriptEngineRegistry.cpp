@@ -137,17 +137,11 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_Material_Constructor);
         PR_ADD_INTERNAL_CALL(Prism_Material_Destructor);
         PR_ADD_INTERNAL_CALL(Prism_Material_SetFloat);
+        PR_ADD_INTERNAL_CALL(Prism_Material_SetVector3);
+        PR_ADD_INTERNAL_CALL(Prism_Material_SetVector4);
         PR_ADD_INTERNAL_CALL(Prism_Material_SetTexture);
-        PR_ADD_INTERNAL_CALL(Prism_MaterialInstance_Constructor);
-        PR_ADD_INTERNAL_CALL(Prism_MaterialInstance_Destructor);
-        PR_ADD_INTERNAL_CALL(Prism_MaterialInstance_SetFloat);
-        PR_ADD_INTERNAL_CALL(Prism_MaterialInstance_SetVector3);
-        PR_ADD_INTERNAL_CALL(Prism_MaterialInstance_SetVector4);
-        PR_ADD_INTERNAL_CALL(Prism_MaterialInstance_SetTexture);
         PR_ADD_INTERNAL_CALL(Prism_Material_SetKeyword);
         PR_ADD_INTERNAL_CALL(Prism_Material_IsKeywordEnabled);
-        PR_ADD_INTERNAL_CALL(Prism_MaterialInstance_SetKeyword);
-        PR_ADD_INTERNAL_CALL(Prism_MaterialInstance_IsKeywordEnabled);
 
         engineAssembly.UploadInternalCalls();
     }

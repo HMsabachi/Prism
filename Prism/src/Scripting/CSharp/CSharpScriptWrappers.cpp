@@ -313,13 +313,13 @@ namespace Prism {
             return new Ref<Material>(mesh->GetMaterial());
         }
 
-        Prism::Ref<Prism::MaterialInstance>* Prism_Mesh_GetMaterialByIndex(Ref<Mesh>* inMesh, int32_t index)
+        Prism::Ref<Prism::Material>* Prism_Mesh_GetMaterialByIndex(Ref<Mesh>* inMesh, int32_t index)
         {
             Ref<Mesh>& mesh = *(Ref<Mesh>*)inMesh;
             const auto& materials = mesh->GetMaterials();
 
             PR_CORE_ASSERT(index < materials.size());
-            return new Ref<MaterialInstance>(materials[index]);
+            return new Ref<Material>(materials[index]);
         }
 
         int32_t Prism_Mesh_GetMaterialCount(Ref<Mesh>* inMesh)
@@ -329,23 +329,23 @@ namespace Prism {
             return materials.size();
         }
 
-        void Prism_Mesh_SetMaterialByIndex(Ref<Mesh>* inMesh, int32_t index, Ref<MaterialInstance>* material)
+        void Prism_Mesh_SetMaterialByIndex(Ref<Mesh>* inMesh, int32_t index, Ref<Material>* material)
         {
             Ref<Mesh>& mesh = *(Ref<Mesh>*)inMesh;
             mesh->SetMaterial(index, material ? *material : nullptr);
         }
 
-        void Prism_Mesh_SetOverrideMaterial(Ref<Mesh>* inMesh, Ref<MaterialInstance>* material)
+        void Prism_Mesh_SetOverrideMaterial(Ref<Mesh>* inMesh, Ref<Material>* material)
         {
             Ref<Mesh>& mesh = *(Ref<Mesh>*)inMesh;
             mesh->SetOverrideMaterial(material ? *material : nullptr);
         }
 
-        Prism::Ref<Prism::MaterialInstance>* Prism_Mesh_GetOverrideMaterial(Ref<Mesh>* inMesh)
+        Prism::Ref<Prism::Material>* Prism_Mesh_GetOverrideMaterial(Ref<Mesh>* inMesh)
         {
             Ref<Mesh>& mesh = *(Ref<Mesh>*)inMesh;
             auto overrideMat = mesh->GetOverrideMaterial();
-            return overrideMat ? new Ref<MaterialInstance>(overrideMat) : nullptr;
+            return overrideMat ? new Ref<Material>(overrideMat) : nullptr;
         }
 
         void* Prism_MeshFactory_CreatePlane(float width, float height)
@@ -391,7 +391,7 @@ namespace Prism {
 #pragma endregion
 
 #pragma region MaterialComponent
-    Ref<MaterialInstance>* Prism_MaterialComponent_GetMaterial(uint64_t entityID)
+    Ref<Material>* Prism_MaterialComponent_GetMaterial(uint64_t entityID)
     {
         WeakRef<Scene> scene = CSharpScriptEngine::GetCurrentSceneContext();
         PR_CORE_ASSERT(scene, "No active scene!");
@@ -399,10 +399,10 @@ namespace Prism {
         PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
         Entity entity = entityMap.at(entityID);
         auto& materialComponent = entity.GetComponent<MaterialComponent>();
-        return new Ref<MaterialInstance>(materialComponent.Material);
+        return new Ref<Material>(materialComponent.material);
     }
 
-    void Prism_MaterialComponent_SetMaterial(uint64_t entityID, Ref<MaterialInstance>* materialInstance)
+    void Prism_MaterialComponent_SetMaterial(uint64_t entityID, Ref<Material>* material)
     {
         WeakRef<Scene> scene = CSharpScriptEngine::GetCurrentSceneContext();
         PR_CORE_ASSERT(scene, "No active scene!");
@@ -410,7 +410,7 @@ namespace Prism {
         PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
         Entity entity = entityMap.at(entityID);
         auto& materialComponent = entity.GetComponent<MaterialComponent>();
-        materialComponent.Material = materialInstance ? *materialInstance : nullptr;
+        materialComponent.material = material ? *material : nullptr;
     }
 
 #pragma endregion
@@ -572,87 +572,40 @@ namespace Prism {
 
         void Prism_Material_SetFloat(Ref<Material>* _this, Rolky::String uniform, float value)
         {
-            Ref<Material>& instance = *(Ref<Material>*)_this;
-            instance->Set(uniform, value);
+            (*_this)->SetFloat(uniform, value);
             uniform.Free(uniform);
         }
 
         void Prism_Material_SetTexture(Ref<Material>* _this, Rolky::String uniform, Ref<Texture2D>* texture)
         {
-            Ref<Material>& instance = *(Ref<Material>*)_this;
-            instance->Set(uniform, *texture);
+            (*_this)->SetTexture(uniform, *texture);
             uniform.Free(uniform);
         }
 
-        Ref<MaterialInstance>* Prism_MaterialInstance_Constructor(Ref<Material>* parent)
+        void Prism_Material_SetVector3(Ref<Material>* _this, Rolky::String uniform, glm::vec3* value)
         {
-            Ref<Material>& material = *(Ref<Material>*)parent;
-            return new Ref<MaterialInstance>(MaterialInstance::Create(material));
-        }
-
-        void Prism_MaterialInstance_Destructor(Ref<MaterialInstance>* _this)
-        {
-            delete _this;
-        }
-
-        void Prism_MaterialInstance_SetFloat(Ref<MaterialInstance>* _this, Rolky::String uniform, float value)
-        {
-            Ref<MaterialInstance>& instance = *(Ref<MaterialInstance>*)_this;
-            instance->Set(uniform, value);
+            (*_this)->SetVec3(uniform, *value);
             uniform.Free(uniform);
         }
 
-        void Prism_MaterialInstance_SetVector3(Ref<MaterialInstance>* _this, Rolky::String uniform, glm::vec3* value)
+        void Prism_Material_SetVector4(Ref<Material>* _this, Rolky::String uniform, glm::vec4* value)
         {
-            Ref<MaterialInstance>& instance = *(Ref<MaterialInstance>*)_this;
-            instance->Set(uniform, *value);
-            uniform.Free(uniform);
-        }
-
-        void Prism_MaterialInstance_SetVector4(Ref<MaterialInstance>* _this, Rolky::String uniform, glm::vec4* value)
-        {
-            Ref<MaterialInstance>& instance = *(Ref<MaterialInstance>*)_this;
-            instance->Set(uniform, *value);
-            uniform.Free(uniform);
-        }
-
-        void Prism_MaterialInstance_SetTexture(Ref<MaterialInstance>* _this, Rolky::String uniform, Ref<Texture2D>* texture)
-        {
-            Ref<MaterialInstance>& instance = *(Ref<MaterialInstance>*)_this;
-            instance->Set(uniform, *texture);
+            (*_this)->SetVec4(uniform, *value);
             uniform.Free(uniform);
         }
 
         void Prism_Material_SetKeyword(Ref<Material>* _this, Rolky::String name, Rolky::Bool32 enabled)
         {
-            Ref<Material>& instance = *(Ref<Material>*)_this;
             std::string kwName = name;
             name.Free(name);
-            instance->SetKeyword(kwName, enabled);
+            (*_this)->SetKeyword(kwName, enabled);
         }
 
         Rolky::Bool32 Prism_Material_IsKeywordEnabled(Ref<Material>* _this, Rolky::String name)
         {
-            Ref<Material>& instance = *(Ref<Material>*)_this;
             std::string kwName = name;
             name.Free(name);
-            return instance->IsKeywordEnabled(kwName);
-        }
-
-        void Prism_MaterialInstance_SetKeyword(Ref<MaterialInstance>* _this, Rolky::String name, Rolky::Bool32 enabled)
-        {
-            Ref<MaterialInstance>& instance = *(Ref<MaterialInstance>*)_this;
-            std::string kwName = name;
-            name.Free(name);
-            instance->SetKeyword(kwName, enabled);
-        }
-
-        Rolky::Bool32 Prism_MaterialInstance_IsKeywordEnabled(Ref<MaterialInstance>* _this, Rolky::String name)
-        {
-            Ref<MaterialInstance>& instance = *(Ref<MaterialInstance>*)_this;
-            std::string kwName = name;
-            name.Free(name);
-            return instance->IsKeywordEnabled(kwName);
+            return (*_this)->IsKeywordEnabled(kwName);
         }
 
 #pragma endregion
