@@ -29,7 +29,7 @@ Shader "Prism/Renderer2D"
                 attribute float a_TexIndex : INDEX0;
                 attribute float a_TilingFactor : OTHER0;
 
-                layout(binding = 16) uniform sampler2D u_Textures[32];
+                layout(binding = 16) uniform sampler2D u_Textures[16];
 
                 VARYING VertexOutput
                 {

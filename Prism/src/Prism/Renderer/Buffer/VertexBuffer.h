@@ -1,11 +1,11 @@
 ﻿#pragma once
 #include "BufferData.h"
-#include "Prism/Shader/Property/VertexType.h"
+#include <PrismShaderCore/Property/VertexType.h>
 
 #include "../RendererAPI.h"
 
 namespace Prism {
-    using PSL::VertexSemantic;
+    using PrismShaderCompiler::VertexSemantic;
 
 #pragma region 布局相关
 

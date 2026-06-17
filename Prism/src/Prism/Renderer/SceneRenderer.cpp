@@ -6,7 +6,7 @@
 #include "Buffer/FrameUniformBuffer.h"
 #include "Renderer.h"
 #include "Renderer2D.h"
-#include "Prism/Shader/PSL/PrismBindings.h"
+#include "Prism/ShaderCompiler/PrismBindings.h"
 #include "Prism/Renderer/Camera/Camera.h"
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -306,7 +306,7 @@ namespace Prism
         if (s_Data.ActiveScene && s_Data.ActiveScene->IsShadowEnabled())
         {
             for (int i = 0; i < 4; i++)
-                s_Data.ShadowFBOs[i]->BindDepthTexture(PSL::PRISM_SHADOW_MAP0 + i);
+                s_Data.ShadowFBOs[i]->BindDepthTexture(Prism::Config::SHADOW_MAP0 + i);
         }
         // Render entities
         for (auto& dc : s_Data.DrawList)
@@ -436,7 +436,7 @@ namespace Prism
 #if 1
         PR_PROFILE_FUNCTION();
         Renderer::BeginRenderPass(s_Data.CompositePass);
-        s_Data.GeoPass->GetSpecification().TargetFramebuffer->BindTexture(PSL::PRISM_GEOMETRY_PASS_TEXTURE);
+        s_Data.GeoPass->GetSpecification().TargetFramebuffer->BindTexture(Prism::Config::GEOMETRY_PASS_TEXTURE);
         s_Data.CompositeMaterial->SetFloat("u_Exposure", s_Data.SceneData.SceneCamera.Camera.GetExposure());
         s_Data.CompositeMaterial->SetInt("Prism_GeometryPassTextureSamples", (int)s_Data.GeoPass->GetSpecification().TargetFramebuffer->GetSpecification().Samples);
         s_Data.CompositeMaterial->Bind();

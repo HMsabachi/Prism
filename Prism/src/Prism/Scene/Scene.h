@@ -10,7 +10,7 @@
 
 namespace Prism
 {
-    struct Event;
+    class Event;
     class Entity;
     class Material;
     class TextureCube;

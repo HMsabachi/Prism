@@ -1,4 +1,4 @@
-workspace "Prism"
+﻿workspace "Prism"
     architecture "x86_64"
     --startproject "Sandbox"
     startproject "PrismEditor"
@@ -27,6 +27,7 @@ IncludeDir["Rolky"] = "Prism/vendor/Rolky/Rolky.Native/Include"
 IncludeDir["yaml"] = "Prism/vendor/yaml-cpp/include"
 IncludeDir["Box2D"] = "Prism/vendor/box2d/include"
 IncludeDir["PhysX"] = "Prism/vendor/PhysX/include"
+IncludeDir["PrismShaderCore"] = "Prism/vendor/PrismShaderCompiler/PrismShaderCore/include/"
 IncludeDir["Python"] = "vendor/Python/include/Python"
 
 LibraryDir = {}
@@ -38,6 +39,7 @@ group "Dependencies"
     include "Prism/vendor/imgui"
     include "Prism/vendor/Rolky/Rolky.Native"
     include "Prism/vendor/box2d"
+    include "Prism/vendor/PrismShaderCompiler/PrismShaderCore"
 group ""
 
 group "Core"
@@ -80,7 +82,7 @@ project "Prism"
         "%{IncludeDir.ImGui}",
         "%{IncludeDir.glm}",
         "%{IncludeDir.stb_image}",
-            "%{prj.name}/vendor/assimp/include",
+        "%{prj.name}/vendor/assimp/include",
         "%{IncludeDir.nethost}",
         "%{IncludeDir.entt}",
         "%{IncludeDir.FastNoise}",
@@ -88,7 +90,8 @@ project "Prism"
         "%{IncludeDir.yaml}",
         "%{IncludeDir.Box2D}",
         "%{IncludeDir.PhysX}",
-        "%{IncludeDir.Python}"
+        "%{IncludeDir.Python}",
+        "%{IncludeDir.PrismShaderCore}"
     }
 
     libdirs
@@ -104,6 +107,7 @@ project "Prism"
         "ImGui",
         "Rolky.Native",
         "Box2D",
+        "PrismShaderCore",
         "opengl32.lib",
         "dwmapi.lib"
     }
@@ -224,6 +228,7 @@ project "PrismEditor"
         "%{IncludeDir.entt}",
         "%{IncludeDir.Rolky}",
         "%{IncludeDir.Python}",
+        "%{IncludeDir.PrismShaderCore}"
     }
 
     links

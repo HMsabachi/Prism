@@ -311,36 +311,36 @@ namespace Prism
             return 0.0f;
         }
 
-        void EditorLayer::DrawMaterialProperty(const PSL::AST::ShaderUniform& uni, Material& material)
+        void EditorLayer::DrawMaterialProperty(const PrismShaderCompiler::AST::ShaderUniform& uni, Material& material)
         {
             const auto& name = uni.Name;
             const auto& displayName = uni.DisplayName.empty() ? uni.Name : uni.DisplayName;
 
             switch (uni.Type)
             {
-            case PSL::PropertyType::Float:
+            case PrismShaderCompiler::PropertyType::Float:
             {
                 float value = material.GetFloat(name);
                 if (Property(displayName, value))
                     material.SetFloat(name, value);
                 break;
             }
-            case PSL::PropertyType::Range:
+            case PrismShaderCompiler::PropertyType::Range:
             {
                 float value = material.GetFloat(name);
                 if (Property(displayName, value, uni.RangeMin, uni.RangeMax, PropertyFlag::SliderProperty))
                     material.SetFloat(name, value);
                 break;
             }
-            case PSL::PropertyType::Color:
-            case PSL::PropertyType::Color3:
+            case PrismShaderCompiler::PropertyType::Color:
+            case PrismShaderCompiler::PropertyType::Color3:
             {
                 glm::vec3 color = material.GetVec3(name);
                 if (Property(displayName, color, PropertyFlag::ColorProperty))
                     material.SetVec3(name, color);
                 break;
             }
-            case PSL::PropertyType::Vector2:
+            case PrismShaderCompiler::PropertyType::Vector2:
             {
                 glm::vec3 v = material.GetVec3(name);
                 glm::vec2 vec2(v.x, v.y);
@@ -348,28 +348,28 @@ namespace Prism
                     material.SetVec3(name, glm::vec3(vec2.x, vec2.y, v.z));
                 break;
             }
-            case PSL::PropertyType::Vector3:
+            case PrismShaderCompiler::PropertyType::Vector3:
             {
                 glm::vec3 vec3 = material.GetVec3(name);
                 if (Property(displayName, vec3))
                     material.SetVec3(name, vec3);
                 break;
             }
-            case PSL::PropertyType::Vector4:
+            case PrismShaderCompiler::PropertyType::Vector4:
             {
                 glm::vec4 vec4 = material.GetVec4(name);
                 if (Property(displayName, vec4))
                     material.SetVec4(name, vec4);
                 break;
             }
-            case PSL::PropertyType::Int:
+            case PrismShaderCompiler::PropertyType::Int:
             {
                 int value = material.GetInt(name);
                 if (Property(displayName, value))
                     material.SetInt(name, value);
                 break;
             }
-            case PSL::PropertyType::Bool:
+            case PrismShaderCompiler::PropertyType::Bool:
             {
                 int value = material.GetInt(name);
                 bool b = (value != 0);
@@ -377,7 +377,7 @@ namespace Prism
                     material.SetInt(name, b ? 1 : 0);
                 break;
             }
-            case PSL::PropertyType::Texture2D:
+            case PrismShaderCompiler::PropertyType::Texture2D:
             {
                 auto texture2D = material.GetTexture2D(name);
                 if (Property(displayName, texture2D, m_CheckerboardTex->GetRendererID()))
@@ -388,7 +388,7 @@ namespace Prism
                 }
                 break;
             }
-            case PSL::PropertyType::TextureCube:
+            case PrismShaderCompiler::PropertyType::TextureCube:
             {
                 auto textureCube = material.GetTextureCube(name);
                 Property(displayName, textureCube, m_CheckerboardTex->GetRendererID());

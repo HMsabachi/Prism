@@ -18,7 +18,7 @@ Shader "Hidden/ShadowDepth"
 
                 attribute vec3 a_Position : POSITION;
 
-                uniform mat4 u_LightVP;
+                layout(location = 0) uniform mat4 u_LightVP;
 
                 void main()
                 {

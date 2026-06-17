@@ -92,7 +92,7 @@ namespace Prism
         {
             GLint maxLen = 0;
             glGetProgramiv(program, GL_INFO_LOG_LENGTH, &maxLen);
-            std::vector<GLchar> log(maxLen);
+            std::vector<GLchar> log(maxLen + 1);
             glGetProgramInfoLog(program, maxLen, &maxLen, &log[0]);
             PR_CORE_ERROR("Shader link failed:\n{0}", &log[0]);
             PR_CORE_WARN("Source: \n{0}", m_VertexSource);

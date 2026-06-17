@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <Prism.h>
 
 #include "imgui/imgui.h"
@@ -37,7 +37,7 @@ namespace Prism
         void ShowBoundingBoxes(bool show, bool onTop = false);
         void UpdateWindowTitle(const std::string& sceneName);
         void SelectEntity(Entity entity);
-        void DrawMaterialProperty(const PSL::AST::ShaderUniform& uni, Material& material);
+        void DrawMaterialProperty(const PrismShaderCompiler::AST::ShaderUniform& uni, Material& material);
 
         void OpenScene();
         void SaveScene();

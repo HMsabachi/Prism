@@ -1,12 +1,7 @@
 ﻿#include "prpch.h"
 #include "PrismShader.h"
 #include "Prism/Utilities/Utilities.h"
-#include "Prism/Shader/PSL/SourceManager.h"
-#include "Prism/Shader/PSL/TokenStream.h"
-#include "Prism/Shader/PSL/Parser.h"
-#include "Prism/Shader/PSL/GLSLGenerator.h"
-#include "Prism/Shader/PSL/Diagnostics.h"
-#include "Prism/Shader/Property/PropertyType.h"
+#include "Prism/ShaderCompiler/ShaderCompiler.h"
 
 #include "Platform/OpenGL/OpenGLShader.h"
 
@@ -53,86 +48,63 @@ namespace Prism
 
     void PrismShader::Load(const std::string& source)
     {
-        PSL::DiagnosticCollector diag;
-        PSL::SourceManager sm(m_FilePath);
+        auto& compiler = ShaderCompiler::Get();
+        m_Compiled = compiler.Compile(source, m_FilePath);
 
-        if (!sm.IsValid())
+        if (m_Compiled.ShaderName.empty())
         {
-            PR_CORE_ERROR("PrismShader::Load - SourceManager failed for '{0}'", m_FilePath);
+            PR_CORE_ERROR("PrismShader::Load - Parse failed for '{}'", m_FilePath);
             return;
         }
 
-        PSL::TokenStream stream(sm, &diag);
-        PSL::Parser parser(stream, &diag);
-        auto doc = parser.ParseShader();
+        m_Name = std::move(m_Compiled.ShaderName);
 
-        if (diag.HasErrors())
-        {
-            PR_CORE_ERROR("PrismShader::Load - Parse errors in '{0}':", m_FilePath);
-            diag.PrintAll();
-            return;
-        }
+        PR_CORE_INFO("PSL parsed '{}': {} uniforms, {} passes",
+            m_Name, m_Compiled.Uniforms.size(), m_Compiled.Passes.size());
 
-        m_Name = std::move(doc.ShaderName);
-        m_Uniforms = std::move(doc.Uniforms);
-        m_MaterialLayout = std::move(doc.MaterialLayout);
-
-        PR_CORE_INFO("PSL parsed '{0}': {1} uniforms, {2} passes",
-            m_Name, m_Uniforms.size(), doc.Passes.size());
-
-        CompilePasses(doc);
-        CompileVariants(doc);
+        CompilePasses();
+        CompileVariants();
 
         for (auto& cb : m_ReloadedCallbacks)
             cb();
     }
 
-    void PrismShader::CompilePasses(const PSL::AST::ShaderDocument& doc)
+    void PrismShader::CompilePasses()
     {
+        auto& compiler = ShaderCompiler::Get();
+
         m_Passes.clear();
-        m_PassGLSL.clear();
-        m_Passes.reserve(doc.Passes.size());
-        m_PassGLSL.reserve(doc.Passes.size());
+        m_Passes.reserve(m_Compiled.Passes.size());
 
-        for (auto& passDef : doc.Passes)
+        for (uint32_t i = 0; i < m_Compiled.Passes.size(); ++i)
         {
-            ShaderPass pass;
-            pass.Name = passDef.Name;
-            pass.Tags = passDef.Tags;
+            auto out = compiler.GenerateGLSL(m_Compiled, i);
 
-            auto output = PSL::GLSLGen::Generate(passDef.Glsl, m_Uniforms, m_FilePath);
-            pass.Program = Ref<Shader>(Shader::Create(output.Vertex, output.Fragment));
+            ShaderPass pass;
+            pass.Name = m_Compiled.Passes[i].Name;
+            pass.Tags = m_Compiled.Passes[i].Tags;
+            pass.Program = Ref<Shader>(Shader::Create(out.VertexShader, out.FragmentShader));
 
             PR_CORE_INFO("  Pass '{}': VS={}B  FS={}B",
-                pass.Name, output.Vertex.size(), output.Fragment.size());
+                pass.Name, out.VertexShader.size(), out.FragmentShader.size());
 
             m_Passes.push_back(std::move(pass));
-            m_PassGLSL.push_back(std::move(passDef.Glsl));
         }
 
         m_Shader = m_Passes[0].Program;
     }
 
-    void PrismShader::CompileVariants(const PSL::AST::ShaderDocument& doc)
+    void PrismShader::CompileVariants()
     {
+        auto& compiler = ShaderCompiler::Get();
+
         m_Keywords.clear();
         m_VariantCache.clear();
 
-        uint8_t kwIdx = 0;
-        for (auto& passDef : doc.Passes)
+        for (auto& kw : m_Compiled.Keywords)
         {
-            for (auto& pragma : passDef.Glsl.Pragmas)
-            {
-                for (auto& kw : pragma.Keywords)
-                {
-                    if (std::find_if(m_Keywords.begin(), m_Keywords.end(),
-                        [&](auto& k) { return k.Name == kw; }) != m_Keywords.end())
-                        continue;
-                    m_Keywords.push_back({ kw, kwIdx });
-                    kwIdx++;
-                    if (kwIdx >= MAX_KEYWORDS_PER_SHADER) break;
-                }
-            }
+            m_Keywords.push_back({ kw, (uint8_t)m_Keywords.size() });
+            if (m_Keywords.size() >= MAX_KEYWORDS_PER_SHADER) break;
         }
 
         m_VariantCache[0] = m_Shader;
@@ -142,12 +114,11 @@ namespace Prism
 
         if (kwCount > 10)
         {
-            PR_CORE_WARN("Shader '{0}' has {1} keywords, too many for eager compilation", m_Name, kwCount);
+            PR_CORE_WARN("Shader '{}' has {} keywords, too many for eager compilation", m_Name, kwCount);
             return;
         }
 
         uint32_t numVariants = 1u << kwCount;
-        uint32_t passCount = (uint32_t)m_Passes.size();
 
         for (KeywordMask mask = 1; mask < numVariants; mask++)
         {
@@ -160,14 +131,11 @@ namespace Prism
                 debugName += kw;
             }
 
-            for (uint32_t p = 0; p < passCount; p++)
-            {
-                auto output = PSL::GLSLGen::Generate(m_PassGLSL[p], m_Uniforms, m_FilePath, keywords);
-                Ref<Shader> program = Ref<Shader>(Shader::Create(output.Vertex, output.Fragment));
-                m_VariantCache[mask] = program;
-            }
+            auto out = compiler.GenerateGLSL(m_Compiled, 0, keywords);
+            Ref<Shader> program = Ref<Shader>(Shader::Create(out.VertexShader, out.FragmentShader));
+            m_VariantCache[mask] = program;
 
-            PR_CORE_INFO("  Variant [{}]: {} program(s)", debugName, passCount);
+            PR_CORE_INFO("  Variant [{}]", debugName);
         }
     }
 
@@ -180,9 +148,9 @@ namespace Prism
         return result;
     }
 
-    const PSL::AST::ShaderUniform* PrismShader::FindUniform(const std::string& name) const
+    const PrismShaderCompiler::AST::ShaderUniform* PrismShader::FindUniform(const std::string& name) const
     {
-        for (auto& u : m_Uniforms)
+        for (auto& u : m_Compiled.Uniforms)
             if (u.Name == name)
                 return &u;
         return nullptr;
@@ -200,7 +168,7 @@ namespace Prism
         for (auto& kw : m_Keywords)
             if (kw.Name == name)
                 return kw.Index;
-        PR_CORE_ERROR("Keyword '{0}' not defined in shader '{1}'", name, m_Name);
+        PR_CORE_ERROR("Keyword '{}' not defined in shader '{}'", name, m_Name);
         PR_CORE_ASSERT(false);
         return 0xFF;
     }
@@ -222,27 +190,23 @@ namespace Prism
         if (mask == 0)
             return m_Shader;
 
-        // Lazy compile
+        auto& compiler = ShaderCompiler::Get();
         auto keywords = KeywordsForMask(mask);
-        for (uint32_t p = 0; p < (uint32_t)m_Passes.size(); p++)
-        {
-            auto output = PSL::GLSLGen::Generate(m_PassGLSL[p], m_Uniforms, m_FilePath, keywords);
-            Ref<Shader> program = Ref<Shader>(Shader::Create(output.Vertex, output.Fragment));
-            m_VariantCache[mask] = program;
-        }
+        auto out = compiler.GenerateGLSL(m_Compiled, 0, keywords);
+        Ref<Shader> program = Ref<Shader>(Shader::Create(out.VertexShader, out.FragmentShader));
+        m_VariantCache[mask] = program;
         return m_VariantCache[mask];
     }
 
     Ref<Shader> PrismShader::GetPassProgram(uint32_t passIndex, KeywordMask mask) const
     {
         PR_CORE_ASSERT(passIndex < m_Passes.size(),
-            "GetPassProgram: passIndex {0} out of range ({1} passes)", passIndex, m_Passes.size());
+            "GetPassProgram: passIndex {} out of range ({} passes)", passIndex, m_Passes.size());
 
         if (mask == 0)
             return m_Passes[passIndex].Program;
 
         Ref<Shader> variant = GetVariant(mask);
-        // Return the first variant; per-pass variant lookup needs variant cache restructure
         return variant ? variant : m_Passes[passIndex].Program;
     }
 
@@ -278,10 +242,7 @@ namespace Prism
 
     void ShaderLibrary::LoadAll(const std::string& directory)
     {
-        std::string vs = File::ReadFile("E:/PrismEngine/AI/test1.Shader");
-        std::string fs = File::ReadFile("E:/PrismEngine/AI/test2.Shader");
-        auto scvc = OpenGLShader(vs, fs);
-        PR_CORE_INFO("Scanning .Shader files in '{0}'...", directory);
+        PR_CORE_INFO("Scanning .Shader files in '{}'...", directory);
         uint32_t success = 0, failed = 0;
         for (auto& entry : std::filesystem::recursive_directory_iterator(directory))
         {
@@ -294,7 +255,7 @@ namespace Prism
 
             if (shader->GetName().empty())
             {
-                PR_CORE_ERROR("Parse failed, skipping: {0}", path);
+                PR_CORE_ERROR("Parse failed, skipping: {}", path);
                 failed++;
                 continue;
             }
@@ -302,13 +263,13 @@ namespace Prism
             auto& name = shader->GetName();
             if (m_Shaders.find(name) != m_Shaders.end())
             {
-                PR_CORE_WARN("Duplicate shader name '{0}' from: {1}", name, path);
+                PR_CORE_WARN("Duplicate shader name '{}' from: {}", name, path);
                 continue;
             }
             m_Shaders[name] = shader;
             success++;
         }
-        PR_CORE_INFO("Shader loading done: {0} success, {1} failed", success, failed);
+        PR_CORE_INFO("Shader loading done: {} success, {} failed", success, failed);
     }
 
     const Ref<PrismShader>& ShaderLibrary::Get(const std::string& name) const

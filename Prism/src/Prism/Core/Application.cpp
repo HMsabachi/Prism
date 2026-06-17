@@ -13,6 +13,8 @@
 #include "Scripting/Python/PythonScriptEngine.h"
 #include "Prism/Physics/Physics.h"
 
+#include "Prism/ShaderCompiler/ShaderCompiler.h"
+
 
 #include <imgui.h>
 #include <GLFW/glfw3.h>
@@ -51,6 +53,7 @@ namespace Prism
 
         // 初始化时间管理器 Initialize Time Manager
         Time::Init();
+        ShaderCompiler::Init();
         // 初始化ImGui层 Initialize ImGui Layer
         m_ImGuiLayer = new ImGuiLayer("ImGui");
         PushOverlay(m_ImGuiLayer);
@@ -59,6 +62,7 @@ namespace Prism
         // 初始化渲染器 Initialize Renderer
         Renderer::Init();
         Renderer::WaitAndRender();
+
     }
 
     Application::~Application()

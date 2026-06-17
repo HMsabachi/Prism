@@ -1,13 +1,13 @@
 ﻿#include "prpch.h"
 #include "ObjectUniformBuffer.h"
-#include "Prism/Shader/PSL/PrismBindings.h"
+#include "Prism/ShaderCompiler/PrismBindings.h"
 
 namespace Prism
 {
 
     void ObjectUniformBuffer::Init()
     {
-        m_Buffer = UniformBuffer::Create(PSL::PRISM_BINDING_OBJECT, sizeof(Data));
+        m_Buffer = UniformBuffer::Create(Prism::Config::BINDING_OBJECT, sizeof(Data));
     }
 
     void ObjectUniformBuffer::SetModel(const glm::mat4& model)

@@ -3,7 +3,7 @@
 #include "Prism/Renderer/Shader.h"
 #include "ShaderCommand.h"
 #include "ShaderVariant.h"
-#include "Prism/Shader/PSL/AST.h"
+#include <PrismShaderCore/Compiler.h>
 #include <functional>
 #include <unordered_map>
 
@@ -40,16 +40,13 @@ namespace Prism
         const std::string& GetFilePath() const { return m_FilePath; }
         const std::string& GetName() const { return m_Name; }
 
-        // Property metadata
-        const std::vector<PSL::AST::ShaderUniform>& GetUniforms() const { return m_Uniforms; }
-        const PSL::AST::ShaderUniform* FindUniform(const std::string& name) const;
-        const PSL::PropertyLayout& GetMaterialLayout() const { return m_MaterialLayout; }
+        const std::vector<PrismShaderCompiler::AST::ShaderUniform>& GetUniforms() const { return m_Compiled.Uniforms; }
+        const PrismShaderCompiler::AST::ShaderUniform* FindUniform(const std::string& name) const;
+        const PrismShaderCompiler::PropertyLayout& GetMaterialLayout() const { return m_Compiled.MaterialLayout; }
 
-        // Multi-Pass API
         uint32_t GetPassCount() const { return (uint32_t)m_Passes.size(); }
         const ShaderPass& GetPass(uint32_t index) const { return m_Passes[index]; }
 
-        // Keyword / Variant API
         const std::vector<ShaderKeyword>& GetKeywords() const { return m_Keywords; }
         uint8_t GetKeywordIndex(const std::string& name) const;
         bool IsKeywordDefined(const std::string& name) const;
@@ -57,20 +54,17 @@ namespace Prism
         Ref<Shader> GetPassProgram(uint32_t passIndex, KeywordMask mask) const;
 
     private:
-        void CompilePasses(const PSL::AST::ShaderDocument& doc);
-        void CompileVariants(const PSL::AST::ShaderDocument& doc);
+        void CompilePasses();
+        void CompileVariants();
         std::vector<std::string> KeywordsForMask(KeywordMask mask) const;
 
     private:
         std::string m_Name;
         std::string m_FilePath;
 
+        PrismShaderCompiler::CompiledShader m_Compiled;
         std::vector<ShaderPass> m_Passes;
-        std::vector<PSL::AST::GLSLCode> m_PassGLSL;
         Ref<Shader> m_Shader;
-
-        std::vector<PSL::AST::ShaderUniform> m_Uniforms;
-        PSL::PropertyLayout m_MaterialLayout;
 
         std::vector<ShaderReloadedCallback> m_ReloadedCallbacks;
 
