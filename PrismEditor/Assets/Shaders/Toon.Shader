@@ -4,6 +4,7 @@ Shader "Custom/Toon"
     {
         u_AlbedoColor("固有色", Color3) = (1.0, 1.0, 1.0)
         u_MainTexture("固有色贴图", Texture2D) = {}
+        u_NormalTexture("法线贴图", Texture2D) = {}
         u_MainTextureTiling("贴图缩放", Vector2) = (1.0, 1.0)
         u_MainTextureOffset("贴图偏移", Vector2) = (0.0, 0.0)
 

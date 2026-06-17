@@ -79,12 +79,6 @@ namespace Prism
             if (!compileStage(GL_VERTEX_SHADER, m_VertexSource)) { m_RendererID = 0; return; }
             if (!compileStage(GL_FRAGMENT_SHADER, m_FragmentSource)) { m_RendererID = 0; return; }
         }
-        GLint count = 0;
-
-        glGetProgramiv(program, GL_ATTACHED_SHADERS, &count);
-
-        PR_CORE_INFO("Attached shader count = {}", count);
-
         glLinkProgram(program);
         GLint linked = 0;
         glGetProgramiv(program, GL_LINK_STATUS, &linked);
