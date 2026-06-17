@@ -6,9 +6,7 @@ Shader "Custom/SimplePBR_Static"
     {
 
         u_Color("主色", Color3) = (0.2, 0.2, 1)
-        // BRDF LUT
         u_AlbedoColor("颜色", Color3) = (1, 1, 1)
-        u_BRDFLUTTexture("BRDF LUT", Texture2D) = {}
         u_Metalness("金属度", Range(0, 1)) = 1.0
         u_Roughness("粗糙度", Range(0, 1)) = 0.0
         u_EnvMapRotation("环境光旋转", Range(0, 360)) = 0
@@ -18,11 +16,6 @@ Shader "Custom/SimplePBR_Static"
         u_NormalTexture("法线贴图", Texture2D) = {}
         u_MetalnessTexture("金属度贴图", Texture2D) = {}
         u_RoughnessTexture("粗糙度贴图", Texture2D) = {}
-
-        // Environment maps
-        u_EnvRadianceTex("环境光贴图", TextureCube) = {}
-        u_EnvIrradianceTex("环境光辐射贴图", TextureCube) = {}
-
 
         // Toggles
         u_RadiancePrefilter("环境光预过滤", Float) = 0.0
@@ -150,18 +143,18 @@ Shader "Custom/SimplePBR_Static"
 
                 vec3 IBL(vec3 F0, vec3 Lr)
                 {
-                    vec3 irradiance = texture(u_EnvIrradianceTex, m_Params.Normal).rgb;
+                    vec3 irradiance = texture(Prism_EnvIrradianceTex, m_Params.Normal).rgb;
                     vec3 F = fresnelSchlickRoughness(F0, m_Params.NdotV, m_Params.Roughness);
                     vec3 kd = (1.0 - F) * (1.0 - m_Params.Metalness);
                     vec3 diffuseIBL = m_Params.Albedo * irradiance;
 
-                    int u_EnvRadianceTexLevels = textureQueryLevels(u_EnvRadianceTex);
+                    int u_EnvRadianceTexLevels = textureQueryLevels(Prism_EnvRadianceTex);
                     float NoV = clamp(m_Params.NdotV, 0.0, 1.0);
                     vec3 R = 2.0 * dot(m_Params.View, m_Params.Normal) * m_Params.Normal - m_Params.View;
 
-                    vec3 specularIrradiance = textureLod(u_EnvRadianceTex, RotateVectorAboutY(u_EnvMapRotation, Lr), (m_Params.Roughness * m_Params.Roughness) * u_EnvRadianceTexLevels).rgb;
+                    vec3 specularIrradiance = textureLod(Prism_EnvRadianceTex, RotateVectorAboutY(u_EnvMapRotation, Lr), (m_Params.Roughness * m_Params.Roughness) * u_EnvRadianceTexLevels).rgb;
                     // Sample BRDF Lut, 1.0 - roughness for y-coord because texture was generated (in Sparky) for gloss model
-                    vec2 specularBRDF = texture(u_BRDFLUTTexture, vec2(m_Params.NdotV, 1.0 - m_Params.Roughness)).rg;
+                    vec2 specularBRDF = texture(Prism_BRDFLUT, vec2(m_Params.NdotV, 1.0 - m_Params.Roughness)).rg;
                     vec3 specularIBL = specularIrradiance * (F * specularBRDF.x + specularBRDF.y);
 
                     return kd * diffuseIBL + specularIBL;

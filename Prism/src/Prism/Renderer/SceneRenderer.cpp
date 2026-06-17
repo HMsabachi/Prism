@@ -151,6 +151,10 @@ namespace Prism
             s_Data.SceneData.ActiveLight.Radiance, s_Data.SceneData.ActiveLight.Multiplier);
         frameUBO.Upload();
         frameUBO.Bind();
+
+        s_Data.SceneData.SceneEnvironment.RadianceMap->Bind(Prism::Config::PRISM_ENV_RADIANCE);
+        s_Data.SceneData.SceneEnvironment.IrradianceMap->Bind(Prism::Config::PRISM_ENV_IRRADIANCE);
+        s_Data.BRDFLUT->Bind(Prism::Config::PRISM_ENV_BRDF_LUT);
     }
 
     void SceneRenderer::EndScene()
@@ -306,17 +310,11 @@ namespace Prism
         if (s_Data.ActiveScene && s_Data.ActiveScene->IsShadowEnabled())
         {
             for (int i = 0; i < 4; i++)
-                s_Data.ShadowFBOs[i]->BindDepthTexture(Prism::Config::SHADOW_MAP0 + i);
+                s_Data.ShadowFBOs[i]->BindDepthTexture(Prism::Config::PRISM_SHADOW_MAP0 + i);
         }
         // Render entities
         for (auto& dc : s_Data.DrawList)
         {
-            auto baseMaterial = dc.Mesh->GetMaterial();
-            // Environment
-            baseMaterial->SetTexture("u_EnvRadianceTex", s_Data.SceneData.SceneEnvironment.RadianceMap);
-            baseMaterial->SetTexture("u_EnvIrradianceTex", s_Data.SceneData.SceneEnvironment.IrradianceMap);
-            baseMaterial->SetTexture("u_BRDFLUTTexture", s_Data.BRDFLUT);
-
             auto overrideMaterial = dc.Material ? dc.Material : dc.Mesh->GetOverrideMaterial();
             Renderer::SubmitMesh(dc.Mesh, dc.Transform, overrideMaterial);
         }
@@ -331,12 +329,7 @@ namespace Prism
         }
         for (auto& dc : s_Data.SelectedMeshDrawList)
         {
-            auto baseMaterial = dc.Mesh->GetMaterial();
-            // Environment (TODO: don't do this per mesh)
-            baseMaterial->SetTexture("u_EnvRadianceTex", s_Data.SceneData.SceneEnvironment.RadianceMap);
-            baseMaterial->SetTexture("u_EnvIrradianceTex", s_Data.SceneData.SceneEnvironment.IrradianceMap);
-            baseMaterial->SetTexture("u_BRDFLUTTexture", s_Data.BRDFLUT);
-            auto overrideMaterial = nullptr; // dc.Material;
+            auto overrideMaterial = nullptr;
             Renderer::SubmitMesh(dc.Mesh, dc.Transform, overrideMaterial);
         }
 
@@ -436,7 +429,7 @@ namespace Prism
 #if 1
         PR_PROFILE_FUNCTION();
         Renderer::BeginRenderPass(s_Data.CompositePass);
-        s_Data.GeoPass->GetSpecification().TargetFramebuffer->BindTexture(Prism::Config::GEOMETRY_PASS_TEXTURE);
+        s_Data.GeoPass->GetSpecification().TargetFramebuffer->BindTexture(Prism::Config::PRISM_GEOMETRY_PASS_TEXTURE);
         s_Data.CompositeMaterial->SetFloat("u_Exposure", s_Data.SceneData.SceneCamera.Camera.GetExposure());
         s_Data.CompositeMaterial->SetInt("Prism_GeometryPassTextureSamples", (int)s_Data.GeoPass->GetSpecification().TargetFramebuffer->GetSpecification().Samples);
         s_Data.CompositeMaterial->Bind();

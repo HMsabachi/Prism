@@ -6,7 +6,7 @@ namespace Prism
 {
     void FrameUniformBuffer::Init()
     {
-        m_Buffer = UniformBuffer::Create(Prism::Config::BINDING_FRAME, sizeof(Data));
+        m_Buffer = UniformBuffer::Create(Prism::Config::PRISM_BINDING_FRAME, sizeof(Data));
     }
 
     void FrameUniformBuffer::SetViewProjection(const glm::mat4& vp)

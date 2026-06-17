@@ -108,7 +108,7 @@ vec3 PrefilterEnvMap(float Roughness, vec3 R)
 		float NoL = clamp(dot(N, L), 0.0, 1.0);
 		if (NoL > 0)
 		{
-			PrefilteredColor += texture(u_EnvRadianceTex, L).rgb * NoL;
+			PrefilteredColor += texture(Prism_EnvRadianceTex, L).rgb * NoL;
 			TotalWeight += NoL;
 		}
 	}

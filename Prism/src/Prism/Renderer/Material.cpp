@@ -50,7 +50,7 @@ namespace Prism
             }
         }
 
-        m_UniformBuffer = UniformBuffer::Create(Prism::Config::BINDING_MATERIAL, totalSize);
+        m_UniformBuffer = UniformBuffer::Create(Prism::Config::PRISM_BINDING_MATERIAL, totalSize);
         m_UniformBuffer->SetData(m_PropertyBuffer);
 
         m_Textures.clear();
@@ -107,7 +107,7 @@ namespace Prism
     {
         auto* uni = m_Shader->FindUniform(name);
         if (!uni || uni->TextureSlot < 0) { PR_CORE_WARN("Material::SetTexture - '{0}' not found", name); return; }
-        uint32_t slot = (uint32_t)uni->TextureSlot - Prism::Config::BINDING_TEXTURE;
+        uint32_t slot = (uint32_t)uni->TextureSlot - Prism::Config::PRISM_BINDING_TEXTURE;
         if (m_Textures.size() <= slot) m_Textures.resize(slot + 1);
         m_Textures[slot] = texture;
     }
@@ -116,7 +116,7 @@ namespace Prism
     {
         auto* uni = m_Shader->FindUniform(name);
         if (!uni || uni->TextureSlot < 0) { PR_CORE_WARN("Material::SetTexture - '{0}' not found", name); return; }
-        uint32_t slot = (uint32_t)uni->TextureSlot - Prism::Config::BINDING_TEXTURE;
+        uint32_t slot = (uint32_t)uni->TextureSlot - Prism::Config::PRISM_BINDING_TEXTURE;
         if (m_Textures.size() <= slot) m_Textures.resize(slot + 1);
         m_Textures[slot] = texture;
     }
@@ -157,7 +157,7 @@ namespace Prism
     {
         auto* uni = m_Shader->FindUniform(name);
         if (!uni || uni->TextureSlot < 0 || uni->Type != PrismShaderCompiler::PropertyType::Texture2D) return nullptr;
-        uint32_t slot = (uint32_t)uni->TextureSlot - Prism::Config::BINDING_TEXTURE;
+        uint32_t slot = (uint32_t)uni->TextureSlot - Prism::Config::PRISM_BINDING_TEXTURE;
         if (slot >= m_Textures.size()) return nullptr;
         return m_Textures[slot].As<Texture2D>();
     }
@@ -166,7 +166,7 @@ namespace Prism
     {
         auto* uni = m_Shader->FindUniform(name);
         if (!uni || uni->TextureSlot < 0 || uni->Type != PrismShaderCompiler::PropertyType::TextureCube) return nullptr;
-        uint32_t slot = (uint32_t)uni->TextureSlot - Prism::Config::BINDING_TEXTURE;
+        uint32_t slot = (uint32_t)uni->TextureSlot - Prism::Config::PRISM_BINDING_TEXTURE;
         if (slot >= m_Textures.size()) return nullptr;
         return m_Textures[slot].As<TextureCube>();
     }
@@ -198,7 +198,7 @@ namespace Prism
         for (size_t i = 0; i < m_Textures.size(); i++)
         {
             if (m_Textures[i])
-                m_Textures[i]->Bind((uint32_t)i + Prism::Config::BINDING_TEXTURE);
+                m_Textures[i]->Bind((uint32_t)i + Prism::Config::PRISM_BINDING_TEXTURE);
         }
     }
 

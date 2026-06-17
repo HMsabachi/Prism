@@ -7,7 +7,7 @@ namespace Prism
 
     void ObjectUniformBuffer::Init()
     {
-        m_Buffer = UniformBuffer::Create(Prism::Config::BINDING_OBJECT, sizeof(Data));
+        m_Buffer = UniformBuffer::Create(Prism::Config::PRISM_BINDING_OBJECT, sizeof(Data));
     }
 
     void ObjectUniformBuffer::SetModel(const glm::mat4& model)

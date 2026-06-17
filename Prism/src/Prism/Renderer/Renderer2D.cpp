@@ -183,7 +183,7 @@ namespace Prism
             s_Data.ObjectUBO.Bind();
 
             for (uint32_t i = 0; i < s_Data.TextureSlotIndex; i++)
-                s_Data.TextureSlots[i]->Bind(Prism::Config::BINDING_TEXTURE + i);
+                s_Data.TextureSlots[i]->Bind(Prism::Config::PRISM_BINDING_TEXTURE + i);
 
             s_Data.QuadPipeline->Bind();
             s_Data.QuadIndexBuffer->Bind();
