@@ -185,7 +185,6 @@ namespace Prism {
         std::string m_FilePath;
 
         friend class Renderer;
-        friend class SceneRenderer;
         friend class RenderPipeline;
         friend class SceneHierarchyPanel;
     };

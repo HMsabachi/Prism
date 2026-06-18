@@ -35,6 +35,11 @@ namespace Prism
     }
     void RenderSystem::OnPostLateUpdate(float dt)
     {
+        Render();
+    }
+
+    void RenderSystem::Render()
+    {
         m_PendingFrameData.DrawList.clear();
         m_PendingFrameData.SelectedDrawList.clear();
 
@@ -47,12 +52,16 @@ namespace Prism
             Entity camEntity = m_Scene->GetMainCameraEntity();
             if (!camEntity) return;
             auto& camComp = camEntity.GetComponent<CameraComponent>();
+            camComp.Camera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
             auto& transform = camEntity.GetComponent<TransformComponent>();
             m_PendingFrameData.Camera.Projection = camComp.Camera;
             m_PendingFrameData.Camera.ViewMatrix = glm::inverse(transform.GetTransform());
         }
 
         m_Config.SkyboxMaterial->SetFloat("u_TextureLod", m_Config.SkyboxLod);
+
+        if (m_Config.SceneEnvironment.RadianceMap)
+            m_Config.SkyboxMaterial->SetTexture("u_Texture", m_Config.SceneEnvironment.RadianceMap);
 
         CollectMeshRenderers(m_PendingFrameData);
         CollectDebugDraws(m_PendingFrameData);
@@ -73,6 +82,8 @@ namespace Prism
 
     void RenderSystem::SetViewportSize(uint32_t width, uint32_t height)
     {
+        m_ViewportWidth = width;
+        m_ViewportHeight = height;
         if (m_Pipeline)
             m_Pipeline->Resize(width, height);
     }
@@ -87,6 +98,17 @@ namespace Prism
     Ref<RenderPass> RenderSystem::GetFinalRenderPass()
     {
         return m_Pipeline ? m_Pipeline->GetFinalRenderPass() : nullptr;
+    }
+
+    uint32_t RenderSystem::GetFinalColorBufferID()
+    {
+        return m_Pipeline ? m_Pipeline->GetFinalRenderPass()
+            ->GetSpecification().TargetFramebuffer->GetColorAttachmentRendererID() : 0;
+    }
+
+    RenderPipelineOptions& RenderSystem::GetOptions()
+    {
+        return m_Pipeline->GetOptions();
     }
 
     std::pair<Ref<TextureCube>, Ref<TextureCube>>

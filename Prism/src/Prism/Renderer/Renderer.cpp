@@ -4,7 +4,6 @@
 #include "Shader/PrismShader.h"
 #include "Buffer/FrameUniformBuffer.h"
 
-#include "SceneRenderer.h"
 #include "RendererAPI.h"
 #include "Renderer2D.h"
 #include "Buffer/ObjectUniformBuffer.h"
@@ -40,8 +39,6 @@ namespace Prism
         s_Data.m_FrameUBO.Init();
 
         Renderer::GetShaderLibrary()->LoadAll("Assets/Shaders");
-
-        SceneRenderer::Init();
 
         // Create fullscreen quad
         float x = -1;

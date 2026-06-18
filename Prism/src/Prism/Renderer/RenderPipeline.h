@@ -44,7 +44,7 @@ namespace Prism
         bool ShowBoundingBoxes = false;
     };
 
-    class RenderPipeline
+    class PRISM_API RenderPipeline
     {
     public:
         void Initialize(uint32_t viewportWidth, uint32_t viewportHeight);
@@ -63,9 +63,10 @@ namespace Prism
         void BeginFrame(const RenderConfig& config, const FrameData& data);
         void UpdateShadowData(const RenderConfig& config, const FrameData& data);
         void ShadowPass(const std::vector<DrawCommand>& drawList);
-        void GeometryPass(const std::vector<DrawCommand>& drawList,
-                          const std::vector<DrawCommand>& selectedList,
-                          const std::vector<DrawCommand>& debugList);
+        void GeometryPass(const RenderConfig config,
+            const std::vector<DrawCommand>& drawList,
+            const std::vector<DrawCommand>& selectedList,
+            const std::vector<DrawCommand>& debugList);
         void CompositePass();
 
         static constexpr uint32_t SHADOW_MAP_SIZE = 2048;

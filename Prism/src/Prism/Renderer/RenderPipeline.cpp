@@ -83,13 +83,12 @@ namespace Prism
 
     void RenderPipeline::Execute(const RenderConfig& config, const FrameData& data)
     {
+        if (config.ShadowsEnabled && !data.DrawList.empty())
+            UpdateShadowData(config, data);
         BeginFrame(config, data);
         if (config.ShadowsEnabled && !data.DrawList.empty())
-        {
-            UpdateShadowData(config, data);
             ShadowPass(data.DrawList);
-        }
-        GeometryPass(data.DrawList, data.SelectedDrawList, data.DebugDrawList);
+        GeometryPass(config, data.DrawList, data.SelectedDrawList, data.DebugDrawList);
         CompositePass();
     }
 
@@ -225,20 +224,22 @@ namespace Prism
                 m_ObjectUBO.Bind();
 
                 auto& submesh = dc.Mesh->m_Submeshes[dc.SubmeshIndex];
-                RendererAPI::DrawIndexedBaseVertex(
+                Renderer::DrawIndexedBaseVertex(
                     submesh.IndexCount, submesh.BaseIndex, submesh.BaseVertex);
             }
         }
     }
 
-    void RenderPipeline::GeometryPass(const std::vector<DrawCommand>& drawList,
-                                       const std::vector<DrawCommand>& selectedList,
-                                       const std::vector<DrawCommand>& debugList)
+    void RenderPipeline::GeometryPass(
+        const RenderConfig config,
+        const std::vector<DrawCommand>& drawList,
+        const std::vector<DrawCommand>& selectedList,
+        const std::vector<DrawCommand>& debugList)
     {
         PR_PROFILE_FUNCTION();
         Renderer::BeginRenderPass(m_GeoPass);
 
-        Renderer::SubmitFullscreenQuad(nullptr);
+        Renderer::SubmitFullscreenQuad(config.SkyboxMaterial);
 
         for (int i = 0; i < 4; i++)
             m_ShadowFBOs[i]->BindDepthTexture(Config::PRISM_SHADOW_MAP0 + i);
@@ -271,7 +272,7 @@ namespace Prism
                 m_ObjectUBO.Bind();
 
                 auto& submesh = dc.Mesh->m_Submeshes[dc.SubmeshIndex];
-                RendererAPI::DrawIndexedBaseVertex(
+                Renderer::DrawIndexedBaseVertex(
                     submesh.IndexCount, submesh.BaseIndex, submesh.BaseVertex);
             }
         }
@@ -280,6 +281,7 @@ namespace Prism
         if (!selectedList.empty())
         {
             Renderer::Submit([]() {
+                glEnable(GL_STENCIL_TEST);
                 glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
                 glStencilFunc(GL_ALWAYS, 1, 0xff);
                 glStencilMask(0xff);
@@ -311,7 +313,7 @@ namespace Prism
                     m_ObjectUBO.Bind();
 
                     auto& submesh = dc.Mesh->m_Submeshes[dc.SubmeshIndex];
-                    RendererAPI::DrawIndexedBaseVertex(
+                    Renderer::DrawIndexedBaseVertex(
                         submesh.IndexCount, submesh.BaseIndex, submesh.BaseVertex);
                 }
             }
@@ -343,7 +345,7 @@ namespace Prism
                     m_ObjectUBO.Bind();
 
                     auto& submesh = dc.Mesh->m_Submeshes[dc.SubmeshIndex];
-                    RendererAPI::DrawIndexedBaseVertex(
+                    Renderer::DrawIndexedBaseVertex(
                         submesh.IndexCount, submesh.BaseIndex, submesh.BaseVertex);
                 }
             }
@@ -388,7 +390,7 @@ namespace Prism
                     m_ObjectUBO.Bind();
 
                     auto& submesh = dc.Mesh->m_Submeshes[dc.SubmeshIndex];
-                    RendererAPI::DrawIndexedBaseVertex(
+                    Renderer::DrawIndexedBaseVertex(
                         submesh.IndexCount, submesh.BaseIndex, submesh.BaseVertex);
                 }
             }
@@ -454,9 +456,9 @@ namespace Prism
         int mipFilter = s_EnvironmentShader->FindKernel("CSMipFilter");
         s_EnvironmentShader->SetTextureCube(mipFilter, "u_InputCubeMap", envUnfiltered);
         const float deltaRoughness = 1.0f / glm::max((float)(envFiltered->GetMipLevelCount() - 1.0f), 1.0f);
-        for (int level = 1, size = cubemapSize / 2; level < envFiltered->GetMipLevelCount(); level++, size /= 2)
+        for (uint32_t level = 1, size = cubemapSize / 2; level < envFiltered->GetMipLevelCount(); level++, size /= 2)
         {
-            const uint32_t numGroups = glm::max(1, size / 32);
+            const uint32_t numGroups = glm::max((uint32_t)1, size / 32);
             s_EnvironmentShader->SetImageCube(mipFilter, "o_OutputCube", envFiltered, level, true);
             s_EnvironmentShader->SetFloat(mipFilter, "u_Roughness", level * deltaRoughness);
             s_EnvironmentShader->Dispatch(mipFilter, numGroups, numGroups, 6);

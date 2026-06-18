@@ -34,8 +34,6 @@
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Material.h"
 
-#include "Prism/Renderer/SceneRenderer.h"
-
 #include "Prism/Renderer/Buffer/Framebuffer.h"
 #include "Prism/Renderer/Buffer/VertexBuffer.h"
 #include "Prism/Renderer/Buffer/ShaderStorageBuffer.h"

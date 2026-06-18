@@ -6,7 +6,6 @@
 #include "Components.h"
 
 #include "Prism/Renderer/Renderer2D.h"
-#include "Prism/Renderer/SceneRenderer.h"
 #include "Prism/Renderer/Renderer.h"
 
 #include "Prism/Editor/EditorCamera.h"
@@ -20,6 +19,7 @@
 #include "Systems/Physics3DSystem.h"
 #include "Systems/ScriptSystem.h"
 #include "Systems/TransformSyncSystem.h"
+#include "Systems/RenderSystem.h"
 
 #include "Scripting/CSharp/CSharpScriptEngine.h"
 #include "Scripting/Python/PythonScriptEngine.h"
@@ -49,7 +49,9 @@ namespace Prism
         AddSystem<TransformSyncSystem>(this);
         AddSystem<Physics3DSystem>(this);
         AddSystem<Physics2DSystem>(this);
-
+        AddSystem<RenderSystem>(this);
+        for (auto& s : m_SystemOrder)
+            s->OnCreate();
         Init();
     }
 
@@ -57,14 +59,12 @@ namespace Prism
     {
         m_Registry.clear();
         s_ActiveScenes.erase(m_SceneID);
+        for (auto& s : m_SystemOrder)
+            s->OnDestroy();
     }
 
     void Scene::Init()
     {
-#if 1
-        auto skyboxShader = Renderer::GetShaderLibrary()->Get("Custom/Skybox");
-        m_SkyboxMaterial = Material::Create(skyboxShader);
-#endif
     }
 
     void Scene::OnUpdate()
@@ -90,116 +90,6 @@ namespace Prism
         for (auto* sys : m_SystemOrder) sys->OnImGuiRender();
     }
 
-    void Scene::OnRenderRuntime()
-    {
-        /////////////////////////////////////////////////////////////////////
-        // RENDER 3D SCENE
-        /////////////////////////////////////////////////////////////////////
-        float ts = Time::GetDeltaTime();
-        Entity cameraEntity = GetMainCameraEntity();
-        if (!cameraEntity)
-            return;
-        glm::mat4 cameraViewMatrix = glm::inverse(cameraEntity.GetComponent<TransformComponent>().GetTransform());
-        PR_CORE_ASSERT(cameraEntity, "Scene does not contain any cameras!");
-        SceneCamera& camera = cameraEntity.GetComponent<CameraComponent>();
-        camera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
-
-        m_SkyboxMaterial->SetFloat("u_TextureLod", m_SkyboxLod);
-
-        auto group = m_Registry.group<MeshRendererComponent>(entt::get<TransformComponent>);
-        SceneRenderer::BeginScene(this, { camera, cameraViewMatrix });
-        for (auto entity : group)
-        {
-            auto [transformComponent, renderer] = group.get<TransformComponent, MeshRendererComponent>(entity);
-            if (renderer.Mesh)
-            {
-                renderer.Mesh->OnUpdate(ts);
-                SceneRenderer::SubmitMesh(renderer.Mesh, transformComponent.GetTransform(), nullptr);
-            }
-        }
-
-        // Collider visualization (Editor only)
-        {
-            auto* physicsSystem = GetSystem<Physics3DSystem>();
-            if (physicsSystem)
-                physicsSystem->SubmitColliderMeshes();
-        }
-
-        SceneRenderer::EndScene();
-        /////////////////////////////////////////////////////////////////////
-
-#if 0
-        // Render all sprites
-        Renderer2D::BeginScene(*camera);
-        {
-            auto group = m_Registry.group<TransformComponent>(entt::get<SpriteRenderer>);
-            for (auto entity : group)
-            {
-                auto [transformComponent, spriteRendererComponent] = group.get<TransformComponent, SpriteRenderer>(entity);
-                if (spriteRendererComponent.Texture)
-                    Renderer2D::DrawQuad(transformComponent.GetTransform(), spriteRendererComponent.Texture, spriteRendererComponent.TilingFactor);
-                else
-                    Renderer2D::DrawQuad(transformComponent.GetTransform(), spriteRendererComponent.Color);
-            }
-        }
-
-        Renderer2D::EndScene();
-#endif
-    }
-
-    void Scene::OnRenderEditor(const EditorCamera& editorCamera)
-    {
-        /////////////////////////////////////////////////////////////////////
-        // RENDER 3D SCENE
-        /////////////////////////////////////////////////////////////////////
-        float ts = Time::GetDeltaTime();
-        m_SkyboxMaterial->SetFloat("u_TextureLod", m_SkyboxLod);
-
-        auto group = m_Registry.group<MeshRendererComponent>(entt::get<TransformComponent>);
-        SceneRenderer::BeginScene(this, { editorCamera, editorCamera.GetViewMatrix() });
-        for (auto entity : group)
-        {
-            auto [transformComponent, renderer] = group.get<TransformComponent, MeshRendererComponent>(entity);
-            if (renderer.Mesh)
-            {
-                renderer.Mesh->OnUpdate(ts);
-
-                if (m_SelectedEntity == entity)
-                    SceneRenderer::SubmitSelectedMesh(renderer.Mesh, transformComponent.GetTransform());
-                else
-                    SceneRenderer::SubmitMesh(renderer.Mesh, transformComponent.GetTransform(), nullptr);
-            }
-        }
-
-        // Collider visualization (Editor only)
-        {
-            auto* physicsSystem = GetSystem<Physics3DSystem>();
-            if (physicsSystem)
-                physicsSystem->SubmitColliderMeshes();
-        }
-
-        SceneRenderer::EndScene();
-        /////////////////////////////////////////////////////////////////////
-
-#if 0
-        // Render all sprites
-        Renderer2D::BeginScene(*camera);
-        {
-            auto group = m_Registry.group<TransformComponent>(entt::get<SpriteRenderer>);
-            for (auto entity : group)
-            {
-                auto [transformComponent, spriteRendererComponent] = group.get<TransformComponent, SpriteRenderer>(entity);
-                if (spriteRendererComponent.Texture)
-                    Renderer2D::DrawQuad(transformComponent.GetTransform(), spriteRendererComponent.Texture, spriteRendererComponent.TilingFactor);
-                else
-                    Renderer2D::DrawQuad(transformComponent.GetTransform(), spriteRendererComponent.Color);
-            }
-        }
-
-        Renderer2D::EndScene();
-#endif
-    }
-
     void Scene::OnEvent(Event& e)
     {
     }
@@ -214,24 +104,6 @@ namespace Prism
     {
         for (auto* sys : m_SystemOrder) sys->OnRuntimeStop();
         m_IsPlaying = false;
-    }
-
-    void Scene::SetViewportSize(uint32_t width, uint32_t height)
-    {
-        m_ViewportWidth = width;
-        m_ViewportHeight = height;
-    }
-
-    void Scene::SetEnvironment(const Environment& environment)
-    {
-        m_Environment = environment;
-        SetSkybox(environment.RadianceMap);
-    }
-
-    void Scene::SetSkybox(const Ref<TextureCube>& skybox)
-    {
-        m_SkyboxTexture = skybox;
-        m_SkyboxMaterial->SetTexture("u_Texture", skybox);
     }
 
     Entity Scene::GetMainCameraEntity()
@@ -360,14 +232,9 @@ namespace Prism
     // Copy to runtime
     void Scene::CopyTo(Ref<Scene>& target)
     {
-        // Environment
-        target->m_Light = m_Light;
-        target->m_LightMultiplier = m_LightMultiplier;
-
-        target->m_Environment = m_Environment;
-        target->m_SkyboxTexture = m_SkyboxTexture;
-        target->m_SkyboxMaterial = m_SkyboxMaterial;
-        target->m_SkyboxLod = m_SkyboxLod;
+        if (auto* srcRS = GetSystem<RenderSystem>())
+            if (auto* dstRS = target->GetSystem<RenderSystem>())
+                dstRS->GetConfig() = srcRS->GetConfig();
 
         CSharpScriptEngine::SetSceneContext(target);
         PythonScriptEngine::SetSceneContext(target);

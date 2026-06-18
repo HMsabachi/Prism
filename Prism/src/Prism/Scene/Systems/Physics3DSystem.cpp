@@ -5,7 +5,7 @@
 #include "../Components.h"
 
 #include "Prism/Physics/Physics.h"
-#include "Prism/Renderer/SceneRenderer.h"
+#include "RenderSystem.h"
 #include "ScriptSystem.h"
 
 namespace Prism {
@@ -63,6 +63,9 @@ namespace Prism {
 
     void Physics3DSystem::SubmitColliderMeshes()
     {
+        auto* rs = m_Scene->GetSystem<RenderSystem>();
+        if (!rs) return;
+
         {
             auto view = m_Scene->GetAllEntitiesWith<BoxColliderComponent>();
             for (auto entity : view)
@@ -71,7 +74,8 @@ namespace Prism {
                 {
                     Entity e = { entity, m_Scene };
                     auto& collider = e.GetComponent<BoxColliderComponent>();
-                    SceneRenderer::SubmitColliderMesh(collider, e.GetComponent<TransformComponent>().GetTransform());
+                    rs->SubmitDebugMesh(collider.DebugMesh,
+                        glm::translate(e.GetComponent<TransformComponent>().GetTransform(), collider.Offset));
                 }
             }
         }
@@ -84,7 +88,8 @@ namespace Prism {
                 {
                     Entity e = { entity, m_Scene };
                     auto& collider = e.GetComponent<SphereColliderComponent>();
-                    SceneRenderer::SubmitColliderMesh(collider, e.GetComponent<TransformComponent>().GetTransform());
+                    rs->SubmitDebugMesh(collider.DebugMesh,
+                        e.GetComponent<TransformComponent>().GetTransform());
                 }
             }
         }
@@ -97,7 +102,8 @@ namespace Prism {
                 {
                     Entity e = { entity, m_Scene };
                     auto& collider = e.GetComponent<CapsuleColliderComponent>();
-                    SceneRenderer::SubmitColliderMesh(collider, e.GetComponent<TransformComponent>().GetTransform());
+                    rs->SubmitDebugMesh(collider.DebugMesh,
+                        e.GetComponent<TransformComponent>().GetTransform());
                 }
             }
         }
@@ -110,7 +116,8 @@ namespace Prism {
                 {
                     Entity e = { entity, m_Scene };
                     auto& collider = e.GetComponent<MeshColliderComponent>();
-                    SceneRenderer::SubmitColliderMesh(collider, e.GetComponent<TransformComponent>().GetTransform());
+                    rs->SubmitDebugMesh(collider.ProcessedMesh,
+                        e.GetComponent<TransformComponent>().GetTransform());
                 }
             }
         }

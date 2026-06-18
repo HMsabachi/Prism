@@ -3,6 +3,7 @@
 
 #include "Entity.h"
 #include "Components.h"
+#include "Systems/RenderSystem.h"
 
 #include "yaml-cpp/yaml.h"
 
@@ -529,25 +530,29 @@ namespace Prism {
 
     static void SerializeEnvironment(YAML::Emitter& out, const Ref<Scene>& scene)
     {
+        auto* rs = scene->GetSystem<RenderSystem>();
+        if (!rs) return;
+        auto& cfg = rs->GetConfig();
+
         out << YAML::Key << "Environment";
         out << YAML::Value;
-        out << YAML::BeginMap; // Environment
-        out << YAML::Key << "AssetPath" << YAML::Value << FileSystem::GetRelativePath(scene->GetEnvironment().FilePath);
-        const auto& light = scene->GetLight();
+        out << YAML::BeginMap;
+        out << YAML::Key << "AssetPath" << YAML::Value << FileSystem::GetRelativePath(cfg.SceneEnvironment.FilePath);
+        const auto& light = cfg.SceneLight;
         out << YAML::Key << "Light" << YAML::Value;
-        out << YAML::BeginMap; // Light
+        out << YAML::BeginMap;
         out << YAML::Key << "Direction" << YAML::Value << light.Direction;
         out << YAML::Key << "Radiance" << YAML::Value << light.Radiance;
         out << YAML::Key << "Multiplier" << YAML::Value << light.Multiplier;
-        out << YAML::EndMap; // Light
+        out << YAML::EndMap;
         out << YAML::Key << "Shadow" << YAML::Value;
-        out << YAML::BeginMap; // Shadow
-        out << YAML::Key << "Enabled" << YAML::Value << scene->IsShadowEnabled();
-        out << YAML::Key << "Bias" << YAML::Value << scene->GetShadowBias();
-        out << YAML::Key << "NormalBias" << YAML::Value << scene->GetShadowNormalBias();
-        out << YAML::Key << "CascadeCount" << YAML::Value << scene->GetCascadeCount();
-        out << YAML::EndMap; // Shadow
-        out << YAML::EndMap; // Environment
+        out << YAML::BeginMap;
+        out << YAML::Key << "Enabled" << YAML::Value << cfg.ShadowsEnabled;
+        out << YAML::Key << "Bias" << YAML::Value << cfg.ShadowBias;
+        out << YAML::Key << "NormalBias" << YAML::Value << cfg.ShadowNormalBias;
+        out << YAML::Key << "CascadeCount" << YAML::Value << cfg.CascadeCount;
+        out << YAML::EndMap;
+        out << YAML::EndMap;
     }
 
     void SceneSerializer::Serialize(const std::string& filepath)
@@ -619,12 +624,13 @@ namespace Prism {
         if (environment)
         {
             std::string envPath = environment["AssetPath"].as<std::string>();
-            m_Scene->SetEnvironment(Environment::Load(envPath));
+            auto& cfg = m_Scene->GetSystem<RenderSystem>()->GetConfig();
+            cfg.SceneEnvironment = Environment::Load(envPath);
 
             auto lightNode = environment["Light"];
             if (lightNode)
             {
-                auto& light = m_Scene->GetLight();
+                auto& light = cfg.SceneLight;
                 light.Direction = lightNode["Direction"].as<glm::vec3>();
                 light.Radiance = lightNode["Radiance"].as<glm::vec3>();
                 light.Multiplier = lightNode["Multiplier"].as<float>();
@@ -632,10 +638,10 @@ namespace Prism {
             auto shadowNode = environment["Shadow"];
             if (shadowNode)
             {
-                m_Scene->SetShadowEnabled(shadowNode["Enabled"].as<bool>());
-                m_Scene->SetShadowBias(shadowNode["Bias"].as<float>());
-                m_Scene->SetShadowNormalBias(shadowNode["NormalBias"].as<float>());
-                m_Scene->SetCascadeCount(shadowNode["CascadeCount"].as<uint32_t>());
+                cfg.ShadowsEnabled = shadowNode["Enabled"].as<bool>();
+                cfg.ShadowBias = shadowNode["Bias"].as<float>();
+                cfg.ShadowNormalBias = shadowNode["NormalBias"].as<float>();
+                cfg.CascadeCount = shadowNode["CascadeCount"].as<uint32_t>();
             }
         }
 

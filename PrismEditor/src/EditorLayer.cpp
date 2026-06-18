@@ -6,6 +6,7 @@
 #include "Scripting/CSharp/CSharpScriptEngine.h"
 #include "Scripting/Python/PythonScriptEngine.h"
 #include "Prism/Scene/Systems/Physics2DSystem.h"
+#include "Prism/Scene/Systems/RenderSystem.h"
 
 PRISM_API void PrismConnectPhysXDebugger();
 
@@ -127,6 +128,7 @@ namespace Prism
             LanguageManager::Get().LoadLanguage("Assets/Lang/en-US.yml");
 
             m_EditorScene = Ref<Scene>::Create("EditorScene", true);
+            m_ActiveScene = m_EditorScene;
             UpdateWindowTitle("Untitled Scene");
             CSharpScriptEngine::SetSceneContext(m_EditorScene);
             PythonScriptEngine::SetSceneContext(m_EditorScene);
@@ -159,6 +161,7 @@ namespace Prism
             m_EditorScene->CopyTo(m_RuntimeScene);
 
             m_RuntimeScene->OnRuntimeStart();
+            m_ActiveScene = m_RuntimeScene;
             m_SceneHierarchyPanel->SetContext(m_RuntimeScene);
             UpdateWindowTitle("Runtime Scene");
         }
@@ -170,6 +173,7 @@ namespace Prism
 
             // Unload runtime scene
             m_RuntimeScene = nullptr;
+            m_ActiveScene = m_EditorScene;
 
             m_SelectionContext.clear();
             CSharpScriptEngine::SetSceneContext(m_EditorScene);
@@ -199,14 +203,18 @@ namespace Prism
                 if (m_ViewportPanelFocused)
                     m_EditorCamera.OnUpdate(ts);
 
-                m_EditorScene->OnRenderEditor(m_EditorCamera);
+                auto* rs = m_ActiveScene->GetSystem<RenderSystem>();
+                if (rs)
+                {
+                    rs->SetEditorCamera(m_EditorCamera);
+                    rs->Render();
+                }
 
                 if (m_DrawOnTopBoundingBoxes)
                 {
-                    Renderer::BeginRenderPass(SceneRenderer::GetFinalRenderPass(), false);
+                    Renderer::BeginRenderPass(rs->GetFinalRenderPass(), false);
                     auto viewProj = m_EditorCamera.GetViewProjection();
                     Renderer2D::BeginScene(viewProj, false);
-                    // TODO: Renderer::DrawAABB(m_MeshEntity.GetComponent<MeshRendererComponent>(), m_MeshEntity.GetComponent<TransformComponent>());
                     Renderer2D::EndScene();
                     Renderer::EndRenderPass();
                 }
@@ -217,7 +225,7 @@ namespace Prism
 
                     if (selection.Mesh && selection.Entity.HasComponent<MeshRendererComponent>())
                     {
-                        Renderer::BeginRenderPass(SceneRenderer::GetFinalRenderPass(), false);
+                        Renderer::BeginRenderPass(rs->GetFinalRenderPass(), false);
                         auto viewProj = m_EditorCamera.GetViewProjection();
                         Renderer2D::BeginScene(viewProj, false);
                         glm::vec4 color = (m_SelectionMode == SelectionMode::Entity) ? glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f } : glm::vec4{ 0.2f, 0.9f, 0.2f, 1.0f };
@@ -233,19 +241,18 @@ namespace Prism
                 if (m_ViewportPanelFocused)
                     m_EditorCamera.OnUpdate(ts);
 
-                m_RuntimeScene->OnUpdate();
-                m_RuntimeScene->OnRenderRuntime();
+                m_ActiveScene->OnUpdate();
 
                 // Box2D collider debug drawing
                 {
-                    Renderer::BeginRenderPass(SceneRenderer::GetFinalRenderPass(), false);
+                    Renderer::BeginRenderPass(m_ActiveScene->GetSystem<RenderSystem>()->GetFinalRenderPass(), false);
                     auto viewProj = m_EditorCamera.GetViewProjection();
                     Renderer2D::BeginScene(viewProj, false);
                     {
-                        auto boxColliderView = m_RuntimeScene->GetAllEntitiesWith<BoxCollider2DComponent>();
+                        auto boxColliderView = m_ActiveScene->GetAllEntitiesWith<BoxCollider2DComponent>();
                         for (auto e : boxColliderView)
                         {
-                            Entity entity = { e, m_RuntimeScene.Raw() };
+                            Entity entity = { e, m_ActiveScene.Raw() };
                             if (!entity.HasComponent<TransformComponent>())
                                 continue;
 
@@ -269,7 +276,8 @@ namespace Prism
                 if (m_ViewportPanelFocused)
                     m_EditorCamera.OnUpdate(ts);
 
-                m_RuntimeScene->OnRenderRuntime();
+                if (auto* rs = m_ActiveScene->GetSystem<RenderSystem>())
+                    rs->Render();
                 break;
             }
             }
@@ -277,7 +285,8 @@ namespace Prism
 
         void EditorLayer::ShowBoundingBoxes(bool show, bool onTop /*= false*/)
         {
-            SceneRenderer::GetOptions().ShowBoundingBoxes = show && !onTop;
+            if (auto* rs = m_ActiveScene->GetSystem<RenderSystem>())
+                rs->GetOptions().ShowBoundingBoxes = show && !onTop;
             m_DrawOnTopBoundingBoxes = show && onTop;
         }
 
@@ -415,6 +424,7 @@ namespace Prism
                 SceneSerializer serializer(newScene);
                 serializer.Deserialize(filepath);
                 m_EditorScene = newScene;
+                m_ActiveScene = m_EditorScene;
                 std::filesystem::path path = filepath;
                 UpdateWindowTitle(path.filename().string());
                 m_SceneHierarchyPanel->SetContext(m_EditorScene);
@@ -506,46 +516,49 @@ namespace Prism
             {
                 std::string filename = Application::Get().OpenFile("*.hdr");
                 if (filename != "")
-                    m_EditorScene->SetEnvironment(Environment::Load(filename));
+                {
+                    auto& cfg = m_EditorScene->GetSystem<RenderSystem>()->GetConfig();
+                    cfg.SceneEnvironment = Environment::Load(filename);
+                }
             }
 
-            ImGui::SliderFloat(TR("Skybox LOD"), &m_EditorScene->GetSkyboxLod(), 0.0f, 11.0f);
-            ImGui::Columns(2);
-            ImGui::AlignTextToFramePadding();
-
-            auto& light = m_EditorScene->GetLight();
-            Property(TR("Light Direction"), light.Direction, PropertyFlag::SliderProperty);
-            Property(TR("Light Radiance"), light.Radiance, PropertyFlag::ColorProperty);
-            Property(TR("Light Multiplier"), light.Multiplier, 0.0f, 5.0f, PropertyFlag::SliderProperty);
-
-            // Shadow
+            if (auto* rs = m_EditorScene->GetSystem<RenderSystem>())
             {
-                auto shadowScene = m_SceneState == SceneState::Edit ? m_EditorScene : m_RuntimeScene;
-                if (shadowScene)
+                auto& cfg = rs->GetConfig();
+                ImGui::SliderFloat(TR("Skybox LOD"), &cfg.SkyboxLod, 0.0f, 11.0f);
+                ImGui::Columns(2);
+                ImGui::AlignTextToFramePadding();
+
+                auto& light = cfg.SceneLight;
+                Property(TR("Light Direction"), light.Direction, PropertyFlag::SliderProperty);
+                Property(TR("Light Radiance"), light.Radiance, PropertyFlag::ColorProperty);
+                Property(TR("Light Multiplier"), light.Multiplier, 0.0f, 5.0f, PropertyFlag::SliderProperty);
+
+                // Shadow
                 {
-                    bool shadowEnabled = shadowScene->IsShadowEnabled();
+                    bool shadowEnabled = cfg.ShadowsEnabled;
                     if (Property(TR("Shadows"), shadowEnabled))
-                        shadowScene->SetShadowEnabled(shadowEnabled);
+                        cfg.ShadowsEnabled = shadowEnabled;
 
                     if (shadowEnabled)
                     {
-                        float shadowBias = shadowScene->GetShadowBias();
+                        float shadowBias = cfg.ShadowBias;
                         if (Property(TR("Shadow Bias"), shadowBias, 0.0f, 0.05f, PropertyFlag::SliderProperty))
-                            shadowScene->SetShadowBias(shadowBias);
+                            cfg.ShadowBias = shadowBias;
 
-                        float shadowNormalBias = shadowScene->GetShadowNormalBias();
+                        float shadowNormalBias = cfg.ShadowNormalBias;
                         if (Property(TR("Normal Bias"), shadowNormalBias, 0.0f, 1.0f, PropertyFlag::SliderProperty))
-                            shadowScene->SetShadowNormalBias(shadowNormalBias);
+                            cfg.ShadowNormalBias = shadowNormalBias;
 
-                        float cascadeCount = (float)shadowScene->GetCascadeCount();
+                        float cascadeCount = (float)cfg.CascadeCount;
                         if (Property(TR("Cascades"), cascadeCount, 1.0f, 4.0f, PropertyFlag::SliderProperty))
-                            shadowScene->SetCascadeCount((uint32_t)cascadeCount);
+                            cfg.CascadeCount = (uint32_t)cascadeCount;
                     }
                 }
             }
 
             {
-                auto* scene = m_SceneState == SceneState::Edit ? m_EditorScene.Raw() : m_RuntimeScene.Raw();
+                auto* scene = m_ActiveScene.Raw();
                 if (auto* p2d = scene ? scene->GetSystem<Physics2DSystem>() : nullptr)
                 {
                     float physics2DGravity = p2d->GetGravity();
@@ -655,13 +668,17 @@ namespace Prism
             m_ViewportPanelFocused = ImGui::IsWindowFocused();
             auto viewportOffset = ImGui::GetCursorPos();
             auto viewportSize = ImGui::GetContentRegionAvail();
-            SceneRenderer::SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
-            m_EditorScene->SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
-            if (m_RuntimeScene)
-                m_RuntimeScene->SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
+            //viewportSize.x *= 2;
+            //viewportSize.y *= 2;
+            if (auto* rs = m_ActiveScene->GetSystem<RenderSystem>())
+                rs->SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
             m_EditorCamera.SetProjectionMatrix(glm::perspectiveFov(glm::radians(45.0f), viewportSize.x, viewportSize.y, 0.1f, 10000.0f));
             m_EditorCamera.SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
-            ImGui::Image((void*)SceneRenderer::GetFinalColorBufferRendererID(), viewportSize, { 0, 1 }, { 1, 0 });
+            //viewportSize.x *= 0.5;
+            //viewportSize.y *= 0.5;
+
+            if (auto* rs = m_ActiveScene->GetSystem<RenderSystem>())
+                ImGui::Image((void*)rs->GetFinalColorBufferID(), viewportSize, { 0, 1 }, { 1, 0 });
 
             static int counter = 0;
             auto windowSize = ImGui::GetWindowSize();
@@ -892,11 +909,7 @@ namespace Prism
             if (m_SceneState == SceneState::Edit)
             {
                 if (m_ViewportPanelMouseOver)
-                    m_EditorScene->OnEvent(e);
-            }
-            else if (m_SceneState == SceneState::Play)
-            {
-                m_RuntimeScene->OnEvent(e);
+                    m_ActiveScene->OnEvent(e);
             }
             if (m_AllowViewportCameraEvents)
                             m_EditorCamera.OnEvent(e);
@@ -941,7 +954,8 @@ namespace Prism
                 {
                 case KeyCode::G:
                     // Toggle grid
-                    SceneRenderer::GetOptions().ShowGrid = !SceneRenderer::GetOptions().ShowGrid;
+                    if (auto* rs = m_ActiveScene->GetSystem<RenderSystem>())
+                        rs->GetOptions().ShowGrid = !rs->GetOptions().ShowGrid;
                     break;
                 case KeyCode::B:
                     // Toggle bounding boxes
