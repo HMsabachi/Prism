@@ -198,15 +198,15 @@ namespace Prism {
             out << YAML::EndMap; // TransformComponent
         }
 
-        if (entity.HasComponent<MeshComponent>())
+        if (entity.HasComponent<MeshRendererComponent>())
         {
-            out << YAML::Key << "MeshComponent";
-            out << YAML::BeginMap; // MeshComponent
+            out << YAML::Key << "MeshRendererComponent";
+            out << YAML::BeginMap;
 
-            auto mesh = entity.GetComponent<MeshComponent>().Mesh;
+            auto mesh = entity.GetComponent<MeshRendererComponent>().Mesh;
             out << YAML::Key << "AssetPath" << YAML::Value << FileSystem::GetRelativePath(mesh->GetFilePath());
 
-            out << YAML::EndMap; // MeshComponent
+            out << YAML::EndMap;
         }
 
         if (entity.HasComponent<CameraComponent>())
@@ -728,13 +728,15 @@ namespace Prism {
                     }
                 }
 
-                auto meshComponent = entity["MeshComponent"];
+                auto meshComponent = entity["MeshRendererComponent"];
                 if (meshComponent)
                 {
                     std::string meshPath = meshComponent["AssetPath"].as<std::string>();
-                    // TEMP (because script creates mesh component...)
-                    if (!deserializedEntity.HasComponent<MeshComponent>())
-                        deserializedEntity.AddComponent<MeshComponent>(Ref<Mesh>::Create(meshPath));
+                    if (!deserializedEntity.HasComponent<MeshRendererComponent>())
+                    {
+                        auto mesh = Ref<Mesh>::Create(meshPath);
+                        deserializedEntity.AddComponent<MeshRendererComponent>(mesh);
+                    }
 
                     PR_CORE_INFO("  Mesh Asset Path: {0}", meshPath);
                 }

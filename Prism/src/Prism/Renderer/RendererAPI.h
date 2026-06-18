@@ -52,6 +52,7 @@ namespace Prism
         static void Clear(float r, float g, float b, float a);
         static void SetClearColor(float r, float g, float b, float a);
         static void DrawIndexed(uint32_t count, PrimitiveType type = PrimitiveType::Triangles, bool depthTest = true);
+        static void DrawIndexedBaseVertex(uint32_t count, uint32_t baseIndex, uint32_t baseVertex, PrimitiveType type = PrimitiveType::Triangles);
         static void SetLineThickness(float thickness);
         static void MemoryBarriers(BarrierFlags flags);
 

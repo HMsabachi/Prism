@@ -36,6 +36,7 @@ namespace Prism
         static void EndScene();
 
         static void SubmitMesh(Ref<Mesh> mesh, const glm::mat4& transform = glm::mat4(1.0f), Ref<Material> overrideMaterial = nullptr);
+        static void SubmitSubmesh(Ref<Mesh> mesh, uint32_t submeshIndex, Ref<Material> material, const glm::mat4& transform);
         static void SubmitSelectedMesh(Ref<Mesh> mesh, const glm::mat4& transform = glm::mat4(1.0f));
         static void SubmitColliderMesh(const BoxColliderComponent& component, const glm::mat4& parentTransform = glm::mat4(1.0F));
         static void SubmitColliderMesh(const SphereColliderComponent& component, const glm::mat4& parentTransform = glm::mat4(1.0F));

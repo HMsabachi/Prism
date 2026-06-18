@@ -95,11 +95,11 @@ namespace Prism {
                             ImGui::CloseCurrentPopup();
                         }
                     }
-                    if (!m_SelectionContext.HasComponent<MeshComponent>())
+                    if (!m_SelectionContext.HasComponent<MeshRendererComponent>())
                     {
                         if (ImGui::Button(TR("Mesh")))
                         {
-                            m_SelectionContext.AddComponent<MeshComponent>();
+                            m_SelectionContext.AddComponent<MeshRendererComponent>();
                             ImGui::CloseCurrentPopup();
                         }
                     }
@@ -237,9 +237,9 @@ namespace Prism {
         }
         if (opened)
         {
-            if (entity.HasComponent<MeshComponent>())
+            if (entity.HasComponent<MeshRendererComponent>())
             {
-                auto mesh = entity.GetComponent<MeshComponent>().Mesh;
+                auto mesh = entity.GetComponent<MeshRendererComponent>().Mesh;
                 // if (mesh)
                 // 	DrawMeshNode(mesh);
             }
@@ -601,9 +601,9 @@ namespace Prism {
         }
 
 
-        if (entity.HasComponent<MeshComponent>())
+        if (entity.HasComponent<MeshRendererComponent>())
         {
-            auto& mc = entity.GetComponent<MeshComponent>();
+            auto& mc = entity.GetComponent<MeshRendererComponent>();
             if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(TransformComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, TR("Mesh")))
             {
                 ImGui::Columns(3);

@@ -41,19 +41,19 @@ namespace Example
             texture.SetData(colorMap);
 
             Log.Trace("HasComponent - TransformComponent = {0}", HasComponent<TransformComponent>());
-            Log.Trace("HasComponent - MeshComponent = {0}", HasComponent<MeshComponent>());
+            Log.Trace("HasComponent - MeshRendererComponent = {0}", HasComponent<MeshRendererComponent>());
 
-            MeshComponent meshComponent = GetComponent<MeshComponent>();
+            MeshRendererComponent meshComponent = GetComponent<MeshRendererComponent>();
             if (meshComponent == null)
             {
-                Log.Trace("MeshComponent is null!");
-                meshComponent = CreateComponent<MeshComponent>();
+                Log.Trace("MeshRendererComponent is null!");
+                meshComponent = CreateComponent<MeshRendererComponent>();
             }
             meshComponent.Mesh = MeshFactory.CreatePlane(1.0f, 1.0f);
 
-            Log.Trace("Mesh has {0} materials!", meshComponent.Mesh.GetMaterialCount());
+            Log.Trace("Mesh has {0} materials!", meshComponent.GetMaterialCount());
 
-            Material material = meshComponent.Mesh.GetMaterial(1);
+            Material material = meshComponent.GetMaterial(1);
             material.SetKeyword("ALBEDO_MAP", true);
             material.Set("u_AlbedoTexture", texture);
 

@@ -25,7 +25,7 @@ Entities:
       Position: [-7.223452, 1.5, -3.1342356]
       Rotation: [1, 0, 0, 0]
       Scale: [2, 2, 2]
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBodyComponent:
       BodyType: 1
@@ -61,7 +61,7 @@ Entities:
       Position: [-4.0302086, 1.5, -3.1342356]
       Rotation: [1, 0, 0, 0]
       Scale: [2, 2, 2]
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBodyComponent:
       BodyType: 1
@@ -97,7 +97,7 @@ Entities:
       Position: [0.07178551, 1.5, -3.1342356]
       Rotation: [1, 0, 0, 0]
       Scale: [2, 2, 2]
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBodyComponent:
       BodyType: 1
@@ -133,7 +133,7 @@ Entities:
       Position: [-3.8477411, 1.5, 0]
       Rotation: [1, 0, 0, 0]
       Scale: [2, 2, 2]
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBodyComponent:
       BodyType: 1
@@ -169,7 +169,7 @@ Entities:
       Position: [0, 1.5, 0]
       Rotation: [1, 0, 0, 0]
       Scale: [2, 2, 2]
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBodyComponent:
       BodyType: 1
@@ -205,7 +205,7 @@ Entities:
       Position: [0, 0, 0]
       Rotation: [1, 0, 0, 0]
       Scale: [50, 1, 50]
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBodyComponent:
       BodyType: 0
@@ -276,7 +276,7 @@ Entities:
       Position: [-19.43363, 4.5087404, -1.9669533e-06]
       Rotation: [1, 0, 0, 0]
       Scale: [1, 1, 1]
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: assets\meshes\Sphere1m.fbx
     RigidBodyComponent:
       BodyType: 1
@@ -346,7 +346,7 @@ Entities:
       Position: [-7.223452, 1.5, 0.4699059]
       Rotation: [1, 0, 0, 0]
       Scale: [2, 2, 2]
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBodyComponent:
       BodyType: 1
@@ -382,7 +382,7 @@ Entities:
       Position: [0.57714844, 3.7860096, -9.399623]
       Rotation: [1, 0, 0, 0]
       Scale: [0.022940006, 0.022940006, 0.022940006]
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: Assets\models\Sphere1m.fbx
     RigidBodyComponent:
       BodyType: 1

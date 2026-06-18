@@ -106,16 +106,15 @@ namespace Prism
 
         m_SkyboxMaterial->SetFloat("u_TextureLod", m_SkyboxLod);
 
-        auto group = m_Registry.group<MeshComponent>(entt::get<TransformComponent>);
+        auto group = m_Registry.group<MeshRendererComponent>(entt::get<TransformComponent>);
         SceneRenderer::BeginScene(this, { camera, cameraViewMatrix });
         for (auto entity : group)
         {
-            auto [transformComponent, meshComponent] = group.get<TransformComponent, MeshComponent>(entity);
-            if (meshComponent.Mesh)
+            auto [transformComponent, renderer] = group.get<TransformComponent, MeshRendererComponent>(entity);
+            if (renderer.Mesh)
             {
-                meshComponent.Mesh->OnUpdate(ts);
-
-                SceneRenderer::SubmitMesh(meshComponent, transformComponent.GetTransform(), nullptr);
+                renderer.Mesh->OnUpdate(ts);
+                SceneRenderer::SubmitMesh(renderer.Mesh, transformComponent.GetTransform(), nullptr);
             }
         }
 
@@ -156,19 +155,19 @@ namespace Prism
         float ts = Time::GetDeltaTime();
         m_SkyboxMaterial->SetFloat("u_TextureLod", m_SkyboxLod);
 
-        auto group = m_Registry.group<MeshComponent>(entt::get<TransformComponent>);
+        auto group = m_Registry.group<MeshRendererComponent>(entt::get<TransformComponent>);
         SceneRenderer::BeginScene(this, { editorCamera, editorCamera.GetViewMatrix() });
         for (auto entity : group)
         {
-            auto [transformComponent, meshComponent] = group.get<TransformComponent, MeshComponent>(entity);
-            if (meshComponent.Mesh)
+            auto [transformComponent, renderer] = group.get<TransformComponent, MeshRendererComponent>(entity);
+            if (renderer.Mesh)
             {
-                meshComponent.Mesh->OnUpdate(ts);
+                renderer.Mesh->OnUpdate(ts);
 
                 if (m_SelectedEntity == entity)
-                    SceneRenderer::SubmitSelectedMesh(meshComponent, transformComponent.GetTransform());
+                    SceneRenderer::SubmitSelectedMesh(renderer.Mesh, transformComponent.GetTransform());
                 else
-                    SceneRenderer::SubmitMesh(meshComponent, transformComponent.GetTransform(), nullptr);
+                    SceneRenderer::SubmitMesh(renderer.Mesh, transformComponent.GetTransform(), nullptr);
             }
         }
 
@@ -320,7 +319,7 @@ namespace Prism
             newEntity = CreateEntity();
 
         CopyComponentIfExists<TransformComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        CopyComponentIfExists<MeshComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<MeshRendererComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<CSharpScriptComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<PythonScriptComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<CameraComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
@@ -384,7 +383,7 @@ namespace Prism
 
         CopyComponent<TagComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<TransformComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<MeshComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<MeshRendererComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<CSharpScriptComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<PythonScriptComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<CameraComponent>(target->m_Registry, m_Registry, enttMap);

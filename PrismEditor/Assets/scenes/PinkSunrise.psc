@@ -31,7 +31,7 @@ Entities:
         - Name: Velocity
           Type: 6
           Data: [0, 0, 0]
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: assets\meshes\TestScene.fbx
   - Entity: 5178862374589434728
     TagComponent:
@@ -62,5 +62,5 @@ Entities:
         - Name: SinkSpeed
           Type: 1
           Data: 5
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: assets\meshes\Sphere1m.fbx

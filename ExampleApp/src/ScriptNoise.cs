@@ -7,7 +7,7 @@ namespace Example
         private void OnCreate()
         {
             var material = new Material("Custom/NoiseTest");
-            var meshComponent = GetComponent<MeshComponent>();
+            var meshComponent = GetComponent<MeshRendererComponent>();
             meshComponent.SetMaterial(0, material);
         }
         private void OnUpdate()

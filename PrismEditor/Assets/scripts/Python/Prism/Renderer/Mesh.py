@@ -1,5 +1,6 @@
 import PrismNative as _Prism
 
+
 class Mesh:
     def __init__(self, filepath=""):
         if isinstance(filepath, int):
@@ -11,30 +12,3 @@ class Mesh:
         if hasattr(self, '_handle') and self._handle != 0:
             _Prism.Prism_Mesh_Destructor(self._handle)
             self._handle = 0
-
-    @property
-    def BaseMaterial(self):
-        from Prism.Renderer.Material import Material
-        handle = _Prism.Prism_Mesh_GetMaterial(self._handle)
-        return Material(handle) if handle else None
-
-    def GetMaterial(self, index):
-        from Prism.Renderer.Material import Material
-        handle = _Prism.Prism_Mesh_GetMaterialByIndex(self._handle, int(index))
-        return Material(handle) if handle else None
-
-    def GetMaterialCount(self):
-        return _Prism.Prism_Mesh_GetMaterialCount(self._handle)
-
-    def SetMaterial(self, index, material):
-        h = material._handle if material else 0
-        _Prism.Prism_Mesh_SetMaterialByIndex(self._handle, int(index), h)
-
-    def SetOverrideMaterial(self, material):
-        h = material._handle if material else 0
-        _Prism.Prism_Mesh_SetOverrideMaterial(self._handle, h)
-
-    def GetOverrideMaterial(self):
-        from Prism.Renderer.Material import Material
-        handle = _Prism.Prism_Mesh_GetOverrideMaterial(self._handle)
-        return Material(handle) if handle else None

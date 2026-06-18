@@ -13,7 +13,7 @@ Entities:
       Position: [0, 14.43297, -7.4505806e-09]
       Rotation: [1, 0, 0, 0]
       Scale: [4, 4, 1]
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBody2DComponent:
       BodyType: 1
@@ -28,7 +28,7 @@ Entities:
       Position: [13.6415138, 2.8245554, -3.03643901e-08]
       Rotation: [0.960835755, 0, 0, 0.277118564]
       Scale: [36, 3.99999952, 4]
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBody2DComponent:
       BodyType: 0
@@ -43,7 +43,7 @@ Entities:
       Position: [-10.8582497, 1.71247244, 2.49667664e-08]
       Rotation: [0.981936872, 0, 0, -0.18920885]
       Scale: [36, 4.00000238, 4]
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBody2DComponent:
       BodyType: 0
@@ -58,7 +58,7 @@ Entities:
       Position: [0, 91.4110565, 0]
       Rotation: [0.942232013, 0, 0, 0.334960997]
       Scale: [0.359999985, 0.360000014, 0.360000014]
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: assets\meshes\cerberus\CerberusMaterials.fbx
     RigidBody2DComponent:
       BodyType: 1

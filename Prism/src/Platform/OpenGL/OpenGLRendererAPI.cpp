@@ -140,6 +140,12 @@ namespace Prism
             glEnable(GL_DEPTH_TEST);
     }
 
+    void RendererAPI::DrawIndexedBaseVertex(uint32_t count, uint32_t baseIndex, uint32_t baseVertex, PrimitiveType type)
+    {
+        glDrawElementsBaseVertex(PrismToOpenGLPrimitiveType(type), count, GL_UNSIGNED_INT,
+            (void*)(sizeof(uint32_t) * baseIndex), baseVertex);
+    }
+
     void RendererAPI::SetLineThickness(float thickness)
     {
         glLineWidth(thickness);

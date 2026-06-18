@@ -3,7 +3,7 @@ from Prism.Component import (
     Component,
     TagComponent,
     TransformComponent,
-    MeshComponent,
+    MeshRendererComponent,
     CameraComponent,
     ScriptComponent,
     SpriteRendererComponent,

@@ -281,17 +281,17 @@ namespace Prism {
 #pragma endregion
 
 #pragma region Mesh
-        void* Prism_MeshComponent_GetMesh(uint64_t entityID)
+        void* Prism_MeshRendererComponent_GetMesh(uint64_t entityID)
         {
             Entity entity = GetEntityFromEntityID(entityID);
-            auto& meshComponent = entity.GetComponent<MeshComponent>();
+            auto& meshComponent = entity.GetComponent<MeshRendererComponent>();
             return new Ref<Mesh>(meshComponent.Mesh);
         }
 
-        void Prism_MeshComponent_SetMesh(uint64_t entityID, Ref<Mesh>* inMesh)
+        void Prism_MeshRendererComponent_SetMesh(uint64_t entityID, Ref<Mesh>* inMesh)
         {
             Entity entity = GetEntityFromEntityID(entityID);
-            auto& meshComponent = entity.GetComponent<MeshComponent>();
+            auto& meshComponent = entity.GetComponent<MeshRendererComponent>();
             meshComponent.Mesh = inMesh ? *inMesh : nullptr;
         }
 
@@ -308,39 +308,6 @@ namespace Prism {
             delete _this;
         }
 
-        Prism::Ref<Prism::Material>* Prism_Mesh_GetMaterial(Ref<Mesh>* inMesh)
-        {
-            // TODO: Step 2 — 临时返回默认材质
-            return new Ref<Material>(Renderer::GetDefaultMaterial());
-        }
-
-        Prism::Ref<Prism::Material>* Prism_Mesh_GetMaterialByIndex(Ref<Mesh>* inMesh, int32_t index)
-        {
-            // TODO: Step 2 — 临时返回默认材质
-            return new Ref<Material>(Renderer::GetDefaultMaterial());
-        }
-
-        int32_t Prism_Mesh_GetMaterialCount(Ref<Mesh>* inMesh)
-        {
-            return 1; // TODO: Step 2
-        }
-
-        void Prism_Mesh_SetMaterialByIndex(Ref<Mesh>* inMesh, int32_t index, Ref<Material>* material)
-        {
-            // TODO: Step 2 — 暂对默认材质操作
-        }
-
-        void Prism_Mesh_SetOverrideMaterial(Ref<Mesh>* inMesh, Ref<Material>* material)
-        {
-            // TODO: Step 2 — 暂对默认材质操作
-        }
-
-        Prism::Ref<Prism::Material>* Prism_Mesh_GetOverrideMaterial(Ref<Mesh>* inMesh)
-        {
-            Ref<Mesh>& mesh = *(Ref<Mesh>*)inMesh;
-            auto overrideMat = Renderer::GetDefaultMaterial();
-            return overrideMat ? new Ref<Material>(overrideMat) : nullptr;
-        }
 
         void* Prism_MeshFactory_CreatePlane(float width, float height)
         {
@@ -531,6 +498,12 @@ namespace Prism {
             Rolky::String::Free(shaderName);
             const auto& shader = Renderer::GetShaderLibrary()->Get(name);
             return new Ref<Material>(Material::Create(shader));
+        }
+
+
+        void Prism_Material_GetDefaultMaterial(Ref<Material>** outMaterial)
+        {
+            *outMaterial = new Ref<Material>(Renderer::GetDefaultMaterial());
         }
 
         void Prism_Material_Destructor(Ref<Material>* _this)

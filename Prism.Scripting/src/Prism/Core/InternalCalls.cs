@@ -33,16 +33,10 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<UInt64, ReflectionType, void> Prism_Entity_CreateComponent;
         internal static delegate* unmanaged[Cdecl]<UInt64, ReflectionType, Bool32> Prism_Entity_HasComponent;
         // Mesh
-        internal static delegate* unmanaged[Cdecl]<UInt64, IntPtr> Prism_MeshComponent_GetMesh;
-        internal static delegate* unmanaged[Cdecl]<UInt64, IntPtr, void> Prism_MeshComponent_SetMesh;
+        internal static delegate* unmanaged[Cdecl]<UInt64, IntPtr> Prism_MeshRendererComponent_GetMesh;
+        internal static delegate* unmanaged[Cdecl]<UInt64, IntPtr, void> Prism_MeshRendererComponent_SetMesh;
         internal static delegate* unmanaged[Cdecl]<NativeString, IntPtr> Prism_Mesh_Constructor;
         internal static delegate* unmanaged[Cdecl]<IntPtr, void> Prism_Mesh_Destructor;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr> Prism_Mesh_GetMaterial;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, Int32, IntPtr> Prism_Mesh_GetMaterialByIndex;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, Int32> Prism_Mesh_GetMaterialCount;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, Int32, IntPtr, void> Prism_Mesh_SetMaterialByIndex;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr, void> Prism_Mesh_SetOverrideMaterial;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr> Prism_Mesh_GetOverrideMaterial;
         internal static delegate* unmanaged[Cdecl]<float, float, IntPtr> Prism_MeshFactory_CreatePlane;
         // Texture2D
         internal static delegate* unmanaged[Cdecl]<UInt32, UInt32, IntPtr> Prism_Texture2D_Constructor;
@@ -50,6 +44,7 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeArray<Vector4>, Int32, void> Prism_Texture2D_SetData;
         // Material
         internal static delegate* unmanaged[Cdecl]<NativeString, IntPtr> Prism_Material_Constructor;
+        internal static delegate* unmanaged[Cdecl]<IntPtr*, void> Prism_Material_GetDefaultMaterial;
         internal static delegate* unmanaged[Cdecl]<IntPtr, void> Prism_Material_Destructor;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, float, void> Prism_Material_SetFloat;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, IntPtr, void> Prism_Material_SetTexture;

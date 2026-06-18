@@ -39,7 +39,7 @@ namespace Prism
     {
         RegisterManagedComponent<TagComponent>();
         RegisterManagedComponent<TransformComponent>();
-        RegisterManagedComponent<MeshComponent>();
+        RegisterManagedComponent<MeshRendererComponent>();
         RegisterManagedComponent<CameraComponent>();
         RegisterManagedComponent<SpriteRendererComponent>();
         RegisterManagedComponent<RigidBody2DComponent>();
@@ -90,16 +90,10 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_Behaviour_GetEnabled);
         PR_ADD_INTERNAL_CALL(Prism_Behaviour_SetEnabled);
         // Mesh
-        PR_ADD_INTERNAL_CALL(Prism_MeshComponent_GetMesh);
-        PR_ADD_INTERNAL_CALL(Prism_MeshComponent_SetMesh);
+        PR_ADD_INTERNAL_CALL(Prism_MeshRendererComponent_GetMesh);
+        PR_ADD_INTERNAL_CALL(Prism_MeshRendererComponent_SetMesh);
         PR_ADD_INTERNAL_CALL(Prism_Mesh_Constructor);
         PR_ADD_INTERNAL_CALL(Prism_Mesh_Destructor);
-        PR_ADD_INTERNAL_CALL(Prism_Mesh_GetMaterial);
-        PR_ADD_INTERNAL_CALL(Prism_Mesh_GetMaterialByIndex);
-        PR_ADD_INTERNAL_CALL(Prism_Mesh_GetMaterialCount);
-        PR_ADD_INTERNAL_CALL(Prism_Mesh_SetMaterialByIndex);
-        PR_ADD_INTERNAL_CALL(Prism_Mesh_SetOverrideMaterial);
-        PR_ADD_INTERNAL_CALL(Prism_Mesh_GetOverrideMaterial);
         PR_ADD_INTERNAL_CALL(Prism_MeshFactory_CreatePlane);
         // RigidBody2DComponent
         PR_ADD_INTERNAL_CALL(Prism_RigidBody2DComponent_ApplyLinearImpulse);
@@ -131,6 +125,7 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_Texture2D_SetData);
         // Material
         PR_ADD_INTERNAL_CALL(Prism_Material_Constructor);
+        PR_ADD_INTERNAL_CALL(Prism_Material_GetDefaultMaterial);
         PR_ADD_INTERNAL_CALL(Prism_Material_Destructor);
         PR_ADD_INTERNAL_CALL(Prism_Material_SetFloat);
         PR_ADD_INTERNAL_CALL(Prism_Material_SetVector3);

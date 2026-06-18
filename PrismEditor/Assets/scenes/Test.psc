@@ -63,7 +63,7 @@ Entities:
         - Name: Speed
           Type: 1
           Data: 5
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: E:\PrismEngine\Prism\PrismEditor\Assets\meshes\TestScene.fbx
   - Entity: 10266587003235082940
     TagComponent:
@@ -76,5 +76,5 @@ Entities:
       ModuleName: Example.ScriptNoise
       StoredFields:
         []
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: E:\PrismEngine\Prism\PrismEditor\Assets\models\Plane1m.obj

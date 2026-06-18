@@ -33,7 +33,7 @@ namespace Prism
     {
         RegisterPythonComponent<TagComponent>();
         RegisterPythonComponent<TransformComponent>();
-        RegisterPythonComponent<MeshComponent>();
+        RegisterPythonComponent<MeshRendererComponent>();
         RegisterPythonComponent<CameraComponent>();
         RegisterPythonComponent<SpriteRendererComponent>();
         RegisterPythonComponent<RigidBody2DComponent>();
@@ -124,19 +124,13 @@ namespace Prism
         // Mesh
         PR_PYTHON_FUNCTION(Prism_Mesh_Constructor, "Mesh(cpp_handle, filepath)");
         PR_PYTHON_FUNCTION(Prism_Mesh_Destructor, "~Mesh(cpp_handle)");
-        PR_PYTHON_FUNCTION(Prism_Mesh_GetMaterial, "GetMaterial(cpp_handle) -> handle");
-        PR_PYTHON_FUNCTION(Prism_Mesh_GetMaterialByIndex, "GetMaterialByIndex(cpp_handle, index) -> handle");
-        PR_PYTHON_FUNCTION(Prism_Mesh_GetMaterialCount, "GetMaterialCount(cpp_handle) -> int");
-        PR_PYTHON_FUNCTION(Prism_Mesh_SetMaterialByIndex, "SetMaterialByIndex(cpp_handle, index, materialHandle)");
-        PR_PYTHON_FUNCTION(Prism_Mesh_SetOverrideMaterial, "SetOverrideMaterial(cpp_handle, materialHandle)");
-        PR_PYTHON_FUNCTION(Prism_Mesh_GetOverrideMaterial, "GetOverrideMaterial(cpp_handle) -> handle");
 
         // MeshFactory
         PR_PYTHON_FUNCTION(Prism_MeshFactory_CreatePlane, "CreatePlane(width, height) -> handle");
 
-        // MeshComponent
-        PR_PYTHON_FUNCTION(Prism_MeshComponent_GetMesh, "GetMesh(entityID) -> handle");
-        PR_PYTHON_FUNCTION(Prism_MeshComponent_SetMesh, "SetMesh(entityID, handle)");
+        // MeshRendererComponent
+        PR_PYTHON_FUNCTION(Prism_MeshRendererComponent_GetMesh, "GetMesh(entityID) -> handle");
+        PR_PYTHON_FUNCTION(Prism_MeshRendererComponent_SetMesh, "SetMesh(entityID, handle)");
 
         // Texture2D
         PR_PYTHON_FUNCTION(Prism_Texture2D_Constructor, "Texture2D(cpp_handle, width, height)");
@@ -145,6 +139,7 @@ namespace Prism
 
         // Material
         PR_PYTHON_FUNCTION(Prism_Material_Constructor, "Material(cpp_handle, shaderName)");
+        PR_PYTHON_FUNCTION(Prism_Material_GetDefaultMaterial, "GetDefaultMaterial() -> handle");
         PR_PYTHON_FUNCTION(Prism_Material_Destructor, "~Material(cpp_handle)");
         PR_PYTHON_FUNCTION(Prism_Material_SetFloat, "SetFloat(cpp_handle, uniform, value)");
         PR_PYTHON_FUNCTION(Prism_Material_SetVector3, "SetVector3(cpp_handle, uniform, vec3)");

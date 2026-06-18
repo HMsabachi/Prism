@@ -13,8 +13,8 @@ namespace Example
         Material material;
         private void OnCreate()
         {
-            MeshComponent meshComponent = GetComponent<MeshComponent>();
-            material = meshComponent.Mesh.GetMaterial(0);
+            MeshRendererComponent meshComponent = GetComponent<MeshRendererComponent>();
+            material = meshComponent.GetMaterial(0);
             GenerateColor();
         }
         private void OnUpdate()

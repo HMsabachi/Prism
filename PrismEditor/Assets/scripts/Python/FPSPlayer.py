@@ -1,6 +1,6 @@
 from Prism.Entity import Entity
 from Prism.Behaviour import Behaviour
-from Prism.Component import TransformComponent, RigidBodyComponent, MeshComponent
+from Prism.Component import TransformComponent, RigidBodyComponent, MeshRendererComponent
 from Prism.Physics.Collider import ColliderType, BoxCollider, SphereCollider, CapsuleCollider
 from Prism.Physics.Physics import Physics, RaycastHit
 from Prism.Core.Input import Input, CursorMode, MouseButton
@@ -79,7 +79,7 @@ class FPSPlayer(Behaviour):
             if Physics.Raycast(origin, self._cameraTransform.Forward, 20.0, hit):
                 entity = Entity.FindEntityByID(hit.EntityID)
                 if entity is not None:
-                    mesh: MeshComponent = entity.GetComponent(MeshComponent)
+                    mesh: MeshRendererComponent = entity.GetComponent(MeshRendererComponent)
                     if mesh is not None and mesh.Mesh is not None:
                         mesh.Mesh.GetMaterial(0).Set("u_Metalness", 1.0)
         if Input.IsKeyPressed(KeyCodes.L):

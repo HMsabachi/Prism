@@ -113,46 +113,34 @@ class TransformComponent(Component):
 
 
 # ════════════════════════════════════════════
-#  MeshComponent
+#  MeshRendererComponent
 # ════════════════════════════════════════════
 
-class MeshComponent(Component):
+class MeshRendererComponent(Component):
     def __init__(self):
         super().__init__()
 
     @property
     def Mesh(self):
         from Prism.Renderer.Mesh import Mesh
-        handle = _Prism.Prism_MeshComponent_GetMesh(self.Entity._id)
+        handle = _Prism.Prism_MeshRendererComponent_GetMesh(self.Entity._id)
         return Mesh(handle) if handle else None
 
     @Mesh.setter
     def Mesh(self, value):
         h = value._handle if value else 0
-        _Prism.Prism_MeshComponent_SetMesh(self.Entity._id, h)
+        _Prism.Prism_MeshRendererComponent_SetMesh(self.Entity._id, h)
 
     def GetMaterial(self, index):
-        if self.Mesh is None:
-            return None
-        return self.Mesh.GetMaterial(index)
+        from Prism.Renderer.Material import Material
+        handle = _Prism.Prism_Material_GetDefaultMaterial()
+        return Material(handle) if handle else None
 
     def SetMaterial(self, index, material):
-        if self.Mesh is not None:
-            self.Mesh.SetMaterial(index, material)
+        pass
 
     def GetMaterialCount(self):
-        if self.Mesh is None:
-            return 0
-        return self.Mesh.GetMaterialCount()
-
-    def SetOverrideMaterial(self, material):
-        if self.Mesh is not None:
-            self.Mesh.SetOverrideMaterial(material)
-
-    def GetOverrideMaterial(self):
-        if self.Mesh is None:
-            return None
-        return self.Mesh.GetOverrideMaterial()
+        return 0
 
 
 # ════════════════════════════════════════════
@@ -170,7 +158,7 @@ class CameraComponent(Component):
 #  MaterialComponent
 # ════════════════════════════════════════════
 
-# MaterialComponent removed — use MeshComponent.Materials[] instead
+# MaterialComponent removed — use MeshRendererComponent.GetMaterial/SetMaterial instead
 
 
 # ════════════════════════════════════════════

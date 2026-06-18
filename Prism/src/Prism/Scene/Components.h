@@ -67,18 +67,23 @@ namespace Prism {
         }
     };
 
-    struct MeshComponent
+    struct MeshRendererComponent
     {
         Ref<Prism::Mesh> Mesh;
-        MeshComponent() = default;
-        MeshComponent(const MeshComponent& other)
-            : Mesh(other.Mesh) {
-        }
-        MeshComponent(const Ref<Prism::Mesh>& mesh)
-            : Mesh(mesh) {
-        }
+        std::vector<Ref<Material>> Materials;
 
-        operator Ref<Prism::Mesh>() { return Mesh; }
+        MeshRendererComponent() = default;
+        MeshRendererComponent(const MeshRendererComponent&) = default;
+        MeshRendererComponent(const Ref<Prism::Mesh>& mesh) { SetMesh(mesh); }
+
+        void SetMesh(const Ref<Prism::Mesh>& mesh)
+        {
+            Mesh = mesh;
+            if (mesh)
+                Materials.resize(mesh->GetSubmeshes().size(), nullptr);
+            else
+                Materials.clear();
+        }
     };
 
     struct CSharpBehaviourBinding

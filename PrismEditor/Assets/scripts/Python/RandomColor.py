@@ -1,13 +1,13 @@
 import random
-from Prism import Behaviour, MeshComponent, Time, Log
+from Prism import Behaviour, MeshRendererComponent, Time, Log
 from Prism.Math import Vector3
 
 
 class RandomColor(Behaviour):
     def OnCreate(self):
         self.random = random.Random()
-        meshComponent = self.GetComponent(MeshComponent)
-        self.material = meshComponent.Mesh.GetMaterial(0)
+        meshComponent = self.GetComponent(MeshRendererComponent)
+        self.material = meshComponent.GetMaterial(0)
         self.GenerateColor()
         self._timer = 0.0
 

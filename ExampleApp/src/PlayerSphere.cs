@@ -29,8 +29,8 @@ namespace Example
             m_PhysicsBody = GetComponent<RigidBodyComponent>();
             m_Transform = GetComponent<TransformComponent>();
 
-            MeshComponent meshComponent = GetComponent<MeshComponent>();
-            m_MeshMaterial = meshComponent.Mesh.GetMaterial(0);
+            MeshRendererComponent meshComponent = GetComponent<MeshRendererComponent>();
+            m_MeshMaterial = meshComponent.GetMaterial(0);
             m_MeshMaterial.Set("u_Metalness", 0.0f);
             randomColor = CreateComponent<RandomColor>();
         }

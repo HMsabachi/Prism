@@ -1,6 +1,6 @@
 from Prism import (
     Behaviour, Log, Time, Input, KeyCodes,
-    TransformComponent, MeshComponent,
+    TransformComponent, MeshRendererComponent,
 )
 from Prism.Math import Vector2, Vector3, Vector4
 from Prism.Math.Mathf import Mathf
@@ -37,18 +37,18 @@ class MapGenerator(Behaviour):
         texture.SetData(colorMap)
 
         Log.Trace("HasComponent - TransformComponent = {}", self.HasComponent(TransformComponent))
-        Log.Trace("HasComponent - MeshComponent = {}", self.HasComponent(MeshComponent))
+        Log.Trace("HasComponent - MeshRendererComponent = {}", self.HasComponent(MeshRendererComponent))
 
-        meshComponent = self.GetComponent(MeshComponent)
+        meshComponent = self.GetComponent(MeshRendererComponent)
         if meshComponent is None:
-            Log.Trace("MeshComponent is null!")
-            meshComponent = self.CreateComponent(MeshComponent)
+            Log.Trace("MeshRendererComponent is null!")
+            meshComponent = self.CreateComponent(MeshRendererComponent)
 
         meshComponent.Mesh = MeshFactory.CreatePlane(1.0, 1.0)
 
-        Log.Trace("Mesh has {} materials!", meshComponent.Mesh.GetMaterialCount())
+        Log.Trace("Mesh has {} materials!", meshComponent.GetMaterialCount())
 
-        material = meshComponent.Mesh.GetMaterial(1)
+        material = meshComponent.GetMaterial(1)
         material.SetKeyword("ALBEDO_MAP", True)
         material.Set("u_AlbedoTexture", texture)
 

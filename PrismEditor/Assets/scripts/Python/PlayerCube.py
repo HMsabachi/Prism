@@ -1,6 +1,6 @@
 from Prism import (
     Behaviour, Input, Time, KeyCodes,
-    RigidBody2DComponent, MeshComponent,
+    RigidBody2DComponent, MeshRendererComponent,
 )
 from Prism.Math import Vector2, Vector3
 from Prism.Renderer.Material import Material
@@ -15,8 +15,8 @@ class PlayerCube(Behaviour):
     def OnCreate(self):
         self.m_PhysicsBody = self.GetComponent(RigidBody2DComponent)
 
-        meshComponent = self.GetComponent(MeshComponent)
-        self.m_MeshMaterial = meshComponent.Mesh.GetMaterial(0)
+        meshComponent = self.GetComponent(MeshRendererComponent)
+        self.m_MeshMaterial = meshComponent.GetMaterial(0)
         self.m_MeshMaterial.Set("u_Metalness", 0.0)
 
         self.m_CollisionCounter = 0

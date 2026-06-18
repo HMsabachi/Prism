@@ -76,18 +76,11 @@ namespace Prism
         void Prism_TransformComponent_SetScale(uint64_t entityID, glm::vec3 inScale);
 
         // Mesh
-        void* Prism_MeshComponent_GetMesh(uint64_t entityID);
-        void Prism_MeshComponent_SetMesh(uint64_t entityID, Ref<Mesh>* inMesh);
+        void* Prism_MeshRendererComponent_GetMesh(uint64_t entityID);
+        void Prism_MeshRendererComponent_SetMesh(uint64_t entityID, Ref<Mesh>* inMesh);
         Ref<Mesh>* Prism_Mesh_Constructor(Rolky::String filepath);
         void Prism_Mesh_Destructor(Ref<Mesh>* _this);
-        Ref<Material>* Prism_Mesh_GetMaterial(Ref<Mesh>* inMesh);
-        Ref<Material>* Prism_Mesh_GetMaterialByIndex(Ref<Mesh>* inMesh, int32_t index);
-        int32_t Prism_Mesh_GetMaterialCount(Ref<Mesh>* inMesh);
-        void Prism_Mesh_SetMaterialByIndex(Ref<Mesh>* inMesh, int32_t index, Ref<Material>* material);
-        void Prism_Mesh_SetOverrideMaterial(Ref<Mesh>* inMesh, Ref<Material>* material);
-        Ref<Material>* Prism_Mesh_GetOverrideMaterial(Ref<Mesh>* inMesh);
         void* Prism_MeshFactory_CreatePlane(float width, float height);
-
 
         // Renderer
         // Texture2D
@@ -117,6 +110,7 @@ namespace Prism
 
         // Material
         Ref<Material>* Prism_Material_Constructor(Rolky::String shaderName);
+        void Prism_Material_GetDefaultMaterial(Ref<Material>** outMaterial);
         void Prism_Material_Destructor(Ref<Material>* _this);
         void Prism_Material_SetFloat(Ref<Material>* _this, Rolky::String uniform, float value);
         void Prism_Material_SetVector3(Ref<Material>* _this, Rolky::String uniform, glm::vec3* value);

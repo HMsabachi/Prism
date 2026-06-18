@@ -38,57 +38,36 @@ namespace Prism
 
     }
 
-    public class MeshComponent : Component
+    public class MeshRendererComponent : Component
     {
         public Mesh Mesh
         {
             get
             {
-                Mesh result = new Mesh(GetMesh_Native(Entity.ID));
-                return result;
+                unsafe { return new Mesh(InternalCalls.Prism_MeshRendererComponent_GetMesh(Entity.ID)); }
             }
             set
             {
                 IntPtr ptr = value == null ? IntPtr.Zero : value.m_UnmanagedInstance;
-                SetMesh_Native(Entity.ID, ptr);
+                unsafe { InternalCalls.Prism_MeshRendererComponent_SetMesh(Entity.ID, ptr); }
             }
         }
-        public unsafe static IntPtr GetMesh_Native(ulong id)
-        {
-            return InternalCalls.Prism_MeshComponent_GetMesh(id);
-        }
-        public unsafe static void SetMesh_Native(ulong id, IntPtr unmanagedInstance)
-        {
-            InternalCalls.Prism_MeshComponent_SetMesh(id, unmanagedInstance);
-        }
 
+        // TODO: Step 2 — InternalCall 到 C++ 端 Materials[]
         public Material GetMaterial(int index)
         {
-            return Mesh.GetMaterial(index);
+            return Material.DefaultMaterial;
         }
 
         public void SetMaterial(int index, Material material)
         {
-            if (Mesh != null)
-                Mesh.SetMaterial(index, material);
+            // TODO
         }
 
         public int GetMaterialCount()
         {
-            return Mesh?.GetMaterialCount() ?? 0;
+            return 0;
         }
-
-        public void SetOverrideMaterial(Material material)
-        {
-            if (Mesh != null)
-                Mesh.SetOverrideMaterial(material);
-        }
-
-        public Material GetOverrideMaterial()
-        {
-            return Mesh.GetOverrideMaterial();
-        }
-
     }
 
     public class CameraComponent : Component

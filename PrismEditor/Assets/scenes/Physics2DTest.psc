@@ -17,7 +17,7 @@ Entities:
       ModuleName: Example.RandomColor
       StoredFields:
         []
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBody2DComponent:
       BodyType: 1
@@ -36,7 +36,7 @@ Entities:
       ModuleName: Example.RandomColor
       StoredFields:
         []
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBody2DComponent:
       BodyType: 1
@@ -55,7 +55,7 @@ Entities:
       ModuleName: Example.RandomColor
       StoredFields:
         []
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBody2DComponent:
       BodyType: 1
@@ -74,7 +74,7 @@ Entities:
       ModuleName: Example.RandomColor
       StoredFields:
         []
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBody2DComponent:
       BodyType: 1
@@ -93,7 +93,7 @@ Entities:
       ModuleName: Example.RandomColor
       StoredFields:
         []
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBody2DComponent:
       BodyType: 1
@@ -112,7 +112,7 @@ Entities:
       ModuleName: Example.RandomColor
       StoredFields:
         []
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBody2DComponent:
       BodyType: 1
@@ -136,7 +136,7 @@ Entities:
         - Name: VerticalForce
           Type: 1
           Data: 10
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: assets\meshes\Sphere1m.fbx
     RigidBody2DComponent:
       BodyType: 1
@@ -155,7 +155,7 @@ Entities:
       ModuleName: Example.RandomColor
       StoredFields:
         []
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBody2DComponent:
       BodyType: 0
@@ -190,7 +190,7 @@ Entities:
       ModuleName: Example.RandomColor
       StoredFields:
         []
-    MeshComponent:
+    MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
     RigidBody2DComponent:
       BodyType: 1

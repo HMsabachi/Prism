@@ -1,7 +1,7 @@
 import PrismNative as _Prism
 from Prism import (
     Behaviour, Log, Input, Time, KeyCodes,
-    TagComponent, TransformComponent, MeshComponent, RigidBodyComponent,
+    TagComponent, TransformComponent, MeshRendererComponent, RigidBodyComponent,
 )
 from Prism.Math import Vector2, Vector3, Vector4, Quaternion, Mathf
 
@@ -82,7 +82,7 @@ class SmokeTest(Behaviour):
         eid = self.Entity.ID
 
         hasTag = _Prism.Prism_Entity_HasComponent(eid, TagComponent)
-        hasMesh = _Prism.Prism_Entity_HasComponent(eid, MeshComponent)
+        hasMesh = _Prism.Prism_Entity_HasComponent(eid, MeshRendererComponent)
         hasRigid = _Prism.Prism_Entity_HasComponent(eid, RigidBodyComponent)
 
         Log.Info(f"[SmokeTest] ✓ Entity API: HasTag={hasTag}, HasMesh={hasMesh}, "

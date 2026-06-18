@@ -46,6 +46,7 @@ namespace Prism
         static void ClearMagenta();
 
         static void DrawIndexed(uint32_t count, PrimitiveType type, bool depthTest = true);
+        static void DrawIndexedBaseVertex(uint32_t count, uint32_t baseIndex, uint32_t baseVertex, PrimitiveType type = PrimitiveType::Triangles);
 
         // For OpenGL
         static void SetLineThickness(float thickness);
@@ -59,7 +60,8 @@ namespace Prism
 
         static void SubmitQuad(Ref<Material> material, const glm::mat4& transform = glm::mat4(1.0f));
         static void SubmitFullscreenQuad(Ref<Material> material);
-        static void SubmitMesh(Ref<Mesh> mesh, const glm::mat4& transform, Ref<Material> overrideMaterial = nullptr);
+        //static void SubmitMesh(Ref<Mesh> mesh, const glm::mat4& transform, Ref<Material> overrideMaterial = nullptr);
+        static void SubmitSubmesh(Ref<Mesh> mesh, uint32_t submeshIndex, const glm::mat4& transform, Ref<Material> material = nullptr);
 
 
         static void DrawAABB(const AABB& aabb, const glm::mat4& transform, const glm::vec4& color = glm::vec4(1.0f,0.0f,0.0f,1.0f));

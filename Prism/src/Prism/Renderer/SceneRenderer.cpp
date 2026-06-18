@@ -42,6 +42,7 @@ namespace Prism
         struct DrawCommand
         {
             Ref<Mesh> Mesh;
+            uint32_t SubmeshIndex = 0;
             Ref<Material> Material;
             glm::mat4 Transform;
         };
@@ -167,41 +168,72 @@ namespace Prism
         s_Data.ActiveScene = nullptr;
     }
 
+#pragma region SubmitDrawList
+
     void SceneRenderer::SubmitMesh(Ref<Mesh> mesh, const glm::mat4& transform, Ref<Material> overrideMaterial)
     {
-        // TODO: Culling, sorting, etc.
+        for (uint32_t i = 0; i < mesh->GetSubmeshes().size(); i++)
+        {
+            auto& submesh = mesh->GetSubmeshes()[i];
+            s_Data.DrawList.push_back({ mesh, i, Renderer::GetDefaultMaterial(), transform * submesh.Transform });
+        }
+    }
 
-        s_Data.DrawList.push_back({ mesh, overrideMaterial, transform });
+    void SceneRenderer::SubmitSubmesh(Ref<Mesh> mesh, uint32_t submeshIndex, Ref<Material> material, const glm::mat4& transform)
+    {
+        s_Data.DrawList.push_back({ mesh, submeshIndex, material, transform });
     }
 
     void SceneRenderer::SubmitSelectedMesh(Ref<Mesh> mesh, const glm::mat4& transform)
     {
-        s_Data.SelectedMeshDrawList.push_back({ mesh, nullptr, transform });
+        for (uint32_t i = 0; i < mesh->GetSubmeshes().size(); i++)
+        {
+            auto& submesh = mesh->GetSubmeshes()[i];
+            s_Data.SelectedMeshDrawList.push_back({ mesh, i, Renderer::GetDefaultMaterial(), transform });
+        }
     }
 
     void SceneRenderer::SubmitColliderMesh(const BoxColliderComponent& component, const glm::mat4& parentTransform)
     {
-        s_Data.ColliderDrawList.push_back({ component.DebugMesh, nullptr, glm::translate(parentTransform, component.Offset) });
+       auto& mesh = component.DebugMesh;
+        for (uint32_t i = 0; i < mesh->GetSubmeshes().size(); i++)
+        {
+            auto& submesh = mesh->GetSubmeshes()[i];
+            s_Data.ColliderDrawList.push_back({ mesh, i, Renderer::GetDefaultMaterial(), glm::translate(parentTransform, component.Offset) });
+        }
     }
 
     void SceneRenderer::SubmitColliderMesh(const SphereColliderComponent& component, const glm::mat4& parentTransform)
     {
-        s_Data.ColliderDrawList.push_back({ component.DebugMesh, nullptr, parentTransform });
+        auto& mesh = component.DebugMesh;
+        for (uint32_t i = 0; i < mesh->GetSubmeshes().size(); i++)
+        {
+            auto& submesh = mesh->GetSubmeshes()[i];
+            s_Data.ColliderDrawList.push_back({ mesh, i, Renderer::GetDefaultMaterial(), parentTransform });
+        }
     }
 
     void SceneRenderer::SubmitColliderMesh(const CapsuleColliderComponent& component, const glm::mat4& parentTransform)
     {
-        s_Data.ColliderDrawList.push_back({ component.DebugMesh, nullptr, parentTransform });
+        auto& mesh = component.DebugMesh;
+        for (uint32_t i = 0; i < mesh->GetSubmeshes().size(); i++)
+        {
+            auto& submesh = mesh->GetSubmeshes()[i];
+            s_Data.ColliderDrawList.push_back({ mesh, i, Renderer::GetDefaultMaterial(), parentTransform });
+        }
     }
 
     void SceneRenderer::SubmitColliderMesh(const MeshColliderComponent& component, const glm::mat4& parentTransform)
     {
-        s_Data.ColliderDrawList.push_back({ component.ProcessedMesh, nullptr, parentTransform });
+        auto& mesh = component.ProcessedMesh;
+        for (uint32_t i = 0; i < mesh->GetSubmeshes().size(); i++)
+        {
+            auto& submesh = mesh->GetSubmeshes()[i];
+            s_Data.ColliderDrawList.push_back({ mesh, i, Renderer::GetDefaultMaterial(), parentTransform });
+        }
     }
-
+#pragma endregion
     static Ref<ComputeShader> environmentShader;
-
-
     std::pair<Ref<TextureCube>, Ref<TextureCube>> SceneRenderer::CreateEnvironmentMap(const std::string& filepath)
     {
         PR_PROFILE_FUNCTION();
@@ -273,8 +305,19 @@ namespace Prism
             s_Data.ShadowDepthMaterial->Bind();
             shadowProgram->SetMat4("u_LightVP", s_Data.ShadowMatrices[cascade]);
 
+            Ref<Mesh> lastShadowMesh = nullptr;
             for (auto& dc : s_Data.DrawList)
-                Renderer::SubmitMesh(dc.Mesh, dc.Transform, s_Data.ShadowDepthMaterial);
+            {
+                if (dc.Mesh != lastShadowMesh)
+                {
+                    dc.Mesh->m_VertexBuffer->Bind();
+                    dc.Mesh->m_Pipeline->Bind();
+                    dc.Mesh->m_IndexBuffer->Bind();
+                    lastShadowMesh = dc.Mesh;
+                }
+                auto& submesh = dc.Mesh->m_Submeshes[dc.SubmeshIndex];
+                Renderer::SubmitSubmesh(dc.Mesh, dc.SubmeshIndex, dc.Transform, s_Data.ShadowDepthMaterial);
+            }
         }
     }
     void SceneRenderer::GeometryPass()
@@ -314,10 +357,22 @@ namespace Prism
                 s_Data.ShadowFBOs[i]->BindDepthTexture(Prism::Config::PRISM_SHADOW_MAP0 + i);
         }
         // Render entities
-        for (auto& dc : s_Data.DrawList)
         {
-            auto overrideMaterial = dc.Material ? dc.Material : Renderer::GetDefaultMaterial();
-            Renderer::SubmitMesh(dc.Mesh, dc.Transform, overrideMaterial);
+            Ref<Mesh> lastMesh = nullptr;
+            for (auto& dc : s_Data.DrawList)
+            {
+                auto& submesh = dc.Mesh->m_Submeshes[dc.SubmeshIndex];
+                auto material = dc.Material ? dc.Material : Renderer::GetDefaultMaterial();
+                if (dc.Mesh != lastMesh)
+                {
+                    dc.Mesh->m_VertexBuffer->Bind();
+                    dc.Mesh->m_Pipeline->Bind();
+                    dc.Mesh->m_IndexBuffer->Bind();
+                    lastMesh = dc.Mesh;
+                }
+                material->Bind();
+                Renderer::SubmitSubmesh(dc.Mesh, dc.SubmeshIndex, dc.Transform, dc.Material);
+            }
         }
         // 被选择实体描边
         if (outline)
@@ -328,10 +383,17 @@ namespace Prism
                     glStencilMask(0xff);
                 });
         }
+        Ref<Mesh> lastMesh = nullptr;
         for (auto& dc : s_Data.SelectedMeshDrawList)
         {
-            auto overrideMaterial = nullptr;
-            Renderer::SubmitMesh(dc.Mesh, dc.Transform, overrideMaterial);
+            if (lastMesh != dc.Mesh)
+            {
+                dc.Mesh->m_VertexBuffer->Bind();
+                dc.Mesh->m_Pipeline->Bind();
+                dc.Mesh->m_IndexBuffer->Bind();
+                lastMesh = dc.Mesh;
+            }
+            Renderer::SubmitSubmesh(dc.Mesh, dc.SubmeshIndex, dc.Transform, dc.Material);
         }
 
         if (outline)
@@ -347,9 +409,19 @@ namespace Prism
                 });
 
             // Draw outline here
-            for (auto& dc : s_Data.SelectedMeshDrawList)
             {
-                Renderer::SubmitMesh(dc.Mesh, dc.Transform, s_Data.OutlineMaterial);
+                Ref<Mesh> lastMesh = nullptr;
+                for (auto& dc : s_Data.SelectedMeshDrawList)
+                {
+                    if (dc.Mesh != lastMesh)
+                    {
+                        dc.Mesh->m_VertexBuffer->Bind();
+                        dc.Mesh->m_Pipeline->Bind();
+                        dc.Mesh->m_IndexBuffer->Bind();
+                        lastMesh = dc.Mesh;
+                    }
+                    Renderer::SubmitSubmesh(dc.Mesh, dc.SubmeshIndex, dc.Transform, s_Data.OutlineMaterial);
+                }
             }
 
             Renderer::Submit([]()
@@ -357,9 +429,19 @@ namespace Prism
                     glPointSize(10);
                     glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
                 });
-            for (auto& dc : s_Data.SelectedMeshDrawList)
             {
-                Renderer::SubmitMesh(dc.Mesh, dc.Transform, s_Data.OutlineMaterial);
+                Ref<Mesh> lastMesh = nullptr;
+                for (auto& dc : s_Data.SelectedMeshDrawList)
+                {
+                    if (dc.Mesh != lastMesh)
+                    {
+                        dc.Mesh->m_VertexBuffer->Bind();
+                        dc.Mesh->m_Pipeline->Bind();
+                        dc.Mesh->m_IndexBuffer->Bind();
+                        lastMesh = dc.Mesh;
+                    }
+                    Renderer::SubmitSubmesh(dc.Mesh, dc.SubmeshIndex, dc.Transform, s_Data.OutlineMaterial);
+                }
             }
 
             Renderer::Submit([]()
@@ -383,10 +465,20 @@ namespace Prism
                     glDisable(GL_DEPTH_TEST);
                 });
 
-            for (auto& dc : s_Data.ColliderDrawList)
             {
-                if (dc.Mesh)
-                    Renderer::SubmitMesh(dc.Mesh, dc.Transform, s_Data.ColliderMaterial);
+                Ref<Mesh> lastMesh = nullptr;
+                for (auto& dc : s_Data.ColliderDrawList)
+                {
+                    if (!dc.Mesh) continue;
+                    if (dc.Mesh != lastMesh)
+                    {
+                        dc.Mesh->m_VertexBuffer->Bind();
+                        dc.Mesh->m_Pipeline->Bind();
+                        dc.Mesh->m_IndexBuffer->Bind();
+                        lastMesh = dc.Mesh;
+                    }
+                    Renderer::SubmitSubmesh(dc.Mesh, dc.SubmeshIndex, dc.Transform, s_Data.ColliderMaterial);
+                }
             }
 
             Renderer::Submit([]()
@@ -395,10 +487,20 @@ namespace Prism
                     glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
                 });
 
-            for (auto& dc : s_Data.ColliderDrawList)
             {
-                if (dc.Mesh)
-                    Renderer::SubmitMesh(dc.Mesh, dc.Transform, s_Data.ColliderMaterial);
+                Ref<Mesh> lastMesh = nullptr;
+                for (auto& dc : s_Data.ColliderDrawList)
+                {
+                    if (!dc.Mesh) continue;
+                    if (dc.Mesh != lastMesh)
+                    {
+                        dc.Mesh->m_VertexBuffer->Bind();
+                        dc.Mesh->m_Pipeline->Bind();
+                        dc.Mesh->m_IndexBuffer->Bind();
+                        lastMesh = dc.Mesh;
+                    }
+                    Renderer::SubmitSubmesh(dc.Mesh, dc.SubmeshIndex, dc.Transform, s_Data.ColliderMaterial);
+                }
             }
 
             Renderer::Submit([]()

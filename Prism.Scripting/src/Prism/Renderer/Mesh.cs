@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using System.Runtime.CompilerServices;
 
@@ -20,53 +20,6 @@ namespace Prism
             unsafe { InternalCalls.Prism_Mesh_Destructor(m_UnmanagedInstance); }
         }
 
-        public Material BaseMaterial
-        {
-            get
-            {
-                unsafe { return new Material(InternalCalls.Prism_Mesh_GetMaterial(m_UnmanagedInstance)); }
-            }
-        }
-
-        public Material GetMaterial(int index)
-        {
-            unsafe
-            {
-                return new Material(InternalCalls.Prism_Mesh_GetMaterialByIndex(m_UnmanagedInstance, index));
-            }
-        }
-
-        public void SetMaterial(int index, Material material)
-        {
-            unsafe
-            {
-                InternalCalls.Prism_Mesh_SetMaterialByIndex(m_UnmanagedInstance, index, material?.m_UnmanagedInstance ?? IntPtr.Zero);
-            }
-        }
-
-        public void SetOverrideMaterial(Material material)
-        {
-            unsafe
-            {
-                InternalCalls.Prism_Mesh_SetOverrideMaterial(m_UnmanagedInstance, material?.m_UnmanagedInstance ?? IntPtr.Zero);
-            }
-        }
-
-        public Material GetOverrideMaterial()
-        {
-            unsafe
-            {
-                IntPtr ptr = InternalCalls.Prism_Mesh_GetOverrideMaterial(m_UnmanagedInstance);
-                return ptr != IntPtr.Zero ? new Material(ptr) : null;
-            }
-        }
-
-        public int GetMaterialCount()
-        {
-            unsafe { return InternalCalls.Prism_Mesh_GetMaterialCount(m_UnmanagedInstance); }
-        }
-
         internal IntPtr m_UnmanagedInstance;
-
     }
 }

@@ -206,7 +206,7 @@ namespace Prism
                     Renderer::BeginRenderPass(SceneRenderer::GetFinalRenderPass(), false);
                     auto viewProj = m_EditorCamera.GetViewProjection();
                     Renderer2D::BeginScene(viewProj, false);
-                    // TODO: Renderer::DrawAABB(m_MeshEntity.GetComponent<MeshComponent>(), m_MeshEntity.GetComponent<TransformComponent>());
+                    // TODO: Renderer::DrawAABB(m_MeshEntity.GetComponent<MeshRendererComponent>(), m_MeshEntity.GetComponent<TransformComponent>());
                     Renderer2D::EndScene();
                     Renderer::EndRenderPass();
                 }
@@ -215,7 +215,7 @@ namespace Prism
                 {
                     auto& selection = m_SelectionContext[0];
 
-                    if (selection.Mesh && selection.Entity.HasComponent<MeshComponent>())
+                    if (selection.Mesh && selection.Entity.HasComponent<MeshRendererComponent>())
                     {
                         Renderer::BeginRenderPass(SceneRenderer::GetFinalRenderPass(), false);
                         auto viewProj = m_EditorCamera.GetViewProjection();
@@ -284,9 +284,9 @@ namespace Prism
         void EditorLayer::SelectEntity(Entity entity)
         {
             SelectedSubmesh selection;
-            if (entity.HasComponent<MeshComponent>())
+            if (entity.HasComponent<MeshRendererComponent>())
             {
-                auto& meshComp = entity.GetComponent<MeshComponent>();
+                auto& meshComp = entity.GetComponent<MeshRendererComponent>();
 
                 if (meshComp.Mesh)
                 {
@@ -574,7 +574,7 @@ namespace Prism
             ImGui::Separator();
             {
                 ImGui::Text(TR("Mesh"));
-                //auto meshComponent = m_MeshEntity.GetComponent<MeshComponent>();
+                //auto meshComponent = m_MeshEntity.GetComponent<MeshRendererComponent>();
                 //std::string fullpath = meshComponent.Mesh ? meshComponent.Mesh->GetFilePath() : "None";
                 //size_t found = fullpath.find_last_of("/\\");
                 //std::string path = found != std::string::npos ? fullpath.substr(found + 1) : fullpath;
@@ -795,9 +795,9 @@ namespace Prism
             if (m_SelectionContext.size())
             {
                 Entity selectedEntity = m_SelectionContext.front().Entity;
-                if (selectedEntity.HasComponent<MeshComponent>())
+                if (selectedEntity.HasComponent<MeshRendererComponent>())
                 {
-                    Ref<Mesh> mesh = selectedEntity.GetComponent<MeshComponent>().Mesh;
+                    Ref<Mesh> mesh = selectedEntity.GetComponent<MeshRendererComponent>().Mesh;
                     if (mesh)
                     {
                         // TODO: Step 2 — 材质面板改用 Asset 系统
@@ -983,11 +983,11 @@ namespace Prism
 
                     m_SelectionContext.clear();
                     m_EditorScene->SetSelectedEntity({});
-                    auto meshEntities = m_EditorScene->GetAllEntitiesWith<MeshComponent>();
+                    auto meshEntities = m_EditorScene->GetAllEntitiesWith<MeshRendererComponent>();
                     for (auto e : meshEntities)
                     {
                         Entity entity = { e, m_EditorScene.Raw() };
-                        auto mesh = entity.GetComponent<MeshComponent>().Mesh;
+                        auto mesh = entity.GetComponent<MeshRendererComponent>().Mesh;
                         if (!mesh)
                             continue;
 

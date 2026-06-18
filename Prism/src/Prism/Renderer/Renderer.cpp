@@ -136,6 +136,12 @@ namespace Prism
             RendererAPI::DrawIndexed(count, type, depthTest);
         });
     }
+    void Renderer::DrawIndexedBaseVertex(uint32_t count, uint32_t baseIndex, uint32_t baseVertex, PrimitiveType type)
+    {
+        Renderer::Submit([=]() {
+            RendererAPI::DrawIndexedBaseVertex(count, baseIndex, baseVertex, type);
+        });
+    }
     void Renderer::SetLineThickness(float thickness)
     {
         Renderer::Submit([=]() {
@@ -204,36 +210,62 @@ namespace Prism
         s_Data.m_FullscreenQuadIndexBuffer->Bind();
         Renderer::DrawIndexed(6, PrimitiveType::Triangles, depthTest);
     }
-    void Renderer::SubmitMesh(Ref<Mesh> mesh, const glm::mat4& transform, Ref<Material> overrideMaterial)
+    //void Renderer::SubmitMesh(Ref<Mesh> mesh, const glm::mat4& transform, Ref<Material> overrideMaterial)
+    //{
+    //    mesh->m_VertexBuffer->Bind();
+    //    mesh->m_Pipeline->Bind();
+    //    mesh->m_IndexBuffer->Bind();
+    //    // TODO: Step 2 改为从 Asset 系统获取材质
+    //    for (Submesh& submesh : mesh->m_Submeshes)
+    //    {
+    //        auto material = overrideMaterial ? overrideMaterial : GetDefaultMaterial();
+    //        auto shader = material->GetShader();
+
+    //        s_Data.m_ObjectUBO.SetModel(transform * submesh.Transform);
+    //        if (mesh->m_IsAnimated)
+    //            s_Data.m_ObjectUBO.SetBones(mesh->m_BoneTransforms.data(), (uint32_t)mesh->m_BoneTransforms.size());
+    //        s_Data.m_ObjectUBO.Upload();
+    //        s_Data.m_ObjectUBO.Bind();
+
+    //        uint32_t passCount = material->GetPassCount();
+    //        for (uint32_t p = 0; p < passCount; p++)
+    //        {
+    //            if (p == 0)
+    //                material->Bind();
+    //            else
+    //                material->Bind(p);
+
+    //            Renderer::Submit([submesh, material]() {
+    //                PR_PROFILE_SCOPE("DrawCall With Submesh");
+    //                glDrawElementsBaseVertex(GL_TRIANGLES, submesh.IndexCount, GL_UNSIGNED_INT, (void*)(sizeof(uint32_t) * submesh.BaseIndex), submesh.BaseVertex);
+    //            });
+    //        }
+    //    }
+    //}
+
+    void Renderer::SubmitSubmesh(Ref<Mesh> mesh, uint32_t submeshIndex, const glm::mat4& transform, Ref<Material> material)
     {
-        mesh->m_VertexBuffer->Bind();
-        mesh->m_Pipeline->Bind();
-        mesh->m_IndexBuffer->Bind();
-        // TODO: Step 2 改为从 Asset 系统获取材质
-        for (Submesh& submesh : mesh->m_Submeshes)
+        auto& submesh = mesh->m_Submeshes[submeshIndex];
+        auto mat = material ? material : GetDefaultMaterial();
+
+        s_Data.m_ObjectUBO.SetModel(transform);
+        if (mesh->m_IsAnimated)
+            s_Data.m_ObjectUBO.SetBones(mesh->m_BoneTransforms.data(), (uint32_t)mesh->m_BoneTransforms.size());
+        s_Data.m_ObjectUBO.Upload();
+        s_Data.m_ObjectUBO.Bind();
+
+        uint32_t passCount = mat->GetPassCount();
+        for (uint32_t p = 0; p < passCount; p++)
         {
-            auto material = overrideMaterial ? overrideMaterial : GetDefaultMaterial();
-            auto shader = material->GetShader();
+            if (p == 0)
+                mat->Bind();
+            else
+                mat->Bind(p);
 
-            s_Data.m_ObjectUBO.SetModel(transform * submesh.Transform);
-            if (mesh->m_IsAnimated)
-                s_Data.m_ObjectUBO.SetBones(mesh->m_BoneTransforms.data(), (uint32_t)mesh->m_BoneTransforms.size());
-            s_Data.m_ObjectUBO.Upload();
-            s_Data.m_ObjectUBO.Bind();
-
-            uint32_t passCount = material->GetPassCount();
-            for (uint32_t p = 0; p < passCount; p++)
-            {
-                if (p == 0)
-                    material->Bind();
-                else
-                    material->Bind(p);
-
-                Renderer::Submit([submesh, material]() {
-                    PR_PROFILE_SCOPE("DrawCall With Submesh");
-                    glDrawElementsBaseVertex(GL_TRIANGLES, submesh.IndexCount, GL_UNSIGNED_INT, (void*)(sizeof(uint32_t) * submesh.BaseIndex), submesh.BaseVertex);
-                });
-            }
+            Renderer::Submit([submesh, mat]() {
+                PR_PROFILE_SCOPE("DrawCall With Submesh");
+                RendererAPI::DrawIndexedBaseVertex(submesh.IndexCount, submesh.BaseIndex, submesh.BaseVertex);
+            });
         }
     }
 
