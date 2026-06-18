@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Prism/Core/Core.h"
 
@@ -25,7 +25,7 @@ namespace Prism {
 
         static PhysicsLayer& GetLayer(uint32_t layerId);
         static PhysicsLayer& GetLayer(const std::string& layerName);
-        static uint32_t GetLayerCount() { return s_Layers.size(); }
+        static uint32_t GetLayerCount() { return (uint32_t)s_Layers.size(); }
 
         static bool ShouldCollide(uint32_t layer1, uint32_t layer2);
         static bool IsLayerValid(uint32_t layerId);

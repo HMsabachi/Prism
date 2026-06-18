@@ -151,7 +151,7 @@ namespace Prism {
         std::vector<Vertex> vertices = collider.CollisionMesh->GetStaticVertices();
 
         physx::PxConvexMeshDesc convexDesc;
-        convexDesc.points.count = vertices.size();
+        convexDesc.points.count = (uint32_t)vertices.size();
         convexDesc.points.stride = sizeof(Vertex);
         convexDesc.points.data = vertices.data();
         convexDesc.flags = physx::PxConvexFlag::eCOMPUTE_CONVEX;

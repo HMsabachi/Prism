@@ -15,7 +15,7 @@ namespace Prism {
 
         virtual void Invalidate() override;
 
-        virtual void Bind() override;
+        virtual void Bind() const override;
     private:
         PipelineSpecification m_Specification;
         uint32_t m_VertexArrayRendererID = 0;

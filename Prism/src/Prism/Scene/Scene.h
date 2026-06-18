@@ -4,6 +4,7 @@
 #include <entt/entt.hpp>
 #include "Systems/ISystem.h"
 #include "Prism/Utilities/TypeInfo.h"
+#include "Prism/Renderer/RenderConfig.h"
 #include <unordered_map>
 #include <vector>
 #include <memory>
@@ -21,21 +22,6 @@ namespace Prism
 namespace Prism
 {
 
-    struct PRISM_API Environment
-    {
-        std::string FilePath;
-        Ref<TextureCube> RadianceMap;
-        Ref<TextureCube> IrradianceMap;
-
-        static Environment Load(const std::string& filepath);
-    };
-    const size_t MAX_LIGHTS = 1;
-    struct Light
-    {
-        alignas(16) glm::vec3 Direction{ -0.5f, -1.0f, -0.5f };
-        alignas(16) glm::vec3 Radiance{ 1.0f, 1.0f, 1.0f };
-        alignas(4) float Multiplier = 1.0f;
-    };
 
     using EntityMap = std::unordered_map<UUID, Entity>;
 

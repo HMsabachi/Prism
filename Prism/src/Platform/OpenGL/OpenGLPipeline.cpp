@@ -61,9 +61,9 @@ namespace Prism {
         });
     }
 
-    void OpenGLPipeline::Bind()
+    void OpenGLPipeline::Bind() const
     {
-        Ref<OpenGLPipeline> instance = this;
+        Ref<const OpenGLPipeline> instance = this;
         Renderer::Submit([instance]()
         {
             glBindVertexArray(instance->m_VertexArrayRendererID);

@@ -186,6 +186,7 @@ namespace Prism {
 
         friend class Renderer;
         friend class SceneRenderer;
+        friend class RenderPipeline;
         friend class SceneHierarchyPanel;
     };
 }
