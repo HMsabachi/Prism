@@ -1,5 +1,6 @@
 ﻿#include "prpch.h"
 #include "CSharpScriptWrappers.h"
+#include "Prism/Renderer/Material.h"
 #include "Prism/Core/Math/Noise.h"
 
 #include "Prism/Core/Input.h"
@@ -309,42 +310,35 @@ namespace Prism {
 
         Prism::Ref<Prism::Material>* Prism_Mesh_GetMaterial(Ref<Mesh>* inMesh)
         {
-            Ref<Mesh>& mesh = *(Ref<Mesh>*)inMesh;
-            return new Ref<Material>(mesh->GetMaterial());
+            // TODO: Step 2 — 临时返回默认材质
+            return new Ref<Material>(Renderer::GetDefaultMaterial());
         }
 
         Prism::Ref<Prism::Material>* Prism_Mesh_GetMaterialByIndex(Ref<Mesh>* inMesh, int32_t index)
         {
-            Ref<Mesh>& mesh = *(Ref<Mesh>*)inMesh;
-            const auto& materials = mesh->GetMaterials();
-
-            PR_CORE_ASSERT(index < materials.size());
-            return new Ref<Material>(materials[index]);
+            // TODO: Step 2 — 临时返回默认材质
+            return new Ref<Material>(Renderer::GetDefaultMaterial());
         }
 
         int32_t Prism_Mesh_GetMaterialCount(Ref<Mesh>* inMesh)
         {
-            Ref<Mesh>& mesh = *(Ref<Mesh>*)inMesh;
-            const auto& materials = mesh->GetMaterials();
-            return materials.size();
+            return 1; // TODO: Step 2
         }
 
         void Prism_Mesh_SetMaterialByIndex(Ref<Mesh>* inMesh, int32_t index, Ref<Material>* material)
         {
-            Ref<Mesh>& mesh = *(Ref<Mesh>*)inMesh;
-            mesh->SetMaterial(index, material ? *material : nullptr);
+            // TODO: Step 2 — 暂对默认材质操作
         }
 
         void Prism_Mesh_SetOverrideMaterial(Ref<Mesh>* inMesh, Ref<Material>* material)
         {
-            Ref<Mesh>& mesh = *(Ref<Mesh>*)inMesh;
-            mesh->SetOverrideMaterial(material ? *material : nullptr);
+            // TODO: Step 2 — 暂对默认材质操作
         }
 
         Prism::Ref<Prism::Material>* Prism_Mesh_GetOverrideMaterial(Ref<Mesh>* inMesh)
         {
             Ref<Mesh>& mesh = *(Ref<Mesh>*)inMesh;
-            auto overrideMat = mesh->GetOverrideMaterial();
+            auto overrideMat = Renderer::GetDefaultMaterial();
             return overrideMat ? new Ref<Material>(overrideMat) : nullptr;
         }
 
@@ -387,31 +381,6 @@ namespace Prism {
             inData.Free(inData);
             instance->Unlock();
         }
-
-#pragma endregion
-
-#pragma region MaterialComponent
-    Ref<Material>* Prism_MaterialComponent_GetMaterial(uint64_t entityID)
-    {
-        WeakRef<Scene> scene = CSharpScriptEngine::GetCurrentSceneContext();
-        PR_CORE_ASSERT(scene, "No active scene!");
-        const auto& entityMap = scene->GetEntityMap();
-        PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
-        Entity entity = entityMap.at(entityID);
-        auto& materialComponent = entity.GetComponent<MaterialComponent>();
-        return new Ref<Material>(materialComponent.material);
-    }
-
-    void Prism_MaterialComponent_SetMaterial(uint64_t entityID, Ref<Material>* material)
-    {
-        WeakRef<Scene> scene = CSharpScriptEngine::GetCurrentSceneContext();
-        PR_CORE_ASSERT(scene, "No active scene!");
-        const auto& entityMap = scene->GetEntityMap();
-        PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
-        Entity entity = entityMap.at(entityID);
-        auto& materialComponent = entity.GetComponent<MaterialComponent>();
-        materialComponent.material = material ? *material : nullptr;
-    }
 
 #pragma endregion
 

@@ -96,31 +96,6 @@ namespace Prism
         // TODO
     }
 
-    public class MaterialComponent : Component
-    {
-        public Material Material
-        {
-            get
-            {
-                IntPtr ptr;
-                unsafe
-                {
-                    ptr = InternalCalls.Prism_MaterialComponent_GetMaterial(Entity.ID);
-                }
-                if (ptr == IntPtr.Zero)
-                    throw new NullReferenceException("Material Not Exists");
-                return new Material(ptr);
-            }
-            set
-            {
-                unsafe
-                {
-                    InternalCalls.Prism_MaterialComponent_SetMaterial(Entity.ID, value == null ? IntPtr.Zero : value.m_UnmanagedInstance);
-                }
-            }
-        }
-    }
-
     public class SpriteRendererComponent : Component
     {
         // TODO

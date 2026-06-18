@@ -42,7 +42,6 @@ namespace Prism
         RegisterManagedComponent<MeshComponent>();
         RegisterManagedComponent<CameraComponent>();
         RegisterManagedComponent<SpriteRendererComponent>();
-        RegisterManagedComponent<MaterialComponent>();
         RegisterManagedComponent<RigidBody2DComponent>();
         RegisterManagedComponent<BoxCollider2DComponent>();
         RegisterManagedComponent<CircleCollider2DComponent>();
@@ -102,9 +101,6 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_Mesh_SetOverrideMaterial);
         PR_ADD_INTERNAL_CALL(Prism_Mesh_GetOverrideMaterial);
         PR_ADD_INTERNAL_CALL(Prism_MeshFactory_CreatePlane);
-        // MaterialComponent
-        PR_ADD_INTERNAL_CALL(Prism_MaterialComponent_GetMaterial);
-        PR_ADD_INTERNAL_CALL(Prism_MaterialComponent_SetMaterial);
         // RigidBody2DComponent
         PR_ADD_INTERNAL_CALL(Prism_RigidBody2DComponent_ApplyLinearImpulse);
         PR_ADD_INTERNAL_CALL(Prism_RigidBody2DComponent_GetLinearVelocity);

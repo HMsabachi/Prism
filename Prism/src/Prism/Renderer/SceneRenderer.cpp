@@ -6,6 +6,7 @@
 #include "Buffer/FrameUniformBuffer.h"
 #include "Renderer.h"
 #include "Renderer2D.h"
+#include "Prism/Renderer/Material.h"
 #include "Prism/ShaderCompiler/PrismBindings.h"
 #include "Prism/Renderer/Camera/Camera.h"
 
@@ -315,7 +316,7 @@ namespace Prism
         // Render entities
         for (auto& dc : s_Data.DrawList)
         {
-            auto overrideMaterial = dc.Material ? dc.Material : dc.Mesh->GetOverrideMaterial();
+            auto overrideMaterial = dc.Material ? dc.Material : Renderer::GetDefaultMaterial();
             Renderer::SubmitMesh(dc.Mesh, dc.Transform, overrideMaterial);
         }
         // 被选择实体描边

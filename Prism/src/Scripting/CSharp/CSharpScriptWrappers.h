@@ -88,9 +88,6 @@ namespace Prism
         Ref<Material>* Prism_Mesh_GetOverrideMaterial(Ref<Mesh>* inMesh);
         void* Prism_MeshFactory_CreatePlane(float width, float height);
 
-        // MaterialComponent
-        Ref<Material>* Prism_MaterialComponent_GetMaterial(uint64_t entityID);
-        void Prism_MaterialComponent_SetMaterial(uint64_t entityID, Ref<Material>* material);
 
         // Renderer
         // Texture2D

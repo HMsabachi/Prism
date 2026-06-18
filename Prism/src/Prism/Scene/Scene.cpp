@@ -23,6 +23,7 @@
 
 #include "Scripting/CSharp/CSharpScriptEngine.h"
 #include "Scripting/Python/PythonScriptEngine.h"
+#include "Prism/Renderer/Material.h"
 
 namespace Prism
 {
@@ -114,9 +115,7 @@ namespace Prism
             {
                 meshComponent.Mesh->OnUpdate(ts);
 
-                // TODO: Should we render (logically)
-                Ref<Material> overrideMaterial = m_Registry.any_of<MaterialComponent>(entity) ? m_Registry.get<MaterialComponent>(entity).material : nullptr;
-                SceneRenderer::SubmitMesh(meshComponent, transformComponent.GetTransform(), overrideMaterial);
+                SceneRenderer::SubmitMesh(meshComponent, transformComponent.GetTransform(), nullptr);
             }
         }
 
@@ -166,13 +165,10 @@ namespace Prism
             {
                 meshComponent.Mesh->OnUpdate(ts);
 
-                // TODO: Should we render (logically)
-
-                Ref<Material> overrideMaterial = m_Registry.any_of<MaterialComponent>(entity) ? m_Registry.get<MaterialComponent>(entity).material : nullptr;
                 if (m_SelectedEntity == entity)
                     SceneRenderer::SubmitSelectedMesh(meshComponent, transformComponent.GetTransform());
                 else
-                    SceneRenderer::SubmitMesh(meshComponent, transformComponent.GetTransform(), overrideMaterial);
+                    SceneRenderer::SubmitMesh(meshComponent, transformComponent.GetTransform(), nullptr);
             }
         }
 
@@ -325,7 +321,6 @@ namespace Prism
 
         CopyComponentIfExists<TransformComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<MeshComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        CopyComponentIfExists<MaterialComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<CSharpScriptComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<PythonScriptComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<CameraComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
@@ -390,7 +385,6 @@ namespace Prism
         CopyComponent<TagComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<TransformComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<MeshComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<MaterialComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<CSharpScriptComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<PythonScriptComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<CameraComponent>(target->m_Registry, m_Registry, enttMap);

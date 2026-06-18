@@ -8,6 +8,7 @@
 #include "RendererAPI.h"
 #include "Renderer2D.h"
 #include "Buffer/ObjectUniformBuffer.h"
+#include "Material.h"
 
 #include "Camera/Camera.h"
 
@@ -87,6 +88,22 @@ namespace Prism
     {
         return s_Data.m_ShaderLibrary;
     }
+
+    // TODO: Step 2 替换为 Asset 系统管理的材质
+    Ref<Material> Renderer::GetDefaultMaterial()
+    {
+        static Ref<Material> s_DefaultMaterial;
+        if (!s_DefaultMaterial)
+        {
+            auto shader = GetShaderLibrary()->Get("Custom/SimplePBR_Static");
+            s_DefaultMaterial = Material::Create(shader);
+            s_DefaultMaterial->SetVec3("u_AlbedoColor", glm::vec3(0.8f));
+            s_DefaultMaterial->SetFloat("u_Roughness", 0.5f);
+            s_DefaultMaterial->SetFloat("u_Metalness", 0.0f);
+        }
+        return s_DefaultMaterial;
+    }
+
     Renderer::Renderer()
     {
     }
@@ -192,10 +209,10 @@ namespace Prism
         mesh->m_VertexBuffer->Bind();
         mesh->m_Pipeline->Bind();
         mesh->m_IndexBuffer->Bind();
-        auto& materials = mesh->GetMaterials();
+        // TODO: Step 2 改为从 Asset 系统获取材质
         for (Submesh& submesh : mesh->m_Submeshes)
         {
-            auto material = overrideMaterial ? overrideMaterial : materials[submesh.MaterialIndex];
+            auto material = overrideMaterial ? overrideMaterial : GetDefaultMaterial();
             auto shader = material->GetShader();
 
             s_Data.m_ObjectUBO.SetModel(transform * submesh.Transform);

@@ -333,6 +333,12 @@ namespace Prism
                 break;
             }
             case PrismShaderCompiler::PropertyType::Color:
+            {
+                glm::vec4 color = material.GetVec4(name);
+                if (Property(displayName, color, PropertyFlag::ColorProperty))
+                    material.SetVec4(name, color);
+                break;
+            }
             case PrismShaderCompiler::PropertyType::Color3:
             {
                 glm::vec3 color = material.GetVec3(name);
@@ -794,7 +800,9 @@ namespace Prism
                     Ref<Mesh> mesh = selectedEntity.GetComponent<MeshComponent>().Mesh;
                     if (mesh)
                     {
-                        auto& materials = mesh->GetMaterials();
+                        // TODO: Step 2 — 材质面板改用 Asset 系统
+                        std::vector<Ref<Material>> materials = {};
+                        materials.push_back(Renderer::GetDefaultMaterial());
                         static uint32_t selectedMaterialIndex = 0;
                         for (uint32_t i = 0; i < materials.size(); i++)
                         {

@@ -6,8 +6,6 @@
 #include "Prism/Renderer/Pipeline.h"
 #include "Prism/Renderer/Buffer/VertexBuffer.h"
 #include "Prism/Renderer/Buffer/IndexBuffer.h"
-#include "Prism/Renderer/Shader/PrismShader.h"
-#include "Prism/Renderer/Material.h"
 
 #include "Prism/Core/Math/AABB.h"
 
@@ -135,13 +133,6 @@ namespace Prism {
         std::vector<Submesh>& GetSubmeshes() { return m_Submeshes; }
         const std::vector<Submesh>& GetSubmeshes() const { return m_Submeshes; }
 
-        Ref<PrismShader> GetMeshShader() { return m_MeshShader; }
-        Ref<Material> GetMaterial() { return m_Materials.empty() ? nullptr : m_Materials[0]; }
-        void SetOverrideMaterial(const Ref<Material>& material) { m_OverrideMaterial = material; }
-        Ref<Material> GetOverrideMaterial() { return m_OverrideMaterial; }
-        void SetMaterial(uint32_t index, const Ref<Material>& material) { PR_CORE_ASSERT(index < m_Materials.size()); m_Materials[index] = material; }
-        std::vector<Ref<Material>>& GetMaterials() { return m_Materials; }
-        const std::vector<Ref<Texture2D>>& GetTextures() const { return m_Textures; }
         const std::string& GetFilePath() const { return m_FilePath; }
 
         const std::vector<Triangle> GetTriangleCache(uint32_t index) const { return m_TriangleCache.at(index); }
@@ -181,12 +172,6 @@ namespace Prism {
         std::vector<glm::mat4> m_BoneTransforms;
         const aiScene* m_Scene;
 
-        // Materials
-        Ref<PrismShader> m_MeshShader;
-        Ref<Material> m_OverrideMaterial;
-        std::vector<Ref<Texture2D>> m_Textures;
-        std::vector<Ref<Texture2D>> m_NormalMaps;
-        std::vector<Ref<Material>> m_Materials;
 
         std::unordered_map<uint32_t, std::vector<Triangle>> m_TriangleCache;
 

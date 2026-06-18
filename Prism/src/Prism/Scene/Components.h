@@ -10,6 +10,7 @@
 
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Mesh.h"
+#include "Prism/Renderer/Material.h"
 #include "Prism/Scene/SceneCamera.h"
 #include "glm/gtx/quaternion.hpp"
 #include "Scripting/CSharp/CSharpField.h"
@@ -137,21 +138,7 @@ namespace Prism {
         }
     };
 
-    struct MaterialComponent
-    {
-        Ref<Material> material;
-
-        MaterialComponent() = default;
-        MaterialComponent(const MaterialComponent& other)
-            : material(other.material) {
-        }
-        MaterialComponent(const Ref<Material>& material)
-            : material(material) {
-        }
-
-        operator Ref<Prism::Material>() { return material; }
-    };
-
+    // MaterialComponent removed — materials now live in MeshComponent.Materials[]
     struct RigidBody2DComponent
     {
         enum class Type { Static, Dynamic, Kinematic };

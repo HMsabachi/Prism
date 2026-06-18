@@ -5,7 +5,6 @@ from Prism.Component import (
     TransformComponent,
     MeshComponent,
     CameraComponent,
-    MaterialComponent,
     ScriptComponent,
     SpriteRendererComponent,
     RigidBody2DComponent,

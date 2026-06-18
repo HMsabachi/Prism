@@ -83,7 +83,6 @@ namespace Prism {
         m_Scene = scene;
 
         m_IsAnimated = scene->mAnimations != nullptr;
-        m_MeshShader = m_IsAnimated ? Renderer::GetShaderLibrary()->Get("Custom/SimplePBR_Animated") : Renderer::GetShaderLibrary()->Get("Custom/SimplePBR_Static");
         m_InverseTransform = glm::inverse(Mat4FromAssimpMat4(scene->mRootNode->mTransformation));
 
         uint32_t vertexCount = 0;
@@ -214,13 +213,8 @@ namespace Prism {
             }
         }
 
-        // Materials
-        if (scene->HasMaterials())
-        {
-            m_Textures.resize(scene->mNumMaterials);
-            m_Materials.resize(scene->mNumMaterials);
-            for (uint32_t i = 0; i < scene->mNumMaterials; i++)
-            {
+        // Materials — removed, using Renderer::GetDefaultMaterial() instead
+        /*
                 auto aiMaterial = scene->mMaterials[i];
                 auto aiMaterialName = aiMaterial->GetName();
 
@@ -458,9 +452,7 @@ namespace Prism {
                     mi->SetKeyword("METALNESS_MAP", false);
                 }
             }
-            PR_MESH_LOG("------------------------------");
-        }
-
+*/
         VertexBufferLayout vertexLayout;
         if (m_IsAnimated)
         {

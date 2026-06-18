@@ -113,8 +113,5 @@ namespace Prism::Script
     Python::ScriptValue* Prism_Material_SetKeyword(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Material_IsKeywordEnabled(Python::ScriptValue* self, Python::ScriptValue* args);
 
-    // MaterialComponent
-    Python::ScriptValue* Prism_MaterialComponent_GetMaterial(Python::ScriptValue* self, Python::ScriptValue* args);
-    Python::ScriptValue* Prism_MaterialComponent_SetMaterial(Python::ScriptValue* self, Python::ScriptValue* args);
 
 } // namespace Prism::Script

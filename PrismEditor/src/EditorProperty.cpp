@@ -12,9 +12,9 @@ namespace Prism
 
         std::string id = "##" + name;
         if ((int)flags & (int)PropertyFlag::ColorProperty)
-            ImGui::ColorEdit4(id.c_str(), glm::value_ptr(value), ImGuiColorEditFlags_NoInputs);
+            modified = ImGui::ColorEdit4(id.c_str(), glm::value_ptr(value), ImGuiColorEditFlags_NoInputs);
         else if ((int)flags & (int)PropertyFlag::SliderProperty)
-            ImGui::SliderFloat4(id.c_str(), glm::value_ptr(value), min, max);
+            modified = ImGui::SliderFloat4(id.c_str(), glm::value_ptr(value), min, max);
         else
             modified = ImGui::DragFloat4(id.c_str(), glm::value_ptr(value));
 
@@ -37,7 +37,7 @@ namespace Prism
 
         std::string id = "##" + name;
         if ((int)flags & (int)PropertyFlag::SliderProperty)
-            ImGui::SliderFloat2(id.c_str(), glm::value_ptr(value), min, max);
+            modified = ImGui::SliderFloat2(id.c_str(), glm::value_ptr(value), min, max);
         else
             modified = ImGui::DragFloat2(id.c_str(), glm::value_ptr(value));
 
@@ -60,7 +60,7 @@ namespace Prism
 
         std::string id = "##" + name;
         if ((int)flags & (int)PropertyFlag::ColorProperty)
-            ImGui::ColorEdit3(id.c_str(), glm::value_ptr(value), ImGuiColorEditFlags_NoInputs);
+            modified = ImGui::ColorEdit3(id.c_str(), glm::value_ptr(value), ImGuiColorEditFlags_NoInputs);
         else if ((int)flags & (int)PropertyFlag::SliderProperty)
             modified = ImGui::SliderFloat3(id.c_str(), glm::value_ptr(value), min, max);
         else

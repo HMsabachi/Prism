@@ -36,7 +36,6 @@ namespace Prism
         RegisterPythonComponent<MeshComponent>();
         RegisterPythonComponent<CameraComponent>();
         RegisterPythonComponent<SpriteRendererComponent>();
-        RegisterPythonComponent<MaterialComponent>();
         RegisterPythonComponent<RigidBody2DComponent>();
         RegisterPythonComponent<BoxCollider2DComponent>();
         RegisterPythonComponent<CircleCollider2DComponent>();
@@ -154,9 +153,6 @@ namespace Prism
         PR_PYTHON_FUNCTION(Prism_Material_SetKeyword, "SetKeyword(cpp_handle, name, enabled)");
         PR_PYTHON_FUNCTION(Prism_Material_IsKeywordEnabled, "IsKeywordEnabled(cpp_handle, name) -> bool");
 
-        // MaterialComponent
-        PR_PYTHON_FUNCTION(Prism_MaterialComponent_GetMaterial, "GetMaterial(entityID) -> handle");
-        PR_PYTHON_FUNCTION(Prism_MaterialComponent_SetMaterial, "SetMaterial(entityID, handle)");
 
         mod.Register();
         InitComponentTypes();

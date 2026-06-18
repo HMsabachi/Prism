@@ -170,20 +170,7 @@ class CameraComponent(Component):
 #  MaterialComponent
 # ════════════════════════════════════════════
 
-class MaterialComponent(Component):
-    def __init__(self):
-        super().__init__()
-
-    @property
-    def Material(self):
-        from Prism.Renderer.Material import Material
-        handle = _Prism.Prism_MaterialComponent_GetMaterial(self.Entity._id)
-        return Material(handle) if handle else None
-
-    @Material.setter
-    def Material(self, value):
-        h = value._handle if value else 0
-        _Prism.Prism_MaterialComponent_SetMaterial(self.Entity._id, h)
+# MaterialComponent removed — use MeshComponent.Materials[] instead
 
 
 # ════════════════════════════════════════════

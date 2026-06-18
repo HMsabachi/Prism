@@ -1,5 +1,5 @@
 import PrismNative as _Prism
-from Prism.Component import Component, TagComponent, TransformComponent, MeshComponent, CameraComponent, MaterialComponent, ScriptComponent, SpriteRendererComponent, RigidBody2DComponent, BoxCollider2DComponent, CircleCollider2DComponent, RigidBodyComponent, BoxColliderComponent, SphereColliderComponent, CapsuleColliderComponent, ForceMode
+from Prism.Component import Component, TagComponent, TransformComponent, MeshComponent, CameraComponent, ScriptComponent, SpriteRendererComponent, RigidBody2DComponent, BoxCollider2DComponent, CircleCollider2DComponent, RigidBodyComponent, BoxColliderComponent, SphereColliderComponent, CapsuleColliderComponent, ForceMode
 from Prism.Entity import Entity as Ent
 
 

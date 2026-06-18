@@ -750,80 +750,40 @@ namespace Prism::Script
         return Python::NoneValue().Detach();
     }
 
+    // TODO: Step 2 — 临时返回默认材质
     Python::ScriptValue* Prism_Mesh_GetMaterial(Python::ScriptValue* self, Python::ScriptValue* args)
     {
-        Python::ScriptRef argsRef(args);
-        uint64_t handle = Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0));
-        auto& meshRef = *reinterpret_cast<Ref<Mesh>*>(handle);
-        auto* matRef = new Ref<Material>(meshRef->GetMaterial());
+        auto* matRef = new Ref<Material>(Renderer::GetDefaultMaterial());
         return Python::UInt64ToValue(reinterpret_cast<uint64_t>(matRef)).Detach();
     }
 
+    // TODO: Step 2 — 临时返回默认材质
     Python::ScriptValue* Prism_Mesh_GetMaterialByIndex(Python::ScriptValue* self, Python::ScriptValue* args)
     {
-        Python::ScriptRef argsRef(args);
-        uint64_t handle = Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0));
-        int32_t index = Python::ValueToInt(Python::GetTupleElement(argsRef, 1));
-        auto& meshRef = *reinterpret_cast<Ref<Mesh>*>(handle);
-        const auto& materials = meshRef->GetMaterials();
-        PR_CORE_ASSERT(index < (int32_t)materials.size());
-        auto* ref = new Ref<Material>(materials[index]);
+        auto* ref = new Ref<Material>(Renderer::GetDefaultMaterial());
         return Python::UInt64ToValue(reinterpret_cast<uint64_t>(ref)).Detach();
     }
 
+    // TODO: Step 2
     Python::ScriptValue* Prism_Mesh_GetMaterialCount(Python::ScriptValue* self, Python::ScriptValue* args)
     {
-        Python::ScriptRef argsRef(args);
-        uint64_t handle = Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0));
-        auto& meshRef = *reinterpret_cast<Ref<Mesh>*>(handle);
-        return Python::IntToValue((int32_t)meshRef->GetMaterials().size()).Detach();
+        return Python::IntToValue(1).Detach();
     }
 
     Python::ScriptValue* Prism_Mesh_SetMaterialByIndex(Python::ScriptValue* self, Python::ScriptValue* args)
     {
-        Python::ScriptRef argsRef(args);
-        uint64_t handle = Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0));
-        int32_t index = Python::ValueToInt(Python::GetTupleElement(argsRef, 1));
-        uint64_t matHandle = Python::ValueToUInt64(Python::GetTupleElement(argsRef, 2));
-        auto& meshRef = *reinterpret_cast<Ref<Mesh>*>(handle);
-        if (matHandle != 0)
-        {
-            auto& matRef = *reinterpret_cast<Ref<Material>*>(matHandle);
-            meshRef->SetMaterial(index, matRef);
-        }
-        else
-            meshRef->SetMaterial(index, nullptr);
-        return Python::NoneValue().Detach();
+        return Python::NoneValue().Detach(); // TODO: Step 2
     }
 
     Python::ScriptValue* Prism_Mesh_SetOverrideMaterial(Python::ScriptValue* self, Python::ScriptValue* args)
     {
-        Python::ScriptRef argsRef(args);
-        uint64_t handle = Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0));
-        uint64_t matHandle = Python::ValueToUInt64(Python::GetTupleElement(argsRef, 1));
-        auto& meshRef = *reinterpret_cast<Ref<Mesh>*>(handle);
-        if (matHandle != 0)
-        {
-            auto& matRef = *reinterpret_cast<Ref<Material>*>(matHandle);
-            meshRef->SetOverrideMaterial(matRef);
-        }
-        else
-            meshRef->SetOverrideMaterial(nullptr);
-        return Python::NoneValue().Detach();
+        return Python::NoneValue().Detach(); // TODO: Step 2
     }
 
     Python::ScriptValue* Prism_Mesh_GetOverrideMaterial(Python::ScriptValue* self, Python::ScriptValue* args)
     {
-        Python::ScriptRef argsRef(args);
-        uint64_t handle = Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0));
-        auto& meshRef = *reinterpret_cast<Ref<Mesh>*>(handle);
-        auto overrideMat = meshRef->GetOverrideMaterial();
-        if (overrideMat)
-        {
-            auto* ref = new Ref<Material>(overrideMat);
-            return Python::UInt64ToValue(reinterpret_cast<uint64_t>(ref)).Detach();
-        }
-        return Python::UInt64ToValue(0).Detach();
+        auto* ref = new Ref<Material>(Renderer::GetDefaultMaterial());
+        return Python::UInt64ToValue(reinterpret_cast<uint64_t>(ref)).Detach();
     }
 
 #pragma endregion
@@ -1010,36 +970,6 @@ namespace Prism::Script
 
 #pragma endregion
 
-#pragma region MaterialComponent
-
-    Python::ScriptValue* Prism_MaterialComponent_GetMaterial(Python::ScriptValue* self, Python::ScriptValue* args)
-    {
-        Python::ScriptRef argsRef(args);
-        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
-        auto& comp = entity.GetComponent<MaterialComponent>();
-        if (comp.material)
-        {
-            auto* ref = new Ref<Material>(comp.material);
-            return Python::UInt64ToValue(reinterpret_cast<uint64_t>(ref)).Detach();
-        }
-        return Python::UInt64ToValue(0).Detach();
-    }
-
-    Python::ScriptValue* Prism_MaterialComponent_SetMaterial(Python::ScriptValue* self, Python::ScriptValue* args)
-    {
-        Python::ScriptRef argsRef(args);
-        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
-        uint64_t handle = Python::ValueToUInt64(Python::GetTupleElement(argsRef, 1));
-        auto& comp = entity.GetComponent<MaterialComponent>();
-        if (handle != 0)
-        {
-            auto& matRef = *reinterpret_cast<Ref<Material>*>(handle);
-            comp.material = matRef;
-        }
-        else
-            comp.material = nullptr;
-        return Python::NoneValue().Detach();
-    }
 
 #pragma endregion
 

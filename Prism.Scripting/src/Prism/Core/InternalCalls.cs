@@ -44,9 +44,6 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr, void> Prism_Mesh_SetOverrideMaterial;
         internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr> Prism_Mesh_GetOverrideMaterial;
         internal static delegate* unmanaged[Cdecl]<float, float, IntPtr> Prism_MeshFactory_CreatePlane;
-        // MaterialComponent
-        internal static delegate* unmanaged[Cdecl]<UInt64, IntPtr> Prism_MaterialComponent_GetMaterial;
-        internal static delegate* unmanaged[Cdecl]<UInt64, IntPtr, void> Prism_MaterialComponent_SetMaterial;
         // Texture2D
         internal static delegate* unmanaged[Cdecl]<UInt32, UInt32, IntPtr> Prism_Texture2D_Constructor;
         internal static delegate* unmanaged[Cdecl]<IntPtr, void> Prism_Texture2D_Destructor;
