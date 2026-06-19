@@ -25,6 +25,7 @@ namespace Prism
         typedef void(*RenderCommandFn)(void*);
         Renderer();
         ~Renderer();
+        static void* DataAllocate(const void* data, size_t size);
         template<typename FuncT>
         static void Submit(FuncT&& func)
         {
@@ -61,7 +62,6 @@ namespace Prism
         static void SubmitQuad(Ref<Material> material, const glm::mat4& transform = glm::mat4(1.0f));
         static void SubmitFullscreenQuad(Ref<Material> material);
         //static void SubmitMesh(Ref<Mesh> mesh, const glm::mat4& transform, Ref<Material> overrideMaterial = nullptr);
-        static void SubmitSubmesh(Ref<Mesh> mesh, uint32_t submeshIndex, const glm::mat4& transform, Ref<Material> material = nullptr);
 
 
         static void DrawAABB(const AABB& aabb, const glm::mat4& transform, const glm::vec4& color = glm::vec4(1.0f,0.0f,0.0f,1.0f));

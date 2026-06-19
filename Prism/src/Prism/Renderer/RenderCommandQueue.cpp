@@ -4,15 +4,23 @@
 #define PR_RENDER_TRACE(...) PR_CORE_TRACE(__VA_ARGS__)
 namespace Prism
 {
+    constexpr size_t AlignUp(size_t size, size_t alignment) {
+        return (size + alignment - 1) & ~(alignment - 1);
+    }
 
-    const size_t RenderCommandQueue::COMMAND_BUFFER_SIZE = 10 * 1024 * 1024;
+    const size_t RenderCommandQueue::COMMAND_BUFFER_SIZE = 10 * 1024 * 1024; // 10MB buffer
+    const size_t RenderCommandQueue::DATA_POOL_MAX_SIZE = 512 * 1024 * 1024; // 512MB buffer
 
     RenderCommandQueue::RenderCommandQueue()
         :m_CommandCount(0)
     {
-        m_CommandBuffer = new uint8_t[COMMAND_BUFFER_SIZE]; // 10MB buffer
+        m_CommandBuffer = new uint8_t[COMMAND_BUFFER_SIZE]; 
         m_CommandBufferPtr = m_CommandBuffer;
         memset(m_CommandBuffer, 0, COMMAND_BUFFER_SIZE);
+
+        m_DataPool = new uint8_t[DATA_POOL_MAX_SIZE];
+        m_DataPoolPtr = m_DataPool;
+        memset(m_DataPool, 0, DATA_POOL_MAX_SIZE);
     }
 
     RenderCommandQueue::~RenderCommandQueue()
@@ -38,6 +46,20 @@ namespace Prism
 
         m_CommandCount++;
         return memory;
+    }
+
+    void* RenderCommandQueue::DataAllocate(const void* data, size_t size)
+    {
+        if (size > DATA_POOL_MAX_SIZE) return nullptr;
+        size_t alignedSize = AlignUp(size, 16);
+        if (m_DataPoolPtr + alignedSize > m_DataPool + DATA_POOL_MAX_SIZE)
+            m_DataPoolPtr = m_DataPool;
+        byte* ptr = m_DataPoolPtr;
+        m_DataPoolPtr += alignedSize;
+        if (data)
+            std::memcpy(ptr, data, size);
+        m_DataPoolCapacity = (m_DataPoolPtr - m_DataPool) / (1024 * 1024);
+        return ptr;
     }
 
     void RenderCommandQueue::Execute()

@@ -174,16 +174,18 @@ namespace Prism
         }
         ImGui::Text("RenderCommandQueue: %d", Renderer::GetRenderCommandQueue().GetSubmitCount());
         Renderer::GetRenderCommandQueue().ResetSubmitCount();
-        static int fps0 = 0, fps1 = 0;
+        static int fps0 = 0, fps1 = 0, capacity;
         fps0 += (int)(1.0f / Time::GetDeltaTime());
         fps0 >>= 1;
         if (timer >= 1.0f)
         {
             timer = 0.0f;
             fps1 = fps0;
+            capacity = Renderer::GetRenderCommandQueue().GetDataPoolCapacity();
         }
         ImGui::Text("LiveReferenceCount: %d", RefUtils::GetLiveReferenceCount());
         ImGui::Text("Fps: %d", fps1);
+        ImGui::Text("Capacity: %d", capacity);
         ImGui::End();
     }
 

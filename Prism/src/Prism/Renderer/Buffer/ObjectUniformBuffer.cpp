@@ -17,14 +17,19 @@ namespace Prism
 
     void ObjectUniformBuffer::SetBones(const glm::mat4* bones, uint32_t count)
     {
+        // TODO: 这里可能有问题
         if (count > PRISM_MAX_BONES) count = PRISM_MAX_BONES;
-        for (uint32_t i = 0; i < count; i++)
-            m_Data.Bones[i] = bones[i];
+        memcpy(m_Data.Bones, bones, count * sizeof(glm::mat4));
+        m_BonesDirty = true;
     }
 
     void ObjectUniformBuffer::Upload()
     {
-        m_Buffer->SetData(&m_Data, sizeof(Data));
+        if (m_BonesDirty)
+            m_Buffer->SetData(&m_Data, sizeof(Data));
+        else
+            m_Buffer->SetData(&m_Data, 2 * sizeof(glm::mat4));
+        m_BonesDirty = false;
     }
 
     void ObjectUniformBuffer::Bind() const

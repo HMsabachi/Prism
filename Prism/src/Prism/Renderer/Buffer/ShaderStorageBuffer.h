@@ -22,7 +22,7 @@ namespace Prism
 		// 这里直接调用会卡住渲染进程
 		virtual void GetData(void* data, size_t size, size_t offset = 0, bool sync = false) const = 0;
 
-		virtual uint32_t GetSize() const = 0;
+		virtual size_t GetSize() const = 0;
 		virtual RendererID GetRendererID() const = 0;
 	};
 }

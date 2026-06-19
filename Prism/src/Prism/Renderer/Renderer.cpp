@@ -1,6 +1,5 @@
 ﻿#include "prpch.h"
 #include "Renderer.h"
-#include "RenderCommand.h"
 #include "Shader/PrismShader.h"
 #include "Buffer/FrameUniformBuffer.h"
 
@@ -86,7 +85,7 @@ namespace Prism
         return s_Data.m_ShaderLibrary;
     }
 
-    // TODO: Step 2 替换为 Asset 系统管理的材质
+    // TODO: Asset 系统管理的材质
     Ref<Material> Renderer::GetDefaultMaterial()
     {
         static Ref<Material> s_DefaultMaterial;
@@ -107,6 +106,12 @@ namespace Prism
     Renderer::~Renderer()
     {
     }
+
+    void* Renderer::DataAllocate(const void* data, size_t size)
+    {
+        return GetRenderCommandQueue().DataAllocate(data, size);
+    }
+
     void Renderer::Clear()
     {
         Renderer::Submit([]() {
@@ -239,32 +244,6 @@ namespace Prism
     //        }
     //    }
     //}
-
-    void Renderer::SubmitSubmesh(Ref<Mesh> mesh, uint32_t submeshIndex, const glm::mat4& transform, Ref<Material> material)
-    {
-        auto& submesh = mesh->m_Submeshes[submeshIndex];
-        auto mat = material ? material : GetDefaultMaterial();
-
-        s_Data.m_ObjectUBO.SetModel(transform);
-        if (mesh->m_IsAnimated)
-            s_Data.m_ObjectUBO.SetBones(mesh->m_BoneTransforms.data(), (uint32_t)mesh->m_BoneTransforms.size());
-        s_Data.m_ObjectUBO.Upload();
-        s_Data.m_ObjectUBO.Bind();
-
-        uint32_t passCount = mat->GetPassCount();
-        for (uint32_t p = 0; p < passCount; p++)
-        {
-            if (p == 0)
-                mat->Bind();
-            else
-                mat->Bind(p);
-
-            Renderer::Submit([submesh, mat]() {
-                PR_PROFILE_SCOPE("DrawCall With Submesh");
-                RendererAPI::DrawIndexedBaseVertex(submesh.IndexCount, submesh.BaseIndex, submesh.BaseVertex);
-            });
-        }
-    }
 
     void Renderer::DrawAABB(Ref<Mesh> mesh, const glm::mat4& transform, const glm::vec4& color)
     {

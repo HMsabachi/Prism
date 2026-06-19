@@ -21,7 +21,7 @@ namespace Prism
 
 
         virtual RendererID GetRendererID() const override;
-        virtual uint32_t GetSize() const override;
+        virtual size_t GetSize() const override;
 
 
 

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Prism/Renderer/Buffer/UniformBuffer.h"
 #include <glm/glm.hpp>
@@ -24,6 +24,7 @@ namespace Prism
 
     private:
         Ref<UniformBuffer> m_Buffer;
+        bool m_BonesDirty = false;
         struct alignas(16) Data
         {
             glm::mat4 Model{ 1.0f };

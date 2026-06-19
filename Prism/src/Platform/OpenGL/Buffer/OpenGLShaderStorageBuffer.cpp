@@ -71,7 +71,7 @@ namespace Prism
     {
         return m_RendererID;
     }
-    uint32_t OpenGLShaderStorageBuffer::GetSize() const
+    size_t OpenGLShaderStorageBuffer::GetSize() const
     {
         return m_Size;
     }

@@ -27,19 +27,21 @@ namespace Prism
 
     void OpenGLUniformBuffer::SetData(const Buffer& buffer)
     {
+        const void* copy = Renderer::DataAllocate(buffer.Data, buffer.Size);
+        const size_t size = buffer.Size;
         Ref<OpenGLUniformBuffer> instance = this;
-        Buffer localCopy = buffer;
-        Renderer::Submit([instance, localCopy]() {
-            glNamedBufferSubData(instance->m_RendererID, 0, localCopy.Size, localCopy.Data);
-        });
+        Renderer::Submit([instance, copy, size]() {
+            glNamedBufferSubData(instance->m_RendererID, 0, size, copy);
+            });
     }
 
     void OpenGLUniformBuffer::SetData(const void* data, uint32_t size, uint32_t offset)
     {
-        Buffer localCopy = Buffer::Copy(data, size);
+        //BufferSafe localCopy = BufferSafe::Copy(data, size);
+        const void* copy = Renderer::DataAllocate(data, size);
         Ref<OpenGLUniformBuffer> instance = this;
-        Renderer::Submit([instance, localCopy, offset]() {
-            glNamedBufferSubData(instance->m_RendererID, offset, localCopy.Size, localCopy.Data);
+        Renderer::Submit([instance, copy, offset, size]() {
+            glNamedBufferSubData(instance->m_RendererID, offset, size, copy);
         });
     }
 
