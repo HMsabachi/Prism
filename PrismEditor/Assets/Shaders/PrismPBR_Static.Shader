@@ -5,7 +5,7 @@ Shader "Custom/SimplePBR_Static"
     Properties
     {
 
-        u_Color("主色", Color3) = (0.2, 0.2, 1)
+        u_Color("主色", Color3) = (1, 1, 1)
         u_AlbedoColor("颜色", Color3) = (1, 1, 1)
         u_Metalness("金属度", Range(0, 1)) = 1.0
         u_Roughness("粗糙度", Range(0, 1)) = 0.0

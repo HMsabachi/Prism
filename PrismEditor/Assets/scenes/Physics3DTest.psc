@@ -7,9 +7,10 @@ Environment:
     Multiplier: 0.515
   Shadow:
     Enabled: true
-    Bias: 0.001
-    NormalBias: 0.1
+    Bias: 0
+    NormalBias: 0.211
     CascadeCount: 4
+    MaxDistance: 189.319
 PhysicsLayers:
   - Name: Default
     CollidesWith:
@@ -18,197 +19,17 @@ PhysicsLayers:
     CollidesWith:
       - Name: Default
 Entities:
-  - Entity: 6217240602347854998
+  - Entity: 3509336336274569647
     TagComponent:
-      Tag: Box
+      Tag: Sphere
     TransformComponent:
-      Position: [-7.223452, 1.5, -3.1342356]
+      Position: [0.57714844, 3.7860096, -9.399623]
       Rotation: [1, 0, 0, 0]
-      Scale: [2, 2, 2]
+      Scale: [0.022940006, 0.022940006, 0.022940006]
     MeshRendererComponent:
-      AssetPath: assets\meshes\Cube1m.fbx
+      AssetPath: Assets\models\Sphere1m.fbx
     RigidBodyComponent:
       BodyType: 1
-      Mass: 0.5
-      IsKinematic: false
-      Layer: 1
-      Constraints:
-        LockPositionX: false
-        LockPositionY: false
-        LockPositionZ: false
-        LockRotationX: false
-        LockRotationY: false
-        LockRotationZ: false
-    PhysicsMaterialComponent:
-      StaticFriction: 1
-      DynamicFriction: 1
-      Bounciness: 0
-    BoxColliderComponent:
-      Size: [1, 1, 1]
-      Offset: [0, 0, 0]
-      IsTrigger: false
-    CSharpScriptComponent:
-      Behaviours:
-        []
-    PythonScriptComponent:
-      Behaviours:
-        - ClassID: 8019244560703880993
-          Enabled: true
-  - Entity: 7159763310276242877
-    TagComponent:
-      Tag: Box
-    TransformComponent:
-      Position: [-4.0302086, 1.5, -3.1342356]
-      Rotation: [1, 0, 0, 0]
-      Scale: [2, 2, 2]
-    MeshRendererComponent:
-      AssetPath: assets\meshes\Cube1m.fbx
-    RigidBodyComponent:
-      BodyType: 1
-      Mass: 0.5
-      IsKinematic: false
-      Layer: 1
-      Constraints:
-        LockPositionX: false
-        LockPositionY: false
-        LockPositionZ: false
-        LockRotationX: false
-        LockRotationY: false
-        LockRotationZ: false
-    PhysicsMaterialComponent:
-      StaticFriction: 1
-      DynamicFriction: 1
-      Bounciness: 0
-    BoxColliderComponent:
-      Size: [1, 1, 1]
-      Offset: [0, 0, 0]
-      IsTrigger: false
-    CSharpScriptComponent:
-      Behaviours:
-        []
-    PythonScriptComponent:
-      Behaviours:
-        - ClassID: 8019244560703880993
-          Enabled: true
-  - Entity: 13919631429494874460
-    TagComponent:
-      Tag: Box
-    TransformComponent:
-      Position: [0.07178551, 1.5, -3.1342356]
-      Rotation: [1, 0, 0, 0]
-      Scale: [2, 2, 2]
-    MeshRendererComponent:
-      AssetPath: assets\meshes\Cube1m.fbx
-    RigidBodyComponent:
-      BodyType: 1
-      Mass: 0.5
-      IsKinematic: false
-      Layer: 1
-      Constraints:
-        LockPositionX: false
-        LockPositionY: false
-        LockPositionZ: false
-        LockRotationX: false
-        LockRotationY: false
-        LockRotationZ: false
-    PhysicsMaterialComponent:
-      StaticFriction: 1
-      DynamicFriction: 1
-      Bounciness: 0
-    BoxColliderComponent:
-      Size: [1, 1, 1]
-      Offset: [0, 0, 0]
-      IsTrigger: false
-    CSharpScriptComponent:
-      Behaviours:
-        []
-    PythonScriptComponent:
-      Behaviours:
-        - ClassID: 8019244560703880993
-          Enabled: true
-  - Entity: 11192140000393742823
-    TagComponent:
-      Tag: Box
-    TransformComponent:
-      Position: [-3.8477411, 1.5, 0]
-      Rotation: [1, 0, 0, 0]
-      Scale: [2, 2, 2]
-    MeshRendererComponent:
-      AssetPath: assets\meshes\Cube1m.fbx
-    RigidBodyComponent:
-      BodyType: 1
-      Mass: 0.5
-      IsKinematic: false
-      Layer: 1
-      Constraints:
-        LockPositionX: false
-        LockPositionY: false
-        LockPositionZ: false
-        LockRotationX: false
-        LockRotationY: false
-        LockRotationZ: false
-    PhysicsMaterialComponent:
-      StaticFriction: 1
-      DynamicFriction: 1
-      Bounciness: 0
-    BoxColliderComponent:
-      Size: [1, 1, 1]
-      Offset: [0, 0, 0]
-      IsTrigger: false
-    CSharpScriptComponent:
-      Behaviours:
-        []
-    PythonScriptComponent:
-      Behaviours:
-        - ClassID: 8019244560703880993
-          Enabled: true
-  - Entity: 4585746309842579712
-    TagComponent:
-      Tag: Box
-    TransformComponent:
-      Position: [0, 1.5, 0]
-      Rotation: [1, 0, 0, 0]
-      Scale: [2, 2, 2]
-    MeshRendererComponent:
-      AssetPath: assets\meshes\Cube1m.fbx
-    RigidBodyComponent:
-      BodyType: 1
-      Mass: 0.5
-      IsKinematic: false
-      Layer: 1
-      Constraints:
-        LockPositionX: false
-        LockPositionY: false
-        LockPositionZ: false
-        LockRotationX: false
-        LockRotationY: false
-        LockRotationZ: false
-    PhysicsMaterialComponent:
-      StaticFriction: 1
-      DynamicFriction: 1
-      Bounciness: 0
-    BoxColliderComponent:
-      Size: [1, 1, 1]
-      Offset: [0, 0, 0]
-      IsTrigger: false
-    CSharpScriptComponent:
-      Behaviours:
-        []
-    PythonScriptComponent:
-      Behaviours:
-        - ClassID: 8019244560703880993
-          Enabled: true
-  - Entity: 18306113171518048249
-    TagComponent:
-      Tag: Box
-    TransformComponent:
-      Position: [0, 0, 0]
-      Rotation: [1, 0, 0, 0]
-      Scale: [50, 1, 50]
-    MeshRendererComponent:
-      AssetPath: assets\meshes\Cube1m.fbx
-    RigidBodyComponent:
-      BodyType: 0
       Mass: 1
       IsKinematic: false
       Layer: 1
@@ -223,15 +44,18 @@ Entities:
       StaticFriction: 1
       DynamicFriction: 1
       Bounciness: 0
-    BoxColliderComponent:
-      Size: [1, 1, 1]
-      Offset: [0, 0, 0]
+    MeshColliderComponent:
+      AssetPath: Assets\models\Sphere1m.fbx
       IsTrigger: false
     CSharpScriptComponent:
       Behaviours:
         - ClassID: 17473292295039821981
           Enabled: true
           Fields:
+            - ID: 2824397154
+              Name: Timer
+              Type: 1
+              Value: 0
             - ID: 3048789568
               Name: ID
               Type: 11
@@ -239,36 +63,42 @@ Entities:
     PythonScriptComponent:
       Behaviours:
         []
-  - Entity: 5178862374589434728
+  - Entity: 10169503531257462571
     TagComponent:
-      Tag: Camera
+      Tag: Box
     TransformComponent:
-      Position: [-21.740631, 9.706595, 15]
-      Rotation: [0.99991035, -0.013391121, 0, 0]
-      Scale: [1, 1, 1]
-    CameraComponent:
-      Camera: some camera data...
-      Primary: true
+      Position: [-7.223452, 1.5, 0.4699059]
+      Rotation: [1, 0, 0, 0]
+      Scale: [2, 2, 2]
+    MeshRendererComponent:
+      AssetPath: assets\meshes\Cube1m.fbx
+    RigidBodyComponent:
+      BodyType: 1
+      Mass: 0.5
+      IsKinematic: false
+      Layer: 1
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: false
+        LockRotationY: false
+        LockRotationZ: false
+    PhysicsMaterialComponent:
+      StaticFriction: 1
+      DynamicFriction: 1
+      Bounciness: 0
+    BoxColliderComponent:
+      Size: [1, 1, 1]
+      Offset: [0, 0, 0]
+      IsTrigger: false
     CSharpScriptComponent:
       Behaviours:
-        - ClassID: 502499430819245105
-          Enabled: true
-          Fields:
-            - ID: 305488032
-              Name: Speed
-              Type: 1
-              Value: 5.6
-            - ID: 3277313775
-              Name: DistanceFromPlayer
-              Type: 1
-              Value: 10.8
-            - ID: 3048789568
-              Name: ID
-              Type: 11
-              Value: 0
+        []
     PythonScriptComponent:
       Behaviours:
-        []
+        - ClassID: 8019244560703880993
+          Enabled: true
   - Entity: 14057422478420564497
     TagComponent:
       Tag: Player
@@ -339,11 +169,86 @@ Entities:
               Name: IsEnabled
               Type: 3
               Value: true
-  - Entity: 10169503531257462571
+  - Entity: 5178862374589434728
+    TagComponent:
+      Tag: Camera
+    TransformComponent:
+      Position: [-21.740631, 9.706595, 15]
+      Rotation: [0.99991035, -0.013391121, 0, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera: some camera data...
+      Primary: true
+    CSharpScriptComponent:
+      Behaviours:
+        - ClassID: 502499430819245105
+          Enabled: true
+          Fields:
+            - ID: 305488032
+              Name: Speed
+              Type: 1
+              Value: 5.6
+            - ID: 3277313775
+              Name: DistanceFromPlayer
+              Type: 1
+              Value: 10.8
+            - ID: 3048789568
+              Name: ID
+              Type: 11
+              Value: 0
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 18306113171518048249
     TagComponent:
       Tag: Box
     TransformComponent:
-      Position: [-7.223452, 1.5, 0.4699059]
+      Position: [0, 0, 0]
+      Rotation: [1, 0, 0, 0]
+      Scale: [50, 1, 50]
+    MeshRendererComponent:
+      AssetPath: assets\meshes\Cube1m.fbx
+    RigidBodyComponent:
+      BodyType: 0
+      Mass: 1
+      IsKinematic: false
+      Layer: 1
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: false
+        LockRotationY: false
+        LockRotationZ: false
+    PhysicsMaterialComponent:
+      StaticFriction: 1
+      DynamicFriction: 1
+      Bounciness: 0
+    BoxColliderComponent:
+      Size: [1, 1, 1]
+      Offset: [0, 0, 0]
+      IsTrigger: false
+    CSharpScriptComponent:
+      Behaviours:
+        - ClassID: 17473292295039821981
+          Enabled: true
+          Fields:
+            - ID: 2824397154
+              Name: Timer
+              Type: 1
+              Value: 0
+            - ID: 3048789568
+              Name: ID
+              Type: 11
+              Value: 0
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 4585746309842579712
+    TagComponent:
+      Tag: Box
+    TransformComponent:
+      Position: [0, 1.5, 0]
       Rotation: [1, 0, 0, 0]
       Scale: [2, 2, 2]
     MeshRendererComponent:
@@ -375,18 +280,18 @@ Entities:
       Behaviours:
         - ClassID: 8019244560703880993
           Enabled: true
-  - Entity: 3509336336274569647
+  - Entity: 11192140000393742823
     TagComponent:
-      Tag: Sphere
+      Tag: Box
     TransformComponent:
-      Position: [0.57714844, 3.7860096, -9.399623]
+      Position: [-3.8477411, 1.5, 0]
       Rotation: [1, 0, 0, 0]
-      Scale: [0.022940006, 0.022940006, 0.022940006]
+      Scale: [2, 2, 2]
     MeshRendererComponent:
-      AssetPath: Assets\models\Sphere1m.fbx
+      AssetPath: assets\meshes\Cube1m.fbx
     RigidBodyComponent:
       BodyType: 1
-      Mass: 1
+      Mass: 0.5
       IsKinematic: false
       Layer: 1
       Constraints:
@@ -400,18 +305,122 @@ Entities:
       StaticFriction: 1
       DynamicFriction: 1
       Bounciness: 0
-    MeshColliderComponent:
-      AssetPath: Assets\models\Sphere1m.fbx
+    BoxColliderComponent:
+      Size: [1, 1, 1]
+      Offset: [0, 0, 0]
       IsTrigger: false
     CSharpScriptComponent:
       Behaviours:
-        - ClassID: 17473292295039821981
-          Enabled: true
-          Fields:
-            - ID: 3048789568
-              Name: ID
-              Type: 11
-              Value: 0
+        []
     PythonScriptComponent:
       Behaviours:
+        - ClassID: 8019244560703880993
+          Enabled: true
+  - Entity: 13919631429494874460
+    TagComponent:
+      Tag: Box
+    TransformComponent:
+      Position: [0.07178551, 1.5, -3.1342356]
+      Rotation: [1, 0, 0, 0]
+      Scale: [2, 2, 2]
+    MeshRendererComponent:
+      AssetPath: assets\meshes\Cube1m.fbx
+    RigidBodyComponent:
+      BodyType: 1
+      Mass: 0.5
+      IsKinematic: false
+      Layer: 1
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: false
+        LockRotationY: false
+        LockRotationZ: false
+    PhysicsMaterialComponent:
+      StaticFriction: 1
+      DynamicFriction: 1
+      Bounciness: 0
+    BoxColliderComponent:
+      Size: [1, 1, 1]
+      Offset: [0, 0, 0]
+      IsTrigger: false
+    CSharpScriptComponent:
+      Behaviours:
         []
+    PythonScriptComponent:
+      Behaviours:
+        - ClassID: 8019244560703880993
+          Enabled: true
+  - Entity: 7159763310276242877
+    TagComponent:
+      Tag: Box
+    TransformComponent:
+      Position: [-4.0302086, 1.5, -3.1342356]
+      Rotation: [1, 0, 0, 0]
+      Scale: [2, 2, 2]
+    MeshRendererComponent:
+      AssetPath: assets\meshes\Cube1m.fbx
+    RigidBodyComponent:
+      BodyType: 1
+      Mass: 0.5
+      IsKinematic: false
+      Layer: 1
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: false
+        LockRotationY: false
+        LockRotationZ: false
+    PhysicsMaterialComponent:
+      StaticFriction: 1
+      DynamicFriction: 1
+      Bounciness: 0
+    BoxColliderComponent:
+      Size: [1, 1, 1]
+      Offset: [0, 0, 0]
+      IsTrigger: false
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        - ClassID: 8019244560703880993
+          Enabled: true
+  - Entity: 6217240602347854998
+    TagComponent:
+      Tag: Box
+    TransformComponent:
+      Position: [-7.223452, 1.5, -3.1342356]
+      Rotation: [1, 0, 0, 0]
+      Scale: [2, 2, 2]
+    MeshRendererComponent:
+      AssetPath: assets\meshes\Cube1m.fbx
+    RigidBodyComponent:
+      BodyType: 1
+      Mass: 0.5
+      IsKinematic: false
+      Layer: 1
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: false
+        LockRotationY: false
+        LockRotationZ: false
+    PhysicsMaterialComponent:
+      StaticFriction: 1
+      DynamicFriction: 1
+      Bounciness: 0
+    BoxColliderComponent:
+      Size: [1, 1, 1]
+      Offset: [0, 0, 0]
+      IsTrigger: false
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        - ClassID: 8019244560703880993
+          Enabled: true
