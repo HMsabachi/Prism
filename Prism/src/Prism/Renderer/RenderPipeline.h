@@ -86,7 +86,7 @@ namespace Prism
         Ref<Texture2D> m_BRDFLUT;
         Ref<PrismShader> m_CompositeShader;
 
-        Ref<Framebuffer> m_ShadowFBOs[4];
+        Ref<RenderPass> m_ShadowPasses[4];
         glm::mat4 m_ShadowMatrices[4]{};
         glm::vec4 m_CascadeSplits{};
 

@@ -345,24 +345,23 @@ namespace Prism
             }
             case PrismShaderCompiler::PropertyType::Color:
             {
-                glm::vec4 color = material.GetVec4(name);
+                glm::vec4 color = material.GetColor(name);
                 if (Property(displayName, color, PropertyFlag::ColorProperty))
-                    material.SetVec4(name, color);
+                    material.SetColor(name, color);
                 break;
             }
             case PrismShaderCompiler::PropertyType::Color3:
             {
-                glm::vec3 color = material.GetVec3(name);
+                glm::vec3 color = material.GetColor3(name);
                 if (Property(displayName, color, PropertyFlag::ColorProperty))
-                    material.SetVec3(name, color);
+                    material.SetColor3(name, color);
                 break;
             }
             case PrismShaderCompiler::PropertyType::Vector2:
             {
-                glm::vec3 v = material.GetVec3(name);
-                glm::vec2 vec2(v.x, v.y);
+                glm::vec2 vec2 = material.GetVec2(name);
                 if (Property(displayName, vec2))
-                    material.SetVec3(name, glm::vec3(vec2.x, vec2.y, v.z));
+                    material.SetVec2(name, vec2);
                 break;
             }
             case PrismShaderCompiler::PropertyType::Vector3:
@@ -388,10 +387,9 @@ namespace Prism
             }
             case PrismShaderCompiler::PropertyType::Bool:
             {
-                int value = material.GetInt(name);
-                bool b = (value != 0);
-                if (Property(displayName, b))
-                    material.SetInt(name, b ? 1 : 0);
+                bool value = material.GetBool(name);
+                if (Property(displayName, value))
+                    material.SetBool(name, value);
                 break;
             }
             case PrismShaderCompiler::PropertyType::Texture2D:
@@ -670,14 +668,14 @@ namespace Prism
             m_ViewportPanelFocused = ImGui::IsWindowFocused();
             auto viewportOffset = ImGui::GetCursorPos();
             auto viewportSize = ImGui::GetContentRegionAvail();
-            //viewportSize.x *= 2;
-            //viewportSize.y *= 2;
+            viewportSize.x *= 2;
+            viewportSize.y *= 2;
             if (auto* rs = m_ActiveScene->GetSystem<RenderSystem>())
                 rs->SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
             m_EditorCamera.SetProjectionMatrix(glm::perspectiveFov(glm::radians(45.0f), viewportSize.x, viewportSize.y, 0.1f, 10000.0f));
             m_EditorCamera.SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
-            //viewportSize.x *= 0.5;
-            //viewportSize.y *= 0.5;
+            viewportSize.x *= 0.5;
+            viewportSize.y *= 0.5;
 
             if (auto* rs = m_ActiveScene->GetSystem<RenderSystem>())
                 ImGui::Image((void*)rs->GetFinalColorBufferID(), viewportSize, { 0, 1 }, { 1, 0 });

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Prism/Core/Core.h"
 #include "Prism/Renderer/Shader.h"
 #include "ShaderCommand.h"
@@ -50,10 +50,10 @@ namespace Prism
         const std::vector<ShaderKeyword>& GetKeywords() const { return m_Keywords; }
         uint8_t GetKeywordIndex(const std::string& name) const;
         bool IsKeywordDefined(const std::string& name) const;
-        Ref<Shader> GetVariant(KeywordMask mask) const;
         Ref<Shader> GetPassProgram(uint32_t passIndex, KeywordMask mask) const;
 
     private:
+        Ref<Shader> GetVariant(KeywordMask mask) const;
         void CompilePasses();
         void CompileVariants();
         std::vector<std::string> KeywordsForMask(KeywordMask mask) const;

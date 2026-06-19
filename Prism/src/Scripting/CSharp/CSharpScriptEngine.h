@@ -16,7 +16,7 @@ namespace Prism
 {
     class Scene;
 
-    // ── AssemblyData 指针封装（避免 ManagedAssembly 值拷贝导致的悬空指针）──
+    // ── AssemblyData 指针封装 ──
     struct AssemblyData
     {
         Rolky::ManagedAssembly* Assembly = nullptr;
@@ -91,11 +91,10 @@ namespace Prism
     };
 
 
-    // 从 engine assembly 创建框架类 (如 Prism.Entity), 使用外部传入的 ScriptID
     template<typename... TArgs>
     UUID CSharpScriptEngine::InstantiateEngine(UUID scriptID, std::string_view className, CSharpScriptStorage& storage, TArgs&&... args)
     {
-        auto type = GetEngineAssembly().GetType(className);
+        auto type = GetEngineAssembly().GetLocalType(className);
         PR_CORE_ASSERT(type, "Class not found in engine assembly!");
         auto instance = type.CreateInstance(std::forward<TArgs>(args)...);
         UUID sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);

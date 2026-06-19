@@ -90,7 +90,7 @@ namespace Prism
         Ref<Texture2D> m_CheckerboardTex;
         Ref<Texture2D> m_PlayButtonTex;
 
-        glm::vec2 m_ViewportBounds[2];
+        glm::vec2 m_ViewportBounds[2]{};
         int m_GizmoType = -1; //  no gizmo
         float m_SnapValue = 0.5f;
         float m_RotationSnapValue = 45.0f;

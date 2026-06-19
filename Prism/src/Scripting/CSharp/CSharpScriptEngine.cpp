@@ -320,7 +320,7 @@ namespace Prism
             s_LoadContext.reset();
         }
 
-        Rolky::TypeCache::Get().Clear();
+        //Rolky::TypeCache::Get().Clear();
 
         Rolky::GC::Collect();
         Rolky::GC::WaitForPendingFinalizers();

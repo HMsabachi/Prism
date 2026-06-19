@@ -1,5 +1,6 @@
 ﻿#include "prpch.h"
 #include "RenderSystem.h"
+#include "Physics3DSystem.h"
 
 #include "Prism/Scene/Scene.h"
 #include "Prism/Scene/Entity.h"
@@ -82,6 +83,8 @@ namespace Prism
 
     void RenderSystem::SetViewportSize(uint32_t width, uint32_t height)
     {
+        if (width == 0 || height == 0 || width == m_ViewportWidth && height == m_ViewportHeight)
+            return;
         m_ViewportWidth = width;
         m_ViewportHeight = height;
         if (m_Pipeline)
@@ -154,6 +157,8 @@ namespace Prism
 
     void RenderSystem::CollectDebugDraws(FrameData& data)
     {
-        // Phase 2: 从 Physics3DSystem 收集碰撞体调试网格
+        auto* physics = m_Scene->GetSystem<Physics3DSystem>();
+        if (physics)
+            physics->SubmitColliderMeshes();
     }
 }

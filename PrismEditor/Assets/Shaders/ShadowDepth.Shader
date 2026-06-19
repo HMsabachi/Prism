@@ -1,5 +1,9 @@
 Shader "Hidden/ShadowDepth"
 {
+    Properties
+    {
+        u_LightVP("灯光矩阵", Matrix4) = 0
+    }
     RenderCommand
     {
         Cull Back
@@ -17,8 +21,6 @@ Shader "Hidden/ShadowDepth"
                 #include "PrismCommon.glsl"
 
                 attribute vec3 a_Position : POSITION;
-
-                layout(location = 0) uniform mat4 u_LightVP;
 
                 void main()
                 {

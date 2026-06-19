@@ -78,14 +78,24 @@ namespace Prism
 
 #pragma region Setters
 
-    void Material::SetFloat(const std::string& name, float value)
+    void Material::SetBool(const std::string& name, bool value)
     {
-        WriteUniform(name, &value, sizeof(float));
+        WriteUniform(name, &value, sizeof(bool));
     }
 
     void Material::SetInt(const std::string& name, int value)
     {
         WriteUniform(name, &value, sizeof(int));
+    }
+
+    void Material::SetFloat(const std::string& name, float value)
+    {
+        WriteUniform(name, &value, sizeof(float));
+    }
+
+    void Material::SetVec2(const std::string& name, const glm::vec2& value)
+    {
+        WriteUniform(name, &value, sizeof(glm::vec2));
     }
 
     void Material::SetVec3(const std::string& name, const glm::vec3& value)
@@ -98,7 +108,22 @@ namespace Prism
         WriteUniform(name, &value, sizeof(glm::vec4));
     }
 
-    void Material::SetMatrix(const std::string& name, const glm::mat4& value)
+    void Material::SetColor3(const std::string& name, const glm::vec3& value)
+    {
+        WriteUniform(name, &value, sizeof(glm::vec3));
+    }
+
+    void Material::SetColor(const std::string& name, const glm::vec4& value)
+    {
+        WriteUniform(name, &value, sizeof(glm::vec4));
+    }
+
+    void Material::SetMatrix3(const std::string& name, const glm::mat3& value)
+    {
+        WriteUniform(name, &value, sizeof(glm::mat3));
+    }
+
+    void Material::SetMatrix4(const std::string& name, const glm::mat4& value)
     {
         WriteUniform(name, &value, sizeof(glm::mat4));
     }
@@ -125,11 +150,11 @@ namespace Prism
 
 #pragma region Getters
 
-    float Material::GetFloat(const std::string& name) const
+    bool Material::GetBool(const std::string& name) const
     {
         auto* uni = m_Shader->FindUniform(name);
-        if (!uni) return 0.0f;
-        return m_PropertyBuffer.Read<float>(uni->BufferOffset);
+        if (!uni) return false;
+        return m_PropertyBuffer.Read<bool>(uni->BufferOffset);
     }
 
     int Material::GetInt(const std::string& name) const
@@ -137,6 +162,20 @@ namespace Prism
         auto* uni = m_Shader->FindUniform(name);
         if (!uni) return 0;
         return m_PropertyBuffer.Read<int>(uni->BufferOffset);
+    }
+
+    float Material::GetFloat(const std::string& name) const
+    {
+        auto* uni = m_Shader->FindUniform(name);
+        if (!uni) return 0.0f;
+        return m_PropertyBuffer.Read<float>(uni->BufferOffset);
+    }
+
+    glm::vec2 Material::GetVec2(const std::string& name) const
+    {
+        auto* uni = m_Shader->FindUniform(name);
+        if (!uni) return glm::vec2(0.0f);
+        return m_PropertyBuffer.Read<glm::vec2>(uni->BufferOffset);
     }
 
     glm::vec3 Material::GetVec3(const std::string& name) const
@@ -151,6 +190,34 @@ namespace Prism
         auto* uni = m_Shader->FindUniform(name);
         if (!uni) return glm::vec4(0.0f);
         return m_PropertyBuffer.Read<glm::vec4>(uni->BufferOffset);
+    }
+
+    glm::vec3 Material::GetColor3(const std::string& name) const
+    {
+        auto* uni = m_Shader->FindUniform(name);
+        if (!uni) return glm::vec3(0.0f);
+        return m_PropertyBuffer.Read<glm::vec3>(uni->BufferOffset);
+    }
+
+    glm::vec4 Material::GetColor(const std::string& name) const
+    {
+        auto* uni = m_Shader->FindUniform(name);
+        if (!uni) return glm::vec4(0.0f);
+        return m_PropertyBuffer.Read<glm::vec4>(uni->BufferOffset);
+    }
+
+    glm::mat3 Material::GetMatrix3(const std::string& name) const
+    {
+        auto* uni = m_Shader->FindUniform(name);
+        if (!uni) return glm::mat3(1.0f);
+        return m_PropertyBuffer.Read<glm::mat3>(uni->BufferOffset);
+    }
+
+    glm::mat4 Material::GetMatrix4(const std::string& name) const
+    {
+        auto* uni = m_Shader->FindUniform(name);
+        if (!uni) return glm::mat4(1.0f);
+        return m_PropertyBuffer.Read<glm::mat4>(uni->BufferOffset);
     }
 
     Ref<Texture2D> Material::GetTexture2D(const std::string& name) const
@@ -178,28 +245,42 @@ namespace Prism
 
 #pragma endregion
 
-    void Material::Bind(uint32_t passIndex)
+    Ref<Shader> Material::GetProgram(uint32_t passIndex)
+    {
+        return m_Shader->GetPassProgram(passIndex, m_KeywordMask);
+    }
+
+    void Material::BindProgram(uint32_t passIndex)
     {
         Ref<Shader> program = m_Shader->GetPassProgram(passIndex, m_KeywordMask);
         program->Bind();
         program->ApplyCommand(m_Shader->GetPass(passIndex).Command);
+    }
 
+    void Material::BindUniform()
+    {
         if (m_Dirty)
         {
             m_UniformBuffer->SetData(m_PropertyBuffer);
             m_Dirty = false;
         }
         m_UniformBuffer->Bind();
-        BindTextures();
     }
 
-    void Material::BindTextures()
+    void Material::BindTexture()
     {
         for (size_t i = 0; i < m_Textures.size(); i++)
         {
             if (m_Textures[i])
                 m_Textures[i]->Bind((uint32_t)i + Prism::Config::PRISM_BINDING_TEXTURE);
         }
+    }
+
+    void Material::Bind(uint32_t passIndex)
+    {
+        BindProgram(passIndex);
+        BindUniform();
+        BindTexture();
     }
 
     void Material::SetKeyword(const std::string& name, bool enabled)

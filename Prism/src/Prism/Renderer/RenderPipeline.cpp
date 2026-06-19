@@ -61,7 +61,11 @@ namespace Prism
         shadowFBSpec.Height = SHADOW_MAP_SIZE;
         shadowFBSpec.Format = FramebufferFormat::Depth;
         for (int i = 0; i < 4; i++)
-            m_ShadowFBOs[i] = Framebuffer::Create(shadowFBSpec);
+        {
+            RenderPassSpecification shadowRPSpec;
+            shadowRPSpec.TargetFramebuffer = Framebuffer::Create(shadowFBSpec);
+            m_ShadowPasses[i] = RenderPass::Create(shadowRPSpec);
+        }
 
         auto shadowShader = Renderer::GetShaderLibrary()->Get("Hidden/ShadowDepth");
         m_ShadowDepthMaterial = Material::Create(shadowShader);
@@ -72,7 +76,7 @@ namespace Prism
         m_GeoPass.Reset();
         m_CompositePass.Reset();
         for (int i = 0; i < 4; i++)
-            m_ShadowFBOs[i].Reset();
+            m_ShadowPasses[i].Reset();
     }
 
     void RenderPipeline::Resize(uint32_t width, uint32_t height)
@@ -197,16 +201,12 @@ namespace Prism
         PR_PROFILE_FUNCTION();
         if (drawList.empty()) return;
 
-        Ref<PrismShader> shadowPrismShader = m_ShadowDepthMaterial->GetShader();
-        Ref<Shader> shadowProgram = shadowPrismShader->GetPassProgram(0, 0);
-
         for (uint32_t cascade = 0; cascade < 4; cascade++)
         {
-            m_ShadowFBOs[cascade]->Bind();
-            Renderer::Submit([]() { glClear(GL_DEPTH_BUFFER_BIT); });
+            Renderer::BeginRenderPass(m_ShadowPasses[cascade]);
 
+            m_ShadowDepthMaterial->SetMatrix4("u_LightVP", m_ShadowMatrices[cascade]);
             m_ShadowDepthMaterial->Bind();
-            shadowProgram->SetMat4("u_LightVP", m_ShadowMatrices[cascade]);
 
             Ref<Mesh> boundMesh = nullptr;
             for (auto& dc : drawList)
@@ -227,6 +227,8 @@ namespace Prism
                 Renderer::DrawIndexedBaseVertex(
                     submesh.IndexCount, submesh.BaseIndex, submesh.BaseVertex);
             }
+
+            Renderer::EndRenderPass();
         }
     }
 
@@ -239,10 +241,15 @@ namespace Prism
         PR_PROFILE_FUNCTION();
         Renderer::BeginRenderPass(m_GeoPass);
 
+        Renderer::Submit([]() {
+            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+            glStencilMask(0);
+        });
+
         Renderer::SubmitFullscreenQuad(config.SkyboxMaterial);
 
         for (int i = 0; i < 4; i++)
-            m_ShadowFBOs[i]->BindDepthTexture(Config::PRISM_SHADOW_MAP0 + i);
+            m_ShadowPasses[i]->GetSpecification().TargetFramebuffer->BindDepthTexture(Config::PRISM_SHADOW_MAP0 + i);
 
         if (!drawList.empty())
         {
@@ -282,7 +289,6 @@ namespace Prism
         {
             Renderer::Submit([]() {
                 glEnable(GL_STENCIL_TEST);
-                glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
                 glStencilFunc(GL_ALWAYS, 1, 0xff);
                 glStencilMask(0xff);
             });
@@ -363,7 +369,7 @@ namespace Prism
             Renderer::Submit([]() {
                 glStencilFunc(GL_ALWAYS, 1, 0xff);
                 glStencilMask(0);
-                glLineWidth(1);
+                glLineWidth(3);
                 glEnable(GL_LINE_SMOOTH);
                 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
                 glDisable(GL_DEPTH_TEST);
@@ -400,6 +406,7 @@ namespace Prism
                 glStencilMask(0xff);
                 glStencilFunc(GL_ALWAYS, 1, 0xff);
                 glEnable(GL_DEPTH_TEST);
+                glDisable(GL_STENCIL_TEST);
             });
         }
 

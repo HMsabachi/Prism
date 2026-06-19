@@ -337,7 +337,7 @@ namespace Prism {
             PR_CORE_ASSERT(dataSize <= buffer.Size);
             uint8_t* pixels = (uint8_t*)buffer.Data;
             uint32_t index = 0;
-            for (int i = 0; i < instance->GetWidth() * instance->GetHeight(); i++)
+            for (uint32_t i = 0; i < instance->GetWidth() * instance->GetHeight(); i++)
             {
                 glm::vec4& value = inData[i];
                 *pixels++ = (uint32_t)(value.x * 255.0f);

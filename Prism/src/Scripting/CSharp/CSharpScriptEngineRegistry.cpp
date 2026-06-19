@@ -23,7 +23,7 @@ namespace Prism
         std::string componentName = "Prism.";
         componentName += componentTypeName;
         auto& engineAssembly = CSharpScriptEngine::GetEngineAssembly();
-        auto& type = engineAssembly.GetType(componentName);
+        auto& type = engineAssembly.GetLocalType(componentName);
         if (type)
         {
             s_CreateComponentFuncs[type.GetTypeId()] = [](Entity& entity) { entity.AddComponent<TComponent>(); };
