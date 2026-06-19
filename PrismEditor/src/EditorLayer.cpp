@@ -553,6 +553,10 @@ namespace Prism
                         float cascadeCount = (float)cfg.CascadeCount;
                         if (Property(TR("Cascades"), cascadeCount, 1.0f, 4.0f, PropertyFlag::SliderProperty))
                             cfg.CascadeCount = (uint32_t)cascadeCount;
+
+                        float maxDist = cfg.MaxShadowDistance;
+                        if (Property(TR("Max Distance"), maxDist, 10.0f, 500.0f, PropertyFlag::SliderProperty))
+                            cfg.MaxShadowDistance = maxDist;
                     }
                 }
             }

@@ -35,5 +35,6 @@ namespace Prism
         float ShadowBias = 0.001f;
         float ShadowNormalBias = 0.1f;
         uint32_t CascadeCount = 4;
+        float MaxShadowDistance = 200.0f;
     };
 }

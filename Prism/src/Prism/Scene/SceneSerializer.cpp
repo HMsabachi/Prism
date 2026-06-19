@@ -552,6 +552,7 @@ namespace Prism {
         out << YAML::Key << "Bias" << YAML::Value << cfg.ShadowBias;
         out << YAML::Key << "NormalBias" << YAML::Value << cfg.ShadowNormalBias;
         out << YAML::Key << "CascadeCount" << YAML::Value << cfg.CascadeCount;
+        out << YAML::Key << "MaxDistance" << YAML::Value << cfg.MaxShadowDistance;
         out << YAML::EndMap;
         out << YAML::EndMap;
     }
@@ -643,6 +644,7 @@ namespace Prism {
                 cfg.ShadowBias = shadowNode["Bias"].as<float>();
                 cfg.ShadowNormalBias = shadowNode["NormalBias"].as<float>();
                 cfg.CascadeCount = shadowNode["CascadeCount"].as<uint32_t>();
+                cfg.MaxShadowDistance = shadowNode["MaxDistance"].as<float>(200.0f);
             }
         }
 
