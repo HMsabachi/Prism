@@ -44,8 +44,10 @@ namespace Prism
                 {
                     NativeString className = typeof(T).FullName;
                     IntPtr handle = InternalCalls.Prism_Entity_AddBehaviour(ID, className);
-                    if (handle == IntPtr.Zero) return null;
-                    T behaviour = (T)GCHandle.FromIntPtr(handle).Target;
+                    if (handle == IntPtr.Zero) throw new MissingReferenceException();
+                    object? obj = GCHandle.FromIntPtr(handle).Target;
+                    if (obj == null) throw new NullReferenceException();
+                    T behaviour = (T)obj;
                     behaviour.Entity = this;
                     return behaviour;
                 }
@@ -58,7 +60,7 @@ namespace Prism
                 return component;
             }
         }
-        public T GetComponent<T>() where T : Component, new()
+        public T? GetComponent<T>() where T : Component, new()
         {
             if (typeof(T).IsSubclassOf(typeof(Behaviour)))
             {
@@ -66,7 +68,9 @@ namespace Prism
                 {
                     IntPtr handle = InternalCalls.Prism_Entity_GetBehaviour(ID, typeof(T));
                     if (handle == IntPtr.Zero) return null;
-                    return (T)GCHandle.FromIntPtr(handle).Target;
+                    object? behaviour = GCHandle.FromIntPtr(handle).Target;
+                    if (behaviour == null) return null;
+                    return (T)behaviour;
                 }
             }
             if (HasComponent<T>())
@@ -85,7 +89,7 @@ namespace Prism
                 NativeString nativeTag = tag;
                 ulong entityID = InternalCalls.Prism_Entity_FindEntityByTag(nativeTag);
                 if (entityID == 0)
-                    return null;
+                    throw new EntityNotFoundException();
                 return new Entity(entityID);
             }
         }
@@ -97,7 +101,7 @@ namespace Prism
                 NativeString nativeTag = tag;
                 ulong entityID = InternalCalls.Prism_Entity_FindEntityByTag(nativeTag);
                 if (entityID == 0)
-                    return null;
+                    throw new EntityNotFoundException();
                 return new Entity(entityID);
             }
         }

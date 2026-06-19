@@ -18,7 +18,7 @@ class PlayerSphere(Behaviour):
         meshComponent: MeshRendererComponent = self.GetComponent(MeshRendererComponent)
         self.randomColor: RandomColor = self.CreateComponent(RandomColor)
         self.m_MeshMaterial: Material = meshComponent.GetMaterial(0)
-        self.m_MeshMaterial.Set("u_Metalness", 0.0)
+        self.m_MeshMaterial.SetFloat("u_Metalness", 0.0)
 
         self.m_CollisionCounter = 0
         self.IsEnabled = self.Enabled
@@ -65,7 +65,7 @@ class PlayerSphere(Behaviour):
     def OnCollisionBegin(self, data):
         self.m_CollisionCounter += 1
         if self._colliding:
-            self.m_MeshMaterial.Set("u_AlbedoColor", Vector3(1.0, 0.0, 0.0))
+            self.m_MeshMaterial.SetVector3("u_AlbedoColor", Vector3(1.0, 0.0, 0.0))
 
     def OnCollisionEnd(self, data):
         self.m_CollisionCounter -= 1

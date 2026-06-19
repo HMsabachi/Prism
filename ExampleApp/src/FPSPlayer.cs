@@ -80,28 +80,29 @@ namespace Example
             if (Input.IsKeyPressed(KeyCode.H) && Physics.Raycast(m_CameraTransform.Transform.Translation + (m_CameraTransform.Forward * 5.0F), m_CameraTransform.Forward, 20.0F, out hitInfo))
             {
                 var entity = Entity.FindEntityByID(hitInfo.EntityID);
-                var mesh = entity?.GetComponent<MeshRendererComponent>()?.Mesh;
-                //mesh?.GetMaterial(0)?.Set("u_Metalness", 1.0f);
+                var renderer = entity?.GetComponent<MeshRendererComponent>();
+                renderer?.Material.SetFloat("u_Metalness", 1.0f);
             }
             if (Input.IsKeyPressed(KeyCode.G) && Physics.Raycast(m_CameraTransform.Transform.Translation + (m_CameraTransform.Forward * 5.0F), m_CameraTransform.Forward, 20.0F, out hitInfo))
             {
                 var entity = Entity.FindEntityByID(hitInfo.EntityID);
-                var mesh = entity?.GetComponent<MeshRendererComponent>()?.Mesh;
-                //mesh?.GetMaterial(0)?.Set("u_Metalness", 0.0f);
+                var renderer = entity?.GetComponent<MeshRendererComponent>();
+                renderer?.Material.SetFloat("u_Metalness", 0.0f);
             }
 
             if (Input.IsKeyPressed(KeyCode.L))
             {
-                Collider[] colliders = Physics.OverlapSphere(m_Transform.Transform.Translation, 1.0F);
+                Collider[] colliders = Physics.OverlapBox(m_Transform.Transform.Translation, new Vector3(1.0F));
                 Log.Trace(colliders.Length);
 
                 foreach (Collider c in colliders)
                 {
                     Log.Trace("EntityID: {0}", c.EntityID);
                     Log.Trace("IsTrigger: {0}", c.IsTrigger);
-                    Log.Trace("IsBox: {0}", c.Is<BoxCollider>());
-                    Log.Trace("IsSphere: {0}", c.Is<SphereCollider>());
-                    Log.Trace("IsCapsule: {0}", c.Is<CapsuleCollider>());
+                    Log.Trace("IsBox: {0}", c is BoxCollider);
+                    Log.Trace("IsSphere: {0}", c is SphereCollider);
+                    Log.Trace("IsCapsule: {0}", c is CapsuleCollider);
+                    Log.Trace("IsMesh: {0}", c is MeshCollider);
                 }
             }
 

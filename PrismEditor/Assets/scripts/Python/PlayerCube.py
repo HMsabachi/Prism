@@ -17,7 +17,7 @@ class PlayerCube(Behaviour):
 
         meshComponent = self.GetComponent(MeshRendererComponent)
         self.m_MeshMaterial = meshComponent.GetMaterial(0)
-        self.m_MeshMaterial.Set("u_Metalness", 0.0)
+        self.m_MeshMaterial.SetFloat("u_Metalness", 0.0)
 
         self.m_CollisionCounter = 0
 
@@ -47,6 +47,6 @@ class PlayerCube(Behaviour):
             self.m_PhysicsBody.ApplyLinearImpulse(Vector2(0, self.JumpForce), Vector2(0, 0), True)
 
         if self.m_CollisionCounter > 0:
-            self.m_MeshMaterial.Set("u_AlbedoColor", Vector3(1.0, 0.0, 0.0))
+            self.m_MeshMaterial.SetVector3("u_AlbedoColor", Vector3(1.0, 0.0, 0.0))
         else:
-            self.m_MeshMaterial.Set("u_AlbedoColor", Vector3(0.8, 0.8, 0.8))
+            self.m_MeshMaterial.SetVector3("u_AlbedoColor", Vector3(0.8, 0.8, 0.8))

@@ -28,7 +28,7 @@ namespace Example
 
             MeshRendererComponent meshComponent = GetComponent<MeshRendererComponent>();
             m_MeshMaterial = meshComponent.GetMaterial(0);
-            m_MeshMaterial.Set("u_Metalness", 0.0f);
+            m_MeshMaterial.SetFloat("u_Metalness", 0.0f);
         }
 
         public void OnCollisionBegin(float data)
@@ -60,9 +60,9 @@ namespace Example
                 m_PhysicsBody.ApplyLinearImpulse(new Vector2(0, JumpForce), new Vector2(0, 0), true);
 
             if (m_CollisionCounter > 0)
-                m_MeshMaterial.Set("u_AlbedoColor", new Vector3(1.0f, 0.0f, 0.0f));
+                m_MeshMaterial.SetVector3("u_AlbedoColor", new Vector3(1.0f, 0.0f, 0.0f));
             else
-                m_MeshMaterial.Set("u_AlbedoColor", new Vector3(0.8f, 0.8f, 0.8f));
+                m_MeshMaterial.SetVector3("u_AlbedoColor", new Vector3(0.8f, 0.8f, 0.8f));
 
         }
 

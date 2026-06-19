@@ -1,4 +1,4 @@
-using Prism;
+﻿using Prism;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +10,7 @@ namespace Example
     class Sink : Behaviour
     {
 
-        public float SinkSpeed;
+        public float SinkSpeed = 0;
 
         void OnCreate()
         {

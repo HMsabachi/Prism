@@ -138,8 +138,10 @@ namespace Prism
             m_SceneHierarchyPanel->SetSelectionChangedCallback(std::bind(&EditorLayer::SelectEntity, this, std::placeholders::_1));
             m_SceneHierarchyPanel->SetEntityDeletedCallback(std::bind(&EditorLayer::OnEntityDeleted, this, std::placeholders::_1));
             SceneSerializer serializer(m_EditorScene);
-            serializer.Deserialize("Assets/Scenes/Physics3DTest.psc");
-            m_SceneFilePath = "Assets/Scenes/Physics3DTest.psc";
+            //serializer.Deserialize("Assets/Scenes/Physics3DTest.psc");
+            //m_SceneFilePath = "Assets/Scenes/Physics3DTest.psc";
+            serializer.Deserialize("Assets/Scenes/FPSDemo.psc");
+            m_SceneFilePath = "Assets/Scenes/FPSDemo.psc";
         }
 
         void EditorLayer::OnDetach()

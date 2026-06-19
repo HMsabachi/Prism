@@ -9,17 +9,24 @@ namespace Example
 {
     class RandomColor : Behaviour
     {
-        Random random = new Random();
-        Material material;
+        public float Timer = 0;
+        private Random random = new Random();
+        private Material material;
         private void OnCreate()
         {
             MeshRendererComponent meshComponent = GetComponent<MeshRendererComponent>();
-            material = meshComponent.GetMaterial(0);
+            material = meshComponent.Material;
             GenerateColor();
+            Timer = 0;
         }
         private void OnUpdate()
         {
-
+            Timer += Time.DeltaTime;
+            if (Timer > 1.5 )
+            {
+                GenerateColor();
+                Timer = 0;
+            }
         }
         public void GenerateColor()
         {
@@ -27,7 +34,7 @@ namespace Example
             float r = (float)random.NextDouble();
             float g = (float)random.NextDouble();
             float b = (float)random.NextDouble();
-            material.Set("u_AlbedoColor", new Vector3(r, g, b));
+            material.SetVector3("u_AlbedoColor", new Vector3(r, g, b));
         }
     }
 }

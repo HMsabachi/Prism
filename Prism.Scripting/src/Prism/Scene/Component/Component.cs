@@ -52,21 +52,70 @@ namespace Prism
                 unsafe { InternalCalls.Prism_MeshRendererComponent_SetMesh(Entity.ID, ptr); }
             }
         }
+        public Material Material
+        {
+            get
+            {
+                IntPtr ptr = IntPtr.Zero;
+                unsafe { InternalCalls.Prism_MeshRendererComponent_GetMaterial(Entity.ID, &ptr, 0); }
+                return new Material(ptr);
+            }
+            set
+            {
+                IntPtr ptr = value.m_UnmanagedInstance;
+                unsafe { InternalCalls.Prism_MeshRendererComponent_SetMaterial(Entity.ID, ptr, 0); }
+            }
+        }
+        public Material[] Materials
+        {
+            get
+            {
+                unsafe
+                {
+                    UInt64 count = InternalCalls.Prism_MeshRendererComponent_GetMaterialCount(Entity.ID);
+                    var materials = new Material[count];
+                    if (count == 0) return materials;
+                    var handles = new IntPtr[count];
+                    fixed (IntPtr* p = handles)
+                        InternalCalls.Prism_MeshRendererComponent_GetMaterials(Entity.ID, p);
+                    for (UInt64 i = 0; i < count; i++)
+                        materials[i] = new Material(handles[i]);
+                    return materials;
+                }
+            }
+            set
+            {
+                unsafe
+                {
+                    int count = value.Length;
+                    var handles = new IntPtr[count];
+                    for (int i = 0; i < count; i++)
+                        handles[i] = value[i] != null ? value[i].m_UnmanagedInstance : IntPtr.Zero;
+                    fixed (IntPtr* p = handles)
+                        InternalCalls.Prism_MeshRendererComponent_SetMaterials(Entity.ID, p, (uint)count);
+                }
+            }
+        }
 
-        // TODO: Step 2 — InternalCall 到 C++ 端 Materials[]
         public Material GetMaterial(int index)
         {
-            return Material.DefaultMaterial;
+            unsafe
+            {
+                IntPtr ptr = IntPtr.Zero;
+                InternalCalls.Prism_MeshRendererComponent_GetMaterial(Entity.ID, &ptr, (uint)index);
+                return new Material(ptr);
+            }
         }
 
         public void SetMaterial(int index, Material material)
         {
-            // TODO
+            IntPtr ptr = material != null ? material.m_UnmanagedInstance : IntPtr.Zero;
+            unsafe { InternalCalls.Prism_MeshRendererComponent_SetMaterial(Entity.ID, ptr, (uint)index); }
         }
 
         public int GetMaterialCount()
         {
-            return 0;
+            unsafe { return (int)InternalCalls.Prism_MeshRendererComponent_GetMaterialCount(Entity.ID); }
         }
     }
 

@@ -16,6 +16,24 @@ class Material:
     def SetFloat(self, uniform, value):
         _Prism.Prism_Material_SetFloat(self._handle, uniform, float(value))
 
+    def SetInt(self, uniform, value):
+        _Prism.Prism_Material_SetInt(self._handle, uniform, int(value))
+
+    def SetBool(self, uniform, value):
+        _Prism.Prism_Material_SetBool(self._handle, uniform, bool(value))
+
+    def SetVec2(self, uniform, value):
+        _Prism.Prism_Material_SetVector2(self._handle, uniform, value)
+
+    def SetColor3(self, uniform, value):
+        _Prism.Prism_Material_SetColor3(self._handle, uniform, value)
+
+    def SetColor(self, uniform, value):
+        _Prism.Prism_Material_SetColor(self._handle, uniform, value)
+
+    def SetMatrix4(self, uniform, value):
+        _Prism.Prism_Material_SetMatrix4(self._handle, uniform, value)
+
     def SetVector3(self, uniform, value):
         _Prism.Prism_Material_SetVector3(self._handle, uniform, value)
 
@@ -25,18 +43,6 @@ class Material:
     def SetTexture(self, uniform, texture):
         h = texture._handle if texture else 0
         _Prism.Prism_Material_SetTexture(self._handle, uniform, h)
-
-    def Set(self, uniform, value):
-        from Prism.Math.Vector3 import Vector3
-        from Prism.Math.Vector4 import Vector4
-        if isinstance(value, Vector3):
-            self.SetVector3(uniform, value)
-        elif isinstance(value, Vector4):
-            self.SetVector4(uniform, value)
-        elif hasattr(value, '_handle'):
-            self.SetTexture(uniform, value)
-        else:
-            self.SetFloat(uniform, float(value))
 
     def SetKeyword(self, name, enabled):
         _Prism.Prism_Material_SetKeyword(self._handle, name, bool(enabled))

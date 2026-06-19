@@ -91,6 +91,11 @@ namespace Prism::Script
     // MeshComponent
     Python::ScriptValue* Prism_MeshRendererComponent_GetMesh(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_MeshRendererComponent_SetMesh(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_MeshRendererComponent_GetMaterial(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_MeshRendererComponent_SetMaterial(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_MeshRendererComponent_GetMaterialCount(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_MeshRendererComponent_GetMaterials(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_MeshRendererComponent_SetMaterials(Python::ScriptValue* self, Python::ScriptValue* args);
 
     // Texture2D
     Python::ScriptValue* Prism_Texture2D_Constructor(Python::ScriptValue* self, Python::ScriptValue* args);
@@ -102,6 +107,12 @@ namespace Prism::Script
     Python::ScriptValue* Prism_Material_GetDefaultMaterial(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Material_Destructor(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Material_SetFloat(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_Material_SetInt(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_Material_SetBool(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_Material_SetVector2(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_Material_SetColor3(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_Material_SetColor(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_Material_SetMatrix4(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Material_SetVector3(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Material_SetVector4(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Material_SetTexture(Python::ScriptValue* self, Python::ScriptValue* args);

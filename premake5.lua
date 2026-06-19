@@ -346,7 +346,7 @@ project "ExampleApp"
             EnableDynamicLoading = "true",
         }
     disablewarnings {
-            "CS8500"
+            "CS8500", "CS8618"
         }
 
     files 

@@ -30,8 +30,8 @@ namespace Example
             m_Transform = GetComponent<TransformComponent>();
 
             MeshRendererComponent meshComponent = GetComponent<MeshRendererComponent>();
-            m_MeshMaterial = meshComponent.GetMaterial(0);
-            m_MeshMaterial.Set("u_Metalness", 0.0f);
+            m_MeshMaterial = meshComponent.Material;
+            m_MeshMaterial.SetFloat("u_Metalness", 0.0f);
             randomColor = CreateComponent<RandomColor>();
         }
 
@@ -39,7 +39,7 @@ namespace Example
         {
             m_CollisionCounter++;
             if (Colliding)
-                m_MeshMaterial.Set("u_AlbedoColor", new Vector3(1.0f, 0.0f, 0.0f));
+                m_MeshMaterial.SetVector3("u_AlbedoColor", new Vector3(1.0f, 0.0f, 0.0f));
         }
 
         public void OnCollisionEnd(float data)

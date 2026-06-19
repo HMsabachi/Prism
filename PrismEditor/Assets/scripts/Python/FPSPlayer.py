@@ -1,7 +1,7 @@
 from Prism.Entity import Entity
 from Prism.Behaviour import Behaviour
 from Prism.Component import TransformComponent, RigidBodyComponent, MeshRendererComponent
-from Prism.Physics.Collider import ColliderType, BoxCollider, SphereCollider, CapsuleCollider
+from Prism.Physics.Collider import BoxCollider, SphereCollider, CapsuleCollider, MeshCollider
 from Prism.Physics.Physics import Physics, RaycastHit
 from Prism.Core.Input import Input, CursorMode, MouseButton
 from Prism.Core.KeyCodes import KeyCodes
@@ -81,16 +81,17 @@ class FPSPlayer(Behaviour):
                 if entity is not None:
                     mesh: MeshRendererComponent = entity.GetComponent(MeshRendererComponent)
                     if mesh is not None and mesh.Mesh is not None:
-                        mesh.Mesh.GetMaterial(0).Set("u_Metalness", 1.0)
+                        mesh.GetMaterial(0).SetFloat("u_Metalness", 1.0)
         if Input.IsKeyPressed(KeyCodes.L):
-            colliders = Physics.OverlapSphere(self._transform.Transform.Translation, 1.0)
+            colliders = Physics.OverlapBox(self._transform.Transform.Translation, Vector3(1.0, 1.0, 1.0))
             Log.Trace("Overlap count: {}", len(colliders))
             for c in colliders:
                 Log.Trace("EntityID: {}", c.EntityID)
                 Log.Trace("IsTrigger: {}", c.IsTrigger)
-                Log.Trace("IsBox: {}", c.IsBox())
-                Log.Trace("IsSphere: {}", c.IsSphere())
-                Log.Trace("IsCapsule: {}", c.IsCapsule())
+                Log.Trace("IsBox: {}", isinstance(c, BoxCollider))
+                Log.Trace("IsSphere: {}", isinstance(c, SphereCollider))
+                Log.Trace("IsCapsule: {}", isinstance(c, CapsuleCollider))
+                Log.Trace("IsMesh: {}", isinstance(c, MeshCollider))
 
         if Input.IsKeyPressed(KeyCodes.W):
             self._rigidBody.AddForce(self._cameraTransform.Forward * self._currentSpeed)

@@ -18,7 +18,7 @@ namespace Prism
     public struct OverlapHitData
     {
         public ulong EntityID;
-        public uint ColliderType;   // 0=Box, 1=Sphere, 2=Capsule
+        public uint ColliderType;   // 0=Box, 1=Sphere, 2=Capsule, 3=Mesh
         public Bool32 IsTrigger;
         public float ShapeData0;
         public float ShapeData1;
@@ -26,6 +26,7 @@ namespace Prism
         public float ShapeData3;
         public float ShapeData4;
         public float ShapeData5;
+        public IntPtr MeshHandle;
     }
 
     public static class Physics
@@ -80,6 +81,8 @@ namespace Prism
                     return new SphereCollider(data.EntityID, data.IsTrigger, data.ShapeData0);
                 case 2: // Capsule
                     return new CapsuleCollider(data.EntityID, data.IsTrigger, data.ShapeData0, data.ShapeData1);
+                case 3: // Mesh
+                    return new MeshCollider(data.EntityID, data.IsTrigger, data.MeshHandle);
                 default:
                     return null;
             }

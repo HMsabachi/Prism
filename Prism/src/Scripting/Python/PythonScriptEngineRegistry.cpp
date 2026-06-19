@@ -131,6 +131,11 @@ namespace Prism
         // MeshRendererComponent
         PR_PYTHON_FUNCTION(Prism_MeshRendererComponent_GetMesh, "GetMesh(entityID) -> handle");
         PR_PYTHON_FUNCTION(Prism_MeshRendererComponent_SetMesh, "SetMesh(entityID, handle)");
+        PR_PYTHON_FUNCTION(Prism_MeshRendererComponent_GetMaterial, "GetMaterial(entityID, index) -> handle");
+        PR_PYTHON_FUNCTION(Prism_MeshRendererComponent_SetMaterial, "SetMaterial(entityID, index, handle)");
+        PR_PYTHON_FUNCTION(Prism_MeshRendererComponent_GetMaterialCount, "GetMaterialCount(entityID) -> uint64");
+        PR_PYTHON_FUNCTION(Prism_MeshRendererComponent_GetMaterials, "GetMaterials(entityID) -> tuple of handles");
+        PR_PYTHON_FUNCTION(Prism_MeshRendererComponent_SetMaterials, "SetMaterials(entityID, handles)");
 
         // Texture2D
         PR_PYTHON_FUNCTION(Prism_Texture2D_Constructor, "Texture2D(cpp_handle, width, height)");
@@ -142,6 +147,12 @@ namespace Prism
         PR_PYTHON_FUNCTION(Prism_Material_GetDefaultMaterial, "GetDefaultMaterial() -> handle");
         PR_PYTHON_FUNCTION(Prism_Material_Destructor, "~Material(cpp_handle)");
         PR_PYTHON_FUNCTION(Prism_Material_SetFloat, "SetFloat(cpp_handle, uniform, value)");
+        PR_PYTHON_FUNCTION(Prism_Material_SetInt, "SetInt(cpp_handle, uniform, value)");
+        PR_PYTHON_FUNCTION(Prism_Material_SetBool, "SetBool(cpp_handle, uniform, value)");
+        PR_PYTHON_FUNCTION(Prism_Material_SetVector2, "SetVec2(cpp_handle, uniform, vec2)");
+        PR_PYTHON_FUNCTION(Prism_Material_SetColor3, "SetColor3(cpp_handle, uniform, vec3)");
+        PR_PYTHON_FUNCTION(Prism_Material_SetColor, "SetColor(cpp_handle, uniform, vec4)");
+        PR_PYTHON_FUNCTION(Prism_Material_SetMatrix4, "SetMatrix4(cpp_handle, uniform, mat4)");
         PR_PYTHON_FUNCTION(Prism_Material_SetVector3, "SetVector3(cpp_handle, uniform, vec3)");
         PR_PYTHON_FUNCTION(Prism_Material_SetVector4, "SetVector4(cpp_handle, uniform, vec4)");
         PR_PYTHON_FUNCTION(Prism_Material_SetTexture, "SetTexture(cpp_handle, uniform, texHandle)");

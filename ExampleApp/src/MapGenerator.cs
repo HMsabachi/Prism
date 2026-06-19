@@ -55,7 +55,7 @@ namespace Example
 
             Material material = meshComponent.GetMaterial(1);
             material.SetKeyword("ALBEDO_MAP", true);
-            material.Set("u_AlbedoTexture", texture);
+            material.SetTexture("u_AlbedoTexture", texture);
 
             TransformComponent transformComponent = GetComponent<TransformComponent>();
             Vector3 position = Entity.GetTransform().Translation;

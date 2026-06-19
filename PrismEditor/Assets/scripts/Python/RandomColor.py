@@ -23,4 +23,4 @@ class RandomColor(Behaviour):
         r = self.random.random()
         g = self.random.random()
         b = self.random.random()
-        self.material.Set("u_AlbedoColor", Vector3(r, g, b))
+        self.material.SetVector3("u_AlbedoColor", Vector3(r, g, b))

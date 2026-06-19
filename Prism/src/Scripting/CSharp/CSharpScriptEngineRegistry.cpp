@@ -89,9 +89,15 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_Entity_GetBehaviour);
         PR_ADD_INTERNAL_CALL(Prism_Behaviour_GetEnabled);
         PR_ADD_INTERNAL_CALL(Prism_Behaviour_SetEnabled);
-        // Mesh
+        // MeshRendererComponent
         PR_ADD_INTERNAL_CALL(Prism_MeshRendererComponent_GetMesh);
         PR_ADD_INTERNAL_CALL(Prism_MeshRendererComponent_SetMesh);
+        PR_ADD_INTERNAL_CALL(Prism_MeshRendererComponent_GetMaterial);
+        PR_ADD_INTERNAL_CALL(Prism_MeshRendererComponent_SetMaterial);
+        PR_ADD_INTERNAL_CALL(Prism_MeshRendererComponent_GetMaterialCount);
+        PR_ADD_INTERNAL_CALL(Prism_MeshRendererComponent_GetMaterials);
+        PR_ADD_INTERNAL_CALL(Prism_MeshRendererComponent_SetMaterials);
+        // Mesh
         PR_ADD_INTERNAL_CALL(Prism_Mesh_Constructor);
         PR_ADD_INTERNAL_CALL(Prism_Mesh_Destructor);
         PR_ADD_INTERNAL_CALL(Prism_MeshFactory_CreatePlane);
@@ -128,6 +134,12 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_Material_GetDefaultMaterial);
         PR_ADD_INTERNAL_CALL(Prism_Material_Destructor);
         PR_ADD_INTERNAL_CALL(Prism_Material_SetFloat);
+        PR_ADD_INTERNAL_CALL(Prism_Material_SetInt);
+        PR_ADD_INTERNAL_CALL(Prism_Material_SetBool);
+        PR_ADD_INTERNAL_CALL(Prism_Material_SetColor3);
+        PR_ADD_INTERNAL_CALL(Prism_Material_SetColor);
+        PR_ADD_INTERNAL_CALL(Prism_Material_SetMatrix4);
+        PR_ADD_INTERNAL_CALL(Prism_Material_SetVector2);
         PR_ADD_INTERNAL_CALL(Prism_Material_SetVector3);
         PR_ADD_INTERNAL_CALL(Prism_Material_SetVector4);
         PR_ADD_INTERNAL_CALL(Prism_Material_SetTexture);

@@ -50,7 +50,7 @@ class MapGenerator(Behaviour):
 
         material = meshComponent.GetMaterial(1)
         material.SetKeyword("ALBEDO_MAP", True)
-        material.Set("u_AlbedoTexture", texture)
+        material.SetTexture("u_AlbedoTexture", texture)
 
         transformComponent = self.GetComponent(TransformComponent)
         position = self.Entity.GetTransform().Translation

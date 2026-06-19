@@ -37,12 +37,14 @@ namespace Prism {
     struct OverlapHitData
     {
         uint64_t EntityID;
-        uint32_t ColliderType;  // 0=Box, 1=Sphere, 2=Capsule
+        uint32_t ColliderType;  // 0=Box, 1=Sphere, 2=Capsule, 3=Mesh
         uint32_t IsTrigger;
         float ShapeData[6];
         // Box:    [0-2]=Size, [3-5]=Offset
         // Sphere: [0]=Radius
         // Capsule:[0]=Radius, [1]=Height
+        // Mesh:   MeshHandle
+        void* MeshHandle;
     };
 
     class PRISM_API Physics

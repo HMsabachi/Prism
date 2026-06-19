@@ -2,7 +2,7 @@ from typing import Optional
 import PrismNative as _Prism
 from Prism.Math.Vector3 import Vector3
 from Prism.Entity import Entity
-from Prism.Physics.Collider import BoxCollider, SphereCollider, CapsuleCollider, Collider
+from Prism.Physics.Collider import BoxCollider, SphereCollider, CapsuleCollider, MeshCollider, Collider
 
 
 class RaycastHit:
@@ -60,4 +60,6 @@ class Physics:
             return SphereCollider(entityID, isTrigger, data[3])
         elif colliderType == 2:  # Capsule
             return CapsuleCollider(entityID, isTrigger, data[3], data[4])
+        elif colliderType == 3:  # Mesh
+            return MeshCollider(entityID, isTrigger, data[3])
         return None

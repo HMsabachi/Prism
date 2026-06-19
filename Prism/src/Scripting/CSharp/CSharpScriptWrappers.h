@@ -74,10 +74,15 @@ namespace Prism
         void Prism_TransformComponent_SetPosition(uint64_t entityID, glm::vec3 inPosition);
         void Prism_TransformComponent_SetRotation(uint64_t entityID, glm::vec3 inRotation);
         void Prism_TransformComponent_SetScale(uint64_t entityID, glm::vec3 inScale);
-
-        // Mesh
+        // MeshRendererComponent
         void* Prism_MeshRendererComponent_GetMesh(uint64_t entityID);
         void Prism_MeshRendererComponent_SetMesh(uint64_t entityID, Ref<Mesh>* inMesh);
+        void Prism_MeshRendererComponent_GetMaterial(uint64_t entityID, Ref<Material>** outMaterial, uint64_t index);
+        void Prism_MeshRendererComponent_SetMaterial(uint64_t entityID, Ref<Material>* inMaterial, uint64_t index);
+        uint64_t Prism_MeshRendererComponent_GetMaterialCount(uint64_t entityID);
+        void Prism_MeshRendererComponent_GetMaterials(uint64_t entityID, void** outHandles);
+        void Prism_MeshRendererComponent_SetMaterials(uint64_t entityID, void** inHandles, uint64_t count);
+        // Mesh
         Ref<Mesh>* Prism_Mesh_Constructor(Rolky::String filepath);
         void Prism_Mesh_Destructor(Ref<Mesh>* _this);
         void* Prism_MeshFactory_CreatePlane(float width, float height);
@@ -113,6 +118,12 @@ namespace Prism
         void Prism_Material_GetDefaultMaterial(Ref<Material>** outMaterial);
         void Prism_Material_Destructor(Ref<Material>* _this);
         void Prism_Material_SetFloat(Ref<Material>* _this, Rolky::String uniform, float value);
+        void Prism_Material_SetInt(Ref<Material>* _this, Rolky::String uniform, int value);
+        void Prism_Material_SetBool(Ref<Material>* _this, Rolky::String uniform, Rolky::Bool32 value);
+        void Prism_Material_SetVector2(Ref<Material>* _this, Rolky::String uniform, glm::vec2* value);
+        void Prism_Material_SetColor3(Ref<Material>* _this, Rolky::String uniform, glm::vec3* value);
+        void Prism_Material_SetColor(Ref<Material>* _this, Rolky::String uniform, glm::vec4* value);
+        void Prism_Material_SetMatrix4(Ref<Material>* _this, Rolky::String uniform, glm::mat4* value);
         void Prism_Material_SetVector3(Ref<Material>* _this, Rolky::String uniform, glm::vec3* value);
         void Prism_Material_SetVector4(Ref<Material>* _this, Rolky::String uniform, glm::vec4* value);
         void Prism_Material_SetTexture(Ref<Material>* _this, Rolky::String uniform, Ref<Texture2D>* texture);

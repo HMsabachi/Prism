@@ -280,8 +280,8 @@ namespace Prism {
         }
 
 #pragma endregion
+#pragma region MeshRendererComponent
 
-#pragma region Mesh
         void* Prism_MeshRendererComponent_GetMesh(uint64_t entityID)
         {
             Entity entity = GetEntityFromEntityID(entityID);
@@ -295,6 +295,64 @@ namespace Prism {
             auto& meshComponent = entity.GetComponent<MeshRendererComponent>();
             meshComponent.Mesh = inMesh ? *inMesh : nullptr;
         }
+        void Prism_MeshRendererComponent_GetMaterial(uint64_t entityID, Ref<Material>** outMaterial, uint64_t index)
+        {
+            PR_CORE_TRACE(entityID);
+            Entity entity = GetEntityFromEntityID(entityID);
+            auto& meshComponent = entity.GetComponent<MeshRendererComponent>();
+            if (index >= meshComponent.Materials.size()) PR_CORE_ERROR("Material index out of range");
+            *outMaterial = new Ref<Material>(meshComponent.Materials[index]);
+        }
+
+        void Prism_MeshRendererComponent_SetMaterial(uint64_t entityID, Ref<Material>* inMaterial, uint64_t index)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            auto& meshComponent = entity.GetComponent<MeshRendererComponent>();
+            if (index >= meshComponent.Materials.size()) PR_CORE_ERROR("Material index out of range");
+            meshComponent.Materials[index] = *inMaterial;
+        }
+
+        uint64_t Prism_MeshRendererComponent_GetMaterialCount(uint64_t entityID)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            auto& mc = entity.GetComponent<MeshRendererComponent>();
+            return mc.Materials.size();
+        }
+
+        void Prism_MeshRendererComponent_GetMaterials(uint64_t entityID, void** outHandles)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            auto& mc = entity.GetComponent<MeshRendererComponent>();
+            for (size_t i = 0; i < mc.Materials.size(); i++)
+            {
+                if (mc.Materials[i])
+                    outHandles[i] = new Ref<Material>(mc.Materials[i]);
+                else
+                    outHandles[i] = nullptr;
+            }
+        }
+
+        void Prism_MeshRendererComponent_SetMaterials(uint64_t entityID, void** inHandles, uint64_t count)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            auto& mc = entity.GetComponent<MeshRendererComponent>();
+            mc.Materials.resize(count);
+            for (uint64_t i = 0; i < count; i++)
+            {
+                if (inHandles[i])
+                {
+                    auto& matRef = *static_cast<Ref<Material>*>(inHandles[i]);
+                    mc.Materials[i] = matRef;
+                }
+                else
+                    mc.Materials[i] = nullptr;
+            }
+        }
+
+#pragma endregion
+        
+#pragma region Mesh
+        
 
         Prism::Ref<Prism::Mesh>* Prism_Mesh_Constructor(Rolky::String filepath)
         {
@@ -520,6 +578,42 @@ namespace Prism {
             uniform.Free(uniform);
         }
 
+        void Prism_Material_SetInt(Ref<Material>* _this, Rolky::String uniform, int value)
+        {
+            (*_this)->SetInt(uniform, value);
+            uniform.Free(uniform);
+        }
+
+        void Prism_Material_SetBool(Ref<Material>* _this, Rolky::String uniform, Rolky::Bool32 value)
+        {
+            (*_this)->SetBool(uniform, value);
+            uniform.Free(uniform);
+        }
+
+        void Prism_Material_SetVector2(Ref<Material>* _this, Rolky::String uniform, glm::vec2* value)
+        {
+            (*_this)->SetVec2(uniform, *value);
+            uniform.Free(uniform);
+        }
+
+        void Prism_Material_SetColor3(Ref<Material>* _this, Rolky::String uniform, glm::vec3* value)
+        {
+            (*_this)->SetColor3(uniform, *value);
+            uniform.Free(uniform);
+        }
+
+        void Prism_Material_SetColor(Ref<Material>* _this, Rolky::String uniform, glm::vec4* value)
+        {
+            (*_this)->SetColor(uniform, *value);
+            uniform.Free(uniform);
+        }
+
+        void Prism_Material_SetMatrix4(Ref<Material>* _this, Rolky::String uniform, glm::mat4* value)
+        {
+            (*_this)->SetMatrix4(uniform, *value);
+            uniform.Free(uniform);
+        }
+
         void Prism_Material_SetTexture(Ref<Material>* _this, Rolky::String uniform, Ref<Texture2D>* texture)
         {
             (*_this)->SetTexture(uniform, *texture);
@@ -565,33 +659,17 @@ namespace Prism {
             std::vector<physx::PxOverlapHit> buffer;
             if (PXPhysicsWrappers::OverlapBox(*origin, *halfSize, buffer))
             {
-                // TODO: Exclude MeshColliders for now
-                size_t count = buffer.size();
-                for (const auto& hit : buffer)
-                {
-                    Entity& entity = *(Entity*)hit.actor->userData;
-
-                    if (!entity.HasComponent<BoxColliderComponent>() && !entity.HasComponent<SphereColliderComponent>() && !entity.HasComponent<CapsuleColliderComponent>())
-                    {
-                        if (entity.HasComponent<MeshColliderComponent>())
-                            count--;
-                    }
-                }
-
-                auto results = Rolky::Array<OverlapHitData>::New(count);
+                auto results = Rolky::Array<OverlapHitData>::New(buffer.size());
                 uint32_t arrayIndex = 0;
 
                 for (const auto& hit : buffer)
                 {
-                    if (arrayIndex >= count)
-                        break;
-
                     Entity& entity = *(Entity*)hit.actor->userData;
 
                     if (entity.HasComponent<BoxColliderComponent>())
                     {
                         auto& bc = entity.GetComponent<BoxColliderComponent>();
-                        OverlapHitData data;
+                        OverlapHitData data{};
                         data.EntityID = entity.GetUUID();
                         data.ColliderType = 0; // Box
                         data.IsTrigger = bc.IsTrigger;
@@ -601,29 +679,40 @@ namespace Prism {
                         data.ShapeData[3] = bc.Offset.x;
                         data.ShapeData[4] = bc.Offset.y;
                         data.ShapeData[5] = bc.Offset.z;
+                        data.MeshHandle = nullptr;
                         results[arrayIndex++] = data;
                     }
                     else if (entity.HasComponent<SphereColliderComponent>())
                     {
                         auto& sc = entity.GetComponent<SphereColliderComponent>();
-                        OverlapHitData data;
+                        OverlapHitData data{};
                         data.EntityID = entity.GetUUID();
                         data.ColliderType = 1; // Sphere
                         data.IsTrigger = sc.IsTrigger;
                         data.ShapeData[0] = sc.Radius;
-                        memset(&data.ShapeData[1], 0, 5 * sizeof(float));
+                        data.MeshHandle = nullptr;
                         results[arrayIndex++] = data;
                     }
                     else if (entity.HasComponent<CapsuleColliderComponent>())
                     {
                         auto& cc = entity.GetComponent<CapsuleColliderComponent>();
-                        OverlapHitData data;
+                        OverlapHitData data{};
                         data.EntityID = entity.GetUUID();
                         data.ColliderType = 2; // Capsule
                         data.IsTrigger = cc.IsTrigger;
                         data.ShapeData[0] = cc.Radius;
                         data.ShapeData[1] = cc.Height;
-                        memset(&data.ShapeData[2], 0, 4 * sizeof(float));
+                        data.MeshHandle = nullptr;
+                        results[arrayIndex++] = data;
+                    }
+                    else if (entity.HasComponent<MeshColliderComponent>())
+                    {
+                        auto& mc = entity.GetComponent<MeshColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 3; // Mesh
+                        data.IsTrigger = mc.IsTrigger;
+                        data.MeshHandle = new Ref<Mesh>(mc.CollisionMesh);
                         results[arrayIndex++] = data;
                     }
                 }
@@ -637,33 +726,17 @@ namespace Prism {
             std::vector<physx::PxOverlapHit> buffer;
             if (PXPhysicsWrappers::OverlapSphere(*origin, radius, buffer))
             {
-                // TODO: Exclude MeshColliders for now
-                size_t count = buffer.size();
-                for (const auto& hit : buffer)
-                {
-                    Entity& entity = *(Entity*)hit.actor->userData;
-
-                    if (!entity.HasComponent<BoxColliderComponent>() && !entity.HasComponent<SphereColliderComponent>() && !entity.HasComponent<CapsuleColliderComponent>())
-                    {
-                        if (entity.HasComponent<MeshColliderComponent>())
-                            count--;
-                    }
-                }
-
-                auto results = Rolky::Array<OverlapHitData>::New(count);
+                auto results = Rolky::Array<OverlapHitData>::New(buffer.size());
                 uint32_t arrayIndex = 0;
 
                 for (const auto& hit : buffer)
                 {
-                    if (arrayIndex >= count)
-                        break;
-
                     Entity& entity = *(Entity*)hit.actor->userData;
 
                     if (entity.HasComponent<BoxColliderComponent>())
                     {
                         auto& bc = entity.GetComponent<BoxColliderComponent>();
-                        OverlapHitData data;
+                        OverlapHitData data{};
                         data.EntityID = entity.GetUUID();
                         data.ColliderType = 0; // Box
                         data.IsTrigger = bc.IsTrigger;
@@ -673,29 +746,40 @@ namespace Prism {
                         data.ShapeData[3] = bc.Offset.x;
                         data.ShapeData[4] = bc.Offset.y;
                         data.ShapeData[5] = bc.Offset.z;
+                        data.MeshHandle = nullptr;
                         results[arrayIndex++] = data;
                     }
                     else if (entity.HasComponent<SphereColliderComponent>())
                     {
                         auto& sc = entity.GetComponent<SphereColliderComponent>();
-                        OverlapHitData data;
+                        OverlapHitData data{};
                         data.EntityID = entity.GetUUID();
                         data.ColliderType = 1; // Sphere
                         data.IsTrigger = sc.IsTrigger;
                         data.ShapeData[0] = sc.Radius;
-                        memset(&data.ShapeData[1], 0, 5 * sizeof(float));
+                        data.MeshHandle = nullptr;
                         results[arrayIndex++] = data;
                     }
                     else if (entity.HasComponent<CapsuleColliderComponent>())
                     {
                         auto& cc = entity.GetComponent<CapsuleColliderComponent>();
-                        OverlapHitData data;
+                        OverlapHitData data{};
                         data.EntityID = entity.GetUUID();
                         data.ColliderType = 2; // Capsule
                         data.IsTrigger = cc.IsTrigger;
                         data.ShapeData[0] = cc.Radius;
                         data.ShapeData[1] = cc.Height;
-                        memset(&data.ShapeData[2], 0, 4 * sizeof(float));
+                        data.MeshHandle = nullptr;
+                        results[arrayIndex++] = data;
+                    }
+                    else if (entity.HasComponent<MeshColliderComponent>())
+                    {
+                        auto& mc = entity.GetComponent<MeshColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 3; // Mesh
+                        data.IsTrigger = mc.IsTrigger;
+                        data.MeshHandle = new Ref<Mesh>(mc.CollisionMesh);
                         results[arrayIndex++] = data;
                     }
                 }
