@@ -1,17 +1,17 @@
-#pragma once
+﻿#pragma once
 #include "RendererTypes.h"
 #include "Prism/Utilities/BitFlags.h"
 namespace Prism
 {
     using RendererID = uint32_t;
 
-    enum class PRISM_API RendererAPIType
+    enum class RendererAPIType
     {
         None = 0,
         OpenGL = 1
     };
 
-    struct PRISM_API RenderAPICapabilities
+    struct RenderAPICapabilities
     {
         std::string Vendor;
         std::string Renderer;

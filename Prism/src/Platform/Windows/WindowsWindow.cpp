@@ -80,7 +80,7 @@ namespace Prism {
     {
         int x, y;
         glfwGetWindowPos(m_Window, &x, &y);
-        return { x, y };
+        return { (float)x, (float)y };
     }
 
 

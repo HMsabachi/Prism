@@ -273,8 +273,3 @@ namespace Prism
 #define PR_KEY_RIGHT_ALT       ::Prism::Key::RightAlt
 #define PR_KEY_RIGHT_SUPER     ::Prism::Key::RightSuper
 #define PR_KEY_MENU            ::Prism::Key::Menu
-
-
-#define PR_MOUSE_BUTTON_LEFT    0
-#define PR_MOUSE_BUTTON_RIGHT   1
-#define PR_MOUSE_BUTTON_MIDDLE  2

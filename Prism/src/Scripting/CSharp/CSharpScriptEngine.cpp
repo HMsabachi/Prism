@@ -130,7 +130,7 @@ namespace Prism
             return 0;
         }
 
-        auto type = GetAppAssembly().GetType(meta->FullName);
+        auto type = GetAppAssembly().GetLocalType(meta->FullName);
         if (!type)
         {
             PR_CORE_ERROR("[CSharp] Class not found in app assembly: {0}", meta->FullName);

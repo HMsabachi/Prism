@@ -1,5 +1,8 @@
 ﻿#include "EditorProperty.h"
 #include "Prism/Renderer/Texture.h"
+#include "Prism/Core/Warning.h"
+PR_WARNING_DISABLE(4312)
+
 
 namespace Prism
 {

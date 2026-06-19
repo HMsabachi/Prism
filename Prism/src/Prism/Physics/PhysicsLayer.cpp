@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "PhysicsLayer.h"
 
 namespace Prism {
@@ -157,7 +157,7 @@ namespace Prism {
             lastId = layer.LayerID;
         }
 
-        return s_Layers.size();
+        return (uint32_t)s_Layers.size();
     }
 
     std::vector<PhysicsLayer> PhysicsLayerManager::s_Layers;

@@ -4,8 +4,8 @@
 
 namespace Prism
 {
-    struct Event;
-    struct MouseScrolledEvent;
+    class Event;
+    class MouseScrolledEvent;
 }
 
 namespace Prism

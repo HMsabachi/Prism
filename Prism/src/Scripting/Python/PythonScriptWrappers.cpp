@@ -648,7 +648,7 @@ namespace Prism::Script
                 }
             }
 
-            Python::ScriptRef tuple = Python::MakeTuple(elements, count);
+            Python::ScriptRef tuple = Python::MakeTuple(elements, (uint32_t)count);
             delete[] elements;
             return tuple.Detach();
         }
@@ -723,7 +723,7 @@ namespace Prism::Script
                 }
             }
 
-            Python::ScriptRef tuple = Python::MakeTuple(elements, count);
+            Python::ScriptRef tuple = Python::MakeTuple(elements, (uint32_t)count);
             delete[] elements;
             return tuple.Detach();
         }
@@ -833,7 +833,7 @@ namespace Prism::Script
 
         for (size_t i = 0; i < count && i < pixelCount; i++)
         {
-            auto elem = Python::GetTupleElement(dataTuple, i);
+            auto elem = Python::GetTupleElement(dataTuple, (uint32_t)i);
             glm::vec4 color = Python::ValueToVec4(elem);
             *pixels++ = static_cast<uint8_t>(glm::clamp(color.r, 0.0f, 1.0f) * 255.0f);
             *pixels++ = static_cast<uint8_t>(glm::clamp(color.g, 0.0f, 1.0f) * 255.0f);

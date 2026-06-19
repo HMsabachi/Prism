@@ -51,7 +51,7 @@ namespace Prism {
             for (auto entity : view)
             {
                 Entity e = { entity, m_Scene };
-                Physics::CreateActor(e, view.size());
+                Physics::CreateActor(e, (int32_t)view.size());
             }
         }
     }

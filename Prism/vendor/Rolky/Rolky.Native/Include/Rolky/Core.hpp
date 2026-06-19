@@ -67,7 +67,9 @@
 #define ROLKY_DOTNET_TARGET_VERSION_MAJOR 8
 #define ROLKY_DOTNET_TARGET_VERSION_MAJOR_STR '8'
 */
-#define ROLKY_UNMANAGED_CALLERS_ONLY ((const UCChar*) (-1ULL))
+// Node: 这里会报warning C4146
+#define ROLKY_UNMANAGED_CALLERS_ONLY ((const UCChar*)(uintptr_t)-1)
+// #define ROLKY_UNMANAGED_CALLERS_ONLY ((const UCChar*) (-1ULL))
 
 namespace Rolky {
 

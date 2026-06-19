@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "MeshFactory.h"
 
 #include <glm/glm.hpp>
@@ -122,7 +122,7 @@ namespace Prism {
         if (yOffset < 0.0F)
             yOffset = 0.0F;
 
-        int top = glm::ceil(pointCount * 0.5F);
+        int top = (int32_t)glm::ceil(pointCount * 0.5F);
 
         for (int y = 0; y < top; y++)
         {
@@ -134,7 +134,7 @@ namespace Prism {
             }
         }
 
-        int bottom = glm::floor(pointCount * 0.5F);
+        int bottom = (int32_t)glm::floor(pointCount * 0.5F);
 
         for (int y = bottom; y < pointCount; y++)
         {

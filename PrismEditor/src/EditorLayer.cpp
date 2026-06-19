@@ -7,6 +7,8 @@
 #include "Scripting/Python/PythonScriptEngine.h"
 #include "Prism/Scene/Systems/Physics2DSystem.h"
 #include "Prism/Scene/Systems/RenderSystem.h"
+#include "Prism/Core/Warning.h"
+PR_WARNING_DISABLE(4312)
 
 PRISM_API void PrismConnectPhysXDebugger();
 

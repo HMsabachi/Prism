@@ -6,6 +6,7 @@ project "Rolky.Native"
     kind "StaticLib"
     staticruntime "Off"
     debuggertype "NativeWithManagedCore"
+    disablewarnings { "4312", "4146", "4005", "4996" }
 
 	dependson "Rolky.Managed"
 

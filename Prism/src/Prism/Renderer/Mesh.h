@@ -26,20 +26,20 @@ namespace Prism
 namespace Prism {
     struct Vertex
     {
-        glm::vec3 Position;
-        glm::vec3 Normal;
-        glm::vec3 Tangent;
-        glm::vec3 Binormal;
-        glm::vec2 Texcoord;
+        glm::vec3 Position{};
+        glm::vec3 Normal{};
+        glm::vec3 Tangent{};
+        glm::vec3 Binormal{};
+        glm::vec2 Texcoord{};
     };
 
     struct AnimatedVertex
     {
-        glm::vec3 Position;
-        glm::vec3 Normal;
-        glm::vec3 Tangent;
-        glm::vec3 Binormal;
-        glm::vec2 Texcoord;
+        glm::vec3 Position{0};
+        glm::vec3 Normal{0};
+        glm::vec3 Tangent{0};
+        glm::vec3 Binormal{0};
+        glm::vec2 Texcoord{0};
     
         uint32_t IDs[4] = { 0, 0,0, 0 };
         float Weights[4]{ 0.0f, 0.0f, 0.0f, 0.0f };
@@ -108,12 +108,12 @@ namespace Prism {
     class Submesh
     {
     public:
-        uint32_t BaseVertex;
-        uint32_t BaseIndex;
-        uint32_t MaterialIndex;
-        uint32_t IndexCount;
+        uint32_t BaseVertex{0};
+        uint32_t BaseIndex{0};
+        uint32_t MaterialIndex{0};
+        uint32_t IndexCount{0};
 
-        glm::mat4 Transform;
+        glm::mat4 Transform{0};
 
         AABB BoundingBox;
 

@@ -19,6 +19,7 @@
 
 
 #include <filesystem>
+#pragma warning(disable: 4267)
 
 namespace Prism {
 

@@ -3,6 +3,7 @@
 	kind "ConsoleApp"
 	language "C++"
 	staticruntime "off"
+	disablewarnings { "4312" }
 
 	defines "PR_DYNAMIC_LINK"
 

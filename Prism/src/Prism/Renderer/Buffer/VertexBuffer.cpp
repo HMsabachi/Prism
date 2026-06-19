@@ -12,6 +12,7 @@ namespace Prism {
 		case RendererAPIType::None:   return nullptr;
 		case RendererAPIType::OpenGL:  return Ref<OpenGLVertexBuffer>::Create(data, size, usage);
 		}
+        return nullptr;
 	}
 
 	Prism::Ref<Prism::VertexBuffer> VertexBuffer::Create(uint32_t size /*= 0*/, BufferUsage usage /*= VertexBufferUsage::Dynamic*/)

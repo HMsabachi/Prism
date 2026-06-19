@@ -183,9 +183,9 @@ namespace Prism
             fps1 = fps0;
             capacity = Renderer::GetRenderCommandQueue().GetDataPoolCapacity();
         }
+        ImGui::Text("RenderDataCapacity: %dMB", capacity);
         ImGui::Text("LiveReferenceCount: %d", RefUtils::GetLiveReferenceCount());
         ImGui::Text("Fps: %d", fps1);
-        ImGui::Text("Capacity: %d", capacity);
         ImGui::End();
     }
 

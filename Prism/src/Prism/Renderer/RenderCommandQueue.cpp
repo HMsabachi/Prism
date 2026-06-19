@@ -4,12 +4,12 @@
 #define PR_RENDER_TRACE(...) PR_CORE_TRACE(__VA_ARGS__)
 namespace Prism
 {
-    constexpr size_t AlignUp(size_t size, size_t alignment) {
+    constexpr static size_t AlignUp(size_t size, size_t alignment) {
         return (size + alignment - 1) & ~(alignment - 1);
     }
 
     const size_t RenderCommandQueue::COMMAND_BUFFER_SIZE = 10 * 1024 * 1024; // 10MB buffer
-    const size_t RenderCommandQueue::DATA_POOL_MAX_SIZE = 512 * 1024 * 1024; // 512MB buffer
+    const size_t RenderCommandQueue::DATA_POOL_MAX_SIZE = 256 * 1024 * 1024; // 256MB buffer
 
     RenderCommandQueue::RenderCommandQueue()
         :m_CommandCount(0)

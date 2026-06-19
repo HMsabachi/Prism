@@ -3,8 +3,8 @@
 
 namespace Rolky
 {
-    struct String;
-    struct ReflectionType;
+    class String;
+    class ReflectionType;
 }
 
 namespace Prism

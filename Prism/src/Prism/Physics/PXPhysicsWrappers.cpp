@@ -3,12 +3,16 @@
 #include "Physics.h"
 #include "PhysicsLayer.h"
 #include "Prism/Renderer/Mesh.h"
+#include "Prism/Core/Warning.h"
 
 #include <glm/gtx/rotate_vector.hpp>
 
+PR_WARNING_PUSH
+PR_WARNING_DISABLE(26495)
 #include <PhysX/extensions/PxDefaultCpuDispatcher.h>
 #include <PhysX/extensions/PxRigidBodyExt.h>
 #include <PhysX/pvd/PxPvdTransport.h>
+PR_WARNING_POP
 
 #ifdef PR_DEBUG
 #define PHYSX_DEBUGGER 1
