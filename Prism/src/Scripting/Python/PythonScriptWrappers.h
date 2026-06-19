@@ -79,6 +79,7 @@ namespace Prism::Script
     // Physics
     Python::ScriptValue* Prism_Physics_Raycast(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Physics_OverlapBox(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_Physics_OverlapCapsule(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Physics_OverlapSphere(Python::ScriptValue* self, Python::ScriptValue* args);
 
     // Mesh

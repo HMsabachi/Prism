@@ -24,6 +24,8 @@ namespace Example
         private int m_CollisionCounter = 0;
         private bool Colliding => m_CollisionCounter > 0;
 
+        private Collider[] m_Colliders = new Collider[10];
+
         void OnCreate()
         {
             m_Transform = GetComponent<TransformComponent>();
@@ -92,17 +94,13 @@ namespace Example
 
             if (Input.IsKeyPressed(KeyCode.L))
             {
-                Collider[] colliders = Physics.OverlapBox(m_Transform.Transform.Translation, new Vector3(1.0F));
-                Log.Trace(colliders.Length);
+                int numColliders = Physics.OverlapBoxNonAlloc(m_Transform.Transform.Translation, new Vector3(1.0F), m_Colliders);
+                Log.Trace(numColliders);
 
-                foreach (Collider c in colliders)
+                for (int i = 0; i < numColliders; i++)
                 {
-                    Log.Trace("EntityID: {0}", c.EntityID);
-                    Log.Trace("IsTrigger: {0}", c.IsTrigger);
-                    Log.Trace("IsBox: {0}", c is BoxCollider);
-                    Log.Trace("IsSphere: {0}", c is SphereCollider);
-                    Log.Trace("IsCapsule: {0}", c is CapsuleCollider);
-                    Log.Trace("IsMesh: {0}", c is MeshCollider);
+                    Collider c = m_Colliders[i];
+                    Log.Trace(c);
                 }
             }
 

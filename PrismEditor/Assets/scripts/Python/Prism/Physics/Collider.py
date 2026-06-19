@@ -1,4 +1,3 @@
-from Prism.Component import Component
 from Prism.Entity import Entity as Ent
 from Prism.Math.Vector3 import Vector3
 
@@ -8,6 +7,22 @@ class Collider:
 
     EntityID: int = 0
     IsTrigger: bool = False
+
+    _entity = None
+    _rigidBody = None
+
+    @property
+    def Entity(self):
+        if self._entity is None:
+            self._entity = Ent(self.EntityID)
+        return self._entity
+
+    @property
+    def RigidBody(self):
+        if self._rigidBody is None:
+            from Prism.Component import RigidBodyComponent
+            self._rigidBody = self.Entity.GetComponent(RigidBodyComponent)
+        return self._rigidBody
 
 
 class BoxCollider(Collider):

@@ -39,12 +39,35 @@ class Physics:
         return [Physics._HitDataToCollider(d) for d in result]
 
     @staticmethod
+    def OverlapCapsule(origin: Vector3, radius: float, halfHeight: float) -> list[Collider]:
+        """Returns all Colliders overlapping a capsule at origin with given radius and half-height."""
+        result = _Prism.Prism_Physics_OverlapCapsule(origin, radius, halfHeight)
+        if result is None:
+            return []
+        return [Physics._HitDataToCollider(d) for d in result]
+
+    @staticmethod
     def OverlapSphere(origin: Vector3, radius: float) -> list[Collider]:
         """Returns all Colliders overlapping a sphere at origin with given radius."""
         result = _Prism.Prism_Physics_OverlapSphere(origin, radius)
         if result is None:
             return []
         return [Physics._HitDataToCollider(d) for d in result]
+
+    @staticmethod
+    def OverlapBoxNonAlloc(origin: Vector3, halfSize: Vector3, colliders: list) -> int:
+        """Non-allocating overlap query. Only available in C#."""
+        raise NotImplementedError("OverlapBoxNonAlloc is only available in C#")
+
+    @staticmethod
+    def OverlapCapsuleNonAlloc(origin: Vector3, radius: float, halfHeight: float, colliders: list) -> int:
+        """Non-allocating overlap query. Only available in C#."""
+        raise NotImplementedError("OverlapCapsuleNonAlloc is only available in C#")
+
+    @staticmethod
+    def OverlapSphereNonAlloc(origin: Vector3, radius: float, colliders: list) -> int:
+        """Non-allocating overlap query. Only available in C#."""
+        raise NotImplementedError("OverlapSphereNonAlloc is only available in C#")
 
     @staticmethod
     def _HitDataToCollider(data: tuple) -> Collider:

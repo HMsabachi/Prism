@@ -120,6 +120,7 @@ namespace Prism
         PR_PYTHON_FUNCTION(Prism_Physics_Raycast, "Raycast(origin, direction, maxDistance) -> (entityID, pos, normal, distance) or None");
         PR_PYTHON_FUNCTION(Prism_Physics_OverlapBox, "OverlapBox(origin, halfSize) -> tuple of Collider or None");
         PR_PYTHON_FUNCTION(Prism_Physics_OverlapSphere, "OverlapSphere(origin, radius) -> tuple of Collider or None");
+        PR_PYTHON_FUNCTION(Prism_Physics_OverlapCapsule, "OverlapCapsule(origin, radius, halfHeight) -> tuple of Collider or None");
 
         // Mesh
         PR_PYTHON_FUNCTION(Prism_Mesh_Constructor, "Mesh(cpp_handle, filepath)");

@@ -111,7 +111,11 @@ namespace Prism
         // Physics
         Rolky::Bool32 Prism_Physics_Raycast(glm::vec3* origin, glm::vec3* direction, float maxDistance, RaycastHit* hit);
         void Prism_Physics_OverlapBox(glm::vec3* origin, glm::vec3* halfSize, Rolky::Array<OverlapHitData>* outResults);
+        void Prism_Physics_OverlapCapsule(glm::vec3* origin, float radius, float halfHeight, Rolky::Array<OverlapHitData>* outResults);
         void Prism_Physics_OverlapSphere(glm::vec3* origin, float radius, Rolky::Array<OverlapHitData>* outResults);
+        void Prism_Physics_OverlapBoxNonAlloc(glm::vec3* origin, glm::vec3* halfSize, OverlapHitData* outBuffer, int32_t bufferSize, int32_t* outCount);
+        void Prism_Physics_OverlapCapsuleNonAlloc(glm::vec3* origin, float radius, float halfHeight, OverlapHitData* outBuffer, int32_t bufferSize, int32_t* outCount);
+        void Prism_Physics_OverlapSphereNonAlloc(glm::vec3* origin, float radius, OverlapHitData* outBuffer, int32_t bufferSize, int32_t* outCount);
 
         // Material
         Ref<Material>* Prism_Material_Constructor(Rolky::String shaderName);

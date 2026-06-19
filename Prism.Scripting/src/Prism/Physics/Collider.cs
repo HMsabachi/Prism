@@ -7,6 +7,43 @@ namespace Prism
     {
         public ulong EntityID { get; protected set; }
         public bool IsTrigger { get; protected set; }
+
+        private Entity m_Entity;
+        private RigidBodyComponent m_RigidBody;
+
+        public Entity Entity
+        {
+            get
+            {
+                if (m_Entity == null)
+                    m_Entity = new Entity(EntityID);
+
+                return m_Entity;
+            }
+        }
+
+        public RigidBodyComponent RigidBody
+        {
+            get
+            {
+                if (m_RigidBody == null)
+                    m_RigidBody = Entity.GetComponent<RigidBodyComponent>();
+
+                return m_RigidBody;
+            }
+        }
+
+        public override string ToString()
+        {
+            string type = "Collider";
+
+            if (this is BoxCollider) type = "BoxCollider";
+            else if (this is SphereCollider) type = "SphereCollider";
+            else if (this is CapsuleCollider) type = "CapsuleCollider";
+            else if (this is MeshCollider) type = "MeshCollider";
+
+            return "Collider(" + type + ", " + EntityID + ", " + IsTrigger + ")";
+        }
     }
 
     public class BoxCollider : Collider

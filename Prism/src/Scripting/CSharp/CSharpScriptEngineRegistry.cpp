@@ -125,6 +125,10 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_Physics_Raycast);
         PR_ADD_INTERNAL_CALL(Prism_Physics_OverlapBox);
         PR_ADD_INTERNAL_CALL(Prism_Physics_OverlapSphere);
+        PR_ADD_INTERNAL_CALL(Prism_Physics_OverlapCapsule);
+        PR_ADD_INTERNAL_CALL(Prism_Physics_OverlapBoxNonAlloc);
+        PR_ADD_INTERNAL_CALL(Prism_Physics_OverlapCapsuleNonAlloc);
+        PR_ADD_INTERNAL_CALL(Prism_Physics_OverlapSphereNonAlloc);
         // Texture2D
         PR_ADD_INTERNAL_CALL(Prism_Texture2D_Constructor);
         PR_ADD_INTERNAL_CALL(Prism_Texture2D_Destructor);

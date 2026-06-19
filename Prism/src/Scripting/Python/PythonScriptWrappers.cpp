@@ -588,16 +588,16 @@ namespace Prism::Script
         glm::vec3 origin = Python::ValueToVec3(Python::GetTupleElement(argsRef, 0));
         glm::vec3 halfSize = Python::ValueToVec3(Python::GetTupleElement(argsRef, 1));
 
-        std::vector<physx::PxOverlapHit> buffer;
-        if (PXPhysicsWrappers::OverlapBox(origin, halfSize, buffer))
+        std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS> buffer;
+        uint32_t count;
+        if (PXPhysicsWrappers::OverlapBox(origin, halfSize, buffer, &count))
         {
-            size_t count = buffer.size();
             Python::ScriptRef* elements = new Python::ScriptRef[count];
             uint32_t arrayIndex = 0;
 
-            for (const auto& hit : buffer)
+            for (uint32_t i = 0; i < count; i++)
             {
-                Entity& entity = *(Entity*)hit.actor->userData;
+                Entity& entity = *(Entity*)buffer[i].actor->userData;
 
                 if (entity.HasComponent<BoxColliderComponent>())
                 {
@@ -661,16 +661,16 @@ namespace Prism::Script
         glm::vec3 origin = Python::ValueToVec3(Python::GetTupleElement(argsRef, 0));
         float radius = Python::ValueToFloat(Python::GetTupleElement(argsRef, 1));
 
-        std::vector<physx::PxOverlapHit> buffer;
-        if (PXPhysicsWrappers::OverlapSphere(origin, radius, buffer))
+        std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS> buffer;
+        uint32_t count;
+        if (PXPhysicsWrappers::OverlapSphere(origin, radius, buffer, &count))
         {
-            size_t count = buffer.size();
             Python::ScriptRef* elements = new Python::ScriptRef[count];
             uint32_t arrayIndex = 0;
 
-            for (const auto& hit : buffer)
+            for (uint32_t i = 0; i < count; i++)
             {
-                Entity& entity = *(Entity*)hit.actor->userData;
+                Entity& entity = *(Entity*)buffer[i].actor->userData;
 
                 if (entity.HasComponent<BoxColliderComponent>())
                 {
@@ -714,6 +714,80 @@ namespace Prism::Script
                     Python::ScriptRef data[4];
                     data[0] = Python::UInt64ToValue(entity.GetUUID());
                     data[1] = Python::UInt64ToValue(3); // Mesh
+                    data[2] = Python::BoolToValue(mc.IsTrigger);
+                    data[3] = Python::UInt64ToValue((uint64_t)new Ref<Mesh>(mc.CollisionMesh));
+                    elements[arrayIndex++] = Python::MakeTuple(data, 4);
+                }
+            }
+
+            Python::ScriptRef tuple = Python::MakeTuple(elements, arrayIndex);
+            delete[] elements;
+            return tuple.Detach();
+        }
+
+        return Python::NoneValue().Detach();
+    }
+
+    Python::ScriptValue* Prism_Physics_OverlapCapsule(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        glm::vec3 origin = Python::ValueToVec3(Python::GetTupleElement(argsRef, 0));
+        float radius = Python::ValueToFloat(Python::GetTupleElement(argsRef, 1));
+        float halfHeight = Python::ValueToFloat(Python::GetTupleElement(argsRef, 2));
+
+        std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS> buffer;
+        uint32_t count;
+        if (PXPhysicsWrappers::OverlapCapsule(origin, radius, halfHeight, buffer, &count))
+        {
+            Python::ScriptRef* elements = new Python::ScriptRef[count];
+            uint32_t arrayIndex = 0;
+
+            for (uint32_t i = 0; i < count; i++)
+            {
+                Entity& entity = *(Entity*)buffer[i].actor->userData;
+
+                if (entity.HasComponent<BoxColliderComponent>())
+                {
+                    auto& bc = entity.GetComponent<BoxColliderComponent>();
+                    Python::ScriptRef data[9];
+                    data[0] = Python::UInt64ToValue(entity.GetUUID());
+                    data[1] = Python::UInt64ToValue(0);
+                    data[2] = Python::BoolToValue(bc.IsTrigger);
+                    data[3] = Python::FloatToValue(bc.Size.x);
+                    data[4] = Python::FloatToValue(bc.Size.y);
+                    data[5] = Python::FloatToValue(bc.Size.z);
+                    data[6] = Python::FloatToValue(bc.Offset.x);
+                    data[7] = Python::FloatToValue(bc.Offset.y);
+                    data[8] = Python::FloatToValue(bc.Offset.z);
+                    elements[arrayIndex++] = Python::MakeTuple(data, 9);
+                }
+                else if (entity.HasComponent<SphereColliderComponent>())
+                {
+                    auto& sc = entity.GetComponent<SphereColliderComponent>();
+                    Python::ScriptRef data[4];
+                    data[0] = Python::UInt64ToValue(entity.GetUUID());
+                    data[1] = Python::UInt64ToValue(1);
+                    data[2] = Python::BoolToValue(sc.IsTrigger);
+                    data[3] = Python::FloatToValue(sc.Radius);
+                    elements[arrayIndex++] = Python::MakeTuple(data, 4);
+                }
+                else if (entity.HasComponent<CapsuleColliderComponent>())
+                {
+                    auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+                    Python::ScriptRef data[5];
+                    data[0] = Python::UInt64ToValue(entity.GetUUID());
+                    data[1] = Python::UInt64ToValue(2);
+                    data[2] = Python::BoolToValue(cc.IsTrigger);
+                    data[3] = Python::FloatToValue(cc.Radius);
+                    data[4] = Python::FloatToValue(cc.Height);
+                    elements[arrayIndex++] = Python::MakeTuple(data, 5);
+                }
+                else if (entity.HasComponent<MeshColliderComponent>())
+                {
+                    auto& mc = entity.GetComponent<MeshColliderComponent>();
+                    Python::ScriptRef data[4];
+                    data[0] = Python::UInt64ToValue(entity.GetUUID());
+                    data[1] = Python::UInt64ToValue(3);
                     data[2] = Python::BoolToValue(mc.IsTrigger);
                     data[3] = Python::UInt64ToValue((uint64_t)new Ref<Mesh>(mc.CollisionMesh));
                     elements[arrayIndex++] = Python::MakeTuple(data, 4);
@@ -867,7 +941,7 @@ namespace Prism::Script
         mc.Materials.resize(count);
         for (size_t i = 0; i < count; i++)
         {
-            uint64_t handle = Python::ValueToUInt64(Python::GetTupleElement(handlesTuple, i));
+            uint64_t handle = Python::ValueToUInt64(Python::GetTupleElement(handlesTuple, (uint32_t)i));
             if (handle != 0)
             {
                 auto& matRef = *reinterpret_cast<Ref<Material>*>(handle);

@@ -125,14 +125,6 @@ namespace Prism {
 #pragma endregion
 
 #pragma region Entity
-        enum class ComponentID
-        {
-            None = 0,
-            Transform = 1,
-            Mesh = 2,
-            Script = 3,
-            SpriteRenderer = 4
-        };
         void Prism_Entity_GetTransform(uint64_t entityID, glm::mat4* outTransform)
         {
             Entity entity = GetEntityFromEntityID(entityID);
@@ -656,15 +648,16 @@ namespace Prism {
 
         void Prism_Physics_OverlapBox(glm::vec3* origin, glm::vec3* halfSize, Rolky::Array<OverlapHitData>* outResults)
         {
-            std::vector<physx::PxOverlapHit> buffer;
-            if (PXPhysicsWrappers::OverlapBox(*origin, *halfSize, buffer))
+            std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS> buffer;
+            uint32_t count;
+            if (PXPhysicsWrappers::OverlapBox(*origin, *halfSize, buffer, &count))
             {
-                auto results = Rolky::Array<OverlapHitData>::New(buffer.size());
+                auto results = Rolky::Array<OverlapHitData>::New(count);
                 uint32_t arrayIndex = 0;
 
-                for (const auto& hit : buffer)
+                for (uint32_t i = 0; i < count; i++)
                 {
-                    Entity& entity = *(Entity*)hit.actor->userData;
+                    Entity& entity = *(Entity*)buffer[i].actor->userData;
 
                     if (entity.HasComponent<BoxColliderComponent>())
                     {
@@ -723,15 +716,16 @@ namespace Prism {
 
         void Prism_Physics_OverlapSphere(glm::vec3* origin, float radius, Rolky::Array<OverlapHitData>* outResults)
         {
-            std::vector<physx::PxOverlapHit> buffer;
-            if (PXPhysicsWrappers::OverlapSphere(*origin, radius, buffer))
+            std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS> buffer;
+            uint32_t count;
+            if (PXPhysicsWrappers::OverlapSphere(*origin, radius, buffer, &count))
             {
-                auto results = Rolky::Array<OverlapHitData>::New(buffer.size());
+                auto results = Rolky::Array<OverlapHitData>::New(count);
                 uint32_t arrayIndex = 0;
 
-                for (const auto& hit : buffer)
+                for (uint32_t i = 0; i < count; i++)
                 {
-                    Entity& entity = *(Entity*)hit.actor->userData;
+                    Entity& entity = *(Entity*)buffer[i].actor->userData;
 
                     if (entity.HasComponent<BoxColliderComponent>())
                     {
@@ -786,6 +780,275 @@ namespace Prism {
 
                 *outResults = results;
             }
+        }
+
+        void Prism_Physics_OverlapCapsule(glm::vec3* origin, float radius, float halfHeight, Rolky::Array<OverlapHitData>* outResults)
+        {
+            std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS> buffer;
+            uint32_t count;
+            if (PXPhysicsWrappers::OverlapCapsule(*origin, radius, halfHeight, buffer, &count))
+            {
+                auto results = Rolky::Array<OverlapHitData>::New(count);
+                uint32_t arrayIndex = 0;
+
+                for (uint32_t i = 0; i < count; i++)
+                {
+                    Entity& entity = *(Entity*)buffer[i].actor->userData;
+
+                    if (entity.HasComponent<BoxColliderComponent>())
+                    {
+                        auto& bc = entity.GetComponent<BoxColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 0;
+                        data.IsTrigger = bc.IsTrigger;
+                        data.ShapeData[0] = bc.Size.x;
+                        data.ShapeData[1] = bc.Size.y;
+                        data.ShapeData[2] = bc.Size.z;
+                        data.ShapeData[3] = bc.Offset.x;
+                        data.ShapeData[4] = bc.Offset.y;
+                        data.ShapeData[5] = bc.Offset.z;
+                        data.MeshHandle = nullptr;
+                        results[arrayIndex++] = data;
+                    }
+                    else if (entity.HasComponent<SphereColliderComponent>())
+                    {
+                        auto& sc = entity.GetComponent<SphereColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 1;
+                        data.IsTrigger = sc.IsTrigger;
+                        data.ShapeData[0] = sc.Radius;
+                        data.MeshHandle = nullptr;
+                        results[arrayIndex++] = data;
+                    }
+                    else if (entity.HasComponent<CapsuleColliderComponent>())
+                    {
+                        auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 2;
+                        data.IsTrigger = cc.IsTrigger;
+                        data.ShapeData[0] = cc.Radius;
+                        data.ShapeData[1] = cc.Height;
+                        data.MeshHandle = nullptr;
+                        results[arrayIndex++] = data;
+                    }
+                    else if (entity.HasComponent<MeshColliderComponent>())
+                    {
+                        auto& mc = entity.GetComponent<MeshColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 3;
+                        data.IsTrigger = mc.IsTrigger;
+                        data.MeshHandle = new Ref<Mesh>(mc.CollisionMesh);
+                        results[arrayIndex++] = data;
+                    }
+                }
+
+                *outResults = results;
+            }
+        }
+
+        void Prism_Physics_OverlapBoxNonAlloc(glm::vec3* origin, glm::vec3* halfSize, OverlapHitData* outBuffer, int32_t bufferSize, int32_t* outCount)
+        {
+            std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS> buffer;
+            uint32_t count = 0;
+            if (PXPhysicsWrappers::OverlapBox(*origin, *halfSize, buffer, &count))
+            {
+                if (count > (uint32_t)bufferSize)
+                    count = bufferSize;
+
+                for (uint32_t i = 0; i < count; i++)
+                {
+                    Entity& entity = *(Entity*)buffer[i].actor->userData;
+
+                    if (entity.HasComponent<BoxColliderComponent>())
+                    {
+                        auto& bc = entity.GetComponent<BoxColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 0;
+                        data.IsTrigger = bc.IsTrigger;
+                        data.ShapeData[0] = bc.Size.x;
+                        data.ShapeData[1] = bc.Size.y;
+                        data.ShapeData[2] = bc.Size.z;
+                        data.ShapeData[3] = bc.Offset.x;
+                        data.ShapeData[4] = bc.Offset.y;
+                        data.ShapeData[5] = bc.Offset.z;
+                        data.MeshHandle = nullptr;
+                        outBuffer[i] = data;
+                    }
+                    else if (entity.HasComponent<SphereColliderComponent>())
+                    {
+                        auto& sc = entity.GetComponent<SphereColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 1;
+                        data.IsTrigger = sc.IsTrigger;
+                        data.ShapeData[0] = sc.Radius;
+                        data.MeshHandle = nullptr;
+                        outBuffer[i] = data;
+                    }
+                    else if (entity.HasComponent<CapsuleColliderComponent>())
+                    {
+                        auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 2;
+                        data.IsTrigger = cc.IsTrigger;
+                        data.ShapeData[0] = cc.Radius;
+                        data.ShapeData[1] = cc.Height;
+                        data.MeshHandle = nullptr;
+                        outBuffer[i] = data;
+                    }
+                    else if (entity.HasComponent<MeshColliderComponent>())
+                    {
+                        auto& mc = entity.GetComponent<MeshColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 3;
+                        data.IsTrigger = mc.IsTrigger;
+                        data.MeshHandle = new Ref<Mesh>(mc.CollisionMesh);
+                        outBuffer[i] = data;
+                    }
+                }
+            }
+            *outCount = count;
+        }
+
+        void Prism_Physics_OverlapCapsuleNonAlloc(glm::vec3* origin, float radius, float halfHeight, OverlapHitData* outBuffer, int32_t bufferSize, int32_t* outCount)
+        {
+            std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS> buffer;
+            uint32_t count = 0;
+            if (PXPhysicsWrappers::OverlapCapsule(*origin, radius, halfHeight, buffer, &count))
+            {
+                if (count > (uint32_t)bufferSize)
+                    count = bufferSize;
+
+                for (uint32_t i = 0; i < count; i++)
+                {
+                    Entity& entity = *(Entity*)buffer[i].actor->userData;
+
+                    if (entity.HasComponent<BoxColliderComponent>())
+                    {
+                        auto& bc = entity.GetComponent<BoxColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 0;
+                        data.IsTrigger = bc.IsTrigger;
+                        data.ShapeData[0] = bc.Size.x;
+                        data.ShapeData[1] = bc.Size.y;
+                        data.ShapeData[2] = bc.Size.z;
+                        data.ShapeData[3] = bc.Offset.x;
+                        data.ShapeData[4] = bc.Offset.y;
+                        data.ShapeData[5] = bc.Offset.z;
+                        data.MeshHandle = nullptr;
+                        outBuffer[i] = data;
+                    }
+                    else if (entity.HasComponent<SphereColliderComponent>())
+                    {
+                        auto& sc = entity.GetComponent<SphereColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 1;
+                        data.IsTrigger = sc.IsTrigger;
+                        data.ShapeData[0] = sc.Radius;
+                        data.MeshHandle = nullptr;
+                        outBuffer[i] = data;
+                    }
+                    else if (entity.HasComponent<CapsuleColliderComponent>())
+                    {
+                        auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 2;
+                        data.IsTrigger = cc.IsTrigger;
+                        data.ShapeData[0] = cc.Radius;
+                        data.ShapeData[1] = cc.Height;
+                        data.MeshHandle = nullptr;
+                        outBuffer[i] = data;
+                    }
+                    else if (entity.HasComponent<MeshColliderComponent>())
+                    {
+                        auto& mc = entity.GetComponent<MeshColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 3;
+                        data.IsTrigger = mc.IsTrigger;
+                        data.MeshHandle = new Ref<Mesh>(mc.CollisionMesh);
+                        outBuffer[i] = data;
+                    }
+                }
+            }
+            *outCount = count;
+        }
+
+        void Prism_Physics_OverlapSphereNonAlloc(glm::vec3* origin, float radius, OverlapHitData* outBuffer, int32_t bufferSize, int32_t* outCount)
+        {
+            std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS> buffer;
+            uint32_t count = 0;
+            if (PXPhysicsWrappers::OverlapSphere(*origin, radius, buffer, &count))
+            {
+                if (count > (uint32_t)bufferSize)
+                    count = bufferSize;
+
+                for (uint32_t i = 0; i < count; i++)
+                {
+                    Entity& entity = *(Entity*)buffer[i].actor->userData;
+
+                    if (entity.HasComponent<BoxColliderComponent>())
+                    {
+                        auto& bc = entity.GetComponent<BoxColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 0;
+                        data.IsTrigger = bc.IsTrigger;
+                        data.ShapeData[0] = bc.Size.x;
+                        data.ShapeData[1] = bc.Size.y;
+                        data.ShapeData[2] = bc.Size.z;
+                        data.ShapeData[3] = bc.Offset.x;
+                        data.ShapeData[4] = bc.Offset.y;
+                        data.ShapeData[5] = bc.Offset.z;
+                        data.MeshHandle = nullptr;
+                        outBuffer[i] = data;
+                    }
+                    else if (entity.HasComponent<SphereColliderComponent>())
+                    {
+                        auto& sc = entity.GetComponent<SphereColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 1;
+                        data.IsTrigger = sc.IsTrigger;
+                        data.ShapeData[0] = sc.Radius;
+                        data.MeshHandle = nullptr;
+                        outBuffer[i] = data;
+                    }
+                    else if (entity.HasComponent<CapsuleColliderComponent>())
+                    {
+                        auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 2;
+                        data.IsTrigger = cc.IsTrigger;
+                        data.ShapeData[0] = cc.Radius;
+                        data.ShapeData[1] = cc.Height;
+                        data.MeshHandle = nullptr;
+                        outBuffer[i] = data;
+                    }
+                    else if (entity.HasComponent<MeshColliderComponent>())
+                    {
+                        auto& mc = entity.GetComponent<MeshColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 3;
+                        data.IsTrigger = mc.IsTrigger;
+                        data.MeshHandle = new Ref<Mesh>(mc.CollisionMesh);
+                        outBuffer[i] = data;
+                    }
+                }
+            }
+            *outCount = count;
         }
 #pragma endregion
 

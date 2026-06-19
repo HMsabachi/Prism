@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 
 using Rolky.Managed.Interop;
@@ -55,6 +55,20 @@ namespace Prism
             return colliders;
         }
 
+        public static Collider[] OverlapCapsule(Vector3 origin, float radius, float halfHeight)
+        {
+            NativeArray<OverlapHitData> results;
+            unsafe
+            {
+                InternalCalls.Prism_Physics_OverlapCapsule(&origin, radius, halfHeight, &results);
+            }
+            var colliders = new Collider[results.Length];
+            for (int i = 0; i < results.Length; i++)
+                colliders[i] = CreateColliderFromHitData(results[i]);
+            results.Dispose();
+            return colliders;
+        }
+
         public static Collider[] OverlapSphere(Vector3 origin, float radius)
         {
             NativeArray<OverlapHitData> results;
@@ -67,6 +81,48 @@ namespace Prism
                 colliders[i] = CreateColliderFromHitData(results[i]);
             results.Dispose();
             return colliders;
+        }
+
+        public static int OverlapBoxNonAlloc(Vector3 origin, Vector3 halfSize, Collider[] colliders)
+        {
+            OverlapHitData[] hitBuffer = new OverlapHitData[colliders.Length];
+            int count = 0;
+            unsafe
+            {
+                fixed (OverlapHitData* hitPtr = hitBuffer)
+                    InternalCalls.Prism_Physics_OverlapBoxNonAlloc(&origin, &halfSize, hitPtr, colliders.Length, &count);
+            }
+            for (int i = 0; i < count; i++)
+                colliders[i] = CreateColliderFromHitData(hitBuffer[i]);
+            return count;
+        }
+
+        public static int OverlapCapsuleNonAlloc(Vector3 origin, float radius, float halfHeight, Collider[] colliders)
+        {
+            OverlapHitData[] hitBuffer = new OverlapHitData[colliders.Length];
+            int count = 0;
+            unsafe
+            {
+                fixed (OverlapHitData* hitPtr = hitBuffer)
+                    InternalCalls.Prism_Physics_OverlapCapsuleNonAlloc(&origin, radius, halfHeight, hitPtr, colliders.Length, &count);
+            }
+            for (int i = 0; i < count; i++)
+                colliders[i] = CreateColliderFromHitData(hitBuffer[i]);
+            return count;
+        }
+
+        public static int OverlapSphereNonAlloc(Vector3 origin, float radius, Collider[] colliders)
+        {
+            OverlapHitData[] hitBuffer = new OverlapHitData[colliders.Length];
+            int count = 0;
+            unsafe
+            {
+                fixed (OverlapHitData* hitPtr = hitBuffer)
+                    InternalCalls.Prism_Physics_OverlapSphereNonAlloc(&origin, radius, hitPtr, colliders.Length, &count);
+            }
+            for (int i = 0; i < count; i++)
+                colliders[i] = CreateColliderFromHitData(hitBuffer[i]);
+            return count;
         }
 
         private static Collider CreateColliderFromHitData(OverlapHitData data)
@@ -84,7 +140,7 @@ namespace Prism
                 case 3: // Mesh
                     return new MeshCollider(data.EntityID, data.IsTrigger, data.MeshHandle);
                 default:
-                    return null;
+                    throw new NotImplementedException();
             }
         }
     }

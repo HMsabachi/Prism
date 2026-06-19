@@ -287,6 +287,18 @@ class RigidBodyComponent(Component):
     def Rotate(self, rotation: Vector3):
         _Prism.Prism_RigidBodyComponent_Rotate(self.Entity._id, rotation)
 
+    @property
+    def Mass(self) -> float:
+        return _Prism.Prism_RigidBodyComponent_GetMass(self.Entity._id)
+
+    @Mass.setter
+    def Mass(self, value: float):
+        _Prism.Prism_RigidBodyComponent_SetMass(self.Entity._id, value)
+
+    @property
+    def Layer(self) -> int:
+        return _Prism.Prism_RigidBodyComponent_GetLayer(self.Entity._id)
+
 
 # ════════════════════════════════════════════
 #  BoxColliderComponent (3D)

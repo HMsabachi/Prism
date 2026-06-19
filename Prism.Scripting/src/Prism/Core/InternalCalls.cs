@@ -83,7 +83,11 @@ namespace Prism
         // Physics
         internal static delegate* unmanaged[Cdecl]<Vector3*, Vector3*, float, RaycastHit*, Bool32> Prism_Physics_Raycast;
         internal static delegate* unmanaged[Cdecl]<Vector3*, Vector3*, NativeArray<OverlapHitData>*, void> Prism_Physics_OverlapBox;
+        internal static delegate* unmanaged[Cdecl]<Vector3*, float, float, NativeArray<OverlapHitData>*, void> Prism_Physics_OverlapCapsule;
         internal static delegate* unmanaged[Cdecl]<Vector3*, float, NativeArray<OverlapHitData>*, void> Prism_Physics_OverlapSphere;
+        internal static delegate* unmanaged[Cdecl]<Vector3*, Vector3*, OverlapHitData*, Int32, Int32*, void> Prism_Physics_OverlapBoxNonAlloc;
+        internal static delegate* unmanaged[Cdecl]<Vector3*, float, float, OverlapHitData*, Int32, Int32*, void> Prism_Physics_OverlapCapsuleNonAlloc;
+        internal static delegate* unmanaged[Cdecl]<Vector3*, float, OverlapHitData*, Int32, Int32*, void> Prism_Physics_OverlapSphereNonAlloc;
 
         // Entity
         internal static delegate* unmanaged[Cdecl]<NativeString, UInt64> Prism_Entity_FindEntityByTag;
