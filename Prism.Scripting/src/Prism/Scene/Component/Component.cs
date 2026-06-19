@@ -170,6 +170,12 @@ namespace Prism
 
     public class RigidBodyComponent : Component
     {
+        public enum Type
+        {
+            Static,
+            Dynamic
+        }
+
         public void AddForce(Vector3 force, ForceMode forceMode = ForceMode.Force)
         {
             unsafe { InternalCalls.Prism_RigidBodyComponent_AddForce(Entity.ID, &force, (int)forceMode); }
@@ -212,6 +218,25 @@ namespace Prism
         public uint Layer
         {
             get { unsafe { return InternalCalls.Prism_RigidBodyComponent_GetLayer(Entity.ID); } }
+        }
+
+        public Type BodyType
+        {
+            get { unsafe { return InternalCalls.Prism_RigidBodyComponent_GetBodyType(Entity.ID); } }
+        }
+
+        public Vector3 AngularVelocity
+        {
+            get
+            {
+                Vector3 result;
+                unsafe { InternalCalls.Prism_RigidBodyComponent_GetAngularVelocity(Entity.ID, &result); }
+                return result;
+            }
+            set
+            {
+                unsafe { InternalCalls.Prism_RigidBodyComponent_SetAngularVelocity(Entity.ID, &value); }
+            }
         }
     }
 

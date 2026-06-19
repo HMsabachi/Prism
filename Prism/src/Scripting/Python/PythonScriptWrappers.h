@@ -26,6 +26,7 @@ namespace Prism::Script
     Python::ScriptValue* Prism_Time_GetFrameCount(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Time_GetTimeScale(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Time_SetTimeScale(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_Time_SetFixedDeltaTime(Python::ScriptValue* self, Python::ScriptValue* args);
 
     // Math
     Python::ScriptValue* Prism_Noise_PerlinNoise(Python::ScriptValue* self, Python::ScriptValue* args);
@@ -75,12 +76,17 @@ namespace Prism::Script
     Python::ScriptValue* Prism_RigidBodyComponent_GetLayer(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_RigidBodyComponent_GetMass(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_RigidBodyComponent_SetMass(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_RigidBodyComponent_GetBodyType(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_RigidBodyComponent_GetAngularVelocity(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_RigidBodyComponent_SetAngularVelocity(Python::ScriptValue* self, Python::ScriptValue* args);
 
     // Physics
     Python::ScriptValue* Prism_Physics_Raycast(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Physics_OverlapBox(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Physics_OverlapCapsule(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Physics_OverlapSphere(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_Physics_GetGravity(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_Physics_SetGravity(Python::ScriptValue* self, Python::ScriptValue* args);
 
     // Mesh
     Python::ScriptValue* Prism_Mesh_Constructor(Python::ScriptValue* self, Python::ScriptValue* args);

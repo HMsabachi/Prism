@@ -10,8 +10,6 @@
 #include "Prism/Core/Warning.h"
 PR_WARNING_DISABLE(4312)
 
-PRISM_API void PrismConnectPhysXDebugger();
-
 #include "Prism/Physics/Physics.h"
 #include "Prism/Editor/PhysicsSettingsWindow.h"
 
@@ -781,15 +779,6 @@ namespace Prism
                 {
                     ImGui::MenuItem(TR("Physics Settings"), nullptr, &m_ShowPhysicsSettings);
 
-                    ImGui::EndMenu();
-                }
-
-                if (ImGui::BeginMenu("Debug"))
-                {
-                    if (ImGui::MenuItem("Connect To PVD"))
-                    {
-                        PrismConnectPhysXDebugger();
-                    }
                     ImGui::EndMenu();
                 }
 

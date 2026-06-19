@@ -34,6 +34,10 @@ class TimeMeta(type):
     def TimeScale(cls, value: float) -> None:
         _Prism.Prism_Time_SetTimeScale(value)
 
+    @FixedDeltaTime.setter
+    def FixedDeltaTime(cls, value: float) -> None:
+        _Prism.Prism_Time_SetFixedDeltaTime(value)
+
 
 class Time(metaclass=TimeMeta):
     pass

@@ -6,17 +6,14 @@
 
 #include "Prism/Scene/Components.h"
 
-PRISM_API void PrismConnectPhysXDebugger()
-{
-    Prism::Physics::ConnectVisualDebugger();
-}
-
 namespace Prism {
 
     static physx::PxScene* s_Scene = nullptr;
     static std::vector<Entity> s_SimulatedEntities;
     static Entity* s_EntityStorageBuffer = nullptr;
+    static uint32_t s_EntityBufferCount = 0;
     static int s_EntityStorageBufferPosition = 0;
+    static float s_Gravity = -9.81F;
 
     void Physics::Init()
     {
@@ -29,13 +26,43 @@ namespace Prism {
         PXPhysicsWrappers::Shutdown();
     }
 
+    void Physics::ExpandEntityBuffer(uint32_t entityCount)
+    {
+        if (s_EntityStorageBuffer != nullptr)
+        {
+            Entity* temp = new Entity[s_EntityBufferCount + entityCount];
+            memcpy(temp, s_EntityStorageBuffer, s_EntityBufferCount * sizeof(Entity));
+
+            for (uint32_t i = 0; i < s_EntityBufferCount; i++)
+            {
+                Entity& e = s_EntityStorageBuffer[i];
+                RigidBodyComponent& rb = e.GetComponent<RigidBodyComponent>();
+
+                if (rb.RuntimeActor)
+                {
+                    physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
+                    actor->userData = &temp[rb.EntityBufferIndex];
+                }
+            }
+
+            delete[] s_EntityStorageBuffer;
+            s_EntityStorageBuffer = temp;
+            s_EntityBufferCount += entityCount;
+        }
+        else
+        {
+            s_EntityStorageBuffer = new Entity[entityCount];
+            s_EntityBufferCount = entityCount;
+        }
+    }
+
     void Physics::CreateScene(const SceneParams& params)
     {
         PR_CORE_ASSERT(s_Scene == nullptr, "Scene already has a Physics Scene!");
         s_Scene = PXPhysicsWrappers::CreateScene(params);
     }
 
-    void Physics::CreateActor(Entity e, int entityCount)
+    void Physics::CreateActor(Entity e)
     {
         if (!e.HasComponent<RigidBodyComponent>())
         {
@@ -51,16 +78,15 @@ namespace Prism {
 
         RigidBodyComponent& rigidbody = e.GetComponent<RigidBodyComponent>();
 
-        if (s_EntityStorageBuffer == nullptr)
-            s_EntityStorageBuffer = new Entity[entityCount];
-
         // Create Actor Body
         physx::PxRigidActor* actor = PXPhysicsWrappers::CreateActor(rigidbody, e.Transform().GetTransform());
         s_SimulatedEntities.push_back(e);
-        Entity* entityStorage = &s_EntityStorageBuffer[s_EntityStorageBufferPosition++];
+        Entity* entityStorage = &s_EntityStorageBuffer[s_EntityStorageBufferPosition];
         *entityStorage = e;
         actor->userData = (void*)entityStorage;
         rigidbody.RuntimeActor = actor;
+        rigidbody.EntityBufferIndex = s_EntityStorageBufferPosition;
+        s_EntityStorageBufferPosition++;
 
         // Physics Material
         physx::PxMaterial* material = PXPhysicsWrappers::CreateMaterial(e.GetComponent<PhysicsMaterialComponent>());
@@ -102,6 +128,19 @@ namespace Prism {
         s_Scene->addActor(*actor);
     }
 
+    void Physics::SetGravity(float gravity)
+    {
+        s_Gravity = gravity;
+
+        if (s_Scene)
+            s_Scene->setGravity({ 0.0F, gravity, 0.0F });
+    }
+
+    float Physics::GetGravity()
+    {
+        return s_Gravity;
+    }
+
     void Physics::Step(float dt)
     {
         s_Scene->simulate(dt);
@@ -128,16 +167,6 @@ namespace Prism {
     void* Physics::GetPhysicsScene()
     {
         return s_Scene;
-    }
-
-    void Physics::ConnectVisualDebugger()
-    {
-        PXPhysicsWrappers::ConnectVisualDebugger();
-    }
-
-    void Physics::DisconnectVisualDebugger()
-    {
-        PXPhysicsWrappers::DisconnectVisualDebugger();
     }
 
     void Physics::SetCollisionCallbacks(CollisionCallback begin, CollisionCallback end)

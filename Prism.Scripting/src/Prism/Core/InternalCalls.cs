@@ -19,6 +19,7 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<UInt64> Prism_Time_GetFrameCount;
         internal static delegate* unmanaged[Cdecl]<float, void> Prism_Time_SetTimeScale;
         internal static delegate* unmanaged[Cdecl]<float> Prism_Time_GetTimeScale;
+        internal static delegate* unmanaged[Cdecl]<float, void> Prism_Time_SetFixedDeltaTime;
         // Math
         internal static delegate* unmanaged[Cdecl]<float, float, float> Prism_Noise_PerlinNoise;
         // Input
@@ -79,6 +80,9 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<UInt64, UInt32> Prism_RigidBodyComponent_GetLayer;
         internal static delegate* unmanaged[Cdecl]<UInt64, float> Prism_RigidBodyComponent_GetMass;
         internal static delegate* unmanaged[Cdecl]<UInt64, float, void> Prism_RigidBodyComponent_SetMass;
+        internal static delegate* unmanaged[Cdecl]<UInt64, RigidBodyComponent.Type> Prism_RigidBodyComponent_GetBodyType;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_RigidBodyComponent_GetAngularVelocity;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_RigidBodyComponent_SetAngularVelocity;
 
         // Physics
         internal static delegate* unmanaged[Cdecl]<Vector3*, Vector3*, float, RaycastHit*, Bool32> Prism_Physics_Raycast;
@@ -88,6 +92,8 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<Vector3*, Vector3*, OverlapHitData*, Int32, Int32*, void> Prism_Physics_OverlapBoxNonAlloc;
         internal static delegate* unmanaged[Cdecl]<Vector3*, float, float, OverlapHitData*, Int32, Int32*, void> Prism_Physics_OverlapCapsuleNonAlloc;
         internal static delegate* unmanaged[Cdecl]<Vector3*, float, OverlapHitData*, Int32, Int32*, void> Prism_Physics_OverlapSphereNonAlloc;
+        internal static delegate* unmanaged[Cdecl]<float> Prism_Physics_GetGravity;
+        internal static delegate* unmanaged[Cdecl]<float, void> Prism_Physics_SetGravity;
 
         // Entity
         internal static delegate* unmanaged[Cdecl]<NativeString, UInt64> Prism_Entity_FindEntityByTag;

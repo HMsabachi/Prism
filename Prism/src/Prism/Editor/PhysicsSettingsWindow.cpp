@@ -1,8 +1,11 @@
 ﻿#include "prpch.h"
 #include "PhysicsSettingsWindow.h"
+#include "Prism/Physics/Physics.h"
 #include "Prism/Physics/PhysicsLayer.h"
+#include "Prism/Core/Time.h"
 
 #include "imgui.h"
+#include "imgui_internal.h"
 
 namespace Prism {
 
@@ -17,13 +20,51 @@ namespace Prism {
 		ImGui::Begin("Physics", show);
 		ImGui::PushID(0);
 		ImGui::Columns(2);
+		RenderWorldSettings();
+		ImGui::EndColumns();
+		ImGui::PopID();
 
+		ImGui::Separator();
+
+		ImGui::PushID(1);
+		ImGui::Columns(2);
 		RenderLayerList();
 		ImGui::NextColumn();
 		RenderSelectedLayer();
-
+		ImGui::EndColumns();
 		ImGui::PopID();
+
 		ImGui::End();
+	}
+
+	void PhysicsSettingsWindow::RenderWorldSettings()
+	{
+		float timestep = Time::GetFixedDeltaTime();
+		if (Property("Fixed Timestep (Default: 0.0167)", timestep, 0.001F, 0.1F))
+		{
+			Time::SetFixedDeltaTime(timestep);
+		}
+
+		float gravity = Physics::GetGravity();
+		if (Property("Gravity (Default: -9.81)", gravity, -50.0F, 50.0F))
+		{
+			Physics::SetGravity(gravity);
+		}
+	}
+
+	bool PhysicsSettingsWindow::Property(const char* label, float& value, float min, float max)
+	{
+		ImGui::Text(label);
+		ImGui::NextColumn();
+		ImGui::PushItemWidth(-1);
+
+		std::string id = "##" + std::string(label);
+		bool changed = ImGui::SliderFloat(id.c_str(), &value, min, max);
+
+		ImGui::PopItemWidth();
+		ImGui::NextColumn();
+
+		return changed;
 	}
 
 	void PhysicsSettingsWindow::RenderLayerList()
@@ -67,6 +108,11 @@ namespace Prism {
 				ImGui::PopID();
 			}
 		}
+
+	if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && ImGui::IsWindowHovered() && !ImGui::IsAnyItemHovered())
+	{
+		s_SelectedLayer = -1;
+	}
 	}
 
 	static std::string s_IDString = "##";

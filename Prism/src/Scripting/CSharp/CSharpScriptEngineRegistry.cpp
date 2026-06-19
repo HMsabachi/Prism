@@ -70,6 +70,7 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_Time_GetFrameCount);
         PR_ADD_INTERNAL_CALL(Prism_Time_SetTimeScale);
         PR_ADD_INTERNAL_CALL(Prism_Time_GetTimeScale);
+        PR_ADD_INTERNAL_CALL(Prism_Time_SetFixedDeltaTime);
         // Math
         PR_ADD_INTERNAL_CALL(Prism_Noise_PerlinNoise);
         // Input
@@ -121,6 +122,9 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_GetLayer);
         PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_GetMass);
         PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_SetMass);
+        PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_GetBodyType);
+        PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_GetAngularVelocity);
+        PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_SetAngularVelocity);
         // Physics
         PR_ADD_INTERNAL_CALL(Prism_Physics_Raycast);
         PR_ADD_INTERNAL_CALL(Prism_Physics_OverlapBox);
@@ -129,6 +133,8 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_Physics_OverlapBoxNonAlloc);
         PR_ADD_INTERNAL_CALL(Prism_Physics_OverlapCapsuleNonAlloc);
         PR_ADD_INTERNAL_CALL(Prism_Physics_OverlapSphereNonAlloc);
+        PR_ADD_INTERNAL_CALL(Prism_Physics_GetGravity);
+        PR_ADD_INTERNAL_CALL(Prism_Physics_SetGravity);
         // Texture2D
         PR_ADD_INTERNAL_CALL(Prism_Texture2D_Constructor);
         PR_ADD_INTERNAL_CALL(Prism_Texture2D_Destructor);

@@ -53,17 +53,18 @@ namespace Prism {
         static void Init();
         static void Shutdown();
 
+        static void ExpandEntityBuffer(uint32_t entityCount);
         static void CreateScene(const SceneParams& params);
-        static void CreateActor(Entity e, int entityCount);
+        static void CreateActor(Entity e);
+
+        static void SetGravity(float gravity);
+        static float GetGravity();
 
         static void Step(float dt);
 
         static void DestroyScene();
 
         static void* GetPhysicsScene();
-
-        static void ConnectVisualDebugger();
-        static void DisconnectVisualDebugger();
 
         using CollisionCallback = std::function<void(Entity)>;
         using TriggerCallback = std::function<void(Entity)>;

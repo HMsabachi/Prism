@@ -11,7 +11,6 @@ PR_WARNING_PUSH
 PR_WARNING_DISABLE(26495)
 #include <PhysX/extensions/PxDefaultCpuDispatcher.h>
 #include <PhysX/extensions/PxRigidBodyExt.h>
-#include <PhysX/pvd/PxPvdTransport.h>
 PR_WARNING_POP
 
 #ifdef PR_DEBUG
@@ -24,7 +23,6 @@ namespace Prism {
     static physx::PxDefaultAllocator s_Allocator;
     static physx::PxFoundation* s_Foundation;
     static physx::PxPhysics* s_Physics;
-    static physx::PxPvd* s_VisualDebugger;
     static physx::PxOverlapHit s_OverlapBuffer[OVERLAP_MAX_COLLIDERS];
 
     static physx::PxSimulationFilterShader s_FilterShader = physx::PxDefaultSimulationFilterShader;
@@ -77,7 +75,7 @@ namespace Prism {
     {
         physx::PxSceneDesc sceneDesc(s_Physics->getTolerancesScale());
 
-        sceneDesc.gravity = ToPhysXVector(sceneParams.Gravity);
+        sceneDesc.gravity = { 0.0F, Physics::GetGravity(), 0.0F };
         sceneDesc.cpuDispatcher = physx::PxDefaultCpuDispatcherCreate(1);
         sceneDesc.filterShader = PrismFilterShader;
         sceneDesc.simulationEventCallback = &s_ContactListener;
@@ -366,12 +364,7 @@ namespace Prism {
         s_Foundation = PxCreateFoundation(PX_PHYSICS_VERSION, s_Allocator, s_ErrorCallback);
         PR_CORE_ASSERT(s_Foundation, "PxCreateFoundation Failed!");
 
-        #if PHYSX_DEBUGGER
-        s_VisualDebugger = PxCreatePvd(*s_Foundation);
-        ConnectVisualDebugger();
-        #endif
-
-        s_Physics = PxCreatePhysics(PX_PHYSICS_VERSION, *s_Foundation, physx::PxTolerancesScale(), true, s_VisualDebugger);
+        s_Physics = PxCreatePhysics(PX_PHYSICS_VERSION, *s_Foundation, physx::PxTolerancesScale(), true);
         PR_CORE_ASSERT(s_Physics, "PxCreatePhysics Failed!");
     }
 
@@ -379,25 +372,6 @@ namespace Prism {
     {
         s_Physics->release();
         s_Foundation->release();
-    }
-
-    void PXPhysicsWrappers::ConnectVisualDebugger()
-    {
-        #if PHYSX_DEBUGGER
-        if (s_VisualDebugger->isConnected(false))
-            s_VisualDebugger->disconnect();
-
-        physx::PxPvdTransport* transport = physx::PxDefaultPvdSocketTransportCreate("localhost", 5425, 10);
-        s_VisualDebugger->connect(*transport, physx::PxPvdInstrumentationFlag::eALL);
-        #endif
-    }
-
-    void PXPhysicsWrappers::DisconnectVisualDebugger()
-    {
-        #if PHYSX_DEBUGGER
-        if (s_VisualDebugger->isConnected(false))
-            s_VisualDebugger->disconnect();
-        #endif
     }
 
 }

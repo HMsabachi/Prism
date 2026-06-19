@@ -220,6 +220,7 @@ namespace Prism {
         bool LockRotationZ = false;
 
         void* RuntimeActor = nullptr;
+        int32_t EntityBufferIndex = -1;
 
         RigidBodyComponent() = default;
         RigidBodyComponent(const RigidBodyComponent& other) = default;

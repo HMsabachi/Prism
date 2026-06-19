@@ -46,6 +46,7 @@ namespace Prism
         int64_t Prism_Time_GetFrameCount();
         void Prism_Time_SetTimeScale(float scale);
         float Prism_Time_GetTimeScale();
+        void Prism_Time_SetFixedDeltaTime(float fixedDeltaTime);
 
         // Math
         float Prism_Noise_PerlinNoise(float x, float y);
@@ -107,6 +108,9 @@ namespace Prism
         uint32_t Prism_RigidBodyComponent_GetLayer(uint64_t entityID);
         float Prism_RigidBodyComponent_GetMass(uint64_t entityID);
         void Prism_RigidBodyComponent_SetMass(uint64_t entityID, float mass);
+        uint32_t Prism_RigidBodyComponent_GetBodyType(uint64_t entityID);
+        void Prism_RigidBodyComponent_GetAngularVelocity(uint64_t entityID, glm::vec3* outVelocity);
+        void Prism_RigidBodyComponent_SetAngularVelocity(uint64_t entityID, glm::vec3* velocity);
 
         // Physics
         Rolky::Bool32 Prism_Physics_Raycast(glm::vec3* origin, glm::vec3* direction, float maxDistance, RaycastHit* hit);
@@ -116,6 +120,8 @@ namespace Prism
         void Prism_Physics_OverlapBoxNonAlloc(glm::vec3* origin, glm::vec3* halfSize, OverlapHitData* outBuffer, int32_t bufferSize, int32_t* outCount);
         void Prism_Physics_OverlapCapsuleNonAlloc(glm::vec3* origin, float radius, float halfHeight, OverlapHitData* outBuffer, int32_t bufferSize, int32_t* outCount);
         void Prism_Physics_OverlapSphereNonAlloc(glm::vec3* origin, float radius, OverlapHitData* outBuffer, int32_t bufferSize, int32_t* outCount);
+        float Prism_Physics_GetGravity();
+        void Prism_Physics_SetGravity(float gravity);
 
         // Material
         Ref<Material>* Prism_Material_Constructor(Rolky::String shaderName);

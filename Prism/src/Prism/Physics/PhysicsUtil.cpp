@@ -36,17 +36,17 @@ namespace Prism {
 
     physx::PxVec3 ToPhysXVector(const glm::vec3& vector)
     {
-        return physx::PxVec3(vector.x, vector.y, vector.z);
+        return *(physx::PxVec3*)&vector;
     }
 
     physx::PxVec4 ToPhysXVector(const glm::vec4& vector)
     {
-        return physx::PxVec4(vector.x, vector.y, vector.z, vector.w);
+        return *(physx::PxVec4*)&vector;
     }
 
     physx::PxQuat ToPhysXQuat(const glm::quat& quat)
     {
-        return physx::PxQuat(quat.x, quat.y, quat.z, quat.w);
+        return *(physx::PxQuat*)&quat;
     }
 
     glm::mat4 FromPhysXTransform(const physx::PxTransform& transform)
@@ -63,17 +63,17 @@ namespace Prism {
 
     glm::vec3 FromPhysXVector(const physx::PxVec3& vector)
     {
-        return glm::vec3(vector.x, vector.y, vector.z);
+        return *(glm::vec3*)&vector;
     }
 
     glm::vec4 FromPhysXVector(const physx::PxVec4& vector)
     {
-        return glm::vec4(vector.x, vector.y, vector.z, vector.w);
+        return *(glm::vec4*)&vector;
     }
 
     glm::quat FromPhysXQuat(const physx::PxQuat& quat)
     {
-        return glm::quat(quat.w, quat.x, quat.y, quat.z);
+        return *(glm::quat*)&quat;
     }
 
     physx::PxFilterFlags PrismFilterShader(physx::PxFilterObjectAttributes attributes0, physx::PxFilterData filterData0, physx::PxFilterObjectAttributes attributes1,

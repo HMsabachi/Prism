@@ -67,6 +67,7 @@ namespace Prism
         PR_PYTHON_FUNCTION(Prism_Time_GetFrameCount, "GetFrameCount() -> uint64");
         PR_PYTHON_FUNCTION(Prism_Time_GetTimeScale, "GetTimeScale() -> float");
         PR_PYTHON_FUNCTION(Prism_Time_SetTimeScale, "SetTimeScale(scale)");
+        PR_PYTHON_FUNCTION(Prism_Time_SetFixedDeltaTime, "SetFixedDeltaTime(fixedDeltaTime)");
 
         // Math
         PR_PYTHON_FUNCTION(Prism_Noise_PerlinNoise, "PerlinNoise(x, y) -> float");
@@ -116,11 +117,16 @@ namespace Prism
         PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_GetLayer, "GetLayer(entityID) -> uint");
         PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_GetMass, "GetMass(entityID) -> float");
         PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_SetMass, "SetMass(entityID, mass)");
+        PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_GetBodyType, "GetBodyType(entityID) -> uint");
+        PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_GetAngularVelocity, "GetAngularVelocity(entityID) -> vec3");
+        PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_SetAngularVelocity, "SetAngularVelocity(entityID, velocity)");
         // Physics
         PR_PYTHON_FUNCTION(Prism_Physics_Raycast, "Raycast(origin, direction, maxDistance) -> (entityID, pos, normal, distance) or None");
         PR_PYTHON_FUNCTION(Prism_Physics_OverlapBox, "OverlapBox(origin, halfSize) -> tuple of Collider or None");
         PR_PYTHON_FUNCTION(Prism_Physics_OverlapSphere, "OverlapSphere(origin, radius) -> tuple of Collider or None");
         PR_PYTHON_FUNCTION(Prism_Physics_OverlapCapsule, "OverlapCapsule(origin, radius, halfHeight) -> tuple of Collider or None");
+        PR_PYTHON_FUNCTION(Prism_Physics_GetGravity, "GetGravity() -> float");
+        PR_PYTHON_FUNCTION(Prism_Physics_SetGravity, "SetGravity(gravity)");
 
         // Mesh
         PR_PYTHON_FUNCTION(Prism_Mesh_Constructor, "Mesh(cpp_handle, filepath)");

@@ -108,6 +108,14 @@ namespace Prism::Script
         return Python::NoneValue().Detach();
     }
 
+    Python::ScriptValue* Prism_Time_SetFixedDeltaTime(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        float fixedDeltaTime = Python::ValueToFloat(Python::GetTupleElement(argsRef, 0));
+        Time::SetFixedDeltaTime(fixedDeltaTime);
+        return Python::NoneValue().Detach();
+    }
+
 #pragma endregion
 
 #pragma region Math
@@ -558,6 +566,46 @@ namespace Prism::Script
         return Python::NoneValue().Detach();
     }
 
+    Python::ScriptValue* Prism_RigidBodyComponent_GetBodyType(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+        PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
+        auto& component = entity.GetComponent<RigidBodyComponent>();
+        return Python::UInt64ToValue((uint64_t)component.BodyType).Detach();
+    }
+
+    Python::ScriptValue* Prism_RigidBodyComponent_GetAngularVelocity(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+        PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
+        auto& component = entity.GetComponent<RigidBodyComponent>();
+
+        physx::PxRigidActor* actor = (physx::PxRigidActor*)component.RuntimeActor;
+        physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
+        PR_CORE_ASSERT(dynamicActor);
+
+        physx::PxVec3 velocity = dynamicActor->getAngularVelocity();
+        return Python::Vec3ToValue(glm::vec3(velocity.x, velocity.y, velocity.z)).Detach();
+    }
+
+    Python::ScriptValue* Prism_RigidBodyComponent_SetAngularVelocity(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+        glm::vec3 velocity = Python::ValueToVec3(Python::GetTupleElement(argsRef, 1));
+        PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
+        auto& component = entity.GetComponent<RigidBodyComponent>();
+
+        physx::PxRigidActor* actor = (physx::PxRigidActor*)component.RuntimeActor;
+        physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
+        PR_CORE_ASSERT(dynamicActor);
+
+        dynamicActor->setAngularVelocity({ velocity.x, velocity.y, velocity.z });
+        return Python::NoneValue().Detach();
+    }
+
 #pragma endregion
 
 #pragma region Physics
@@ -799,6 +847,19 @@ namespace Prism::Script
             return tuple.Detach();
         }
 
+        return Python::NoneValue().Detach();
+    }
+
+    Python::ScriptValue* Prism_Physics_GetGravity(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        return Python::FloatToValue(Physics::GetGravity()).Detach();
+    }
+
+    Python::ScriptValue* Prism_Physics_SetGravity(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        float gravity = Python::ValueToFloat(Python::GetTupleElement(argsRef, 0));
+        Physics::SetGravity(gravity);
         return Python::NoneValue().Detach();
     }
 #pragma endregion

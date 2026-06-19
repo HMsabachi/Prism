@@ -299,6 +299,18 @@ class RigidBodyComponent(Component):
     def Layer(self) -> int:
         return _Prism.Prism_RigidBodyComponent_GetLayer(self.Entity._id)
 
+    @property
+    def BodyType(self) -> int:
+        return _Prism.Prism_RigidBodyComponent_GetBodyType(self.Entity._id)
+
+    @property
+    def AngularVelocity(self):
+        return Vector3(_Prism.Prism_RigidBodyComponent_GetAngularVelocity(self.Entity._id))
+
+    @AngularVelocity.setter
+    def AngularVelocity(self, value):
+        _Prism.Prism_RigidBodyComponent_SetAngularVelocity(self.Entity._id, value)
+
 
 # ════════════════════════════════════════════
 #  BoxColliderComponent (3D)

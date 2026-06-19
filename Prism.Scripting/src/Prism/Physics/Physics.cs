@@ -125,6 +125,18 @@ namespace Prism
             return count;
         }
 
+        public static float Gravity
+        {
+            get
+            {
+                unsafe { return InternalCalls.Prism_Physics_GetGravity(); }
+            }
+            set
+            {
+                unsafe { InternalCalls.Prism_Physics_SetGravity(value); }
+            }
+        }
+
         private static Collider CreateColliderFromHitData(OverlapHitData data)
         {
             switch (data.ColliderType)

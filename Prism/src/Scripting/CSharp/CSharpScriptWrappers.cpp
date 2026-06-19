@@ -87,6 +87,7 @@ namespace Prism {
         int64_t Prism_Time_GetFrameCount(){ return (int64_t)Time::GetFrameCount(); }
         void Prism_Time_SetTimeScale(float scale){ Time::SetTimeScale(scale);}
         float Prism_Time_GetTimeScale(){ return Time::GetTimeScale();}
+        void Prism_Time_SetFixedDeltaTime(float fixedDeltaTime) { Time::SetFixedDeltaTime(fixedDeltaTime); }
 #pragma endregion
 
 #pragma region Math
@@ -539,6 +540,43 @@ namespace Prism {
 
             component.Mass = mass;
             physx::PxRigidBodyExt::updateMassAndInertia(*dynamicActor, mass);
+        }
+
+        uint32_t Prism_RigidBodyComponent_GetBodyType(uint64_t entityID)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
+            auto& component = entity.GetComponent<RigidBodyComponent>();
+            return (uint32_t)component.BodyType;
+        }
+
+        void Prism_RigidBodyComponent_GetAngularVelocity(uint64_t entityID, glm::vec3* outVelocity)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
+            auto& component = entity.GetComponent<RigidBodyComponent>();
+
+            physx::PxRigidActor* actor = (physx::PxRigidActor*)component.RuntimeActor;
+            physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
+            PR_CORE_ASSERT(dynamicActor);
+
+            PR_CORE_ASSERT(outVelocity);
+            physx::PxVec3 velocity = dynamicActor->getAngularVelocity();
+            *outVelocity = { velocity.x, velocity.y, velocity.z };
+        }
+
+        void Prism_RigidBodyComponent_SetAngularVelocity(uint64_t entityID, glm::vec3* velocity)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
+            auto& component = entity.GetComponent<RigidBodyComponent>();
+
+            physx::PxRigidActor* actor = (physx::PxRigidActor*)component.RuntimeActor;
+            physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
+            PR_CORE_ASSERT(dynamicActor);
+
+            PR_CORE_ASSERT(velocity);
+            dynamicActor->setAngularVelocity({ velocity->x, velocity->y, velocity->z });
         }
 
 #pragma endregion
@@ -1049,6 +1087,16 @@ namespace Prism {
                 }
             }
             *outCount = count;
+        }
+
+        float Prism_Physics_GetGravity()
+        {
+            return Physics::GetGravity();
+        }
+
+        void Prism_Physics_SetGravity(float gravity)
+        {
+            Physics::SetGravity(gravity);
         }
 #pragma endregion
 

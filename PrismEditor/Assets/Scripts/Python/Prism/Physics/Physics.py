@@ -15,7 +15,16 @@ class RaycastHit:
         self.Distance: float = 0.0
 
 
+class _PhysicsGravity:
+    def __get__(self, obj, objtype=None):
+        return _Prism.Prism_Physics_GetGravity()
+    def __set__(self, obj, value):
+        _Prism.Prism_Physics_SetGravity(value)
+
+
 class Physics:
+    gravity = _PhysicsGravity()
+
     @staticmethod
     def Raycast(origin: Vector3, direction: Vector3, maxDistance: float, hit: Optional[RaycastHit] = None) -> bool:
         """Cast a ray into the physics scene. Returns True if something was hit."""
