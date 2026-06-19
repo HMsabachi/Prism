@@ -28,6 +28,7 @@ namespace Prism
         uint32_t SubmeshIndex = 0;
         Ref<Material> Material;
         glm::mat4 Transform = glm::mat4(1.0f);
+        uint64_t SortKey = 0;
     };
 
     struct FrameData
@@ -51,7 +52,7 @@ namespace Prism
         void Shutdown();
         void Resize(uint32_t width, uint32_t height);
 
-        void Execute(const RenderConfig& config, const FrameData& data);
+        void Execute(const RenderConfig& config, FrameData& data);
 
         Ref<RenderPass> GetFinalRenderPass() const { return m_CompositePass; }
         RenderPipelineOptions& GetOptions() { return m_Options; }

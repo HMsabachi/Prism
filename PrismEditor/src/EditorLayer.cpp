@@ -814,16 +814,16 @@ namespace Prism
                 Entity selectedEntity = m_SelectionContext.front().Entity;
                 if (selectedEntity.HasComponent<MeshRendererComponent>())
                 {
-                    Ref<Mesh> mesh = selectedEntity.GetComponent<MeshRendererComponent>().Mesh;
+                    auto& meshComp = selectedEntity.GetComponent<MeshRendererComponent>();
+                    Ref<Mesh> mesh = meshComp.Mesh;
                     if (mesh)
                     {
-                        // TODO: Step 2 — 材质面板改用 Asset 系统
-                        std::vector<Ref<Material>> materials = {};
-                        materials.push_back(Renderer::GetDefaultMaterial());
+                        auto& materials = meshComp.Materials;
                         static uint32_t selectedMaterialIndex = 0;
                         for (uint32_t i = 0; i < materials.size(); i++)
                         {
                             auto& material = materials[i];
+                            if (!material) continue;
 
                             ImGuiTreeNodeFlags node_flags = (selectedMaterialIndex == i ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_Leaf;
                             bool opened = ImGui::TreeNodeEx((void*)(&material), node_flags, material->GetName().c_str());

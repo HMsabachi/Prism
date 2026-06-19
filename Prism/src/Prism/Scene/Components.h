@@ -84,6 +84,17 @@ namespace Prism {
             else
                 Materials.clear();
         }
+
+        void SetMaterial(uint32_t index, Ref<Material> material)
+        {
+            if (index < Materials.size())
+                Materials[index] = material;
+        }
+
+        void SetMaterials(const std::vector<Ref<Material>>& materials)
+        {
+            Materials = materials;
+        }
     };
 
     struct CSharpBehaviourBinding

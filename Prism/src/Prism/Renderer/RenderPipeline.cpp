@@ -85,8 +85,11 @@ namespace Prism
         m_CompositePass->GetSpecification().TargetFramebuffer->Resize(width, height);
     }
 
-    void RenderPipeline::Execute(const RenderConfig& config, const FrameData& data)
+    void RenderPipeline::Execute(const RenderConfig& config, FrameData& data)
     {
+        std::sort(data.DrawList.begin(), data.DrawList.end(),
+            [](auto& a, auto& b) { return a.SortKey < b.SortKey; });
+
         if (config.ShadowsEnabled && !data.DrawList.empty())
             UpdateShadowData(config, data);
         BeginFrame(config, data);
@@ -253,16 +256,22 @@ namespace Prism
 
         if (!drawList.empty())
         {
+            Ref<Shader> boundProgram;
             Ref<Material> boundMaterial;
             Ref<Mesh> boundMesh;
 
             for (auto& dc : drawList)
             {
                 auto material = dc.Material ? dc.Material : Renderer::GetDefaultMaterial();
-
+                if (boundProgram != material->GetProgram())
+                {
+                    material->BindProgram();
+                    boundProgram = material->GetProgram();
+                }
                 if (material != boundMaterial)
                 {
-                    material->Bind();
+                    material->BindUniform();
+                    material->BindTexture();
                     boundMaterial = material;
                 }
 

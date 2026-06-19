@@ -8,6 +8,7 @@
 #include "Prism/Scene/Entity.h"
 #include "Prism/Scene/Components.h"
 #include "Prism/Physics/PXPhysicsWrappers.h"
+#include "Prism/Asset/ModelImporter.h"
 #include "Prism/Physics/Physics.h"
 
 #include "Scripting/Python/PythonScriptEngine.h"
@@ -738,7 +739,7 @@ namespace Prism::Script
     {
         Python::ScriptRef argsRef(args);
         std::string filepath = Python::ValueToString(Python::GetTupleElement(argsRef, 0));
-        auto* ref = new Ref<Mesh>(new Mesh(filepath));
+        auto* ref = new Ref<Mesh>(ModelImporter::Import(filepath).Mesh);
         return Python::UInt64ToValue(reinterpret_cast<uint64_t>(ref)).Detach();
     }
 
@@ -758,7 +759,7 @@ namespace Prism::Script
         Python::ScriptRef argsRef(args);
         float width = Python::ValueToFloat(Python::GetTupleElement(argsRef, 0));
         float height = Python::ValueToFloat(Python::GetTupleElement(argsRef, 1));
-        auto* ref = new Ref<Mesh>(new Mesh("assets/models/Plane1m.obj"));
+        auto* ref = new Ref<Mesh>(ModelImporter::Import("assets/models/Plane1m.obj").Mesh);
         return Python::UInt64ToValue(reinterpret_cast<uint64_t>(ref)).Detach();
     }
 

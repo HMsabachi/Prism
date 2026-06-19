@@ -7,6 +7,7 @@
 #include "Prism/Core/Warning.h"
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/MeshFactory.h"
+#include "Prism/Asset/ModelImporter.h"
 #include "Prism/Physics/PXPhysicsWrappers.h"
 #include "Prism/Physics/PhysicsLayer.h"
 #include "Prism/Utilities/FileSystem.h"
@@ -625,7 +626,11 @@ namespace Prism {
                 {
                     std::string file = Application::Get().OpenFile();
                     if (!file.empty())
-                        mc.Mesh = Ref<Mesh>::Create(FileSystem::GetRelativePath(file));
+                    {
+                        auto result = ModelImporter::Import(FileSystem::GetRelativePath(file));
+                        mc.Mesh = result.Mesh;
+                        mc.SetMaterials(result.Materials);
+                    }
                 }
                 ImGui::NextColumn();
                 ImGui::Columns(1);
@@ -892,7 +897,7 @@ namespace Prism {
                     std::string file = Application::Get().OpenFile();
                     if (!file.empty())
                     {
-                        component.CollisionMesh = Ref<Mesh>::Create(FileSystem::GetRelativePath(file));
+                        component.CollisionMesh = ModelImporter::Import(FileSystem::GetRelativePath(file)).Mesh;
                         PXPhysicsWrappers::CreateConvexMesh(component);
                     }
                 }

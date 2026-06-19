@@ -4,6 +4,7 @@
 #include "Entity.h"
 #include "Components.h"
 #include "Systems/RenderSystem.h"
+#include "Prism/Asset/ModelImporter.h"
 
 #include "yaml-cpp/yaml.h"
 
@@ -740,8 +741,10 @@ namespace Prism {
                     std::string meshPath = meshComponent["AssetPath"].as<std::string>();
                     if (!deserializedEntity.HasComponent<MeshRendererComponent>())
                     {
-                        auto mesh = Ref<Mesh>::Create(meshPath);
-                        deserializedEntity.AddComponent<MeshRendererComponent>(mesh);
+                        auto result = ModelImporter::Import(meshPath);
+                        deserializedEntity.AddComponent<MeshRendererComponent>(result.Mesh);
+                        auto& comp = deserializedEntity.GetComponent<MeshRendererComponent>();
+                        comp.SetMaterials(result.Materials);
                     }
 
                     PR_CORE_INFO("  Mesh Asset Path: {0}", meshPath);
@@ -869,7 +872,7 @@ namespace Prism {
                 if (meshColliderComponent)
                 {
                     std::string meshPath = meshColliderComponent["AssetPath"].as<std::string>();
-                    auto& component = deserializedEntity.AddComponent<MeshColliderComponent>(Ref<Mesh>::Create(meshPath));
+                    auto& component = deserializedEntity.AddComponent<MeshColliderComponent>(ModelImporter::Import(meshPath).Mesh);
                     component.IsTrigger = meshColliderComponent["IsTrigger"] ? meshColliderComponent["IsTrigger"].as<bool>() : false;
                     PXPhysicsWrappers::CreateConvexMesh(component);
 

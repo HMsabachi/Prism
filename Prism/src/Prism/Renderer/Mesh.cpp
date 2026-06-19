@@ -68,426 +68,73 @@ namespace Prism {
 
 
 
-    Mesh::Mesh(const std::string& filename)
-        : m_FilePath(filename)
+    Mesh::Mesh(MeshData&& data)
+        : m_StaticVertices(std::move(data.Vertices))
+        , m_AnimatedVertices(std::move(data.AnimVertices))
+        , m_Indices(std::move(data.Indices))
+        , m_Submeshes(std::move(data.Submeshes))
+        , m_IsAnimated(data.IsAnimated)
+        , m_FilePath(std::move(data.FilePath))
+        , m_Importer(std::move(data.Importer))
+        , m_BoneCount(data.BoneCount)
+        , m_BoneInfo(std::move(data.BoneInfo))
+        , m_BoneMapping(std::move(data.BoneMapping))
     {
-        LogStream::Initialize();
+        m_Scene = m_Importer ? m_Importer->GetScene() : nullptr;
+        if (m_Scene)
+            m_InverseTransform = glm::inverse(Mat4FromAssimpMat4(m_Scene->mRootNode->mTransformation));
 
-        PR_CORE_INFO("Loading mesh: {0}", filename.c_str());
-
-        m_Importer = std::make_unique<Assimp::Importer>();
-
-        const aiScene* scene = m_Importer->ReadFile(filename, s_MeshImportFlags);
-        if (!scene || !scene->HasMeshes())
-            PR_CORE_ERROR("读取: {0} 模型文件失败", filename);
-
-        m_Scene = scene;
-
-        m_IsAnimated = scene->mAnimations != nullptr;
-        m_InverseTransform = glm::inverse(Mat4FromAssimpMat4(scene->mRootNode->mTransformation));
-
-        uint32_t vertexCount = 0;
-        uint32_t indexCount = 0;
-
-        m_Submeshes.reserve(scene->mNumMeshes);
-        for (size_t m = 0; m < scene->mNumMeshes; m++)
+        if (!m_IsAnimated && !m_StaticVertices.empty())
         {
-            aiMesh* mesh = scene->mMeshes[m];
-
-            Submesh& submesh = m_Submeshes.emplace_back();
-            submesh.BaseVertex = vertexCount;
-            submesh.BaseIndex = indexCount;
-            submesh.MaterialIndex = mesh->mMaterialIndex;
-            submesh.IndexCount = mesh->mNumFaces * 3;
-            submesh.MeshName = mesh->mName.C_Str();
-
-            vertexCount += mesh->mNumVertices;
-            indexCount += submesh.IndexCount;
-
-            PR_CORE_ASSERT(mesh->HasPositions(), "Meshes require positions.");
-            PR_CORE_ASSERT(mesh->HasNormals(), "Meshes require normals.");
-
-            // Vertices
-            if (m_IsAnimated)
+            m_TriangleCache.reserve(m_Submeshes.size());
+            for (size_t m = 0; m < m_Submeshes.size(); m++)
             {
-                for (size_t i = 0; i < mesh->mNumVertices; i++)
+                auto& submesh = m_Submeshes[m];
+                m_TriangleCache[m] = {};
+                for (uint32_t i = submesh.BaseIndex; i < submesh.BaseIndex + submesh.IndexCount; i += 3)
                 {
-                    AnimatedVertex vertex;
-                    vertex.Position = { mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z };
-                    vertex.Normal = { mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z };
-
-                    if (mesh->HasTangentsAndBitangents())
-                    {
-                        vertex.Tangent = { mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z };
-                        vertex.Binormal = { mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z };
-                    }
-
-                    if (mesh->HasTextureCoords(0))
-                        vertex.Texcoord = { mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y };
-
-                    m_AnimatedVertices.push_back(vertex);
-                }
-            }
-            else
-            {
-                auto& aabb = submesh.BoundingBox;
-                aabb.Min = { FLT_MAX, FLT_MAX, FLT_MAX };
-                aabb.Max = { -FLT_MAX, -FLT_MAX, -FLT_MAX };
-                for (size_t i = 0; i < mesh->mNumVertices; i++)
-                {
-                    Vertex vertex;
-                    vertex.Position = { mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z };
-                    vertex.Normal = { mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z };
-                    aabb.Min.x = glm::min(vertex.Position.x, aabb.Min.x);
-                    aabb.Min.y = glm::min(vertex.Position.y, aabb.Min.y);
-                    aabb.Min.z = glm::min(vertex.Position.z, aabb.Min.z);
-                    aabb.Max.x = glm::max(vertex.Position.x, aabb.Max.x);
-                    aabb.Max.y = glm::max(vertex.Position.y, aabb.Max.y);
-                    aabb.Max.z = glm::max(vertex.Position.z, aabb.Max.z);
-
-                    if (mesh->HasTangentsAndBitangents())
-                    {
-                        vertex.Tangent = { mesh->mTangents[i].x, mesh->mTangents[i].y, mesh->mTangents[i].z };
-                        vertex.Binormal = { mesh->mBitangents[i].x, mesh->mBitangents[i].y, mesh->mBitangents[i].z };
-                    }
-
-                    if (mesh->HasTextureCoords(0))
-                        vertex.Texcoord = { mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y };
-
-                    m_StaticVertices.push_back(vertex);
-                }
-            }
-
-            // Indices
-            for (size_t i = 0; i < mesh->mNumFaces; i++)
-            {
-                PR_CORE_ASSERT(mesh->mFaces[i].mNumIndices == 3, "Must have 3 indices.");
-                Index index = { mesh->mFaces[i].mIndices[0], mesh->mFaces[i].mIndices[1], mesh->mFaces[i].mIndices[2] };
-                m_Indices.push_back(index);
-
-                if (!m_IsAnimated)
-                    m_TriangleCache[m].emplace_back(m_StaticVertices[index.V1 + submesh.BaseVertex],
-                        m_StaticVertices[index.V2 + submesh.BaseVertex],
-                        m_StaticVertices[index.V3 + submesh.BaseVertex]);
-
-            }
-
-        }
-        TraverseNodes(scene->mRootNode);
-        // Bones
-        if (m_IsAnimated)
-        {
-            for (size_t m = 0; m < scene->mNumMeshes; m++)
-            {
-                aiMesh* mesh = scene->mMeshes[m];
-                Submesh& submesh = m_Submeshes[m];
-
-                for (size_t i = 0; i < mesh->mNumBones; i++)
-                {
-                    aiBone* bone = mesh->mBones[i];
-                    std::string boneName(bone->mName.data);
-                    int boneIndex = 0;
-
-                    if (m_BoneMapping.find(boneName) == m_BoneMapping.end())
-                    {
-                        // Allocate an index for a new bone
-                        boneIndex = m_BoneCount;
-                        m_BoneCount++;
-                        BoneInfo bi;
-                        m_BoneInfo.push_back(bi);
-                        m_BoneInfo[boneIndex].BoneOffset = Mat4FromAssimpMat4(bone->mOffsetMatrix);
-                        m_BoneMapping[boneName] = boneIndex;
-                    }
-                    else
-                    {
-                        PR_MESH_LOG("Found existing bone in map");
-                        boneIndex = m_BoneMapping[boneName];
-                    }
-
-                    for (size_t j = 0; j < bone->mNumWeights; j++)
-                    {
-                        int VertexID = submesh.BaseVertex + bone->mWeights[j].mVertexId;
-                        float Weight = bone->mWeights[j].mWeight;
-                        m_AnimatedVertices[VertexID].AddBoneData(boneIndex, Weight);
-                    }
+                    auto& idx = m_Indices[i / 3];
+                    m_TriangleCache[m].emplace_back(
+                        m_StaticVertices[idx.V1 + submesh.BaseVertex],
+                        m_StaticVertices[idx.V2 + submesh.BaseVertex],
+                        m_StaticVertices[idx.V3 + submesh.BaseVertex]);
                 }
             }
         }
 
-        // Materials — removed, using Renderer::GetDefaultMaterial() instead
-        /*
-                auto aiMaterial = scene->mMaterials[i];
-                auto aiMaterialName = aiMaterial->GetName();
-
-                auto mi = Material::Create(m_MeshShader);
-                mi->SetName(aiMaterialName.C_Str());
-                m_Materials[i] = mi;
-
-                PR_MESH_LOG("Material Name = {0}; Index = {1}", aiMaterialName.data, i);
-                aiString aiTexPath;
-                uint32_t textureCount = aiMaterial->GetTextureCount(aiTextureType_DIFFUSE);
-                PR_MESH_LOG("  TextureCount = {0}", textureCount);
-
-                aiColor3D aiColor;
-                aiMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, aiColor);
-                float shininess, metalness;
-                if (aiMaterial->Get(AI_MATKEY_SHININESS, shininess) != aiReturn_SUCCESS)
-                    shininess = 80.0f; // Default value
-
-                if (aiMaterial->Get(AI_MATKEY_REFLECTIVITY, metalness) != aiReturn_SUCCESS)
-                    metalness = 0.0f;
-
-                float roughness = 1.0f - glm::sqrt(shininess / 100.0f);
-                PR_MESH_LOG("    COLOR = {0}, {1}, {2}", aiColor.r, aiColor.g, aiColor.b);
-                PR_MESH_LOG("    ROUGHNESS = {0}", roughness);
-                bool hasAlbedoMap = aiMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &aiTexPath) == AI_SUCCESS;
-                if (hasAlbedoMap)
-                {
-                    // TODO: Temp - this should be handled by Prism's filesystem
-                    std::filesystem::path path = filename;
-                    auto parentPath = path.parent_path();
-                    parentPath /= std::string(aiTexPath.data);
-                    std::string texturePath = parentPath.string();
-
-                    PR_MESH_LOG("  Albedp map path = {0}", texturePath);
-                    auto texture = Texture2D::Create(texturePath, true);
-                    if (texture->Loaded())
-                    {
-                        m_Textures[i] = texture;
-                        mi->SetTexture("u_AlbedoTexture", m_Textures[i]);
-                        mi->SetKeyword("ALBEDO_MAP", true);
-                    }
-                    else
-                    {
-                        PR_CORE_ERROR("Could not load texture: {0}", texturePath);
-                        // 倒退回反照率颜色
-                        mi->SetVec3("u_AlbedoColor", glm::vec3{ aiColor.r, aiColor.g, aiColor.b });
-                    }
-                }
-                else
-                {
-                    mi->SetVec3("u_AlbedoColor", glm::vec3{ aiColor.r, aiColor.g, aiColor.b });
-                    PR_CORE_TRACE("  No albedo map");
-                }
-
-                // Normal maps
-                mi->SetKeyword("NORMAL_MAP", false);
-                if (aiMaterial->GetTexture(aiTextureType_NORMALS, 0, &aiTexPath) == AI_SUCCESS)
-                {
-                    // TODO: Temp - this should be handled by Prism's filesystem
-                    std::filesystem::path path = filename;
-                    auto parentPath = path.parent_path();
-                    parentPath /= std::string(aiTexPath.data);
-                    std::string texturePath = parentPath.string();
-
-                    PR_MESH_LOG("    Normal map path = {0}", texturePath);
-                    auto texture = Texture2D::Create(texturePath);
-                    if (texture->Loaded())
-                    {
-                        mi->SetTexture("u_NormalTexture", texture);
-                        mi->SetKeyword("NORMAL_MAP", true);
-                    }
-                    else
-                    {
-                        PR_CORE_ERROR("  Could not load texture: {0}", texturePath);
-                    }
-                }
-                else
-                {
-                    PR_MESH_LOG("Mesh has no normal map");
-                }
-
-                // Roughness map
-                // mi->SetFloat("u_Roughness", 1.0f);
-                // mi->Set("u_RoughnessTexToggle", 0.0f);
-                if (aiMaterial->GetTexture(aiTextureType_SHININESS, 0, &aiTexPath) == AI_SUCCESS)
-                {
-                    // TODO: Temp - this should be handled by Prism's filesystem
-                    std::filesystem::path path = filename;
-                    auto parentPath = path.parent_path();
-                    parentPath /= std::string(aiTexPath.data);
-                    std::string texturePath = parentPath.string();
-                    PR_MESH_LOG("    Roughness map path = {0}", texturePath);
-
-                    auto texture = Texture2D::Create(texturePath);
-                    if (texture->Loaded())
-                    {
-                        PR_MESH_LOG("  Roughness map path = {0}", texturePath);
-                        mi->SetTexture("u_RoughnessTexture", texture);
-                        mi->SetKeyword("ROUGHNESS_MAP", true);
-                    }
-                    else
-                    {
-                        PR_CORE_ERROR("  Could not load texture: {0}", texturePath);
-                    }
-                }
-                else
-                {
-                    PR_MESH_LOG("  No roughness texture");
-                    mi->SetFloat("u_Roughness", roughness);
-                }
-
-
-#if 0
-                if (aiMaterial->Get("$raw.ReflectionFactor|file", aiPTI_String, 0, aiTexPath) == AI_SUCCESS)
-                {
-                    // TODO: Temp - this should be handled by Prism's filesystem
-                    std::filesystem::path path = filename;
-                    auto parentPath = path.parent_path();
-                    parentPath /= std::string(aiTexPath.data);
-                    std::string texturePath = parentPath.string();
-
-                    auto texture = Texture2D::Create(texturePath);
-                    if (texture->Loaded())
-                    {
-                        PR_MESH_LOG("  Metalness map path = {0}", texturePath);
-                        mi->SetTexture("u_MetalnessTexture", texture);
-                        mi->SetFloat("u_MetalnessTexToggle", 1.0f);
-                    }
-                    else
-                    {
-                        PR_CORE_ERROR("Could not load texture: {0}", texturePath);
-                    }
-                }
-                else
-                {
-                    PR_MESH_LOG("  No metalness texture");
-                    mi->SetFloat("u_Metalness", metalness);
-                }
-#endif
-
-                bool metalnessTextureFound = false;
-                for (uint32_t i = 0; i < aiMaterial->mNumProperties; i++)
-                {
-                    auto prop = aiMaterial->mProperties[i];
-#if DEBUG_PRINT_ALL_PROPS
-                    PR_MESH_LOG("Material Property:");
-                    PR_MESH_LOG("  Name = {0}", prop->mKey.data);
-                    PR_MESH_LOG("  Type = {0}", prop->mType);
-                    PR_MESH_LOG("  Size = {0}", prop->mDataLength);
-                    float data = *(float*)prop->mData;
-                    PR_MESH_LOG("  Value = {0}", data);
-
-                    switch (prop->mSemantic)
-                    {
-                    case aiTextureType_NONE:
-                        PR_MESH_LOG("  Semantic = aiTextureType_NONE");
-                        break;
-                    case aiTextureType_DIFFUSE:
-                        PR_MESH_LOG("  Semantic = aiTextureType_DIFFUSE");
-                        break;
-                    case aiTextureType_SPECULAR:
-                        PR_MESH_LOG("  Semantic = aiTextureType_SPECULAR");
-                        break;
-                    case aiTextureType_AMBIENT:
-                        PR_MESH_LOG("  Semantic = aiTextureType_AMBIENT");
-                        break;
-                    case aiTextureType_EMISSIVE:
-                        PR_MESH_LOG("  Semantic = aiTextureType_EMISSIVE");
-                        break;
-                    case aiTextureType_HEIGHT:
-                        PR_MESH_LOG("  Semantic = aiTextureType_HEIGHT");
-                        break;
-                    case aiTextureType_NORMALS:
-                        PR_MESH_LOG("  Semantic = aiTextureType_NORMALS");
-                        break;
-                    case aiTextureType_SHININESS:
-                        PR_MESH_LOG("  Semantic = aiTextureType_SHININESS");
-                        break;
-                    case aiTextureType_OPACITY:
-                        PR_MESH_LOG("  Semantic = aiTextureType_OPACITY");
-                        break;
-                    case aiTextureType_DISPLACEMENT:
-                        PR_MESH_LOG("  Semantic = aiTextureType_DISPLACEMENT");
-                        break;
-                    case aiTextureType_LIGHTMAP:
-                        PR_MESH_LOG("  Semantic = aiTextureType_LIGHTMAP");
-                        break;
-                    case aiTextureType_REFLECTION:
-                        PR_MESH_LOG("  Semantic = aiTextureType_REFLECTION");
-                        break;
-                    case aiTextureType_UNKNOWN:
-                        PR_MESH_LOG("  Semantic = aiTextureType_UNKNOWN");
-                        break;
-                    }
-#endif
-
-                    if (prop->mType == aiPTI_String)
-                    {
-                        uint32_t strLength = *(uint32_t*)prop->mData;
-                        std::string str(prop->mData + 4, strLength);
-
-                        std::string key = prop->mKey.data;
-                        if (key == "$raw.ReflectionFactor|file")
-                        {
-                            metalnessTextureFound = true;
-
-                            // TODO: Temp - this should be handled by Prism's filesystem
-                            std::filesystem::path path = filename;
-                            auto parentPath = path.parent_path();
-                            parentPath /= str;
-                            std::string texturePath = parentPath.string();
-
-                            PR_MESH_LOG("    Metalness map path = {0}", texturePath);
-                            auto texture = Texture2D::Create(texturePath);
-                            if (texture->Loaded())
-                            {
-                                mi->SetTexture("u_MetalnessTexture", texture);
-                                mi->SetKeyword("METALNESS_MAP", true);
-                            }
-                            else
-                            {
-                                PR_CORE_ERROR("  Could not load texture: {0}", texturePath);
-                                mi->SetFloat("u_Metalness", metalness);
-                                mi->SetKeyword("METALNESS_MAP", false);
-                            }
-                            break;
-                        }
-                    }
-                }
-                if (!metalnessTextureFound)
-                {
-                    PR_MESH_LOG("    No metalness map");
-
-                    mi->SetFloat("u_Metalness", metalness);
-                    mi->SetKeyword("METALNESS_MAP", false);
-                }
-            }
-*/
         VertexBufferLayout vertexLayout;
         if (m_IsAnimated)
         {
             m_VertexBuffer = VertexBuffer::Create(m_AnimatedVertices.data(), m_AnimatedVertices.size() * sizeof(AnimatedVertex));
             vertexLayout = {
-                { ShaderDataType::Float3, "a_Position" , VertexSemantic::Position},
-                { ShaderDataType::Float3, "a_Normal" , VertexSemantic::Normal},
-                { ShaderDataType::Float3, "a_Tangent", VertexSemantic::Tangent },
-                { ShaderDataType::Float3, "a_Binormal", VertexSemantic::Binormal },
-                { ShaderDataType::Float2, "a_TexCoord", VertexSemantic::TexCoord0 },
-                { ShaderDataType::Int4, "a_BoneIDs", VertexSemantic::BoneIndices },
-                { ShaderDataType::Float4, "a_BoneWeights", VertexSemantic::BoneWeights },
+                { ShaderDataType::Float3, "a_Position",  VertexSemantic::Position},
+                { ShaderDataType::Float3, "a_Normal",    VertexSemantic::Normal},
+                { ShaderDataType::Float3, "a_Tangent",   VertexSemantic::Tangent},
+                { ShaderDataType::Float3, "a_Binormal",  VertexSemantic::Binormal},
+                { ShaderDataType::Float2, "a_TexCoord",  VertexSemantic::TexCoord0},
+                { ShaderDataType::Int4,   "a_BoneIDs",    VertexSemantic::BoneIndices},
+                { ShaderDataType::Float4, "a_BoneWeights", VertexSemantic::BoneWeights},
             };
-            m_VertexBuffer->SetLayout(vertexLayout);
         }
         else
         {
             m_VertexBuffer = VertexBuffer::Create(m_StaticVertices.data(), m_StaticVertices.size() * sizeof(Vertex));
             vertexLayout = {
-                { ShaderDataType::Float3, "a_Position" , VertexSemantic::Position},
-                { ShaderDataType::Float3, "a_Normal" , VertexSemantic::Normal},
-                { ShaderDataType::Float3, "a_Tangent", VertexSemantic::Tangent },
-                { ShaderDataType::Float3, "a_Binormal", VertexSemantic::Binormal },
-                { ShaderDataType::Float2, "a_TexCoord", VertexSemantic::TexCoord0 },
+                { ShaderDataType::Float3, "a_Position",  VertexSemantic::Position},
+                { ShaderDataType::Float3, "a_Normal",    VertexSemantic::Normal},
+                { ShaderDataType::Float3, "a_Tangent",   VertexSemantic::Tangent},
+                { ShaderDataType::Float3, "a_Binormal",  VertexSemantic::Binormal},
+                { ShaderDataType::Float2, "a_TexCoord",  VertexSemantic::TexCoord0},
             };
-            m_VertexBuffer->SetLayout(vertexLayout);
         }
-
+        m_VertexBuffer->SetLayout(vertexLayout);
         m_IndexBuffer = IndexBuffer::Create(m_Indices.data(), m_Indices.size() * sizeof(Index));
 
         PipelineSpecification pipelineSpec;
         pipelineSpec.Layout = vertexLayout;
         m_Pipeline = Pipeline::Create(pipelineSpec);
     }
+
 
     Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<Index>& indices)
         : m_StaticVertices(vertices), m_Indices(indices), m_IsAnimated(false)

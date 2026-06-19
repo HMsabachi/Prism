@@ -14,6 +14,7 @@
 #include "Prism/Scene/Systems/ScriptSystem.h"
 #include "Scripting/CSharp/CSharpScriptMetaRegistry.h"
 #include "Prism/Renderer/Renderer.h"
+#include "Prism/Asset/ModelImporter.h"
 #include <glm/gtc/type_ptr.hpp>
 
 #include <Rolky/String.hpp>
@@ -299,7 +300,8 @@ namespace Prism {
         {
             std::string path = filepath;
             Rolky::String::Free(filepath);
-            return new Ref<Mesh>(new Mesh(path));
+            auto result = ModelImporter::Import(path);
+            return new Ref<Mesh>(result.Mesh);
         }
 
         void Prism_Mesh_Destructor(Ref<Mesh>* _this)
@@ -311,7 +313,7 @@ namespace Prism {
 
         void* Prism_MeshFactory_CreatePlane(float width, float height)
         {
-            return new Ref<Mesh>(new Mesh("assets/models/Plane1m.obj"));
+            return new Ref<Mesh>(ModelImporter::Import("assets/models/Plane1m.obj").Mesh);
         }
 
 #pragma endregion

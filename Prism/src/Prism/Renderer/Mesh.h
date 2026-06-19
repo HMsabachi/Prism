@@ -119,13 +119,32 @@ namespace Prism {
 
         std::string NodeName, MeshName;
     };
+    struct MeshData
+    {
+        std::vector<Vertex> Vertices;
+        std::vector<AnimatedVertex> AnimVertices;
+        std::vector<Index> Indices;
+        std::vector<Submesh> Submeshes;
+        bool IsAnimated = false;
+        std::string FilePath;
+
+        std::unique_ptr<Assimp::Importer> Importer;
+        uint32_t BoneCount = 0;
+        std::vector<BoneInfo> BoneInfo;
+        std::unordered_map<std::string, uint32_t> BoneMapping;
+    };
+
+    class ModelImporter;
+
     class PRISM_API Mesh : public RefCounted
     {
     public:
 
-        Mesh(const std::string& filename);
+        Mesh(MeshData&& data);
         Mesh(const std::vector<Vertex>& vertices, const std::vector<Index>& indices);
         ~Mesh();
+
+        friend class ModelImporter;
 
         void OnUpdate(float ts);
         void DumpVertexBuffer();
