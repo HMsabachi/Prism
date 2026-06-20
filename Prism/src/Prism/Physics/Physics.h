@@ -21,9 +21,21 @@ namespace Prism {
         All      = Static | Dynamic | Kinematic
     };
 
-    struct SceneParams
+    enum class BroadphaseType
     {
+        SweepAndPrune,
+        MultiBoxPrune,
+        AutomaticBoxPrune
+    };
+
+    struct PhysicsSettings
+    {
+        float FixedTimestep = 0.02F;
         glm::vec3 Gravity = { 0.0F, -9.81F, 0.0F };
+        BroadphaseType BroadphaseAlgorithm = BroadphaseType::AutomaticBoxPrune;
+        glm::vec3 WorldBoundsMin = glm::vec3(0.0F);
+        glm::vec3 WorldBoundsMax = glm::vec3(1.0F);
+        uint32_t WorldBoundsSubdivisions = 2;
     };
 
     struct RaycastHit
@@ -54,8 +66,10 @@ namespace Prism {
         static void Shutdown();
 
         static void ExpandEntityBuffer(uint32_t entityCount);
-        static void CreateScene(const SceneParams& params);
+        static void CreateScene();
         static void CreateActor(Entity e);
+
+        static PhysicsSettings& GetSettings();
 
         static void SetGravity(float gravity);
         static float GetGravity();

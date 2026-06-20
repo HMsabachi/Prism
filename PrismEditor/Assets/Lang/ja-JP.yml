@@ -98,5 +98,16 @@ translations:
   Bounciness: 弾性
   Height: 高さ
 
+  # ===== 物理設定パネル =====
+  Physics Settings: 物理設定
+  Fixed Timestep (Default 0.0167): "固定タイムステップ (デフォルト 0.0167)"
+  Gravity (Default -9.81): "重力 (デフォルト -9.81)"
+  Broadphase Type: ブロードフェーズアルゴリズム
+  Sweep And Prune: "スイープ＆プルーン (SAP)"
+  Multi Box Pruning: "マルチボックスプルーニング (MBP)"
+  Automatic Box Pruning: "自動ボックスプルーニング (ABP)"
+  World Bounds (Min): "ワールド境界 (最小)"
+  World Bounds (Max): "ワールド境界 (最大)"
+  Grid Subdivisions: グリッド分割
   # ===== スクリプトプロパティ =====
   Module Name: モジュール名

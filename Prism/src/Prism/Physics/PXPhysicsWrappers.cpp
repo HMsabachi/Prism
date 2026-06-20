@@ -5,6 +5,7 @@
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Core/Warning.h"
 
+#include <functional>
 #include <glm/gtx/rotate_vector.hpp>
 
 PR_WARNING_PUSH
@@ -28,6 +29,23 @@ namespace Prism {
     static physx::PxSimulationFilterShader s_FilterShader = physx::PxDefaultSimulationFilterShader;
 
     static ContactListener s_ContactListener;
+
+    static std::function<void(Entity)> s_OnCollisionBegin;
+    static std::function<void(Entity)> s_OnCollisionEnd;
+    static std::function<void(Entity)> s_OnTriggerBegin;
+    static std::function<void(Entity)> s_OnTriggerEnd;
+
+    void SetContactCallbacks(const std::function<void(Entity)>& onBegin, const std::function<void(Entity)>& onEnd)
+    {
+        s_OnCollisionBegin = onBegin;
+        s_OnCollisionEnd = onEnd;
+    }
+
+    void SetContactTriggerCallbacks(const std::function<void(Entity)>& onBegin, const std::function<void(Entity)>& onEnd)
+    {
+        s_OnTriggerBegin = onBegin;
+        s_OnTriggerEnd = onEnd;
+    }
 
     void PhysicsErrorCallback::reportError(physx::PxErrorCode::Enum code, const char* message, const char* file, int line)
     {
@@ -71,11 +89,97 @@ namespace Prism {
         }
     }
 
-    physx::PxScene* PXPhysicsWrappers::CreateScene(const SceneParams& sceneParams)
+    void ContactListener::onConstraintBreak(physx::PxConstraintInfo* constraints, physx::PxU32 count)
+    {
+        PX_UNUSED(constraints);
+        PX_UNUSED(count);
+    }
+
+    void ContactListener::onWake(physx::PxActor** actors, physx::PxU32 count)
+    {
+        for (uint32_t i = 0; i < count; i++)
+        {
+            physx::PxActor& actor = *actors[i];
+            Entity& entity = *(Entity*)actor.userData;
+
+            PR_CORE_INFO("PhysX Actor waking up: ID: {0}, Name: {1}", entity.GetUUID(), entity.GetComponent<TagComponent>().Tag);
+        }
+    }
+
+    void ContactListener::onSleep(physx::PxActor** actors, physx::PxU32 count)
+    {
+        for (uint32_t i = 0; i < count; i++)
+        {
+            physx::PxActor& actor = *actors[i];
+            Entity& entity = *(Entity*)actor.userData;
+
+            PR_CORE_INFO("PhysX Actor going to sleep: ID: {0}, Name: {1}", entity.GetUUID(), entity.GetComponent<TagComponent>().Tag);
+        }
+    }
+
+    void ContactListener::onContact(const physx::PxContactPairHeader& pairHeader, const physx::PxContactPair* pairs, physx::PxU32 nbPairs)
+    {
+        Entity& a = *(Entity*)pairHeader.actors[0]->userData;
+        Entity& b = *(Entity*)pairHeader.actors[1]->userData;
+
+        if (pairs->flags == physx::PxContactPairFlag::eACTOR_PAIR_HAS_FIRST_TOUCH)
+        {
+            if (s_OnCollisionBegin) s_OnCollisionBegin(a);
+            if (s_OnCollisionBegin) s_OnCollisionBegin(b);
+        }
+        else if (pairs->flags == physx::PxContactPairFlag::eACTOR_PAIR_LOST_TOUCH)
+        {
+            if (s_OnCollisionEnd) s_OnCollisionEnd(a);
+            if (s_OnCollisionEnd) s_OnCollisionEnd(b);
+        }
+    }
+
+    void ContactListener::onTrigger(physx::PxTriggerPair* pairs, physx::PxU32 count)
+    {
+        Entity& a = *(Entity*)pairs->triggerActor->userData;
+        Entity& b = *(Entity*)pairs->otherActor->userData;
+
+        if (pairs->status & physx::PxPairFlag::eNOTIFY_TOUCH_FOUND)
+        {
+            if (s_OnTriggerBegin) s_OnTriggerBegin(a);
+            if (s_OnTriggerBegin) s_OnTriggerBegin(b);
+        }
+        else if (pairs->status & physx::PxPairFlag::eNOTIFY_TOUCH_LOST)
+        {
+            if (s_OnTriggerEnd) s_OnTriggerEnd(a);
+            if (s_OnTriggerEnd) s_OnTriggerEnd(b);
+        }
+
+        PX_UNUSED(count);
+    }
+
+    void ContactListener::onAdvance(const physx::PxRigidBody* const* bodyBuffer, const physx::PxTransform* poseBuffer, const physx::PxU32 count)
+    {
+        PX_UNUSED(bodyBuffer);
+        PX_UNUSED(poseBuffer);
+        PX_UNUSED(count);
+    }
+
+    static physx::PxBroadPhaseType::Enum PrismToPhysXBroadphaseType(BroadphaseType type)
+    {
+        switch (type)
+        {
+        case BroadphaseType::SweepAndPrune: return physx::PxBroadPhaseType::eSAP;
+        case BroadphaseType::MultiBoxPrune: return physx::PxBroadPhaseType::eMBP;
+        case BroadphaseType::AutomaticBoxPrune: return physx::PxBroadPhaseType::eABP;
+        }
+
+        return physx::PxBroadPhaseType::eABP;
+    }
+
+    physx::PxScene* PXPhysicsWrappers::CreateScene()
     {
         physx::PxSceneDesc sceneDesc(s_Physics->getTolerancesScale());
 
-        sceneDesc.gravity = { 0.0F, Physics::GetGravity(), 0.0F };
+        const PhysicsSettings& settings = Physics::GetSettings();
+
+        sceneDesc.gravity = ToPhysXVector(settings.Gravity);
+        sceneDesc.broadPhaseType = PrismToPhysXBroadphaseType(settings.BroadphaseAlgorithm);
         sceneDesc.cpuDispatcher = physx::PxDefaultCpuDispatcherCreate(1);
         sceneDesc.filterShader = PrismFilterShader;
         sceneDesc.simulationEventCallback = &s_ContactListener;

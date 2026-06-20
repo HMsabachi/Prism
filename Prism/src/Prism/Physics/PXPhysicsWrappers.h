@@ -9,7 +9,6 @@
 
 namespace Prism
 {
-    struct SceneParams;
     struct RaycastHit;
 
     class PhysicsErrorCallback : public physx::PxErrorCallback
@@ -18,10 +17,21 @@ namespace Prism
         virtual void reportError(physx::PxErrorCode::Enum code, const char* message, const char* file, int line) override;
     };
 
+    class ContactListener : public physx::PxSimulationEventCallback
+    {
+    public:
+        virtual void onConstraintBreak(physx::PxConstraintInfo* constraints, physx::PxU32 count) override;
+        virtual void onWake(physx::PxActor** actors, physx::PxU32 count) override;
+        virtual void onSleep(physx::PxActor** actors, physx::PxU32 count) override;
+        virtual void onContact(const physx::PxContactPairHeader& pairHeader, const physx::PxContactPair* pairs, physx::PxU32 nbPairs) override;
+        virtual void onTrigger(physx::PxTriggerPair* pairs, physx::PxU32 count) override;
+        virtual void onAdvance(const physx::PxRigidBody* const* bodyBuffer, const physx::PxTransform* poseBuffer, const physx::PxU32 count) override;
+    };
+
     class PXPhysicsWrappers
     {
     public:
-        static physx::PxScene* CreateScene(const SceneParams& sceneParams);
+        static physx::PxScene* CreateScene();
         static physx::PxRigidActor* CreateActor(const RigidBodyComponent& rigidbody, const glm::mat4& transform);
         static void SetCollisionFilters(const physx::PxRigidActor& actor, uint32_t physicsLayer);
 

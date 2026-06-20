@@ -888,7 +888,7 @@ namespace Prism
             CSharpScriptEngine::OnImGuiRender();
             //PythonScriptEngine::OnImGuiRender();
 
-            PhysicsSettingsWindow::OnImGuiRender(&m_ShowPhysicsSettings);
+            PhysicsSettingsWindow::OnImGuiRender(m_ShowPhysicsSettings);
 
             ImGui::End();
         #endif

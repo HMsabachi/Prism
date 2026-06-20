@@ -3,21 +3,24 @@
 #include "Prism/Physics/Physics.h"
 #include "Prism/Physics/PhysicsLayer.h"
 #include "Prism/Core/Time.h"
+#include "Prism/Core/LanguageManager.h"
 
 #include "imgui.h"
 #include "imgui_internal.h"
+
+#include <glm/gtc/type_ptr.hpp>
 
 namespace Prism {
 
 	static int32_t s_SelectedLayer = -1;
 	static char s_NewLayerNameBuffer[50];
 
-	void PhysicsSettingsWindow::OnImGuiRender(bool* show)
+	void PhysicsSettingsWindow::OnImGuiRender(bool& show)
 	{
-		if (!(*show))
+		if (!show)
 			return;
 
-		ImGui::Begin("Physics", show);
+		ImGui::Begin("Physics", &show);
 		ImGui::PushID(0);
 		ImGui::Columns(2);
 		RenderWorldSettings();
@@ -39,32 +42,20 @@ namespace Prism {
 
 	void PhysicsSettingsWindow::RenderWorldSettings()
 	{
-		float timestep = Time::GetFixedDeltaTime();
-		if (Property("Fixed Timestep (Default: 0.0167)", timestep, 0.001F, 0.1F))
+		PhysicsSettings& settings = Physics::GetSettings();
+
+		Property(TR("Fixed Timestep (Default 0.0167)"), settings.FixedTimestep, 0.001F, 0.1F);
+		Property(TR("Gravity (Default -9.81)"), settings.Gravity.y, -50.0F, 50.0F);
+
+		static const char* broadphaseTypeStrings[] = { TR("Sweep And Prune"), TR("Multi Box Pruning"), TR("Automatic Box Pruning") };
+		Property(TR("Broadphase Type"), broadphaseTypeStrings, 3, (int*)&settings.BroadphaseAlgorithm);
+
+		if (settings.BroadphaseAlgorithm != BroadphaseType::AutomaticBoxPrune)
 		{
-			Time::SetFixedDeltaTime(timestep);
+			Property(TR("World Bounds (Min)"), settings.WorldBoundsMin);
+			Property(TR("World Bounds (Max)"), settings.WorldBoundsMax);
+			Property(TR("Grid Subdivisions"), settings.WorldBoundsSubdivisions, 1u, 10000u);
 		}
-
-		float gravity = Physics::GetGravity();
-		if (Property("Gravity (Default: -9.81)", gravity, -50.0F, 50.0F))
-		{
-			Physics::SetGravity(gravity);
-		}
-	}
-
-	bool PhysicsSettingsWindow::Property(const char* label, float& value, float min, float max)
-	{
-		ImGui::Text(label);
-		ImGui::NextColumn();
-		ImGui::PushItemWidth(-1);
-
-		std::string id = "##" + std::string(label);
-		bool changed = ImGui::SliderFloat(id.c_str(), &value, min, max);
-
-		ImGui::PopItemWidth();
-		ImGui::NextColumn();
-
-		return changed;
 	}
 
 	void PhysicsSettingsWindow::RenderLayerList()
@@ -88,7 +79,7 @@ namespace Prism {
 			ImGui::EndPopup();
 		}
 
-		uint32_t buttonId = 1;
+		uint32_t buttonId = 0;
 
 		for (const auto& layer : PhysicsLayerManager::GetLayers())
 		{
@@ -148,6 +139,84 @@ namespace Prism {
 				PhysicsLayerManager::SetLayerCollision(s_SelectedLayer, layer.LayerID, shouldCollide);
 			}
 		}
+	}
+
+	bool PhysicsSettingsWindow::Property(const char* label, float& value, float min, float max)
+	{
+		ImGui::Text(label);
+		ImGui::NextColumn();
+		ImGui::PushItemWidth(-1);
+
+		std::string id = "##" + std::string(label);
+		bool changed = ImGui::DragFloat(id.c_str(), &value, 1.0F, min, max);
+
+		ImGui::PopItemWidth();
+		ImGui::NextColumn();
+
+		return changed;
+	}
+
+	bool PhysicsSettingsWindow::Property(const char* label, uint32_t& value, uint32_t min, uint32_t max)
+	{
+		ImGui::Text(label);
+		ImGui::NextColumn();
+		ImGui::PushItemWidth(-1);
+
+		std::string id = "##" + std::string(label);
+		bool changed = ImGui::DragInt(id.c_str(), (int*)&value, 1.0F, min, max);
+
+		ImGui::PopItemWidth();
+		ImGui::NextColumn();
+
+		return changed;
+	}
+
+	bool PhysicsSettingsWindow::Property(const char* label, glm::vec3& value, float min, float max)
+	{
+		ImGui::Text(label);
+		ImGui::NextColumn();
+		ImGui::PushItemWidth(-1);
+
+		std::string id = "##" + std::string(label);
+		bool changed = ImGui::DragFloat3(id.c_str(), glm::value_ptr(value), 1.0F, min, max);
+
+		ImGui::PopItemWidth();
+		ImGui::NextColumn();
+
+		return changed;
+	}
+
+	bool PhysicsSettingsWindow::Property(const char* label, const char** options, int32_t optionCount, int32_t* selected)
+	{
+		const char* current = options[*selected];
+		ImGui::Text(label);
+		ImGui::NextColumn();
+		ImGui::PushItemWidth(-1);
+
+		bool changed = false;
+
+		std::string id = "##" + std::string(label);
+		if (ImGui::BeginCombo(id.c_str(), current))
+		{
+			for (int i = 0; i < optionCount; i++)
+			{
+				bool is_selected = (current == options[i]);
+				if (ImGui::Selectable(options[i], is_selected))
+				{
+					current = options[i];
+					*selected = i;
+					changed = true;
+				}
+				if (is_selected)
+					ImGui::SetItemDefaultFocus();
+			}
+			ImGui::EndCombo();
+		}
+
+		ImGui::PopItemWidth();
+		ImGui::NextColumn();
+
+		return changed;
 	}
 
 }

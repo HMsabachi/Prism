@@ -5,6 +5,7 @@
 #include "PXPhysicsWrappers.h"
 
 #include "Prism/Scene/Components.h"
+#include <PhysX/extensions/PxBroadPhaseExt.h>
 
 namespace Prism {
 
@@ -13,7 +14,7 @@ namespace Prism {
     static Entity* s_EntityStorageBuffer = nullptr;
     static uint32_t s_EntityBufferCount = 0;
     static int s_EntityStorageBufferPosition = 0;
-    static float s_Gravity = -9.81F;
+    static PhysicsSettings s_Settings;
 
     void Physics::Init()
     {
@@ -56,10 +57,24 @@ namespace Prism {
         }
     }
 
-    void Physics::CreateScene(const SceneParams& params)
+    void Physics::CreateScene()
     {
         PR_CORE_ASSERT(s_Scene == nullptr, "Scene already has a Physics Scene!");
-        s_Scene = PXPhysicsWrappers::CreateScene(params);
+        s_Scene = PXPhysicsWrappers::CreateScene();
+
+        if (s_Settings.BroadphaseAlgorithm != BroadphaseType::AutomaticBoxPrune)
+        {
+            physx::PxBounds3* regionBounds = nullptr;
+            physx::PxBounds3 globalBounds(ToPhysXVector(s_Settings.WorldBoundsMin), ToPhysXVector(s_Settings.WorldBoundsMax));
+            uint32_t regionCount = physx::PxBroadPhaseExt::createRegionsFromWorldBounds(regionBounds, globalBounds, s_Settings.WorldBoundsSubdivisions);
+
+            for (uint32_t i = 0; i < regionCount; i++)
+            {
+                physx::PxBroadPhaseRegion region;
+                region.mBounds = regionBounds[i];
+                s_Scene->addBroadPhaseRegion(region);
+            }
+        }
     }
 
     void Physics::CreateActor(Entity e)
@@ -80,7 +95,10 @@ namespace Prism {
 
         // Create Actor Body
         physx::PxRigidActor* actor = PXPhysicsWrappers::CreateActor(rigidbody, e.Transform().GetTransform());
-        s_SimulatedEntities.push_back(e);
+
+        if (rigidbody.BodyType == RigidBodyComponent::Type::Dynamic)
+            s_SimulatedEntities.push_back(e);
+
         Entity* entityStorage = &s_EntityStorageBuffer[s_EntityStorageBufferPosition];
         *entityStorage = e;
         actor->userData = (void*)entityStorage;
@@ -130,7 +148,7 @@ namespace Prism {
 
     void Physics::SetGravity(float gravity)
     {
-        s_Gravity = gravity;
+        s_Settings.Gravity.y = gravity;
 
         if (s_Scene)
             s_Scene->setGravity({ 0.0F, gravity, 0.0F });
@@ -138,7 +156,12 @@ namespace Prism {
 
     float Physics::GetGravity()
     {
-        return s_Gravity;
+        return s_Settings.Gravity.y;
+    }
+
+    PhysicsSettings& Physics::GetSettings()
+    {
+        return s_Settings;
     }
 
     void Physics::Step(float dt)

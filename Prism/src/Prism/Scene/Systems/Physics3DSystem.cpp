@@ -29,8 +29,7 @@ namespace Prism {
     void Physics3DSystem::OnRuntimeStart()
     {
         {
-            SceneParams sceneDesc;
-            Physics::CreateScene(sceneDesc);
+            Physics::CreateScene();
         }
 
         {
