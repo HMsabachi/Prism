@@ -54,9 +54,9 @@ namespace Prism
             if (!camEntity) return;
             auto& camComp = camEntity.GetComponent<CameraComponent>();
             camComp.Camera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
-            auto& transform = camEntity.GetComponent<TransformComponent>();
+            auto& transform = camEntity.Transformation();
             m_PendingFrameData.Camera.Projection = camComp.Camera;
-            m_PendingFrameData.Camera.ViewMatrix = glm::inverse(transform.GetTransform());
+            m_PendingFrameData.Camera.ViewMatrix = glm::inverse(transform.GetMatrix());
         }
 
         m_Config.SkyboxMaterial->SetFloat("u_TextureLod", m_Config.SkyboxLod);
@@ -135,7 +135,7 @@ namespace Prism
 
             renderer.Mesh->OnUpdate(ts);
 
-            glm::mat4 worldTransform = transform.GetTransform();
+            glm::mat4 worldTransform = transform.Transformation.GetMatrix();
             bool isSelected = (m_Scene->GetSelectedEntity() == entity);
 
             for (uint32_t i = 0; i < renderer.Mesh->GetSubmeshes().size(); i++)

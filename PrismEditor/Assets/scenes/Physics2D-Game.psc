@@ -11,7 +11,7 @@ Entities:
       Tag: Box
     TransformComponent:
       Position: [-16.614326, 4.39151, 6.433595e-09]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [3.0000002, 0.3, 1]
     MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
@@ -28,7 +28,7 @@ Entities:
       Tag: Box
     TransformComponent:
       Position: [-20.766222, 2.2943144, 0]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [3.0000002, 0.3, 1]
     MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
@@ -79,7 +79,7 @@ Entities:
       Tag: Player
     TransformComponent:
       Position: [-23.693254, 1.5918453, -1.9636936e-06]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     ScriptComponent:
       ModuleName: Example.PlayerCube
@@ -111,7 +111,7 @@ Entities:
       Tag: Cube
     TransformComponent:
       Position: [500, 0, 0]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [1200, 1, 5]
     MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
@@ -144,7 +144,7 @@ Entities:
       Tag: Box
     TransformComponent:
       Position: [-12.0348625, 6.596472, 9.600619e-07]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [3.0000002, 0.3, 1]
     MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx

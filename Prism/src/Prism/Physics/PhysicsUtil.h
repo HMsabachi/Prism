@@ -1,10 +1,11 @@
 ﻿#pragma once
 
+#include "Prism/Core/Math/Transform.h"
+
 #include <PhysX/PxPhysicsAPI.h>
 #include <glm/glm.hpp>
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
-#include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include <functional>
@@ -17,6 +18,7 @@ namespace Prism {
     void SetContactCallbacks(const std::function<void(Entity)>& onBegin, const std::function<void(Entity)>& onEnd);
     void SetContactTriggerCallbacks(const std::function<void(Entity)>& onBegin, const std::function<void(Entity)>& onEnd);
 
+    physx::PxTransform ToPhysXTransform(const Transform& transform);
     physx::PxTransform ToPhysXTransform(const glm::mat4& matrix);
     physx::PxMat44 ToPhysXMatrix(const glm::mat4& matrix);
     physx::PxVec3 ToPhysXVector(const glm::vec3& vector);

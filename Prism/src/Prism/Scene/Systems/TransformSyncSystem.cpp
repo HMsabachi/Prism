@@ -34,15 +34,15 @@ namespace Prism {
                 auto* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
                 if (!actor) continue;
 
-                auto& tc = e.Transform();
-                if (!tc.TransformDirty) continue;
+                auto& transform = e.Transformation();
+                if (!transform.IsPhysicsDirty()) continue;
 
-                actor->setGlobalPose(ToPhysXTransform(tc.GetTransform()));
-                tc.TransformDirty = false;
+                actor->setGlobalPose(ToPhysXTransform(transform.GetMatrix()));
+                transform.MarkPhysicsClean();
             }
         }
 
-        // 2D: ECS -> Box2D 
+        // 2D: ECS -> Box2D
         {
             auto view = m_Scene->GetAllEntitiesWith<RigidBody2DComponent>();
             for (auto entity : view)
@@ -52,12 +52,13 @@ namespace Prism {
                 auto* body = static_cast<b2Body*>(rb2d.RuntimeBody);
                 if (!body) continue;
 
-                auto& tc = e.Transform();
-                if (!tc.TransformDirty) continue;
+                auto& transform = e.Transformation();
+                if (!transform.IsPhysicsDirty()) continue;
 
-                float angle = glm::eulerAngles(tc.Rotation).z;
-                body->SetTransform(b2Vec2(tc.Position.x, tc.Position.y), angle);
-                tc.TransformDirty = false;
+                const auto& pos = transform.GetPosition();
+                float angle = glm::radians(transform.GetRotation().z);
+                body->SetTransform(b2Vec2(pos.x, pos.y), angle);
+                transform.MarkPhysicsClean();
             }
         }
     }
@@ -78,11 +79,11 @@ namespace Prism {
                 auto* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
                 if (!actor) continue;
 
-                auto& tc = e.Transform();
+                auto& transform = e.Transformation();
                 physx::PxTransform pxTransform = actor->getGlobalPose();
-                tc.Position = glm::vec3(pxTransform.p.x, pxTransform.p.y, pxTransform.p.z);
-                tc.Rotation = glm::quat(pxTransform.q.w, pxTransform.q.x, pxTransform.q.y, pxTransform.q.z);
-                tc.TransformDirty = false;
+                transform.SetPosition(glm::vec3(pxTransform.p.x, pxTransform.p.y, pxTransform.p.z));
+                transform.SetRotation(glm::quat(pxTransform.q.w, pxTransform.q.x, pxTransform.q.y, pxTransform.q.z));
+                transform.MarkPhysicsClean();
             }
         }
 
@@ -96,12 +97,12 @@ namespace Prism {
                 auto* body = static_cast<b2Body*>(rb2d.RuntimeBody);
                 if (!body) continue;
 
-                auto& tc = e.Transform();
+                auto& transform = e.Transformation();
                 const auto& position = body->GetPosition();
-                tc.Position.x = position.x;
-                tc.Position.y = position.y;
-                tc.Rotation = glm::quat(glm::vec3(0.0f, 0.0f, body->GetAngle()));
-                tc.TransformDirty = false;
+                const auto& prevPos = transform.GetPosition();
+                transform.SetPosition(glm::vec3(position.x, position.y, prevPos.z));
+                transform.SetRotation(glm::vec3(0.0f, 0.0f, glm::degrees(body->GetAngle())));
+                transform.MarkPhysicsClean();
             }
         }
     }

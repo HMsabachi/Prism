@@ -231,7 +231,7 @@ namespace Prism
                         auto viewProj = m_EditorCamera.GetViewProjection();
                         Renderer2D::BeginScene(viewProj, false);
                         glm::vec4 color = (m_SelectionMode == SelectionMode::Entity) ? glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f } : glm::vec4{ 0.2f, 0.9f, 0.2f, 1.0f };
-                        Renderer::DrawAABB(selection.Mesh->BoundingBox, selection.Entity.GetComponent<TransformComponent>().GetTransform() * selection.Mesh->Transform, color);
+                        Renderer::DrawAABB(selection.Mesh->BoundingBox, selection.Entity.Transformation().GetMatrix() * selection.Mesh->Transform, color);
                         Renderer2D::EndScene();
                         Renderer::EndRenderPass();
                     }
@@ -258,11 +258,11 @@ namespace Prism
                             if (!entity.HasComponent<TransformComponent>())
                                 continue;
 
-                            auto& tc = entity.Transform();
+                            auto& tc = entity.Transformation();
                             auto& boxCollider = entity.GetComponent<BoxCollider2DComponent>();
 
-                            glm::vec3 position = tc.Position + glm::vec3(boxCollider.Offset, 0.0f);
-                            float angle = glm::eulerAngles(tc.Rotation).z;
+                            glm::vec3 position = tc.GetPosition() + glm::vec3(boxCollider.Offset, 0.0f);
+                            float angle = tc.GetRotation().z;
                             glm::vec2 size = boxCollider.Size * 2.0f;
 
                             Renderer2D::DrawRotatedQuad(position, size, angle, glm::vec4(0.5f, 0.0f, 0.5f, 0.3f));
@@ -704,8 +704,8 @@ namespace Prism
                 ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, rw, rh);
 
                 bool snap = Input::IsKeyPressed(PR_KEY_LEFT_CONTROL);
-                auto& tc = selection.Entity.Transform();
-                glm::mat4 entityTransform = tc.GetTransform();
+                auto& entityTransform = selection.Entity.Transformation();
+                glm::mat4 transformMatrix = entityTransform.GetMatrix();
                 float snapValue = GetSnapValue();
                 float snapValues[3] = { snapValue, snapValue, snapValue };
                 if (m_SelectionMode == SelectionMode::Entity)
@@ -714,14 +714,21 @@ namespace Prism
                         glm::value_ptr(m_EditorCamera.GetProjectionMatrix()),
                         (ImGuizmo::OPERATION)m_GizmoType,
                         ImGuizmo::LOCAL,
-                        glm::value_ptr(entityTransform),
+                        glm::value_ptr(transformMatrix),
                         nullptr,
                         snap ? snapValues : nullptr);
-                    tc.SetTransform(entityTransform);
+
+                    glm::vec3 skew;
+                    glm::vec4 perspective;
+                    glm::vec3 pos, scl;
+                    glm::quat rot;
+                    glm::decompose(transformMatrix, scl, rot, pos, skew, perspective);
+                    entityTransform.SetPosition(pos);
+                    entityTransform.SetRotation(rot);
                 }
                 else
                 {
-                    glm::mat4 transformBase = entityTransform * selection.Mesh->Transform;
+                    glm::mat4 transformBase = transformMatrix * selection.Mesh->Transform;
                     ImGuizmo::Manipulate(glm::value_ptr(m_EditorCamera.GetViewMatrix()),
                         glm::value_ptr(m_EditorCamera.GetProjectionMatrix()),
                         (ImGuizmo::OPERATION)m_GizmoType,
@@ -730,7 +737,7 @@ namespace Prism
                         nullptr,
                         snap ? snapValues : nullptr);
 
-                    selection.Mesh->Transform = glm::inverse(entityTransform) * transformBase;
+                    selection.Mesh->Transform = glm::inverse(transformMatrix) * transformBase;
                 }
             }
             ImGui::End();
@@ -1006,8 +1013,8 @@ namespace Prism
                         {
                             auto& submesh = submeshes[i];
                             Ray ray = {
-                                glm::inverse(entity.Transform().GetTransform() * submesh.Transform) * glm::vec4(origin, 1.0f),
-                                glm::inverse(glm::mat3(entity.Transform().GetTransform()) * glm::mat3(submesh.Transform)) * direction
+                                glm::inverse(entity.Transformation().GetMatrix() * submesh.Transform) * glm::vec4(origin, 1.0f),
+                                glm::inverse(glm::mat3(entity.Transformation().GetMatrix()) * glm::mat3(submesh.Transform)) * direction
                             };
 
                             float t;

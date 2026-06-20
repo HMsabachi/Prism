@@ -87,9 +87,9 @@ namespace Example
 
             if (Input.IsKeyPressed(KeyCode.R))
             {
-                Matrix4 transform = Entity.GetTransform();
+                /*Matrix4 transform = Entity.GetTransform();
                 transform.Translation = new Vector3(0.0f);
-                Entity.SetTransform(transform);
+                Entity.SetTransform(transform);*/
             }
 
         }

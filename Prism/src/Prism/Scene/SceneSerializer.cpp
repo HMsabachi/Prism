@@ -192,10 +192,10 @@ namespace Prism {
             out << YAML::Key << "TransformComponent";
             out << YAML::BeginMap; // TransformComponent
 
-            auto& tc = entity.GetComponent<TransformComponent>();
-            out << YAML::Key << "Position" << YAML::Value << tc.Position;
-            out << YAML::Key << "Rotation" << YAML::Value << tc.Rotation;
-            out << YAML::Key << "Scale" << YAML::Value << tc.Scale;
+            auto& transform = entity.Transformation();
+            out << YAML::Key << "Position" << YAML::Value << transform.GetPosition();
+            out << YAML::Key << "Rotation" << YAML::Value << transform.GetRotation();
+            out << YAML::Key << "Scale" << YAML::Value << transform.GetScale();
 
             out << YAML::EndMap; // TransformComponent
         }
@@ -695,18 +695,18 @@ namespace Prism {
                 if (transformComponent)
                 {
                     // Entities always have transforms
-                    auto& tc = deserializedEntity.GetComponent<TransformComponent>();
+                    auto& transform = deserializedEntity.Transformation();
                     glm::vec3 translation = transformComponent["Position"].as<glm::vec3>();
-                    glm::quat rotation = transformComponent["Rotation"].as<glm::quat>();
+                    glm::vec3 rotation = transformComponent["Rotation"].as<glm::vec3>();
                     glm::vec3 scale = transformComponent["Scale"].as<glm::vec3>();
 
-                    tc.Position = translation;
-                    tc.Rotation = rotation;
-                    tc.Scale = scale;
+                    transform.SetPosition(translation);
+                    transform.SetRotation(rotation);
+                    transform.SetScale(scale);
 
                     PR_CORE_INFO("  Entity Transform:");
                     PR_CORE_INFO("    Translation: {0}, {1}, {2}", translation.x, translation.y, translation.z);
-                    PR_CORE_INFO("    Rotation: {0}, {1}, {2}, {3}", rotation.w, rotation.x, rotation.y, rotation.z);
+                    PR_CORE_INFO("    Rotation: {0}, {1}, {2}", rotation.x, rotation.y, rotation.z);
                     PR_CORE_INFO("    Scale: {0}, {1}, {2}", scale.x, scale.y, scale.z);
                 }
 

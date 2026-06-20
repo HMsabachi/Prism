@@ -29,13 +29,6 @@ class Entity:
             self._transform = Transform(self._id)
         return self._transform
 
-    from Prism.Math.Matrix4 import Matrix4
-    def GetTransform(self) -> "Matrix4":
-        return self.Matrix4(_Prism.Prism_Entity_GetTransform(self._id))
-
-    def SetTransform(self, transform: "Matrix4") -> None:
-        _Prism.Prism_Entity_SetTransform(self._id, transform)
-
     def HasComponent(self, cls) -> bool:
         from Prism.Behaviour import Behaviour
         if issubclass(cls, Behaviour) and cls is not Behaviour:

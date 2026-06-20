@@ -8,6 +8,7 @@
 #include <glm/gtx/matrix_decompose.hpp>
 #include "Prism/Core/UUID.h"
 
+#include "Prism/Core/Math/Transform.h"
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/Material.h"
@@ -40,31 +41,15 @@ namespace Prism {
 
     struct TransformComponent
     {
-        glm::vec3 Position = { 0.0f, 0.0f, 0.0f };
-        glm::quat Rotation = { 1.0f, 0.0f, 0.0f, 0.0f };
-        glm::vec3 Scale    = { 1.0f, 1.0f, 1.0f };
-        bool TransformDirty = false;
+        Transform Transformation;
 
         TransformComponent() = default;
         TransformComponent(const TransformComponent& other) = default;
+        TransformComponent(const Transform& transform)
+            : Transformation(transform) {}
 
-        void SetPosition(const glm::vec3& pos) { Position = pos; TransformDirty = true; }
-        void SetRotation(const glm::quat& rot) { Rotation = rot; TransformDirty = true; }
-        void SetScale(const glm::vec3& scl)    { Scale = scl;    TransformDirty = true; }
-
-        glm::mat4 GetTransform() const
-        {
-            return glm::translate(glm::mat4(1.0f), Position)
-                 * glm::toMat4(Rotation)
-                 * glm::scale(glm::mat4(1.0f), Scale);
-        }
-
-        void SetTransform(const glm::mat4& mat)
-        {
-            glm::vec3 skew;
-            glm::vec4 perspective;
-            glm::decompose(mat, Scale, Rotation, Position, skew, perspective);
-        }
+        operator Transform& () { return Transformation; }
+        operator const Transform& () const { return Transformation; }
     };
 
     struct MeshRendererComponent

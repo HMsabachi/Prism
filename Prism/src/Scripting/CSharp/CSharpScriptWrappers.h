@@ -57,8 +57,6 @@ namespace Prism
         CursorMode Prism_Input_GetCursorMode();
         Rolky::Bool32 Prism_Input_IsMouseButtonPressed(MouseButton button);
         // Entity
-        void Prism_Entity_GetTransform(uint64_t entityID, glm::mat4* outTransform);
-        void Prism_Entity_SetTransform(uint64_t entityID, glm::mat4* inTransform);
         void Prism_Entity_CreateComponent(uint64_t entityID, Rolky::ReflectionType type);
         Rolky::Bool32 Prism_Entity_HasComponent(uint64_t entityID, Rolky::ReflectionType type);
         uint64_t Prism_Entity_FindEntityByTag(Rolky::String tag);
@@ -75,6 +73,10 @@ namespace Prism
         void Prism_TransformComponent_SetPosition(uint64_t entityID, glm::vec3 inPosition);
         void Prism_TransformComponent_SetRotation(uint64_t entityID, glm::vec3 inRotation);
         void Prism_TransformComponent_SetScale(uint64_t entityID, glm::vec3 inScale);
+
+        struct ScriptTransform { glm::vec3 Position; glm::vec3 Rotation; glm::vec3 Scale; };
+        void Prism_TransformComponent_GetTransform(uint64_t entityID, ScriptTransform* outTransform);
+        void Prism_TransformComponent_SetTransform(uint64_t entityID, ScriptTransform* inTransform);
         // MeshRendererComponent
         void* Prism_MeshRendererComponent_GetMesh(uint64_t entityID);
         void Prism_MeshRendererComponent_SetMesh(uint64_t entityID, Ref<Mesh>* inMesh);

@@ -1,4 +1,4 @@
-﻿using Prism;
+using Prism;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,7 +22,7 @@ namespace Example
         public void OnUpdate()
         {
             float ts = Time.DeltaTime;
-            Matrix4 transform = Entity.GetTransform();
+            /*Matrix4 transform = Entity.GetTransform();
 
             Vector3 playerTranslation = m_PlayerEntity.GetTransform().Translation;
             Vector3 translation = transform.Translation;
@@ -30,7 +30,7 @@ namespace Example
             translation.Z = playerTranslation.Z + DistanceFromPlayer;
             translation.Y = Math.Max(translation.Y, 2.0f);
             transform.Translation = translation;
-            Entity.SetTransform(transform);
+            Entity.SetTransform(transform);*/
         }
 
 

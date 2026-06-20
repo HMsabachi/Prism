@@ -11,7 +11,7 @@ Entities:
       Tag: Main Cube
     TransformComponent:
       Position: [0, 14.43297, -7.4505806e-09]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [4, 4, 1]
     MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx

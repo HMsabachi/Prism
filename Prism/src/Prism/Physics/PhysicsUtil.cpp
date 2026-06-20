@@ -5,6 +5,13 @@
 
 namespace Prism {
 
+    physx::PxTransform ToPhysXTransform(const Transform& transform)
+    {
+        physx::PxQuat r = ToPhysXQuat(glm::normalize(glm::quat(glm::radians(transform.GetRotation()))));
+        physx::PxVec3 p = ToPhysXVector(transform.GetPosition());
+        return physx::PxTransform(p, r);
+    }
+
     physx::PxTransform ToPhysXTransform(const glm::mat4& matrix)
     {
         physx::PxQuat r = ToPhysXQuat(glm::normalize(glm::toQuat(matrix)));

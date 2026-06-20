@@ -5,22 +5,22 @@ namespace Prism
 {
     public class TransformComponent : Component
     {
-        public Matrix4 Transform
+        public Transform Transform
         {
             get
             {
-                Matrix4 matrix;
+                Transform t;
                 unsafe
                 {
-                    InternalCalls.Prism_Entity_GetTransform(Entity.ID, &matrix);
+                    InternalCalls.Prism_TransformComponent_GetTransform(Entity.ID, &t);
                 }
-                return matrix;
+                return t;
             }
             set
             {
                 unsafe
                 {
-                    InternalCalls.Prism_Entity_SetTransform(Entity.ID, &value);
+                    InternalCalls.Prism_TransformComponent_SetTransform(Entity.ID, &value);
                 }
             }
         }
@@ -45,12 +45,6 @@ namespace Prism
             }
         }
 
-        // Position axis accessors — temporary workaround.
-        // TODO: 后续改为 ref return / 直接内存修改模式，实现 Unity 式 transform.position.X = value 语法
-        public float PositionX { get => Position.X; set => Position = new Vector3(value, Position.Y, Position.Z); }
-        public float PositionY { get => Position.Y; set => Position = new Vector3(Position.X, value, Position.Z); }
-        public float PositionZ { get => Position.Z; set => Position = new Vector3(Position.X, Position.Y, value); }
-
         public Vector3 Rotation
         {
             get
@@ -60,11 +54,7 @@ namespace Prism
                 {
                     InternalCalls.Prism_TransformComponent_GetRotation(Entity.ID, &rotation);
                 }
-                return new Vector3(
-                    rotation.X * (180.0f / MathF.PI),
-                    rotation.Y * (180.0f / MathF.PI),
-                    rotation.Z * (180.0f / MathF.PI)
-                );
+                return rotation;
             }
             set
             {
@@ -74,12 +64,6 @@ namespace Prism
                 }
             }
         }
-
-        // Rotation axis accessors — temporary workaround.
-        // TODO: 后续改为 ref return / 直接内存修改模式，实现 Unity 式 transform.rotation.X = value 语法
-        public float RotationX { get => Rotation.X; set => Rotation = new Vector3(value, Rotation.Y, Rotation.Z); }
-        public float RotationY { get => Rotation.Y; set => Rotation = new Vector3(Rotation.X, value, Rotation.Z); }
-        public float RotationZ { get => Rotation.Z; set => Rotation = new Vector3(Rotation.X, Rotation.Y, value); }
 
         public Vector3 Scale
         {
@@ -100,12 +84,6 @@ namespace Prism
                 }
             }
         }
-
-        // Scale axis accessors — temporary workaround.
-        // TODO: 后续改为 ref return / 直接内存修改模式，实现 Unity 式 transform.scale.X = value 语法
-        public float ScaleX { get => Scale.X; set => Scale = new Vector3(value, Scale.Y, Scale.Z); }
-        public float ScaleY { get => Scale.Y; set => Scale = new Vector3(Scale.X, value, Scale.Z); }
-        public float ScaleZ { get => Scale.Z; set => Scale = new Vector3(Scale.X, Scale.Y, value); }
 
         public void SetPosition(float x, float y, float z)
         {

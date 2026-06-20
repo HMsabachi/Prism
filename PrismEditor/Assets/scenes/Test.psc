@@ -11,7 +11,7 @@ Entities:
       Tag: Noise
     TransformComponent:
       Position: [0, 6.5, 0]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [9.25, 1, 10.25]
     ScriptComponent:
       ModuleName: Example.MapGenerator
@@ -55,7 +55,7 @@ Entities:
       Tag: Empty Entity
     TransformComponent:
       Position: [0, 0, 0]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     ScriptComponent:
       ModuleName: Example.Script
@@ -70,7 +70,7 @@ Entities:
       Tag: ScriptNoise
     TransformComponent:
       Position: [0, 6.8021007, -8.643346]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [10.0599985, 10.0599985, 10.0599985]
     ScriptComponent:
       ModuleName: Example.ScriptNoise

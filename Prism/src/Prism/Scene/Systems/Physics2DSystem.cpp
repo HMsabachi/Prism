@@ -107,7 +107,7 @@ namespace Prism {
     void Physics2DSystem::OnRigidBody2DConstruct(entt::registry& registry, entt::entity entity)
     {
         Entity e = { entity, m_Scene };
-        auto& tc = e.Transform();
+        auto& tc = e.Transformation();
         auto& rigidBody2D = registry.get<RigidBody2DComponent>(entity);
 
         b2BodyDef bodyDef;
@@ -118,8 +118,8 @@ namespace Prism {
         else if (rigidBody2D.BodyType == RigidBody2DComponent::Type::Kinematic)
             bodyDef.type = b2_kinematicBody;
 
-        bodyDef.position.Set(tc.Position.x, tc.Position.y);
-        bodyDef.angle = glm::eulerAngles(tc.Rotation).z;
+        bodyDef.position.Set(tc.GetPosition().x, tc.GetPosition().y);
+        bodyDef.angle = glm::radians(tc.GetRotation().z);
 
         b2Body* body = m_World->CreateBody(&bodyDef);
         body->SetFixedRotation(rigidBody2D.FixedRotation);

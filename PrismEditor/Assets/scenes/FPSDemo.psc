@@ -30,7 +30,7 @@ Entities:
       Tag: Sphere
     TransformComponent:
       Position: [-3.9877, 1, 0]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     MeshRendererComponent:
       AssetPath: assets\meshes\Sphere1m.fbx
@@ -74,7 +74,7 @@ Entities:
       Tag: Box
     TransformComponent:
       Position: [0, 1.5, 0]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [2, 2, 2]
     MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
@@ -119,7 +119,7 @@ Entities:
       Tag: Mesh Collider
     TransformComponent:
       Position: [-2.6046, 1, -0.0016999245]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     MeshRendererComponent:
       AssetPath: assets\meshes\Sphere1m.fbx
@@ -163,7 +163,7 @@ Entities:
       Tag: Player
     TransformComponent:
       Position: [2.8080375, 1.5, 0]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [2, 2, 2]
     MeshRendererComponent:
       AssetPath: Assets\meshes\Capsule.fbx
@@ -252,7 +252,7 @@ Entities:
       Tag: Camera
     TransformComponent:
       Position: [2.808, 2.25, 0]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     CameraComponent:
       Camera: some camera data...
@@ -268,7 +268,7 @@ Entities:
       Tag: Ground
     TransformComponent:
       Position: [0, 0, 0]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [50, 1, 50]
     MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx

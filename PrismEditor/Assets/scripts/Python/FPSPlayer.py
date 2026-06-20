@@ -33,12 +33,7 @@ class FPSPlayer(Behaviour):
 
         self._currentSpeed = self.WalkingSpeed
 
-        self._cameraRotationX = 0.0
-        self._rotationY = 0.0
-
         self._lastMousePosition = Input.GetMousePosition()
-
-        self._rotationY = self._transform.Rotation.y
 
         Input.SetCursorMode(CursorMode.Locked)
 
@@ -63,27 +58,29 @@ class FPSPlayer(Behaviour):
     def UpdateRotation(self, ts: float):
         currentMousePosition = Input.GetMousePosition()
         delta = self._lastMousePosition - currentMousePosition
-        self._rotationY += delta.x * self.MouseSensitivity * ts
-        # self._transform.Rotation = Vector3(0.0, self._rotationY, 0.0)
+        yRotation = delta.x * self.MouseSensitivity * ts
+        xRotation = delta.y * self.MouseSensitivity * ts
+        self._rigidBody.Rotate(Vector3(0.0, yRotation, 0.0))
 
-        if delta.y != 0.0:
-            self._cameraRotationX += delta.y * self.MouseSensitivity * ts
-            self._cameraRotationX = Mathf.Clamp(self._cameraRotationX, -80.0, 80.0)
+        if delta.y != 0.0 or delta.x != 0.0:
+            self._cameraTransform.Rotation += Vector3(xRotation, yRotation, 0.0)
+
+        self._cameraTransform.Rotation = Vector3(Mathf.Clamp(self._cameraTransform.Rotation.x, -80.0, 80.0), self._cameraTransform.Rotation.YZ)
 
         self._lastMousePosition = currentMousePosition
 
     def UpdateMovement(self):
         if Input.IsKeyPressed(KeyCodes.H):
-            origin = self._cameraTransform.Transform.Translation + (self._cameraTransform.Forward * 5.0)
+            origin = self._cameraTransform.Position + (self._cameraTransform.Transform.Forward * 5.0)
             hit = RaycastHit()
-            if Physics.Raycast(origin, self._cameraTransform.Forward, 20.0, hit):
+            if Physics.Raycast(origin, self._cameraTransform.Transform.Forward, 20.0, hit):
                 entity = Entity.FindEntityByID(hit.EntityID)
                 if entity is not None:
                     mesh: MeshRendererComponent = entity.GetComponent(MeshRendererComponent)
                     if mesh is not None and mesh.Mesh is not None:
                         mesh.GetMaterial(0).SetFloat("u_Metalness", 1.0)
         if Input.IsKeyPressed(KeyCodes.L):
-            colliders = Physics.OverlapBox(self._transform.Transform.Translation, Vector3(1.0, 1.0, 1.0))
+            colliders = Physics.OverlapBox(self._transform.Position, Vector3(1.0, 1.0, 1.0))
             Log.Trace("Overlap count: {}", len(colliders))
             for c in colliders:
                 Log.Trace("EntityID: {}", c.EntityID)
@@ -94,14 +91,14 @@ class FPSPlayer(Behaviour):
                 Log.Trace("IsMesh: {}", isinstance(c, MeshCollider))
 
         if Input.IsKeyPressed(KeyCodes.W):
-            self._rigidBody.AddForce(self._cameraTransform.Forward * self._currentSpeed)
+            self._rigidBody.AddForce(self._cameraTransform.Transform.Forward * self._currentSpeed)
         elif Input.IsKeyPressed(KeyCodes.S):
-            self._rigidBody.AddForce(self._cameraTransform.Forward * -self._currentSpeed)
+            self._rigidBody.AddForce(self._cameraTransform.Transform.Forward * -self._currentSpeed)
 
         if Input.IsKeyPressed(KeyCodes.A):
-            self._rigidBody.AddForce(self._cameraTransform.Right * -self._currentSpeed)
+            self._rigidBody.AddForce(self._cameraTransform.Transform.Right * -self._currentSpeed)
         elif Input.IsKeyPressed(KeyCodes.D):
-            self._rigidBody.AddForce(self._cameraTransform.Right * self._currentSpeed)
+            self._rigidBody.AddForce(self._cameraTransform.Transform.Right * self._currentSpeed)
 
         if Input.IsKeyPressed(KeyCodes.Space) and self.Colliding:
             self._rigidBody.AddForce(Vector3.Up * self.JumpForce)
@@ -109,14 +106,9 @@ class FPSPlayer(Behaviour):
         velocity.Clamp(Vector3(-self._currentSpeed), Vector3(self._currentSpeed))
 
     def UpdateCameraTransform(self):
-        cameraPosition = self._cameraTransform.Position
-        translation = self._transform.Transform.Translation
-        cameraPosition.x = translation.x
-        cameraPosition.z = translation.z
-        cameraPosition.y = translation.y + 1.5
-        self._cameraTransform.Position = cameraPosition
-
-        self._cameraTransform.Rotation = Vector3(self._cameraRotationX, self._rotationY, 0.0)
+        position = Vector3(self._transform.Position)
+        position.y += 1.5
+        self._cameraTransform.Position = position
 
     def OnCollisionBegin(self, collision_id: float):
         self._collisionCounter += 1

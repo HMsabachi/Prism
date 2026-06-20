@@ -39,8 +39,6 @@ namespace Prism::Script
     Python::ScriptValue* Prism_Input_IsMouseButtonPressed(Python::ScriptValue* self, Python::ScriptValue* args);
 
     // Entity
-    Python::ScriptValue* Prism_Entity_GetTransform(Python::ScriptValue* self, Python::ScriptValue* args);
-    Python::ScriptValue* Prism_Entity_SetTransform(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Entity_CreateComponent(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Entity_HasComponent(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Entity_AddBehaviour(Python::ScriptValue* self, Python::ScriptValue* args);
@@ -61,6 +59,8 @@ namespace Prism::Script
     Python::ScriptValue* Prism_TransformComponent_SetRotation(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_TransformComponent_GetScale(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_TransformComponent_SetScale(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_TransformComponent_GetTransform(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_TransformComponent_SetTransform(Python::ScriptValue* self, Python::ScriptValue* args);
 
     // RigidBody2DComponent
     Python::ScriptValue* Prism_RigidBody2DComponent_ApplyLinearImpulse(Python::ScriptValue* self, Python::ScriptValue* args);

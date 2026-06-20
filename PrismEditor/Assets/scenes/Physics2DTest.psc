@@ -149,7 +149,7 @@ Entities:
       Tag: Cube
     TransformComponent:
       Position: [0, 0, 0]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [50, 1, 50]
     ScriptComponent:
       ModuleName: Example.RandomColor

@@ -1,7 +1,9 @@
-using System;
+﻿using System;
+using System.Runtime.InteropServices;
 
 namespace Prism
 {
+    [StructLayout(LayoutKind.Sequential)]
     public struct Transform : IEquatable<Transform>
     {
         public Vector3 Position;

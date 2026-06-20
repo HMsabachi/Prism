@@ -94,7 +94,7 @@ namespace Prism {
         RigidBodyComponent& rigidbody = e.GetComponent<RigidBodyComponent>();
 
         // Create Actor Body
-        physx::PxRigidActor* actor = PXPhysicsWrappers::CreateActor(rigidbody, e.Transform().GetTransform());
+        physx::PxRigidActor* actor = PXPhysicsWrappers::CreateActor(rigidbody, e.Transformation());
 
         if (rigidbody.BodyType == RigidBodyComponent::Type::Dynamic)
             s_SimulatedEntities.push_back(e);
@@ -109,32 +109,31 @@ namespace Prism {
         // Physics Material
         physx::PxMaterial* material = PXPhysicsWrappers::CreateMaterial(e.GetComponent<PhysicsMaterialComponent>());
 
-        auto& transform = e.Transform();
-        glm::vec3 scale = transform.Scale;
+        const Transform& transform = e.Transformation();
 
         // Add all colliders
         if (e.HasComponent<BoxColliderComponent>())
         {
             BoxColliderComponent& collider = e.GetComponent<BoxColliderComponent>();
-            PXPhysicsWrappers::AddBoxCollider(*actor, *material, collider, scale);
+            PXPhysicsWrappers::AddBoxCollider(*actor, *material, collider, transform.GetScale());
         }
 
         if (e.HasComponent<SphereColliderComponent>())
         {
             SphereColliderComponent& collider = e.GetComponent<SphereColliderComponent>();
-            PXPhysicsWrappers::AddSphereCollider(*actor, *material, collider, scale);
+            PXPhysicsWrappers::AddSphereCollider(*actor, *material, collider, transform.GetScale());
         }
 
         if (e.HasComponent<CapsuleColliderComponent>())
         {
             CapsuleColliderComponent& collider = e.GetComponent<CapsuleColliderComponent>();
-            PXPhysicsWrappers::AddCapsuleCollider(*actor, *material, collider, scale);
+            PXPhysicsWrappers::AddCapsuleCollider(*actor, *material, collider, transform.GetScale());
         }
 
         if (e.HasComponent<MeshColliderComponent>())
         {
             MeshColliderComponent& collider = e.GetComponent<MeshColliderComponent>();
-            PXPhysicsWrappers::AddMeshCollider(*actor, *material, collider, scale);
+            PXPhysicsWrappers::AddMeshCollider(*actor, *material, collider, transform.GetScale());
         }
 
         if (!PhysicsLayerManager::IsLayerValid(rigidbody.Layer))

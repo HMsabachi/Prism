@@ -558,20 +558,20 @@ namespace Prism {
 
         if (entity.HasComponent<TransformComponent>())
         {
-            auto& tc = entity.GetComponent<TransformComponent>();
+            Transform& transform = entity.Transformation();
             if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(TransformComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, TR("Transform")))
             {
-                glm::vec3 position = tc.Position;
-                glm::vec3 rotation = glm::degrees(glm::eulerAngles(tc.Rotation));
-                glm::vec3 scale = tc.Scale;
+                glm::vec3 translation = transform.GetPosition();
+                glm::vec3 rotation = transform.GetRotation();
+                glm::vec3 scale = transform.GetScale();
 
                 ImGui::Columns(2);
                 ImGui::Text(TR("Translation"));
                 ImGui::NextColumn();
                 ImGui::PushItemWidth(-1);
 
-                if (ImGui::DragFloat3("##translation", glm::value_ptr(position), 0.25f))
-                    tc.SetPosition(position);
+                if (ImGui::DragFloat3("##translation", glm::value_ptr(translation), 0.25f))
+                    transform.SetPosition(translation);
 
                 ImGui::PopItemWidth();
                 ImGui::NextColumn();
@@ -581,7 +581,7 @@ namespace Prism {
                 ImGui::PushItemWidth(-1);
 
                 if (ImGui::DragFloat3("##rotation", glm::value_ptr(rotation), 0.25f))
-                    tc.SetRotation(glm::quat(glm::radians(rotation)));
+                    transform.SetRotation(rotation);
 
                 ImGui::PopItemWidth();
                 ImGui::NextColumn();
@@ -591,7 +591,7 @@ namespace Prism {
                 ImGui::PushItemWidth(-1);
 
                 if (ImGui::DragFloat3("##scale", glm::value_ptr(scale), 0.25f))
-                    tc.SetScale(scale);
+                    transform.SetScale(scale);
 
                 ImGui::PopItemWidth();
                 ImGui::NextColumn();

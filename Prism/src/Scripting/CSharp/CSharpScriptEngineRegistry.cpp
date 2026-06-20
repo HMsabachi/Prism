@@ -80,8 +80,6 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_Input_GetCursorMode);
         PR_ADD_INTERNAL_CALL(Prism_Input_IsMouseButtonPressed);
         // Entity
-        PR_ADD_INTERNAL_CALL(Prism_Entity_GetTransform);
-        PR_ADD_INTERNAL_CALL(Prism_Entity_SetTransform);
         PR_ADD_INTERNAL_CALL(Prism_Entity_CreateComponent);
         PR_ADD_INTERNAL_CALL(Prism_Entity_HasComponent);
         PR_ADD_INTERNAL_CALL(Prism_Entity_FindEntityByTag);
@@ -113,6 +111,8 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_TransformComponent_SetPosition);
         PR_ADD_INTERNAL_CALL(Prism_TransformComponent_SetRotation);
         PR_ADD_INTERNAL_CALL(Prism_TransformComponent_SetScale);
+        PR_ADD_INTERNAL_CALL(Prism_TransformComponent_GetTransform);
+        PR_ADD_INTERNAL_CALL(Prism_TransformComponent_SetTransform);
         // RigidBodyComponent
         PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_AddForce);
         PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_AddTorque);

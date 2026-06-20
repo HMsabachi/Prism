@@ -74,7 +74,7 @@ namespace Prism {
                     Entity e = { entity, m_Scene };
                     auto& collider = e.GetComponent<BoxColliderComponent>();
                     rs->SubmitDebugMesh(collider.DebugMesh,
-                        glm::translate(e.GetComponent<TransformComponent>().GetTransform(), collider.Offset));
+                        glm::translate(e.Transformation().GetMatrix(), collider.Offset));
                 }
             }
         }
@@ -88,7 +88,7 @@ namespace Prism {
                     Entity e = { entity, m_Scene };
                     auto& collider = e.GetComponent<SphereColliderComponent>();
                     rs->SubmitDebugMesh(collider.DebugMesh,
-                        e.GetComponent<TransformComponent>().GetTransform());
+                        e.Transformation().GetMatrix());
                 }
             }
         }
@@ -102,7 +102,7 @@ namespace Prism {
                     Entity e = { entity, m_Scene };
                     auto& collider = e.GetComponent<CapsuleColliderComponent>();
                     rs->SubmitDebugMesh(collider.DebugMesh,
-                        e.GetComponent<TransformComponent>().GetTransform());
+                        e.Transformation().GetMatrix());
                 }
             }
         }
@@ -116,7 +116,7 @@ namespace Prism {
                     Entity e = { entity, m_Scene };
                     auto& collider = e.GetComponent<MeshColliderComponent>();
                     rs->SubmitDebugMesh(collider.ProcessedMesh,
-                        e.GetComponent<TransformComponent>().GetTransform());
+                        e.Transformation().GetMatrix());
                 }
             }
         }

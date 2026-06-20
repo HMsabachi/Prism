@@ -20,7 +20,7 @@ Entities:
       Tag: Mesh
     TransformComponent:
       Position: [0, 0, 0]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [17.2032, 17.2032, 17.2032]
     MeshRendererComponent:
       AssetPath: Assets\models\sponza\sponza.obj
@@ -35,7 +35,7 @@ Entities:
       Tag: Player
     TransformComponent:
       Position: [-23.693254, 1.5918453, -2.0246953e-06]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [0.5, 1, 0.5]
     MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
@@ -58,7 +58,7 @@ Entities:
       Tag: Box
     TransformComponent:
       Position: [-12.0348625, 6.596472, 9.600619e-07]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [3.0000002, 0.3, 1]
     MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
@@ -97,7 +97,7 @@ Entities:
       Tag: Cube
     TransformComponent:
       Position: [500, 0, 0]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [1200, 1, 5]
     MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
@@ -120,7 +120,7 @@ Entities:
       Tag: Sphere
     TransformComponent:
       Position: [-16.412237, 3.1920667, -1.9073486e-06]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     MeshRendererComponent:
       AssetPath: assets\meshes\Sphere1m.fbx
@@ -189,7 +189,7 @@ Entities:
       Tag: Box
     TransformComponent:
       Position: [-20.766222, 2.2943144, 0]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [3.0000002, 0.3, 1]
     MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
@@ -212,7 +212,7 @@ Entities:
       Tag: Box
     TransformComponent:
       Position: [-16.614326, 4.39151, 6.433595e-09]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [3.0000002, 0.3, 1]
     MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx

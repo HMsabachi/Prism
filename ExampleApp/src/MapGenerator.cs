@@ -58,8 +58,8 @@ namespace Example
             material.SetTexture("u_AlbedoTexture", texture);
 
             TransformComponent transformComponent = GetComponent<TransformComponent>();
-            Vector3 position = Entity.GetTransform().Translation;
-            transformComponent.Transform = Matrix4.Scale(new Vector3(10f, 1.0f, 10f)) * Matrix4.Translate(position);
+            /*Vector3 position = Entity.GetTransform().Translation;
+            transformComponent.Transform = Matrix4.Scale(new Vector3(10f, 1.0f, 10f)) * Matrix4.Translate(position);*/
         }
 
         private void OnCreate()
@@ -70,7 +70,7 @@ namespace Example
         private void OnUpdate()
         {
             float ts = Time.DeltaTime;
-            Matrix4 transform = Entity.GetTransform();
+            /*Matrix4 transform = Entity.GetTransform();
             Vector3 translation = transform.Translation;
             translation.Y += ts * Speed;
             if (Input.IsKeyPressed(KeyCode.Space))
@@ -78,7 +78,7 @@ namespace Example
                 translation.Y -= 10.0f;
             }
             transform.Translation = translation;
-            Entity.SetTransform(transform);
+            Entity.SetTransform(transform);*/
         }
     }
 }

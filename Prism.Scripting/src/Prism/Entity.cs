@@ -17,17 +17,6 @@ namespace Prism
 
         public TransformComponent Transform => GetComponent<TransformComponent>();
 
-        public Matrix4 GetTransform()
-        {
-            var transform = GetComponent<TransformComponent>();
-            return transform.Transform;
-        }
-
-        public void SetTransform(Matrix4 value)
-        {
-            var transform = GetComponent<TransformComponent>();
-            transform.Transform = value;
-        }
         public bool HasComponent<T>() where T : Component, new()
         {
             if (typeof(T).IsSubclassOf(typeof(Behaviour)))

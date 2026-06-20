@@ -29,8 +29,6 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<CursorMode, void> Prism_Input_SetCursorMode;
         internal static delegate* unmanaged[Cdecl]<CursorMode> Prism_Input_GetCursorMode;
         // Entity
-        internal static delegate* unmanaged[Cdecl]<UInt64, Matrix4*, void> Prism_Entity_GetTransform;
-        internal static delegate* unmanaged[Cdecl]<UInt64, Matrix4*, void> Prism_Entity_SetTransform;
         internal static delegate* unmanaged[Cdecl]<UInt64, ReflectionType, void> Prism_Entity_CreateComponent;
         internal static delegate* unmanaged[Cdecl]<UInt64, ReflectionType, Bool32> Prism_Entity_HasComponent;
         // MeshRendererComponent
@@ -110,6 +108,8 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector3, void> Prism_TransformComponent_SetPosition;
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector3, void> Prism_TransformComponent_SetRotation;
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector3, void> Prism_TransformComponent_SetScale;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Transform*, void> Prism_TransformComponent_GetTransform;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Transform*, void> Prism_TransformComponent_SetTransform;
 
     }
 #pragma warning restore CS0649

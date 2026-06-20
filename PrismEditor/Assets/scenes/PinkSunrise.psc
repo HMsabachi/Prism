@@ -11,7 +11,7 @@ Entities:
       Tag: Test Entity
     TransformComponent:
       Position: [0.24810958, -1.9073486e-06, -0.268641]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     ScriptComponent:
       ModuleName: Example.Script
@@ -54,7 +54,7 @@ Entities:
       Tag: Sphere
     TransformComponent:
       Position: [0, 21.980507, -1.6400628]
-      Rotation: [1, 0, 0, 0]
+      Rotation: [0, 0, 0]
       Scale: [0.100000024, 0.100000024, 0.100000024]
     ScriptComponent:
       ModuleName: Example.Sink

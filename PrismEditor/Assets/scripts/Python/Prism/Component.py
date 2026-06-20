@@ -95,12 +95,16 @@ class TransformComponent(Component):
 
     @property
     def Transform(self):
-        from Prism.Math.Matrix4 import Matrix4
-        return Matrix4(_Prism.Prism_Entity_GetTransform(self.Entity._id))
+        from Prism.Core.Transform import Transform as T
+        result = _Prism.Prism_TransformComponent_GetTransform(self.Entity._id)
+        return T(Vector3(result[0]), Vector3(result[1]), Vector3(result[2]))
 
     @Transform.setter
     def Transform(self, value):
-        _Prism.Prism_Entity_SetTransform(self.Entity._id, value)
+        _Prism.Prism_TransformComponent_SetTransform(
+            self.Entity._id,
+            value.Position, value.Rotation, value.Scale
+        )
 
     def SetPosition(self, x, y, z):
         _Prism.Prism_TransformComponent_SetPosition(self.Entity._id, Vector3(x, y, z))

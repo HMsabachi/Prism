@@ -29,6 +29,13 @@ namespace Prism
             Z = 0f;
         }
 
+        public Vector3(float scalar, Vector2 yz)
+        {
+            X = scalar;
+            Y = yz.X;
+            Z = yz.Y;
+        }
+
         public Vector3(Vector4 vector)
         {
             X = vector.X;
