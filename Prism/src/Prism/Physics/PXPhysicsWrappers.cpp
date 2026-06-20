@@ -193,6 +193,8 @@ namespace Prism {
     {
         physx::PxRigidActor* actor = nullptr;
 
+        const PhysicsSettings& settings = Physics::GetSettings();
+
         if (rigidbody.BodyType == RigidBodyComponent::Type::Static)
         {
             actor = s_Physics->createRigidStatic(ToPhysXTransform(transform));
@@ -209,6 +211,8 @@ namespace Prism {
             dynamicActor->setRigidDynamicLockFlag(physx::PxRigidDynamicLockFlag::eLOCK_ANGULAR_X, rigidbody.LockRotationX);
             dynamicActor->setRigidDynamicLockFlag(physx::PxRigidDynamicLockFlag::eLOCK_ANGULAR_Y, rigidbody.LockRotationY);
             dynamicActor->setRigidDynamicLockFlag(physx::PxRigidDynamicLockFlag::eLOCK_ANGULAR_Z, rigidbody.LockRotationZ);
+
+            dynamicActor->setSolverIterationCounts(settings.SolverIterations, settings.SolverVelocityIterations);
 
             physx::PxRigidBodyExt::updateMassAndInertia(*dynamicActor, rigidbody.Mass);
             actor = dynamicActor;
@@ -297,17 +301,17 @@ namespace Prism {
 
     physx::PxConvexMesh* PXPhysicsWrappers::CreateConvexMesh(MeshColliderComponent& collider)
     {
-        std::vector<Vertex> vertices = collider.CollisionMesh->GetStaticVertices();
-
-        physx::PxConvexMeshDesc convexDesc;
-        convexDesc.points.count = (uint32_t)vertices.size();
-        convexDesc.points.stride = sizeof(Vertex);
-        convexDesc.points.data = vertices.data();
-        convexDesc.flags = physx::PxConvexFlag::eCOMPUTE_CONVEX;
-
         physx::PxConvexMesh* mesh = nullptr;
         if (!ConvexMeshSerializer::IsSerialized(collider.CollisionMesh->GetFilePath()))
         {
+            std::vector<Vertex> vertices = collider.CollisionMesh->GetStaticVertices();
+
+            physx::PxConvexMeshDesc convexDesc;
+            convexDesc.points.count = (uint32_t)vertices.size();
+            convexDesc.points.stride = sizeof(Vertex);
+            convexDesc.points.data = vertices.data();
+            convexDesc.flags = physx::PxConvexFlag::eCOMPUTE_CONVEX;
+
             physx::PxDefaultMemoryOutputStream buf;
             physx::PxCookingParams params(s_Physics->getTolerancesScale());
             physx::PxConvexMeshCookingResult::Enum result;
@@ -324,9 +328,10 @@ namespace Prism {
             mesh = s_Physics->createConvexMesh(input);
         }
 
+        // TODO: This doesn't really belong here since this generates the debug mesh used for the editor
         if (!collider.ProcessedMesh)
         {
-            // Based On: https://github.com/EpicGames/UnrealEngine/blob/08ee319f80ef47dbf0988e14b546b65214838ec4/Engine/Source/ThirdParty/PhysX3/NvCloth/samples/SampleBase/renderer/ConvexRenderMesh.cpp
+            // Based On: https://github.com/EpicGames/UnrealEngine/blob/release/Engine/Source/ThirdParty/PhysX3/NvCloth/samples/SampleBase/renderer/ConvexRenderMesh.cpp
 
             const uint32_t nbPolygons = mesh->getNbPolygons();
             const physx::PxVec3* convexVertices = mesh->getVertices();

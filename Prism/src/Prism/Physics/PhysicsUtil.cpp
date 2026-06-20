@@ -132,6 +132,9 @@ namespace Prism {
             fseek(f, 0, SEEK_END);
             size = ftell(f);
             fseek(f, 0, SEEK_SET);
+            if (s_MeshDataBuffer)
+                delete[] s_MeshDataBuffer;
+
             s_MeshDataBuffer = new physx::PxU8[size / sizeof(physx::PxU8)];
             fread(s_MeshDataBuffer, sizeof(physx::PxU8), size / sizeof(physx::PxU8), f);
             fclose(f);

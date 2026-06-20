@@ -22,7 +22,7 @@ namespace Prism {
     {
         uint32_t layerId = GetNextLayerID();
         PhysicsLayer layer = { layerId, name, (uint32_t)BIT(layerId), BIT(layerId) };
-        s_Layers.push_back(layer);
+        s_Layers.insert(s_Layers.begin() + layerId, layer);
 
         if (setCollisions)
         {
@@ -37,9 +37,6 @@ namespace Prism {
 
     void PhysicsLayerManager::RemoveLayer(uint32_t layerId)
     {
-        if (!IsLayerValid(layerId))
-            return;
-
         PhysicsLayer& layerInfo = GetLayer(layerId);
 
         for (auto& otherLayer : s_Layers)
@@ -95,15 +92,7 @@ namespace Prism {
 
     PhysicsLayer& PhysicsLayerManager::GetLayer(uint32_t layerId)
     {
-        for (auto& layer : s_Layers)
-        {
-            if (layer.LayerID == layerId)
-            {
-                return layer;
-            }
-        }
-
-        return s_NullLayer;
+        return layerId >= s_Layers.size() ? s_NullLayer : s_Layers[layerId];
     }
 
     PhysicsLayer& PhysicsLayerManager::GetLayer(const std::string& layerName)
@@ -126,18 +115,8 @@ namespace Prism {
 
     bool PhysicsLayerManager::IsLayerValid(uint32_t layerId)
     {
-        for (const auto& layer : s_Layers)
-        {
-            if (layer.LayerID == layerId)
-                return true;
-        }
-
-        return false;
-    }
-
-    void PhysicsLayerManager::ClearLayers()
-    {
-        s_Layers.clear();
+        const PhysicsLayer& layer = GetLayer(layerId);
+        return layer.LayerID != s_NullLayer.LayerID && layer.IsValid();
     }
 
     uint32_t PhysicsLayerManager::GetNextLayerID()

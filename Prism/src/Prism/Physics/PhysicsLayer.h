@@ -10,6 +10,11 @@ namespace Prism {
         std::string Name;
         uint32_t BitValue;
         int32_t CollidesWith = 0;
+
+        bool IsValid() const
+        {
+            return !Name.empty() && BitValue > 0;
+        }
     };
 
     class PRISM_API PhysicsLayerManager
@@ -29,8 +34,6 @@ namespace Prism {
 
         static bool ShouldCollide(uint32_t layer1, uint32_t layer2);
         static bool IsLayerValid(uint32_t layerId);
-
-        static void ClearLayers();
 
     private:
         static uint32_t GetNextLayerID();
