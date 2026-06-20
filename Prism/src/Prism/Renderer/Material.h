@@ -11,9 +11,11 @@ namespace Prism
     {
     public:
         static Ref<Material> Create(const Ref<PrismShader>& shader);
+        static Ref<Material> Create(const Ref<Material>& material);
 
     public:
         Material(const Ref<PrismShader>& shader);
+        Material(const Ref<Material>& material);
         virtual ~Material();
 
         // Shader

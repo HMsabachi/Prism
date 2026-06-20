@@ -161,7 +161,17 @@ Entities:
       IsTrigger: false
     CSharpScriptComponent:
       Behaviours:
-        []
+        - ClassID: 17473292295039821981
+          Enabled: true
+          Fields:
+            - ID: 2824397154
+              Name: Timer
+              Type: 1
+              Value: 0
+            - ID: 3048789568
+              Name: ID
+              Type: 11
+              Value: 0
     PythonScriptComponent:
       Behaviours:
         []
@@ -195,7 +205,17 @@ Entities:
       IsTrigger: false
     CSharpScriptComponent:
       Behaviours:
-        []
+        - ClassID: 17473292295039821981
+          Enabled: true
+          Fields:
+            - ID: 2824397154
+              Name: Timer
+              Type: 1
+              Value: 0
+            - ID: 3048789568
+              Name: ID
+              Type: 11
+              Value: 0
     PythonScriptComponent:
       Behaviours:
         []
@@ -365,7 +385,17 @@ Entities:
       IsTrigger: false
     CSharpScriptComponent:
       Behaviours:
-        []
+        - ClassID: 17473292295039821981
+          Enabled: true
+          Fields:
+            - ID: 2824397154
+              Name: Timer
+              Type: 1
+              Value: 0
+            - ID: 3048789568
+              Name: ID
+              Type: 11
+              Value: 0
     PythonScriptComponent:
       Behaviours:
         []

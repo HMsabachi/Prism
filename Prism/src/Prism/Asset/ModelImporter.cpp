@@ -46,9 +46,18 @@ namespace Prism
             TraverseNodes(node->mChildren[i], submeshes, transform);
     }
 
+    static std::unordered_map<std::string, ModelImportResult> s_Result;
+
     ModelImportResult ModelImporter::Import(const std::string& filepath)
     {
         ModelImportResult result;
+        if (s_Result.find(filepath) != s_Result.end())
+        {
+            result.Mesh = s_Result[filepath].Mesh;
+            for (auto& material : s_Result[filepath].Materials)
+                result.Materials.push_back(Material::Create(material));
+            return result;
+        }
 
         auto importer = std::make_unique<Assimp::Importer>();
         const aiScene* scene = importer->ReadFile(filepath, s_MeshImportFlags);
@@ -238,7 +247,7 @@ namespace Prism
             result.Materials.push_back(
                 submesh.MaterialIndex < materialLookup.size()
                     ? materialLookup[submesh.MaterialIndex] : nullptr);
-
+        s_Result[filepath] = result;
         return result;
     }
 }

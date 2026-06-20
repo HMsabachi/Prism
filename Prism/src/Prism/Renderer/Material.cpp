@@ -10,6 +10,12 @@ namespace Prism
         return Ref<Material>::Create(shader);
     }
 
+
+    Ref<Prism::Material> Material::Create(const Ref<Material>& material)
+    {
+        return Ref<Material>::Create(material);
+    }
+
     Material::Material(const Ref<PrismShader>& shader)
         : m_Shader(shader)
     {
@@ -17,8 +23,23 @@ namespace Prism
         AllocateStorage();
     }
 
+
+    Material::Material(const Ref<Material>& material)
+        : m_Shader(material->m_Shader)
+    {
+        m_Shader->AddShaderReloadedCallback(std::bind(&Material::OnShaderReloaded, this));
+        AllocateStorage();
+        m_PropertyBuffer = material->m_PropertyBuffer.Copy();
+        m_Textures = material->m_Textures;
+        m_KeywordMask = material->m_KeywordMask;
+        m_Name = material->m_Name;
+        m_Dirty = true;
+    }
+
     Material::~Material()
     {
+        m_PropertyBuffer.Free();
+        m_UniformBuffer.Reset();
     }
 
     void Material::WriteUniform(const std::string& name, const void* data, uint32_t size)
