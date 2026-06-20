@@ -1,4 +1,5 @@
-﻿using Prism;
+﻿using System;
+using Prism;
 
 namespace Example
 {
@@ -7,9 +8,12 @@ namespace Example
         public float WalkingSpeed = 10.0F;
         public float RunSpeed = 20.0F;
         public float JumpForce = 50.0F;
+
+        //[NonSerialized]
         public float MouseSensitivity = 10.0F;
 
         private float m_CurrentSpeed;
+        private float m_CurrentYMovement = 0.0F;
 
         private RigidBodyComponent m_RigidBody;
         private TransformComponent m_Transform;
@@ -51,8 +55,12 @@ namespace Example
             m_CurrentSpeed = Input.IsKeyPressed(KeyCode.LeftControl) ? RunSpeed : WalkingSpeed;
 
             UpdateRotation();
-            UpdateMovement();
             UpdateCameraTransform();
+        }
+
+        void OnFixedUpdate()
+        {
+            UpdateMovement();
         }
 
         private void UpdateRotation()
@@ -60,22 +68,24 @@ namespace Example
             float ts = Time.DeltaTime;
             Vector2 currentMousePosition = Input.GetMousePosition();
             Vector2 delta = m_LastMousePosition - currentMousePosition;
-            float yRotation = delta.X * MouseSensitivity * ts;
+            m_CurrentYMovement = delta.X * MouseSensitivity * ts;
             float xRotation = delta.Y * MouseSensitivity * ts;
-            m_RigidBody.Rotate(new Vector3(0.0F, yRotation, 0.0F));
 
             if (delta.Y != 0.0F || delta.X != 0.0F)
             {
-                m_CameraTransform.Rotation += new Vector3(xRotation, yRotation, 0.0F);
+                m_CameraTransform.Rotation += new Vector3(xRotation, m_CurrentYMovement, 0.0F);
             }
 
             m_CameraTransform.Rotation = new Vector3(Mathf.Clamp(m_CameraTransform.Rotation.X, -80.0F, 80.0F), m_CameraTransform.Rotation.YZ);
 
             m_LastMousePosition = currentMousePosition;
+            m_Transform.Rotation = new Vector3(0.0f, m_CameraTransform.Rotation.Y, 0.0f);
         }
 
         private void UpdateMovement()
         {
+            m_RigidBody.Rotate(new Vector3(0.0F, m_CurrentYMovement, 0.0F));
+
             RaycastHit hitInfo;
             if (Input.IsKeyPressed(KeyCode.H) && Physics.Raycast(m_CameraTransform.Position + (m_CameraTransform.Transform.Forward * 5.0F), m_CameraTransform.Transform.Forward, 20.0F, out hitInfo))
             {

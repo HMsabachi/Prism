@@ -4,6 +4,7 @@
 
 #include <Prism/Core/Hash.h>
 
+#include <Rolky/Attribute.hpp>
 #include <Rolky/ManagedObject.hpp>
 #include <Rolky/String.hpp>
 #include <glm/glm.hpp>
@@ -161,6 +162,18 @@ namespace Prism
             {
                 if (field.GetAccessibility() != Rolky::TypeAccessibility::Public)
                     continue;
+
+                bool nonSerialized = false;
+                for (auto& attr : field.GetAttributes())
+                {
+                    std::string attrName = attr.GetType().GetFullName().operator std::string();
+                    if (attrName == "System.NonSerializedAttribute")
+                    {
+                        nonSerialized = true;
+                        break;
+                    }
+                }
+                if (nonSerialized) continue;
 
                 Rolky::ScopedString fieldName = field.GetName();
                 std::string fieldNameStr = fieldName;
