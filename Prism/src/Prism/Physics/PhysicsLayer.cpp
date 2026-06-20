@@ -21,7 +21,7 @@ namespace Prism {
     uint32_t PhysicsLayerManager::AddLayer(const std::string& name, bool setCollisions)
     {
         uint32_t layerId = GetNextLayerID();
-        PhysicsLayer layer = { layerId, name, BIT(layerId) };
+        PhysicsLayer layer = { layerId, name, (uint32_t)BIT(layerId), BIT(layerId) };
         s_Layers.push_back(layer);
 
         if (setCollisions)

@@ -118,7 +118,8 @@ namespace Prism {
         else if (rigidBody2D.BodyType == RigidBody2DComponent::Type::Kinematic)
             bodyDef.type = b2_kinematicBody;
 
-        bodyDef.position.Set(tc.GetPosition().x, tc.GetPosition().y);
+        glm::vec3 translation = tc.GetPosition();
+        bodyDef.position.Set(translation.x, translation.y);
         bodyDef.angle = glm::radians(tc.GetRotation().z);
 
         b2Body* body = m_World->CreateBody(&bodyDef);

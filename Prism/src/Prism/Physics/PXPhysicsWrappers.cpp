@@ -2,6 +2,7 @@
 #include "PXPhysicsWrappers.h"
 #include "Physics.h"
 #include "PhysicsLayer.h"
+#include "PhysicsUtil.h"
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Core/Warning.h"
 
@@ -296,7 +297,6 @@ namespace Prism {
 
     physx::PxConvexMesh* PXPhysicsWrappers::CreateConvexMesh(MeshColliderComponent& collider)
     {
-        // TODO: Save cooked mesh once processed
         std::vector<Vertex> vertices = collider.CollisionMesh->GetStaticVertices();
 
         physx::PxConvexMeshDesc convexDesc;
@@ -305,16 +305,24 @@ namespace Prism {
         convexDesc.points.data = vertices.data();
         convexDesc.flags = physx::PxConvexFlag::eCOMPUTE_CONVEX;
 
-        physx::PxConvexMeshCookingResult::Enum result;
-        physx::PxConvexMesh* mesh = PxCreateConvexMesh(
-            physx::PxCookingParams(s_Physics->getTolerancesScale()),
-            convexDesc,
-            *PxGetStandaloneInsertionCallback(),
-            &result
-        );
+        physx::PxConvexMesh* mesh = nullptr;
+        if (!ConvexMeshSerializer::IsSerialized(collider.CollisionMesh->GetFilePath()))
+        {
+            physx::PxDefaultMemoryOutputStream buf;
+            physx::PxCookingParams params(s_Physics->getTolerancesScale());
+            physx::PxConvexMeshCookingResult::Enum result;
+            if (!PxCookConvexMesh(params, convexDesc, buf, &result))
+                PR_CORE_ASSERT(false);
 
-        if (!mesh)
-            PR_CORE_ASSERT(false);
+            ConvexMeshSerializer::SerializeMesh(collider.CollisionMesh->GetFilePath(), buf);
+            physx::PxDefaultMemoryInputData input(buf.getData(), buf.getSize());
+            mesh = s_Physics->createConvexMesh(input);
+        }
+        else
+        {
+            physx::PxDefaultMemoryInputData input = ConvexMeshSerializer::DeserializeMesh(collider.CollisionMesh->GetFilePath());
+            mesh = s_Physics->createConvexMesh(input);
+        }
 
         if (!collider.ProcessedMesh)
         {

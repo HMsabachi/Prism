@@ -704,7 +704,7 @@ namespace Prism
                 ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, rw, rh);
 
                 bool snap = Input::IsKeyPressed(PR_KEY_LEFT_CONTROL);
-                auto& entityTransform = selection.Entity.Transformation();
+                Transform& entityTransform = selection.Entity.Transformation();
                 glm::mat4 transformMatrix = entityTransform.GetMatrix();
                 float snapValue = GetSnapValue();
                 float snapValues[3] = { snapValue, snapValue, snapValue };

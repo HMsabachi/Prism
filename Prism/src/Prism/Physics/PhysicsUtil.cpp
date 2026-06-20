@@ -1,6 +1,8 @@
 ﻿#include "prpch.h"
 #include "PhysicsUtil.h"
 
+#include <filesystem>
+
 #include "Prism/Scene/Entity.h"
 
 namespace Prism {
@@ -85,6 +87,57 @@ namespace Prism {
         }
 
         return physx::PxFilterFlag::eSUPPRESS;
+    }
+
+    void ConvexMeshSerializer::SerializeMesh(const std::string& filepath, const physx::PxDefaultMemoryOutputStream& data)
+    {
+        std::filesystem::path p = filepath;
+        auto path = p.parent_path() / (p.filename().string() + ".pxm");
+        std::string cachedFilepath = path.string();
+
+        FILE* f = fopen(cachedFilepath.c_str(), "wb");
+        if (f)
+        {
+            fwrite(data.getData(), sizeof(physx::PxU8), data.getSize() / sizeof(physx::PxU8), f);
+            fclose(f);
+        }
+    }
+
+    bool ConvexMeshSerializer::IsSerialized(const std::string& filepath)
+    {
+        std::filesystem::path p = filepath;
+        auto path = p.parent_path() / (p.filename().string() + ".pxm");
+        std::string cachedFilepath = path.string();
+
+        FILE* f = fopen(cachedFilepath.c_str(), "rb");
+        bool exists = f != nullptr;
+        if (exists)
+            fclose(f);
+        return exists;
+    }
+
+    static physx::PxU8* s_MeshDataBuffer;
+
+    physx::PxDefaultMemoryInputData ConvexMeshSerializer::DeserializeMesh(const std::string& filepath)
+    {
+        std::filesystem::path p = filepath;
+        auto path = p.parent_path() / (p.filename().string() + ".pxm");
+        std::string cachedFilepath = path.string();
+
+        FILE* f = fopen(cachedFilepath.c_str(), "rb");
+
+        uint32_t size;
+        if (f)
+        {
+            fseek(f, 0, SEEK_END);
+            size = ftell(f);
+            fseek(f, 0, SEEK_SET);
+            s_MeshDataBuffer = new physx::PxU8[size / sizeof(physx::PxU8)];
+            fread(s_MeshDataBuffer, sizeof(physx::PxU8), size / sizeof(physx::PxU8), f);
+            fclose(f);
+        }
+
+        return physx::PxDefaultMemoryInputData(s_MeshDataBuffer, size);
     }
 
 }

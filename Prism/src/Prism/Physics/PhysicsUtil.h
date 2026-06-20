@@ -34,4 +34,12 @@ namespace Prism {
     physx::PxFilterFlags PrismFilterShader(physx::PxFilterObjectAttributes attributes0, physx::PxFilterData filterData0, physx::PxFilterObjectAttributes attributes1,
         physx::PxFilterData filterData1, physx::PxPairFlags& pairFlags, const void* constantBlock, physx::PxU32 constantBlockSize);
 
+    class ConvexMeshSerializer
+    {
+    public:
+        static void SerializeMesh(const std::string& filepath, const physx::PxDefaultMemoryOutputStream& data);
+        static bool IsSerialized(const std::string& filepath);
+        static physx::PxDefaultMemoryInputData DeserializeMesh(const std::string& filepath);
+    };
+
 }

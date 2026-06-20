@@ -671,7 +671,6 @@ namespace Prism {
                         PhysicsLayerManager::SetLayerCollision(layerInfo.LayerID, otherLayer.LayerID, true);
                     }
                 }
-                PhysicsLayerManager::SetLayerCollision(layerInfo.LayerID, layerInfo.LayerID, true);
             }
         }
 
