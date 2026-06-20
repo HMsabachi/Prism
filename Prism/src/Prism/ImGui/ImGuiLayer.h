@@ -24,6 +24,8 @@ namespace Prism
 	public:
 		void Begin();
 		void End();
+
+		void SetDarkThemeColors();
 	private:
 
 

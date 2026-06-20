@@ -2,6 +2,7 @@
 #include "SceneHierarchyPanel.h"
 
 #include <imgui.h>
+#include <imgui/imgui_internal.h>
 
 #include "Prism/Core/Application.h"
 #include "Prism/Core/Warning.h"
@@ -84,113 +85,6 @@ namespace Prism {
             if (m_SelectionContext)
             {
                 DrawComponents(m_SelectionContext);
-
-                if (ImGui::Button(TR("Add Component")))
-                    ImGui::OpenPopup("AddComponentPanel");
-
-                if (ImGui::BeginPopup("AddComponentPanel"))
-                {
-                    if (!m_SelectionContext.HasComponent<CameraComponent>())
-                    {
-                        if (ImGui::Button(TR("Camera")))
-                        {
-                            m_SelectionContext.AddComponent<CameraComponent>();
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    if (!m_SelectionContext.HasComponent<MeshRendererComponent>())
-                    {
-                        if (ImGui::Button(TR("Mesh")))
-                        {
-                            m_SelectionContext.AddComponent<MeshRendererComponent>();
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    if (!m_SelectionContext.HasComponent<SpriteRendererComponent>())
-                    {
-                        if (ImGui::Button(TR("Sprite Renderer")))
-                        {
-                            m_SelectionContext.AddComponent<SpriteRendererComponent>();
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    if (!m_SelectionContext.HasComponent<RigidBody2DComponent>())
-                    {
-                        if (ImGui::Button(TR("Rigidbody 2D")))
-                        {
-                            m_SelectionContext.AddComponent<RigidBody2DComponent>();
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    if (!m_SelectionContext.HasComponent<BoxCollider2DComponent>())
-                    {
-                        if (ImGui::Button(TR("Box Collider 2D")))
-                        {
-                            m_SelectionContext.AddComponent<BoxCollider2DComponent>();
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    if (!m_SelectionContext.HasComponent<CircleCollider2DComponent>())
-                    {
-                        if (ImGui::Button(TR("Circle Collider 2D")))
-                        {
-                            m_SelectionContext.AddComponent<CircleCollider2DComponent>();
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    if (!m_SelectionContext.HasComponent<RigidBodyComponent>())
-                    {
-                        if (ImGui::Button(TR("Rigidbody")))
-                        {
-                            m_SelectionContext.AddComponent<RigidBodyComponent>();
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    if (!m_SelectionContext.HasComponent<PhysicsMaterialComponent>())
-                    {
-                        if (ImGui::Button(TR("Physics Material")))
-                        {
-                            m_SelectionContext.AddComponent<PhysicsMaterialComponent>();
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    if (!m_SelectionContext.HasComponent<BoxColliderComponent>())
-                    {
-                        if (ImGui::Button(TR("Box Collider")))
-                        {
-                            auto& component = m_SelectionContext.AddComponent<BoxColliderComponent>();
-                            component.DebugMesh = MeshFactory::CreateBox(component.Size);
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    if (!m_SelectionContext.HasComponent<SphereColliderComponent>())
-                    {
-                        if (ImGui::Button(TR("Sphere Collider")))
-                        {
-                            auto& component = m_SelectionContext.AddComponent<SphereColliderComponent>();
-                            component.DebugMesh = MeshFactory::CreateSphere(component.Radius);
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    if (!m_SelectionContext.HasComponent<CapsuleColliderComponent>())
-                    {
-                        if (ImGui::Button(TR("Capsule Collider")))
-                        {
-                            auto& component = m_SelectionContext.AddComponent<CapsuleColliderComponent>();
-                            component.DebugMesh = MeshFactory::CreateCapsule(component.Radius, component.Height);
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    if (!m_SelectionContext.HasComponent<MeshColliderComponent>())
-                    {
-                        if (ImGui::Button(TR("Mesh Collider")))
-                        {
-                            m_SelectionContext.AddComponent<MeshColliderComponent>();
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    ImGui::EndPopup();
-                }
             }
         }
         ImGui::End();
@@ -222,6 +116,7 @@ namespace Prism {
             name = entity.GetComponent<TagComponent>().Tag.c_str();
 
         ImGuiTreeNodeFlags node_flags = (entity == m_SelectionContext ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
+        node_flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
         bool opened = ImGui::TreeNodeEx((void*)(uint32_t)entity, node_flags, name);
         if (ImGui::IsItemClicked())
         {
@@ -240,13 +135,7 @@ namespace Prism {
         }
         if (opened)
         {
-            if (entity.HasComponent<MeshRendererComponent>())
-            {
-                auto mesh = entity.GetComponent<MeshRendererComponent>().Mesh;
-                // if (mesh)
-                // 	DrawMeshNode(mesh);
-            }
-
+            // TODO: Children
             ImGui::TreePop();
         }
 
@@ -515,20 +404,101 @@ namespace Prism {
         PopID();
     }
 
+    static bool DrawVec3Control(const std::string& label, glm::vec3& values, float resetValue = 0.0f, float columnWidth = 100.0f)
+    {
+        bool modified = false;
+
+        ImGuiIO& io = ImGui::GetIO();
+        auto boldFont = io.Fonts->Fonts[0];
+
+        ImGui::PushID(label.c_str());
+
+        ImGui::Columns(2);
+        ImGui::SetColumnWidth(0, columnWidth);
+        ImGui::Text(label.c_str());
+        ImGui::NextColumn();
+
+        ImGui::PushMultiItemsWidths(3, ImGui::CalcItemWidth());
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 0, 0 });
+
+        float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
+        ImVec2 buttonSize = { lineHeight + 3.0f, lineHeight };
+
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.8f, 0.1f, 0.15f, 1.0f });
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ 0.9f, 0.2f, 0.2f, 1.0f });
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ 0.8f, 0.1f, 0.15f, 1.0f });
+        ImGui::PushFont(boldFont);
+        if (ImGui::Button("X", buttonSize))
+        {
+            values.x = resetValue;
+            modified = true;
+        }
+        ImGui::PopFont();
+        ImGui::PopStyleColor(3);
+
+        ImGui::SameLine();
+        modified |= ImGui::DragFloat("##X", &values.x, 0.1f, 0.0f, 0.0f, "%.2f");
+        ImGui::PopItemWidth();
+        ImGui::SameLine();
+
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.2f, 0.7f, 0.2f, 1.0f });
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ 0.3f, 0.8f, 0.3f, 1.0f });
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ 0.2f, 0.7f, 0.2f, 1.0f });
+        ImGui::PushFont(boldFont);
+        if (ImGui::Button("Y", buttonSize))
+        {
+            values.y = resetValue;
+            modified = true;
+        }
+        ImGui::PopFont();
+        ImGui::PopStyleColor(3);
+
+        ImGui::SameLine();
+        modified |= ImGui::DragFloat("##Y", &values.y, 0.1f, 0.0f, 0.0f, "%.2f");
+        ImGui::PopItemWidth();
+        ImGui::SameLine();
+
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{ 0.1f, 0.25f, 0.8f, 1.0f });
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{ 0.2f, 0.35f, 0.9f, 1.0f });
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{ 0.1f, 0.25f, 0.8f, 1.0f });
+        ImGui::PushFont(boldFont);
+        if (ImGui::Button("Z", buttonSize))
+        {
+            values.z = resetValue;
+            modified = true;
+        }
+        ImGui::PopFont();
+        ImGui::PopStyleColor(3);
+
+        ImGui::SameLine();
+        modified |= ImGui::DragFloat("##Z", &values.z, 0.1f, 0.0f, 0.0f, "%.2f");
+        ImGui::PopItemWidth();
+
+        ImGui::PopStyleVar();
+
+        ImGui::Columns(1);
+
+        ImGui::PopID();
+
+        return modified;
+    }
+
     template<typename T, typename UIFunction>
     static void DrawComponent(const std::string& name, Entity entity, UIFunction uiFunction)
     {
         if (entity.HasComponent<T>())
         {
+            const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
+
             auto& component = entity.GetComponent<T>();
-            const ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
-            bool open = ImGui::TreeNodeEx((void*)((uint32_t)entity | (uint32_t)typeid(T).hash_code()), flags, "%s", name.c_str());
+
+            ImGui::Separator();
+            bool open = ImGui::TreeNodeEx((void*)typeid(T).hash_code(), treeNodeFlags, "%s", name.c_str());
             if (open)
             {
                 uiFunction(component);
                 ImGui::TreePop();
             }
-            ImGui::Separator();
         }
     }
 
@@ -538,23 +508,134 @@ namespace Prism {
 
         auto id = entity.GetComponent<IDComponent>().ID;
 
+        ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
+
         if (entity.HasComponent<TagComponent>())
         {
             auto& tag = entity.GetComponent<TagComponent>().Tag;
             char buffer[256];
             memset(buffer, 0, 256);
             memcpy(buffer, tag.c_str(), tag.length());
+            ImGui::PushItemWidth(contentRegionAvailable.x * 0.5f);
             if (ImGui::InputText("##Tag", buffer, 256))
             {
                 tag = std::string(buffer);
             }
+            ImGui::PopItemWidth();
         }
 
         // ID
         ImGui::SameLine();
         ImGui::TextDisabled("%llx", id);
+        float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
+        ImVec2 textSize = ImGui::CalcTextSize(TR("Add Component"));
+        ImGui::SameLine(contentRegionAvailable.x - (textSize.x + GImGui->Style.FramePadding.y));
+        if (ImGui::Button(TR("Add Component")))
+            ImGui::OpenPopup("AddComponentPanel");
 
-        ImGui::Separator();
+        if (ImGui::BeginPopup("AddComponentPanel"))
+        {
+            if (!entity.HasComponent<CameraComponent>())
+            {
+                if (ImGui::Button(TR("Camera")))
+                {
+                    entity.AddComponent<CameraComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!entity.HasComponent<MeshRendererComponent>())
+            {
+                if (ImGui::Button(TR("Mesh")))
+                {
+                    entity.AddComponent<MeshRendererComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!entity.HasComponent<SpriteRendererComponent>())
+            {
+                if (ImGui::Button(TR("Sprite Renderer")))
+                {
+                    entity.AddComponent<SpriteRendererComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!entity.HasComponent<RigidBody2DComponent>())
+            {
+                if (ImGui::Button(TR("Rigidbody 2D")))
+                {
+                    entity.AddComponent<RigidBody2DComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!entity.HasComponent<BoxCollider2DComponent>())
+            {
+                if (ImGui::Button(TR("Box Collider 2D")))
+                {
+                    entity.AddComponent<BoxCollider2DComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!entity.HasComponent<CircleCollider2DComponent>())
+            {
+                if (ImGui::Button(TR("Circle Collider 2D")))
+                {
+                    entity.AddComponent<CircleCollider2DComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!entity.HasComponent<RigidBodyComponent>())
+            {
+                if (ImGui::Button(TR("Rigidbody")))
+                {
+                    entity.AddComponent<RigidBodyComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!entity.HasComponent<PhysicsMaterialComponent>())
+            {
+                if (ImGui::Button(TR("Physics Material")))
+                {
+                    entity.AddComponent<PhysicsMaterialComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!entity.HasComponent<BoxColliderComponent>())
+            {
+                if (ImGui::Button(TR("Box Collider")))
+                {
+                    auto& component = entity.AddComponent<BoxColliderComponent>();
+                    component.DebugMesh = MeshFactory::CreateBox(component.Size);
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!entity.HasComponent<SphereColliderComponent>())
+            {
+                if (ImGui::Button(TR("Sphere Collider")))
+                {
+                    auto& component = entity.AddComponent<SphereColliderComponent>();
+                    component.DebugMesh = MeshFactory::CreateSphere(component.Radius);
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!entity.HasComponent<CapsuleColliderComponent>())
+            {
+                if (ImGui::Button(TR("Capsule Collider")))
+                {
+                    auto& component = entity.AddComponent<CapsuleColliderComponent>();
+                    component.DebugMesh = MeshFactory::CreateCapsule(component.Radius, component.Height);
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!entity.HasComponent<MeshColliderComponent>())
+            {
+                if (ImGui::Button(TR("Mesh Collider")))
+                {
+                    entity.AddComponent<MeshColliderComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            ImGui::EndPopup();
+        }
 
         if (entity.HasComponent<TransformComponent>())
         {
@@ -565,42 +646,20 @@ namespace Prism {
                 glm::vec3 rotation = transform.GetRotation();
                 glm::vec3 scale = transform.GetScale();
 
-                ImGui::Columns(2);
-                ImGui::Text(TR("Translation"));
-                ImGui::NextColumn();
-                ImGui::PushItemWidth(-1);
+                bool updateTransform = false;
+                updateTransform |= DrawVec3Control(TR("Translation"), translation);
+                updateTransform |= DrawVec3Control(TR("Rotation"), rotation);
+                updateTransform |= DrawVec3Control(TR("Scale"), scale, 1.0f);
 
-                if (ImGui::DragFloat3("##translation", glm::value_ptr(translation), 0.25f))
+                if (updateTransform)
+                {
                     transform.SetPosition(translation);
-
-                ImGui::PopItemWidth();
-                ImGui::NextColumn();
-
-                ImGui::Text(TR("Rotation"));
-                ImGui::NextColumn();
-                ImGui::PushItemWidth(-1);
-
-                if (ImGui::DragFloat3("##rotation", glm::value_ptr(rotation), 0.25f))
                     transform.SetRotation(rotation);
-
-                ImGui::PopItemWidth();
-                ImGui::NextColumn();
-
-                ImGui::Text(TR("Scale"));
-                ImGui::NextColumn();
-                ImGui::PushItemWidth(-1);
-
-                if (ImGui::DragFloat3("##scale", glm::value_ptr(scale), 0.25f))
                     transform.SetScale(scale);
-
-                ImGui::PopItemWidth();
-                ImGui::NextColumn();
-
-                ImGui::Columns(1);
+                }
 
                 ImGui::TreePop();
             }
-            ImGui::Separator();
         }
 
 
