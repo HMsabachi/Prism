@@ -44,6 +44,7 @@ Shader "Custom/SimplePBR_Static"
             GLSL
             {
                 #pragma shader_feature ALBEDO_MAP NORMAL_MAP METALNESS_MAP ROUGHNESS_MAP
+                #pragma shader_feature SHOW_CASCADES
                 #include "PrismCommon.glsl"
                 #include "PrismPBR.glsl"
                 attribute vec3 a_Position : POSITION;
@@ -216,6 +217,21 @@ Shader "Custom/SimplePBR_Static"
                     vec3 iblContribution = IBL(F0, Lr);
 
                     FragColor = vec4(lightContribution + iblContribution, 1.0);
+
+                    // ShowCascades debug — uncomment #define SHOW_CASCADES above to enable
+                #ifdef SHOW_CASCADES
+                    if (Prism_ShadowParams.z > 0.0)
+                    {
+                        int cascadeIdx = 0;
+                        for (int i = 0; i < min(int(Prism_ShadowParams.z), PRISM_MAX_CASCADES) - 1; i++)
+                            if (-vs_Output.ViewPosition.z > Prism_CascadeSplits[i])
+                                cascadeIdx = i + 1;
+                        if (cascadeIdx == 0) FragColor.rgb *= vec3(1.0, 0.25, 0.25);
+                        if (cascadeIdx == 1) FragColor.rgb *= vec3(0.25, 1.0, 0.25);
+                        if (cascadeIdx == 2) FragColor.rgb *= vec3(0.25, 0.25, 1.0);
+                        if (cascadeIdx == 3) FragColor.rgb *= vec3(1.0, 1.0, 0.25);
+                    }
+                #endif
 
                     // Bloom
                     float brightness = dot(FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));

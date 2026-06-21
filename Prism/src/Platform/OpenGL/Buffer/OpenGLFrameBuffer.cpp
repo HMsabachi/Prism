@@ -175,13 +175,7 @@ namespace Prism {
                 GLenum glFormat = Utils::PrismFBTextureFormatToGL(instance->m_DepthAttachmentFormat);
                 GLenum attachmentType = GL_DEPTH_ATTACHMENT;
 
-                // Setup depth comparison for shadow maps
-                if (instance->m_DepthAttachmentFormat == FramebufferTextureFormat::DEPTH32F)
-                {
-                    glTexParameteri(Utils::TextureTarget(multisample), GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-                    glTexParameteri(Utils::TextureTarget(multisample), GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
-                }
-                else if (instance->m_DepthAttachmentFormat == FramebufferTextureFormat::DEPTH24STENCIL8)
+                if (instance->m_DepthAttachmentFormat == FramebufferTextureFormat::DEPTH24STENCIL8)
                 {
                     attachmentType = GL_DEPTH_STENCIL_ATTACHMENT;
                 }

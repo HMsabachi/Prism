@@ -598,14 +598,14 @@ namespace Prism
             m_ViewportPanelFocused = ImGui::IsWindowFocused();
             auto viewportOffset = ImGui::GetCursorPos();
             auto viewportSize = ImGui::GetContentRegionAvail();
-            viewportSize.x *= 2;
-            viewportSize.y *= 2;
+            //viewportSize.x *= 2;
+            //viewportSize.y *= 2;
             if (auto* rs = m_ActiveScene->GetSystem<RenderSystem>())
                 rs->SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
             m_EditorCamera.SetProjectionMatrix(glm::perspectiveFov(glm::radians(45.0f), viewportSize.x, viewportSize.y, 0.1f, 10000.0f));
             m_EditorCamera.SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
-            viewportSize.x *= 0.5;
-            viewportSize.y *= 0.5;
+            //viewportSize.x *= 0.5;
+            //viewportSize.y *= 0.5;
 
             if (auto* rs = m_ActiveScene->GetSystem<RenderSystem>())
                 ImGui::Image((void*)rs->GetFinalColorBufferID(), viewportSize, { 0, 1 }, { 1, 0 });
@@ -934,7 +934,7 @@ namespace Prism
                             continue;
 
                         auto& submeshes = mesh->GetSubmeshes();
-                        float lastT = std::numeric_limits<float>::max();
+                        constexpr float lastT = std::numeric_limits<float>::max();
                         for (uint32_t i = 0; i < submeshes.size(); i++)
                         {
                             auto& submesh = submeshes[i];

@@ -19,7 +19,7 @@ namespace Prism
         void PRISM_API RemoveFromLiveReferences(void* instance)
         {
             std::scoped_lock<std::mutex> lock(s_LiveReferenceMutex);
-            if (Application::Get().IsRunning() != 1) return; // Avoid assertions during shutdown
+            if (Application::Get().IsRunning() != 1) [[unlikely]] return; // Avoid assertions during shutdown
             PR_CORE_ASSERT(instance);
             PR_CORE_ASSERT(s_LiveReferences.find(instance) != s_LiveReferences.end());
             s_LiveReferences.erase(instance);

@@ -1,9 +1,9 @@
 // PrismShadow.glsl
 
-layout(binding = PRISM_SHADOW_MAP0) uniform sampler2DShadow Prism_ShadowMap0;
-layout(binding = PRISM_SHADOW_MAP1) uniform sampler2DShadow Prism_ShadowMap1;
-layout(binding = PRISM_SHADOW_MAP2) uniform sampler2DShadow Prism_ShadowMap2;
-layout(binding = PRISM_SHADOW_MAP3) uniform sampler2DShadow Prism_ShadowMap3;
+layout(binding = PRISM_SHADOW_MAP0) uniform sampler2D Prism_ShadowMap0;
+layout(binding = PRISM_SHADOW_MAP1) uniform sampler2D Prism_ShadowMap1;
+layout(binding = PRISM_SHADOW_MAP2) uniform sampler2D Prism_ShadowMap2;
+layout(binding = PRISM_SHADOW_MAP3) uniform sampler2D Prism_ShadowMap3;
 
 const vec2 PoissonDistribution[64] = vec2[](
     vec2(-0.884081,  0.124488), vec2(-0.714377,  0.027940),
@@ -47,27 +47,28 @@ vec2 SamplePoisson(int index)
 
 float GetShadowBias(vec3 normal, vec3 lightDir)
 {
-    const float MINIMUM_SHADOW_BIAS = 0.002;
-    float bias = max(MINIMUM_SHADOW_BIAS * (1.0 - dot(normal, lightDir)), MINIMUM_SHADOW_BIAS);
+    float baseBias = Prism_ShadowParams.x;
+    float bias = max(baseBias * (1.0 - dot(normal, lightDir)), baseBias);
     return bias;
 }
 
-float HardShadows_DirectionalLight(sampler2DShadow shadowMap, vec3 projCoords, float bias, float shadowFade)
+float HardShadows_DirectionalLight(sampler2D shadowMap, vec3 shadowCoords, float bias, float shadowFade)
 {
-    float z = texture(shadowMap, vec3(projCoords.xy, projCoords.z - bias));
-    return 1.0 - (1.0 - z) * shadowFade;
+    float z = texture(shadowMap, shadowCoords.xy).r;
+    return 1.0 - step(z + bias, shadowCoords.z) * shadowFade;
 }
 
-float FindBlockerDistance_DirectionalLight(sampler2DShadow shadowMap, vec3 projCoords, float bias, float uvLightSize, vec2 searchWidth)
+float FindBlockerDistance_DirectionalLight(sampler2D shadowMap, vec3 shadowCoords, float bias)
 {
     int numBlockerSearchSamples = 64;
     int blockers = 0;
     float avgBlockerDistance = 0.0;
 
+    vec2 searchWidth = vec2(0.05);
     for (int i = 0; i < numBlockerSearchSamples; i++)
     {
-        float z = texture(shadowMap, vec3(projCoords.xy + SamplePoisson(i) * searchWidth, projCoords.z));
-        if (z < (projCoords.z - bias))
+        float z = texture(shadowMap, shadowCoords.xy + SamplePoisson(i) * searchWidth).r;
+        if (z < (shadowCoords.z - bias))
         {
             blockers++;
             avgBlockerDistance += z;
@@ -80,32 +81,32 @@ float FindBlockerDistance_DirectionalLight(sampler2DShadow shadowMap, vec3 projC
     return -1.0;
 }
 
-float PCF_DirectionalLight(sampler2DShadow shadowMap, vec3 projCoords, float bias, float uvRadius)
+float PCF_DirectionalLight(sampler2D shadowMap, vec3 shadowCoords, float bias, float uvRadius)
 {
     int numPCFSamples = 64;
     float sum = 0.0;
     for (int i = 0; i < numPCFSamples; i++)
     {
-        float z = texture(shadowMap, vec3(projCoords.xy + SamplePoisson(i) * uvRadius, projCoords.z));
-        sum += (z < (projCoords.z - bias)) ? 1.0 : 0.0;
+        float z = texture(shadowMap, shadowCoords.xy + SamplePoisson(i) * uvRadius).r;
+        sum += (z < (shadowCoords.z - bias)) ? 1.0 : 0.0;
     }
     return sum / float(numPCFSamples);
 }
 
-float PCSS_DirectionalLight(sampler2DShadow shadowMap, vec3 projCoords, float bias, float uvLightSize, float shadowFade)
+float PCSS_DirectionalLight(sampler2D shadowMap, vec3 shadowCoords, float bias, float uvLightSize, float shadowFade)
 {
-    vec2 searchWidth = vec2(uvLightSize, uvLightSize) * 0.05;
-    float blockerDistance = FindBlockerDistance_DirectionalLight(shadowMap, projCoords, bias, uvLightSize, searchWidth);
+    float blockerDistance = FindBlockerDistance_DirectionalLight(shadowMap, shadowCoords, bias);
     if (blockerDistance == -1.0)
         return 1.0;
 
-    float penumbraWidth = (projCoords.z - blockerDistance) / blockerDistance;
+    float penumbraWidth = (shadowCoords.z - blockerDistance) / blockerDistance;
+
     float NEAR = 0.01;
-    float uvRadius = penumbraWidth * uvLightSize * NEAR / projCoords.z;
-    return 1.0 - PCF_DirectionalLight(shadowMap, projCoords, bias, uvRadius) * shadowFade;
+    float uvRadius = penumbraWidth * uvLightSize * NEAR / shadowCoords.z;
+    return 1.0 - PCF_DirectionalLight(shadowMap, shadowCoords, bias, uvRadius) * shadowFade;
 }
 
-float CascadeShadow(sampler2DShadow shadowMap, vec3 worldPos, vec3 normal, int cascade, float shadowFade)
+float CascadeShadow(sampler2D shadowMap, vec3 worldPos, vec3 normal, int cascade, float shadowFade)
 {
     vec4 lightSpacePos = Prism_ShadowMatrices[cascade] * vec4(worldPos, 1.0);
     vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
@@ -116,13 +117,7 @@ float CascadeShadow(sampler2DShadow shadowMap, vec3 worldPos, vec3 normal, int c
     float lightSize = Prism_ShadowData.x;
 
     if (softShadows)
-    {
-        // TODO: PCSS needs sampler2D (non-shadow) to read raw depth for blocker search.
-        //       Currently Prism only declares sampler2DShadow for shadow maps.
-        //       Fallback to hard shadows until non-shadow samplers are added.
-        // return PCSS_DirectionalLight(shadowMap, projCoords, bias, lightSize, shadowFade);
-        return HardShadows_DirectionalLight(shadowMap, projCoords, bias, shadowFade);
-    }
+        return PCSS_DirectionalLight(shadowMap, projCoords, bias, lightSize, shadowFade);
     else
         return HardShadows_DirectionalLight(shadowMap, projCoords, bias, shadowFade);
 }

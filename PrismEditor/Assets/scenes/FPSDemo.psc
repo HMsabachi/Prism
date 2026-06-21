@@ -8,9 +8,9 @@ Environment:
   Shadow:
     Enabled: true
     Bias: 0
-    NormalBias: 0.189
+    NormalBias: 0.128
     CascadeCount: 4
-    MaxDistance: 178.894
+    MaxDistance: 167.934
 PhysicsLayers:
   - Name: Default
     CollidesWith:
@@ -891,7 +891,7 @@ Entities:
       Tag: Directional Light
     TransformComponent:
       Position: [0, 0, 0]
-      Rotation: [2.4391356, 21.239403, 65.113495]
+      Rotation: [2.2941287, 7.7143326, 64.53795]
       Scale: [1, 1, 1]
     CSharpScriptComponent:
       Behaviours:
@@ -901,7 +901,7 @@ Entities:
         []
     DirectionalLightComponent:
       Radiance: [1, 1, 1]
-      Intensity: 0.7
+      Intensity: 1.4
       CastShadows: true
       SoftShadows: true
       LightSize: 0.5

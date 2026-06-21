@@ -237,6 +237,21 @@ Shader "Custom/SimplePBR_Animated"
 
                     FragColor = vec4(lightContribution + iblContribution, 1.0);
 
+                    // ShowCascades debug — uncomment #define SHOW_CASCADES above to enable
+                #ifdef SHOW_CASCADES
+                    if (Prism_ShadowParams.z > 0.0)
+                    {
+                        int cascadeIdx = 0;
+                        for (int i = 0; i < min(int(Prism_ShadowParams.z), PRISM_MAX_CASCADES) - 1; i++)
+                            if (-vs_Output.ViewPosition.z > Prism_CascadeSplits[i])
+                                cascadeIdx = i + 1;
+                        if (cascadeIdx == 0) FragColor.rgb *= vec3(1.0, 0.25, 0.25);
+                        if (cascadeIdx == 1) FragColor.rgb *= vec3(0.25, 1.0, 0.25);
+                        if (cascadeIdx == 2) FragColor.rgb *= vec3(0.25, 0.25, 1.0);
+                        if (cascadeIdx == 3) FragColor.rgb *= vec3(1.0, 1.0, 0.25);
+                    }
+                #endif
+
                     // Bloom
                     float brightness = dot(FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
                     BloomColor = brightness > 1.0 ? FragColor : vec4(0.0, 0.0, 0.0, 1.0);
