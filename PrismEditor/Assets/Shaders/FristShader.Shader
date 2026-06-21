@@ -24,12 +24,16 @@ Shader "Custom/MyFirstShader"
 
                 layout(location = 0) out vec4 FragColor;
 
-                VARYING vec2 vUV;
-                VARYING vec3 vNormal;
+                varying VertexOutput
+                {
+                    vec2 UV;
+                    vec3 Normal;
+                } vs_Output;
                 void main()
                 {
                     gl_Position = Prism_ViewProjection * Prism_Model * vec4(aPos, 1.0);
-                    vUV = aUV;
+                    vs_Output.UV = aUV;
+                    vs_Output.Normal = mat3(Prism_Model) * aNormal;
                 }
 
                 void frag()

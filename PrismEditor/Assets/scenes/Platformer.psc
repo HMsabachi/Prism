@@ -1,6 +1,6 @@
 Scene: Scene Name
 Environment:
-  AssetPath: assets\env\pink_sunrise_4k.hdr
+  AssetPath: Assets\env\pink_sunrise_4k.hdr
   Light:
     Direction: [0.262, -1, -0.015]
     Radiance: [1, 1, 1]
@@ -10,7 +10,7 @@ Environment:
     Bias: 0.001
     NormalBias: 0.1
     CascadeCount: 4
-    MaxDistance: 178.894
+    MaxDistance: 208.43
 PhysicsLayers:
   - Name: Default
     CollidesWith:
@@ -31,7 +31,63 @@ PhysicsLayers:
   - Name: Default
     CollidesWith:
       []
+  - Name: Player
+    CollidesWith:
+      []
+  - Name: Ground
+    CollidesWith:
+      []
+  - Name: Cubes
+    CollidesWith:
+      []
+  - Name: Default
+    CollidesWith:
+      []
+  - Name: Default
+    CollidesWith:
+      []
+  - Name: Player
+    CollidesWith:
+      []
+  - Name: Ground
+    CollidesWith:
+      []
+  - Name: Cubes
+    CollidesWith:
+      []
+  - Name: Default
+    CollidesWith:
+      []
+  - Name: Player
+    CollidesWith:
+      []
+  - Name: Ground
+    CollidesWith:
+      []
+  - Name: Cubes
+    CollidesWith:
+      []
+  - Name: Default
+    CollidesWith:
+      []
 Entities:
+  - Entity: 176003475073107292
+    TagComponent:
+      Tag: Sky Light
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+    SkyLightComponent:
+      Intensity: 1
+      Angle: 0
+      AssetPath: Assets\env\pink_sunrise_4k.hdr
   - Entity: 2842299641876190180
     TagComponent:
       Tag: Box
@@ -247,3 +303,22 @@ Entities:
     PythonScriptComponent:
       Behaviours:
         []
+  - Entity: 1650256631972144901
+    TagComponent:
+      Tag: Directional Light
+    TransformComponent:
+      Position: [-0.1436995, 4.6931667, -0.8149608]
+      Rotation: [159.73215, -27.905241, 141.07608]
+      Scale: [1, 1, 1]
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+    DirectionalLightComponent:
+      Radiance: [1, 1, 1]
+      Intensity: 1.5
+      CastShadows: true
+      SoftShadows: true
+      LightSize: 0.5

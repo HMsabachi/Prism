@@ -33,7 +33,7 @@ Shader "Prism/Renderer2D"
 
                 layout(binding = 16) uniform sampler2D u_Textures[16];
 
-                VARYING VertexOutput
+                varying VertexOutput
                 {
                     vec4 Color;
                     vec2 TexCoord;

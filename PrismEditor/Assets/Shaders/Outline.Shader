@@ -29,7 +29,7 @@ Shader "Standard/Outline"
 
                 layout(location = 0) out vec4 FragColor;
 
-                VARYING VertexOutput
+                varying VertexOutput
                 {
                     vec2 TexCoord;
                 } vs_Output;

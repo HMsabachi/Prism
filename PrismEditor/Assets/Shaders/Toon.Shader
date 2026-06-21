@@ -60,7 +60,7 @@ Shader "Custom/Toon"
 
                 layout(location = 0) out vec4 FragColor;
 
-                VARYING VertexOutput
+                varying VertexOutput
                 {
                     vec3 WorldPosition;
                     vec3 Normal;

@@ -29,7 +29,7 @@ Shader "Prism/Renderer2D_Line"
 
                 layout(location = 0) out vec4 FragColor;
 
-                VARYING VertexOutput
+                varying VertexOutput
                 {
                     vec4 Color;
                 } vs_Output;

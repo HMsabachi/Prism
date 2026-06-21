@@ -56,7 +56,7 @@ Shader "Custom/SimplePBR_Static"
                 layout(location = 0) out vec4 FragColor;
                 layout(location = 1) out vec4 BloomColor;
 
-                VARYING VertexOutput
+                varying VertexOutput
                 {
                     vec3 WorldPosition;
                     vec3 Normal;

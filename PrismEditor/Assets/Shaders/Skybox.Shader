@@ -31,7 +31,7 @@ Shader "Custom/Skybox"
 
                 layout(location = 0) out vec4 FragColor;
 
-                VARYING VertexOutput
+                varying VertexOutput
                 {
                     vec3 Position;
                 } vs_Output;

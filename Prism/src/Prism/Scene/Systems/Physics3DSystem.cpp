@@ -115,8 +115,9 @@ namespace Prism {
                 {
                     Entity e = { entity, m_Scene };
                     auto& collider = e.GetComponent<MeshColliderComponent>();
-                    rs->SubmitDebugMesh(collider.ProcessedMesh,
-                        e.Transformation().GetMatrix());
+                    if (collider.ProcessedMesh)
+                        rs->SubmitDebugMesh(collider.ProcessedMesh,
+                            e.Transformation().GetMatrix());
                 }
             }
         }

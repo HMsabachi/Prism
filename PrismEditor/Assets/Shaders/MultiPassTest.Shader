@@ -28,7 +28,7 @@ Shader "Test/MultiPass"
 
                 layout(location = 0) out vec4 FragColor;
 
-                VARYING VertexOutput
+                varying VertexOutput
                 {
                     vec3 Normal;
                 } vs_Output;
@@ -61,7 +61,7 @@ Shader "Test/MultiPass"
 
                 layout(location = 0) out vec4 FragColor;
 
-                VARYING VertexOutput
+                varying VertexOutput
                 {
                     vec3 Normal;
                 } vs_Output;
