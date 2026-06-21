@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 namespace Prism::Config
 {
@@ -16,6 +16,8 @@ namespace Prism::Config
     constexpr int PRISM_ENV_RADIANCE               = 8;
     constexpr int PRISM_ENV_IRRADIANCE             = 9;
     constexpr int PRISM_ENV_BRDF_LUT               = 10;
+
+    constexpr int PRISM_BLOOM_TEXTURE              = 11;
 
     constexpr int PRISM_BINDING_TEXTURE            = 16;
 }

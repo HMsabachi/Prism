@@ -25,7 +25,7 @@ namespace Prism
 
         uint32_t GetRefCount() const { return m_RefCount; }
     private:
-        mutable uint32_t m_RefCount = 0;
+        mutable std::atomic<uint32_t> m_RefCount{ 0 };
     };
 
     template<typename T>

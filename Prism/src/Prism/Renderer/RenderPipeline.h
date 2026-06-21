@@ -69,6 +69,8 @@ namespace Prism
             const std::vector<DrawCommand>& selectedList,
             const std::vector<DrawCommand>& debugList);
         void CompositePass();
+        void BloomBlurPass();
+        void BloomBlendPass();
 
         static constexpr uint32_t SHADOW_MAP_SIZE = 2048;
 
@@ -77,8 +79,12 @@ namespace Prism
 
         Ref<RenderPass> m_GeoPass;
         Ref<RenderPass> m_CompositePass;
+        Ref<RenderPass> m_BloomBlurPass[2];
+        Ref<RenderPass> m_BloomBlendPass;
 
         Ref<Material> m_CompositeMaterial;
+        Ref<Material> m_BloomBlurMaterial;
+        Ref<Material> m_BloomBlendMaterial;
         Ref<Material> m_GridMaterial;
         Ref<Material> m_OutlineMaterial;
         Ref<Material> m_ColliderMaterial;

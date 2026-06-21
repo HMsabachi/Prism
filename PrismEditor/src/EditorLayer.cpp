@@ -1,5 +1,7 @@
 ﻿#include "EditorLayer.h"
-#include "EditorProperty.h"
+#include "Prism/ImGui/ImGui.h"
+using Prism::UI::Property;
+using Prism::UI::PropertyFlag;
 
 #include "Prism/ImGui/ImGuizmo.h"
 #include "Prism/Core/LanguageManager.h"
@@ -32,7 +34,7 @@ namespace Prism
 
 
         EditorLayer::EditorLayer()
-            : m_SceneType(SceneType::Model), m_EditorCamera(glm::perspectiveFov(glm::radians(45.0f), 1280.0f, 720.0f, 0.1f, 10000.0f))
+            : m_SceneType(SceneType::Model), m_EditorCamera(glm::perspectiveFov(glm::radians(45.0f), 1280.0f, 720.0f, 0.1f, 1000.0f))
         {
 
         }
@@ -461,11 +463,6 @@ namespace Prism
                 ImGui::Columns(2);
                 ImGui::AlignTextToFramePadding();
 
-                auto& light = cfg.SceneLight;
-                Property(TR("Light Direction"), light.Direction, PropertyFlag::SliderProperty);
-                Property(TR("Light Radiance"), light.Radiance, PropertyFlag::ColorProperty);
-                Property(TR("Light Multiplier"), light.Multiplier, 0.0f, 5.0f, PropertyFlag::SliderProperty);
-
                 // Shadow
                 {
                     bool shadowEnabled = cfg.ShadowsEnabled;
@@ -502,9 +499,6 @@ namespace Prism
                         p2d->SetGravity(physics2DGravity);
                 }
             }
-            Property(TR("Exposure"), m_EditorCamera.GetExposure(), 0.0f, 5.0f, PropertyFlag::SliderProperty);
-
-            Property(TR("Radiance Prefiltering"), m_RadiancePrefilter);
             Property(TR("Env Map Rotation"), m_EnvMapRotation, -360.0f, 360.0f, PropertyFlag::SliderProperty);
             if (Property(TR("Show Bounding Boxes"), m_UIShowBoundingBoxes))
                 ShowBoundingBoxes(m_UIShowBoundingBoxes, m_UIShowBoundingBoxesOnTop);

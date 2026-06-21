@@ -29,4 +29,5 @@ layout(std140, binding = PRISM_BINDING_FRAME) uniform PrismFrame
     mat4 Prism_ShadowMatrices[PRISM_MAX_CASCADES];
     vec4 Prism_CascadeSplits;
     vec4 Prism_ShadowParams;
+    vec4 Prism_ShadowData;
 };

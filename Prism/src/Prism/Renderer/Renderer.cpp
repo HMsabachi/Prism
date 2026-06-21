@@ -85,21 +85,6 @@ namespace Prism
         return s_Data.m_ShaderLibrary;
     }
 
-    // TODO: Asset 系统管理的材质
-    Ref<Material> Renderer::GetDefaultMaterial()
-    {
-        static Ref<Material> s_DefaultMaterial;
-        if (!s_DefaultMaterial)
-        {
-            auto shader = GetShaderLibrary()->Get("Custom/SimplePBR_Static");
-            s_DefaultMaterial = Material::Create(shader);
-            s_DefaultMaterial->SetVec3("u_AlbedoColor", glm::vec3(0.8f));
-            s_DefaultMaterial->SetFloat("u_Roughness", 0.5f);
-            s_DefaultMaterial->SetFloat("u_Metalness", 0.0f);
-        }
-        return s_DefaultMaterial;
-    }
-
     Renderer::Renderer()
     {
     }

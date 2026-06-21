@@ -1,6 +1,6 @@
 Scene: Scene Name
 Environment:
-  AssetPath: assets\env\pink_sunrise_4k.hdr
+  AssetPath: Assets\env\pink_sunrise_4k.hdr
   Light:
     Direction: [-0.477, -1, -0.015]
     Radiance: [1, 1, 1]
@@ -494,7 +494,7 @@ Entities:
       Tag: Ground
     TransformComponent:
       Position: [0, 0, 0]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [30, 1, 30]
     MeshRendererComponent:
       AssetPath: assets\meshes\Cube1m.fbx
@@ -679,3 +679,229 @@ Entities:
     PythonScriptComponent:
       Behaviours:
         []
+  - Entity: 13055394339875908354
+    TagComponent:
+      Tag: Sphere
+    TransformComponent:
+      Position: [6.451, 32.381, -0.973]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      AssetPath: assets\meshes\Sphere1m.fbx
+    RigidBodyComponent:
+      BodyType: 1
+      Mass: 1.7
+      IsKinematic: false
+      Layer: 0
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: false
+        LockRotationY: false
+        LockRotationZ: false
+    PhysicsMaterialComponent:
+      StaticFriction: 1
+      DynamicFriction: 0.25
+      Bounciness: 1
+    SphereColliderComponent:
+      Radius: 0.5
+      IsTrigger: false
+    CSharpScriptComponent:
+      Behaviours:
+        - ClassID: 17473292295039821981
+          Enabled: true
+          Fields:
+            - ID: 2824397154
+              Name: Timer
+              Type: 1
+              Value: 0
+            - ID: 3048789568
+              Name: ID
+              Type: 11
+              Value: 0
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 17630412765612539020
+    TagComponent:
+      Tag: Sphere
+    TransformComponent:
+      Position: [6.451, 32.381, -0.973]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      AssetPath: assets\meshes\Sphere1m.fbx
+    RigidBodyComponent:
+      BodyType: 1
+      Mass: 1.7
+      IsKinematic: false
+      Layer: 0
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: false
+        LockRotationY: false
+        LockRotationZ: false
+    PhysicsMaterialComponent:
+      StaticFriction: 1
+      DynamicFriction: 0.25
+      Bounciness: 1
+    SphereColliderComponent:
+      Radius: 0.5
+      IsTrigger: false
+    CSharpScriptComponent:
+      Behaviours:
+        - ClassID: 17473292295039821981
+          Enabled: true
+          Fields:
+            - ID: 2824397154
+              Name: Timer
+              Type: 1
+              Value: 0
+            - ID: 3048789568
+              Name: ID
+              Type: 11
+              Value: 0
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 9939336877926155800
+    TagComponent:
+      Tag: Sphere
+    TransformComponent:
+      Position: [2.727, 33.773, 2.272]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      AssetPath: assets\meshes\Sphere1m.fbx
+    RigidBodyComponent:
+      BodyType: 1
+      Mass: 0.2
+      IsKinematic: false
+      Layer: 0
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: false
+        LockRotationY: false
+        LockRotationZ: false
+    PhysicsMaterialComponent:
+      StaticFriction: 1
+      DynamicFriction: 0.25
+      Bounciness: 0.4
+    SphereColliderComponent:
+      Radius: 0.5
+      IsTrigger: false
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 11224383103227793398
+    TagComponent:
+      Tag: Sphere
+    TransformComponent:
+      Position: [2.322, 34.32, -1.051]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      AssetPath: assets\meshes\Sphere1m.fbx
+    RigidBodyComponent:
+      BodyType: 1
+      Mass: 0.2
+      IsKinematic: false
+      Layer: 0
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: false
+        LockRotationY: false
+        LockRotationZ: false
+    PhysicsMaterialComponent:
+      StaticFriction: 1
+      DynamicFriction: 0.25
+      Bounciness: 0.5
+    SphereColliderComponent:
+      Radius: 0.5
+      IsTrigger: false
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 11588662516026471113
+    TagComponent:
+      Tag: Sphere
+    TransformComponent:
+      Position: [2.727, 33.773, 2.272]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      AssetPath: assets\meshes\Sphere1m.fbx
+    RigidBodyComponent:
+      BodyType: 1
+      Mass: 0.2
+      IsKinematic: false
+      Layer: 0
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: false
+        LockRotationY: false
+        LockRotationZ: false
+    PhysicsMaterialComponent:
+      StaticFriction: 1
+      DynamicFriction: 0.25
+      Bounciness: 0.4
+    SphereColliderComponent:
+      Radius: 0.5
+      IsTrigger: false
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 9421913743984938135
+    TagComponent:
+      Tag: Sky Light
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [-21.190977, 0, 0]
+      Scale: [1, 1, 1]
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+    SkyLightComponent:
+      Intensity: 1
+      Angle: 0
+      AssetPath: Assets\env\pink_sunrise_4k.hdr
+  - Entity: 8444794147831695495
+    TagComponent:
+      Tag: Directional Light
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [2.4391356, 21.239403, 65.113495]
+      Scale: [1, 1, 1]
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+    DirectionalLightComponent:
+      Radiance: [1, 1, 1]
+      Intensity: 0.7
+      CastShadows: true
+      SoftShadows: true
+      LightSize: 0.5

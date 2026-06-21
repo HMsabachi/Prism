@@ -22,16 +22,18 @@ namespace Prism {
 	};
 }
 
-inline std::string format_as(const glm::vec2& vec) {
-	return fmt::format("vec2({}, {})", vec.x, vec.y);
-}
+namespace glm {
+	inline std::string format_as(const vec2& vec) {
+		return fmt::format("vec2({}, {})", vec.x, vec.y);
+	}
 
-inline std::string format_as(const glm::vec3& vec) {
-	return fmt::format("vec3({}, {}, {})", vec.x, vec.y, vec.z);
-}
+	inline std::string format_as(const vec3& vec) {
+		return fmt::format("vec3({}, {}, {})", vec.x, vec.y, vec.z);
+	}
 
-inline std::string format_as(const glm::vec4& vec) {
-	return fmt::format("vec4({}, {}, {}, {})", vec.x, vec.y, vec.z, vec.w);
+	inline std::string format_as(const vec4& vec) {
+		return fmt::format("vec4({}, {}, {}, {})", vec.x, vec.y, vec.z, vec.w);
+	}
 }
 
 

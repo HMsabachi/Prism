@@ -526,6 +526,31 @@ namespace Prism {
             out << YAML::EndMap;
         }
 
+        if (entity.HasComponent<DirectionalLightComponent>())
+        {
+            auto& dlc = entity.GetComponent<DirectionalLightComponent>();
+            out << YAML::Key << "DirectionalLightComponent";
+            out << YAML::BeginMap;
+            out << YAML::Key << "Radiance" << YAML::Value << dlc.Radiance;
+            out << YAML::Key << "Intensity" << YAML::Value << dlc.Intensity;
+            out << YAML::Key << "CastShadows" << YAML::Value << dlc.CastShadows;
+            out << YAML::Key << "SoftShadows" << YAML::Value << dlc.SoftShadows;
+            out << YAML::Key << "LightSize" << YAML::Value << dlc.LightSize;
+            out << YAML::EndMap;
+        }
+
+        if (entity.HasComponent<SkyLightComponent>())
+        {
+            auto& slc = entity.GetComponent<SkyLightComponent>();
+            out << YAML::Key << "SkyLightComponent";
+            out << YAML::BeginMap;
+            out << YAML::Key << "Intensity" << YAML::Value << slc.Intensity;
+            out << YAML::Key << "Angle" << YAML::Value << slc.Angle;
+            if (!slc.SceneEnvironment.FilePath.empty())
+                out << YAML::Key << "AssetPath" << YAML::Value << FileSystem::GetRelativePath(slc.SceneEnvironment.FilePath);
+            out << YAML::EndMap;
+        }
+
         out << YAML::EndMap; // Entity
     }
 
@@ -1018,6 +1043,33 @@ namespace Prism {
                     registry.remove<PythonScriptComponent>((entt::entity)deserializedEntity);
                     registry.emplace<PythonScriptComponent>((entt::entity)deserializedEntity, std::move(comp));
                     PR_CORE_INFO("  PythonScriptComponent: loaded");
+                }
+
+                auto directionalLightComponent = entity["DirectionalLightComponent"];
+                if (directionalLightComponent)
+                {
+                    auto& component = deserializedEntity.AddComponent<DirectionalLightComponent>();
+                    if (directionalLightComponent["Radiance"])
+                        component.Radiance = directionalLightComponent["Radiance"].as<glm::vec3>();
+                    component.Intensity = directionalLightComponent["Intensity"] ? directionalLightComponent["Intensity"].as<float>() : 1.0f;
+                    component.CastShadows = directionalLightComponent["CastShadows"] ? directionalLightComponent["CastShadows"].as<bool>() : true;
+                    component.SoftShadows = directionalLightComponent["SoftShadows"] ? directionalLightComponent["SoftShadows"].as<bool>() : true;
+                    component.LightSize = directionalLightComponent["LightSize"] ? directionalLightComponent["LightSize"].as<float>() : 0.5f;
+                    PR_CORE_INFO("  DirectionalLightComponent: Intensity={0}", component.Intensity);
+                }
+
+                auto skyLightComponent = entity["SkyLightComponent"];
+                if (skyLightComponent)
+                {
+                    auto& component = deserializedEntity.AddComponent<SkyLightComponent>();
+                    component.Intensity = skyLightComponent["Intensity"] ? skyLightComponent["Intensity"].as<float>() : 1.0f;
+                    component.Angle = skyLightComponent["Angle"] ? skyLightComponent["Angle"].as<float>() : 0.0f;
+                    if (skyLightComponent["AssetPath"])
+                    {
+                        std::string envPath = skyLightComponent["AssetPath"].as<std::string>();
+                        component.SceneEnvironment = Environment::Load(envPath);
+                    }
+                    PR_CORE_INFO("  SkyLightComponent: Intensity={0}", component.Intensity);
                 }
             }
         }

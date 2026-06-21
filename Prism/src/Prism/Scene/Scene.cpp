@@ -205,6 +205,8 @@ namespace Prism
         CopyComponentIfExists<SphereColliderComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<CapsuleColliderComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<MeshColliderComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<DirectionalLightComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<SkyLightComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
     }
 
     Entity Scene::FindEntityByTag(const std::string& tag)
@@ -264,6 +266,8 @@ namespace Prism
         CopyComponent<SphereColliderComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<CapsuleColliderComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<MeshColliderComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<DirectionalLightComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<SkyLightComponent>(target->m_Registry, m_Registry, enttMap);
 
 
         CSharpScriptEngine::SetSceneContext(this);

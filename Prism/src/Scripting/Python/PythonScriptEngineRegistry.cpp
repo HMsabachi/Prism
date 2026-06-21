@@ -151,7 +151,6 @@ namespace Prism
 
         // Material
         PR_PYTHON_FUNCTION(Prism_Material_Constructor, "Material(cpp_handle, shaderName)");
-        PR_PYTHON_FUNCTION(Prism_Material_GetDefaultMaterial, "GetDefaultMaterial() -> handle");
         PR_PYTHON_FUNCTION(Prism_Material_Destructor, "~Material(cpp_handle)");
         PR_PYTHON_FUNCTION(Prism_Material_SetFloat, "SetFloat(cpp_handle, uniform, value)");
         PR_PYTHON_FUNCTION(Prism_Material_SetInt, "SetInt(cpp_handle, uniform, value)");

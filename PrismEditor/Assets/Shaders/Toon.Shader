@@ -58,6 +58,8 @@ Shader "Custom/Toon"
                 attribute vec3 a_Binormal : BINORMAL;
                 attribute vec2 a_TexCoord : TEXCOORD0;
 
+                layout(location = 0) out vec4 FragColor;
+
                 VARYING VertexOutput
                 {
                     vec3 WorldPosition;
@@ -108,7 +110,8 @@ Shader "Custom/Toon"
                     if (Prism_ShadowParams.z > 0.0)
                     {
                         vec3 biasedPos = vs_Output.WorldPosition + N * Prism_ShadowParams.y;
-                        shadow = Prism_GetShadow(biasedPos, -(Prism_View * vec4(vs_Output.WorldPosition, 1.0)).z);
+                        float viewDepth = -(Prism_View * vec4(vs_Output.WorldPosition, 1.0)).z;
+                        shadow = Prism_GetShadow(biasedPos, viewDepth, N);
                     }
 
                     vec3 shadowColor = albedo * u_ShadowColor.rgb * u_ShadowBrightness;
@@ -158,6 +161,8 @@ Shader "Custom/Toon"
 
                 attribute vec3 a_Position : POSITION;
                 attribute vec3 a_Normal : NORMAL;
+
+                layout(location = 0) out vec4 FragColor;
 
                 void main()
                 {

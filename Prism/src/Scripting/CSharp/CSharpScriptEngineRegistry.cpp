@@ -141,7 +141,6 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_Texture2D_SetData);
         // Material
         PR_ADD_INTERNAL_CALL(Prism_Material_Constructor);
-        PR_ADD_INTERNAL_CALL(Prism_Material_GetDefaultMaterial);
         PR_ADD_INTERNAL_CALL(Prism_Material_Destructor);
         PR_ADD_INTERNAL_CALL(Prism_Material_SetFloat);
         PR_ADD_INTERNAL_CALL(Prism_Material_SetInt);

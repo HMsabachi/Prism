@@ -26,6 +26,8 @@ Shader "Debug/Collider"
 
                 attribute vec3 a_Position : POSITION;
 
+                layout(location = 0) out vec4 FragColor;
+
                 void main()
                 {
                     gl_Position = Prism_ViewProjection * Prism_Model * vec4(a_Position, 1.0);

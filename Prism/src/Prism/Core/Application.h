@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Core.h"
 
@@ -41,6 +41,7 @@ namespace Prism
         inline static Application& Get() { return *s_Instance; }
         inline Window& GetWindow() const { return *m_Window; }
 
+        bool IsRunning() const { return m_Running; }
         static const char* GetConfigurationName();
         static const char* GetPlatformName();
     protected:

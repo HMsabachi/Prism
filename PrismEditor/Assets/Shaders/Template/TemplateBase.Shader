@@ -28,6 +28,8 @@ Shader "Standard/TemplateBase"
                 attribute vec3 a_Position : POSITION;
                 attribute vec2 a_TexCoord : TEXCOORD0; // 暂时这样需要修改
 
+                layout(location = 0) out vec4 FragColor;
+
                 VARYING VertexOutput
                 {
                     vec2 TexCoord;

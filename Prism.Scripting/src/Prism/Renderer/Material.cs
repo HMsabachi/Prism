@@ -4,15 +4,6 @@ namespace Prism
 {
     public class Material
     {
-        public static Material DefaultMaterial
-        {
-            get
-            {
-                IntPtr ptr = IntPtr.Zero;
-                unsafe { InternalCalls.Prism_Material_GetDefaultMaterial(&ptr); }
-                return new Material(ptr);
-            }
-        }
 
         public Material(string shaderName)
         {

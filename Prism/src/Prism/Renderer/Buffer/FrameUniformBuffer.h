@@ -24,7 +24,8 @@ namespace Prism
         void SetLight(uint32_t index, const glm::vec3& dir, const glm::vec3& radiance, float multiplier);
         void SetShadowMatrices(const glm::mat4* matrices, uint32_t count);
         void SetCascadeSplits(const glm::vec4& splits);
-        void SetShadowParams(const glm::vec4& params);
+        void SetShadowParams(float bias, float normalBias, float cascadeCount, float softShadows);
+        void SetShadowData(float lightSize, float maxShadowDistance, float shadowFade, float cascadeFading);
         void SetAspectRatio(float ratio);
         void SetResolution(const glm::vec2& res);
 
@@ -61,6 +62,7 @@ namespace Prism
             glm::mat4 ShadowMatrices[PRISM_MAX_CASCADES]{};
             glm::vec4 CascadeSplits{};
             glm::vec4 ShadowParams{};
+            glm::vec4 ShadowData{};
         } m_Data;
     };
 }

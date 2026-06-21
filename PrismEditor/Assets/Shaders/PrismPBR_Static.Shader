@@ -52,6 +52,8 @@ Shader "Custom/SimplePBR_Static"
                 attribute vec3 a_Binormal : BINORMAL;
                 attribute vec2 a_TexCoord : TEXCOORD0;
 
+                layout(location = 0) out vec4 FragColor;
+                layout(location = 1) out vec4 BloomColor;
 
                 VARYING VertexOutput
                 {
@@ -61,6 +63,11 @@ Shader "Custom/SimplePBR_Static"
                     mat3 WorldNormals;
                     mat3 WorldTransform;
                     vec3 Binormal;
+                    vec4 ShadowMapCoord0;
+                    vec4 ShadowMapCoord1;
+                    vec4 ShadowMapCoord2;
+                    vec4 ShadowMapCoord3;
+                    vec3 ViewPosition;
                 } vs_Output;
 
                 void main()
@@ -73,6 +80,12 @@ Shader "Custom/SimplePBR_Static"
                     vs_Output.WorldNormals = mat3(u_ModelMatrix) * mat3(a_Tangent, a_Binormal, a_Normal);
                     vs_Output.WorldTransform = mat3(u_ModelMatrix);
                     vs_Output.Binormal = a_Binormal;
+
+                    vs_Output.ShadowMapCoord0 = Prism_ShadowMatrices[0] * vec4(vs_Output.WorldPosition, 1.0);
+                    vs_Output.ShadowMapCoord1 = Prism_ShadowMatrices[1] * vec4(vs_Output.WorldPosition, 1.0);
+                    vs_Output.ShadowMapCoord2 = Prism_ShadowMatrices[2] * vec4(vs_Output.WorldPosition, 1.0);
+                    vs_Output.ShadowMapCoord3 = Prism_ShadowMatrices[3] * vec4(vs_Output.WorldPosition, 1.0);
+                    vs_Output.ViewPosition = vec3(Prism_View * vec4(vs_Output.WorldPosition, 1.0));
 
                     gl_Position = u_ViewProjectionMatrix * u_ModelMatrix * vec4(a_Position, 1.0);
                 }
@@ -134,7 +147,7 @@ Shader "Custom/SimplePBR_Static"
                     if (Prism_ShadowParams.z > 0.0)
                     {
                         vec3 biasedPos = vs_Output.WorldPosition + m_Params.Normal * Prism_ShadowParams.y;
-                        shadow = Prism_GetShadow(biasedPos, -(Prism_View * vec4(vs_Output.WorldPosition, 1.0)).z);
+                        shadow = Prism_GetShadow(biasedPos, -vs_Output.ViewPosition.z, m_Params.Normal);
                     }
                     result *= shadow;
 
@@ -203,7 +216,10 @@ Shader "Custom/SimplePBR_Static"
                     vec3 iblContribution = IBL(F0, Lr);
 
                     FragColor = vec4(lightContribution + iblContribution, 1.0);
-                    //FragColor = vec4(u_Color, 1.0);
+
+                    // Bloom
+                    float brightness = dot(FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+                    BloomColor = brightness > 1.0 ? FragColor : vec4(0.0, 0.0, 0.0, 1.0);
                 }
 
             }

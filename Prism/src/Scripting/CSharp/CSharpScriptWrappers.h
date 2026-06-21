@@ -127,7 +127,6 @@ namespace Prism
 
         // Material
         Ref<Material>* Prism_Material_Constructor(Rolky::String shaderName);
-        void Prism_Material_GetDefaultMaterial(Ref<Material>** outMaterial);
         void Prism_Material_Destructor(Ref<Material>* _this);
         void Prism_Material_SetFloat(Ref<Material>* _this, Rolky::String uniform, float value);
         void Prism_Material_SetInt(Ref<Material>* _this, Rolky::String uniform, int value);

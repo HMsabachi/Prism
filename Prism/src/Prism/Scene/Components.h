@@ -13,6 +13,7 @@
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/Material.h"
 #include "Prism/Scene/SceneCamera.h"
+#include "Prism/Renderer/SceneEnvironment.h"
 #include "glm/gtx/quaternion.hpp"
 #include "Scripting/CSharp/CSharpField.h"
 #include "Scripting/Python/PythonField.h"
@@ -274,6 +275,28 @@ namespace Prism {
         }
 
         operator Ref<Mesh>() { return CollisionMesh; }
+    };
+
+    // ── Lights ──────────────
+    enum class LightType
+    {
+        None = 0, Directional = 1, Point = 2, Spot = 3
+    };
+
+    struct DirectionalLightComponent
+    {
+        glm::vec3 Radiance = { 1.0f, 1.0f, 1.0f };
+        float Intensity = 1.0f;
+        bool CastShadows = true;
+        bool SoftShadows = true;
+        float LightSize = 0.5f; // For PCSS
+    };
+
+    struct SkyLightComponent
+    {
+        Environment SceneEnvironment;
+        float Intensity = 1.0f;
+        float Angle = 0.0f;
     };
 
 }

@@ -21,6 +21,9 @@ Shader "Custom/MyFirstShader"
                 attribute vec3 aPos : POSITION;
                 attribute vec2 aUV : TEXCOORD0;
                 attribute vec3 aNormal : NORMAL;
+
+                layout(location = 0) out vec4 FragColor;
+
                 VARYING vec2 vUV;
                 VARYING vec3 vNormal;
                 void main()

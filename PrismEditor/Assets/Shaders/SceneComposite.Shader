@@ -20,6 +20,8 @@ Shader "Custom/SceneComposite"
                 attribute vec3 a_Position : POSITION;
                 attribute vec2 a_TexCoord : TEXCOORD0;
 
+                layout(location = 0) out vec4 FragColor;
+
                 VARYING VertexOutput
                 {
                     vec2 TexCoord;

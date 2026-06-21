@@ -16,6 +16,8 @@
 #define PRISM_ENV_IRRADIANCE  9
 #define PRISM_ENV_BRDF_LUT    10
 
+#define PRISM_BLOOM_TEXTURE 11
+
 #define PRISM_BINDING_TEXTURE 16
 
 #endif

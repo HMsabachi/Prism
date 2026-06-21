@@ -56,9 +56,14 @@ namespace Prism
         m_Data.CascadeSplits = splits;
     }
 
-    void FrameUniformBuffer::SetShadowParams(const glm::vec4& params)
+    void FrameUniformBuffer::SetShadowParams(float bias, float normalBias, float cascadeCount, float softShadows)
     {
-        m_Data.ShadowParams = params;
+        m_Data.ShadowParams = { bias, normalBias, cascadeCount, softShadows };
+    }
+
+    void FrameUniformBuffer::SetShadowData(float lightSize, float maxShadowDistance, float shadowFade, float cascadeFading)
+    {
+        m_Data.ShadowData = { lightSize, maxShadowDistance, shadowFade, cascadeFading };
     }
 
     void FrameUniformBuffer::SetAspectRatio(float ratio)

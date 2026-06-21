@@ -594,12 +594,6 @@ namespace Prism {
             return new Ref<Material>(Material::Create(shader));
         }
 
-
-        void Prism_Material_GetDefaultMaterial(Ref<Material>** outMaterial)
-        {
-            *outMaterial = new Ref<Material>(Renderer::GetDefaultMaterial());
-        }
-
         void Prism_Material_Destructor(Ref<Material>* _this)
         {
             delete _this;

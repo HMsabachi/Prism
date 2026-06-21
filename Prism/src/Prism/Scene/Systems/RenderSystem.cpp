@@ -59,10 +59,42 @@ namespace Prism
             m_PendingFrameData.Camera.ViewMatrix = glm::inverse(transform.GetMatrix());
         }
 
-        m_Config.SkyboxMaterial->SetFloat("u_TextureLod", m_Config.SkyboxLod);
+        // Process lights
+        {
+            m_Config.LightEnvironment = LightEnvironment();
+            auto lights = m_Scene->GetRegistry().group<TransformComponent, DirectionalLightComponent>();
+            uint32_t directionalLightIndex = 0;
+            for (auto entity : lights)
+            {
+                auto [transformComponent, lightComponent] = lights.get<TransformComponent, DirectionalLightComponent>(entity);
+                Transform& lightTransform = transformComponent.Transformation;
+                glm::vec3 direction = -glm::normalize(glm::mat3(lightTransform.GetMatrix()) * glm::vec3(1.0f));
+                m_Config.LightEnvironment.DirectionalLights[directionalLightIndex++] =
+                {
+                    direction,
+                    lightComponent.Radiance,
+                    lightComponent.Intensity,
+                    lightComponent.CastShadows,
+                    lightComponent.SoftShadows,
+                    lightComponent.LightSize
+                };
+            }
+        }
 
-        if (m_Config.SceneEnvironment.RadianceMap)
-            m_Config.SkyboxMaterial->SetTexture("u_Texture", m_Config.SceneEnvironment.RadianceMap);
+        // TODO: only one sky light at the moment!
+        {
+            auto lights = m_Scene->GetRegistry().view<SkyLightComponent>();
+            for (auto entity : lights)
+            {
+                auto& skyLightComponent = lights.get<SkyLightComponent>(entity);
+                m_Config.SceneEnvironment = skyLightComponent.SceneEnvironment;
+                m_Config.SceneEnvironmentIntensity = skyLightComponent.Intensity;
+                if (m_Config.SceneEnvironment.RadianceMap)
+                    m_Config.SkyboxMaterial->SetTexture("u_Texture", m_Config.SceneEnvironment.RadianceMap);
+            }
+        }
+
+        m_Config.SkyboxMaterial->SetFloat("u_TextureLod", m_Config.SkyboxLod);
 
         CollectMeshRenderers(m_PendingFrameData);
         CollectDebugDraws(m_PendingFrameData);
@@ -125,11 +157,12 @@ namespace Prism
     {
         float ts = Time::GetDeltaTime();
         glm::vec3 camPos = glm::inverse(data.Camera.ViewMatrix)[3];
-        auto group = m_Scene->GetRegistry().group<MeshRendererComponent, TransformComponent>();
+        auto view = m_Scene->GetRegistry().view<MeshRendererComponent>();
 
-        for (auto& entity : group)
+        for (auto& entity : view)
         {
-            auto [renderer, transform] = group.get<MeshRendererComponent, TransformComponent>(entity);
+            auto& renderer = view.get<MeshRendererComponent>(entity);
+            auto& transform = m_Scene->GetRegistry().get<TransformComponent>(entity);
 
             if (!renderer.Mesh) continue;
 

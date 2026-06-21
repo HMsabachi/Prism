@@ -191,7 +191,7 @@ namespace Prism
             s_Data.Stats.DrawCalls++;
         }
 
-        dataSize = (uint8_t*)s_Data.LineVertexBufferPtr - (uint8_t*)s_Data.LineVertexBufferBase;
+        dataSize = (uint32_t)((uint8_t*)s_Data.LineVertexBufferPtr - (uint8_t*)s_Data.LineVertexBufferBase);
         if (dataSize)
         {
             s_Data.LineVertexBuffer->SetData(s_Data.LineVertexBufferBase, dataSize);

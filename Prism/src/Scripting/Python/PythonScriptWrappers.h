@@ -111,7 +111,6 @@ namespace Prism::Script
 
     // Material
     Python::ScriptValue* Prism_Material_Constructor(Python::ScriptValue* self, Python::ScriptValue* args);
-    Python::ScriptValue* Prism_Material_GetDefaultMaterial(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Material_Destructor(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Material_SetFloat(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_Material_SetInt(Python::ScriptValue* self, Python::ScriptValue* args);

@@ -29,6 +29,8 @@ Shader "Prism/Renderer2D"
                 attribute float a_TexIndex : INDEX0;
                 attribute float a_TilingFactor : OTHER0;
 
+                layout(location = 0) out vec4 FragColor;
+
                 layout(binding = 16) uniform sampler2D u_Textures[16];
 
                 VARYING VertexOutput

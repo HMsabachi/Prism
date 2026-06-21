@@ -7,7 +7,7 @@
 namespace Prism
 {
 
-    class PRISM_API Entity : public RefCounted
+    class PRISM_API Entity
     {
     public:
         Entity() = default;

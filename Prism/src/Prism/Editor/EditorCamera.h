@@ -34,9 +34,6 @@ namespace Prism
         const glm::vec3& GetPosition() const { return m_Position; }
         glm::quat GetOrientation() const;
 
-        float GetExposure() const { return m_Exposure; }
-        float& GetExposure() { return m_Exposure; }
-
         float GetPitch() const { return m_Pitch; }
         float GetYaw() const { return m_Yaw; }
     private:
@@ -54,17 +51,15 @@ namespace Prism
         float RotationSpeed() const;
         float ZoomSpeed() const;
     private:
-        glm::mat4 m_ViewMatrix;
-        glm::vec3 m_Position, m_Rotation, m_FocalPoint;
+        glm::mat4 m_ViewMatrix = glm::mat4(1.0f);
+        glm::vec3 m_Position = glm::vec3(0.0f), m_Rotation = glm::vec3(0.0f), m_FocalPoint = glm::vec3(0.0f);
 
-        bool m_Panning, m_Rotating;
-        glm::vec2 m_InitialMousePosition;
-        glm::vec3 m_InitialFocalPoint, m_InitialRotation;
+        bool m_Panning = false, m_Rotating = false;
+        glm::vec2 m_InitialMousePosition = glm::vec2(0.0f);
+        glm::vec3 m_InitialFocalPoint = glm::vec3(0.0f), m_InitialRotation = glm::vec3(0.0f);
 
-        float m_Distance;
-        float m_Pitch, m_Yaw;
-
-        float m_Exposure = 0.8f;
+        float m_Distance = 10.0f;
+        float m_Pitch = 0.0f, m_Yaw = 0.0f;
 
         uint32_t m_ViewportWidth = 1280, m_ViewportHeight = 720;
     };

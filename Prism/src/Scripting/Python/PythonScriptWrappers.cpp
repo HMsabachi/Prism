@@ -1085,12 +1085,6 @@ namespace Prism::Script
         return Python::UInt64ToValue(reinterpret_cast<uint64_t>(ref)).Detach();
     }
 
-    Python::ScriptValue* Prism_Material_GetDefaultMaterial(Python::ScriptValue* self, Python::ScriptValue* args)
-    {
-        auto* ref = new Ref<Material>(Renderer::GetDefaultMaterial());
-        return Python::UInt64ToValue(reinterpret_cast<uint64_t>(ref)).Detach();
-    }
-
     Python::ScriptValue* Prism_Material_Destructor(Python::ScriptValue* self, Python::ScriptValue* args)
     {
         Python::ScriptRef argsRef(args);

@@ -29,7 +29,8 @@ namespace Prism
     {
         m_Shader->AddShaderReloadedCallback(std::bind(&Material::OnShaderReloaded, this));
         AllocateStorage();
-        m_PropertyBuffer = material->m_PropertyBuffer.Copy();
+
+        m_PropertyBuffer = material->m_PropertyBuffer;
         m_Textures = material->m_Textures;
         m_KeywordMask = material->m_KeywordMask;
         m_Name = material->m_Name;
@@ -39,7 +40,6 @@ namespace Prism
     Material::~Material()
     {
         m_PropertyBuffer.Free();
-        m_UniformBuffer.Reset();
     }
 
     void Material::WriteUniform(const std::string& name, const void* data, uint32_t size)

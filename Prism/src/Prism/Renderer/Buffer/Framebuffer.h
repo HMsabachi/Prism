@@ -1,66 +1,101 @@
 #pragma once
 #include "Prism/Renderer/RendererAPI.h"
+#include <vector>
 
 namespace Prism {
 
-	enum class PRISM_API FramebufferFormat
-	{
-		None = 0,
-		RGBA8 = 1,
-		RGBA16F = 2,
-		Depth = 3
-	};
+    enum class PRISM_API FramebufferTextureFormat
+    {
+        None = 0,
 
-	struct PRISM_API FramebufferSpecification
-	{
-		uint32_t Width = 1280;
-		uint32_t Height = 720;
-		glm::vec4 ClearColor;
-		FramebufferFormat Format;
-		uint32_t Samples = 1; // multisampling
+        // Color
+        RGBA8 = 1,
+        RGBA16F = 2,
+        RGBA32F = 3,
+        RG32F = 4,
 
-		// SwapChainTarget = screen buffer (i.e. no framebuffer)
-		bool SwapChainTarget = false;
-	};
+        // Depth/stencil
+        DEPTH32F = 5,
+        DEPTH24STENCIL8 = 6,
 
-	class PRISM_API Framebuffer : public RefCounted
-	{
-	public:
-		static Ref<Framebuffer> Create(const FramebufferSpecification& spec);
+        // Defaults
+        Depth = DEPTH24STENCIL8
+    };
 
-		virtual const FramebufferSpecification& GetSpecification() const = 0;
+    struct FramebufferTextureSpecification
+    {
+        FramebufferTextureSpecification() = default;
+        FramebufferTextureSpecification(FramebufferTextureFormat format) : TextureFormat(format) {}
 
-		virtual ~Framebuffer() {}
-		virtual void Bind() const = 0;
-		virtual void Unbind() const = 0;
+        FramebufferTextureFormat TextureFormat;
+        // TODO: filtering/wrap
+    };
 
-		virtual void Resize(uint32_t width, uint32_t height, bool forceRecreate = false) = 0;
+    struct FramebufferAttachmentSpecification
+    {
+        FramebufferAttachmentSpecification() = default;
+        FramebufferAttachmentSpecification(const std::initializer_list<FramebufferTextureSpecification>& attachments)
+            : Attachments(attachments) {}
 
-		virtual void BindTexture(uint32_t slot = 0) const = 0;
-		virtual void BindDepthTexture(uint32_t slot = 0) const = 0;
+        std::vector<FramebufferTextureSpecification> Attachments;
+    };
 
-		virtual RendererID GetRendererID() const = 0;
-		virtual RendererID GetColorAttachmentRendererID() const = 0;
-		virtual RendererID GetDepthAttachmentRendererID() const = 0;
-	};
+    struct PRISM_API FramebufferSpecification
+    {
+        uint32_t Width = 1280;
+        uint32_t Height = 720;
+        glm::vec4 ClearColor;
+        FramebufferAttachmentSpecification Attachments;
+        uint32_t Samples = 1; // multisampling
 
-	class PRISM_API FramebufferPool final
-	{
-	public:
-		FramebufferPool(uint32_t maxFBs = 32);
-		~FramebufferPool();
+        // TODO: Temp, needs scale
+        bool NoResize = false;
 
-		std::weak_ptr<Framebuffer> AllocateBuffer();
-		void Add(const Ref<Framebuffer>& framebuffer);
+        // SwapChainTarget = screen buffer (i.e. no framebuffer)
+        bool SwapChainTarget = false;
+    };
 
-		std::vector<Ref<Framebuffer>>& GetAll() { return m_Pool; }
-		const std::vector<Ref<Framebuffer>>& GetAll() const { return m_Pool; }
+    class PRISM_API Framebuffer : public RefCounted
+    {
+    public:
+        static Ref<Framebuffer> Create(const FramebufferSpecification& spec);
 
-		inline static FramebufferPool* GetGlobal() { return s_Instance; }
-	private:
-		std::vector<Ref<Framebuffer>> m_Pool;
+        virtual const FramebufferSpecification& GetSpecification() const = 0;
 
-		static FramebufferPool* s_Instance;
-	};
+        virtual ~Framebuffer() {}
+        virtual void Bind() const = 0;
+        virtual void Unbind() const = 0;
+
+        virtual void Resize(uint32_t width, uint32_t height, bool forceRecreate = false) = 0;
+
+        virtual void BindTexture(uint32_t attachmentIndex = 0, uint32_t slot = 0) const = 0;
+        virtual void BindDepthTexture(uint32_t slot = 0) const = 0;
+
+        virtual uint32_t GetWidth() const = 0;
+        virtual uint32_t GetHeight() const = 0;
+
+        virtual RendererID GetRendererID() const = 0;
+        virtual RendererID GetColorAttachmentRendererID(int index = 0) const = 0;
+        virtual RendererID GetDepthAttachmentRendererID() const = 0;
+    };
+
+    class PRISM_API FramebufferPool final
+    {
+    public:
+        FramebufferPool(uint32_t maxFBs = 32);
+        ~FramebufferPool();
+
+        std::weak_ptr<Framebuffer> AllocateBuffer();
+        void Add(const Ref<Framebuffer>& framebuffer);
+
+        std::vector<Ref<Framebuffer>>& GetAll() { return m_Pool; }
+        const std::vector<Ref<Framebuffer>>& GetAll() const { return m_Pool; }
+
+        inline static FramebufferPool* GetGlobal() { return s_Instance; }
+    private:
+        std::vector<Ref<Framebuffer>> m_Pool;
+
+        static FramebufferPool* s_Instance;
+    };
 
 }

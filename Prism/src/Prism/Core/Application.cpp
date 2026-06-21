@@ -48,6 +48,7 @@ namespace Prism
         // 初始化窗口 Initialize Window
         m_Window = std::unique_ptr<Window>(Window::Create(WindowProps(m_Props.Name, m_Props.WindowWidth, m_Props.WindowHeight)));
         m_Window->SetEventCallback(BIND_EVENT_FN(OnEvent));
+        m_Window->Maximize();
         m_Window->SetVSync(m_Props.VSync);
         // 初始化渲染器 Initialize Renderer
 
@@ -212,7 +213,8 @@ namespace Prism
         auto& fbs = FramebufferPool::GetGlobal()->GetAll();
         for (auto& fb : fbs)
         {
-            fb->Resize(width, height);
+            if (!fb->GetSpecification().NoResize)
+                fb->Resize(width, height);
         }
 
         m_Minimized = false;

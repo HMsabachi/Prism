@@ -32,7 +32,7 @@ namespace Prism
     void* RenderCommandQueue::Allocate(RenderCommandFn fn, uint32_t size)
     {
         m_SubmitCount++;
-        if (m_IsExecuting);
+        //if (m_IsExecuting);
             //PR_CORE_WARN("RenderCommandQueue: 在执行命令队列时分配新了的命令!");
         // TODO: 对齐 alignment
         *(RenderCommandFn*)m_CommandBufferPtr = fn;
@@ -58,7 +58,7 @@ namespace Prism
         m_DataPoolPtr += alignedSize;
         if (data)
             std::memcpy(ptr, data, size);
-        m_DataPoolCapacity = (m_DataPoolPtr - m_DataPool) / (1024 * 1024);
+        m_DataPoolCapacity = (uint32_t)((m_DataPoolPtr - m_DataPool) / (1024 * 1024));
         return ptr;
     }
 

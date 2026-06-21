@@ -23,7 +23,7 @@ namespace Prism
         FramebufferSpecification geoFBSpec;
         geoFBSpec.Width = viewportWidth;
         geoFBSpec.Height = viewportHeight;
-        geoFBSpec.Format = FramebufferFormat::RGBA16F;
+        geoFBSpec.Attachments = { FramebufferTextureFormat::RGBA16F, FramebufferTextureFormat::RGBA16F, FramebufferTextureFormat::Depth };
         geoFBSpec.Samples = 8;
         geoFBSpec.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
 
@@ -34,8 +34,8 @@ namespace Prism
         FramebufferSpecification compFBSpec;
         compFBSpec.Width = viewportWidth;
         compFBSpec.Height = viewportHeight;
-        compFBSpec.Format = FramebufferFormat::RGBA8;
-        compFBSpec.ClearColor = { 0.5f, 0.1f, 0.1f, 1.0f };
+        compFBSpec.Attachments = { FramebufferTextureFormat::RGBA8 };
+        compFBSpec.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
 
         RenderPassSpecification compRPSpec;
         compRPSpec.TargetFramebuffer = Framebuffer::Create(compFBSpec);
@@ -59,7 +59,9 @@ namespace Prism
         FramebufferSpecification shadowFBSpec;
         shadowFBSpec.Width = SHADOW_MAP_SIZE;
         shadowFBSpec.Height = SHADOW_MAP_SIZE;
-        shadowFBSpec.Format = FramebufferFormat::Depth;
+        shadowFBSpec.Attachments = { FramebufferTextureFormat::DEPTH32F };
+        shadowFBSpec.NoResize = true;
+        shadowFBSpec.ClearColor = { 0.0f, 0.0f, 0.0f, 0.0f };
         for (int i = 0; i < 4; i++)
         {
             RenderPassSpecification shadowRPSpec;
@@ -69,6 +71,34 @@ namespace Prism
 
         auto shadowShader = Renderer::GetShaderLibrary()->Get("Hidden/ShadowDepth");
         m_ShadowDepthMaterial = Material::Create(shadowShader);
+
+        // Bloom Blur
+        FramebufferSpecification bloomBlurFBSpec;
+        bloomBlurFBSpec.Attachments = { FramebufferTextureFormat::RGBA16F };
+        bloomBlurFBSpec.ClearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+        RenderPassSpecification bloomBlurRPSpec;
+        bloomBlurRPSpec.TargetFramebuffer = Framebuffer::Create(bloomBlurFBSpec);
+        m_BloomBlurPass[0] = RenderPass::Create(bloomBlurRPSpec);
+        bloomBlurRPSpec.TargetFramebuffer = Framebuffer::Create(bloomBlurFBSpec);
+        m_BloomBlurPass[1] = RenderPass::Create(bloomBlurRPSpec);
+
+        auto bloomBlurShader = Renderer::GetShaderLibrary()->Get("PostProcess/BloomBlur");
+        if (bloomBlurShader)
+            m_BloomBlurMaterial = Material::Create(bloomBlurShader);
+
+        // Bloom Blend
+        FramebufferSpecification bloomBlendFBSpec;
+        bloomBlendFBSpec.Attachments = { FramebufferTextureFormat::RGBA8 };
+        bloomBlendFBSpec.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
+
+        RenderPassSpecification bloomBlendRPSpec;
+        bloomBlendRPSpec.TargetFramebuffer = Framebuffer::Create(bloomBlendFBSpec);
+        m_BloomBlendPass = RenderPass::Create(bloomBlendRPSpec);
+
+        auto bloomBlendShader = Renderer::GetShaderLibrary()->Get("PostProcess/BloomBlend");
+        if (bloomBlendShader)
+            m_BloomBlendMaterial = Material::Create(bloomBlendShader);
     }
 
     void RenderPipeline::Shutdown()
@@ -77,6 +107,11 @@ namespace Prism
         m_CompositePass.Reset();
         for (int i = 0; i < 4; i++)
             m_ShadowPasses[i].Reset();
+        m_BloomBlurPass[0].Reset();
+        m_BloomBlurPass[1].Reset();
+        m_BloomBlendPass.Reset();
+        m_BloomBlurMaterial.Reset();
+        m_BloomBlendMaterial.Reset();
     }
 
     void RenderPipeline::Resize(uint32_t width, uint32_t height)
@@ -90,12 +125,20 @@ namespace Prism
         std::sort(data.DrawList.begin(), data.DrawList.end(),
             [](auto& a, auto& b) { return a.SortKey < b.SortKey; });
 
-        if (config.ShadowsEnabled && !data.DrawList.empty())
+        bool castShadows = config.ShadowsEnabled && !data.DrawList.empty()
+            && config.LightEnvironment.DirectionalLights[0].CastShadows;
+        if (castShadows)
             UpdateShadowData(config, data);
+        {
+            auto& dl = config.LightEnvironment.DirectionalLights[0];
+            m_FrameUBO.SetShadowData(dl.LightSize, config.MaxShadowDistance, 25.0f, 0.0f);
+        }
         BeginFrame(config, data);
-        if (config.ShadowsEnabled && !data.DrawList.empty())
+        if (castShadows)
             ShadowPass(data.DrawList);
         GeometryPass(config, data.DrawList, data.SelectedDrawList, data.DebugDrawList);
+        // TODO: BloomBlurPass() — need MSAA resolve on Attachment1 before reading as sampler2D
+        // if (config.EnableBloom) BloomBlurPass();
         CompositePass();
     }
 
@@ -107,20 +150,23 @@ namespace Prism
         m_FrameUBO.SetProjection(cam.Projection.GetProjectionMatrix());
         m_FrameUBO.SetCameraPosition(glm::inverse(cam.ViewMatrix)[3]);
         m_FrameUBO.SetTime(Time::GetTime(), Time::GetDeltaTime());
-        m_FrameUBO.SetLight(0, config.SceneLight.Direction,
-                            config.SceneLight.Radiance, config.SceneLight.Multiplier);
+        auto directionalLight = config.LightEnvironment.DirectionalLights[0];
+        m_FrameUBO.SetLight(0, directionalLight.Direction,
+                            directionalLight.Radiance, directionalLight.Multiplier);
         m_FrameUBO.Upload();
         m_FrameUBO.Bind();
-
-        config.SceneEnvironment.RadianceMap->Bind(Config::PRISM_ENV_RADIANCE);
-        config.SceneEnvironment.IrradianceMap->Bind(Config::PRISM_ENV_IRRADIANCE);
+        if (config.SceneEnvironment.RadianceMap && config.SceneEnvironment.IrradianceMap)
+        {
+            config.SceneEnvironment.RadianceMap->Bind(Config::PRISM_ENV_RADIANCE);
+            config.SceneEnvironment.IrradianceMap->Bind(Config::PRISM_ENV_IRRADIANCE);
+        }
         m_BRDFLUT->Bind(Config::PRISM_ENV_BRDF_LUT);
     }
 
     void RenderPipeline::UpdateShadowData(const RenderConfig& config, const FrameData& data)
     {
         auto& camera = data.Camera;
-        auto& light = config.SceneLight;
+        auto directionalLight = config.LightEnvironment.DirectionalLights[0];
         uint32_t cascadeCount = glm::clamp(config.CascadeCount, 1u, 4u);
 
         auto& proj = camera.Projection.GetProjectionMatrix();
@@ -142,11 +188,11 @@ namespace Prism
         }
 
         m_CascadeSplits = glm::vec4(splits[0], splits[1], splits[2], splits[3]);
-        glm::vec4 shadowParams(config.ShadowBias, config.ShadowNormalBias,
-                               (float)cascadeCount, 0.0f);
+        m_FrameUBO.SetShadowParams(config.ShadowBias, config.ShadowNormalBias,
+                                   (float)cascadeCount, directionalLight.SoftShadows ? 1.0f : 0.0f);
 
         glm::mat4 invView = glm::inverse(camera.ViewMatrix);
-        glm::vec3 lightDir = glm::normalize(light.Direction);
+        glm::vec3 lightDir = glm::normalize(directionalLight.Direction);
         glm::vec3 up = glm::abs(lightDir.y) < 0.99f
                            ? glm::vec3(0.0f, 1.0f, 0.0f)
                            : glm::vec3(1.0f, 0.0f, 0.0f);
@@ -197,7 +243,6 @@ namespace Prism
 
         m_FrameUBO.SetShadowMatrices(m_ShadowMatrices, cascadeCount);
         m_FrameUBO.SetCascadeSplits(m_CascadeSplits);
-        m_FrameUBO.SetShadowParams(shadowParams);
     }
 
     void RenderPipeline::ShadowPass(const std::vector<DrawCommand>& drawList)
@@ -263,7 +308,7 @@ namespace Prism
 
             for (auto& dc : drawList)
             {
-                auto material = dc.Material ? dc.Material : Renderer::GetDefaultMaterial();
+                auto material = dc.Material;
                 if (boundProgram != material->GetProgram())
                 {
                     material->BindProgram();
@@ -309,7 +354,7 @@ namespace Prism
 
                 for (auto& dc : selectedList)
                 {
-                    auto material = dc.Material ? dc.Material : Renderer::GetDefaultMaterial();
+                    auto material = dc.Material;
 
                     if (material != boundMaterial)
                     {
@@ -435,13 +480,55 @@ namespace Prism
     {
         PR_PROFILE_FUNCTION();
         Renderer::BeginRenderPass(m_CompositePass);
-        m_GeoPass->GetSpecification().TargetFramebuffer->BindTexture(Config::PRISM_GEOMETRY_PASS_TEXTURE);
+        m_GeoPass->GetSpecification().TargetFramebuffer->BindTexture(0, Config::PRISM_GEOMETRY_PASS_TEXTURE);
 
         float exposure = 0.8f;
         m_CompositeMaterial->SetFloat("u_Exposure", exposure);
         m_CompositeMaterial->SetInt("Prism_GeometryPassTextureSamples",
             (int)m_GeoPass->GetSpecification().TargetFramebuffer->GetSpecification().Samples);
         m_CompositeMaterial->Bind();
+
+        Renderer::SubmitFullscreenQuad(nullptr);
+        Renderer::EndRenderPass();
+    }
+
+    void RenderPipeline::BloomBlurPass()
+    {
+        PR_PROFILE_FUNCTION();
+        int amount = 10;
+        int index = 0;
+
+        for (int i = 0; i < amount; i++)
+        {
+            index = i % 2;
+            Renderer::BeginRenderPass(m_BloomBlurPass[index]);
+            m_BloomBlurMaterial->SetBool("u_Horizontal", index == 0);
+            m_BloomBlurMaterial->Bind();
+            if (i > 0)
+            {
+                auto fb = m_BloomBlurPass[1 - index]->GetSpecification().TargetFramebuffer;
+                fb->BindTexture(0, Config::PRISM_GEOMETRY_PASS_TEXTURE);
+            }
+            else
+            {
+                auto fb = m_GeoPass->GetSpecification().TargetFramebuffer;
+                fb->BindTexture(1, Config::PRISM_GEOMETRY_PASS_TEXTURE);
+            }
+            Renderer::SubmitFullscreenQuad(nullptr);
+            Renderer::EndRenderPass();
+        }
+    }
+
+    void RenderPipeline::BloomBlendPass()
+    {
+        PR_PROFILE_FUNCTION();
+        Renderer::BeginRenderPass(m_BloomBlendPass);
+        m_BloomBlendMaterial->SetFloat("u_Exposure", 0.8f);
+        m_BloomBlendMaterial->SetBool("u_EnableBloom", true);
+        m_BloomBlendMaterial->Bind();
+
+        m_GeoPass->GetSpecification().TargetFramebuffer->BindTexture(0, Config::PRISM_GEOMETRY_PASS_TEXTURE);
+        m_BloomBlurPass[1]->GetSpecification().TargetFramebuffer->BindTexture(0, Config::PRISM_BLOOM_TEXTURE);
 
         Renderer::SubmitFullscreenQuad(nullptr);
         Renderer::EndRenderPass();
@@ -491,9 +578,4 @@ namespace Prism
         return { envFiltered, irradianceMap };
     }
 
-    Environment Environment::Load(const std::string& filepath)
-    {
-        auto [radiance, irradiance] = RenderPipeline::CreateEnvironmentMap(filepath);
-        return { filepath, radiance, irradiance };
-    }
 }

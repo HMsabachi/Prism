@@ -26,6 +26,8 @@ Shader "Test/MultiPass"
                 attribute vec3 a_Position : POSITION;
                 attribute vec3 a_Normal : NORMAL;
 
+                layout(location = 0) out vec4 FragColor;
+
                 VARYING VertexOutput
                 {
                     vec3 Normal;
@@ -56,6 +58,8 @@ Shader "Test/MultiPass"
 
                 attribute vec3 a_Position : POSITION;
                 attribute vec3 a_Normal : NORMAL;
+
+                layout(location = 0) out vec4 FragColor;
 
                 VARYING VertexOutput
                 {

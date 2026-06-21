@@ -1,5 +1,6 @@
 ﻿#include "prpch.h"
 #include "Ref.h"
+#include "Application.h"
 
 namespace Prism
 {
@@ -8,22 +9,23 @@ namespace Prism
 
     namespace RefUtils {
 
-        void AddToLiveReferences(void* instance)
+        void PRISM_API AddToLiveReferences(void* instance)
         {
-            //std::scoped_lock<std::mutex> lock(s_LiveReferenceMutex);
+            std::scoped_lock<std::mutex> lock(s_LiveReferenceMutex);
             PR_CORE_ASSERT(instance);
             s_LiveReferences.insert(instance);
         }
 
-        void RemoveFromLiveReferences(void* instance)
+        void PRISM_API RemoveFromLiveReferences(void* instance)
         {
-            //std::scoped_lock<std::mutex> lock(s_LiveReferenceMutex);
+            std::scoped_lock<std::mutex> lock(s_LiveReferenceMutex);
+            if (Application::Get().IsRunning() != 1) return; // Avoid assertions during shutdown
             PR_CORE_ASSERT(instance);
             PR_CORE_ASSERT(s_LiveReferences.find(instance) != s_LiveReferences.end());
             s_LiveReferences.erase(instance);
         }
 
-        bool IsLive(void* instance)
+        bool PRISM_API IsLive(void* instance)
         {
             PR_CORE_ASSERT(instance);
             return s_LiveReferences.find(instance) != s_LiveReferences.end();
@@ -31,7 +33,7 @@ namespace Prism
 
         size_t PRISM_API GetLiveReferenceCount()
         {
-            //std::scoped_lock<std::mutex> lock(s_LiveReferenceMutex);
+            std::scoped_lock<std::mutex> lock(s_LiveReferenceMutex);
             return s_LiveReferences.size();
         }
 

@@ -27,6 +27,8 @@ Shader "Prism/Renderer2D_Line"
                 attribute vec3 a_Position : POSITION;
                 attribute vec4 a_Color : COLOR;
 
+                layout(location = 0) out vec4 FragColor;
+
                 VARYING VertexOutput
                 {
                     vec4 Color;

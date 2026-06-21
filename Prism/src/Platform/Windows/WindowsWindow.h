@@ -28,6 +28,8 @@ namespace Prism {
         void SetVSync(bool enabled) override;
         bool IsVSync() const override;
 
+        void Maximize() override;
+
         // Get the native Windows 获取底层窗口句柄
         virtual const std::string& GetTitle() const override { return m_Data.Title; }
         virtual void SetTitle(const std::string& title) override;
