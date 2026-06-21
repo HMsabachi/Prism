@@ -68,10 +68,7 @@ Shader "Custom/SimplePBR_Animated"
                     mat3 WorldNormals;
                     mat3 WorldTransform;
                     vec3 Binormal;
-                    vec4 ShadowMapCoord0;
-                    vec4 ShadowMapCoord1;
-                    vec4 ShadowMapCoord2;
-                    vec4 ShadowMapCoord3;
+                    vec4 ShadowMapCoords[4];
                     vec3 ViewPosition;
                 } vs_Output;
 
@@ -95,10 +92,10 @@ Shader "Custom/SimplePBR_Animated"
                     vs_Output.Binormal = mat3(boneTransform) * a_Binormal;
                     vs_Output.WorldTransform = mat3(u_ModelMatrix);
 
-                    vs_Output.ShadowMapCoord0 = Prism_ShadowMatrices[0] * vec4(vs_Output.WorldPosition, 1.0);
-                    vs_Output.ShadowMapCoord1 = Prism_ShadowMatrices[1] * vec4(vs_Output.WorldPosition, 1.0);
-                    vs_Output.ShadowMapCoord2 = Prism_ShadowMatrices[2] * vec4(vs_Output.WorldPosition, 1.0);
-                    vs_Output.ShadowMapCoord3 = Prism_ShadowMatrices[3] * vec4(vs_Output.WorldPosition, 1.0);
+                    vs_Output.ShadowMapCoords[0] = Prism_ShadowMatrices[0] * vec4(vs_Output.WorldPosition, 1.0);
+                    vs_Output.ShadowMapCoords[1] = Prism_ShadowMatrices[1] * vec4(vs_Output.WorldPosition, 1.0);
+                    vs_Output.ShadowMapCoords[2] = Prism_ShadowMatrices[2] * vec4(vs_Output.WorldPosition, 1.0);
+                    vs_Output.ShadowMapCoords[3] = Prism_ShadowMatrices[3] * vec4(vs_Output.WorldPosition, 1.0);
                     vs_Output.ViewPosition = vec3(Prism_View * vec4(vs_Output.WorldPosition, 1.0));
 
                     //gl_Position = u_ViewProjectionMatrix * u_ModelMatrix * vec4(a_Position, 1.0);
