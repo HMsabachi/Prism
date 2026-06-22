@@ -10,7 +10,7 @@ Environment:
     Bias: 0
     NormalBias: 0.128
     CascadeCount: 4
-    MaxDistance: 500
+    MaxDistance: 242.851
 PhysicsLayers:
   - Name: Default
     CollidesWith:

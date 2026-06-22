@@ -3,18 +3,18 @@
 #include <glm/glm.hpp>
 #include <vector>
 
-#include "Prism/Renderer/RenderPass.h"
-#include "Prism/Renderer/RenderConfig.h"
-#include "Prism/Renderer/Mesh.h"
-#include "Prism/Renderer/Material.h"
-#include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Camera/Camera.h"
+#include "Prism/Renderer/RenderConfig.h"
 #include "Prism/Renderer/Buffer/FrameUniformBuffer.h"
 #include "Prism/Renderer/Buffer/ObjectUniformBuffer.h"
 
 namespace Prism
 {
     class PrismShader;
+    class Material;
+    class Mesh;
+    class RenderPass;
+    class Texture2D;
 
     struct RendererCamera
     {
@@ -55,6 +55,7 @@ namespace Prism
         void Execute(const RenderConfig& config, FrameData& data);
 
         Ref<RenderPass> GetFinalRenderPass() const { return m_CompositePass; }
+        const Ref<RenderPass>& GetShadowPass(uint32_t index) const { return m_ShadowPasses[index]; }
         RenderPipelineOptions& GetOptions() { return m_Options; }
 
         static std::pair<Ref<TextureCube>, Ref<TextureCube>>

@@ -106,7 +106,13 @@ namespace Prism
         m_IsPlaying = false;
     }
 
-    Entity Scene::GetMainCameraEntity()
+
+	void Scene::OnImGuiRender()
+	{
+        for (auto* sys : m_SystemOrder) sys->OnImGuiRender();
+	}
+
+	Entity Scene::GetMainCameraEntity()
     {
         auto view = m_Registry.view<CameraComponent>();
         for (auto entity : view)

@@ -348,7 +348,27 @@ namespace UI {
         return changed;
     }
 
-    // ── Color ──
+
+	PRISM_API bool PropertySlider(const std::string& label, int& value, int min, int max)
+	{
+        bool modified = false;
+
+        ImGui::Text(label.c_str());
+        ImGui::NextColumn();
+        ImGui::PushItemWidth(-1);
+
+        s_IDBuffer[0] = '#';
+        s_IDBuffer[1] = '#';
+        memset(s_IDBuffer + 2, 0, 14);
+        _itoa(s_Counter++, s_IDBuffer + 2, 16);
+        modified = ImGui::SliderInt(s_IDBuffer, &value, min, max);
+        ImGui::PopItemWidth();
+        ImGui::NextColumn();
+        return modified;
+
+	}
+
+	// ── Color ──
 
     bool PropertyColor(const std::string& label, glm::vec3& values)
     {

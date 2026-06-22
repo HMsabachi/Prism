@@ -16,6 +16,7 @@ namespace Prism
         void OnCreate() override;
         void OnDestroy() override;
         void OnPostLateUpdate(float dt) override;
+        void OnImGuiRender() override;
         void Render();
 
         void SetEditorCamera(const EditorCamera& camera);

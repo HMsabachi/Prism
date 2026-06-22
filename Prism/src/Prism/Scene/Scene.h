@@ -35,6 +35,7 @@ namespace Prism
         // Runtime
         void OnRuntimeStart();
         void OnRuntimeStop();
+        void OnImGuiRender();
 
         Entity GetMainCameraEntity();
 

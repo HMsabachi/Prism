@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <string>
 #include <glm/glm.hpp>
@@ -44,6 +44,8 @@ namespace Prism {
         PRISM_API bool Property(const std::string& label, const Ref<Texture2D>& texture, uint32_t fallbackRendererID);
         PRISM_API bool Property(const std::string& label, const Ref<TextureCube>& texture, uint32_t fallbackRendererID);
         PRISM_API bool Property(const std::string& label, const char** options, int32_t optionCount, int32_t* selected);
+
+        PRISM_API bool PropertySlider(const std::string& label, int& value, int min, int max);
 
         PRISM_API bool PropertyColor(const std::string& label, glm::vec3& values);
         PRISM_API bool PropertyColor(const std::string& label, glm::vec4& values);

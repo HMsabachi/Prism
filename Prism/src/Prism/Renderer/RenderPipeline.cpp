@@ -1,9 +1,11 @@
 ﻿#include "prpch.h"
 #include "RenderPipeline.h"
 
-#include "Prism/Renderer/Renderer.h"
-#include "Prism/Renderer/RendererAPI.h"
+#include "Prism/Renderer/RenderPass.h"
+#include "Prism/Renderer/Mesh.h"
+#include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Material.h"
+#include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Shader/PrismShader.h"
 #include "Prism/Renderer/ComputeShader/ComputeShader.h"
 #include "Prism/ShaderCompiler/PrismBindings.h"
@@ -178,7 +180,7 @@ namespace Prism
         farClip = glm::min(farClip, config.MaxShadowDistance);
 
         float splits[4] = {};
-        float splitLambda = 0.95f;
+        float splitLambda = 0.82f;
         for (uint32_t i = 0; i < cascadeCount; i++)
         {
             float fraction = (float)(i + 1) / (float)cascadeCount;

@@ -820,9 +820,8 @@ namespace Prism
             ImGui::End();
             CSharpScriptEngine::OnImGuiRender();
             //PythonScriptEngine::OnImGuiRender();
-
             PhysicsSettingsWindow::OnImGuiRender(m_ShowPhysicsSettings);
-
+            m_ActiveScene->OnImGuiRender();
             ImGui::End();
         #endif
 

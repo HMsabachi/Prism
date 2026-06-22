@@ -7,6 +7,8 @@
 #include "Prism/Scene/Components.h"
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Editor/EditorCamera.h"
+#include "Prism/ImGui/ImGui.h"
+#include "Prism/Core/LanguageManager.h"
 
 namespace Prism
 {
@@ -14,7 +16,6 @@ namespace Prism
         : m_Scene(scene)
     {
     }
-
     RenderSystem::~RenderSystem()
     {
     }
@@ -39,7 +40,36 @@ namespace Prism
         Render();
     }
 
-    void RenderSystem::Render()
+
+	void RenderSystem::OnImGuiRender()
+	{
+        ImGui::Begin("Render System");
+        if (UI::BeginTreeNode(TR("Shadows")))
+        {
+            UI::BeginPropertyGrid();
+            UI::Property("Enable Shadows", m_Config.ShadowsEnabled);
+            UI::Property("Shadow Bias", m_Config.ShadowBias, 0.0001f, 0.0f, 0.1f);
+            UI::Property("Normal Bias", m_Config.ShadowNormalBias, 0.001f, 0.0f, 1.0f);
+            UI::Property("Cascade Count", m_Config.CascadeCount, 1, 4);
+            UI::Property("Max Shadow Distance", m_Config.MaxShadowDistance, 1.0f, 1000.0f, UI::PropertyFlag::SliderProperty);
+            UI::EndPropertyGrid();
+            UI::EndTreeNode();
+        }
+        if (UI::BeginTreeNode(TR("Shadow Map"), false))
+        {
+            static int cascadeIndex = 0;
+            UI::BeginPropertyGrid();
+            UI::PropertySlider("Cascade Index", cascadeIndex, 0, 3);
+            UI::EndPropertyGrid();
+            const auto& rendererID = m_Pipeline->GetShadowPass(cascadeIndex)->GetSpecification().TargetFramebuffer->GetDepthAttachmentRendererID();
+            float size = ImGui::GetContentRegionAvail().x;
+            ImGui::Image((void*)(uint64_t)rendererID, { size, size }, { 0, 1 }, { 1, 0 });
+            UI::EndTreeNode();
+        }
+        ImGui::End();
+	}
+
+	void RenderSystem::Render()
     {
         m_PendingFrameData.DrawList.clear();
         m_PendingFrameData.SelectedDrawList.clear();
