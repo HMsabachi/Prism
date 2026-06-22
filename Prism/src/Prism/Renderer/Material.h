@@ -76,6 +76,7 @@ namespace Prism
         Ref<UniformBuffer> m_UniformBuffer;
         std::vector<Ref<Texture>> m_Textures;
         KeywordMask m_KeywordMask = 0;
+        ShaderReloadedToken m_ReloadToken = 0;
         bool m_Dirty = true;
     };
 }

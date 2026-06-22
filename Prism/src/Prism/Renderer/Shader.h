@@ -6,10 +6,7 @@
 #include <string>
 #include <glm/glm.hpp>
 
-namespace Prism
-{
-    struct ShaderCommand;
-}
+namespace PrismShaderCompiler { struct PipelineState; }
 
 namespace Prism
 {
@@ -25,7 +22,7 @@ namespace Prism
 
         virtual const std::string& GetName() const = 0;
 
-        virtual void ApplyCommand(const ShaderCommand& command) = 0;
+        virtual void ApplyRenderState(const PrismShaderCompiler::PipelineState& state) = 0;
 
         virtual void SetInt(const std::string& name, int value) = 0;
         virtual void SetFloat(const std::string& name, float value) = 0;

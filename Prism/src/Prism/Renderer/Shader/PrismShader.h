@@ -1,31 +1,39 @@
 ﻿#pragma once
 #include "Prism/Core/Core.h"
 #include "Prism/Renderer/Shader.h"
-#include "ShaderCommand.h"
-#include "ShaderVariant.h"
+#include "Prism/Utilities/Delegate.h"
 #include <PrismShaderCore/Compiler.h>
+#include <PrismShaderCore/Pipeline/PipelineState.h>
 #include <functional>
+#include <optional>
 #include <unordered_map>
 
 namespace Prism
 {
+    using KeywordMask = uint64_t;
+    constexpr size_t MAX_KEYWORDS_PER_SHADER = 64;
+
+    struct ShaderKeyword
+    {
+        std::string Name;
+        uint8_t Index = 0;
+        bool IsMultiCompile = false;
+    };
+
     using ShaderReloadedCallback = std::function<void()>;
+    using ShaderReloadedToken = Delegate<>::Token;
 
     struct ShaderPass
     {
-        Ref<Shader> Program;
-        ShaderCommand Command;
         std::string Name;
         std::unordered_map<std::string, std::string> Tags;
+        std::optional<PrismShaderCompiler::PipelineState> RenderState;
     };
 
     class PRISM_API PrismShader : public RefCounted
     {
     public:
         static Ref<PrismShader> Create(const std::string& path);
-        static Ref<PrismShader> CreateFromString(const std::string& source);
-
-        Ref<Shader> GetOriginalShader() const;
 
     public:
         PrismShader(const std::string& path);
@@ -36,7 +44,8 @@ namespace Prism
         void Load(const std::string& source);
 
     public:
-        void AddShaderReloadedCallback(const ShaderReloadedCallback& callback);
+        ShaderReloadedToken AddShaderReloadedCallback(const ShaderReloadedCallback& callback);
+        void RemoveShaderReloadedCallback(ShaderReloadedToken token);
         const std::string& GetFilePath() const { return m_FilePath; }
         const std::string& GetName() const { return m_Name; }
 
@@ -53,10 +62,13 @@ namespace Prism
         Ref<Shader> GetPassProgram(uint32_t passIndex, KeywordMask mask) const;
 
     private:
-        Ref<Shader> GetVariant(KeywordMask mask) const;
+        Ref<Shader> GetVariant(uint32_t passIndex, KeywordMask mask) const;
         void CompilePasses();
         void CompileVariants();
         std::vector<std::string> KeywordsForMask(KeywordMask mask) const;
+        KeywordMask MultiCompileMask() const;
+        KeywordMask PassKeywordMask(uint32_t passIndex) const;
+        KeywordMask ProjectMaskToPass(KeywordMask mask, uint32_t passIndex) const;
 
     private:
         std::string m_Name;
@@ -64,12 +76,13 @@ namespace Prism
 
         PrismShaderCompiler::CompiledShader m_Compiled;
         std::vector<ShaderPass> m_Passes;
-        Ref<Shader> m_Shader;
 
-        std::vector<ShaderReloadedCallback> m_ReloadedCallbacks;
+        Delegate<> m_ReloadedCallbacks;
 
         std::vector<ShaderKeyword> m_Keywords;
-        mutable std::unordered_map<KeywordMask, Ref<Shader>> m_VariantCache;
+        KeywordMask m_MultiCompileMask = 0;
+        std::vector<KeywordMask> m_PassKeywordMasks;
+        mutable std::unordered_map<uint32_t, std::unordered_map<KeywordMask, Ref<Shader>>> m_VariantCache;
 
     public:
         static std::vector<Ref<PrismShader>> s_AllShaders;

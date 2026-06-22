@@ -18,14 +18,6 @@ namespace Prism
         return shader;
     }
 
-    Ref<PrismShader> PrismShader::CreateFromString(const std::string& source)
-    {
-        Ref<PrismShader> shader = Ref<PrismShader>::Create();
-        shader->Load(source);
-        s_AllShaders.push_back(shader);
-        return shader;
-    }
-
     PrismShader::PrismShader(const std::string& path)
     {
         m_FilePath = path;
@@ -62,11 +54,11 @@ namespace Prism
         PR_CORE_INFO("PSL parsed '{}': {} uniforms, {} passes",
             m_Name, m_Compiled.Uniforms.size(), m_Compiled.Passes.size());
 
+        m_VariantCache.clear();
         CompilePasses();
         CompileVariants();
 
-        for (auto& cb : m_ReloadedCallbacks)
-            cb();
+        m_ReloadedCallbacks.Invoke();
     }
 
     void PrismShader::CompilePasses()
@@ -83,15 +75,14 @@ namespace Prism
             ShaderPass pass;
             pass.Name = m_Compiled.Passes[i].Name;
             pass.Tags = m_Compiled.Passes[i].Tags;
-            pass.Program = Ref<Shader>(Shader::Create(out.VertexShader, out.FragmentShader));
+            pass.RenderState = m_Compiled.Passes[i].RenderState;
 
             PR_CORE_INFO("  Pass '{}': VS={}B  FS={}B",
                 pass.Name, out.VertexShader.size(), out.FragmentShader.size());
 
             m_Passes.push_back(std::move(pass));
+            m_VariantCache[i][0] = Ref<Shader>(Shader::Create(out.VertexShader, out.FragmentShader));
         }
-
-        m_Shader = m_Passes[0].Program;
     }
 
     void PrismShader::CompileVariants()
@@ -99,44 +90,69 @@ namespace Prism
         auto& compiler = ShaderCompiler::Get();
 
         m_Keywords.clear();
-        m_VariantCache.clear();
+        m_MultiCompileMask = 0;
 
+        uint8_t bit = 0;
         for (auto& kw : m_Compiled.Keywords)
         {
-            m_Keywords.push_back({ kw, (uint8_t)m_Keywords.size() });
             if (m_Keywords.size() >= MAX_KEYWORDS_PER_SHADER) break;
+            if (kw.IsMultiCompile)
+            {
+                m_Keywords.push_back({ kw.Name, bit++, true });
+                m_MultiCompileMask |= (KeywordMask(1) << (bit - 1));
+            }
+        }
+        for (auto& kw : m_Compiled.Keywords)
+        {
+            if (m_Keywords.size() >= MAX_KEYWORDS_PER_SHADER) break;
+            if (!kw.IsMultiCompile)
+                m_Keywords.push_back({ kw.Name, bit++, false });
         }
 
-        m_VariantCache[0] = m_Shader;
+        m_PassKeywordMasks.assign(m_Compiled.PassGLSL.size(), 0);
+        for (uint32_t p = 0; p < m_Compiled.PassGLSL.size(); ++p)
+        {
+            KeywordMask m = 0;
+            for (auto& pragma : m_Compiled.PassGLSL[p].Pragmas)
+                for (auto& name : pragma.Keywords)
+                    for (auto& kw : m_Keywords)
+                        if (kw.Name == name) m |= (KeywordMask(1) << kw.Index);
+            m_PassKeywordMasks[p] = m;
+        }
 
         uint32_t kwCount = (uint32_t)m_Keywords.size();
         if (kwCount == 0) return;
 
-        if (kwCount > 10)
+#if defined(PR_DEBUG) || defined(PR_RELEASE)
+        for (uint32_t p = 0; p < m_Passes.size(); ++p)
         {
-            PR_CORE_WARN("Shader '{}' has {} keywords, too many for eager compilation", m_Name, kwCount);
-            return;
-        }
-
-        uint32_t numVariants = 1u << kwCount;
-
-        for (KeywordMask mask = 1; mask < numVariants; mask++)
-        {
-            auto keywords = KeywordsForMask(mask);
-
-            std::string debugName;
-            for (auto& kw : keywords)
+            KeywordMask passMulti = m_MultiCompileMask & m_PassKeywordMasks[p];
+            if (passMulti == 0) continue;
+            for (KeywordMask sub = passMulti; sub > 0; sub = (sub - 1) & passMulti)
             {
-                if (!debugName.empty()) debugName += "|";
-                debugName += kw;
+                auto keywords = KeywordsForMask(sub);
+                auto out = compiler.GenerateGLSL(m_Compiled, p, keywords);
+                m_VariantCache[p][sub] = Ref<Shader>(Shader::Create(out.VertexShader, out.FragmentShader));
+                PR_CORE_INFO("  Pass '{}' variant: [{}]", m_Passes[p].Name, Utilities::Join(keywords, ", "));
             }
-
-            auto out = compiler.GenerateGLSL(m_Compiled, 0, keywords);
-            Ref<Shader> program = Ref<Shader>(Shader::Create(out.VertexShader, out.FragmentShader));
-            m_VariantCache[mask] = program;
-
-            PR_CORE_INFO("  Variant [{}]", debugName);
         }
+#endif
+    }
+
+    KeywordMask PrismShader::MultiCompileMask() const
+    {
+        return m_MultiCompileMask;
+    }
+
+    KeywordMask PrismShader::PassKeywordMask(uint32_t passIndex) const
+    {
+        if (passIndex >= m_PassKeywordMasks.size()) return 0;
+        return m_PassKeywordMasks[passIndex];
+    }
+
+    KeywordMask PrismShader::ProjectMaskToPass(KeywordMask mask, uint32_t passIndex) const
+    {
+        return mask & PassKeywordMask(passIndex);
     }
 
     std::vector<std::string> PrismShader::KeywordsForMask(KeywordMask mask) const
@@ -156,12 +172,7 @@ namespace Prism
         return nullptr;
     }
 
-    Ref<Shader> PrismShader::GetOriginalShader() const
-    {
-        return m_Shader;
-    }
-
-#pragma region Keyword / Variant
+    #pragma region Keyword / Variant
 
     uint8_t PrismShader::GetKeywordIndex(const std::string& name) const
     {
@@ -181,40 +192,39 @@ namespace Prism
         return false;
     }
 
-    Ref<Shader> PrismShader::GetVariant(KeywordMask mask) const
+    Ref<Shader> PrismShader::GetVariant(uint32_t passIndex, KeywordMask mask) const
     {
-        auto it = m_VariantCache.find(mask);
-        if (it != m_VariantCache.end())
-            return it->second;
-
-        if (mask == 0)
-            return m_Shader;
+        KeywordMask localMask = ProjectMaskToPass(mask, passIndex);
+        auto& passCache = m_VariantCache[passIndex];
+        auto it = passCache.find(localMask);
+        if (it != passCache.end()) return it->second;
 
         auto& compiler = ShaderCompiler::Get();
-        auto keywords = KeywordsForMask(mask);
-        auto out = compiler.GenerateGLSL(m_Compiled, 0, keywords);
+        auto keywords = KeywordsForMask(localMask);
+        auto out = compiler.GenerateGLSL(m_Compiled, passIndex, keywords);
         Ref<Shader> program = Ref<Shader>(Shader::Create(out.VertexShader, out.FragmentShader));
-        m_VariantCache[mask] = program;
-        return m_VariantCache[mask];
+        passCache[localMask] = program;
+        PR_CORE_TRACE("Shader'{}' Pass'{}' variant:[{}]", m_Name, m_Passes[passIndex].Name, Utilities::Join(keywords, ", "));
+        return program;
     }
 
     Ref<Shader> PrismShader::GetPassProgram(uint32_t passIndex, KeywordMask mask) const
     {
         PR_CORE_ASSERT(passIndex < m_Passes.size(),
             "GetPassProgram: passIndex {} out of range ({} passes)", passIndex, m_Passes.size());
-
-        if (mask == 0)
-            return m_Passes[passIndex].Program;
-
-        Ref<Shader> variant = GetVariant(mask);
-        return variant ? variant : m_Passes[passIndex].Program;
+        return GetVariant(passIndex, mask);
     }
 
-#pragma endregion
+    #pragma endregion
 
-    void PrismShader::AddShaderReloadedCallback(const ShaderReloadedCallback& callback)
+    ShaderReloadedToken PrismShader::AddShaderReloadedCallback(const ShaderReloadedCallback& callback)
     {
-        m_ReloadedCallbacks.push_back(callback);
+        return m_ReloadedCallbacks.Add(callback);
+    }
+
+    void PrismShader::RemoveShaderReloadedCallback(ShaderReloadedToken token)
+    {
+        m_ReloadedCallbacks.Remove(token);
     }
 
     // ShaderLibrary

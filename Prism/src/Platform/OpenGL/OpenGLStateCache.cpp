@@ -1,8 +1,10 @@
 ﻿#include "prpch.h"
 #include "OpenGLStateCache.h"
-#include "Prism/Renderer/Shader/ShaderCommand.h"  
+#include <PrismShaderCore/Pipeline/PipelineState.h>
 
 #include <glad/glad.h>
+
+using namespace PrismShaderCompiler;
 
 namespace Prism
 {
@@ -13,23 +15,23 @@ namespace Prism
         {
         case CullMode::Back:  return GL_BACK;
         case CullMode::Front: return GL_FRONT;
-        case CullMode::Off:   return GL_BACK;   
+        case CullMode::Off:   return GL_BACK;
         }
         return GL_BACK;
     }
 
-    static GLenum ToOpenGL(DepthCompareFunc func)
+    static GLenum ToOpenGL(DepthFunc func)
     {
         switch (func)
         {
-        case DepthCompareFunc::Never:        return GL_NEVER;
-        case DepthCompareFunc::Less:         return GL_LESS;
-        case DepthCompareFunc::Equal:        return GL_EQUAL;
-        case DepthCompareFunc::LessEqual:    return GL_LEQUAL;
-        case DepthCompareFunc::Greater:      return GL_GREATER;
-        case DepthCompareFunc::NotEqual:     return GL_NOTEQUAL;
-        case DepthCompareFunc::GreaterEqual: return GL_GEQUAL;
-        case DepthCompareFunc::Always:       return GL_ALWAYS;
+        case DepthFunc::Never:    return GL_NEVER;
+        case DepthFunc::Less:     return GL_LESS;
+        case DepthFunc::Equal:    return GL_EQUAL;
+        case DepthFunc::LEqual:   return GL_LEQUAL;
+        case DepthFunc::Greater:  return GL_GREATER;
+        case DepthFunc::NotEqual: return GL_NOTEQUAL;
+        case DepthFunc::GEqual:   return GL_GEQUAL;
+        case DepthFunc::Always:   return GL_ALWAYS;
         }
         return GL_LEQUAL;
     }
@@ -47,74 +49,51 @@ namespace Prism
         }
         return GL_ONE;
     }
-
-    static GLenum ToOpenGL(BlendOperation op)
-    {
-        switch (op)
-        {
-        case BlendOperation::Add:             return GL_FUNC_ADD;
-        case BlendOperation::Subtract:        return GL_FUNC_SUBTRACT;
-        case BlendOperation::ReverseSubtract: return GL_FUNC_REVERSE_SUBTRACT;
-        case BlendOperation::Min:             return GL_MIN;
-        case BlendOperation::Max:             return GL_MAX;
-        }
-        return GL_FUNC_ADD;
-    }
 #pragma endregion
 
-
-
-    static ShaderCommand s_Current;
+    static PipelineState s_Current;
 
     void OpenGLStateCache::Init()
     {
-        Reset();   // 初始化为 OpenGL 默认状态
+        Reset();
     }
 
     void OpenGLStateCache::Reset()
     {
+        s_Current = PipelineState::Default();
 
-        s_Current = ShaderCommand();  
-
-        // 把 OpenGL 重置到默认状态
         glEnable(GL_BLEND);
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
         glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
         glEnable(GL_DEPTH_TEST);
         glDepthFunc(GL_LEQUAL);
         glDepthMask(GL_TRUE);
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+        glDisable(GL_POLYGON_OFFSET_FILL);
     }
 
-
-
-    void OpenGLStateCache::Apply(const ShaderCommand& newCommand)
+    void OpenGLStateCache::Apply(const PipelineState& newCommand)
     {
         ApplyBlendIfChanged(newCommand);
         ApplyCullIfChanged(newCommand);
         ApplyDepthIfChanged(newCommand);
-        ApplyZWriteIfChanged(newCommand);
+        ApplyColorMaskIfChanged(newCommand);
+        ApplyDepthBiasIfChanged(newCommand);
 
-        // 更新缓存
         s_Current = newCommand;
     }
 
-
-
-    void OpenGLStateCache::ApplyBlendIfChanged(const ShaderCommand& cmd)
+    void OpenGLStateCache::ApplyBlendIfChanged(const PipelineState& cmd)
     {
-        bool needBlend = cmd.flags.Has(ShaderCommandFlag::Blend);
-        bool currBlend = s_Current.flags.Has(ShaderCommandFlag::Blend);
-
-        if (needBlend != currBlend)
+        if (cmd.BlendEnabled != s_Current.BlendEnabled)
         {
-            if (needBlend)
+            if (cmd.BlendEnabled)
             {
                 glEnable(GL_BLEND);
                 glBlendFuncSeparate(
-                    ToOpenGL(cmd.blendSrcRGB), ToOpenGL(cmd.blendDstRGB),
-                    ToOpenGL(cmd.blendSrcAlpha), ToOpenGL(cmd.blendDstAlpha)
-                );
-                glBlendEquationSeparate(
-                    ToOpenGL(cmd.blendOpRGB), ToOpenGL(cmd.blendOpAlpha)
+                    ToOpenGL(cmd.SrcFactor), ToOpenGL(cmd.DstFactor),
+                    ToOpenGL(cmd.SrcAlpha), ToOpenGL(cmd.DstAlpha)
                 );
             }
             else
@@ -124,83 +103,101 @@ namespace Prism
             return;
         }
 
-
-        if (needBlend &&
-            (cmd.blendSrcRGB != s_Current.blendSrcRGB ||
-                cmd.blendDstRGB != s_Current.blendDstRGB ||
-                cmd.blendSrcAlpha != s_Current.blendSrcAlpha ||
-                cmd.blendDstAlpha != s_Current.blendDstAlpha ||
-                cmd.blendOpRGB != s_Current.blendOpRGB ||
-                cmd.blendOpAlpha != s_Current.blendOpAlpha))
+        if (cmd.BlendEnabled &&
+            (cmd.SrcFactor != s_Current.SrcFactor ||
+                cmd.DstFactor != s_Current.DstFactor ||
+                cmd.SrcAlpha != s_Current.SrcAlpha ||
+                cmd.DstAlpha != s_Current.DstAlpha))
         {
             glBlendFuncSeparate(
-                ToOpenGL(cmd.blendSrcRGB), ToOpenGL(cmd.blendDstRGB),
-                ToOpenGL(cmd.blendSrcAlpha), ToOpenGL(cmd.blendDstAlpha)
-            );
-            glBlendEquationSeparate(
-                ToOpenGL(cmd.blendOpRGB), ToOpenGL(cmd.blendOpAlpha)
+                ToOpenGL(cmd.SrcFactor), ToOpenGL(cmd.DstFactor),
+                ToOpenGL(cmd.SrcAlpha), ToOpenGL(cmd.DstAlpha)
             );
         }
     }
 
-    void OpenGLStateCache::ApplyCullIfChanged(const ShaderCommand& cmd)
+    void OpenGLStateCache::ApplyCullIfChanged(const PipelineState& cmd)
     {
-        bool needCull = cmd.flags.Has(ShaderCommandFlag::Cull);
-        bool currCull = s_Current.flags.Has(ShaderCommandFlag::Cull);
-
-        if (needCull != currCull)
+        if (cmd.Cull != s_Current.Cull)
         {
-            if (needCull)
-            {
-                glEnable(GL_CULL_FACE);
-                glCullFace(ToOpenGL(cmd.cullMode));
-            }
-            else
+            if (cmd.Cull == CullMode::Off)
             {
                 glDisable(GL_CULL_FACE);
             }
-            return;
-        }
-
-        if (needCull && cmd.cullMode != s_Current.cullMode)
-        {
-            glCullFace(ToOpenGL(cmd.cullMode));
+            else
+            {
+                glEnable(GL_CULL_FACE);
+                glCullFace(ToOpenGL(cmd.Cull));
+            }
         }
     }
 
-    void OpenGLStateCache::ApplyDepthIfChanged(const ShaderCommand& cmd)
+    void OpenGLStateCache::ApplyDepthIfChanged(const PipelineState& cmd)
     {
-        bool needZTest = cmd.flags.Has(ShaderCommandFlag::ZTest);
-        bool currZTest = s_Current.flags.Has(ShaderCommandFlag::ZTest);
-
-        if (needZTest != currZTest)
+        if (cmd.DepthTest != s_Current.DepthTest)
         {
-            if (needZTest)
+            if (cmd.DepthTest)
             {
                 glEnable(GL_DEPTH_TEST);
-                glDepthFunc(ToOpenGL(cmd.zTestFunc));
+                glDepthFunc(ToOpenGL(cmd.DepthCompare));
             }
             else
             {
                 glDisable(GL_DEPTH_TEST);
             }
-            return;
+        }
+        else if (cmd.DepthTest && cmd.DepthCompare != s_Current.DepthCompare)
+        {
+            glDepthFunc(ToOpenGL(cmd.DepthCompare));
         }
 
-        if (needZTest && cmd.zTestFunc != s_Current.zTestFunc)
+        if (cmd.DepthWrite != s_Current.DepthWrite)
         {
-            glDepthFunc(ToOpenGL(cmd.zTestFunc));
+            glDepthMask(cmd.DepthWrite ? GL_TRUE : GL_FALSE);
         }
     }
 
-    void OpenGLStateCache::ApplyZWriteIfChanged(const ShaderCommand& cmd)
+    void OpenGLStateCache::ApplyColorMaskIfChanged(const PipelineState& cmd)
     {
-        bool needZWrite = cmd.flags.Has(ShaderCommandFlag::ZWrite);
-        bool currZWrite = s_Current.flags.Has(ShaderCommandFlag::ZWrite);
-
-        if (needZWrite != currZWrite)
+        if (cmd.WriteMask != s_Current.WriteMask)
         {
-            glDepthMask(needZWrite ? GL_TRUE : GL_FALSE);
+            GLboolean r = GL_FALSE, g = GL_FALSE, b = GL_FALSE, a = GL_FALSE;
+            switch (cmd.WriteMask)
+            {
+            case ColorMask::RGBA: r = g = b = a = GL_TRUE; break;
+            case ColorMask::RGB:  r = g = b = GL_TRUE;     break;
+            case ColorMask::R:    r = GL_TRUE;             break;
+            case ColorMask::G:    g = GL_TRUE;             break;
+            case ColorMask::B:    b = GL_TRUE;             break;
+            case ColorMask::A:    a = GL_TRUE;             break;
+            case ColorMask::None: break;
+            }
+            glColorMask(r, g, b, a);
+        }
+    }
+
+    void OpenGLStateCache::ApplyDepthBiasIfChanged(const PipelineState& cmd)
+    {
+        bool needBias = cmd.DepthBiasFactor != 0.0f || cmd.DepthBiasUnits != 0.0f;
+        bool currBias = s_Current.DepthBiasFactor != 0.0f || s_Current.DepthBiasUnits != 0.0f;
+
+        if (needBias != currBias)
+        {
+            if (needBias)
+            {
+                glEnable(GL_POLYGON_OFFSET_FILL);
+                glPolygonOffset(cmd.DepthBiasFactor, cmd.DepthBiasUnits);
+            }
+            else
+            {
+                glDisable(GL_POLYGON_OFFSET_FILL);
+            }
+        }
+        else if (needBias &&
+                 (cmd.DepthBiasFactor != s_Current.DepthBiasFactor ||
+                     cmd.DepthBiasUnits != s_Current.DepthBiasUnits))
+        {
+            glPolygonOffset(cmd.DepthBiasFactor, cmd.DepthBiasUnits);
         }
     }
 }

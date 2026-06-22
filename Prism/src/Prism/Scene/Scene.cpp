@@ -87,7 +87,6 @@ namespace Prism
         for (auto* sys : m_SystemOrder) sys->OnPreLateUpdate(dt);
         for (auto* sys : m_SystemOrder) sys->OnLateUpdate(dt);
         for (auto* sys : m_SystemOrder) sys->OnPostLateUpdate(dt);
-        for (auto* sys : m_SystemOrder) sys->OnImGuiRender();
     }
 
     void Scene::OnEvent(Event& e)

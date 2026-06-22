@@ -110,9 +110,9 @@ namespace Prism
         });
     }
 
-    void OpenGLShader::ApplyCommand(const ShaderCommand& command)
+    void OpenGLShader::ApplyRenderState(const PrismShaderCompiler::PipelineState& state)
     {
-        Renderer::Submit([=]() { OpenGLStateCache::Apply(command); });
+        Renderer::Submit([=]() { OpenGLStateCache::Apply(state); });
     }
 
     void OpenGLShader::SetInt(const std::string& name, int value)

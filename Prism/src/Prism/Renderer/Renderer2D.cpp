@@ -178,7 +178,7 @@ namespace Prism
         {
             s_Data.QuadVertexBuffer->SetData(s_Data.QuadVertexBufferBase, dataSize);
 
-            s_Data.TextureShader->GetOriginalShader()->Bind();
+            s_Data.TextureShader->GetPassProgram(0, 0)->Bind();
             s_Data.ObjectUBO.Upload();
             s_Data.ObjectUBO.Bind();
 
@@ -196,7 +196,7 @@ namespace Prism
         {
             s_Data.LineVertexBuffer->SetData(s_Data.LineVertexBufferBase, dataSize);
 
-            s_Data.LineShader->GetOriginalShader()->Bind();
+            s_Data.LineShader->GetPassProgram(0, 0)->Bind();
             s_Data.ObjectUBO.Upload();
             s_Data.ObjectUBO.Bind();
 

@@ -15,7 +15,7 @@ namespace Prism {
 
         virtual void Reload() override {}
         virtual void Bind() override;
-        virtual void ApplyCommand(const ShaderCommand& command) override;
+        virtual void ApplyRenderState(const PrismShaderCompiler::PipelineState& state) override;
 
         virtual void SetInt(const std::string& name, int value) override;
         virtual void SetFloat(const std::string& name, float value) override;

@@ -19,7 +19,7 @@ namespace Prism
     Material::Material(const Ref<PrismShader>& shader)
         : m_Shader(shader)
     {
-        m_Shader->AddShaderReloadedCallback(std::bind(&Material::OnShaderReloaded, this));
+        m_ReloadToken = m_Shader->AddShaderReloadedCallback(std::bind(&Material::OnShaderReloaded, this));
         AllocateStorage();
     }
 
@@ -27,7 +27,7 @@ namespace Prism
     Material::Material(const Ref<Material>& material)
         : m_Shader(material->m_Shader)
     {
-        m_Shader->AddShaderReloadedCallback(std::bind(&Material::OnShaderReloaded, this));
+        m_ReloadToken = m_Shader->AddShaderReloadedCallback(std::bind(&Material::OnShaderReloaded, this));
         AllocateStorage();
 
         m_PropertyBuffer = material->m_PropertyBuffer;
@@ -39,6 +39,8 @@ namespace Prism
 
     Material::~Material()
     {
+        if (m_Shader && m_ReloadToken != 0)
+            m_Shader->RemoveShaderReloadedCallback(m_ReloadToken);
         m_PropertyBuffer.Free();
     }
 
@@ -91,8 +93,10 @@ namespace Prism
 
     void Material::SetShader(const Ref<PrismShader>& shader)
     {
+        if (m_Shader && m_ReloadToken != 0)
+            m_Shader->RemoveShaderReloadedCallback(m_ReloadToken);
         m_Shader = shader;
-        m_Shader->AddShaderReloadedCallback(std::bind(&Material::OnShaderReloaded, this));
+        m_ReloadToken = m_Shader->AddShaderReloadedCallback(std::bind(&Material::OnShaderReloaded, this));
         AllocateStorage();
         m_KeywordMask = 0;
     }
@@ -275,7 +279,9 @@ namespace Prism
     {
         Ref<Shader> program = m_Shader->GetPassProgram(passIndex, m_KeywordMask);
         program->Bind();
-        program->ApplyCommand(m_Shader->GetPass(passIndex).Command);
+        const auto& pass = m_Shader->GetPass(passIndex);
+        if (pass.RenderState)
+            program->ApplyRenderState(*pass.RenderState);
     }
 
     void Material::BindUniform()

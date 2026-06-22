@@ -48,6 +48,6 @@ namespace Prism
         }
     private:
         std::vector<Invokeer> m_Functions;
-        Token m_NextToken = 0;
+        Token m_NextToken = 1;
     };
 }
