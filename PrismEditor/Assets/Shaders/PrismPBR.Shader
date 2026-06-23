@@ -38,7 +38,7 @@ Shader "Standard/PrismPBR"
 
         Pass
         {
-            Tags { "Queue" = "Geometry" "RenderType" = "Opaque" }
+            Tags { "Queue" = "Geometry" "RenderType" = "Opaque" "LightMode" = "ForwardBase" }
             Name "ForwardBase"
             GLSL
             {
@@ -258,6 +258,42 @@ Shader "Standard/PrismPBR"
                     BloomColor = brightness > 1.0 ? FragColor : vec4(0.0, 0.0, 0.0, 1.0);
                 }
 
+            }
+        }
+
+        Pass
+        {
+            Tags { "LightMode" = "ShadowCaster" }
+            Name "ShadowCaster"
+            RenderCommand { Cull Back ZWrite On ZTest LEqual }
+            GLSL
+            {
+                #pragma shader_feature SKINNED
+                #include "PrismCommon.glsl"
+
+                attribute vec3 a_Position : POSITION;
+            #ifdef SKINNED
+                attribute ivec4 a_BoneIndices : BONEINDICES;
+                attribute vec4 a_BoneWeights : BONEWEIGHTS;
+            #endif
+
+                void vert()
+                {
+                #ifdef SKINNED
+                    mat4 boneTransform = Prism_Bones[a_BoneIndices[0]] * a_BoneWeights[0];
+                    boneTransform += Prism_Bones[a_BoneIndices[1]] * a_BoneWeights[1];
+                    boneTransform += Prism_Bones[a_BoneIndices[2]] * a_BoneWeights[2];
+                    boneTransform += Prism_Bones[a_BoneIndices[3]] * a_BoneWeights[3];
+                    vec4 localPosition = boneTransform * vec4(a_Position, 1.0);
+                    gl_Position = Prism_ShadowMatrices[int(Prism_ObjectReserved.x)] * Prism_Model * localPosition;
+                #else
+                    gl_Position = Prism_ShadowMatrices[int(Prism_ObjectReserved.x)] * Prism_Model * vec4(a_Position, 1.0);
+                #endif
+                }
+
+                void frag()
+                {
+                }
             }
         }
     }

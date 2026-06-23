@@ -2,6 +2,7 @@
 #include "PrismShader.h"
 #include "Prism/Utilities/Utilities.h"
 #include "Prism/ShaderCompiler/ShaderCompiler.h"
+#include "Prism/Core/Hash.h"
 
 #include "Platform/OpenGL/OpenGLShader.h"
 
@@ -74,7 +75,8 @@ namespace Prism
 
             ShaderPass pass;
             pass.Name = m_Compiled.Passes[i].Name;
-            pass.Tags = m_Compiled.Passes[i].Tags;
+            for (auto& tag : m_Compiled.Passes[i].Tags)
+                pass.Tags[Hash::GenerateFNVHash64(tag.first)] = Hash::GenerateFNVHash64(tag.second);
             pass.RenderState = m_Compiled.Passes[i].RenderState;
 
             PR_CORE_INFO("  Pass '{}': VS={}B  FS={}B",
@@ -172,7 +174,19 @@ namespace Prism
         return nullptr;
     }
 
-    #pragma region Keyword / Variant
+    int32_t PrismShader::FindPassByTag(uint64_t keyHash, uint64_t valueHash) const
+    {
+        for (uint32_t i = 0; i < m_Passes.size(); ++i)
+        {
+            auto& pass = m_Passes[i];
+            auto it = pass.Tags.find(keyHash);
+            if (it != pass.Tags.end() && it->second == valueHash)
+                return i;
+        }
+        return -1;
+    }
+
+#pragma region Keyword / Variant
 
     uint8_t PrismShader::GetKeywordIndex(const std::string& name) const
     {

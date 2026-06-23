@@ -154,6 +154,8 @@ namespace Prism {
 
         const std::string& GetFilePath() const { return m_FilePath; }
 
+        bool IsAnimated() const { return m_IsAnimated; }
+
         const std::vector<Triangle> GetTriangleCache(uint32_t index) const { return m_TriangleCache.at(index); }
 
         const std::vector<Vertex>& GetStaticVertices() const { return m_StaticVertices; }

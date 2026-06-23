@@ -17,6 +17,7 @@ namespace Prism
 
         void SetModel(const glm::mat4& model);
         void SetBones(const glm::mat4* bones, uint32_t count);
+        void SetShadowPassIndex(int index) { m_Data.Reserved.x = static_cast<float>(index); }
         void Upload();
         void Bind() const;
 
@@ -29,6 +30,7 @@ namespace Prism
         {
             glm::mat4 Model{ 1.0f };
             glm::mat4 PrevModel{ 1.0f };
+            glm::vec4 Reserved{ 0.0f };
             glm::mat4 Bones[PRISM_MAX_BONES]{};
         } m_Data;
     };

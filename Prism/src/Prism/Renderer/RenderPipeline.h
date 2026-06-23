@@ -102,8 +102,8 @@ namespace Prism
         Ref<Material> m_BloomBlendMaterial;
         Ref<Material> m_GridMaterial;
         Ref<Material> m_OutlineMaterial;
+        Ref<Material> m_OutlineAnimMaterial;
         Ref<Material> m_ColliderMaterial;
-        Ref<Material> m_ShadowDepthMaterial;
 
         Ref<Texture2D> m_BRDFLUT;
         Ref<PrismShader> m_CompositeShader;

@@ -26,7 +26,7 @@ namespace Prism
     struct ShaderPass
     {
         std::string Name;
-        std::unordered_map<std::string, std::string> Tags;
+        std::unordered_map<uint64_t, uint64_t> Tags;
         std::optional<PrismShaderCompiler::PipelineState> RenderState;
     };
 
@@ -55,6 +55,7 @@ namespace Prism
 
         uint32_t GetPassCount() const { return (uint32_t)m_Passes.size(); }
         const ShaderPass& GetPass(uint32_t index) const { return m_Passes[index]; }
+        int32_t FindPassByTag(uint64_t keyHash, uint64_t valueHash) const;
 
         const std::vector<ShaderKeyword>& GetKeywords() const { return m_Keywords; }
         uint8_t GetKeywordIndex(const std::string& name) const;

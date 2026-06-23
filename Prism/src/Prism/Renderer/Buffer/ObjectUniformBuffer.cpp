@@ -28,7 +28,7 @@ namespace Prism
         if (m_BonesDirty)
             m_Buffer->SetData(&m_Data, sizeof(Data));
         else
-            m_Buffer->SetData(&m_Data, 2 * sizeof(glm::mat4));
+            m_Buffer->SetData(&m_Data, offsetof(Data, Bones));
         m_BonesDirty = false;
     }
 

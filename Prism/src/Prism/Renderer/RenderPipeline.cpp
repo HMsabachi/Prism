@@ -14,11 +14,17 @@
 #include "Prism/ShaderCompiler/PrismBindings.h"
 #include "Prism/Renderer/Camera/Camera.h"
 
+#include "Prism/Core/Hash.h"
+
 #include <glad/glad.h>
 
 namespace Prism
 {
     static Ref<ComputeShader> s_EnvironmentShader;
+
+    constexpr uint64_t SHADER_TAG_KEY_LIGHT_MODE = Hash::GenerateFNVHash64("LightMode");
+    constexpr uint64_t SHADER_TAG_VALUE_FORWARD_BASE = Hash::GenerateFNVHash64("ForwardBase");
+    constexpr uint64_t SHADER_TAG_VALUE_SHADOW_CASTER = Hash::GenerateFNVHash64("ShadowCaster");
 
     void RenderPipeline::Initialize(uint32_t viewportWidth, uint32_t viewportHeight)
     {
@@ -57,6 +63,8 @@ namespace Prism
 
         auto outlineShader = Renderer::GetShaderLibrary()->Get("Standard/Outline");
         m_OutlineMaterial = Material::Create(outlineShader);
+        m_OutlineAnimMaterial = Material::Create(outlineShader);
+        m_OutlineAnimMaterial->SetKeyword("SKINNED", true);
 
         auto colliderShader = Renderer::GetShaderLibrary()->Get("Debug/Collider");
         m_ColliderMaterial = Material::Create(colliderShader);
@@ -73,9 +81,6 @@ namespace Prism
             shadowRPSpec.TargetFramebuffer = Framebuffer::Create(shadowFBSpec);
             m_ShadowPasses[i] = RenderPass::Create(shadowRPSpec);
         }
-
-        auto shadowShader = Renderer::GetShaderLibrary()->Get("Hidden/ShadowDepth");
-        m_ShadowDepthMaterial = Material::Create(shadowShader);
 
         // Bloom Blur
         FramebufferSpecification bloomBlurFBSpec;
@@ -166,12 +171,30 @@ namespace Prism
         {
             Renderer::BeginRenderPass(m_ShadowPasses[cascade]);
 
-            m_ShadowDepthMaterial->SetMatrix4("u_LightVP", m_ShadowMatrices[cascade]);
-            m_ShadowDepthMaterial->Bind();
-
+            Ref<Material> boundMaterial;
+            Ref<Shader> boundProgram;
             Ref<Mesh> boundMesh = nullptr;
+
             for (auto& dc : drawList)
             {
+                auto& shader = dc.Material->GetShader();
+                int32_t shadowPass = shader->FindPassByTag(SHADER_TAG_KEY_LIGHT_MODE, SHADER_TAG_VALUE_SHADOW_CASTER);
+                if (shadowPass < 0) continue;
+
+                auto& material = dc.Material;
+
+                if (boundProgram != material->GetProgram(shadowPass))
+                {
+                    material->BindProgram(shadowPass);
+                    boundProgram = material->GetProgram(shadowPass);
+                }
+                if (material != boundMaterial)
+                {
+                    material->BindUniform();
+                    material->BindTexture();
+                    boundMaterial = material;
+                }
+
                 if (dc.Mesh != boundMesh)
                 {
                     dc.Mesh->m_VertexBuffer->Bind();
@@ -181,6 +204,10 @@ namespace Prism
                 }
 
                 m_ObjectUBO.SetModel(dc.Transform);
+                m_ObjectUBO.SetShadowPassIndex((int)cascade);
+                if (dc.Mesh->IsAnimated())
+                    m_ObjectUBO.SetBones(dc.Mesh->m_BoneTransforms.data(),
+                        (uint32_t)dc.Mesh->m_BoneTransforms.size());
                 m_ObjectUBO.Upload();
                 m_ObjectUBO.Bind();
 
@@ -220,11 +247,12 @@ namespace Prism
 
             for (auto& dc : drawList)
             {
-                auto material = dc.Material;
-                if (boundProgram != material->GetProgram())
+                auto& material = dc.Material;
+                int32_t forwardBasePass = material->GetShader()->FindPassByTag(SHADER_TAG_KEY_LIGHT_MODE, SHADER_TAG_VALUE_FORWARD_BASE);
+                if (boundProgram != material->GetProgram(forwardBasePass))
                 {
-                    material->BindProgram();
-                    boundProgram = material->GetProgram();
+                    material->BindProgram(forwardBasePass);
+                    boundProgram = material->GetProgram(forwardBasePass);
                 }
                 if (material != boundMaterial)
                 {
@@ -242,6 +270,9 @@ namespace Prism
                 }
 
                 m_ObjectUBO.SetModel(dc.Transform);
+                if (dc.Mesh->IsAnimated())
+                    m_ObjectUBO.SetBones(dc.Mesh->m_BoneTransforms.data(),
+                        (uint32_t)dc.Mesh->m_BoneTransforms.size());
                 m_ObjectUBO.Upload();
                 m_ObjectUBO.Bind();
 
@@ -282,6 +313,9 @@ namespace Prism
                     }
 
                     m_ObjectUBO.SetModel(dc.Transform);
+                    if (dc.Mesh->IsAnimated())
+                        m_ObjectUBO.SetBones(dc.Mesh->m_BoneTransforms.data(),
+                            (uint32_t)dc.Mesh->m_BoneTransforms.size());
                     m_ObjectUBO.Upload();
                     m_ObjectUBO.Bind();
 
@@ -301,10 +335,17 @@ namespace Prism
 
             {
                 Ref<Mesh> boundMesh = nullptr;
-                m_OutlineMaterial->Bind();
+                Ref<Material> boundMaterial;
 
                 for (auto& dc : selectedList)
                 {
+                    auto material = dc.Mesh->IsAnimated() ? m_OutlineAnimMaterial : m_OutlineMaterial;
+                    if (material != boundMaterial)
+                    {
+                        material->Bind();
+                        boundMaterial = material;
+                    }
+
                     if (dc.Mesh != boundMesh)
                     {
                         dc.Mesh->m_VertexBuffer->Bind();
@@ -314,6 +355,9 @@ namespace Prism
                     }
 
                     m_ObjectUBO.SetModel(dc.Transform);
+                    if (dc.Mesh->IsAnimated())
+                        m_ObjectUBO.SetBones(dc.Mesh->m_BoneTransforms.data(),
+                            (uint32_t)dc.Mesh->m_BoneTransforms.size());
                     m_ObjectUBO.Upload();
                     m_ObjectUBO.Bind();
 

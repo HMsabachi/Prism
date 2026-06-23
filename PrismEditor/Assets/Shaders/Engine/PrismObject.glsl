@@ -6,5 +6,6 @@ layout(std140, binding = PRISM_BINDING_OBJECT) uniform PrismObject
 {
     mat4 Prism_Model;
     mat4 Prism_PreviousModel;
+    vec4 Prism_ObjectReserved;       // .x = ShadowPassIndex
     mat4 Prism_Bones[PRISM_MAX_BONES];
 };
