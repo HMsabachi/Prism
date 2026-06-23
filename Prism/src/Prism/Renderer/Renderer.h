@@ -11,8 +11,6 @@ namespace Prism
     class ShaderLibrary;
     class Camera;
     class Mesh;
-    class FrameUniformBuffer;
-    class Material;
 }
 
 namespace Prism
@@ -57,17 +55,11 @@ namespace Prism
         static void BeginRenderPass(Ref<RenderPass> renderPass, bool clear = true);
         static void EndRenderPass();
 
-        static void WaitAndRender();	
-
-        static void SubmitQuad(Ref<Material> material, const glm::mat4& transform = glm::mat4(1.0f));
-        static void SubmitFullscreenQuad(Ref<Material> material);
-        //static void SubmitMesh(Ref<Mesh> mesh, const glm::mat4& transform, Ref<Material> overrideMaterial = nullptr);
-
+        static void WaitAndRender();
 
         static void DrawAABB(const AABB& aabb, const glm::mat4& transform, const glm::vec4& color = glm::vec4(1.0f,0.0f,0.0f,1.0f));
         static void DrawAABB(Ref<Mesh> mesh, const glm::mat4& transform, const glm::vec4& color = glm::vec4(1.0f));
     public:
         static RenderCommandQueue& GetRenderCommandQueue();
-        static FrameUniformBuffer& GetFrameUBO();
     };
 }

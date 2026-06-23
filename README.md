@@ -187,7 +187,7 @@ Prism/
 │   ├── src/                       # PrismEditor.cpp、EditorLayer
 │   └── Assets/
 │       ├── Shaders/Engine/        # 引擎 GLSL 包含文件（PrismFrame、PrismShadow、PrismPBR）
-│       └── Shaders/*.Shader       # PSL 着色器（PrismPBR_Static、PrismPBR_Anim、ShadowDepth 等）
+│       └── Shaders/*.Shader       # PSL 着色器（PrismPBR、ShadowDepth 等）
 │
 ├── ExampleApp/                    # C# 示例脚本项目
 ├── docs/                          # 技术文档（PSL、Renderer、Time、PythonScriptCore）

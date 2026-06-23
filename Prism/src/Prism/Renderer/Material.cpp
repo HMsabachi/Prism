@@ -270,12 +270,12 @@ namespace Prism
 
 #pragma endregion
 
-    Ref<Shader> Material::GetProgram(uint32_t passIndex)
+    Ref<Shader> Material::GetProgram(uint32_t passIndex) const
     {
         return m_Shader->GetPassProgram(passIndex, m_KeywordMask);
     }
 
-    void Material::BindProgram(uint32_t passIndex)
+    void Material::BindProgram(uint32_t passIndex) const
     {
         Ref<Shader> program = m_Shader->GetPassProgram(passIndex, m_KeywordMask);
         program->Bind();
@@ -284,7 +284,7 @@ namespace Prism
             program->ApplyRenderState(*pass.RenderState);
     }
 
-    void Material::BindUniform()
+    void Material::BindUniform() const
     {
         if (m_Dirty)
         {
@@ -294,7 +294,7 @@ namespace Prism
         m_UniformBuffer->Bind();
     }
 
-    void Material::BindTexture()
+    void Material::BindTexture() const
     {
         for (size_t i = 0; i < m_Textures.size(); i++)
         {
@@ -303,7 +303,7 @@ namespace Prism
         }
     }
 
-    void Material::Bind(uint32_t passIndex)
+    void Material::Bind(uint32_t passIndex) const
     {
         BindProgram(passIndex);
         BindUniform();

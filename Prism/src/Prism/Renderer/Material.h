@@ -58,11 +58,11 @@ namespace Prism
         bool IsKeywordEnabled(const std::string& name) const;
         KeywordMask GetKeywordMask() const { return m_KeywordMask; }
 
-        Ref<Shader> GetProgram(uint32_t passIndex = 0);
-        void BindProgram(uint32_t passIndex = 0);
-        void BindUniform();
-        void BindTexture();
-        void Bind(uint32_t passIndex = 0);
+        Ref<Shader> GetProgram(uint32_t passIndex = 0) const;
+        void BindProgram(uint32_t passIndex = 0) const;
+        void BindUniform() const;
+        void BindTexture() const;
+        void Bind(uint32_t passIndex = 0) const;
         uint32_t GetPassCount() const { return m_Shader->GetPassCount(); }
 
     private:
@@ -73,10 +73,10 @@ namespace Prism
         Ref<PrismShader> m_Shader;
         std::string m_Name;
         Buffer m_PropertyBuffer;
-        Ref<UniformBuffer> m_UniformBuffer;
+        mutable Ref<UniformBuffer> m_UniformBuffer;
         std::vector<Ref<Texture>> m_Textures;
         KeywordMask m_KeywordMask = 0;
         ShaderReloadedToken m_ReloadToken = 0;
-        bool m_Dirty = true;
+        mutable bool m_Dirty = true;
     };
 }

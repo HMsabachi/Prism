@@ -15,6 +15,9 @@ namespace Prism
     class Mesh;
     class RenderPass;
     class Texture2D;
+    class VertexBuffer;
+    class IndexBuffer;
+    class Pipeline;
 
     struct RendererCamera
     {
@@ -31,12 +34,15 @@ namespace Prism
         uint64_t SortKey = 0;
     };
 
-    struct FrameData
+    struct FrameSnapshot
     {
         RendererCamera Camera;
+        RenderConfig Config;
         std::vector<DrawCommand> DrawList;
         std::vector<DrawCommand> SelectedDrawList;
+        std::vector<DrawCommand> ShadowDrawList;
         std::vector<DrawCommand> DebugDrawList;
+        uint64_t FrameIndex = 0;
     };
 
     struct RenderPipelineOptions
@@ -52,7 +58,7 @@ namespace Prism
         void Shutdown();
         void Resize(uint32_t width, uint32_t height);
 
-        void Execute(const RenderConfig& config, FrameData& data);
+        void Execute(const FrameSnapshot& snapshot);
 
         Ref<RenderPass> GetFinalRenderPass() const { return m_CompositePass; }
         const Ref<RenderPass>& GetShadowPass(uint32_t index) const { return m_ShadowPasses[index]; }
@@ -62,10 +68,10 @@ namespace Prism
             CreateEnvironmentMap(const std::string& filepath);
 
     private:
-        void BeginFrame(const RenderConfig& config, const FrameData& data);
-        void UpdateShadowData(const RenderConfig& config, const FrameData& data);
+        void BeginFrame(const FrameSnapshot& snapshot);
+        void UpdateShadowData(const FrameSnapshot& snapshot);
         void ShadowPass(const std::vector<DrawCommand>& drawList);
-        void GeometryPass(const RenderConfig config,
+        void GeometryPass(const RenderConfig& config,
             const std::vector<DrawCommand>& drawList,
             const std::vector<DrawCommand>& selectedList,
             const std::vector<DrawCommand>& debugList);
@@ -73,10 +79,18 @@ namespace Prism
         void BloomBlurPass();
         void BloomBlendPass();
 
+        void DrawFullscreen(const Ref<Material>& material);
+        void DrawQuad(const Ref<Material>& material, const glm::mat4& transform);
+        void CreateFullscreenQuad();
+
         static constexpr uint32_t SHADOW_MAP_SIZE = 2048;
 
         FrameUniformBuffer m_FrameUBO;
         ObjectUniformBuffer m_ObjectUBO;
+
+        Ref<VertexBuffer> m_FullscreenQuadVB;
+        Ref<IndexBuffer> m_FullscreenQuadIB;
+        Ref<Pipeline> m_FullscreenQuadPipeline;
 
         Ref<RenderPass> m_GeoPass;
         Ref<RenderPass> m_CompositePass;

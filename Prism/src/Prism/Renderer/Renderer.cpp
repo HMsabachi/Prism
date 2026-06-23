@@ -1,82 +1,30 @@
 ﻿#include "prpch.h"
 #include "Renderer.h"
 #include "Shader/PrismShader.h"
-#include "Buffer/FrameUniformBuffer.h"
 
 #include "RendererAPI.h"
 #include "Renderer2D.h"
-#include "Buffer/ObjectUniformBuffer.h"
 #include "Material.h"
 
 #include "Camera/Camera.h"
-
 #include <glad/glad.h>
-
 namespace Prism
 {
-    RendererAPIType RendererAPI::s_CurrentRendererAPI = RendererAPIType::OpenGL;
-
+    RendererAPIType RendererAPI::s_CurrentRendererAPI = RendererAPIType::OpenGL; 
     struct RendererData
     {
         Ref<RenderPass> m_ActiveRenderPass;
         RenderCommandQueue m_CommandQueue;
         Ref<ShaderLibrary> m_ShaderLibrary;
-        Ref<VertexBuffer> m_FullscreenQuadVertexBuffer;
-        Ref<IndexBuffer> m_FullscreenQuadIndexBuffer;
-        Ref<Pipeline> m_FullscreenQuadPipeline;
-        ObjectUniformBuffer m_ObjectUBO;
-        FrameUniformBuffer m_FrameUBO;
     };
 
-    static RendererData s_Data;
-
+    static RendererData s_Data; 
     void Renderer::Init()
     {
         s_Data.m_ShaderLibrary = Ref<ShaderLibrary>::Create();
         Renderer::Submit([]() { RendererAPI::Init(); });
-        s_Data.m_ObjectUBO.Init();
-        s_Data.m_FrameUBO.Init();
 
-        Renderer::GetShaderLibrary()->LoadAll("Assets/Shaders");
-
-        // Create fullscreen quad
-        float x = -1;
-        float y = -1;
-        float width = 2, height = 2;
-        struct QuadVertex
-        {
-            glm::vec3 Position;
-            glm::vec2 TexCoord;
-        };
-
-        QuadVertex* data = new QuadVertex[4];
-
-        data[0].Position = glm::vec3(x, y, 0.1f);
-        data[0].TexCoord = glm::vec2(0, 0);
-
-        data[1].Position = glm::vec3(x + width, y, 0.1f);
-        data[1].TexCoord = glm::vec2(1, 0);
-
-        data[2].Position = glm::vec3(x + width, y + height, 0.1f);
-        data[2].TexCoord = glm::vec2(1, 1);
-
-        data[3].Position = glm::vec3(x, y + height, 0.1f);
-        data[3].TexCoord = glm::vec2(0, 1);
-
-        {
-            PipelineSpecification pipelineSpec;
-            pipelineSpec.Layout = {
-                { ShaderDataType::Float3, "a_Position" , VertexSemantic::Position},
-                { ShaderDataType::Float2, "a_TexCoord" , VertexSemantic::TexCoord0}
-            };
-            s_Data.m_FullscreenQuadPipeline = Pipeline::Create(pipelineSpec);
-
-            s_Data.m_FullscreenQuadVertexBuffer = VertexBuffer::Create(data, 4 * sizeof(QuadVertex));
-
-            uint32_t indices[6] = { 0, 1, 2, 2, 3, 0, };
-            s_Data.m_FullscreenQuadIndexBuffer = IndexBuffer::Create(indices, 6 * sizeof(uint32_t));
-        }
-
+        Renderer::GetShaderLibrary()->LoadAll("Assets/Shaders"); 
         Renderer2D::Init();
     }
 
@@ -115,8 +63,7 @@ namespace Prism
     void Renderer::ClearMagenta()
     {
         Clear(1, 0, 1);
-    }
-
+    } 
     void Renderer::DrawIndexed(uint32_t count, PrimitiveType type, bool depthTest)
     {
         Renderer::Submit([=]() {
@@ -150,8 +97,7 @@ namespace Prism
 
     void Renderer::BeginRenderPass(Ref<RenderPass> renderPass, bool clear)
     {
-        PR_CORE_ASSERT(renderPass, "渲染通道不能为空！");
-
+        PR_CORE_ASSERT(renderPass, "渲染通道不能为空！"); 
         s_Data.m_ActiveRenderPass = renderPass;
         renderPass->GetSpecification().TargetFramebuffer->Bind();
         if (clear)
@@ -169,66 +115,6 @@ namespace Prism
         s_Data.m_ActiveRenderPass->GetSpecification().TargetFramebuffer->Unbind();
         s_Data.m_ActiveRenderPass = nullptr;
     }
-
-    
-
-    void Renderer::SubmitQuad(Ref<Material> material, const glm::mat4& transform)
-    {
-        bool depthTest = true;
-        if (material)
-        {
-            material->Bind();
-            s_Data.m_ObjectUBO.SetModel(transform);
-            s_Data.m_ObjectUBO.Upload();
-            s_Data.m_ObjectUBO.Bind();
-        }
-        s_Data.m_FullscreenQuadVertexBuffer->Bind();
-        s_Data.m_FullscreenQuadPipeline->Bind();
-        s_Data.m_FullscreenQuadIndexBuffer->Bind();
-        Renderer::DrawIndexed(6, PrimitiveType::Triangles, depthTest);
-    }
-    void Renderer::SubmitFullscreenQuad(Ref<Material> material)
-    {
-        bool depthTest = true;
-        if (material)
-            material->Bind();
-        s_Data.m_FullscreenQuadVertexBuffer->Bind();
-        s_Data.m_FullscreenQuadPipeline->Bind();
-        s_Data.m_FullscreenQuadIndexBuffer->Bind();
-        Renderer::DrawIndexed(6, PrimitiveType::Triangles, depthTest);
-    }
-    //void Renderer::SubmitMesh(Ref<Mesh> mesh, const glm::mat4& transform, Ref<Material> overrideMaterial)
-    //{
-    //    mesh->m_VertexBuffer->Bind();
-    //    mesh->m_Pipeline->Bind();
-    //    mesh->m_IndexBuffer->Bind();
-    //    // TODO: Step 2 改为从 Asset 系统获取材质
-    //    for (Submesh& submesh : mesh->m_Submeshes)
-    //    {
-    //        auto material = overrideMaterial ? overrideMaterial : GetDefaultMaterial();
-    //        auto shader = material->GetShader();
-
-    //        s_Data.m_ObjectUBO.SetModel(transform * submesh.Transform);
-    //        if (mesh->m_IsAnimated)
-    //            s_Data.m_ObjectUBO.SetBones(mesh->m_BoneTransforms.data(), (uint32_t)mesh->m_BoneTransforms.size());
-    //        s_Data.m_ObjectUBO.Upload();
-    //        s_Data.m_ObjectUBO.Bind();
-
-    //        uint32_t passCount = material->GetPassCount();
-    //        for (uint32_t p = 0; p < passCount; p++)
-    //        {
-    //            if (p == 0)
-    //                material->Bind();
-    //            else
-    //                material->Bind(p);
-
-    //            Renderer::Submit([submesh, material]() {
-    //                PR_PROFILE_SCOPE("DrawCall With Submesh");
-    //                glDrawElementsBaseVertex(GL_TRIANGLES, submesh.IndexCount, GL_UNSIGNED_INT, (void*)(sizeof(uint32_t) * submesh.BaseIndex), submesh.BaseVertex);
-    //            });
-    //        }
-    //    }
-    //}
 
     void Renderer::DrawAABB(Ref<Mesh> mesh, const glm::mat4& transform, const glm::vec4& color)
     {
@@ -256,8 +142,7 @@ namespace Prism
             transform * glm::vec4 { aabb.Min.x, aabb.Max.y, aabb.Min.z, 1.0f },
             transform * glm::vec4 { aabb.Max.x, aabb.Max.y, aabb.Min.z, 1.0f },
             transform * glm::vec4 { aabb.Max.x, aabb.Min.y, aabb.Min.z, 1.0f }
-        };
-
+        }; 
         for (uint32_t i = 0; i < 4; i++)
             Renderer2D::DrawLine(corners[i], corners[(i + 1) % 4], color);
 
@@ -271,11 +156,6 @@ namespace Prism
     RenderCommandQueue& Renderer::GetRenderCommandQueue()
     {
         return s_Data.m_CommandQueue;
-    }
-
-    FrameUniformBuffer& Renderer::GetFrameUBO()
-    {
-        return s_Data.m_FrameUBO;
     }
 
 }

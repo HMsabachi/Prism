@@ -71,12 +71,13 @@ namespace Prism
 
 	void RenderSystem::Render()
     {
-        m_PendingFrameData.DrawList.clear();
-        m_PendingFrameData.SelectedDrawList.clear();
+        m_PendingSnapshot.DrawList.clear();
+        m_PendingSnapshot.SelectedDrawList.clear();
+        m_PendingSnapshot.ShadowDrawList.clear();
 
         if (m_HasEditorCamera)
         {
-            m_PendingFrameData.Camera = m_EditorCamera;
+            m_PendingSnapshot.Camera = m_EditorCamera;
         }
         else
         {
@@ -85,8 +86,8 @@ namespace Prism
             auto& camComp = camEntity.GetComponent<CameraComponent>();
             camComp.Camera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
             auto& transform = camEntity.Transformation();
-            m_PendingFrameData.Camera.Projection = camComp.Camera;
-            m_PendingFrameData.Camera.ViewMatrix = glm::inverse(transform.GetMatrix());
+            m_PendingSnapshot.Camera.Projection = camComp.Camera;
+            m_PendingSnapshot.Camera.ViewMatrix = glm::inverse(transform.GetMatrix());
         }
 
         // Process lights
@@ -126,13 +127,17 @@ namespace Prism
 
         m_Config.SkyboxMaterial->SetFloat("u_TextureLod", m_Config.SkyboxLod);
 
-        CollectMeshRenderers(m_PendingFrameData);
-        CollectDebugDraws(m_PendingFrameData);
+        CollectMeshRenderers(m_PendingSnapshot);
+        CollectDebugDraws(m_PendingSnapshot);
 
+        m_PendingSnapshot.Config = m_Config;
+
+        // TODO(多线程):SubmitSnapshot 入队,渲染线程异步消费
         if (m_Pipeline)
-            m_Pipeline->Execute(m_Config, m_PendingFrameData);
+            m_Pipeline->Execute(m_PendingSnapshot);
 
-        m_PendingFrameData.DebugDrawList.clear();
+        // TODO(多线程): clear 需随双缓冲所有权调整,单线程下 Ref 保活安全
+        m_PendingSnapshot.DebugDrawList.clear();
     }
 #pragma endregion
 
@@ -157,7 +162,7 @@ namespace Prism
                                         Ref<Material> material)
     {
         for (uint32_t i = 0; i < mesh->GetSubmeshes().size(); i++)
-            m_PendingFrameData.DebugDrawList.push_back({ mesh, i, material, transform });
+            m_PendingSnapshot.DebugDrawList.push_back({ mesh, i, material, transform });
     }
 
     Ref<RenderPass> RenderSystem::GetFinalRenderPass()
@@ -183,10 +188,10 @@ namespace Prism
     }
 
 
-    void RenderSystem::CollectMeshRenderers(FrameData& data)
+    void RenderSystem::CollectMeshRenderers(FrameSnapshot& snapshot)
     {
         float ts = Time::GetDeltaTime();
-        glm::vec3 camPos = glm::inverse(data.Camera.ViewMatrix)[3];
+        glm::vec3 camPos = glm::inverse(snapshot.Camera.ViewMatrix)[3];
         auto view = m_Scene->GetRegistry().view<MeshRendererComponent>();
 
         for (auto& entity : view)
@@ -220,14 +225,16 @@ namespace Prism
                 cmd.SortKey = ((program & 0xFFFF) << 48) | ((material & 0xFFFF) << 32) | ((mesh & 0xFFFF) << 16) | distQ;
 
                 if (isSelected)
-                    data.SelectedDrawList.push_back(cmd);
+                    snapshot.SelectedDrawList.push_back(cmd);
                 else
-                    data.DrawList.push_back(cmd);
+                    snapshot.DrawList.push_back(cmd);
+                cmd.SortKey = cmd.SortKey << 32;
+                snapshot.ShadowDrawList.push_back(cmd);
             }
         }
     }
 
-    void RenderSystem::CollectDebugDraws(FrameData& data)
+    void RenderSystem::CollectDebugDraws(FrameSnapshot& snapshot)
     {
         auto* physics = m_Scene->GetSystem<Physics3DSystem>();
         if (physics)

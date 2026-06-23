@@ -1,7 +1,6 @@
 // Prism Shader Language v1.0
-Shader "Custom/SimplePBR_Animated"
+Shader "Standard/PrismPBR"
 {
-    // ==================== Properties（材质参数） ====================
     Properties
     {
 
@@ -43,10 +42,8 @@ Shader "Custom/SimplePBR_Animated"
             Name "ForwardBase"
             GLSL
             {
-                #pragma shader_feature ALBEDO_MAP
-                #pragma shader_feature NORMAL_MAP
-                #pragma shader_feature METALNESS_MAP
-                #pragma shader_feature ROUGHNESS_MAP
+                #pragma shader_feature SKINNED SHOW_CASCADES
+                #pragma shader_feature ALBEDO_MAP NORMAL_MAP METALNESS_MAP ROUGHNESS_MAP
                 #include "PrismCommon.glsl"
                 #include "PrismPBR.glsl"
                 attribute vec3 a_Position : POSITION;
@@ -54,8 +51,10 @@ Shader "Custom/SimplePBR_Animated"
                 attribute vec3 a_Tangent : TANGENT;
                 attribute vec3 a_Binormal : BINORMAL;
                 attribute vec2 a_TexCoord : TEXCOORD0;
+            #ifdef SKINNED
                 attribute ivec4 a_BoneIndices : BONEINDICES;
                 attribute vec4 a_BoneWeights : BONEWEIGHTS;
+            #endif
 
                 layout(location = 0) out vec4 FragColor;
                 layout(location = 1) out vec4 BloomColor;
@@ -72,10 +71,11 @@ Shader "Custom/SimplePBR_Animated"
                     vec3 ViewPosition;
                 } vs_Output;
 
-                void main()
+                void vert()
                 {
                     mat4 u_ViewProjectionMatrix = Prism_ViewProjection;
                     mat4 u_ModelMatrix = Prism_Model;
+                #ifdef SKINNED
                     mat4 boneTransform = Prism_Bones[a_BoneIndices[0]] * a_BoneWeights[0];
                     boneTransform += Prism_Bones[a_BoneIndices[1]] * a_BoneWeights[1];
                     boneTransform += Prism_Bones[a_BoneIndices[2]] * a_BoneWeights[2];
@@ -85,11 +85,14 @@ Shader "Custom/SimplePBR_Animated"
 
                     vs_Output.WorldPosition = vec3(u_ModelMatrix * boneTransform * vec4(a_Position, 1.0));
                     vs_Output.Normal = mat3(u_ModelMatrix) * mat3(boneTransform) * a_Normal;
-
-
+                    vs_Output.Binormal = mat3(boneTransform) * a_Binormal;
+                #else
+                    vs_Output.WorldPosition = vec3(u_ModelMatrix * vec4(a_Position, 1.0));
+                    vs_Output.Normal = mat3(u_ModelMatrix) * a_Normal;
+                    vs_Output.Binormal = a_Binormal;
+                #endif
                     vs_Output.TexCoord = vec2(a_TexCoord.x, 1.0 - a_TexCoord.y);
                     vs_Output.WorldNormals = mat3(u_ModelMatrix) * mat3(a_Tangent, a_Binormal, a_Normal);
-                    vs_Output.Binormal = mat3(boneTransform) * a_Binormal;
                     vs_Output.WorldTransform = mat3(u_ModelMatrix);
 
                     vs_Output.ShadowMapCoords[0] = Prism_ShadowMatrices[0] * vec4(vs_Output.WorldPosition, 1.0);
@@ -98,8 +101,11 @@ Shader "Custom/SimplePBR_Animated"
                     vs_Output.ShadowMapCoords[3] = Prism_ShadowMatrices[3] * vec4(vs_Output.WorldPosition, 1.0);
                     vs_Output.ViewPosition = vec3(Prism_View * vec4(vs_Output.WorldPosition, 1.0));
 
-                    //gl_Position = u_ViewProjectionMatrix * u_ModelMatrix * vec4(a_Position, 1.0);
+                #ifdef SKINNED
                     gl_Position = u_ViewProjectionMatrix * u_ModelMatrix * localPosition;
+                #else
+                    gl_Position = u_ViewProjectionMatrix * u_ModelMatrix * vec4(a_Position, 1.0);
+                #endif
                 }
 
                 // Constant normal incidence Fresnel factor for all dielectrics.
@@ -117,9 +123,7 @@ Shader "Custom/SimplePBR_Animated"
                 };
 
                 PBRParameters m_Params;
-
-                // ---------------------------------------------------------------------------------------------------
-
+                
                 vec3 RotateVectorAboutY(float angle, vec3 vec)
                 {
                     angle = radians(angle);

@@ -198,7 +198,7 @@ GLSL
 3. 通过 `Material::SetKeyword(name, enabled)` / `MaterialInstance::SetKeyword(name, enabled)` 运行时切换
 4. `Material::Bind()` 根据当前 `KeywordMask` 通过 `PrismShader::GetVariant(mask)` 选择对应变体
 
-**示例**（来自 PrismPBR_Static.Shader）：
+**示例**（来自 PrismPBR.Shader）：
 ```glsl
 #pragma shader_feature ALBEDO_MAP NORMAL_MAP METALNESS_MAP ROUGHNESS_MAP
 ```

@@ -62,7 +62,7 @@ namespace Prism {
 
         void write(const char* message) override
         {
-            PR_CORE_ERROR("Assimp error: {0}", message);
+            PR_CORE_WARN("Assimp: {0}", message);
         }
     };
 

@@ -42,9 +42,10 @@ namespace Prism
 
         bool m_HasEditorCamera = false;
         RendererCamera m_EditorCamera;
-        FrameData m_PendingFrameData;
+        // TODO(多线程): 单缓冲→双缓冲 m_Snapshots[2] + m_FrameIndex 交替,逻辑写 N+1/渲染读 N。详见 .claude/roadmap-render-thread.md Phase 3
+        FrameSnapshot m_PendingSnapshot;
 
-        void CollectMeshRenderers(FrameData& data);
-        void CollectDebugDraws(FrameData& data);
+        void CollectMeshRenderers(FrameSnapshot& snapshot);
+        void CollectDebugDraws(FrameSnapshot& snapshot);
     };
 }

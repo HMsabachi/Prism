@@ -179,7 +179,7 @@ namespace Prism
         if (!scene->HasMaterials())
             return result;
 
-        auto shader = Renderer::GetShaderLibrary()->Get("Custom/SimplePBR_Static");
+        auto shader = Renderer::GetShaderLibrary()->Get("Standard/PrismPBR");
         std::filesystem::path parentDir = std::filesystem::path(filepath).parent_path();
 
         std::vector<Ref<Material>> materialLookup(scene->mNumMaterials);
@@ -187,6 +187,9 @@ namespace Prism
         {
             auto* aiMat = scene->mMaterials[i];
             auto material = Material::Create(shader);
+
+            if (meshData.IsAnimated)
+                material->SetKeyword("SKINNED", true);
 
             aiString name;
             if (aiMat->Get(AI_MATKEY_NAME, name) == AI_SUCCESS)
