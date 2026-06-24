@@ -756,12 +756,23 @@ namespace Prism {
                     if (!file.empty())
                     {
                         component.CollisionMesh = ModelImporter::Import(FileSystem::GetRelativePath(file)).Mesh;
-                        PXPhysicsWrappers::CreateConvexMesh(component);
+                        if (component.IsConvex)
+                            PXPhysicsWrappers::CreateConvexMesh(component, true);
+                        else
+                            PXPhysicsWrappers::CreateTriangleMesh(component, true);
                     }
                 }
                 ImGui::NextColumn();
                 ImGui::Columns(1);
 
+                if (UI::Property(TR("Is Convex"), component.IsConvex))
+                {
+                    component.ProcessedMeshes.clear();
+                    if (component.IsConvex)
+                        PXPhysicsWrappers::CreateConvexMesh(component, true);
+                    else
+                        PXPhysicsWrappers::CreateTriangleMesh(component, true);
+                }
                 UI::Property(TR("Is Trigger"), component.IsTrigger);
                 UI::EndPropertyGrid();
             });

@@ -22,6 +22,7 @@ namespace Prism {
     public:
         static uint32_t AddLayer(const std::string& name, bool setCollisions = true);
         static void RemoveLayer(uint32_t layerId);
+        static void ClearLayers();
 
         static void SetLayerCollision(uint32_t layerId, uint32_t otherLayer, bool collides);
         static std::vector<PhysicsLayer> GetLayerCollisions(uint32_t layerId);

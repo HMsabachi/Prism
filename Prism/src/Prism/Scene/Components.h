@@ -263,7 +263,8 @@ namespace Prism {
     struct MeshColliderComponent
     {
         Ref<Mesh> CollisionMesh;
-        Ref<Mesh> ProcessedMesh;
+        std::vector<Ref<Mesh>> ProcessedMeshes;
+        bool IsConvex = false;
         bool IsTrigger = false;
 
         MeshColliderComponent() = default;

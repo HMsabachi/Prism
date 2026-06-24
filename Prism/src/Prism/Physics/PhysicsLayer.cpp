@@ -53,6 +53,12 @@ namespace Prism {
         RemoveIfExists<PhysicsLayer>(s_Layers, [&](const PhysicsLayer& layer) { return layer.LayerID == layerId; });
     }
 
+    void PhysicsLayerManager::ClearLayers()
+    {
+        s_Layers.clear();
+        s_Layers.push_back({ 0, "Default", BIT(0), BIT(0) });
+    }
+
     void PhysicsLayerManager::SetLayerCollision(uint32_t layerId, uint32_t otherLayer, bool collides)
     {
         if (ShouldCollide(layerId, otherLayer) && collides)

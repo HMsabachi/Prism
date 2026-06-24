@@ -359,6 +359,7 @@ namespace Prism {
             auto& mcComponent = entity.GetComponent<MeshColliderComponent>();
             if (mcComponent.CollisionMesh)
                 out << YAML::Key << "AssetPath" << YAML::Value << FileSystem::GetRelativePath(mcComponent.CollisionMesh->GetFilePath());
+            out << YAML::Key << "IsConvex" << YAML::Value << mcComponent.IsConvex;
             out << YAML::Key << "IsTrigger" << YAML::Value << mcComponent.IsTrigger;
 
             out << YAML::EndMap; // MeshColliderComponent
@@ -676,6 +677,8 @@ namespace Prism {
             }
         }
 
+        PhysicsLayerManager::ClearLayers();
+
         auto physicsLayers = data["PhysicsLayers"];
         if (physicsLayers)
         {
@@ -900,8 +903,8 @@ namespace Prism {
                 {
                     std::string meshPath = meshColliderComponent["AssetPath"].as<std::string>();
                     auto& component = deserializedEntity.AddComponent<MeshColliderComponent>(ModelImporter::Import(meshPath).Mesh);
+                    component.IsConvex = meshColliderComponent["IsConvex"] ? meshColliderComponent["IsConvex"].as<bool>() : false;
                     component.IsTrigger = meshColliderComponent["IsTrigger"] ? meshColliderComponent["IsTrigger"].as<bool>() : false;
-                    PXPhysicsWrappers::CreateConvexMesh(component);
 
                     PR_CORE_INFO("  MeshColliderComponent: AssetPath={0}", FileSystem::GetRelativePath(meshPath));
                 }

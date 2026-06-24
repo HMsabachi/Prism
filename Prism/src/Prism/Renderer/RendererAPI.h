@@ -21,7 +21,7 @@ namespace Prism
         float MaxAnisotropy = 0.0f;
         int MaxTextureUnits = 0;
 
-        int MaxGroupCount[3], MaxGroupSize[3], MaxInvocations;
+        int MaxGroupCount[3]{}, MaxGroupSize[3]{}, MaxInvocations{};
     };
 
     class PRISM_API RendererAPI

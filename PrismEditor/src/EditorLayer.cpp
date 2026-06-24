@@ -651,6 +651,8 @@ namespace Prism
                     glm::decompose(transformMatrix, scl, rot, pos, skew, perspective);
                     entityTransform.SetPosition(pos);
                     entityTransform.SetRotation(rot);
+                    entityTransform.SetScale(scl);
+                    entityTransform.SetScale(scl);
                 }
                 else
                 {

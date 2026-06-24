@@ -40,7 +40,8 @@ namespace Prism
         static void AddCapsuleCollider(physx::PxRigidActor& actor, const physx::PxMaterial& material, const CapsuleColliderComponent& collider, const glm::vec3& size = glm::vec3(0.0F));
         static void AddMeshCollider(physx::PxRigidActor& actor, const physx::PxMaterial& material, MeshColliderComponent& collider, const glm::vec3& size = glm::vec3(0.0F));
 
-        static physx::PxConvexMesh* CreateConvexMesh(MeshColliderComponent& collider);
+        static std::vector<physx::PxTriangleMesh*> CreateTriangleMesh(MeshColliderComponent& collider, bool invalidateOld = false);
+        static std::vector<physx::PxConvexMesh*> CreateConvexMesh(MeshColliderComponent& collider, bool invalidateOld = false);
 
         static physx::PxMaterial* CreateMaterial(const PhysicsMaterialComponent& material);
 

@@ -119,6 +119,7 @@ namespace Prism {
         uint32_t BaseIndex{0};
         uint32_t MaterialIndex{0};
         uint32_t IndexCount{0};
+        uint32_t VertexCount{0};
 
         glm::mat4 Transform{0};
 
