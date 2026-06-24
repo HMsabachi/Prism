@@ -6,6 +6,7 @@
 #include "Prism/Renderer/Pipeline.h"
 #include "Prism/Renderer/Buffer/IndexBuffer.h"
 #include "Prism/Renderer/Shader.h"
+#include "Prism/Renderer/Shader/PrismShader.h"
 #include "Prism/Renderer/Renderer.h"
 #include "Buffer/ObjectUniformBuffer.h"
 

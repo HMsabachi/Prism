@@ -2,7 +2,6 @@
 #include "Prism/Core/UUID.h"
 
 #include <entt/entt.hpp>
-#include "Systems/ISystem.h"
 #include "Prism/Utilities/TypeInfo.h"
 #include <unordered_map>
 #include <vector>
@@ -12,6 +11,7 @@ namespace Prism
 {
     class Event;
     class Entity;
+    class ISystem;
 }
 
 namespace Prism

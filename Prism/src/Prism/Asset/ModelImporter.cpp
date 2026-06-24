@@ -4,6 +4,7 @@
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Mesh.h"
+#include "Prism/Renderer/Material.h"
 
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>

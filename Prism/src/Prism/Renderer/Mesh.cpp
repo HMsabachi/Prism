@@ -1,6 +1,9 @@
 ﻿#include "prpch.h"
 #include "Mesh.h"
 #include "Prism/Renderer/Renderer.h"
+#include "Prism/Renderer/Pipeline.h"
+#include "Prism/Renderer/Buffer/VertexBuffer.h"
+#include "Prism/Renderer/Buffer/IndexBuffer.h"
 
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>

@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include "Prism/Renderer/Mesh.h"
 
 #include "Scene.h"
 #include "Components.h"

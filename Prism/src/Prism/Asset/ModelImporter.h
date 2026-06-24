@@ -1,11 +1,13 @@
 #pragma once
 
 #include <vector>
-#include "Prism/Renderer/Mesh.h"
-#include "Prism/Renderer/Material.h"
+#include "Prism/Core/Core.h"
 
 namespace Prism
 {
+    class Mesh;
+    class Material;
+
     struct ModelImportResult
     {
         Ref<Mesh> Mesh;

@@ -5,6 +5,9 @@
 #include "RendererAPI.h"
 #include "Renderer2D.h"
 #include "Material.h"
+#include "RenderPass.h"
+#include "Mesh.h"
+#include "Buffer/Framebuffer.h"
 
 #include "Camera/Camera.h"
 #include <glad/glad.h>

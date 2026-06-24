@@ -3,16 +3,15 @@
 #include "Core.h"
 
 #include "LayerStack.h"
-#include "Prism/Events/ApplicationEvent.h"
 #include "Prism/Events/Event.h"
 #include "Window.h"
 
-#include "Prism/ImGui/ImGuiLayer.h"
-
-
-
 namespace Prism
 {
+    class ImGuiLayer;
+    class WindowCloseEvent;
+    class WindowResizeEvent;
+
     struct PRISM_API ApplicationProps
     {
         std::string Name;

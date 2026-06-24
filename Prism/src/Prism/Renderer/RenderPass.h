@@ -2,9 +2,9 @@
 
 #include "Prism/Core/Core.h"
 
-#include "Buffer/Framebuffer.h"
-
 namespace Prism {
+
+    class Framebuffer;
 
     struct PRISM_API RenderPassSpecification
     {

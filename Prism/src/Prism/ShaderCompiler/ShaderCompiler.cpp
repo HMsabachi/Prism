@@ -30,9 +30,7 @@ namespace Prism
         CompilerConfig config;
         config.IncludeRoot = "Assets/Shaders/Include";
         config.EngineRoot = "Assets/Shaders/Engine";
-        config.ReadFile = [](const std::string& path) -> std::string {
-            return Prism::File::ReadFile(path);
-            };
+        config.ReadFile = &Prism::File::ReadFile;
         config.OnLog = ShaderCompiler_LogCallback;
 
         s_Instance = new PrismShaderCompiler::ShaderCompiler(config);

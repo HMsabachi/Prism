@@ -2,6 +2,7 @@
 #include "OpenGLShader.h"
 
 #include <glm/gtc/type_ptr.hpp>
+#include <PrismShaderCore/Pipeline/PipelineState.h>
 
 #include "Prism/Renderer/Renderer.h"
 #include "OpenGLStateCache.h"

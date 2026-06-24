@@ -1,9 +1,10 @@
 ﻿#pragma once
 
-#include "Scene.h"
+#include "Prism/Core/Core.h"
 
 namespace Prism
 {
+    class Scene;
 
 	class PRISM_API SceneSerializer
 	{

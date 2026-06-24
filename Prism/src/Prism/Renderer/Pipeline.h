@@ -1,9 +1,10 @@
 ﻿#pragma once
 
 #include "Prism/Renderer/Buffer/VertexBuffer.h"
-#include "Prism/Renderer/Shader/PrismShader.h"
 
 namespace Prism {
+
+    class PrismShader;
 
     struct PipelineSpecification
     {

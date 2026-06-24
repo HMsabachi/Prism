@@ -2,12 +2,12 @@
 
 #include <string>
 #include <glm/glm.hpp>
-#include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/SceneEnvironment.h"
 
 namespace Prism
 {
     class Material;
+    class TextureCube;
 
     struct Light
     {

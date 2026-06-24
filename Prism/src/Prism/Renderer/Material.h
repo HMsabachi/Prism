@@ -1,12 +1,18 @@
 ﻿#pragma once
 
 #include "Shader/PrismShader.h"
-#include "Prism/Renderer/Buffer/UniformBuffer.h"
-#include "Texture.h"
+#include "Prism/Core/Buffer.h"
 #include <glm/glm.hpp>
+#include <string>
+#include <vector>
 
 namespace Prism
 {
+    class UniformBuffer;
+    class Texture;
+    class Texture2D;
+    class TextureCube;
+
     class PRISM_API Material : public RefCounted
     {
     public:
@@ -75,6 +81,7 @@ namespace Prism
         Buffer m_PropertyBuffer;
         mutable Ref<UniformBuffer> m_UniformBuffer;
         std::vector<Ref<Texture>> m_Textures;
+        std::vector<PrismShaderCompiler::AST::ShaderUniform> m_Uniforms;
         KeywordMask m_KeywordMask = 0;
         ShaderReloadedToken m_ReloadToken = 0;
         mutable bool m_Dirty = true;

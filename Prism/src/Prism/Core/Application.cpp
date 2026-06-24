@@ -5,6 +5,8 @@
 #include "Input.h"
 #include "Time.h"
 
+#include "Prism/Events/ApplicationEvent.h"
+#include "Prism/ImGui/ImGuiLayer.h"
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Renderer2D.h"
 #include "Prism/Renderer/Buffer/Framebuffer.h"

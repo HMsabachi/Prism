@@ -314,9 +314,8 @@ namespace Prism {
 
             physx::PxDefaultMemoryOutputStream buf;
             physx::PxCookingParams params(s_Physics->getTolerancesScale());
-            physx::PxConvexMeshCookingResult::Enum result;
-            if (!PxCookConvexMesh(params, convexDesc, buf, &result))
-                PR_CORE_ASSERT(false);
+            physx::PxConvexMeshCookingResult::Enum result{};
+            PR_CORE_ASSERT(PxCookConvexMesh(params, convexDesc, buf, &result));
 
             ConvexMeshSerializer::SerializeMesh(collider.CollisionMesh->GetFilePath(), buf);
             physx::PxDefaultMemoryInputData input(buf.getData(), buf.getSize());
@@ -394,8 +393,7 @@ namespace Prism {
             Entity& entity = *(Entity*)hitInfo.block.actor->userData;
 
             // NOTE: This should never be the case...
-            if (!entity)
-                PR_CORE_ASSERT(false, "Physics body with no Entity?");
+            PR_CORE_ASSERT(entity, "Physics body with no Entity?");
 
             hit->EntityID = entity.GetUUID();
             hit->Position = FromPhysXVector(hitInfo.block.position);

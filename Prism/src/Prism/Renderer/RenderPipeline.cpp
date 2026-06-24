@@ -9,6 +9,7 @@
 #include "Prism/Renderer/Pipeline.h"
 #include "Prism/Renderer/Buffer/VertexBuffer.h"
 #include "Prism/Renderer/Buffer/IndexBuffer.h"
+#include "Prism/Renderer/Buffer/Framebuffer.h"
 #include "Prism/Renderer/Shader/PrismShader.h"
 #include "Prism/Renderer/ComputeShader/ComputeShader.h"
 #include "Prism/ShaderCompiler/PrismBindings.h"

@@ -3,26 +3,18 @@ Shader "Standard/PrismPBR"
 {
     Properties
     {
-
         u_Color("主色", Color3) = (1, 1, 1)
         u_AlbedoColor("颜色", Color3) = (1, 1, 1)
         u_Metalness("金属度", Range(0, 1)) = 1.0
         u_Roughness("粗糙度", Range(0, 1)) = 0.0
         u_EnvMapRotation("环境光旋转", Range(0, 360)) = 0
-
         // PBR texture inputs
         u_AlbedoTexture("颜色贴图", Texture2D) = {}
         u_NormalTexture("法线贴图", Texture2D) = {}
         u_MetalnessTexture("金属度贴图", Texture2D) = {}
         u_RoughnessTexture("粗糙度贴图", Texture2D) = {}
-
         // Toggles
         u_RadiancePrefilter("环境光预过滤", Float) = 0.0
-
-        // light
-        u_LightDirection("光照方向", Vector3) = (1, 1, 1)
-        u_LightRadiance("光照颜色", Vector3) = (1, 1, 1)
-
     }
 
     RenderCommand

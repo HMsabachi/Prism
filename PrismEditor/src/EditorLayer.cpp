@@ -68,8 +68,8 @@ namespace Prism
             SceneSerializer serializer(m_EditorScene);
             //serializer.Deserialize("Assets/Scenes/Physics3DTest.psc");
             //m_SceneFilePath = "Assets/Scenes/Physics3DTest.psc";
-            serializer.Deserialize("Assets/Scenes/FPSDemo.psc");
-            m_SceneFilePath = "Assets/Scenes/FPSDemo.psc";
+            //serializer.Deserialize("Assets/Scenes/FPSDemo.psc");
+            //m_SceneFilePath = "Assets/Scenes/FPSDemo.psc";
         }
 
         void EditorLayer::OnDetach()

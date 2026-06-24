@@ -1,5 +1,7 @@
 ﻿#include "prpch.h"
 #include "Material.h"
+#include "Prism/Renderer/Buffer/UniformBuffer.h"
+#include "Prism/Renderer/Texture.h"
 #include "Prism/ShaderCompiler/PrismBindings.h"
 
 namespace Prism
@@ -54,14 +56,33 @@ namespace Prism
 
     void Material::AllocateStorage()
     {
+        auto tempBuffer = std::move(m_PropertyBuffer);
+        auto tempTextures = std::move(m_Textures);
         auto& layout = m_Shader->GetMaterialLayout();
         uint32_t totalSize = layout.GetTotalSize();
         m_PropertyBuffer.Allocate(totalSize);
-
+        uint32_t maxTexSlot = 0;
+        for (auto& uni : m_Shader->GetUniforms())
+            if (uni.TextureSlot > (int32_t)maxTexSlot)
+                maxTexSlot = (uint32_t)uni.TextureSlot;
+        m_Textures.resize(maxTexSlot + 1);
         for (auto& uni : m_Shader->GetUniforms())
         {
-            if (PrismShaderCompiler::PropertyTypeUtil::IsTextureType(uni.Type))
+            auto it = std::find_if(m_Uniforms.begin(), m_Uniforms.end(), [&](const PrismShaderCompiler::AST::ShaderUniform& u) { return u.Name == uni.Name; });
+            if (it != m_Uniforms.end() && uni.Type == it->Type)
+            {
+                uint32_t offset = (uint32_t)uni.BufferOffset;
+                uint32_t size = (uint32_t)uni.BufferSize;
+                if (PrismShaderCompiler::PropertyTypeUtil::IsTextureType(uni.Type))
+                {
+                    uint32_t tempSlot = (uint32_t)it->TextureSlot - Prism::Config::PRISM_BINDING_TEXTURE;
+                    uint32_t slot = (uint32_t)uni.TextureSlot - Prism::Config::PRISM_BINDING_TEXTURE;
+                    m_Textures[slot] = tempTextures[tempSlot];
+                    continue;
+                }
+                m_PropertyBuffer.Write((const byte*)&tempBuffer.Data[it->BufferOffset], size, offset);
                 continue;
+            }
             uint32_t offset = (uint32_t)uni.BufferOffset;
             uint32_t size = (uint32_t)uni.BufferSize;
             if (size == 0) continue;
@@ -72,17 +93,9 @@ namespace Prism
                 m_PropertyBuffer.Write((const byte*)&uni.DefaultValue[0], copySize, offset);
             }
         }
-
         m_UniformBuffer = UniformBuffer::Create(Prism::Config::PRISM_BINDING_MATERIAL, totalSize);
         m_UniformBuffer->SetData(m_PropertyBuffer);
-
-        m_Textures.clear();
-        uint32_t maxTexSlot = 0;
-        for (auto& uni : m_Shader->GetUniforms())
-            if (uni.TextureSlot > (int32_t)maxTexSlot)
-                maxTexSlot = (uint32_t)uni.TextureSlot;
-        m_Textures.resize(maxTexSlot + 1);
-
+        m_Uniforms = m_Shader->GetUniforms();
         m_Dirty = false;
     }
 

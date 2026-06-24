@@ -1,9 +1,11 @@
 #pragma once
 
 #include <string>
-#include "Prism/Renderer/Texture.h"
+#include "Prism/Core/Core.h"
 
 namespace Prism {
+
+    class TextureCube;
 
     struct PRISM_API Environment
     {

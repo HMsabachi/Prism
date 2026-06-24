@@ -3,14 +3,14 @@
 #include "OrthographicCamera.h"
 
 #include "Prism/Events/Event.h"
-#include "Prism/Events/ApplicationEvent.h"
-#include "Prism/Events/MouseEvent.h"
-
 
 #include <glm/glm.hpp>
 
 namespace Prism
 {
+	class MouseScrolledEvent;
+	class WindowResizeEvent;
+
 	class PRISM_API OrthographicCameraController
 	{
 	public:

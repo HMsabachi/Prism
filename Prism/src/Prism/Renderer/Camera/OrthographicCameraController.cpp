@@ -3,6 +3,8 @@
 #include "Prism/Core/Time.h"
 #include "Prism/Core/Input.h"
 #include "Prism/Core/KeyCodes.h"
+#include "Prism/Events/ApplicationEvent.h"
+#include "Prism/Events/MouseEvent.h"
 
 
 namespace Prism

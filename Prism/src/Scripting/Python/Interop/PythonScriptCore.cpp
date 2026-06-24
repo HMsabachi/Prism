@@ -223,13 +223,27 @@ namespace Prism::Python {
                 break;
             }
         }
+        PyConfig config;
+        PyConfig_InitPythonConfig(&config);
         if (!pythonHome.empty())
-            Py_SetPythonHome(pythonHome.wstring().c_str());
+        {
+            PyStatus status = PyConfig_SetString(
+                &config,
+                &config.home,
+                pythonHome.wstring().c_str()
+            );
 
-        Py_Initialize();
-        if (!Py_IsInitialized())
+            if (PyStatus_Exception(status))
+            {
+                PyConfig_Clear(&config);
+                return false;
+            }
+        }
+        PyStatus status = Py_InitializeFromConfig(&config);
+        PyConfig_Clear(&config);
+        if (PyStatus_Exception(status))
             return false;
-
+        
         PyRun_SimpleString(
             "import sys, os\n"
             "scripts_path = os.path.abspath('Assets/scripts/Python')\n"
@@ -239,7 +253,6 @@ namespace Prism::Python {
         );
 
         InitializeMathBridge();
-
         return true;
     }
 

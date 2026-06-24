@@ -1,16 +1,19 @@
 ﻿#pragma once
 
 #include "RendererTypes.h"
+#include "RendererAPI.h"
 #include "RenderCommandQueue.h"
-#include "RenderPass.h"
 
-#include "Mesh.h"
+#include <glm/glm.hpp>
+#include "Prism/Core/Math/AABB.h"
 
 namespace Prism
 {
     class ShaderLibrary;
     class Camera;
     class Mesh;
+    class Material;
+    class RenderPass;
 }
 
 namespace Prism

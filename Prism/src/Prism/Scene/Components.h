@@ -7,9 +7,8 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 #include "Prism/Core/UUID.h"
-
 #include "Prism/Core/Math/Transform.h"
-#include "Prism/Renderer/Texture.h"
+
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/Material.h"
 #include "Prism/Scene/SceneCamera.h"

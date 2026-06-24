@@ -3,11 +3,14 @@
 #include <vector>
 #include <glm/glm.hpp>
 
-#include "Prism/Renderer/Pipeline.h"
-#include "Prism/Renderer/Buffer/VertexBuffer.h"
-#include "Prism/Renderer/Buffer/IndexBuffer.h"
-
+#include "Prism/Core/Core.h"
 #include "Prism/Core/Math/AABB.h"
+
+#include <unordered_map>
+#include <string>
+#include <memory>
+#include <cstring>
+#include <cstdint>
 
 struct aiNode;
 struct aiAnimation;
@@ -20,6 +23,10 @@ namespace Assimp {
 
 namespace Prism
 {
+    class Pipeline;
+    class VertexBuffer;
+    class IndexBuffer;
+
     struct AABB;
 }
 

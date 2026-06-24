@@ -1,6 +1,7 @@
 ﻿#include "prpch.h"
 #include "CSharpScriptWrappers.h"
 #include "Prism/Renderer/Material.h"
+#include "Prism/Renderer/Texture.h"
 #include "Prism/Core/Math/Noise.h"
 
 #include "Prism/Core/Input.h"

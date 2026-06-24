@@ -1,5 +1,7 @@
 ﻿#pragma once
 #include <Prism.h>
+#include "Prism/Events/KeyEvent.h"
+#include "Prism/Events/MouseEvent.h"
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"

@@ -1,5 +1,6 @@
 #include "prpch.h"
 #include "LayerStack.h"
+#include "Layer.h"
 
 namespace Prism 
 {
