@@ -13,8 +13,6 @@ Shader "Standard/PrismPBR"
         u_NormalTexture("法线贴图", Texture2D) = {}
         u_MetalnessTexture("金属度贴图", Texture2D) = {}
         u_RoughnessTexture("粗糙度贴图", Texture2D) = {}
-        // Toggles
-        u_RadiancePrefilter("环境光预过滤", Float) = 0.0
     }
 
     RenderCommand
@@ -37,7 +35,6 @@ Shader "Standard/PrismPBR"
                 #pragma shader_feature SKINNED SHOW_CASCADES
                 #pragma shader_feature ALBEDO_MAP NORMAL_MAP METALNESS_MAP ROUGHNESS_MAP
                 #include "PrismCommon.glsl"
-                #include "PrismPBR.glsl"
                 attribute vec3 a_Position : POSITION;
                 attribute vec3 a_Normal : NORMAL;
                 attribute vec3 a_Tangent : TANGENT;
@@ -100,8 +97,42 @@ Shader "Standard/PrismPBR"
                 #endif
                 }
 
-                // Constant normal incidence Fresnel factor for all dielectrics.
                 const vec3 Fdielectric = vec3(0.04);
+                const float Epsilon = 0.00001;
+
+                // GGX/Towbridge-Reitz normal distribution function.
+                float ndfGGX(float cosLh, float roughness)
+                {
+                    float alpha = roughness * roughness;
+                    float alphaSq = alpha * alpha;
+                    float denom = (cosLh * cosLh) * (alphaSq - 1.0) + 1.0;
+                    return alphaSq / (3.141592 * denom * denom);
+                }
+
+                // Single term for separable Schlick-GGX below.
+                float gaSchlickG1(float cosTheta, float k)
+                {
+                    return cosTheta / (cosTheta * (1.0 - k) + k);
+                }
+
+                // Schlick-GGX approximation of geometric attenuation function using Smith's method.
+                float gaSchlickGGX(float cosLi, float NdotV, float roughness)
+                {
+                    float r = roughness + 1.0;
+                    float k = (r * r) / 8.0; // Epic suggests using this roughness remapping for analytic lights.
+                    return gaSchlickG1(cosLi, k) * gaSchlickG1(NdotV, k);
+                }
+
+                // Shlick's approximation of the Fresnel factor.
+                vec3 fresnelSchlick(vec3 F0, float cosTheta)
+                {
+                    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+                }
+
+                vec3 fresnelSchlickRoughness(vec3 F0, float cosTheta, float roughness)
+                {
+                    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
+                }
 
                 struct PBRParameters
                 {
@@ -170,14 +201,7 @@ Shader "Standard/PrismPBR"
                     vec3 diffuseIBL = m_Params.Albedo * irradiance;
 
                     int u_EnvRadianceTexLevels = textureQueryLevels(Prism_EnvRadianceTex);
-                    float NoV = clamp(m_Params.NdotV, 0.0, 1.0);
-                    vec3 R = 2.0 * dot(m_Params.View, m_Params.Normal) * m_Params.Normal - m_Params.View;
-                    vec3 specularIrradiance = vec3(0.0);
-
-                    if (u_RadiancePrefilter > 0.5)
-                        specularIrradiance = PrefilterEnvMap(m_Params.Roughness * m_Params.Roughness, R) * u_RadiancePrefilter;
-                    else
-                        specularIrradiance = textureLod(Prism_EnvRadianceTex, RotateVectorAboutY(u_EnvMapRotation, Lr), sqrt(m_Params.Roughness) * u_EnvRadianceTexLevels).rgb * (1.0 - u_RadiancePrefilter);
+                    vec3 specularIrradiance = textureLod(Prism_EnvRadianceTex, RotateVectorAboutY(u_EnvMapRotation, Lr), sqrt(m_Params.Roughness) * u_EnvRadianceTexLevels).rgb;
 
                     // Sample BRDF Lut, 1.0 - roughness for y-coord because texture was generated (in Sparky) for gloss model
                     vec2 specularBRDF = texture(Prism_BRDFLUT, vec2(m_Params.NdotV, 1.0 - m_Params.Roughness)).rg;

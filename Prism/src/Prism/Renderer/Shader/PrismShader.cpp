@@ -111,11 +111,11 @@ namespace Prism
                 m_Keywords.push_back({ kw.Name, bit++, false });
         }
 
-        m_PassKeywordMasks.assign(m_Compiled.PassGLSL.size(), 0);
-        for (uint32_t p = 0; p < m_Compiled.PassGLSL.size(); ++p)
+        m_PassKeywordMasks.assign(m_Compiled.Passes.size(), 0);
+        for (uint32_t p = 0; p < m_Compiled.Passes.size(); ++p)
         {
             KeywordMask m = 0;
-            for (auto& pragma : m_Compiled.PassGLSL[p].Pragmas)
+            for (auto& pragma : m_Compiled.Passes[p].Glsl.Pragmas)
                 for (auto& name : pragma.Keywords)
                     for (auto& kw : m_Keywords)
                         if (kw.Name == name) m |= (KeywordMask(1) << kw.Index);
@@ -267,33 +267,51 @@ namespace Prism
     void ShaderLibrary::LoadAll(const std::string& directory)
     {
         PR_CORE_INFO("Scanning .Shader files in '{}'...", directory);
+        m_PathFromName = ShaderCompiler::Get().ScanShaderDirectory(directory);
         uint32_t success = 0, failed = 0;
-        for (auto& entry : std::filesystem::recursive_directory_iterator(directory))
+        for (auto& [name, path] : m_PathFromName)
         {
-            if (entry.path().extension() != ".Shader")
-                continue;
-
-            std::string path = entry.path().generic_string();
-
+            if (Exists(name)) { success++; continue; }
             auto shader = Ref<PrismShader>(PrismShader::Create(path));
-
             if (shader->GetName().empty())
             {
                 PR_CORE_ERROR("Parse failed, skipping: {}", path);
                 failed++;
                 continue;
             }
-
-            auto& name = shader->GetName();
-            if (m_Shaders.find(name) != m_Shaders.end())
-            {
-                PR_CORE_WARN("Duplicate shader name '{}' from: {}", name, path);
-                continue;
-            }
             m_Shaders[name] = shader;
             success++;
         }
         PR_CORE_INFO("Shader loading done: {} success, {} failed", success, failed);
+    }
+
+
+    PrismShaderCompiler::CompiledShader ShaderLibrary::OnResolveUsePass(const std::string& name)
+    {
+        if (Exists(name))
+        {
+            return Get(name)->GetCompiledShader();
+        }
+        else
+        {
+            auto it = m_PathFromName.find(name);
+            if (it != m_PathFromName.end())
+            {
+                auto shader = Ref<PrismShader>(PrismShader::Create(it->second));
+                if (shader->GetName().empty())
+                {
+                    PR_CORE_ERROR("ShaderLibrary::OnResolveUsePass - Parse failed for '{}'", it->second);
+                    return {};
+                }
+                m_Shaders[name] = shader;
+                return shader->GetCompiledShader();
+            }
+            else
+            {
+                PR_CORE_ERROR("ShaderLibrary::OnResolveUsePass - Shader '{}' not found", name);
+                return {};
+            }
+        }
     }
 
     const Ref<PrismShader>& ShaderLibrary::Get(const std::string& name) const

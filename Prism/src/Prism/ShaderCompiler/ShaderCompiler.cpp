@@ -2,6 +2,8 @@
 #include "ShaderCompiler.h"
 
 #include "Prism/Utilities/Utilities.h"
+#include "Prism/Renderer/Renderer.h"
+#include "Prism/Renderer/Shader/PrismShader.h"
 
 #include <PrismShaderCore/Log.h>
 #include <PrismShaderCore/Generator/IRGenerator.h>
@@ -31,7 +33,10 @@ namespace Prism
         config.IncludeRoot = "Assets/Shaders/Include";
         config.EngineRoot = "Assets/Shaders/Engine";
         config.ReadFile = &Prism::File::ReadFile;
-        config.OnLog = ShaderCompiler_LogCallback;
+        config.OnLog = &ShaderCompiler_LogCallback;
+        config.ResolveUsePass = [](const std::string& shaderName) -> CompiledShader {
+            return Renderer::GetShaderLibrary()->OnResolveUsePass(shaderName);
+        };
 
         s_Instance = new PrismShaderCompiler::ShaderCompiler(config);
     }

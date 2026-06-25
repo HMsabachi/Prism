@@ -48,6 +48,7 @@ namespace Prism
         void RemoveShaderReloadedCallback(ShaderReloadedToken token);
         const std::string& GetFilePath() const { return m_FilePath; }
         const std::string& GetName() const { return m_Name; }
+        const PrismShaderCompiler::CompiledShader& GetCompiledShader() const { return m_Compiled; }
 
         const std::vector<PrismShaderCompiler::AST::ShaderUniform>& GetUniforms() const { return m_Compiled.Uniforms; }
         const PrismShaderCompiler::AST::ShaderUniform* FindUniform(const std::string& name) const;
@@ -99,11 +100,14 @@ namespace Prism
         void Load(const std::string& path);
         void Load(const std::string& name, const std::string& path);
         void LoadAll(const std::string& directory);
+        bool Exists(const std::string& name) const { return m_Shaders.find(name) != m_Shaders.end(); }
 
+        PrismShaderCompiler::CompiledShader OnResolveUsePass(const std::string& name);
         const Ref<PrismShader>& Get(const std::string& name) const;
         const std::unordered_map<std::string, Ref<PrismShader>>& GetAll() const;
     private:
         std::unordered_map<std::string, Ref<PrismShader>> m_Shaders;
+        std::unordered_map<std::string, std::string> m_PathFromName;
     };
 
 }
