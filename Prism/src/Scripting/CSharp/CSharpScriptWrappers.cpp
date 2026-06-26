@@ -492,7 +492,10 @@ namespace Prism {
             physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
             physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
             PR_CORE_ASSERT(dynamicActor);
-            dynamicActor->setLinearVelocity(physx::PxVec3(velocity->x, velocity->y, velocity->z));
+            physx::PxVec3 pxVelocity(velocity->x, velocity->y, velocity->z);
+            if (!pxVelocity.isFinite())
+                return;
+            dynamicActor->setLinearVelocity(pxVelocity);
         }
 
         void Prism_RigidBodyComponent_Rotate(uint64_t entityID, glm::vec3* rotation)

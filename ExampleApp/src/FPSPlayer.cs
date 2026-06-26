@@ -8,12 +8,17 @@ namespace Example
         public float WalkingSpeed = 10.0F;
         public float RunSpeed = 20.0F;
         public float JumpForce = 50.0F;
+        public float CameraForwardOffset = 0.2F;
+        public float CameraYOffset = 0.85F;
 
         //[NonSerialized]
         public float MouseSensitivity = 10.0F;
 
         private float m_CurrentSpeed;
         private float m_CurrentYMovement = 0.0F;
+
+        private Vector2 m_MovementDirection = new Vector2(0.0F);
+        private bool m_ShouldJump = false;
 
         private RigidBodyComponent m_RigidBody;
         private TransformComponent m_Transform;
@@ -54,6 +59,8 @@ namespace Example
 
             m_CurrentSpeed = Input.IsKeyPressed(KeyCode.LeftControl) ? RunSpeed : WalkingSpeed;
 
+            UpdateRaycasting();
+            UpdateMovementInput();
             UpdateRotation();
             UpdateCameraTransform();
         }
@@ -82,10 +89,27 @@ namespace Example
             m_Transform.Rotation = new Vector3(0.0f, m_CameraTransform.Rotation.Y, 0.0f);
         }
 
-        private void UpdateMovement()
+        private void UpdateMovementInput()
         {
-            m_RigidBody.Rotate(new Vector3(0.0F, m_CurrentYMovement, 0.0F));
+            if (Input.IsKeyPressed(KeyCode.W))
+                m_MovementDirection.Y = 1.0F;
+            else if (Input.IsKeyPressed(KeyCode.S))
+                m_MovementDirection.Y = -1.0F;
+            else
+                m_MovementDirection.Y = 0.0F;
 
+            if (Input.IsKeyPressed(KeyCode.A))
+                m_MovementDirection.X = -1.0F;
+            else if (Input.IsKeyPressed(KeyCode.D))
+                m_MovementDirection.X = 1.0F;
+            else
+                m_MovementDirection.X = 0.0F;
+
+            m_ShouldJump = Input.IsKeyPressed(KeyCode.Space) && !m_ShouldJump;
+        }
+
+        private void UpdateRaycasting()
+        {
             RaycastHit hitInfo;
             if (Input.IsKeyPressed(KeyCode.H) && Physics.Raycast(m_CameraTransform.Position + (m_CameraTransform.Transform.Forward * 5.0F), m_CameraTransform.Transform.Forward, 20.0F, out hitInfo))
             {
@@ -111,28 +135,29 @@ namespace Example
                     Log.Trace(c);
                 }
             }
+        }
 
-            if (Input.IsKeyPressed(KeyCode.W))
-                m_RigidBody.AddForce(m_Transform.Transform.Forward * m_CurrentSpeed);
-            else if (Input.IsKeyPressed(KeyCode.S))
-                m_RigidBody.AddForce(m_Transform.Transform.Forward * -m_CurrentSpeed);
+        private void UpdateMovement()
+        {
+            m_RigidBody.Rotate(new Vector3(0.0F, m_CurrentYMovement, 0.0F));
 
-            if (Input.IsKeyPressed(KeyCode.A))
-                m_RigidBody.AddForce(m_Transform.Transform.Right * -m_CurrentSpeed);
-            else if (Input.IsKeyPressed(KeyCode.D))
-                m_RigidBody.AddForce(m_Transform.Transform.Right * m_CurrentSpeed);
+            Vector3 movement = m_CameraTransform.Transform.Right * m_MovementDirection.X + m_CameraTransform.Transform.Forward * m_MovementDirection.Y;
+            movement.Normalize();
+            Vector3 velocity = movement * m_CurrentSpeed;
+            velocity.Y = m_RigidBody.GetLinearVelocity().Y;
+            m_RigidBody.SetLinearVelocity(velocity);
 
-            if (Input.IsKeyPressed(KeyCode.Space) && Colliding)
-                m_RigidBody.AddForce(Vector3.Up * JumpForce);
-            var linearVelocity = m_RigidBody.LinearVelocity;
-            linearVelocity.Clamp(new Vector3(-m_CurrentSpeed, -m_CurrentSpeed, -m_CurrentSpeed), new Vector3(m_CurrentSpeed, m_CurrentSpeed, m_CurrentSpeed));
-            m_RigidBody.LinearVelocity = linearVelocity;
+            if (m_ShouldJump && Colliding)
+            {
+                m_RigidBody.AddForce(Vector3.Up * JumpForce, ForceMode.VelocityChange);
+                m_ShouldJump = false;
+            }
         }
 
         private void UpdateCameraTransform()
         {
-            Vector3 position = m_Transform.Position;
-            position.Y += 1.5F;
+            Vector3 position = m_Transform.Position + m_Transform.Transform.Forward * CameraForwardOffset;
+            position.Y = m_Transform.Position.Y + CameraYOffset;
             m_CameraTransform.Position = position;
         }
 

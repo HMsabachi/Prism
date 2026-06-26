@@ -50,11 +50,11 @@ Entities:
     TagComponent:
       Tag: Mesh
     TransformComponent:
-      Position: [7.676742, 1.1115024, 6.605533]
+      Position: [7.676742, 6.5393863, -5.0555487]
       Rotation: [0, -0, 0]
-      Scale: [1, 1, 1]
+      Scale: [0.056000005, 0.056000005, 0.056000005]
     MeshRendererComponent:
-      AssetPath: Assets\meshes\stormtrooper\silly_dancing.fbx
+      AssetPath: Assets\meshes\cerberus\CerberusMaterials.fbx
     RigidBodyComponent:
       BodyType: 1
       Mass: 5
@@ -377,7 +377,7 @@ Entities:
       Tag: Player
     TransformComponent:
       Position: [0.016, 1.5, 13.07]
-      Rotation: [0, 0, 0]
+      Rotation: [0, -0, 0]
       Scale: [2, 2, 2]
     MeshRendererComponent:
       AssetPath: Assets\meshes\Capsule.fbx
@@ -397,13 +397,43 @@ Entities:
       StaticFriction: 0.1
       DynamicFriction: 0.1
       Bounciness: 0
-    MeshColliderComponent:
-      AssetPath: Assets\meshes\Capsule.fbx
-      IsConvex: false
+    CapsuleColliderComponent:
+      Radius: 0.5
+      Height: 1
       IsTrigger: false
     CSharpScriptComponent:
       Behaviours:
-        []
+        - ClassID: 4621281492369714213
+          Enabled: true
+          Fields:
+            - ID: 316217235
+              Name: WalkingSpeed
+              Type: 1
+              Value: 10
+            - ID: 2138685965
+              Name: RunSpeed
+              Type: 1
+              Value: 20
+            - ID: 868800460
+              Name: JumpForce
+              Type: 1
+              Value: 10
+            - ID: 1585848256
+              Name: CameraForwardOffset
+              Type: 1
+              Value: 0.2
+            - ID: 3048789568
+              Name: ID
+              Type: 11
+              Value: 0
+            - ID: 2756558778
+              Name: CameraYOffset
+              Type: 1
+              Value: 0.85
+            - ID: 1438023815
+              Name: MouseSensitivity
+              Type: 1
+              Value: 10
     PythonScriptComponent:
       Behaviours:
         []

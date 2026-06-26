@@ -115,9 +115,17 @@ namespace Prism {
                 {
                     Entity e = { entity, m_Scene };
                     auto& collider = e.GetComponent<MeshColliderComponent>();
-                    for (auto& debugMesh : collider.ProcessedMeshes)
-                        rs->SubmitDebugMesh(debugMesh,
-                            e.Transformation().GetMatrix());
+                    if (!collider.ProcessedMeshes.empty())
+                    {
+                        for (auto& debugMesh : collider.ProcessedMeshes)
+                            rs->SubmitDebugMesh(debugMesh,
+                                e.Transformation().GetMatrix());
+                    }
+                    else if (collider.CollisionMesh)
+                    {
+                        rs->SubmitDebugMesh(collider.CollisionMesh,
+                            glm::rotate(e.Transformation().GetMatrix(), glm::radians(90.0f), glm::vec3(1, 0, 0)));
+                    }
                 }
             }
         }

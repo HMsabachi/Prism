@@ -1,6 +1,6 @@
 from Prism.Entity import Entity
 from Prism.Behaviour import Behaviour
-from Prism.Component import TransformComponent, RigidBodyComponent, MeshRendererComponent
+from Prism.Component import TransformComponent, RigidBodyComponent, MeshRendererComponent, ForceMode
 from Prism.Physics.Collider import BoxCollider, SphereCollider, CapsuleCollider, MeshCollider
 from Prism.Physics.Physics import Physics, RaycastHit
 from Prism.Core.Input import Input, CursorMode, MouseButton
@@ -17,6 +17,8 @@ class FPSPlayer(Behaviour):
     WalkingSpeed: float = 10.0
     RunSpeed: float = 20.0
     JumpForce: float = 50.0
+    CameraForwardOffset: float = 0.2
+    CameraYOffset: float = 0.85
     MouseSensitivity: float = 10.0
 
     _collisionCounter: int = 0
@@ -32,6 +34,9 @@ class FPSPlayer(Behaviour):
         self._cameraTransform: TransformComponent = self._cameraEntity.GetComponent(TransformComponent)
 
         self._currentSpeed = self.WalkingSpeed
+
+        self._movementDirection = Vector2(0.0, 0.0)
+        self._shouldJump = False
 
         self._lastMousePosition = Input.GetMousePosition()
 
@@ -51,6 +56,8 @@ class FPSPlayer(Behaviour):
             else self.WalkingSpeed
         )
 
+        self.UpdateRaycasting()
+        self.UpdateMovementInput()
         self.UpdateRotation(ts)
         self.UpdateMovement()
         self.UpdateCameraTransform()
@@ -69,7 +76,24 @@ class FPSPlayer(Behaviour):
 
         self._lastMousePosition = currentMousePosition
 
-    def UpdateMovement(self):
+    def UpdateMovementInput(self):
+        if Input.IsKeyPressed(KeyCodes.W):
+            self._movementDirection.y = 1.0
+        elif Input.IsKeyPressed(KeyCodes.S):
+            self._movementDirection.y = -1.0
+        else:
+            self._movementDirection.y = 0.0
+
+        if Input.IsKeyPressed(KeyCodes.A):
+            self._movementDirection.x = -1.0
+        elif Input.IsKeyPressed(KeyCodes.D):
+            self._movementDirection.x = 1.0
+        else:
+            self._movementDirection.x = 0.0
+
+        self._shouldJump = Input.IsKeyPressed(KeyCodes.Space) and not self._shouldJump
+
+    def UpdateRaycasting(self):
         if Input.IsKeyPressed(KeyCodes.H):
             origin = self._cameraTransform.Position + (self._cameraTransform.Transform.Forward * 5.0)
             hit = RaycastHit()
@@ -90,24 +114,20 @@ class FPSPlayer(Behaviour):
                 Log.Trace("IsCapsule: {}", isinstance(c, CapsuleCollider))
                 Log.Trace("IsMesh: {}", isinstance(c, MeshCollider))
 
-        if Input.IsKeyPressed(KeyCodes.W):
-            self._rigidBody.AddForce(self._cameraTransform.Transform.Forward * self._currentSpeed)
-        elif Input.IsKeyPressed(KeyCodes.S):
-            self._rigidBody.AddForce(self._cameraTransform.Transform.Forward * -self._currentSpeed)
+    def UpdateMovement(self):
+        movement = self._cameraTransform.Transform.Right * self._movementDirection.x + self._cameraTransform.Transform.Forward * self._movementDirection.y
+        movement.Normalize()
+        velocity = movement * self._currentSpeed
+        velocity.y = self._rigidBody.GetLinearVelocity().y
+        self._rigidBody.SetLinearVelocity(velocity)
 
-        if Input.IsKeyPressed(KeyCodes.A):
-            self._rigidBody.AddForce(self._cameraTransform.Transform.Right * -self._currentSpeed)
-        elif Input.IsKeyPressed(KeyCodes.D):
-            self._rigidBody.AddForce(self._cameraTransform.Transform.Right * self._currentSpeed)
-
-        if Input.IsKeyPressed(KeyCodes.Space) and self.Colliding:
-            self._rigidBody.AddForce(Vector3.Up * self.JumpForce)
-        velocity = self._rigidBody.GetLinearVelocity()
-        velocity.Clamp(Vector3(-self._currentSpeed), Vector3(self._currentSpeed))
+        if self._shouldJump and self.Colliding:
+            self._rigidBody.AddForce(Vector3.Up * self.JumpForce, ForceMode.Impulse)
+            self._shouldJump = False
 
     def UpdateCameraTransform(self):
-        position = Vector3(self._transform.Position)
-        position.y += 1.5
+        position = self._transform.Position + self._transform.Transform.Forward * self.CameraForwardOffset
+        position.y = self._transform.Position.y + self.CameraYOffset
         self._cameraTransform.Position = position
 
     def OnCollisionBegin(self, collision_id: float):

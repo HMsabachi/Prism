@@ -509,7 +509,10 @@ namespace Prism::Script
         physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
         physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
         PR_CORE_ASSERT(dynamicActor);
-        dynamicActor->setLinearVelocity(physx::PxVec3(velocity.x, velocity.y, velocity.z));
+        physx::PxVec3 pxVelocity(velocity.x, velocity.y, velocity.z);
+        if (!pxVelocity.isFinite())
+            return Python::NoneValue().Detach();
+        dynamicActor->setLinearVelocity(pxVelocity);
         return Python::NoneValue().Detach();
     }
 

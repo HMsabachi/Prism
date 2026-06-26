@@ -52,5 +52,9 @@ namespace Prism {
 
         PRISM_API bool DrawVec3Control(const std::string& label, glm::vec3& values, float resetValue = 0.0f, float columnWidth = 100.0f);
 
+        PRISM_API void BeginCheckboxGroup(const char* label);
+        PRISM_API bool PropertyCheckboxGroup(const char* label, bool& value);
+        PRISM_API void EndCheckboxGroup();
+
     }
 }

@@ -10,6 +10,7 @@ namespace UI {
     static int s_UIContextID = 0;
     static uint32_t s_Counter = 0;
     static char s_IDBuffer[16];
+    static int s_CheckboxCount = 0;
 
     void PushID()
     {
@@ -459,6 +460,40 @@ namespace UI {
         ImGui::PopID();
 
         return modified;
+    }
+
+    void BeginCheckboxGroup(const char* label)
+    {
+        ImGui::Text("%s", label);
+        ImGui::NextColumn();
+        ImGui::PushItemWidth(-1);
+    }
+
+    bool PropertyCheckboxGroup(const char* label, bool& value)
+    {
+        bool modified = false;
+
+        if (++s_CheckboxCount > 1)
+            ImGui::SameLine();
+
+        ImGui::Text("%s", label);
+        ImGui::SameLine();
+
+        s_IDBuffer[0] = '#';
+        s_IDBuffer[1] = '#';
+        memset(s_IDBuffer + 2, 0, 14);
+        _itoa(s_Counter++, s_IDBuffer + 2, 16);
+        if (ImGui::Checkbox(s_IDBuffer, &value))
+            modified = true;
+
+        return modified;
+    }
+
+    void EndCheckboxGroup()
+    {
+        ImGui::PopItemWidth();
+        ImGui::NextColumn();
+        s_CheckboxCount = 0;
     }
 
 } // namespace UI

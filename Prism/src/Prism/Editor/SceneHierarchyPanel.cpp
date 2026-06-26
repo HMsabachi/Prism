@@ -235,14 +235,34 @@ namespace Prism {
             const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
 
             auto& component = entity.GetComponent<T>();
+            ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
 
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+            float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
             ImGui::Separator();
             bool open = ImGui::TreeNodeEx((void*)typeid(T).hash_code(), treeNodeFlags, "%s", name.c_str());
+            ImGui::PopStyleVar();
+            ImGui::SameLine(contentRegionAvailable.x - lineHeight * 0.5f);
+            if (ImGui::Button("+", ImVec2{ lineHeight, lineHeight }))
+                ImGui::OpenPopup("ComponentSettings");
+
+            bool removeComponent = false;
+            if (ImGui::BeginPopup("ComponentSettings"))
+            {
+                if (ImGui::MenuItem(TR("Remove component")))
+                    removeComponent = true;
+
+                ImGui::EndPopup();
+            }
+
             if (open)
             {
                 uiFunction(component);
                 ImGui::TreePop();
             }
+
+            if (removeComponent)
+                entity.RemoveComponent<T>();
         }
     }
 
@@ -399,8 +419,15 @@ namespace Prism {
 
         if (entity.HasComponent<TransformComponent>())
         {
+            const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
             Transform& transform = entity.Transformation();
-            if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(TransformComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, TR("Transform")))
+
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+            ImGui::Separator();
+            bool open = ImGui::TreeNodeEx((void*)typeid(TransformComponent).hash_code(), treeNodeFlags, "%s", TR("Transform"));
+            ImGui::PopStyleVar();
+
+            if (open)
             {
                 glm::vec3 translation = transform.GetPosition();
                 glm::vec3 rotation = transform.GetRotation();
@@ -423,10 +450,7 @@ namespace Prism {
         }
 
 
-        if (entity.HasComponent<MeshRendererComponent>())
-        {
-            auto& mc = entity.GetComponent<MeshRendererComponent>();
-            if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(TransformComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, TR("Mesh")))
+        DrawComponent<MeshRendererComponent>(TR("Mesh"), entity, [](auto& component)
             {
                 ImGui::Columns(3);
                 ImGui::SetColumnWidth(0, 100);
@@ -435,8 +459,8 @@ namespace Prism {
                 ImGui::Text(TR("File Path"));
                 ImGui::NextColumn();
                 ImGui::PushItemWidth(-1);
-                if (mc.Mesh)
-                    ImGui::InputText("##meshfilepath", (char*)mc.Mesh->GetFilePath().c_str(), 256, ImGuiInputTextFlags_ReadOnly);
+                if (component.Mesh)
+                    ImGui::InputText("##meshfilepath", (char*)component.Mesh->GetFilePath().c_str(), 256, ImGuiInputTextFlags_ReadOnly);
                 else
                     ImGui::InputText("##meshfilepath", (char*)"Null", 256, ImGuiInputTextFlags_ReadOnly);
                 ImGui::PopItemWidth();
@@ -447,25 +471,18 @@ namespace Prism {
                     if (!file.empty())
                     {
                         auto result = ModelImporter::Import(FileSystem::GetRelativePath(file));
-                        mc.Mesh = result.Mesh;
-                        mc.SetMaterials(result.Materials);
+                        component.Mesh = result.Mesh;
+                        component.SetMaterials(result.Materials);
                     }
                 }
                 ImGui::NextColumn();
                 ImGui::Columns(1);
-                ImGui::TreePop();
-            }
-            ImGui::Separator();
-        }
+            });
 
-        if (entity.HasComponent<CameraComponent>())
-        {
-            auto& cc = entity.GetComponent<CameraComponent>();
-            if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(CameraComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, TR("Camera")))
+        DrawComponent<CameraComponent>(TR("Camera"), entity, [](auto& component)
             {
-                // Projection Type
                 const char* projTypeStrings[] = { TR("Perspective"), TR("Orthographic") };
-                const char* currentProj = projTypeStrings[(int)cc.Camera.GetProjectionType()];
+                const char* currentProj = projTypeStrings[(int)component.Camera.GetProjectionType()];
                 if (ImGui::BeginCombo(TR("Projection"), currentProj))
                 {
                     for (int type = 0; type < 2; type++)
@@ -474,7 +491,7 @@ namespace Prism {
                         if (ImGui::Selectable(projTypeStrings[type], is_selected))
                         {
                             currentProj = projTypeStrings[type];
-                            cc.Camera.SetProjectionType((SceneCamera::ProjectionType)type);
+                            component.Camera.SetProjectionType((SceneCamera::ProjectionType)type);
                         }
                         if (is_selected)
                             ImGui::SetItemDefaultFocus();
@@ -483,54 +500,40 @@ namespace Prism {
                 }
 
                 UI::BeginPropertyGrid();
-                // Perspective parameters
-                if (cc.Camera.GetProjectionType() == SceneCamera::ProjectionType::Perspective)
+                if (component.Camera.GetProjectionType() == SceneCamera::ProjectionType::Perspective)
                 {
-                    float verticalFOV = cc.Camera.GetPerspectiveVerticalFOV();
+                    float verticalFOV = component.Camera.GetPerspectiveVerticalFOV();
                     if (UI::Property(TR("Vertical FOV"), verticalFOV))
-                        cc.Camera.SetPerspectiveVerticalFOV(verticalFOV);
+                        component.Camera.SetPerspectiveVerticalFOV(verticalFOV);
 
-                    float nearClip = cc.Camera.GetPerspectiveNearClip();
+                    float nearClip = component.Camera.GetPerspectiveNearClip();
                     if (UI::Property(TR("Near Clip"), nearClip))
-                        cc.Camera.SetPerspectiveNearClip(nearClip);
+                        component.Camera.SetPerspectiveNearClip(nearClip);
                     ImGui::SameLine();
-                    float farClip = cc.Camera.GetPerspectiveFarClip();
+                    float farClip = component.Camera.GetPerspectiveFarClip();
                     if (UI::Property(TR("Far Clip"), farClip))
-                        cc.Camera.SetPerspectiveFarClip(farClip);
+                        component.Camera.SetPerspectiveFarClip(farClip);
                 }
-
-                // Orthographic parameters
-                else if (cc.Camera.GetProjectionType() == SceneCamera::ProjectionType::Orthographic)
+                else if (component.Camera.GetProjectionType() == SceneCamera::ProjectionType::Orthographic)
                 {
-                    float orthoSize = cc.Camera.GetOrthographicSize();
+                    float orthoSize = component.Camera.GetOrthographicSize();
                     if (UI::Property(TR("Size"), orthoSize))
-                        cc.Camera.SetOrthographicSize(orthoSize);
+                        component.Camera.SetOrthographicSize(orthoSize);
 
-                    float nearClip = cc.Camera.GetOrthographicNearClip();
+                    float nearClip = component.Camera.GetOrthographicNearClip();
                     if (UI::Property(TR("Near Clip"), nearClip))
-                        cc.Camera.SetOrthographicNearClip(nearClip);
+                        component.Camera.SetOrthographicNearClip(nearClip);
                     ImGui::SameLine();
-                    float farClip = cc.Camera.GetOrthographicFarClip();
+                    float farClip = component.Camera.GetOrthographicFarClip();
                     if (UI::Property(TR("Far Clip"), farClip))
-                        cc.Camera.SetOrthographicFarClip(farClip);
+                        component.Camera.SetOrthographicFarClip(farClip);
                 }
-
                 UI::EndPropertyGrid();
-                ImGui::TreePop();
-            }
-            ImGui::Separator();
-        }
+            });
 
-        if (entity.HasComponent<SpriteRendererComponent>())
-        {
-            auto& src = entity.GetComponent<SpriteRendererComponent>();
-            if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(SpriteRendererComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, TR("Sprite Renderer")))
+        DrawComponent<SpriteRendererComponent>(TR("Sprite Renderer"), entity, [](auto& component)
             {
-
-                ImGui::TreePop();
-            }
-            ImGui::Separator();
-        }
+            });
 
         DrawComponent<DirectionalLightComponent>(TR("Directional Light"), entity, [](auto& component)
             {
@@ -661,18 +664,28 @@ namespace Prism {
                 {
                     UI::BeginPropertyGrid();
                     UI::Property(TR("Mass"), component.Mass);
+                    UI::Property(TR("Linear Drag"), component.LinearDrag);
+                    UI::Property(TR("Angular Drag"), component.AngularDrag);
+                    UI::Property(TR("Disable Gravity"), component.DisableGravity);
                     UI::Property(TR("Is Kinematic"), component.IsKinematic);
                     UI::EndPropertyGrid();
 
                     if (ImGui::TreeNode(TR("Constraints")))
                     {
                         UI::BeginPropertyGrid();
-                        UI::Property(TR("Position X"), component.LockPositionX);
-                        UI::Property(TR("Position Y"), component.LockPositionY);
-                        UI::Property(TR("Position Z"), component.LockPositionZ);
-                        UI::Property(TR("Rotation X"), component.LockRotationX);
-                        UI::Property(TR("Rotation Y"), component.LockRotationY);
-                        UI::Property(TR("Rotation Z"), component.LockRotationZ);
+
+                        UI::BeginCheckboxGroup(TR("Freeze Position"));
+                        UI::PropertyCheckboxGroup("X", component.LockPositionX);
+                        UI::PropertyCheckboxGroup("Y", component.LockPositionY);
+                        UI::PropertyCheckboxGroup("Z", component.LockPositionZ);
+                        UI::EndCheckboxGroup();
+
+                        UI::BeginCheckboxGroup(TR("Freeze Rotation"));
+                        UI::PropertyCheckboxGroup("X", component.LockRotationX);
+                        UI::PropertyCheckboxGroup("Y", component.LockRotationY);
+                        UI::PropertyCheckboxGroup("Z", component.LockRotationZ);
+                        UI::EndCheckboxGroup();
+
                         UI::EndPropertyGrid();
 
                         ImGui::TreePop();
@@ -780,7 +793,14 @@ namespace Prism {
         // CSharpScriptComponent
         if (entity.HasComponent<CSharpScriptComponent>())
         {
-            if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(CSharpScriptComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, TR("C# Script")))
+            const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
+
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+            ImGui::Separator();
+            bool open = ImGui::TreeNodeEx((void*)typeid(CSharpScriptComponent).hash_code(), treeNodeFlags, "%s", TR("C# Script"));
+            ImGui::PopStyleVar();
+
+            if (open)
             {
                 auto& comp = entity.GetComponent<CSharpScriptComponent>();
 
@@ -905,13 +925,19 @@ namespace Prism {
 
                 ImGui::TreePop();
             }
-            ImGui::Separator();
         }
 
         // PythonScriptComponent
         if (entity.HasComponent<PythonScriptComponent>())
         {
-            if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(PythonScriptComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, TR("Python Script")))
+            const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
+
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+            ImGui::Separator();
+            bool open = ImGui::TreeNodeEx((void*)typeid(PythonScriptComponent).hash_code(), treeNodeFlags, "%s", TR("Python Script"));
+            ImGui::PopStyleVar();
+
+            if (open)
             {
                 auto& comp = entity.GetComponent<PythonScriptComponent>();
 
@@ -1050,7 +1076,6 @@ namespace Prism {
 
                 ImGui::TreePop();
             }
-            ImGui::Separator();
         }
 
     }
