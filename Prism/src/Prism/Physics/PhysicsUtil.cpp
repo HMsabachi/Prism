@@ -130,45 +130,34 @@ namespace Prism {
         return std::filesystem::is_directory(dir);
     }
 
-    static std::vector<physx::PxU8*> s_MeshDataBuffers;
+    static physx::PxU8* s_MeshDataBuffer;
 
-    std::vector<physx::PxDefaultMemoryInputData> ConvexMeshSerializer::DeserializeMesh(const std::string& filepath)
+    physx::PxDefaultMemoryInputData ConvexMeshSerializer::DeserializeMesh(const std::string& filepath, const std::string& submeshName)
     {
-        std::vector<physx::PxDefaultMemoryInputData> result;
-        auto dir = GetSerializedDir(filepath);
+        std::filesystem::path p = filepath;
+        std::string stem = p.stem().string();
+        auto dir = p.parent_path() / stem;
+        auto path = dir / (submeshName + ".pxm");
 
-        if (!std::filesystem::is_directory(dir))
-            return result;
+        uint32_t size = 0;
 
-        for (const auto& file : std::filesystem::directory_iterator(dir))
+        FILE* f = fopen(path.string().c_str(), "rb");
+        if (f)
         {
-            if (file.path().extension() != ".pxm")
-                continue;
-
-            FILE* f = fopen(file.path().string().c_str(), "rb");
-            if (!f)
-                continue;
-
             fseek(f, 0, SEEK_END);
-            uint32_t size = (uint32_t)ftell(f);
+            size = (uint32_t)ftell(f);
             fseek(f, 0, SEEK_SET);
 
-            physx::PxU8* buffer = new physx::PxU8[size / sizeof(physx::PxU8)];
-            fread(buffer, sizeof(physx::PxU8), size / sizeof(physx::PxU8), f);
+            if (s_MeshDataBuffer)
+                delete[] s_MeshDataBuffer;
+
+            s_MeshDataBuffer = new physx::PxU8[size / sizeof(physx::PxU8)];
+            fread(s_MeshDataBuffer, sizeof(physx::PxU8), size / sizeof(physx::PxU8), f);
             fclose(f);
-
-            s_MeshDataBuffers.push_back(buffer);
-            result.push_back(physx::PxDefaultMemoryInputData(buffer, size));
         }
+        PR_CORE_ASSERT(size > 0, "Failed to deserialize mesh: {0}", path.string());
 
-        return result;
-    }
-
-    void ConvexMeshSerializer::CleanupDataBuffers()
-    {
-        for (auto buffer : s_MeshDataBuffers)
-            delete[] buffer;
-        s_MeshDataBuffers.clear();
+        return physx::PxDefaultMemoryInputData(s_MeshDataBuffer, size);
     }
 
 }

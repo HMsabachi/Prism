@@ -43,7 +43,7 @@ namespace Prism {
         indices[10] = { 3, 2, 6 };
         indices[11] = { 6, 7, 3 };
 
-        return Ref<Mesh>::Create(vertices, indices);
+        return Ref<Mesh>::Create(vertices, indices, glm::mat4(1.0F));
     }
 
     Ref<Mesh> MeshFactory::CreateSphere(float radius)
@@ -85,7 +85,7 @@ namespace Prism {
             }
         }
 
-        return Ref<Mesh>::Create(vertices, indices);
+        return Ref<Mesh>::Create(vertices, indices, glm::mat4(1.0F));
     }
 
     Ref<Mesh> MeshFactory::CreateCapsule(float radius, float height)
@@ -164,7 +164,7 @@ namespace Prism {
             }
         }
 
-        return Ref<Mesh>::Create(vertices, indices);
+        return Ref<Mesh>::Create(vertices, indices, glm::mat4(1.0F));
     }
 
 }

@@ -149,7 +149,7 @@ namespace Prism {
     public:
 
         Mesh(MeshData&& data);
-        Mesh(const std::vector<Vertex>& vertices, const std::vector<Index>& indices);
+        Mesh(const std::vector<Vertex>& vertices, const std::vector<Index>& indices, const glm::mat4& transform = glm::mat4(1.0F));
         ~Mesh();
 
         friend class ModelImporter;

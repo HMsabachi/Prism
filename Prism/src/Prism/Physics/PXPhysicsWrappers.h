@@ -34,13 +34,13 @@ namespace Prism
     public:
         static physx::PxScene* CreateScene();
 
-        static void AddBoxCollider(PhysicsActor& actor, const physx::PxMaterial& material);
-        static void AddSphereCollider(PhysicsActor& actor, const physx::PxMaterial& material);
-        static void AddCapsuleCollider(PhysicsActor& actor, const physx::PxMaterial& material);
-        static void AddMeshCollider(PhysicsActor& actor, const physx::PxMaterial& material);
+        static void AddBoxCollider(PhysicsActor& actor);
+        static void AddSphereCollider(PhysicsActor& actor);
+        static void AddCapsuleCollider(PhysicsActor& actor);
+        static void AddMeshCollider(PhysicsActor& actor);
 
-        static std::vector<physx::PxTriangleMesh*> CreateTriangleMesh(MeshColliderComponent& collider, bool invalidateOld = false);
-        static std::vector<physx::PxConvexMesh*> CreateConvexMesh(MeshColliderComponent& collider, bool invalidateOld = false);
+        static std::vector<physx::PxShape*> CreateConvexMesh(MeshColliderComponent& collider, const glm::vec3& size, bool invalidateOld = false);
+        static std::vector<physx::PxShape*> CreateTriangleMesh(MeshColliderComponent& collider, const glm::vec3& size, bool invalidateOld = false);
 
         static bool Raycast(const glm::vec3& origin, const glm::vec3& direction, float maxDistance, RaycastHit* hit);
         static bool OverlapBox(const glm::vec3& origin, const glm::vec3& halfSize, std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS>& buffer, uint32_t* count);

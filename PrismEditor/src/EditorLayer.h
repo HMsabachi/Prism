@@ -8,8 +8,6 @@
 #include "glm/gtc/type_ptr.hpp"
 
 
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtx/quaternion.hpp>
 
 #include <string>

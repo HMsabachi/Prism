@@ -51,12 +51,6 @@ namespace Prism {
 
     Ref<PhysicsActor> Physics::CreateActor(Entity e)
     {
-        if (!e.HasComponent<RigidBodyComponent>())
-        {
-            PR_CORE_WARN("Trying to create PhysX actor from a non-rigidbody actor!");
-            return nullptr;
-        }
-
         Ref<PhysicsActor> actor = Ref<PhysicsActor>::Create(e);
         s_Actors.push_back(actor);
         actor->Spawn();

@@ -44,8 +44,8 @@ namespace Prism
     }
 
 
-	void RenderSystem::OnImGuiRender()
-	{
+    void RenderSystem::OnImGuiRender()
+    {
         ImGui::Begin("Render System");
         if (UI::BeginTreeNode(TR("Shadows")))
         {
@@ -70,9 +70,9 @@ namespace Prism
             UI::EndTreeNode();
         }
         ImGui::End();
-	}
+    }
 
-	void RenderSystem::Render()
+    void RenderSystem::Render()
     {
         m_PendingSnapshot.DrawList.clear();
         m_PendingSnapshot.SelectedDrawList.clear();
@@ -123,6 +123,7 @@ namespace Prism
                 auto& skyLightComponent = lights.get<SkyLightComponent>(entity);
                 m_Config.SceneEnvironment = skyLightComponent.SceneEnvironment;
                 m_Config.SceneEnvironmentIntensity = skyLightComponent.Intensity;
+                m_Config.SkyboxLod = skyLightComponent.SkyboxLod;
                 if (m_Config.SceneEnvironment.RadianceMap)
                     m_Config.SkyboxMaterial->SetTexture("u_Texture", m_Config.SceneEnvironment.RadianceMap);
             }

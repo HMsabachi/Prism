@@ -266,6 +266,7 @@ namespace Prism {
         std::vector<Ref<Mesh>> ProcessedMeshes;
         bool IsConvex = false;
         bool IsTrigger = false;
+        bool OverrideMesh = false;
 
         MeshColliderComponent() = default;
         MeshColliderComponent(const MeshColliderComponent& other) = default;
@@ -297,6 +298,7 @@ namespace Prism {
         Environment SceneEnvironment;
         float Intensity = 1.0f;
         float Angle = 0.0f;
+        float SkyboxLod = 0.0f;
     };
 
 }

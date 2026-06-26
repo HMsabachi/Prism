@@ -12,6 +12,7 @@
 #include "Prism/Physics/PhysicsLayer.h"
 #include "Prism/Physics/PXPhysicsWrappers.h"
 #include "Prism/Utilities/FileSystem.h"
+#include "Prism/Scene/Components.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
@@ -360,10 +361,11 @@ namespace Prism {
             out << YAML::BeginMap; // MeshColliderComponent
 
             auto& mcComponent = entity.GetComponent<MeshColliderComponent>();
-            if (mcComponent.CollisionMesh)
+            if (mcComponent.OverrideMesh && mcComponent.CollisionMesh)
                 out << YAML::Key << "AssetPath" << YAML::Value << FileSystem::GetRelativePath(mcComponent.CollisionMesh->GetFilePath());
             out << YAML::Key << "IsConvex" << YAML::Value << mcComponent.IsConvex;
             out << YAML::Key << "IsTrigger" << YAML::Value << mcComponent.IsTrigger;
+            out << YAML::Key << "OverrideMesh" << YAML::Value << mcComponent.OverrideMesh;
 
             out << YAML::EndMap; // MeshColliderComponent
         }
@@ -550,6 +552,7 @@ namespace Prism {
             out << YAML::BeginMap;
             out << YAML::Key << "Intensity" << YAML::Value << slc.Intensity;
             out << YAML::Key << "Angle" << YAML::Value << slc.Angle;
+            out << YAML::Key << "SkyboxLod" << YAML::Value << slc.SkyboxLod;
             if (!slc.SceneEnvironment.FilePath.empty())
                 out << YAML::Key << "AssetPath" << YAML::Value << FileSystem::GetRelativePath(slc.SceneEnvironment.FilePath);
             out << YAML::EndMap;
@@ -641,6 +644,17 @@ namespace Prism {
         PR_CORE_ASSERT(false);
     }
 
+    static bool CheckPath(const std::string& path)
+    {
+        FILE* f = fopen(path.c_str(), "rb");
+        if (f)
+        {
+            fclose(f);
+            return true;
+        }
+        return false;
+    }
+
     bool SceneSerializer::Deserialize(const std::string& filepath)
     {
         std::ifstream stream(filepath);
@@ -705,6 +719,8 @@ namespace Prism {
                 }
             }
         }
+
+        std::vector<std::string> missingPaths;
 
         auto entities = data["Entities"];
         if (entities)
@@ -774,10 +790,19 @@ namespace Prism {
                     std::string meshPath = meshComponent["AssetPath"].as<std::string>();
                     if (!deserializedEntity.HasComponent<MeshRendererComponent>())
                     {
-                        auto result = ModelImporter::Import(meshPath);
-                        deserializedEntity.AddComponent<MeshRendererComponent>(result.Mesh);
-                        auto& comp = deserializedEntity.GetComponent<MeshRendererComponent>();
-                        comp.SetMaterials(result.Materials);
+                        if (!CheckPath(meshPath))
+                        {
+                            missingPaths.emplace_back(meshPath);
+                            Ref<Mesh> mesh;
+                            deserializedEntity.AddComponent<MeshRendererComponent>(mesh);
+                        }
+                        else
+                        {
+                            auto result = ModelImporter::Import(meshPath);
+                            deserializedEntity.AddComponent<MeshRendererComponent>(result.Mesh);
+                            auto& comp = deserializedEntity.GetComponent<MeshRendererComponent>();
+                            comp.SetMaterials(result.Materials);
+                        }
                     }
 
                     PR_CORE_INFO("  Mesh Asset Path: {0}", meshPath);
@@ -907,12 +932,40 @@ namespace Prism {
                 auto meshColliderComponent = entity["MeshColliderComponent"];
                 if (meshColliderComponent)
                 {
-                    std::string meshPath = meshColliderComponent["AssetPath"].as<std::string>();
-                    auto& component = deserializedEntity.AddComponent<MeshColliderComponent>(ModelImporter::Import(meshPath).Mesh);
-                    component.IsConvex = meshColliderComponent["IsConvex"] ? meshColliderComponent["IsConvex"].as<bool>() : false;
-                    component.IsTrigger = meshColliderComponent["IsTrigger"] ? meshColliderComponent["IsTrigger"].as<bool>() : false;
+                    Ref<Mesh> collisionMesh = deserializedEntity.HasComponent<MeshRendererComponent>() ? deserializedEntity.GetComponent<MeshRendererComponent>().Mesh : nullptr;
+                    bool overrideMesh = meshColliderComponent["OverrideMesh"] ? meshColliderComponent["OverrideMesh"].as<bool>() : false;
 
-                    PR_CORE_INFO("  MeshColliderComponent: AssetPath={0}", FileSystem::GetRelativePath(meshPath));
+                    if (overrideMesh)
+                    {
+                        std::string meshPath = meshColliderComponent["AssetPath"].as<std::string>();
+                        if (!CheckPath(meshPath))
+                        {
+                            missingPaths.emplace_back(meshPath);
+                        }
+                        else
+                        {
+                            collisionMesh = ModelImporter::Import(meshPath).Mesh;
+                        }
+                    }
+
+                    if (collisionMesh)
+                    {
+                        auto& component = deserializedEntity.AddComponent<MeshColliderComponent>(collisionMesh);
+                        component.IsConvex = meshColliderComponent["IsConvex"] ? meshColliderComponent["IsConvex"].as<bool>() : false;
+                        component.IsTrigger = meshColliderComponent["IsTrigger"] ? meshColliderComponent["IsTrigger"].as<bool>() : false;
+                        component.OverrideMesh = overrideMesh;
+
+                        if (component.IsConvex)
+                            PXPhysicsWrappers::CreateConvexMesh(component, deserializedEntity.Transformation().GetScale());
+                        else
+                            PXPhysicsWrappers::CreateTriangleMesh(component, deserializedEntity.Transformation().GetScale());
+
+                        PR_CORE_INFO("  MeshColliderComponent: IsConvex={0}, OverrideMesh={1}", component.IsConvex, overrideMesh);
+                    }
+                    else
+                    {
+                        PR_CORE_WARN("MeshColliderComponent in use without valid mesh!");
+                    }
                 }
 
                 // CSharpScriptComponent — 从 YAML 直接构建，OnConstruct 统一做 Meta 验证
@@ -1073,15 +1126,34 @@ namespace Prism {
                     auto& component = deserializedEntity.AddComponent<SkyLightComponent>();
                     component.Intensity = skyLightComponent["Intensity"] ? skyLightComponent["Intensity"].as<float>() : 1.0f;
                     component.Angle = skyLightComponent["Angle"] ? skyLightComponent["Angle"].as<float>() : 0.0f;
+                    component.SkyboxLod = skyLightComponent["SkyboxLod"] ? skyLightComponent["SkyboxLod"].as<float>() : 0.0f;
                     if (skyLightComponent["AssetPath"])
                     {
                         std::string envPath = skyLightComponent["AssetPath"].as<std::string>();
-                        component.SceneEnvironment = Environment::Load(envPath);
+                        if (!CheckPath(envPath))
+                        {
+                            missingPaths.emplace_back(envPath);
+                        }
+                        else
+                        {
+                            component.SceneEnvironment = Environment::Load(envPath);
+                        }
                     }
                     PR_CORE_INFO("  SkyLightComponent: Intensity={0}", component.Intensity);
                 }
             }
         }
+        if (missingPaths.size())
+        {
+            PR_CORE_ERROR("The following files could not be loaded:");
+            for (auto& path : missingPaths)
+            {
+                PR_CORE_ERROR("  {0}", path);
+            }
+
+            return false;
+        }
+
         return true;
     }
 

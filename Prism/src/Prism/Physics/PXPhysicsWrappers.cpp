@@ -192,7 +192,7 @@ namespace Prism {
         return s_Physics->createScene(sceneDesc);
     }
 
-    void PXPhysicsWrappers::AddBoxCollider(PhysicsActor& actor, const physx::PxMaterial& material)
+    void PXPhysicsWrappers::AddBoxCollider(PhysicsActor& actor)
     {
         auto& collider = actor.m_Entity.GetComponent<BoxColliderComponent>();
         glm::vec3 size = actor.m_Entity.Transformation().GetScale();
@@ -204,13 +204,13 @@ namespace Prism {
         if (size.z != 0.0F) colliderSize.z *= size.z;
 
         physx::PxBoxGeometry boxGeometry = physx::PxBoxGeometry(colliderSize.x / 2.0F, colliderSize.y / 2.0F, colliderSize.z / 2.0F);
-        physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor.m_ActorInternal, boxGeometry, material);
+        physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor.m_ActorInternal, boxGeometry, *actor.m_MaterialInternal);
         shape->setFlag(physx::PxShapeFlag::eSIMULATION_SHAPE, !collider.IsTrigger);
         shape->setFlag(physx::PxShapeFlag::eTRIGGER_SHAPE, collider.IsTrigger);
         shape->setLocalPose(ToPhysXTransform(glm::translate(glm::mat4(1.0F), collider.Offset)));
     }
 
-    void PXPhysicsWrappers::AddSphereCollider(PhysicsActor& actor, const physx::PxMaterial& material)
+    void PXPhysicsWrappers::AddSphereCollider(PhysicsActor& actor)
     {
         auto& collider = actor.m_Entity.GetComponent<SphereColliderComponent>();
 
@@ -219,12 +219,12 @@ namespace Prism {
         if (size.x != 0.0F) colliderRadius *= size.x;
 
         physx::PxSphereGeometry sphereGeometry = physx::PxSphereGeometry(colliderRadius);
-        physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor.m_ActorInternal, sphereGeometry, material);
+        physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor.m_ActorInternal, sphereGeometry, *actor.m_MaterialInternal);
         shape->setFlag(physx::PxShapeFlag::eSIMULATION_SHAPE, !collider.IsTrigger);
         shape->setFlag(physx::PxShapeFlag::eTRIGGER_SHAPE, collider.IsTrigger);
     }
 
-    void PXPhysicsWrappers::AddCapsuleCollider(PhysicsActor& actor, const physx::PxMaterial& material)
+    void PXPhysicsWrappers::AddCapsuleCollider(PhysicsActor& actor)
     {
         auto& collider = actor.m_Entity.GetComponent<CapsuleColliderComponent>();
 
@@ -232,19 +232,19 @@ namespace Prism {
         float colliderHeight = collider.Height;
         glm::vec3 size = actor.m_Entity.Transformation().GetScale();
         if (size.x != 0.0F)
-            colliderRadius *= (size.x / 2.0F);
+            colliderRadius *= size.x;
 
         if (size.y != 0.0F)
             colliderHeight *= size.y;
 
         physx::PxCapsuleGeometry capsuleGeometry = physx::PxCapsuleGeometry(colliderRadius, colliderHeight / 2.0F);
-        physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor.m_ActorInternal, capsuleGeometry, material);
+        physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor.m_ActorInternal, capsuleGeometry, *actor.m_MaterialInternal);
         shape->setFlag(physx::PxShapeFlag::eSIMULATION_SHAPE, !collider.IsTrigger);
         shape->setFlag(physx::PxShapeFlag::eTRIGGER_SHAPE, collider.IsTrigger);
         shape->setLocalPose(physx::PxTransform(physx::PxQuat(physx::PxHalfPi, physx::PxVec3(0, 0, 1))));
     }
 
-    void PXPhysicsWrappers::AddMeshCollider(PhysicsActor& actor, const physx::PxMaterial& material)
+    void PXPhysicsWrappers::AddMeshCollider(PhysicsActor& actor)
     {
         auto& collider = actor.m_Entity.GetComponent<MeshColliderComponent>();
         glm::vec3 size = actor.m_Entity.Transformation().GetScale();
@@ -264,36 +264,210 @@ namespace Prism {
 
         if (collider.IsConvex || forceConvex)
         {
-            std::vector<physx::PxConvexMesh*> meshes = CreateConvexMesh(collider);
+            std::vector<physx::PxShape*> shapes = CreateConvexMesh(collider, meshScale);
 
-            for (auto mesh : meshes)
+            for (auto shape : shapes)
             {
-                physx::PxConvexMeshGeometry convexGeometry = physx::PxConvexMeshGeometry(mesh, physx::PxMeshScale(ToPhysXVector(meshScale)));
-                convexGeometry.meshFlags = physx::PxConvexMeshGeometryFlag::eTIGHT_BOUNDS;
-                physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor.m_ActorInternal, convexGeometry, material);
-                if (!shape) { PR_CORE_ERROR("Failed to create convex mesh shape"); continue; }
+                physx::PxMaterial* materials[] = { actor.m_MaterialInternal };
+                shape->setMaterials(materials, 1);
                 shape->setFlag(physx::PxShapeFlag::eSIMULATION_SHAPE, !collider.IsTrigger);
                 shape->setFlag(physx::PxShapeFlag::eTRIGGER_SHAPE, collider.IsTrigger);
+                actor.AddCollisionShape(shape);
             }
         }
         else
         {
-            std::vector<physx::PxTriangleMesh*> meshes = CreateTriangleMesh(collider);
+            std::vector<physx::PxShape*> shapes = CreateTriangleMesh(collider, meshScale);
 
-            for (auto mesh : meshes)
+            for (auto shape : shapes)
             {
-                physx::PxTriangleMeshGeometry triGeometry = physx::PxTriangleMeshGeometry(mesh, physx::PxMeshScale(ToPhysXVector(meshScale)));
-                physx::PxShape* shape = physx::PxRigidActorExt::createExclusiveShape(*actor.m_ActorInternal, triGeometry, material);
-                if (!shape) { PR_CORE_ERROR("Failed to create triangle mesh shape"); continue; }
+                physx::PxMaterial* materials[] = { actor.m_MaterialInternal };
+                shape->setMaterials(materials, 1);
                 shape->setFlag(physx::PxShapeFlag::eSIMULATION_SHAPE, !collider.IsTrigger);
                 shape->setFlag(physx::PxShapeFlag::eTRIGGER_SHAPE, collider.IsTrigger);
+                actor.AddCollisionShape(shape);
             }
         }
     }
 
-    std::vector<physx::PxTriangleMesh*> PXPhysicsWrappers::CreateTriangleMesh(MeshColliderComponent& collider, bool invalidateOld)
+    std::vector<physx::PxShape*> PXPhysicsWrappers::CreateConvexMesh(MeshColliderComponent& collider, const glm::vec3& size, bool invalidateOld)
     {
-        std::vector<physx::PxTriangleMesh*> meshes;
+        std::vector<physx::PxShape*> shapes;
+        collider.ProcessedMeshes.clear();
+
+        if (invalidateOld)
+            ConvexMeshSerializer::DeleteIfSerializedAndInvalidated(collider.CollisionMesh->GetFilePath());
+
+        if (!ConvexMeshSerializer::IsSerialized(collider.CollisionMesh->GetFilePath()))
+        {
+            const std::vector<Vertex>& vertices = collider.CollisionMesh->GetStaticVertices();
+            const std::vector<Index>& indices = collider.CollisionMesh->GetIndices();
+
+            std::vector<glm::vec3> vertexPositions;
+            for (const auto& vertex : vertices)
+                vertexPositions.push_back(vertex.Position);
+
+            bool anySubmeshCooked = false;
+
+            for (const auto& submesh : collider.CollisionMesh->GetSubmeshes())
+            {
+                physx::PxConvexMeshDesc convexDesc;
+                convexDesc.points.count = submesh.VertexCount;
+                convexDesc.points.stride = sizeof(glm::vec3);
+                convexDesc.points.data = &vertexPositions[submesh.BaseVertex];
+                convexDesc.indices.count = submesh.IndexCount / 3;
+                convexDesc.indices.data = &indices[submesh.BaseIndex / 3];
+                convexDesc.indices.stride = sizeof(Index);
+                convexDesc.flags = physx::PxConvexFlag::eCOMPUTE_CONVEX | physx::PxConvexFlag::eSHIFT_VERTICES;
+
+                physx::PxDefaultMemoryOutputStream buf;
+                physx::PxCookingParams params(s_Physics->getTolerancesScale());
+                physx::PxConvexMeshCookingResult::Enum result{};
+                if (!PxCookConvexMesh(params, convexDesc, buf, &result))
+                {
+                    PR_CORE_WARN("Failed to cook convex submesh: {0}, will fallback to whole mesh", submesh.MeshName);
+                    continue;
+                }
+
+                anySubmeshCooked = true;
+                ConvexMeshSerializer::SerializeMesh(collider.CollisionMesh->GetFilePath(), buf, submesh.MeshName);
+                physx::PxDefaultMemoryInputData input(buf.getData(), buf.getSize());
+                physx::PxConvexMesh* convexMesh = s_Physics->createConvexMesh(input);
+                if (!convexMesh) { PR_CORE_ERROR("Failed to create convex mesh: {0}", submesh.MeshName); continue; }
+                physx::PxConvexMeshGeometry convexGeometry = physx::PxConvexMeshGeometry(convexMesh, physx::PxMeshScale(ToPhysXVector(size)));
+                convexGeometry.meshFlags = physx::PxConvexMeshGeometryFlag::eTIGHT_BOUNDS;
+                physx::PxMaterial* material = s_Physics->createMaterial(0, 0, 0); // Dummy material, replaced at runtime
+                physx::PxShape* shape = s_Physics->createShape(convexGeometry, *material, true);
+                if (!shape) { PR_CORE_ERROR("Failed to create convex mesh shape: {0}", submesh.MeshName); continue; }
+                shape->setLocalPose(ToPhysXTransform(submesh.Transform));
+                shapes.push_back(shape);
+            }
+
+            // Fallback: cook all vertices as a single convex hull
+            if (!anySubmeshCooked)
+            {
+                PR_CORE_INFO("All submeshes failed, cooking whole mesh as single convex hull");
+
+                physx::PxConvexMeshDesc convexDesc;
+                convexDesc.points.count = (uint32_t)vertexPositions.size();
+                convexDesc.points.stride = sizeof(glm::vec3);
+                convexDesc.points.data = vertexPositions.data();
+                convexDesc.flags = physx::PxConvexFlag::eCOMPUTE_CONVEX | physx::PxConvexFlag::eSHIFT_VERTICES;
+
+                physx::PxDefaultMemoryOutputStream buf;
+                physx::PxCookingParams params(s_Physics->getTolerancesScale());
+                physx::PxConvexMeshCookingResult::Enum result{};
+                if (PxCookConvexMesh(params, convexDesc, buf, &result))
+                {
+                    ConvexMeshSerializer::SerializeMesh(collider.CollisionMesh->GetFilePath(), buf, "whole");
+                    physx::PxDefaultMemoryInputData input(buf.getData(), buf.getSize());
+                    physx::PxConvexMesh* convexMesh = s_Physics->createConvexMesh(input);
+                    if (convexMesh)
+                    {
+                        physx::PxConvexMeshGeometry convexGeometry = physx::PxConvexMeshGeometry(convexMesh, physx::PxMeshScale(ToPhysXVector(size)));
+                        convexGeometry.meshFlags = physx::PxConvexMeshGeometryFlag::eTIGHT_BOUNDS;
+                        physx::PxMaterial* material = s_Physics->createMaterial(0, 0, 0);
+                        physx::PxShape* shape = s_Physics->createShape(convexGeometry, *material, true);
+                        if (shape)
+                        {
+                            shape->setLocalPose(ToPhysXTransform(glm::mat4(1.0F)));
+                            shapes.push_back(shape);
+                        }
+                        else
+                        {
+                            PR_CORE_ERROR("Failed to create whole convex shape");
+                        }
+                    }
+                    else
+                    {
+                        PR_CORE_ERROR("Failed to create whole convex mesh");
+                    }
+                }
+                else
+                {
+                    PR_CORE_ERROR("Failed to cook whole convex mesh for {0}", collider.CollisionMesh->GetFilePath());
+                }
+            }
+        }
+        else
+        {
+            for (const auto& submesh : collider.CollisionMesh->GetSubmeshes())
+            {
+                physx::PxDefaultMemoryInputData meshData = ConvexMeshSerializer::DeserializeMesh(collider.CollisionMesh->GetFilePath(), submesh.MeshName);
+                physx::PxConvexMesh* convexMesh = s_Physics->createConvexMesh(meshData);
+                if (!convexMesh) continue;
+                physx::PxConvexMeshGeometry convexGeometry = physx::PxConvexMeshGeometry(convexMesh, physx::PxMeshScale(ToPhysXVector(size)));
+                convexGeometry.meshFlags = physx::PxConvexMeshGeometryFlag::eTIGHT_BOUNDS;
+                physx::PxMaterial* material = s_Physics->createMaterial(0, 0, 0);
+                physx::PxShape* shape = s_Physics->createShape(convexGeometry, *material, true);
+                if (!shape) continue;
+                shape->setLocalPose(ToPhysXTransform(submesh.Transform));
+                shapes.push_back(shape);
+            }
+
+            if (shapes.empty())
+            {
+                PR_CORE_WARN("Cached convex mesh invalid for {0}, rebuilding", collider.CollisionMesh->GetFilePath());
+                ConvexMeshSerializer::DeleteIfSerializedAndInvalidated(collider.CollisionMesh->GetFilePath());
+                return CreateConvexMesh(collider, size, false);
+            }
+        }
+
+        if (collider.ProcessedMeshes.size() <= 0)
+        {
+            for (auto shape : shapes)
+            {
+                physx::PxGeometryHolder holder = shape->getGeometry();
+                physx::PxConvexMeshGeometry& convexGeometry = holder.convexMesh();
+                physx::PxConvexMesh* mesh = convexGeometry.convexMesh;
+
+                const uint32_t nbPolygons = mesh->getNbPolygons();
+                const physx::PxVec3* convexVertices = mesh->getVertices();
+                const physx::PxU8* convexIndices = mesh->getIndexBuffer();
+
+                uint32_t vertCounter = 0;
+                uint32_t indexCounter = 0;
+
+                std::vector<Vertex> collisionVertices;
+                std::vector<Index> collisionIndices;
+
+                for (uint32_t i = 0; i < nbPolygons; i++)
+                {
+                    physx::PxHullPolygon polygon;
+                    mesh->getPolygonData(i, polygon);
+
+                    uint32_t vI0 = vertCounter;
+
+                    for (uint32_t vI = 0; vI < polygon.mNbVerts; vI++)
+                    {
+                        Vertex v;
+                        v.Position = glm::rotate(FromPhysXVector(convexVertices[convexIndices[polygon.mIndexBase + vI]]), glm::radians(90.0F), glm::vec3(1, 0, 0));
+                        collisionVertices.push_back(v);
+                        vertCounter++;
+                    }
+
+                    for (uint32_t vI = 1; vI < uint32_t(polygon.mNbVerts) - 1; vI++)
+                    {
+                        Index index;
+                        index.V1 = uint32_t(vI0);
+                        index.V2 = uint32_t(vI0 + vI + 1);
+                        index.V3 = uint32_t(vI0 + vI);
+                        collisionIndices.push_back(index);
+                        indexCounter++;
+                    }
+                }
+
+                collider.ProcessedMeshes.push_back(Ref<Mesh>::Create(collisionVertices, collisionIndices, FromPhysXTransform(shape->getLocalPose())));
+            }
+        }
+
+        return shapes;
+    }
+
+    std::vector<physx::PxShape*> PXPhysicsWrappers::CreateTriangleMesh(MeshColliderComponent& collider, const glm::vec3& size, bool invalidateOld)
+    {
+        std::vector<physx::PxShape*> shapes;
+        collider.ProcessedMeshes.clear();
 
         if (invalidateOld)
             ConvexMeshSerializer::DeleteIfSerializedAndInvalidated(collider.CollisionMesh->GetFilePath());
@@ -326,35 +500,49 @@ namespace Prism {
                 }
 
                 ConvexMeshSerializer::SerializeMesh(collider.CollisionMesh->GetFilePath(), buf, submesh.MeshName);
+
                 physx::PxDefaultMemoryInputData input(buf.getData(), buf.getSize());
-                meshes.push_back(s_Physics->createTriangleMesh(input));
+                physx::PxTriangleMesh* trimesh = s_Physics->createTriangleMesh(input);
+                if (!trimesh) { PR_CORE_ERROR("Failed to create triangle mesh: {0}", submesh.MeshName); continue; }
+                physx::PxTriangleMeshGeometry triangleGeometry = physx::PxTriangleMeshGeometry(trimesh, physx::PxMeshScale(ToPhysXVector(size)));
+                physx::PxMaterial* material = s_Physics->createMaterial(0, 0, 0); // Dummy material, replaced at runtime
+                physx::PxShape* shape = s_Physics->createShape(triangleGeometry, *material, true);
+                if (!shape) { PR_CORE_ERROR("Failed to create triangle mesh shape: {0}", submesh.MeshName); continue; }
+                shape->setLocalPose(ToPhysXTransform(submesh.Transform));
+                shapes.push_back(shape);
             }
         }
         else
         {
-            std::vector<physx::PxDefaultMemoryInputData> serializedMeshes = ConvexMeshSerializer::DeserializeMesh(collider.CollisionMesh->GetFilePath());
-
-            for (auto& meshData : serializedMeshes)
+            for (const auto& submesh : collider.CollisionMesh->GetSubmeshes())
             {
-                physx::PxTriangleMesh* m = s_Physics->createTriangleMesh(meshData);
-                if (m)
-                    meshes.push_back(m);
+                physx::PxDefaultMemoryInputData meshData = ConvexMeshSerializer::DeserializeMesh(collider.CollisionMesh->GetFilePath(), submesh.MeshName);
+                physx::PxTriangleMesh* trimesh = s_Physics->createTriangleMesh(meshData);
+                if (!trimesh) continue;
+                physx::PxTriangleMeshGeometry triangleGeometry = physx::PxTriangleMeshGeometry(trimesh, physx::PxMeshScale(ToPhysXVector(size)));
+                physx::PxMaterial* material = s_Physics->createMaterial(0, 0, 0);
+                physx::PxShape* shape = s_Physics->createShape(triangleGeometry, *material, true);
+                if (!shape) continue;
+                shape->setLocalPose(ToPhysXTransform(submesh.Transform));
+                shapes.push_back(shape);
             }
 
-            ConvexMeshSerializer::CleanupDataBuffers();
-
-            if (meshes.empty() && !serializedMeshes.empty())
+            if (shapes.empty())
             {
                 PR_CORE_WARN("Cached triangle mesh invalid for {0}, rebuilding", collider.CollisionMesh->GetFilePath());
                 ConvexMeshSerializer::DeleteIfSerializedAndInvalidated(collider.CollisionMesh->GetFilePath());
-                return CreateTriangleMesh(collider, false);
+                return CreateTriangleMesh(collider, size, false);
             }
         }
 
         if (collider.ProcessedMeshes.size() <= 0)
         {
-            for (auto mesh : meshes)
+            for (auto shape : shapes)
             {
+                physx::PxGeometryHolder holder = shape->getGeometry();
+                physx::PxTriangleMeshGeometry& triangleGeometry = holder.triangleMesh();
+                physx::PxTriangleMesh* mesh = triangleGeometry.triangleMesh;
+
                 const uint32_t nbVerts = mesh->getNbVertices();
                 const physx::PxVec3* triVertices = mesh->getVertices();
                 const uint32_t nbTriangles = mesh->getNbTriangles();
@@ -379,144 +567,11 @@ namespace Prism {
                     inds.push_back(index);
                 }
 
-                collider.ProcessedMeshes.push_back(Ref<Mesh>::Create(verts, inds));
+                collider.ProcessedMeshes.push_back(Ref<Mesh>::Create(verts, inds, FromPhysXTransform(shape->getLocalPose())));
             }
         }
 
-        return meshes;
-    }
-
-    std::vector<physx::PxConvexMesh*> PXPhysicsWrappers::CreateConvexMesh(MeshColliderComponent& collider, bool invalidateOld)
-    {
-        std::vector<physx::PxConvexMesh*> meshes;
-
-        if (invalidateOld)
-            ConvexMeshSerializer::DeleteIfSerializedAndInvalidated(collider.CollisionMesh->GetFilePath());
-
-        if (!ConvexMeshSerializer::IsSerialized(collider.CollisionMesh->GetFilePath()))
-        {
-            const std::vector<Vertex>& vertices = collider.CollisionMesh->GetStaticVertices();
-            const std::vector<Index>& indices = collider.CollisionMesh->GetIndices();
-            std::vector<glm::vec3> vertexPositions;
-            for (const auto& vertex : vertices)
-                vertexPositions.push_back(vertex.Position);
-
-            bool anySubmeshCooked = false;
-
-            for (const auto& submesh : collider.CollisionMesh->GetSubmeshes())
-            {
-                physx::PxConvexMeshDesc convexDesc;
-                convexDesc.points.count = submesh.VertexCount;
-                convexDesc.points.stride = sizeof(glm::vec3);
-                convexDesc.points.data = &vertexPositions[submesh.BaseVertex];
-                convexDesc.flags = physx::PxConvexFlag::eCOMPUTE_CONVEX | physx::PxConvexFlag::eCHECK_ZERO_AREA_TRIANGLES | physx::PxConvexFlag::eSHIFT_VERTICES;
-
-                physx::PxDefaultMemoryOutputStream buf;
-                physx::PxCookingParams params(s_Physics->getTolerancesScale());
-                physx::PxConvexMeshCookingResult::Enum result{};
-                if (!PxCookConvexMesh(params, convexDesc, buf, &result))
-                {
-                    PR_CORE_WARN("Failed to cook convex submesh: {0}, will fallback to whole mesh", submesh.MeshName);
-                    continue;
-                }
-
-                anySubmeshCooked = true;
-                ConvexMeshSerializer::SerializeMesh(collider.CollisionMesh->GetFilePath(), buf, submesh.MeshName);
-                physx::PxDefaultMemoryInputData input(buf.getData(), buf.getSize());
-                meshes.push_back(s_Physics->createConvexMesh(input));
-            }
-
-            // Fallback: cook all vertices as a single convex hull
-            if (!anySubmeshCooked)
-            {
-                PR_CORE_INFO("All submeshes failed, cooking whole mesh as single convex hull");
-
-                physx::PxConvexMeshDesc convexDesc;
-                convexDesc.points.count = (uint32_t)vertexPositions.size();
-                convexDesc.points.stride = sizeof(glm::vec3);
-                convexDesc.points.data = vertexPositions.data();
-                convexDesc.flags = physx::PxConvexFlag::eCOMPUTE_CONVEX;
-
-                physx::PxDefaultMemoryOutputStream buf;
-                physx::PxCookingParams params(s_Physics->getTolerancesScale());
-                physx::PxConvexMeshCookingResult::Enum result{};
-                if (PxCookConvexMesh(params, convexDesc, buf, &result))
-                {
-                    ConvexMeshSerializer::SerializeMesh(collider.CollisionMesh->GetFilePath(), buf, "whole");
-                    physx::PxDefaultMemoryInputData input(buf.getData(), buf.getSize());
-                    meshes.push_back(s_Physics->createConvexMesh(input));
-                }
-                else
-                {
-                    PR_CORE_ERROR("Failed to cook whole convex mesh for {0}", collider.CollisionMesh->GetFilePath());
-                }
-            }
-        }
-        else
-        {
-            std::vector<physx::PxDefaultMemoryInputData> serializedMeshes = ConvexMeshSerializer::DeserializeMesh(collider.CollisionMesh->GetFilePath());
-
-            for (auto& meshData : serializedMeshes)
-            {
-                physx::PxConvexMesh* m = s_Physics->createConvexMesh(meshData);
-                if (m)
-                    meshes.push_back(m);
-            }
-
-            ConvexMeshSerializer::CleanupDataBuffers();
-
-            // Cached data was invalid (e.g. triangle mesh stored as convex), rebuild
-            if (meshes.empty() && !serializedMeshes.empty())
-            {
-                PR_CORE_WARN("Cached convex mesh invalid for {0}, rebuilding", collider.CollisionMesh->GetFilePath());
-                ConvexMeshSerializer::DeleteIfSerializedAndInvalidated(collider.CollisionMesh->GetFilePath());
-                return CreateConvexMesh(collider, false);
-            }
-        }
-
-        if (collider.ProcessedMeshes.size() <= 0)
-        {
-            for (auto mesh : meshes)
-            {
-                const uint32_t nbPolygons = mesh->getNbPolygons();
-                const physx::PxVec3* convexVertices = mesh->getVertices();
-                const physx::PxU8* convexIndices = mesh->getIndexBuffer();
-
-                uint32_t vertCounter = 0;
-
-                std::vector<Vertex> collisionVertices;
-                std::vector<Index> collisionIndices;
-
-                for (uint32_t i = 0; i < nbPolygons; i++)
-                {
-                    physx::PxHullPolygon polygon;
-                    mesh->getPolygonData(i, polygon);
-
-                    uint32_t vI0 = vertCounter;
-
-                    for (uint32_t vI = 0; vI < polygon.mNbVerts; vI++)
-                    {
-                        Vertex v;
-                        v.Position = glm::rotate(FromPhysXVector(convexVertices[convexIndices[polygon.mIndexBase + vI]]), glm::radians(90.0F), glm::vec3(1, 0, 0));
-                        collisionVertices.push_back(v);
-                        vertCounter++;
-                    }
-
-                    for (uint32_t vI = 1; vI < uint32_t(polygon.mNbVerts) - 1; vI++)
-                    {
-                        Index index;
-                        index.V1 = uint32_t(vI0);
-                        index.V2 = uint32_t(vI0 + vI + 1);
-                        index.V3 = uint32_t(vI0 + vI);
-                        collisionIndices.push_back(index);
-                    }
-                }
-
-                collider.ProcessedMeshes.push_back(Ref<Mesh>::Create(collisionVertices, collisionIndices));
-            }
-        }
-
-        return meshes;
+        return shapes;
     }
 
     bool PXPhysicsWrappers::Raycast(const glm::vec3& origin, const glm::vec3& direction, float maxDistance, RaycastHit* hit)

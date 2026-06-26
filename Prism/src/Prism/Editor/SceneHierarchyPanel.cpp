@@ -8,6 +8,8 @@
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/MeshFactory.h"
 #include "Prism/Asset/ModelImporter.h"
+#include "Prism/Physics/Physics.h"
+#include "Prism/Physics/PhysicsActor.h"
 #include "Prism/Physics/PXPhysicsWrappers.h"
 #include "Prism/Physics/PhysicsLayer.h"
 #include "Prism/Utilities/FileSystem.h"
@@ -17,6 +19,7 @@
 #include "Scripting/Python/PythonScriptMetaRegistry.h"
 #include "Scripting/Python/PythonScriptEngine.h"
 #include "Prism/Scene/Systems/ScriptSystem.h"
+#include "Prism/Scene/Components.h"
 #include <assimp/scene.h>
 
 #include <glm/glm.hpp>
@@ -410,7 +413,16 @@ namespace Prism {
             {
                 if (ImGui::Button(TR("Mesh Collider")))
                 {
-                    entity.AddComponent<MeshColliderComponent>();
+                    MeshColliderComponent& component = entity.AddComponent<MeshColliderComponent>();
+                    if (entity.HasComponent<MeshRendererComponent>())
+                    {
+                        auto mesh = entity.GetComponent<MeshRendererComponent>().Mesh;
+                        if (mesh)
+                        {
+                            component.CollisionMesh = mesh;
+                            PXPhysicsWrappers::CreateTriangleMesh(component, entity.Transformation().GetScale());
+                        }
+                    }
                     ImGui::CloseCurrentPopup();
                 }
             }
@@ -571,6 +583,8 @@ namespace Prism {
 
                 UI::BeginPropertyGrid();
                 UI::Property(TR("Intensity"), component.Intensity, 0.01f, 0.0f, 5.0f);
+                UI::Property(TR("Angle"), component.Angle, 0.01f, 0.0f, 360.0f);
+                UI::Property(TR("Skybox LOD"), component.SkyboxLod, 0.01f, 0.0f, 10.0f);
                 UI::EndPropertyGrid();
             });
 
@@ -747,46 +761,67 @@ namespace Prism {
                 UI::EndPropertyGrid();
             });
 
-        DrawComponent<MeshColliderComponent>(TR("Mesh Collider"), entity, [](auto& component)
+        DrawComponent<MeshColliderComponent>(TR("Mesh Collider"), entity, [&](auto& component)
             {
-                UI::BeginPropertyGrid();
-                ImGui::Columns(3);
-                ImGui::SetColumnWidth(0, 100);
-                ImGui::SetColumnWidth(1, 300);
-                ImGui::SetColumnWidth(2, 40);
-                ImGui::Text("File Path");
-                ImGui::NextColumn();
-                ImGui::PushItemWidth(-1);
-                if (component.CollisionMesh)
-                    ImGui::InputText("##meshcolliderfilepath", (char*)component.CollisionMesh->GetFilePath().c_str(), 256, ImGuiInputTextFlags_ReadOnly);
-                else
-                    ImGui::InputText("##meshcolliderfilepath", (char*)"Null", 256, ImGuiInputTextFlags_ReadOnly);
-                ImGui::PopItemWidth();
-                ImGui::NextColumn();
-                if (ImGui::Button("...##openmeshcollider"))
+                if (component.OverrideMesh)
                 {
-                    std::string file = Application::Get().OpenFile();
-                    if (!file.empty())
+                    ImGui::Columns(3);
+                    ImGui::SetColumnWidth(0, 100);
+                    ImGui::SetColumnWidth(1, 300);
+                    ImGui::SetColumnWidth(2, 40);
+                    ImGui::Text("File Path");
+                    ImGui::NextColumn();
+                    ImGui::PushItemWidth(-1);
+                    if (component.CollisionMesh)
+                        ImGui::InputText("##meshcolliderfilepath", (char*)component.CollisionMesh->GetFilePath().c_str(), 256, ImGuiInputTextFlags_ReadOnly);
+                    else
+                        ImGui::InputText("##meshcolliderfilepath", (char*)"Null", 256, ImGuiInputTextFlags_ReadOnly);
+                    ImGui::PopItemWidth();
+                    ImGui::NextColumn();
+                    if (ImGui::Button("...##openmeshcollider"))
                     {
-                        component.CollisionMesh = ModelImporter::Import(FileSystem::GetRelativePath(file)).Mesh;
-                        if (component.IsConvex)
-                            PXPhysicsWrappers::CreateConvexMesh(component, true);
-                        else
-                            PXPhysicsWrappers::CreateTriangleMesh(component, true);
+                        std::string file = Application::Get().OpenFile();
+                        if (!file.empty())
+                        {
+                            auto importResult = ModelImporter::Import(FileSystem::GetRelativePath(file));
+                            if (importResult.Mesh)
+                            {
+                                component.CollisionMesh = importResult.Mesh;
+                                if (component.IsConvex)
+                                    PXPhysicsWrappers::CreateConvexMesh(component, entity.Transformation().GetScale(), true);
+                                else
+                                    PXPhysicsWrappers::CreateTriangleMesh(component, entity.Transformation().GetScale(), true);
+                            }
+                        }
                     }
+                    ImGui::Columns(1);
                 }
-                ImGui::NextColumn();
-                ImGui::Columns(1);
 
+                UI::BeginPropertyGrid();
                 if (UI::Property(TR("Is Convex"), component.IsConvex))
                 {
                     component.ProcessedMeshes.clear();
                     if (component.IsConvex)
-                        PXPhysicsWrappers::CreateConvexMesh(component, true);
+                        PXPhysicsWrappers::CreateConvexMesh(component, entity.Transformation().GetScale(), true);
                     else
-                        PXPhysicsWrappers::CreateTriangleMesh(component, true);
+                        PXPhysicsWrappers::CreateTriangleMesh(component, entity.Transformation().GetScale(), true);
                 }
                 UI::Property(TR("Is Trigger"), component.IsTrigger);
+                if (UI::Property(TR("Override Mesh"), component.OverrideMesh))
+                {
+                    if (!component.OverrideMesh && entity.HasComponent<MeshRendererComponent>())
+                    {
+                        auto mesh = entity.GetComponent<MeshRendererComponent>().Mesh;
+                        if (mesh)
+                        {
+                            component.CollisionMesh = mesh;
+                            if (component.IsConvex)
+                                PXPhysicsWrappers::CreateConvexMesh(component, entity.Transformation().GetScale(), true);
+                            else
+                                PXPhysicsWrappers::CreateTriangleMesh(component, entity.Transformation().GetScale(), true);
+                        }
+                    }
+                }
                 UI::EndPropertyGrid();
             });
 

@@ -7,7 +7,11 @@
 namespace physx
 {
     class PxRigidActor;
+    class PxShape;
+    class PxMaterial;
 }
+
+#include <unordered_map>
 
 namespace Prism {
 
@@ -41,6 +45,8 @@ namespace Prism {
 
         Entity& GetEntity() { return m_Entity; }
 
+        void AddCollisionShape(physx::PxShape* shape);
+
     private:
         void Initialize();
         void Spawn();
@@ -53,6 +59,9 @@ namespace Prism {
         PhysicsMaterialComponent m_Material;
 
         physx::PxRigidActor* m_ActorInternal;
+        std::unordered_map<int, std::vector<physx::PxShape*>> m_Shapes;
+
+        physx::PxMaterial* m_MaterialInternal;
 
         friend class Physics;
         friend class PXPhysicsWrappers;

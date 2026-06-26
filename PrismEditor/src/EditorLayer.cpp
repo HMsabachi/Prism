@@ -14,6 +14,7 @@ PR_WARNING_DISABLE(4312)
 
 #include "Prism/Physics/Physics.h"
 #include "Prism/Editor/PhysicsSettingsWindow.h"
+#include "Prism/Math/Math.h"
 
 #include <filesystem>
 
@@ -446,50 +447,8 @@ namespace Prism
             ImGui::Begin("Model");
 
             ImGui::Begin("Environment");
-            if (ImGui::Button(TR("Load Environment Map")))
-            {
-                std::string filename = Application::Get().OpenFile("*.hdr");
-                if (filename != "")
-                {
-                    auto& cfg = m_EditorScene->GetSystem<RenderSystem>()->GetConfig();
-                    cfg.SceneEnvironment = Environment::Load(filename);
-                }
-            }
-
-            if (auto* rs = m_EditorScene->GetSystem<RenderSystem>())
-            {
-                auto& cfg = rs->GetConfig();
-                ImGui::SliderFloat(TR("Skybox LOD"), &cfg.SkyboxLod, 0.0f, 11.0f);
-                ImGui::Columns(2);
-                ImGui::AlignTextToFramePadding();
-
-                // Shadow
-                {
-                    bool shadowEnabled = cfg.ShadowsEnabled;
-                    if (Property(TR("Shadows"), shadowEnabled))
-                        cfg.ShadowsEnabled = shadowEnabled;
-
-                    if (shadowEnabled)
-                    {
-                        float shadowBias = cfg.ShadowBias;
-                        if (Property(TR("Shadow Bias"), shadowBias, 0.0f, 0.05f, PropertyFlag::SliderProperty))
-                            cfg.ShadowBias = shadowBias;
-
-                        float shadowNormalBias = cfg.ShadowNormalBias;
-                        if (Property(TR("Normal Bias"), shadowNormalBias, 0.0f, 1.0f, PropertyFlag::SliderProperty))
-                            cfg.ShadowNormalBias = shadowNormalBias;
-
-                        float cascadeCount = (float)cfg.CascadeCount;
-                        if (Property(TR("Cascades"), cascadeCount, 1.0f, 4.0f, PropertyFlag::SliderProperty))
-                            cfg.CascadeCount = (uint32_t)cascadeCount;
-
-                        float maxDist = cfg.MaxShadowDistance;
-                        if (Property(TR("Max Distance"), maxDist, 10.0f, 500.0f, PropertyFlag::SliderProperty))
-                            cfg.MaxShadowDistance = maxDist;
-                    }
-                }
-            }
-
+            ImGui::Columns(2);
+            ImGui::AlignTextToFramePadding();
             {
                 auto* scene = m_ActiveScene.Raw();
                 if (auto* p2d = scene ? scene->GetSystem<Physics2DSystem>() : nullptr)
@@ -644,15 +603,11 @@ namespace Prism
                         nullptr,
                         snap ? snapValues : nullptr);
 
-                    glm::vec3 skew;
-                    glm::vec4 perspective;
-                    glm::vec3 pos, scl;
-                    glm::quat rot;
-                    glm::decompose(transformMatrix, scl, rot, pos, skew, perspective);
-                    entityTransform.SetPosition(pos);
-                    entityTransform.SetRotation(rot);
-                    entityTransform.SetScale(scl);
-                    entityTransform.SetScale(scl);
+                    glm::vec3 translation, rotation, scale;
+                    Math::DecomposeTransform(transformMatrix, translation, rotation, scale);
+                    entityTransform.SetPosition(translation);
+                    entityTransform.SetRotation(glm::degrees(rotation));
+                    entityTransform.SetScale(scale);
                 }
                 else
                 {
