@@ -1,9 +1,12 @@
-#pragma once
+﻿#pragma once
 
 #include "Prism/Core/Core.h"
+#include "Prism/Core/Ref.h"
 #include "Prism/Scene/Entity.h"
 
 namespace Prism {
+
+    class PhysicsActor;
 
     enum class ForceMode : uint16_t
     {
@@ -67,9 +70,10 @@ namespace Prism {
         static void Init();
         static void Shutdown();
 
-        static void ExpandEntityBuffer(uint32_t entityCount);
         static void CreateScene();
-        static void CreateActor(Entity e);
+        static Ref<PhysicsActor> CreateActor(Entity e);
+
+        static Ref<PhysicsActor> GetActorForEntity(Entity entity);
 
         static PhysicsSettings& GetSettings();
 
@@ -81,6 +85,8 @@ namespace Prism {
         static void DestroyScene();
 
         static void* GetPhysicsScene();
+
+        static std::vector<Ref<PhysicsActor>>& GetActors();
 
         using CollisionCallback = std::function<void(Entity)>;
         using TriggerCallback = std::function<void(Entity)>;

@@ -7,6 +7,7 @@
 #include "Prism/Core/Input.h"
 #include "Prism/Physics/PXPhysicsWrappers.h"
 #include "Prism/Physics/Physics.h"
+#include "Prism/Physics/PhysicsActor.h"
 #include "Prism/Scene/Scene.h"
 #include "Prism/Scene/Entity.h"
 #include "Prism/Scene/Components.h"
@@ -443,76 +444,53 @@ namespace Prism {
         void Prism_RigidBodyComponent_AddForce(uint64_t entityID, glm::vec3* force, int32_t forceMode)
         {
             Entity entity = GetEntityFromEntityID(entityID);
-            auto& rb = entity.GetComponent<RigidBodyComponent>();
 
-            if (rb.IsKinematic)
+            if (!entity.HasComponent<RigidBodyComponent>())
             {
-                PR_CORE_WARN("Cannot add a force to a kinematic actor! EntityID({0})", entityID);
+                PR_CORE_WARN("Trying to add force to entity without RigidBodyComponent! EntityID({0})", entityID);
                 return;
             }
 
-            physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
-            physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
-            PR_CORE_ASSERT(dynamicActor);
-            dynamicActor->addForce(physx::PxVec3(force->x, force->y, force->z), (physx::PxForceMode::Enum)forceMode);
+            Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+            actor->AddForce(*force, (ForceMode)forceMode);
         }
 
         void Prism_RigidBodyComponent_AddTorque(uint64_t entityID, glm::vec3* torque, int32_t forceMode)
         {
             Entity entity = GetEntityFromEntityID(entityID);
-            auto& rb = entity.GetComponent<RigidBodyComponent>();
 
-            if (rb.IsKinematic)
+            if (!entity.HasComponent<RigidBodyComponent>())
             {
-                PR_CORE_WARN("Cannot add torque to a kinematic actor! EntityID({0})", entityID);
+                PR_CORE_WARN("Trying to add torque to entity without RigidBodyComponent! EntityID({0})", entityID);
                 return;
             }
 
-            physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
-            physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
-            PR_CORE_ASSERT(dynamicActor);
-            dynamicActor->addTorque(physx::PxVec3(torque->x, torque->y, torque->z), (physx::PxForceMode::Enum)forceMode);
+            Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+            actor->AddTorque(*torque, (ForceMode)forceMode);
         }
 
         void Prism_RigidBodyComponent_GetLinearVelocity(uint64_t entityID, glm::vec3* outVelocity)
         {
             Entity entity = GetEntityFromEntityID(entityID);
-            auto& rb = entity.GetComponent<RigidBodyComponent>();
-            physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
-            physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
-            PR_CORE_ASSERT(dynamicActor);
-            physx::PxVec3 velocity = dynamicActor->getLinearVelocity();
-            *outVelocity = glm::vec3(velocity.x, velocity.y, velocity.z);
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
+            Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+            *outVelocity = actor->GetLinearVelocity();
         }
 
         void Prism_RigidBodyComponent_SetLinearVelocity(uint64_t entityID, glm::vec3* velocity)
         {
             Entity entity = GetEntityFromEntityID(entityID);
-            auto& rb = entity.GetComponent<RigidBodyComponent>();
-            physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
-            physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
-            PR_CORE_ASSERT(dynamicActor);
-            physx::PxVec3 pxVelocity(velocity->x, velocity->y, velocity->z);
-            if (!pxVelocity.isFinite())
-                return;
-            dynamicActor->setLinearVelocity(pxVelocity);
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
+            Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+            actor->SetLinearVelocity(*velocity);
         }
 
         void Prism_RigidBodyComponent_Rotate(uint64_t entityID, glm::vec3* rotation)
         {
             Entity entity = GetEntityFromEntityID(entityID);
-            auto& rb = entity.GetComponent<RigidBodyComponent>();
-
-            physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
-            physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
-            PR_CORE_ASSERT(dynamicActor);
-
-            physx::PxTransform transform = dynamicActor->getGlobalPose();
-            transform.q *= (physx::PxQuat(glm::radians(rotation->x), { 1.0F, 0.0F, 0.0F })
-                * physx::PxQuat(glm::radians(rotation->y), { 0.0F, 1.0F, 0.0F })
-                * physx::PxQuat(glm::radians(rotation->z), { 0.0F, 0.0F, 1.0F }));
-
-            dynamicActor->setGlobalPose(transform);
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
+            Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+            actor->Rotate(*rotation);
         }
 
         uint32_t Prism_RigidBodyComponent_GetLayer(uint64_t entityID)
@@ -527,27 +505,16 @@ namespace Prism {
         {
             Entity entity = GetEntityFromEntityID(entityID);
             PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
-            auto& component = entity.GetComponent<RigidBodyComponent>();
-
-            physx::PxRigidActor* actor = (physx::PxRigidActor*)component.RuntimeActor;
-            physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
-            PR_CORE_ASSERT(dynamicActor);
-
-            return dynamicActor->getMass();
+            Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+            return actor->GetMass();
         }
 
         void Prism_RigidBodyComponent_SetMass(uint64_t entityID, float mass)
         {
             Entity entity = GetEntityFromEntityID(entityID);
             PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
-            auto& component = entity.GetComponent<RigidBodyComponent>();
-
-            physx::PxRigidActor* actor = (physx::PxRigidActor*)component.RuntimeActor;
-            physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
-            PR_CORE_ASSERT(dynamicActor);
-
-            component.Mass = mass;
-            physx::PxRigidBodyExt::updateMassAndInertia(*dynamicActor, mass);
+            Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+            actor->SetMass(mass);
         }
 
         uint32_t Prism_RigidBodyComponent_GetBodyType(uint64_t entityID)
@@ -562,29 +529,16 @@ namespace Prism {
         {
             Entity entity = GetEntityFromEntityID(entityID);
             PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
-            auto& component = entity.GetComponent<RigidBodyComponent>();
-
-            physx::PxRigidActor* actor = (physx::PxRigidActor*)component.RuntimeActor;
-            physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
-            PR_CORE_ASSERT(dynamicActor);
-
-            PR_CORE_ASSERT(outVelocity);
-            physx::PxVec3 velocity = dynamicActor->getAngularVelocity();
-            *outVelocity = { velocity.x, velocity.y, velocity.z };
+            Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+            *outVelocity = actor->GetAngularVelocity();
         }
 
         void Prism_RigidBodyComponent_SetAngularVelocity(uint64_t entityID, glm::vec3* velocity)
         {
             Entity entity = GetEntityFromEntityID(entityID);
             PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
-            auto& component = entity.GetComponent<RigidBodyComponent>();
-
-            physx::PxRigidActor* actor = (physx::PxRigidActor*)component.RuntimeActor;
-            physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
-            PR_CORE_ASSERT(dynamicActor);
-
-            PR_CORE_ASSERT(velocity);
-            dynamicActor->setAngularVelocity({ velocity->x, velocity->y, velocity->z });
+            Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+            actor->SetAngularVelocity(*velocity);
         }
 
 #pragma endregion

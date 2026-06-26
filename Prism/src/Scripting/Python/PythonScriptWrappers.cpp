@@ -10,6 +10,7 @@
 #include "Prism/Physics/PXPhysicsWrappers.h"
 #include "Prism/Asset/ModelImporter.h"
 #include "Prism/Physics/Physics.h"
+#include "Prism/Physics/PhysicsActor.h"
 
 #include "Scripting/Python/PythonScriptEngine.h"
 #include "Prism/Scene/Systems/ScriptSystem.h"
@@ -451,16 +452,13 @@ namespace Prism::Script
         int32_t forceMode = Python::ValueToInt(Python::GetTupleElement(argsRef, 2));
 
         glm::vec3 force = Python::ValueToVec3(forceObj);
-        auto& rb = entity.GetComponent<RigidBodyComponent>();
-        if (rb.IsKinematic)
+        if (!entity.HasComponent<RigidBodyComponent>())
         {
-            PR_CORE_WARN("Cannot add a force to a kinematic actor! EntityID({0})", (uint64_t)entity.GetUUID());
+            PR_CORE_WARN("Trying to add force to entity without RigidBodyComponent! EntityID({0})", (uint64_t)entity.GetUUID());
             return Python::NoneValue().Detach();
         }
-        physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
-        physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
-        PR_CORE_ASSERT(dynamicActor);
-        dynamicActor->addForce(physx::PxVec3(force.x, force.y, force.z), (physx::PxForceMode::Enum)forceMode);
+        Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+        actor->AddForce(force, (ForceMode)forceMode);
         return Python::NoneValue().Detach();
     }
 
@@ -472,16 +470,13 @@ namespace Prism::Script
         int32_t forceMode = Python::ValueToInt(Python::GetTupleElement(argsRef, 2));
 
         glm::vec3 torque = Python::ValueToVec3(torqueObj);
-        auto& rb = entity.GetComponent<RigidBodyComponent>();
-        if (rb.IsKinematic)
+        if (!entity.HasComponent<RigidBodyComponent>())
         {
-            PR_CORE_WARN("Cannot add torque to a kinematic actor! EntityID({0})", (uint64_t)entity.GetUUID());
+            PR_CORE_WARN("Trying to add torque to entity without RigidBodyComponent! EntityID({0})", (uint64_t)entity.GetUUID());
             return Python::NoneValue().Detach();
         }
-        physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
-        physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
-        PR_CORE_ASSERT(dynamicActor);
-        dynamicActor->addTorque(physx::PxVec3(torque.x, torque.y, torque.z), (physx::PxForceMode::Enum)forceMode);
+        Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+        actor->AddTorque(torque, (ForceMode)forceMode);
         return Python::NoneValue().Detach();
     }
 
@@ -490,12 +485,8 @@ namespace Prism::Script
         Python::ScriptRef argsRef(args);
         Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
 
-        auto& rb = entity.GetComponent<RigidBodyComponent>();
-        physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
-        physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
-        PR_CORE_ASSERT(dynamicActor);
-        physx::PxVec3 velocity = dynamicActor->getLinearVelocity();
-        return Python::Vec3ToValue(glm::vec3(velocity.x, velocity.y, velocity.z)).Detach();
+        Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+        return Python::Vec3ToValue(actor->GetLinearVelocity()).Detach();
     }
 
     Python::ScriptValue* Prism_RigidBodyComponent_SetLinearVelocity(Python::ScriptValue* self, Python::ScriptValue* args)
@@ -505,14 +496,8 @@ namespace Prism::Script
         Python::ScriptRef vecObj = Python::GetTupleElement(argsRef, 1);
 
         glm::vec3 velocity = Python::ValueToVec3(vecObj);
-        auto& rb = entity.GetComponent<RigidBodyComponent>();
-        physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
-        physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
-        PR_CORE_ASSERT(dynamicActor);
-        physx::PxVec3 pxVelocity(velocity.x, velocity.y, velocity.z);
-        if (!pxVelocity.isFinite())
-            return Python::NoneValue().Detach();
-        dynamicActor->setLinearVelocity(pxVelocity);
+        Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+        actor->SetLinearVelocity(velocity);
         return Python::NoneValue().Detach();
     }
 
@@ -523,17 +508,8 @@ namespace Prism::Script
         Python::ScriptRef vecObj = Python::GetTupleElement(argsRef, 1);
         glm::vec3 rotation = Python::ValueToVec3(vecObj);
 
-        auto& rb = entity.GetComponent<RigidBodyComponent>();
-        physx::PxRigidActor* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
-        physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
-        PR_CORE_ASSERT(dynamicActor);
-
-        physx::PxTransform transform = dynamicActor->getGlobalPose();
-        transform.q *= (physx::PxQuat(glm::radians(rotation.x), { 1.0F, 0.0F, 0.0F })
-            * physx::PxQuat(glm::radians(rotation.y), { 0.0F, 1.0F, 0.0F })
-            * physx::PxQuat(glm::radians(rotation.z), { 0.0F, 0.0F, 1.0F }));
-
-        dynamicActor->setGlobalPose(transform);
+        Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+        actor->Rotate(rotation);
         return Python::NoneValue().Detach();
     }
 
@@ -551,13 +527,8 @@ namespace Prism::Script
         Python::ScriptRef argsRef(args);
         Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
         PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
-        auto& component = entity.GetComponent<RigidBodyComponent>();
-
-        physx::PxRigidActor* actor = (physx::PxRigidActor*)component.RuntimeActor;
-        physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
-        PR_CORE_ASSERT(dynamicActor);
-
-        return Python::FloatToValue(dynamicActor->getMass()).Detach();
+        Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+        return Python::FloatToValue(actor->GetMass()).Detach();
     }
 
     Python::ScriptValue* Prism_RigidBodyComponent_SetMass(Python::ScriptValue* self, Python::ScriptValue* args)
@@ -566,14 +537,8 @@ namespace Prism::Script
         Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
         float mass = Python::ValueToFloat(Python::GetTupleElement(argsRef, 1));
         PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
-        auto& component = entity.GetComponent<RigidBodyComponent>();
-
-        physx::PxRigidActor* actor = (physx::PxRigidActor*)component.RuntimeActor;
-        physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
-        PR_CORE_ASSERT(dynamicActor);
-
-        component.Mass = mass;
-        physx::PxRigidBodyExt::updateMassAndInertia(*dynamicActor, mass);
+        Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+        actor->SetMass(mass);
         return Python::NoneValue().Detach();
     }
 
@@ -591,14 +556,8 @@ namespace Prism::Script
         Python::ScriptRef argsRef(args);
         Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
         PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
-        auto& component = entity.GetComponent<RigidBodyComponent>();
-
-        physx::PxRigidActor* actor = (physx::PxRigidActor*)component.RuntimeActor;
-        physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
-        PR_CORE_ASSERT(dynamicActor);
-
-        physx::PxVec3 velocity = dynamicActor->getAngularVelocity();
-        return Python::Vec3ToValue(glm::vec3(velocity.x, velocity.y, velocity.z)).Detach();
+        Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+        return Python::Vec3ToValue(actor->GetAngularVelocity()).Detach();
     }
 
     Python::ScriptValue* Prism_RigidBodyComponent_SetAngularVelocity(Python::ScriptValue* self, Python::ScriptValue* args)
@@ -607,13 +566,8 @@ namespace Prism::Script
         Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
         glm::vec3 velocity = Python::ValueToVec3(Python::GetTupleElement(argsRef, 1));
         PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
-        auto& component = entity.GetComponent<RigidBodyComponent>();
-
-        physx::PxRigidActor* actor = (physx::PxRigidActor*)component.RuntimeActor;
-        physx::PxRigidDynamic* dynamicActor = actor->is<physx::PxRigidDynamic>();
-        PR_CORE_ASSERT(dynamicActor);
-
-        dynamicActor->setAngularVelocity({ velocity.x, velocity.y, velocity.z });
+        Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+        actor->SetAngularVelocity(velocity);
         return Python::NoneValue().Detach();
     }
 

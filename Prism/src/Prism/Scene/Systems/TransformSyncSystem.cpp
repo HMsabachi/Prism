@@ -4,10 +4,11 @@
 #include "../Entity.h"
 #include "../Components.h"
 
+#include "Prism/Physics/Physics.h"
+#include "Prism/Physics/PhysicsActor.h"
 #include "Prism/Physics/PhysicsUtil.h"
 
 #include <box2d/box2d.h>
-#include <PhysX/PxPhysicsAPI.h>
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
@@ -26,20 +27,8 @@ namespace Prism {
 
         // 3D: ECS -> PhysX
         {
-            auto view = m_Scene->GetAllEntitiesWith<RigidBodyComponent>();
-            for (auto entity : view)
-            {
-                Entity e = { entity, m_Scene };
-                auto& rb = e.GetComponent<RigidBodyComponent>();
-                auto* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
-                if (!actor) continue;
-
-                auto& transform = e.Transformation();
-                if (!transform.IsPhysicsDirty()) continue;
-
-                actor->setGlobalPose(ToPhysXTransform(transform.GetMatrix()));
-                transform.MarkPhysicsClean();
-            }
+            for (auto& actor : Physics::GetActors())
+                actor->SyncToPhysX();
         }
 
         // 2D: ECS -> Box2D
@@ -69,22 +58,8 @@ namespace Prism {
 
         // 3D: PhysX -> ECS
         {
-            auto view = m_Scene->GetAllEntitiesWith<RigidBodyComponent>();
-            for (auto entity : view)
-            {
-                Entity e = { entity, m_Scene };
-                auto& rb = e.GetComponent<RigidBodyComponent>();
-                if (rb.BodyType != RigidBodyComponent::Type::Dynamic) continue;
-
-                auto* actor = static_cast<physx::PxRigidActor*>(rb.RuntimeActor);
-                if (!actor) continue;
-
-                auto& transform = e.Transformation();
-                physx::PxTransform pxTransform = actor->getGlobalPose();
-                transform.SetPosition(glm::vec3(pxTransform.p.x, pxTransform.p.y, pxTransform.p.z));
-                transform.SetRotation(glm::quat(pxTransform.q.w, pxTransform.q.x, pxTransform.q.y, pxTransform.q.z));
-                transform.MarkPhysicsClean();
-            }
+            for (auto& actor : Physics::GetActors())
+                actor->SyncFromPhysX();
         }
 
         // 2D: Box2D -> ECS

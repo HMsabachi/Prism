@@ -285,6 +285,9 @@ namespace Prism {
             auto& rbComponent = entity.GetComponent<RigidBodyComponent>();
             out << YAML::Key << "BodyType" << YAML::Value << (int)rbComponent.BodyType;
             out << YAML::Key << "Mass" << YAML::Value << rbComponent.Mass;
+            out << YAML::Key << "LinearDrag" << YAML::Value << rbComponent.LinearDrag;
+            out << YAML::Key << "AngularDrag" << YAML::Value << rbComponent.AngularDrag;
+            out << YAML::Key << "DisableGravity" << YAML::Value << rbComponent.DisableGravity;
             out << YAML::Key << "IsKinematic" << YAML::Value << rbComponent.IsKinematic;
             out << YAML::Key << "Layer" << YAML::Value << rbComponent.Layer;
             out << YAML::Key << "Constraints";
@@ -840,6 +843,9 @@ namespace Prism {
                     auto& component = deserializedEntity.AddComponent<RigidBodyComponent>();
                     component.BodyType = (RigidBodyComponent::Type)rigidBodyComponent["BodyType"].as<int>();
                     component.Mass = rigidBodyComponent["Mass"] ? rigidBodyComponent["Mass"].as<float>() : 1.0f;
+                    component.LinearDrag = rigidBodyComponent["LinearDrag"] ? rigidBodyComponent["LinearDrag"].as<float>() : 0.0F;
+                    component.AngularDrag = rigidBodyComponent["AngularDrag"] ? rigidBodyComponent["AngularDrag"].as<float>() : 0.05F;
+                    component.DisableGravity = rigidBodyComponent["DisableGravity"] ? rigidBodyComponent["DisableGravity"].as<bool>() : false;
                     component.IsKinematic = rigidBodyComponent["IsKinematic"] ? rigidBodyComponent["IsKinematic"].as<bool>() : false;
                     component.Layer = rigidBodyComponent["Layer"] ? rigidBodyComponent["Layer"].as<uint32_t>() : 0;
                     component.LockPositionX = rigidBodyComponent["Constraints"]["LockPositionX"].as<bool>();

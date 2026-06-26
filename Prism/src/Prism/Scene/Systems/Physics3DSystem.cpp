@@ -46,7 +46,6 @@ namespace Prism {
 
         {
             auto view = m_Scene->GetAllEntitiesWith<RigidBodyComponent>();
-            Physics::ExpandEntityBuffer((uint32_t)view.size());
             for (auto entity : view)
             {
                 Entity e = { entity, m_Scene };
