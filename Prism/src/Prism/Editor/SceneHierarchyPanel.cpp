@@ -67,7 +67,7 @@ namespace Prism {
             for (auto& entityid : m_Context->m_Registry.view<entt::entity>())
             {
                 Entity e(entityid, m_Context.Raw());
-                if (e.HasComponent<IDComponent>())
+                if (e.HasComponent<IDComponent>() && e.Parent() == entt::null)
                     DrawEntityNode(e);
             }
 
@@ -160,9 +160,37 @@ namespace Prism {
 
             ImGui::EndPopup();
         }
+        if (ImGui::BeginDragDropSource())
+        {
+            uint32_t entityId = (uint32_t)entity;
+            ImGui::SetDragDropPayload("scene_entity_hierarchy", &entityId, sizeof(uint32_t));
+            ImGui::EndDragDropSource();
+        }
+
+        if (ImGui::BeginDragDropTarget())
+        {
+            const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("scene_entity_hierarchy", ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
+
+            if (payload)
+            {
+                uint32_t droppedHandle = *((uint32_t*)payload->Data);
+                Entity e = m_Context->FindEntityByHandle(droppedHandle);
+                e.Parent() = entity;
+                entity.AddChild(e);
+                PR_CORE_INFO("Dropping Entity {0} on {1}", droppedHandle, (uint32_t)entity);
+            }
+
+            ImGui::EndDragDropTarget();
+        }
+
         if (opened)
         {
-            // TODO: Children
+            for (auto& child : entity.Children())
+            {
+                Entity e = m_Context->FindEntityByHandle((uint32_t)child);
+                DrawEntityNode(e);
+            }
+
             ImGui::TreePop();
         }
 

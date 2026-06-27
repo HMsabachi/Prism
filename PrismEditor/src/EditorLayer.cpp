@@ -1,5 +1,6 @@
 ﻿#include "EditorLayer.h"
 #include "Prism/ImGui/ImGui.h"
+#include "Prism/Asset/ModelImporter.h"
 using Prism::UI::Property;
 using Prism::UI::PropertyFlag;
 
@@ -66,6 +67,10 @@ namespace Prism
             m_SceneHierarchyPanel = CreateScope<SceneHierarchyPanel>(m_EditorScene);
             m_SceneHierarchyPanel->SetSelectionChangedCallback(std::bind(&EditorLayer::SelectEntity, this, std::placeholders::_1));
             m_SceneHierarchyPanel->SetEntityDeletedCallback(std::bind(&EditorLayer::OnEntityDeleted, this, std::placeholders::_1));
+
+            m_AssetManagerPanel = CreateScope<AssetManagerPanel>();
+            m_ObjectsPanel = CreateScope<ObjectsPanel>();
+
             SceneSerializer serializer(m_EditorScene);
             //serializer.Deserialize("Assets/Scenes/Physics3DTest.psc");
             //m_SceneFilePath = "Assets/Scenes/Physics3DTest.psc";
@@ -196,7 +201,22 @@ namespace Prism
                             float angle = tc.GetRotation().z;
                             glm::vec2 size = boxCollider.Size * 2.0f;
 
-                            Renderer2D::DrawRotatedQuad(position, size, angle, glm::vec4(0.5f, 0.0f, 0.5f, 0.3f));
+                            Renderer2D::DrawRotatedRect(position, size, angle, glm::vec4(0.5f, 0.0f, 0.5f, 0.3f));
+                        }
+
+                        auto circleColliderView = m_ActiveScene->GetAllEntitiesWith<CircleCollider2DComponent>();
+                        for (auto e : circleColliderView)
+                        {
+                            Entity entity = { e, m_ActiveScene.Raw() };
+                            if (!entity.HasComponent<TransformComponent>())
+                                continue;
+
+                            auto& tc = entity.Transformation();
+                            auto& circleCollider = entity.GetComponent<CircleCollider2DComponent>();
+
+                            glm::vec3 position = tc.GetPosition() + glm::vec3(circleCollider.Offset, 0.0f);
+
+                            Renderer2D::DrawCircle(position, circleCollider.Radius, glm::vec4(0.5f, 0.0f, 0.5f, 0.3f));
                         }
                     }
                     Renderer2D::EndScene();
@@ -345,28 +365,47 @@ namespace Prism
             }
         }
 
+        void EditorLayer::NewScene()
+        {
+            m_EditorScene = Ref<Scene>::Create("Empty Scene", true);
+            m_ActiveScene = m_EditorScene;
+            m_SceneHierarchyPanel->SetContext(m_EditorScene);
+            CSharpScriptEngine::SetSceneContext(m_EditorScene);
+            PythonScriptEngine::SetSceneContext(m_EditorScene);
+            UpdateWindowTitle("Untitled Scene");
+            m_SceneFilePath = std::string();
+
+            m_EditorScene->SetSelectedEntity({});
+            m_SelectionContext.clear();
+
+            m_EditorCamera = EditorCamera(glm::perspectiveFov(glm::radians(45.0f), 1280.0f, 720.0f, 0.1f, 1000.0f));
+        }
+
         void EditorLayer::OpenScene()
         {
             auto& app = Application::Get();
             std::string filepath = app.OpenFile("Prism Scene (*.psc)\0*.psc\0");
             if (!filepath.empty())
-            {
-                Ref<Scene> newScene = Ref<Scene>::Create();
-                SceneSerializer serializer(newScene);
-                serializer.Deserialize(filepath);
-                m_EditorScene = newScene;
-                m_ActiveScene = m_EditorScene;
-                std::filesystem::path path = filepath;
-                UpdateWindowTitle(path.filename().string());
-                m_SceneHierarchyPanel->SetContext(m_EditorScene);
-                CSharpScriptEngine::SetSceneContext(m_EditorScene);
-        PythonScriptEngine::SetSceneContext(m_EditorScene);
+                OpenScene(filepath);
+        }
 
-                m_EditorScene->SetSelectedEntity({});
-                m_SelectionContext.clear();
+        void EditorLayer::OpenScene(const std::string& filepath)
+        {
+            Ref<Scene> newScene = Ref<Scene>::Create();
+            SceneSerializer serializer(newScene);
+            serializer.Deserialize(filepath);
+            m_EditorScene = newScene;
+            m_ActiveScene = m_EditorScene;
+            std::filesystem::path path = filepath;
+            UpdateWindowTitle(path.filename().string());
+            m_SceneHierarchyPanel->SetContext(m_EditorScene);
+            CSharpScriptEngine::SetSceneContext(m_EditorScene);
+            PythonScriptEngine::SetSceneContext(m_EditorScene);
 
-                m_SceneFilePath = filepath;
-            }
+            m_EditorScene->SetSelectedEntity({});
+            m_SelectionContext.clear();
+
+            m_SceneFilePath = filepath;
         }
 
         void EditorLayer::SaveScene()
@@ -463,6 +502,7 @@ namespace Prism
                 ShowBoundingBoxes(m_UIShowBoundingBoxes, m_UIShowBoundingBoxesOnTop);
             if (m_UIShowBoundingBoxes && Property(TR("On Top"), m_UIShowBoundingBoxesOnTop))
                 ShowBoundingBoxes(m_UIShowBoundingBoxes, m_UIShowBoundingBoxesOnTop);
+
             char* label = m_SelectionMode == SelectionMode::Entity ? const_cast<char*>(TR("Entity")) : const_cast<char*>(TR("Mesh"));
             if (ImGui::Button(label))
             {
@@ -569,6 +609,43 @@ namespace Prism
             if (auto* rs = m_ActiveScene->GetSystem<RenderSystem>())
                 ImGui::Image((void*)rs->GetFinalColorBufferID(), viewportSize, { 0, 1 }, { 1, 0 });
 
+            if (ImGui::BeginDragDropTarget())
+            {
+                auto objectData = ImGui::AcceptDragDropPayload("scene_entity_objectP");
+                if (objectData)
+                {
+                    auto d = (DragDropData*)objectData->Data;
+                    if (strcmp(d->Type, "Mesh") == 0)
+                    {
+                        auto entity = m_EditorScene->CreateEntity(d->Name);
+                        auto importResult = ModelImporter::Import(d->SourcePath);
+                        entity.AddComponent<MeshRendererComponent>(importResult.Mesh);
+                        entity.GetComponent<MeshRendererComponent>().SetMaterials(importResult.Materials);
+                    }
+                }
+
+                auto assetData = ImGui::AcceptDragDropPayload("scene_entity_assetsP");
+                if (assetData)
+                {
+                    auto d = (DragDropData*)assetData->Data;
+
+                    if (strcmp(d->Type, "PrismScene") == 0)
+                    {
+                        auto sceneName = d->SourcePath;
+                        OpenScene(sceneName);
+                    }
+
+                    if (strcmp(d->Type, "Mesh") == 0)
+                    {
+                        auto entity = m_EditorScene->CreateEntity(d->Name);
+                        auto importResult = ModelImporter::Import(d->SourcePath);
+                        entity.AddComponent<MeshRendererComponent>(importResult.Mesh);
+                        entity.GetComponent<MeshRendererComponent>().SetMaterials(importResult.Materials);
+                    }
+                }
+                ImGui::EndDragDropTarget();
+            }
+
             static int counter = 0;
             auto windowSize = ImGui::GetWindowSize();
             ImVec2 minBound = ImGui::GetWindowPos();
@@ -632,9 +709,7 @@ namespace Prism
                 if (ImGui::BeginMenu(TR("File")))
                 {
                     if (ImGui::MenuItem(TR("New Scene"), "Ctrl+N"))
-                    {
-
-                    }
+                        NewScene();
                     if (ImGui::MenuItem(TR("Open Scene..."), "Ctrl+O"))
                     {
                         OpenScene();
@@ -775,16 +850,18 @@ namespace Prism
             }
 
             ImGui::End();
-            CSharpScriptEngine::OnImGuiRender();
+            //CSharpScriptEngine::OnImGuiRender();
             //PythonScriptEngine::OnImGuiRender();
             PhysicsSettingsWindow::OnImGuiRender(m_ShowPhysicsSettings);
             m_ActiveScene->OnImGuiRender();
+            m_AssetManagerPanel->OnImGuiRender();
+            m_ObjectsPanel->OnImGuiRender();
             ImGui::End();
         #endif
 
-            static bool show_demo_window = true;
-            if (show_demo_window)
-                ImGui::ShowDemoWindow(&show_demo_window);
+            //static bool show_demo_window = true;
+            //if (show_demo_window)
+            //    ImGui::ShowDemoWindow(&show_demo_window);
             //ImGui::ShowStyleEditor();
         }
 
@@ -852,6 +929,9 @@ namespace Prism
                         Entity selectedEntity = m_SelectionContext[0].Entity;
                         m_EditorScene->DuplicateEntity(selectedEntity);
                     }
+                    break;
+                case KeyCode::N:
+                    NewScene();
                     break;
                 case KeyCode::O:
                     OpenScene();

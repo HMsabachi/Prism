@@ -12,6 +12,10 @@
 
 #include <string>
 
+#include "Prism/Editor/AssetManagerPanel.h"
+#include "Prism/Editor/ObjectsPanel.h"
+#include "Prism/Utilities/DragDropData.h"
+
 namespace Prism
 {
     class EditorLayer : public Prism::Layer
@@ -39,7 +43,9 @@ namespace Prism
         void SelectEntity(Entity entity);
         void DrawMaterialProperty(const PrismShaderCompiler::AST::ShaderUniform& uni, Material& material);
 
+        void NewScene();
         void OpenScene();
+        void OpenScene(const std::string& filepath);
         void SaveScene();
         void SaveSceneAs();
     private:
@@ -66,6 +72,8 @@ namespace Prism
         std::vector<Ref<Material>> m_DielectricSphereMaterialInstances;
     private:
         Scope<SceneHierarchyPanel> m_SceneHierarchyPanel;
+        Scope<AssetManagerPanel> m_AssetManagerPanel;
+        Scope<ObjectsPanel> m_ObjectsPanel;
 
         Ref<Scene> m_ActiveScene;
         Ref<Scene> m_RuntimeScene, m_EditorScene;

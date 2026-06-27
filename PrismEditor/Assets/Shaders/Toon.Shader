@@ -1,3 +1,4 @@
+// Prism Shader Language v1.0
 Shader "Custom/Toon"
 {
     Properties
@@ -9,22 +10,26 @@ Shader "Custom/Toon"
         u_AlbedoTextureOffset("贴图偏移", Vector2) = (0.0, 0.0)
 
         u_ShadowThreshold("阴影阈值", Range(0, 1)) = 0.45
-        u_ShadowSmooth("阴影柔化", Range(0.001, 0.5)) = 0.05
+        u_BrightThreshold("亮面阈值", Range(0, 1)) = 0.75
+        u_ShadowSmooth("色阶柔化", Range(0.001, 0.5)) = 0.05
         u_ShadowColor("阴影色", Color) = (0.35, 0.45, 0.65, 1.0)
-        u_ShadowBrightness("阴影亮度", Range(0, 1)) = 0.6
-        u_HighlightThreshold("高光阈值", Range(0, 1)) = 0.75
-        u_HighlightIntensity("高光强度", Range(1.0, 2.0)) = 1.2
+        u_ShadowBoost("阴影亮度", Range(0, 1)) = 0.6
+        u_BrightBoost("亮面增强", Range(1.0, 3.0)) = 1.2
 
         u_SpecularColor("高光色", Color) = (1.0, 1.0, 1.0, 1.0)
         u_SpecularIntensity("高光强度", Range(0, 5)) = 1.5
-        u_SpecularThreshold("高光阈值", Range(0, 1)) = 0.35
         u_Shininess("光泽度", Range(1, 200)) = 30.0
-        u_SpecularWidth("高光宽度", Range(0.01, 1.0)) = 0.15
+        u_SpecularSmooth("高光柔化", Range(0.001, 1.0)) = 0.15
 
         u_RimColor("边缘光色", Color) = (1.0, 0.6, 0.3, 1.0)
         u_RimIntensity("边缘光强度", Range(0, 5)) = 1.2
         u_RimPower("边缘光范围", Range(0.1, 10)) = 3.0
         u_RimSmooth("边缘光柔化", Range(0.001, 0.5)) = 0.05
+
+        u_EmissionColor("自发光色", Color3) = (0.0, 0.0, 0.0)
+        u_EmissionTexture("自发光贴图", Texture2D) = {}
+
+        u_AmbientColor("环境光色", Color3) = (0.05, 0.05, 0.10)
 
         u_OutlineColor("描边色", Color) = (0.05, 0.05, 0.1, 1.0)
         u_OutlineWidth("描边宽度", Float) = 0.02
@@ -33,7 +38,7 @@ Shader "Custom/Toon"
     RenderCommand
     {
         Cull Back
-        ZTest LEqual
+        ZTest LessEqual
         ZWrite On
         Blend SrcAlpha OneMinusSrcAlpha
     }
@@ -46,7 +51,8 @@ Shader "Custom/Toon"
             Name "ForwardBase"
             GLSL
             {
-                #pragma shader_feature SKINNED NORMAL_MAP ALBEDO_MAP
+                #pragma shader_feature SKINNED
+                #pragma shader_feature ALBEDO_MAP NORMAL_MAP EMISSION_MAP
                 #include "PrismCommon.glsl"
 
                 attribute vec3 a_Position : POSITION;
@@ -60,6 +66,7 @@ Shader "Custom/Toon"
             #endif
 
                 layout(location = 0) out vec4 FragColor;
+                layout(location = 1) out vec4 BloomColor;
 
                 varying VertexOutput
                 {
@@ -120,12 +127,43 @@ Shader "Custom/Toon"
                 #endif
 
                     vec3 V = normalize(Prism_CameraPosition - vs_Output.WorldPosition);
-                    vec3 L = normalize(-Prism_Lights[0].Direction);
-                    vec3 H = normalize(L + V);
-
-                    float NdotL = dot(N, L);
                     float NdotV = max(dot(N, V), 0.0);
-                    float NdotH = max(dot(N, H), 0.0);
+
+                    vec3 color = vec3(0.0);
+                    for (int i = 0; i < PRISM_MAX_LIGHTS; i++)
+                    {
+                        vec3 L = normalize(-Prism_Lights[i].Direction);
+                        vec3 H = normalize(L + V);
+                        float NdotL = dot(N, L);
+                        float NdotH = max(dot(N, H), 0.0);
+                        float cosLi = max(NdotL, 0.0);
+
+                        float shadowStep = smoothstep(
+                            u_ShadowThreshold - u_ShadowSmooth,
+                            u_ShadowThreshold + u_ShadowSmooth,
+                            NdotL
+                        );
+                        float brightStep = smoothstep(
+                            u_BrightThreshold - u_ShadowSmooth,
+                            u_BrightThreshold + u_ShadowSmooth,
+                            NdotL
+                        );
+
+                        vec3 diffuse = mix(u_ShadowColor.rgb * u_ShadowBoost, vec3(1.0), shadowStep);
+                        diffuse = mix(diffuse, vec3(u_BrightBoost), brightStep);
+                        diffuse *= albedo;
+
+                        float spec = pow(NdotH, u_Shininess);
+                        float specStep = smoothstep(
+                            0.5 - u_SpecularSmooth,
+                            0.5 + u_SpecularSmooth,
+                            spec
+                        );
+                        vec3 specular = specStep * u_SpecularColor.rgb * u_SpecularIntensity;
+
+                        vec3 radiance = Prism_Lights[i].Radiance * Prism_Lights[i].Multiplier;
+                        color += (diffuse + specular) * radiance * cosLi;
+                    }
 
                     float shadow = 1.0;
                     if (Prism_ShadowParams.z > 0.0)
@@ -133,41 +171,24 @@ Shader "Custom/Toon"
                         vec3 biasedPos = vs_Output.WorldPosition + N * Prism_ShadowParams.y;
                         shadow = Prism_GetShadow(biasedPos, -vs_Output.ViewPosition.z, N);
                     }
-
-                    vec3 lightRadiance = Prism_Lights[0].Radiance * Prism_Lights[0].Multiplier;
-
-                    vec3 shadowColor = albedo * u_ShadowColor.rgb * u_ShadowBrightness;
-                    vec3 highlightColor = albedo * u_HighlightIntensity;
-
-                    float shadowStep = smoothstep(
-                        u_ShadowThreshold - u_ShadowSmooth,
-                        u_ShadowThreshold + u_ShadowSmooth,
-                        NdotL
-                    );
-                    float highlightStep = smoothstep(
-                        u_HighlightThreshold - u_ShadowSmooth,
-                        u_HighlightThreshold + u_ShadowSmooth,
-                        NdotL
-                    );
-
-                    vec3 diffuseColor = mix(shadowColor, albedo, shadowStep);
-                    diffuseColor = mix(diffuseColor, highlightColor, highlightStep);
-
-                    float spec = pow(NdotH, u_Shininess);
-                    float specStep = smoothstep(
-                        u_SpecularThreshold - u_SpecularWidth * 0.5,
-                        u_SpecularThreshold + u_SpecularWidth * 0.5,
-                        spec
-                    );
-                    vec3 specularColor = specStep * u_SpecularColor.rgb * u_SpecularIntensity;
+                    color *= shadow;
+                    color += albedo * u_AmbientColor;
 
                     float rim = 1.0 - NdotV;
                     rim = pow(rim, u_RimPower);
                     float rimStep = smoothstep(0.5 - u_RimSmooth, 0.5 + u_RimSmooth, rim);
-                    vec3 rimColor = rimStep * u_RimColor.rgb * u_RimIntensity;
+                    color += rimStep * u_RimColor.rgb * u_RimIntensity;
 
-                    vec3 finalColor = (diffuseColor * lightRadiance + specularColor) * shadow + rimColor;
-                    FragColor = vec4(finalColor, 1.0);
+                    vec3 emission = u_EmissionColor;
+                #ifdef EMISSION_MAP
+                    emission *= texture(u_EmissionTexture, vs_Output.TexCoord).rgb;
+                #endif
+                    color += emission;
+
+                    FragColor = vec4(color, 1.0);
+
+                    float brightness = dot(FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
+                    BloomColor = brightness > 1.0 ? FragColor : vec4(0.0);
                 }
             }
         }
@@ -202,11 +223,16 @@ Shader "Custom/Toon"
 
                     vec4 localPosition = boneTransform * vec4(a_Position, 1.0);
                     vec3 worldNormal = mat3(Prism_Model) * mat3(boneTransform) * a_Normal;
-                    vec3 pos = localPosition.xyz + normalize(worldNormal) * u_OutlineWidth;
-                    gl_Position = Prism_ViewProjection * Prism_Model * pos;
+                    vec3 worldPos = vec3(Prism_Model * localPosition);
+                    vec4 viewPos = Prism_View * vec4(worldPos, 1.0);
+                    vec3 viewNormal = mat3(Prism_View) * worldNormal;
+                    viewPos.xyz += normalize(viewNormal) * u_OutlineWidth * (-viewPos.z);
+                    gl_Position = Prism_Projection * viewPos;
                 #else
-                    vec3 pos = a_Position + normalize(a_Normal) * u_OutlineWidth;
-                    gl_Position = Prism_ViewProjection * Prism_Model * vec4(pos, 1.0);
+                    vec4 viewPos = Prism_View * Prism_Model * vec4(a_Position, 1.0);
+                    vec3 viewNormal = mat3(Prism_View) * mat3(Prism_Model) * a_Normal;
+                    viewPos.xyz += normalize(viewNormal) * u_OutlineWidth * (-viewPos.z);
+                    gl_Position = Prism_Projection * viewPos;
                 #endif
                 }
 

@@ -49,16 +49,16 @@ namespace Prism
                 return component;
             }
         }
-        public T? GetComponent<T>() where T : Component, new()
+        public T GetComponent<T>() where T : Component, new()
         {
             if (typeof(T).IsSubclassOf(typeof(Behaviour)))
             {
                 unsafe
                 {
                     IntPtr handle = InternalCalls.Prism_Entity_GetBehaviour(ID, typeof(T));
-                    if (handle == IntPtr.Zero) return null;
+                    if (handle == IntPtr.Zero) throw new NullReferenceException();
                     object? behaviour = GCHandle.FromIntPtr(handle).Target;
-                    if (behaviour == null) return null;
+                    if (behaviour == null) throw new NullReferenceException();
                     return (T)behaviour;
                 }
             }
@@ -68,7 +68,7 @@ namespace Prism
                 component.Entity = this;
                 return component;
             }
-            return null;
+            throw new NullReferenceException();
         }
 
         public Entity FindEntityByTag(string tag)

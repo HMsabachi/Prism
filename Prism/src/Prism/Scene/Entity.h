@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "Scene.h"
 #include "Components.h"
@@ -77,15 +77,23 @@ namespace Prism
         UUID GetUUID() { return GetComponent<IDComponent>().ID; }
         UUID GetSceneUUID() { return m_Scene->GetUUID(); }
         Scene* GetScene() const { return m_Scene; }
+
+        entt::entity& Parent() { return m_Parent; }
+        const entt::entity& Parent() const { return m_Parent; }
+        std::vector<entt::entity>& Children() { return m_Children; }
+        const std::vector<entt::entity>& Children() const { return m_Children; }
+        void AddChild(Entity child) { m_Children.push_back((entt::entity)child); }
     private:
         Entity(const std::string& name);
     private:
         entt::entity m_EntityHandle;
         Scene* m_Scene = nullptr;
 
+        entt::entity m_Parent = entt::null;
+        std::vector<entt::entity> m_Children;
+
         friend class Scene;
         friend class SceneSerializer;
     };
 
 }
-

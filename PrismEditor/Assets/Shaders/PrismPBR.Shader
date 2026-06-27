@@ -201,7 +201,7 @@ Shader "Standard/PrismPBR"
                     vec3 diffuseIBL = m_Params.Albedo * irradiance;
 
                     int u_EnvRadianceTexLevels = textureQueryLevels(Prism_EnvRadianceTex);
-                    vec3 specularIrradiance = textureLod(Prism_EnvRadianceTex, RotateVectorAboutY(u_EnvMapRotation, Lr), sqrt(m_Params.Roughness) * u_EnvRadianceTexLevels).rgb;
+                    vec3 specularIrradiance = textureLod(Prism_EnvRadianceTex, RotateVectorAboutY(u_EnvMapRotation, Lr), (m_Params.Roughness * m_Params.Roughness) * u_EnvRadianceTexLevels).rgb;
 
                     // Sample BRDF Lut, 1.0 - roughness for y-coord because texture was generated (in Sparky) for gloss model
                     vec2 specularBRDF = texture(Prism_BRDFLUT, vec2(m_Params.NdotV, 1.0 - m_Params.Roughness)).rg;

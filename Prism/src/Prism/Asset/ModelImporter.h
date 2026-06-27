@@ -14,7 +14,7 @@ namespace Prism
         std::vector<Ref<Material>> Materials;
     };
 
-    class ModelImporter
+    class PRISM_API ModelImporter
     {
     public:
         static ModelImportResult Import(const std::string& filepath);

@@ -106,12 +106,12 @@ namespace Prism
     }
 
 
-	void Scene::OnImGuiRender()
-	{
+    void Scene::OnImGuiRender()
+    {
         for (auto* sys : m_SystemOrder) sys->OnImGuiRender();
-	}
+    }
 
-	Entity Scene::GetMainCameraEntity()
+    Entity Scene::GetMainCameraEntity()
     {
         auto view = m_Registry.view<CameraComponent>();
         for (auto entity : view)
@@ -222,6 +222,18 @@ namespace Prism
         {
             const auto& candidate = view.get<TagComponent>(entity).Tag;
             if (candidate == tag)
+                return Entity(entity, this);
+        }
+
+        return Entity{};
+    }
+
+    Entity Scene::FindEntityByHandle(uint32_t handle)
+    {
+        auto view = m_Registry.view<TagComponent>();
+        for (auto entity : view)
+        {
+            if (entity == (entt::entity)handle)
                 return Entity(entity, this);
         }
 

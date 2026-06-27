@@ -11,7 +11,6 @@ namespace Example
         public float CameraForwardOffset = 0.2F;
         public float CameraYOffset = 0.85F;
 
-        //[NonSerialized]
         public float MouseSensitivity = 10.0F;
 
         private float m_CurrentSpeed;

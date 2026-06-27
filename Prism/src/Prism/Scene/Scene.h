@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Prism/Core/UUID.h"
 
 #include <entt/entt.hpp>
@@ -51,6 +51,7 @@ namespace Prism
         }
 
         Entity FindEntityByTag(const std::string& tag);
+        Entity FindEntityByHandle(uint32_t handle);
         Entity TryGetEntityByUUID(UUID uuid);
 
         const EntityMap& GetEntityMap() const { return m_EntityIDMap; }
@@ -107,7 +108,7 @@ namespace Prism
         bool m_IsPlaying = false;
 
         std::unordered_map<uint32_t, std::unique_ptr<ISystem>> m_Systems;
-        std::vector<ISystem*> m_SystemOrder;                                
+        std::vector<ISystem*> m_SystemOrder;
 
         friend class Entity;
         friend class SceneHierarchyPanel;
