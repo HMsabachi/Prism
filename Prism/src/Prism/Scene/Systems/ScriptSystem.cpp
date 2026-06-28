@@ -833,7 +833,7 @@ namespace Prism {
         auto& registry = m_Scene->GetRegistry();
         for (auto& [entityUUID, savedComp] : m_SavedCSharpComponents)
         {
-            Entity entity = m_Scene->TryGetEntityByUUID(entityUUID);
+            Entity entity = m_Scene->FindEntityByUUID(entityUUID);
             if (!entity) continue;
             registry.emplace<CSharpScriptComponent>((entt::entity)entity, std::move(savedComp));
         }
@@ -864,7 +864,7 @@ namespace Prism {
         auto& registry = m_Scene->GetRegistry();
         for (auto& [entityUUID, savedComp] : m_SavedPythonComponents)
         {
-            Entity entity = m_Scene->TryGetEntityByUUID(entityUUID);
+            Entity entity = m_Scene->FindEntityByUUID(entityUUID);
             if (!entity) continue;
             registry.emplace<PythonScriptComponent>((entt::entity)entity, std::move(savedComp));
         }

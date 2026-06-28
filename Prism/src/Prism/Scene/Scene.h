@@ -1,6 +1,7 @@
-#pragma once
+﻿#pragma once
 #include "Prism/Core/UUID.h"
 
+#include <glm/glm.hpp>
 #include <entt/entt.hpp>
 #include "Prism/Utilities/TypeInfo.h"
 #include <unordered_map>
@@ -30,6 +31,7 @@ namespace Prism
         void Init();
 
         void OnUpdate();
+        void OnRender(float dt);
         void OnEvent(Event& e);
 
         // Runtime
@@ -51,8 +53,8 @@ namespace Prism
         }
 
         Entity FindEntityByTag(const std::string& tag);
-        Entity FindEntityByHandle(uint32_t handle);
-        Entity TryGetEntityByUUID(UUID uuid);
+        Entity FindEntityByUUID(UUID uuid);
+        glm::mat4 GetTransformRelativeToParent(Entity entity);
 
         const EntityMap& GetEntityMap() const { return m_EntityIDMap; }
 

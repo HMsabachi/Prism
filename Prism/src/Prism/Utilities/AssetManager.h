@@ -10,7 +10,7 @@ namespace Prism
 
 	enum class AssetType
 	{
-		Scene, Mesh, Image, Audio, Script, Other
+		Scene, Mesh, Image, Audio, Script, Shader, Other
 	};
 
 	class AssetTypes

@@ -22,10 +22,11 @@ namespace Prism {
         virtual void OnUpdate(float dt){}
         virtual void OnPreLateUpdate(float dt){} 
         virtual void OnLateUpdate(float dt){}
-        virtual void OnPostLateUpdate(float dt){} 
+        virtual void OnPostLateUpdate(float dt){}
+        virtual void OnRender(float dt){}
 
 
-        virtual void OnImGuiRender(){} 
+        virtual void OnImGuiRender(){}
     };
 
 }

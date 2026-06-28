@@ -65,7 +65,7 @@ namespace Prism {
 
         friend class Physics;
         friend class PXPhysicsWrappers;
-        friend class TransformSyncSystem;
+        friend class TransformSystem;
     };
 
 }

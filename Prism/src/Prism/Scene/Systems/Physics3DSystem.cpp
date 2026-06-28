@@ -73,7 +73,7 @@ namespace Prism {
                     Entity e = { entity, m_Scene };
                     auto& collider = e.GetComponent<BoxColliderComponent>();
                     rs->SubmitDebugMesh(collider.DebugMesh,
-                        glm::translate(e.Transformation().GetMatrix(), collider.Offset));
+                        glm::translate(m_Scene->GetTransformRelativeToParent(e), collider.Offset));
                 }
             }
         }
@@ -87,7 +87,7 @@ namespace Prism {
                     Entity e = { entity, m_Scene };
                     auto& collider = e.GetComponent<SphereColliderComponent>();
                     rs->SubmitDebugMesh(collider.DebugMesh,
-                        e.Transformation().GetMatrix());
+                        m_Scene->GetTransformRelativeToParent(e));
                 }
             }
         }
@@ -101,7 +101,7 @@ namespace Prism {
                     Entity e = { entity, m_Scene };
                     auto& collider = e.GetComponent<CapsuleColliderComponent>();
                     rs->SubmitDebugMesh(collider.DebugMesh,
-                        e.Transformation().GetMatrix());
+                        m_Scene->GetTransformRelativeToParent(e));
                 }
             }
         }
@@ -118,12 +118,12 @@ namespace Prism {
                     {
                         for (auto& debugMesh : collider.ProcessedMeshes)
                             rs->SubmitDebugMesh(debugMesh,
-                                e.Transformation().GetMatrix());
+                                m_Scene->GetTransformRelativeToParent(e));
                     }
                     else if (collider.CollisionMesh)
                     {
                         rs->SubmitDebugMesh(collider.CollisionMesh,
-                            glm::rotate(e.Transformation().GetMatrix(), glm::radians(90.0f), glm::vec3(1, 0, 0)));
+                            glm::rotate(m_Scene->GetTransformRelativeToParent(e), glm::radians(90.0f), glm::vec3(1, 0, 0)));
                     }
                 }
             }

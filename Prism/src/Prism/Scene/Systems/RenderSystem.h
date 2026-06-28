@@ -15,9 +15,8 @@ namespace Prism
 
         void OnCreate() override;
         void OnDestroy() override;
-        void OnPostLateUpdate(float dt) override;
+        void OnRender(float dt) override;
         void OnImGuiRender() override;
-        void Render();
 
         void SetEditorCamera(const EditorCamera& camera);
         void SetViewportSize(uint32_t width, uint32_t height);
@@ -45,6 +44,7 @@ namespace Prism
         // TODO(多线程): 单缓冲→双缓冲 m_Snapshots[2] + m_FrameIndex 交替,逻辑写 N+1/渲染读 N。详见 .claude/roadmap-render-thread.md Phase 3
         FrameSnapshot m_PendingSnapshot;
 
+        void Render();
         void CollectMeshRenderers(FrameSnapshot& snapshot);
         void CollectDebugDraws(FrameSnapshot& snapshot);
     };

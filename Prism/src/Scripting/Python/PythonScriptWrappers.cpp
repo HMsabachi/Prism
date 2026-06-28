@@ -14,6 +14,7 @@
 
 #include "Scripting/Python/PythonScriptEngine.h"
 #include "Prism/Scene/Systems/ScriptSystem.h"
+#include "Prism/Scene/Systems/TransformSystem.h"
 #include "Scripting/Python/PythonScriptEngineRegistry.h"
 #include "Scripting/Python/PythonScriptMetaRegistry.h"
 #include "Scripting/Python/Interop/PythonMathBridge.h"
@@ -264,13 +265,16 @@ namespace Prism::Script
         return Python::NoneValue().Detach();
     }
 
+    static TransformSystem* GetTransformSystem(Entity entity)
+    {
+        return entity.GetScene()->GetSystem<TransformSystem>();
+    }
+
     Python::ScriptValue* Prism_TransformComponent_GetRotation(Python::ScriptValue* self, Python::ScriptValue* args)
     {
         Python::ScriptRef argsRef(args);
         Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
-        Transform& transform = entity.Transformation();
-        glm::vec3 euler = transform.GetRotation();
-
+        glm::vec3 euler = GetTransformSystem(entity)->GetWorldRotation(entity);
         return Python::Vec3ToValue(euler).Detach();
     }
 
@@ -279,10 +283,7 @@ namespace Prism::Script
         Python::ScriptRef argsRef(args);
         Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
         Python::ScriptRef vecObj = Python::GetTupleElement(argsRef, 1);
-
-        glm::vec3 euler = Python::ValueToVec3(vecObj);
-        Transform& transform = entity.Transformation();
-        transform.SetRotation(euler);
+        GetTransformSystem(entity)->SetWorldRotation(entity, Python::ValueToVec3(vecObj));
         return Python::NoneValue().Detach();
     }
 
@@ -290,9 +291,7 @@ namespace Prism::Script
     {
         Python::ScriptRef argsRef(args);
         Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
-        Transform& transform = entity.Transformation();
-
-        return Python::Vec3ToValue(transform.GetScale()).Detach();
+        return Python::Vec3ToValue(GetTransformSystem(entity)->GetWorldScale(entity)).Detach();
     }
 
     Python::ScriptValue* Prism_TransformComponent_SetScale(Python::ScriptValue* self, Python::ScriptValue* args)
@@ -300,9 +299,7 @@ namespace Prism::Script
         Python::ScriptRef argsRef(args);
         Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
         Python::ScriptRef vecObj = Python::GetTupleElement(argsRef, 1);
-
-        Transform& transform = entity.Transformation();
-        transform.SetScale(Python::ValueToVec3(vecObj));
+        GetTransformSystem(entity)->SetWorldScale(entity, Python::ValueToVec3(vecObj));
         return Python::NoneValue().Detach();
     }
 
@@ -310,13 +307,17 @@ namespace Prism::Script
     {
         Python::ScriptRef argsRef(args);
         Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
-        Transform& transform = entity.Transformation();
+        auto world = GetTransformSystem(entity)->GetWorldDecomposed(entity);
+        auto& tc = entity.Transformation();
 
-        Python::ScriptRef data[3];
-        data[0] = Python::Vec3ToValue(transform.GetPosition());
-        data[1] = Python::Vec3ToValue(transform.GetRotation());
-        data[2] = Python::Vec3ToValue(transform.GetScale());
-        return Python::MakeTuple(data, 3).Detach();
+        Python::ScriptRef data[6];
+        data[0] = Python::Vec3ToValue(world.Position);
+        data[1] = Python::Vec3ToValue(world.Rotation);
+        data[2] = Python::Vec3ToValue(world.Scale);
+        data[3] = Python::Vec3ToValue(tc.Up);
+        data[4] = Python::Vec3ToValue(tc.Right);
+        data[5] = Python::Vec3ToValue(tc.Forward);
+        return Python::MakeTuple(data, 6).Detach();
     }
 
     Python::ScriptValue* Prism_TransformComponent_SetTransform(Python::ScriptValue* self, Python::ScriptValue* args)
@@ -327,10 +328,10 @@ namespace Prism::Script
         glm::vec3 rotation = Python::ValueToVec3(Python::GetTupleElement(argsRef, 2));
         glm::vec3 scale = Python::ValueToVec3(Python::GetTupleElement(argsRef, 3));
 
-        Transform& transform = entity.Transformation();
-        transform.SetPosition(position);
-        transform.SetRotation(rotation);
-        transform.SetScale(scale);
+        auto* ts = GetTransformSystem(entity);
+        ts->SetWorldPosition(entity, position);
+        ts->SetWorldRotation(entity, rotation);
+        ts->SetWorldScale(entity, scale);
         return Python::NoneValue().Detach();
     }
 
@@ -360,9 +361,7 @@ namespace Prism::Script
     {
         Python::ScriptRef argsRef(args);
         Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
-        Transform& transform = entity.Transformation();
-
-        return Python::Vec3ToValue(transform.GetPosition()).Detach();
+        return Python::Vec3ToValue(GetTransformSystem(entity)->GetWorldPosition(entity)).Detach();
     }
 
     Python::ScriptValue* Prism_TransformComponent_SetPosition(Python::ScriptValue* self, Python::ScriptValue* args)
@@ -370,9 +369,55 @@ namespace Prism::Script
         Python::ScriptRef argsRef(args);
         Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
         Python::ScriptRef vecObj = Python::GetTupleElement(argsRef, 1);
+        GetTransformSystem(entity)->SetWorldPosition(entity, Python::ValueToVec3(vecObj));
+        return Python::NoneValue().Detach();
+    }
 
-        Transform& transform = entity.Transformation();
-        transform.SetPosition(Python::ValueToVec3(vecObj));
+    Python::ScriptValue* Prism_TransformComponent_GetLocalPosition(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+        return Python::Vec3ToValue(entity.Transformation().GetPosition()).Detach();
+    }
+
+    Python::ScriptValue* Prism_TransformComponent_SetLocalPosition(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+        Python::ScriptRef vecObj = Python::GetTupleElement(argsRef, 1);
+        entity.Transformation().SetPosition(Python::ValueToVec3(vecObj));
+        return Python::NoneValue().Detach();
+    }
+
+    Python::ScriptValue* Prism_TransformComponent_GetLocalRotation(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+        return Python::Vec3ToValue(entity.Transformation().GetRotation()).Detach();
+    }
+
+    Python::ScriptValue* Prism_TransformComponent_SetLocalRotation(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+        Python::ScriptRef vecObj = Python::GetTupleElement(argsRef, 1);
+        entity.Transformation().SetRotation(Python::ValueToVec3(vecObj));
+        return Python::NoneValue().Detach();
+    }
+
+    Python::ScriptValue* Prism_TransformComponent_GetLocalScale(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+        return Python::Vec3ToValue(entity.Transformation().GetScale()).Detach();
+    }
+
+    Python::ScriptValue* Prism_TransformComponent_SetLocalScale(Python::ScriptValue* self, Python::ScriptValue* args)
+    {
+        Python::ScriptRef argsRef(args);
+        Entity entity = GetEntityFromEntityID(Python::ValueToUInt64(Python::GetTupleElement(argsRef, 0)));
+        Python::ScriptRef vecObj = Python::GetTupleElement(argsRef, 1);
+        entity.Transformation().SetScale(Python::ValueToVec3(vecObj));
         return Python::NoneValue().Detach();
     }
 

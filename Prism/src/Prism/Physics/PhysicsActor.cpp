@@ -180,15 +180,18 @@ namespace Prism {
     {
         physx::PxPhysics& physics = PXPhysicsWrappers::GetPhysics();
 
+        Ref<Scene> scene = Scene::GetScene(m_Entity.GetSceneUUID());
+        glm::mat4 transform = scene->GetTransformRelativeToParent(m_Entity);
+
         if (m_RigidBody.BodyType == RigidBodyComponent::Type::Static)
         {
-            m_ActorInternal = physics.createRigidStatic(ToPhysXTransform(m_Entity.Transformation()));
+            m_ActorInternal = physics.createRigidStatic(ToPhysXTransform(transform));
         }
         else
         {
             const PhysicsSettings& settings = Physics::GetSettings();
 
-            physx::PxRigidDynamic* actor = physics.createRigidDynamic(ToPhysXTransform(m_Entity.Transformation()));
+            physx::PxRigidDynamic* actor = physics.createRigidDynamic(ToPhysXTransform(transform));
             actor->setLinearDamping(m_RigidBody.LinearDrag);
             actor->setAngularDamping(m_RigidBody.AngularDrag);
             actor->setRigidBodyFlag(physx::PxRigidBodyFlag::eKINEMATIC, m_RigidBody.IsKinematic);
@@ -249,22 +252,23 @@ namespace Prism {
 
     void PhysicsActor::SyncToPhysX()
     {
-        auto& transform = m_Entity.Transformation();
-        if (!transform.IsPhysicsDirty()) return;
+        auto& tc = m_Entity.Transformation();
+        if (!tc.IsPhysicsDirty()) return;
 
-        m_ActorInternal->setGlobalPose(ToPhysXTransform(transform.GetMatrix()));
-        transform.MarkPhysicsClean();
+        Ref<Scene> scene = Scene::GetScene(m_Entity.GetSceneUUID());
+        m_ActorInternal->setGlobalPose(ToPhysXTransform(scene->GetTransformRelativeToParent(m_Entity)));
+        tc.MarkPhysicsClean();
     }
 
     void PhysicsActor::SyncFromPhysX()
     {
         if (!IsDynamic()) return;
 
-        auto& transform = m_Entity.Transformation();
+        auto& tc = m_Entity.Transformation();
         physx::PxTransform pxTransform = m_ActorInternal->getGlobalPose();
-        transform.SetPosition(glm::vec3(pxTransform.p.x, pxTransform.p.y, pxTransform.p.z));
-        transform.SetRotation(glm::quat(pxTransform.q.w, pxTransform.q.x, pxTransform.q.y, pxTransform.q.z));
-        transform.MarkPhysicsClean();
+        tc.SetPosition(glm::vec3(pxTransform.p.x, pxTransform.p.y, pxTransform.p.z));
+        tc.SetRotation(glm::degrees(glm::eulerAngles(glm::quat(pxTransform.q.w, pxTransform.q.x, pxTransform.q.y, pxTransform.q.z))));
+        tc.MarkPhysicsClean();
     }
 
     void PhysicsActor::AddCollisionShape(physx::PxShape* shape)

@@ -61,6 +61,12 @@ namespace Prism::Script
     Python::ScriptValue* Prism_TransformComponent_SetScale(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_TransformComponent_GetTransform(Python::ScriptValue* self, Python::ScriptValue* args);
     Python::ScriptValue* Prism_TransformComponent_SetTransform(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_TransformComponent_GetLocalPosition(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_TransformComponent_SetLocalPosition(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_TransformComponent_GetLocalRotation(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_TransformComponent_SetLocalRotation(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_TransformComponent_GetLocalScale(Python::ScriptValue* self, Python::ScriptValue* args);
+    Python::ScriptValue* Prism_TransformComponent_SetLocalScale(Python::ScriptValue* self, Python::ScriptValue* args);
 
     // RigidBody2DComponent
     Python::ScriptValue* Prism_RigidBody2DComponent_ApplyLinearImpulse(Python::ScriptValue* self, Python::ScriptValue* args);

@@ -15,6 +15,9 @@ namespace Prism {
 		s_Types["wav"] = AssetType::Audio;
 		s_Types["ogg"] = AssetType::Audio;
 		s_Types["cs"] = AssetType::Script;
+        s_Types["py"] = AssetType::Script;
+        s_Types["Shader"] = AssetType::Shader;
+        s_Types["glsl"] = AssetType::Shader;
 	}
 
 	size_t AssetTypes::GetAssetTypeID(const std::string& extension)

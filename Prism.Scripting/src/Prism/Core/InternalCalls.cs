@@ -105,11 +105,20 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_TransformComponent_GetPosition;
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_TransformComponent_GetRotation;
         internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_TransformComponent_GetScale;
-        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3, void> Prism_TransformComponent_SetPosition;
-        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3, void> Prism_TransformComponent_SetRotation;
-        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3, void> Prism_TransformComponent_SetScale;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_TransformComponent_GetUp;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_TransformComponent_GetRight;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_TransformComponent_GetForward;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_TransformComponent_SetPosition;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_TransformComponent_SetRotation;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_TransformComponent_SetScale;
         internal static delegate* unmanaged[Cdecl]<UInt64, Transform*, void> Prism_TransformComponent_GetTransform;
         internal static delegate* unmanaged[Cdecl]<UInt64, Transform*, void> Prism_TransformComponent_SetTransform;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_TransformComponent_GetLocalPosition;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_TransformComponent_SetLocalPosition;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_TransformComponent_GetLocalRotation;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_TransformComponent_SetLocalRotation;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_TransformComponent_GetLocalScale;
+        internal static delegate* unmanaged[Cdecl]<UInt64, Vector3*, void> Prism_TransformComponent_SetLocalScale;
 
     }
 #pragma warning restore CS0649

@@ -11,14 +11,12 @@
 #include "Prism/Editor/EditorCamera.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/quaternion.hpp>
-#include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include "Systems/Physics2DSystem.h"
 #include "Systems/Physics3DSystem.h"
 #include "Systems/ScriptSystem.h"
-#include "Systems/TransformSyncSystem.h"
+#include "Systems/TransformSystem.h"
 #include "Systems/RenderSystem.h"
 
 #include "Scripting/CSharp/CSharpScriptEngine.h"
@@ -46,7 +44,7 @@ namespace Prism
         s_ActiveScenes[m_SceneID] = this;
 
         AddSystem<ScriptSystem>(this);
-        AddSystem<TransformSyncSystem>(this);
+        AddSystem<TransformSystem>(this);
         AddSystem<Physics3DSystem>(this);
         AddSystem<Physics2DSystem>(this);
         AddSystem<RenderSystem>(this);
@@ -87,6 +85,11 @@ namespace Prism
         for (auto* sys : m_SystemOrder) sys->OnPreLateUpdate(dt);
         for (auto* sys : m_SystemOrder) sys->OnLateUpdate(dt);
         for (auto* sys : m_SystemOrder) sys->OnPostLateUpdate(dt);
+    }
+
+    void Scene::OnRender(float dt)
+    {
+        for (auto* sys : m_SystemOrder) sys->OnRender(dt);
     }
 
     void Scene::OnEvent(Event& e)
@@ -130,6 +133,8 @@ namespace Prism
         idComponent.ID = {};
 
         entity.AddComponent<TransformComponent>();
+        entity.AddComponent<ParentComponent>();
+        entity.AddComponent<ChildrenComponent>();
         entity.AddComponent<CSharpScriptComponent>();
         entity.AddComponent<PythonScriptComponent>();
         if (!name.empty())
@@ -145,6 +150,8 @@ namespace Prism
         idComponent.ID = uuid;
 
         entity.AddComponent<TransformComponent>();
+        entity.AddComponent<ParentComponent>();
+        entity.AddComponent<ChildrenComponent>();
         entity.AddComponent<CSharpScriptComponent>();
         entity.AddComponent<PythonScriptComponent>();
         if (!name.empty())
@@ -196,6 +203,8 @@ namespace Prism
             newEntity = CreateEntity();
 
         CopyComponentIfExists<TransformComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<ParentComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<ChildrenComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<MeshRendererComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<CSharpScriptComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<PythonScriptComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
@@ -228,24 +237,18 @@ namespace Prism
         return Entity{};
     }
 
-    Entity Scene::FindEntityByHandle(uint32_t handle)
-    {
-        auto view = m_Registry.view<TagComponent>();
-        for (auto entity : view)
-        {
-            if (entity == (entt::entity)handle)
-                return Entity(entity, this);
-        }
-
-        return Entity{};
-    }
-
-    Entity Scene::TryGetEntityByUUID(UUID uuid)
+    Entity Scene::FindEntityByUUID(UUID uuid)
     {
         auto it = m_EntityIDMap.find(uuid);
         if (it != m_EntityIDMap.end())
             return it->second;
         return {};
+    }
+
+    glm::mat4 Scene::GetTransformRelativeToParent(Entity entity)
+    {
+        auto* ts = GetSystem<TransformSystem>();
+        return ts ? ts->GetWorldTransformMatrix(entity) : glm::mat4(1.0F);
     }
 
     // Copy to runtime
@@ -269,6 +272,8 @@ namespace Prism
 
         CopyComponent<TagComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<TransformComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<ParentComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<ChildrenComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<MeshRendererComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<CSharpScriptComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<PythonScriptComponent>(target->m_Registry, m_Registry, enttMap);

@@ -9,16 +9,19 @@ namespace Prism
         public Vector3 Position;
         public Vector3 Rotation; // euler angles in degrees
         public Vector3 Scale;
+        public Vector3 Up;       // filled by C++
+        public Vector3 Right;    // filled by C++
+        public Vector3 Forward;  // filled by C++
 
-        public Vector3 Up => new Quaternion(Rotation * MathF.PI / 180f) * Vector3.Up;
-        public Vector3 Right => new Quaternion(Rotation * MathF.PI / 180f) * Vector3.Right;
-        public Vector3 Forward => new Quaternion(Rotation * MathF.PI / 180f) * Vector3.Forward;
-
-        public Transform(Vector3 position, Vector3 rotation, Vector3 scale)
+        public Transform(Vector3 position, Vector3 rotation, Vector3 scale,
+                         Vector3 up, Vector3 right, Vector3 forward)
         {
             Position = position;
             Rotation = rotation;
             Scale = scale;
+            Up = up;
+            Right = right;
+            Forward = forward;
         }
 
         // Compose two transforms: result = a * b  (apply b, then a)
@@ -36,6 +39,9 @@ namespace Prism
                 a.Scale.Y * b.Scale.Y,
                 a.Scale.Z * b.Scale.Z
             );
+            result.Up = aq * Vector3.Up;
+            result.Right = aq * Vector3.Right;
+            result.Forward = aq * Vector3.Forward;
             return result;
         }
 

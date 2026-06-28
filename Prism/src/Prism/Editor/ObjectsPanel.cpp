@@ -31,7 +31,7 @@ namespace Prism {
 
 				if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
 				{
-					ImGui::Image((void*)m_CubeImage->GetRendererID(), ImVec2(20, 20));
+					ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(20, 20));
 					ImGui::SameLine();
 
 					ImGui::Text("Cube");
@@ -41,14 +41,14 @@ namespace Prism {
 					ImGui::EndDragDropSource();
 				}
 
-				ImGui::Image((void*)m_CubeImage->GetRendererID(), ImVec2(30, 30));
+				ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(30, 30));
 				ImGui::SameLine();
 				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 				ImGui::Selectable("Sphere");
 
 				if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
 				{
-					ImGui::Image((void*)m_CubeImage->GetRendererID(), ImVec2(20, 20));
+					ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(20, 20));
 					ImGui::SameLine();
 
 					ImGui::Text("Sphere");
@@ -57,14 +57,14 @@ namespace Prism {
 					ImGui::EndDragDropSource();
 				}
 
-				ImGui::Image((void*)m_CubeImage->GetRendererID(), ImVec2(30, 30));
+				ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(30, 30));
 				ImGui::SameLine();
 				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 				ImGui::Selectable("Cylinder");
 
 				if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
 				{
-					ImGui::Image((void*)m_CubeImage->GetRendererID(), ImVec2(20, 20));
+					ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(20, 20));
 					ImGui::SameLine();
 
 					ImGui::Text("Cylinder");
@@ -73,14 +73,14 @@ namespace Prism {
 					ImGui::EndDragDropSource();
 				}
 
-				ImGui::Image((void*)m_CubeImage->GetRendererID(), ImVec2(30, 30));
+				ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(30, 30));
 				ImGui::SameLine();
 				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 				ImGui::Selectable("Torus");
 
 				if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
 				{
-					ImGui::Image((void*)m_CubeImage->GetRendererID(), ImVec2(20, 20));
+					ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(20, 20));
 					ImGui::SameLine();
 
 					ImGui::Text("Torus");
@@ -90,14 +90,14 @@ namespace Prism {
 				}
 
 
-				ImGui::Image((void*)m_CubeImage->GetRendererID(), ImVec2(30, 30));
+				ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(30, 30));
 				ImGui::SameLine();
 				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 				ImGui::Selectable("Plane");
 
 				if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
 				{
-					ImGui::Image((void*)m_CubeImage->GetRendererID(), ImVec2(20, 20));
+					ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(20, 20));
 					ImGui::SameLine();
 
 					ImGui::Text("Plane");
@@ -106,14 +106,14 @@ namespace Prism {
 					ImGui::EndDragDropSource();
 				}
 
-				ImGui::Image((void*)m_CubeImage->GetRendererID(), ImVec2(30, 30));
+				ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(30, 30));
 				ImGui::SameLine();
 				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
 				ImGui::Selectable("Cone");
 
 				if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
 				{
-					ImGui::Image((void*)m_CubeImage->GetRendererID(), ImVec2(20, 20));
+					ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(20, 20));
 					ImGui::SameLine();
 
 					ImGui::Text("Cone");

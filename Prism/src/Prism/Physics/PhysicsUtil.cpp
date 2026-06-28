@@ -7,10 +7,10 @@
 
 namespace Prism {
 
-    physx::PxTransform ToPhysXTransform(const Transform& transform)
+    physx::PxTransform ToPhysXTransform(const glm::vec3& position, const glm::quat& rotation)
     {
-        physx::PxQuat r = ToPhysXQuat(glm::normalize(glm::quat(glm::radians(transform.GetRotation()))));
-        physx::PxVec3 p = ToPhysXVector(transform.GetPosition());
+        physx::PxQuat r = ToPhysXQuat(glm::normalize(rotation));
+        physx::PxVec3 p = ToPhysXVector(position);
         return physx::PxTransform(p, r);
     }
 

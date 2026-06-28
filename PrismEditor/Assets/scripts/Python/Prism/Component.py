@@ -73,31 +73,50 @@ class TransformComponent(Component):
         _Prism.Prism_TransformComponent_SetScale(self.Entity._id, value)
 
     @property
+    def LocalPosition(self):
+        return Vector3(_Prism.Prism_TransformComponent_GetLocalPosition(self.Entity._id))
+
+    @LocalPosition.setter
+    def LocalPosition(self, value):
+        _Prism.Prism_TransformComponent_SetLocalPosition(self.Entity._id, value)
+
+    @property
+    def LocalRotation(self):
+        return Vector3(_Prism.Prism_TransformComponent_GetLocalRotation(self.Entity._id)) * (180.0 / 3.141592653589793)
+
+    @LocalRotation.setter
+    def LocalRotation(self, value):
+        _Prism.Prism_TransformComponent_SetLocalRotation(self.Entity._id, value)
+
+    @property
+    def LocalScale(self):
+        return Vector3(_Prism.Prism_TransformComponent_GetLocalScale(self.Entity._id))
+
+    @LocalScale.setter
+    def LocalScale(self, value):
+        _Prism.Prism_TransformComponent_SetLocalScale(self.Entity._id, value)
+
+    @property
     def Forward(self):
-        from Prism.Math.Quaternion import Quaternion
-        r = self.Rotation
-        q = Quaternion.Euler(r.x, r.y, r.z)
-        return q * Vector3.Forward
+        result = _Prism.Prism_TransformComponent_GetTransform(self.Entity._id)
+        return Vector3(result[5])
 
     @property
     def Right(self):
-        from Prism.Math.Quaternion import Quaternion
-        r = self.Rotation
-        q = Quaternion.Euler(r.x, r.y, r.z)
-        return q * Vector3.Right
+        result = _Prism.Prism_TransformComponent_GetTransform(self.Entity._id)
+        return Vector3(result[4])
 
     @property
     def Up(self):
-        from Prism.Math.Quaternion import Quaternion
-        r = self.Rotation
-        q = Quaternion.Euler(r.x, r.y, r.z)
-        return q * Vector3.Up
+        result = _Prism.Prism_TransformComponent_GetTransform(self.Entity._id)
+        return Vector3(result[3])
 
     @property
     def Transform(self):
         from Prism.Core.Transform import Transform as T
         result = _Prism.Prism_TransformComponent_GetTransform(self.Entity._id)
-        return T(Vector3(result[0]), Vector3(result[1]), Vector3(result[2]))
+        return T(Vector3(result[0]), Vector3(result[1]), Vector3(result[2]),
+                 Vector3(result[3]), Vector3(result[4]), Vector3(result[5]))
 
     @Transform.setter
     def Transform(self, value):
@@ -105,6 +124,18 @@ class TransformComponent(Component):
             self.Entity._id,
             value.Position, value.Rotation, value.Scale
         )
+
+    @property
+    def LocalTransform(self):
+        from Prism.Core.Transform import Transform as T
+        return T(self.LocalPosition, self.LocalRotation, self.LocalScale,
+                 Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(0, 0, 0))
+
+    @LocalTransform.setter
+    def LocalTransform(self, value):
+        self.LocalPosition = value.Position
+        self.LocalRotation = value.Rotation
+        self.LocalScale = value.Scale
 
     def SetPosition(self, x, y, z):
         _Prism.Prism_TransformComponent_SetPosition(self.Entity._id, Vector3(x, y, z))

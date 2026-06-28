@@ -17,8 +17,6 @@ class FPSPlayer(Behaviour):
     WalkingSpeed: float = 10.0
     RunSpeed: float = 20.0
     JumpForce: float = 50.0
-    CameraForwardOffset: float = 0.2
-    CameraYOffset: float = 0.85
     MouseSensitivity: float = 10.0
 
     _collisionCounter: int = 0
@@ -60,19 +58,21 @@ class FPSPlayer(Behaviour):
         self.UpdateMovementInput()
         self.UpdateRotation(ts)
         self.UpdateMovement()
-        self.UpdateCameraTransform()
 
     def UpdateRotation(self, ts: float):
+        if Input.GetCursorMode() != CursorMode.Locked:
+            return
+
         currentMousePosition = Input.GetMousePosition()
         delta = self._lastMousePosition - currentMousePosition
-        yRotation = delta.x * self.MouseSensitivity * ts
+        yRotation = delta.x * (self.MouseSensitivity * 10.0) * ts
         xRotation = delta.y * self.MouseSensitivity * ts
-        self._rigidBody.Rotate(Vector3(0.0, yRotation, 0.0))
+        self._rigidBody.Rotate(Vector3.Up * yRotation)
 
-        if delta.y != 0.0 or delta.x != 0.0:
-            self._cameraTransform.Rotation += Vector3(xRotation, yRotation, 0.0)
+        if xRotation != 0.0:
+            self._cameraTransform.LocalRotation += Vector3(xRotation, 0.0, 0.0)
 
-        self._cameraTransform.Rotation = Vector3(Mathf.Clamp(self._cameraTransform.Rotation.x, -80.0, 80.0), self._cameraTransform.Rotation.YZ)
+        self._cameraTransform.LocalRotation = Vector3(Mathf.Clamp(self._cameraTransform.LocalRotation.x, -80.0, 80.0), 0.0, 0.0)
 
         self._lastMousePosition = currentMousePosition
 
@@ -124,11 +124,6 @@ class FPSPlayer(Behaviour):
         if self._shouldJump and self.Colliding:
             self._rigidBody.AddForce(Vector3.Up * self.JumpForce, ForceMode.Impulse)
             self._shouldJump = False
-
-    def UpdateCameraTransform(self):
-        position = self._transform.Position + self._transform.Transform.Forward * self.CameraForwardOffset
-        position.y = self._transform.Position.y + self.CameraYOffset
-        self._cameraTransform.Position = position
 
     def OnCollisionBegin(self, collision_id: float):
         self._collisionCounter += 1

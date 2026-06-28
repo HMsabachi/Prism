@@ -21,14 +21,16 @@ namespace Prism {
 		m_ResourceTex = Texture2D::Create("assets/editor/resource.png");
 		m_SceneTex = Texture2D::Create("assets/editor/scene.png");
 
-		m_AssetIconMaps[-1] = Texture2D::Create("assets/editor/file.png");
-		m_AssetIconMaps[AssetTypes::GetAssetTypeID("fbx")] = Texture2D::Create("assets/editor/fbx.png");
-		m_AssetIconMaps[AssetTypes::GetAssetTypeID("obj")] = Texture2D::Create("assets/editor/obj.png");
-		m_AssetIconMaps[AssetTypes::GetAssetTypeID("wav")] = Texture2D::Create("assets/editor/wav.png");
-		m_AssetIconMaps[AssetTypes::GetAssetTypeID("cs")] = Texture2D::Create("assets/editor/csc.png");
-		m_AssetIconMaps[AssetTypes::GetAssetTypeID("png")] = Texture2D::Create("assets/editor/png.png");
-		m_AssetIconMaps[AssetTypes::GetAssetTypeID("blend")] = Texture2D::Create("assets/editor/blend.png");
-		m_AssetIconMaps[AssetTypes::GetAssetTypeID("psc")] = Texture2D::Create("assets/editor/prism.png");
+		m_AssetIconMap[-1] = Texture2D::Create("assets/editor/file.png");
+		m_AssetIconMap[AssetTypes::GetAssetTypeID("fbx")] = Texture2D::Create("assets/editor/fbx.png");
+		m_AssetIconMap[AssetTypes::GetAssetTypeID("obj")] = Texture2D::Create("assets/editor/obj.png");
+		m_AssetIconMap[AssetTypes::GetAssetTypeID("wav")] = Texture2D::Create("assets/editor/wav.png");
+		m_AssetIconMap[AssetTypes::GetAssetTypeID("cs")] = Texture2D::Create("assets/editor/csc.png");
+		m_AssetIconMap[AssetTypes::GetAssetTypeID("png")] = Texture2D::Create("assets/editor/png.png");
+		m_AssetIconMap[AssetTypes::GetAssetTypeID("blend")] = Texture2D::Create("assets/editor/blend.png");
+		m_AssetIconMap[AssetTypes::GetAssetTypeID("psc")] = Texture2D::Create("assets/editor/prism.png");
+        m_AssetIconMap[AssetTypes::GetAssetTypeID("Shader")] = Texture2D::Create("assets/editor/shader.png");
+        m_AssetIconMap[AssetTypes::GetAssetTypeID("glsl")] = m_AssetIconMap[AssetTypes::GetAssetTypeID("Shader")];
 
 		m_BackbtnTex = Texture2D::Create("assets/editor/btn_back.png");
 		m_FwrdbtnTex = Texture2D::Create("assets/editor/btn_fwrd.png");
@@ -94,9 +96,29 @@ namespace Prism {
 						ImGui::TreePop();
 					}
 
-					if (ImGui::IsMouseDown(1))
+					if (ImGui::BeginPopupContextWindow(0, 1))
 					{
-						//ImGui::OpenPopup("window");
+						if (ImGui::BeginMenu("New"))
+						{
+							if (ImGui::MenuItem("Folder"))
+								PR_CORE_INFO("Creating Folder...");
+							if (ImGui::MenuItem("Scene"))
+								PR_CORE_INFO("Creating Scene...");
+							if (ImGui::MenuItem("Script"))
+								PR_CORE_INFO("Creating Script...");
+							if (ImGui::MenuItem("Prefab"))
+								PR_CORE_INFO("Creating Prefab...");
+							if (ImGui::BeginMenu("Shaders"))
+							{
+								if (ImGui::MenuItem("Shader"))
+									PR_CORE_INFO("Creating Shader File...");
+								if (ImGui::MenuItem("Shader Graph"))
+									PR_CORE_INFO("Creating Shader Graph...");
+								ImGui::EndMenu();
+							}
+							ImGui::EndMenu();
+						}
+						ImGui::EndPopup();
 					}
 				}
 
@@ -200,7 +222,7 @@ namespace Prism {
 	{
 		ImGui::PushID(dirIndex);
 		size_t fileID = AssetTypes::GetAssetTypeID(m_CurrentDir[dirIndex].FileType);
-		RendererID iconRef = m_AssetIconMaps[fileID]->GetRendererID();
+		RendererID iconRef = m_AssetIconMap[fileID]->GetRendererID();
 		ImGui::Image((ImTextureID)iconRef, ImVec2(20, 20));
 
 		ImGui::SameLine();
@@ -221,7 +243,7 @@ namespace Prism {
 		ImGui::BeginGroup();
 
 		size_t fileID = AssetTypes::GetAssetTypeID(m_CurrentDir[dirIndex].FileType);
-		RendererID iconRef = m_AssetIconMaps[fileID]->GetRendererID();
+		RendererID iconRef = m_AssetIconMap[fileID]->GetRendererID();
 		float columnWidth = ImGui::GetColumnWidth();
 
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));

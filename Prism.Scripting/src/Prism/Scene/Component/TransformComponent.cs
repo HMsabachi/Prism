@@ -1,4 +1,4 @@
-﻿
+
 using System;
 
 namespace Prism
@@ -10,18 +10,12 @@ namespace Prism
             get
             {
                 Transform t;
-                unsafe
-                {
-                    InternalCalls.Prism_TransformComponent_GetTransform(Entity.ID, &t);
-                }
+                unsafe { InternalCalls.Prism_TransformComponent_GetTransform(Entity.ID, &t); }
                 return t;
             }
             set
             {
-                unsafe
-                {
-                    InternalCalls.Prism_TransformComponent_SetTransform(Entity.ID, &value);
-                }
+                unsafe { InternalCalls.Prism_TransformComponent_SetTransform(Entity.ID, &value); }
             }
         }
 
@@ -30,18 +24,12 @@ namespace Prism
             get
             {
                 Vector3 position;
-                unsafe
-                {
-                    InternalCalls.Prism_TransformComponent_GetPosition(Entity.ID, &position);
-                }
+                unsafe { InternalCalls.Prism_TransformComponent_GetPosition(Entity.ID, &position); }
                 return position;
             }
             set
             {
-                unsafe
-                {
-                    InternalCalls.Prism_TransformComponent_SetPosition(Entity.ID, value);
-                }
+                unsafe { InternalCalls.Prism_TransformComponent_SetPosition(Entity.ID, &value); }
             }
         }
 
@@ -50,18 +38,12 @@ namespace Prism
             get
             {
                 Vector3 rotation;
-                unsafe
-                {
-                    InternalCalls.Prism_TransformComponent_GetRotation(Entity.ID, &rotation);
-                }
+                unsafe { InternalCalls.Prism_TransformComponent_GetRotation(Entity.ID, &rotation); }
                 return rotation;
             }
             set
             {
-                unsafe
-                {
-                    InternalCalls.Prism_TransformComponent_SetRotation(Entity.ID, value);
-                }
+                unsafe { InternalCalls.Prism_TransformComponent_SetRotation(Entity.ID, &value); }
             }
         }
 
@@ -70,18 +52,54 @@ namespace Prism
             get
             {
                 Vector3 scale;
-                unsafe
-                {
-                    InternalCalls.Prism_TransformComponent_GetScale(Entity.ID, &scale);
-                }
+                unsafe { InternalCalls.Prism_TransformComponent_GetScale(Entity.ID, &scale); }
                 return scale;
             }
             set
             {
-                unsafe
-                {
-                    InternalCalls.Prism_TransformComponent_SetScale(Entity.ID, value);
-                }
+                unsafe { InternalCalls.Prism_TransformComponent_SetScale(Entity.ID, &value); }
+            }
+        }
+
+        public Vector3 LocalPosition
+        {
+            get
+            {
+                Vector3 position;
+                unsafe { InternalCalls.Prism_TransformComponent_GetLocalPosition(Entity.ID, &position); }
+                return position;
+            }
+            set
+            {
+                unsafe { InternalCalls.Prism_TransformComponent_SetLocalPosition(Entity.ID, &value); }
+            }
+        }
+
+        public Vector3 LocalRotation
+        {
+            get
+            {
+                Vector3 rotation;
+                unsafe { InternalCalls.Prism_TransformComponent_GetLocalRotation(Entity.ID, &rotation); }
+                return rotation;
+            }
+            set
+            {
+                unsafe { InternalCalls.Prism_TransformComponent_SetLocalRotation(Entity.ID, &value); }
+            }
+        }
+
+        public Vector3 LocalScale
+        {
+            get
+            {
+                Vector3 scale;
+                unsafe { InternalCalls.Prism_TransformComponent_GetLocalScale(Entity.ID, &scale); }
+                return scale;
+            }
+            set
+            {
+                unsafe { InternalCalls.Prism_TransformComponent_SetLocalScale(Entity.ID, &value); }
             }
         }
 
@@ -102,13 +120,40 @@ namespace Prism
 
         public Transform LocalTransform
         {
-            get => new(Position, Rotation, Scale);
-            set { Position = value.Position; Rotation = value.Rotation; Scale = value.Scale; }
+            get
+            {
+                return new Transform(LocalPosition, LocalRotation, LocalScale,
+                                     Vector3.Zero, Vector3.Zero, Vector3.Zero);
+            }
+            set { LocalPosition = value.Position; LocalRotation = value.Rotation; LocalScale = value.Scale; }
         }
 
-        // Derived direction vectors from current rotation
-        public Vector3 Forward => new Quaternion(Rotation * MathF.PI / 180f) * Vector3.Forward;
-        public Vector3 Right => new Quaternion(Rotation * MathF.PI / 180f) * Vector3.Right;
-        public Vector3 Up => new Quaternion(Rotation * MathF.PI / 180f) * Vector3.Up;
+        public Vector3 Forward
+        {
+            get
+            {
+                Vector3 forward;
+                unsafe { InternalCalls.Prism_TransformComponent_GetForward(Entity.ID, &forward); }
+                return forward;
+            }
+        }
+        public Vector3 Right
+        {
+            get
+            {
+                Vector3 right;
+                unsafe { InternalCalls.Prism_TransformComponent_GetRight(Entity.ID, &right); }
+                return right;
+            }
+        }
+        public Vector3 Up
+        {
+            get
+            {
+                Vector3 up;
+                unsafe { InternalCalls.Prism_TransformComponent_GetUp(Entity.ID, &up); }
+                return up;
+            }
+        }
     }
 }

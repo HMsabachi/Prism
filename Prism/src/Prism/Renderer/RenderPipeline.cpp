@@ -603,7 +603,14 @@ namespace Prism
         glm::vec3 up = glm::abs(lightDir.y) < 0.99f
             ? glm::vec3(0.0f, 1.0f, 0.0f)
             : glm::vec3(1.0f, 0.0f, 0.0f);
-        glm::mat4 lightView = glm::lookAt(-lightDir, glm::vec3(0.0f), up);
+
+        glm::vec3 camPos = invView[3];
+        glm::vec3 camForward = -glm::normalize(glm::vec3(invView[2]));
+        float midDist = (nearClip + farClip) * 0.5f;
+        glm::vec3 frustumCenter = camPos + camForward * midDist;
+        float lightDist = farClip * 2.0f + 200.0f;
+        glm::vec3 lightEye = frustumCenter - lightDir * lightDist;
+        glm::mat4 lightView = glm::lookAt(lightEye, frustumCenter, up);
 
         float tanHalfFov = tanf(fov * 0.5f);
         float prevSplit = nearClip;

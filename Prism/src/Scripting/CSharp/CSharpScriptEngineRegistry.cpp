@@ -108,11 +108,20 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_TransformComponent_GetPosition);
         PR_ADD_INTERNAL_CALL(Prism_TransformComponent_GetRotation);
         PR_ADD_INTERNAL_CALL(Prism_TransformComponent_GetScale);
+        PR_ADD_INTERNAL_CALL(Prism_TransformComponent_GetUp);
+        PR_ADD_INTERNAL_CALL(Prism_TransformComponent_GetRight);
+        PR_ADD_INTERNAL_CALL(Prism_TransformComponent_GetForward);
         PR_ADD_INTERNAL_CALL(Prism_TransformComponent_SetPosition);
         PR_ADD_INTERNAL_CALL(Prism_TransformComponent_SetRotation);
         PR_ADD_INTERNAL_CALL(Prism_TransformComponent_SetScale);
         PR_ADD_INTERNAL_CALL(Prism_TransformComponent_GetTransform);
         PR_ADD_INTERNAL_CALL(Prism_TransformComponent_SetTransform);
+        PR_ADD_INTERNAL_CALL(Prism_TransformComponent_GetLocalPosition);
+        PR_ADD_INTERNAL_CALL(Prism_TransformComponent_SetLocalPosition);
+        PR_ADD_INTERNAL_CALL(Prism_TransformComponent_GetLocalRotation);
+        PR_ADD_INTERNAL_CALL(Prism_TransformComponent_SetLocalRotation);
+        PR_ADD_INTERNAL_CALL(Prism_TransformComponent_GetLocalScale);
+        PR_ADD_INTERNAL_CALL(Prism_TransformComponent_SetLocalScale);
         // RigidBodyComponent
         PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_AddForce);
         PR_ADD_INTERNAL_CALL(Prism_RigidBodyComponent_AddTorque);

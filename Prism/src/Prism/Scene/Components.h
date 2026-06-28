@@ -7,7 +7,6 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 #include "Prism/Core/UUID.h"
-#include "Prism/Core/Math/Transform.h"
 
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/Material.h"
@@ -39,17 +38,50 @@ namespace Prism {
         operator const std::string& () const { return Tag; }
     };
 
+    struct ParentComponent
+    {
+        UUID ParentHandle = 0;
+
+        ParentComponent() = default;
+        ParentComponent(const ParentComponent& other) = default;
+        ParentComponent(UUID parent)
+            : ParentHandle(parent) {}
+    };
+
+    struct ChildrenComponent
+    {
+        std::vector<UUID> Children;
+
+        ChildrenComponent() = default;
+        ChildrenComponent(const ChildrenComponent& other) = default;
+    };
+
     struct TransformComponent
     {
-        Transform Transformation;
+        glm::vec3 Up = { 0.0F, 1.0F, 0.0F };
+        glm::vec3 Right = { 1.0F, 0.0F, 0.0F };
+        glm::vec3 Forward = { 0.0F, 0.0F, -1.0F };
+
+        const glm::vec3& GetPosition() const { return m_Position; }
+        void SetPosition(const glm::vec3& v) { m_Position = v; m_PhysicsDirty = true; }
+
+        const glm::vec3& GetRotation() const { return m_Rotation; }
+        void SetRotation(const glm::vec3& v) { m_Rotation = v; m_PhysicsDirty = true; }
+
+        const glm::vec3& GetScale() const { return m_Scale; }
+        void SetScale(const glm::vec3& v) { m_Scale = v; m_PhysicsDirty = true; }
+
+        bool IsPhysicsDirty() const { return m_PhysicsDirty; }
+        void MarkPhysicsClean() { m_PhysicsDirty = false; }
 
         TransformComponent() = default;
         TransformComponent(const TransformComponent& other) = default;
-        TransformComponent(const Transform& transform)
-            : Transformation(transform) {}
 
-        operator Transform& () { return Transformation; }
-        operator const Transform& () const { return Transformation; }
+    private:
+        glm::vec3 m_Position = { 0.0f, 0.0f, 0.0f };
+        glm::vec3 m_Rotation = { 0.0f, 0.0f, 0.0f };
+        glm::vec3 m_Scale = { 1.0f, 1.0f, 1.0f };
+        bool m_PhysicsDirty = true; // 默认 true，首帧必定同步到物理引擎
     };
 
     struct MeshRendererComponent

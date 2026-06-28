@@ -61,14 +61,41 @@ namespace Prism {
     void SceneHierarchyPanel::OnImGuiRender()
     {
         ImGui::Begin("Scene Hierarchy");
+        ImRect windowRect = { ImGui::GetWindowContentRegionMin(), ImGui::GetWindowContentRegionMax() };
+
         if (m_Context)
         {
             uint32_t entityCount = 0, meshCount = 0;
             for (auto& entityid : m_Context->m_Registry.view<entt::entity>())
             {
                 Entity e(entityid, m_Context.Raw());
-                if (e.HasComponent<IDComponent>() && e.Parent() == entt::null)
+                if (e.HasComponent<IDComponent>() && e.GetParentUUID() == 0)
                     DrawEntityNode(e);
+            }
+
+            if (ImGui::BeginDragDropTargetCustom(windowRect, ImGui::GetCurrentWindow()->ID))
+            {
+                const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("scene_entity_hierarchy", ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
+
+                if (payload)
+                {
+                    UUID droppedHandle = *((UUID*)payload->Data);
+                    Entity e = m_Context->FindEntityByUUID(droppedHandle);
+                    if (e)
+                    {
+                        Entity previousParent = m_Context->FindEntityByUUID(e.GetParentUUID());
+                        if (previousParent)
+                        {
+                            auto& children = previousParent.Children();
+                            children.erase(std::remove(children.begin(), children.end(), droppedHandle), children.end());
+                        }
+
+                        e.SetParentUUID(0);
+                        PR_CORE_INFO("Unparented Entity!");
+                    }
+                }
+
+                ImGui::EndDragDropTarget();
             }
 
             if (ImGui::BeginPopupContextWindow("CreateEntityPopup", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverExistingPopup))
@@ -160,10 +187,11 @@ namespace Prism {
 
             ImGui::EndPopup();
         }
-        if (ImGui::BeginDragDropSource())
+        if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
         {
-            uint32_t entityId = (uint32_t)entity;
-            ImGui::SetDragDropPayload("scene_entity_hierarchy", &entityId, sizeof(uint32_t));
+            UUID entityId = entity.GetUUID();
+            ImGui::Text(entity.GetComponent<TagComponent>().Tag.c_str());
+            ImGui::SetDragDropPayload("scene_entity_hierarchy", &entityId, sizeof(UUID));
             ImGui::EndDragDropSource();
         }
 
@@ -173,11 +201,23 @@ namespace Prism {
 
             if (payload)
             {
-                uint32_t droppedHandle = *((uint32_t*)payload->Data);
-                Entity e = m_Context->FindEntityByHandle(droppedHandle);
-                e.Parent() = entity;
-                entity.AddChild(e);
-                PR_CORE_INFO("Dropping Entity {0} on {1}", droppedHandle, (uint32_t)entity);
+                UUID droppedHandle = *((UUID*)payload->Data);
+                Entity e = m_Context->FindEntityByUUID(droppedHandle);
+                if (e)
+                {
+                    Entity previousParent = m_Context->FindEntityByUUID(e.GetParentUUID());
+                    if (previousParent)
+                    {
+                        auto& parentChildren = previousParent.Children();
+                        parentChildren.erase(std::remove(parentChildren.begin(), parentChildren.end(), droppedHandle), parentChildren.end());
+                    }
+
+                    e.SetParentUUID(entity.GetUUID());
+                    auto& children = entity.Children();
+                    children.push_back(droppedHandle);
+
+                    PR_CORE_INFO("Dropping Entity {0} on {1}", droppedHandle, entity.GetUUID());
+                }
             }
 
             ImGui::EndDragDropTarget();
@@ -185,10 +225,11 @@ namespace Prism {
 
         if (opened)
         {
-            for (auto& child : entity.Children())
+            for (auto child : entity.Children())
             {
-                Entity e = m_Context->FindEntityByHandle((uint32_t)child);
-                DrawEntityNode(e);
+                Entity e = m_Context->FindEntityByUUID(child);
+                if (e)
+                    DrawEntityNode(e);
             }
 
             ImGui::TreePop();
@@ -460,7 +501,7 @@ namespace Prism {
         if (entity.HasComponent<TransformComponent>())
         {
             const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
-            Transform& transform = entity.Transformation();
+            auto& transform = entity.Transformation();
 
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
             ImGui::Separator();

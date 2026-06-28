@@ -100,8 +100,14 @@ namespace Prism
         PR_PYTHON_FUNCTION(Prism_TransformComponent_SetRotation, "SetRotation(entityID, vec3) degrees");
         PR_PYTHON_FUNCTION(Prism_TransformComponent_GetScale, "GetScale(entityID) -> vec3");
         PR_PYTHON_FUNCTION(Prism_TransformComponent_SetScale, "SetScale(entityID, vec3)");
-        PR_PYTHON_FUNCTION(Prism_TransformComponent_GetTransform, "GetTransform(entityID) -> (position, rotation, scale)");
-        PR_PYTHON_FUNCTION(Prism_TransformComponent_SetTransform, "SetTransform(entityID, position, rotation, scale)");
+        PR_PYTHON_FUNCTION(Prism_TransformComponent_GetTransform, "GetTransform(entityID) -> (position, rotation, scale, up, right, forward) world");
+        PR_PYTHON_FUNCTION(Prism_TransformComponent_SetTransform, "SetTransform(entityID, position, rotation, scale) world");
+        PR_PYTHON_FUNCTION(Prism_TransformComponent_GetLocalPosition, "GetLocalPosition(entityID) -> vec3");
+        PR_PYTHON_FUNCTION(Prism_TransformComponent_SetLocalPosition, "SetLocalPosition(entityID, vec3)");
+        PR_PYTHON_FUNCTION(Prism_TransformComponent_GetLocalRotation, "GetLocalRotation(entityID) -> vec3");
+        PR_PYTHON_FUNCTION(Prism_TransformComponent_SetLocalRotation, "SetLocalRotation(entityID, vec3)");
+        PR_PYTHON_FUNCTION(Prism_TransformComponent_GetLocalScale, "GetLocalScale(entityID) -> vec3");
+        PR_PYTHON_FUNCTION(Prism_TransformComponent_SetLocalScale, "SetLocalScale(entityID, vec3)");
 
         // RigidBody2DComponent
         PR_PYTHON_FUNCTION(Prism_RigidBody2DComponent_ApplyLinearImpulse, "ApplyLinearImpulse(entityID, impulse, offset, wake)");

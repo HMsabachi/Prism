@@ -14,6 +14,7 @@
 
 #include "Scripting/CSharp/CSharpScriptEngine.h"
 #include "Prism/Scene/Systems/ScriptSystem.h"
+#include "Prism/Scene/Systems/TransformSystem.h"
 #include "Scripting/CSharp/CSharpScriptMetaRegistry.h"
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Asset/ModelImporter.h"
@@ -219,63 +220,109 @@ namespace Prism {
 #pragma endregion
 
 #pragma region TransformComponent
+        static TransformSystem* GetTransformSystem(Entity entity)
+        {
+            return entity.GetScene()->GetSystem<TransformSystem>();
+        }
+
         void Prism_TransformComponent_GetPosition(uint64_t entityID, glm::vec3* outPosition)
         {
             Entity entity = GetEntityFromEntityID(entityID);
-            Transform& transform = entity.Transformation();
-            memcpy(outPosition, &transform.GetPosition(), sizeof(glm::vec3));
+            *outPosition = GetTransformSystem(entity)->GetWorldPosition(entity);
         }
         void Prism_TransformComponent_GetRotation(uint64_t entityID, glm::vec3* outRotation)
         {
             Entity entity = GetEntityFromEntityID(entityID);
-            Transform& transform = entity.Transformation();
-            glm::vec3 euler = transform.GetRotation();
-            memcpy(outRotation, &euler, sizeof(glm::vec3));
+            *outRotation = GetTransformSystem(entity)->GetWorldRotation(entity);
         }
-
         void Prism_TransformComponent_GetScale(uint64_t entityID, glm::vec3* outScale)
         {
             Entity entity = GetEntityFromEntityID(entityID);
-            Transform& transform = entity.Transformation();
-            memcpy(outScale, &transform.GetScale(), sizeof(glm::vec3));
-        }
-        void Prism_TransformComponent_SetPosition(uint64_t entityID, glm::vec3 inPosition)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            Transform& transform = entity.Transformation();
-            transform.SetPosition(inPosition);
+            *outScale = GetTransformSystem(entity)->GetWorldScale(entity);
         }
 
-        void Prism_TransformComponent_SetRotation(uint64_t entityID, glm::vec3 inRotation)
+        void Prism_TransformComponent_GetUp(uint64_t entityID, glm::vec3* outUP)
         {
             Entity entity = GetEntityFromEntityID(entityID);
-            Transform& transform = entity.Transformation();
-            transform.SetRotation(inRotation);
+            *outUP = entity.Transformation().Up;
+        }
+        void Prism_TransformComponent_GetRight(uint64_t entityID, glm::vec3* outRight)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            *outRight = entity.Transformation().Right;
+        }
+        void Prism_TransformComponent_GetForward(uint64_t entityID, glm::vec3* outForward)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            *outForward = entity.Transformation().Forward;
         }
 
-        void Prism_TransformComponent_SetScale(uint64_t entityID, glm::vec3 inScale)
+        void Prism_TransformComponent_SetPosition(uint64_t entityID, glm::vec3* inPosition)
         {
             Entity entity = GetEntityFromEntityID(entityID);
-            Transform& transform = entity.Transformation();
-            transform.SetScale(inScale);
+            GetTransformSystem(entity)->SetWorldPosition(entity, *inPosition);
+        }
+        void Prism_TransformComponent_SetRotation(uint64_t entityID, glm::vec3* inRotation)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            GetTransformSystem(entity)->SetWorldRotation(entity, *inRotation);
+        }
+        void Prism_TransformComponent_SetScale(uint64_t entityID, glm::vec3* inScale)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            GetTransformSystem(entity)->SetWorldScale(entity, *inScale);
         }
 
         void Prism_TransformComponent_GetTransform(uint64_t entityID, ScriptTransform* outTransform)
         {
             Entity entity = GetEntityFromEntityID(entityID);
-            Transform& transform = entity.Transformation();
-            outTransform->Position = transform.GetPosition();
-            outTransform->Rotation = transform.GetRotation();
-            outTransform->Scale = transform.GetScale();
+            auto world = GetTransformSystem(entity)->GetWorldDecomposed(entity);
+            auto& tc = entity.Transformation();
+            outTransform->Position = world.Position;
+            outTransform->Rotation = world.Rotation;
+            outTransform->Scale    = world.Scale;
+            outTransform->Up       = tc.Up;
+            outTransform->Right    = tc.Right;
+            outTransform->Forward  = tc.Forward;
         }
-
         void Prism_TransformComponent_SetTransform(uint64_t entityID, ScriptTransform* inTransform)
         {
             Entity entity = GetEntityFromEntityID(entityID);
-            Transform& transform = entity.Transformation();
-            transform.SetPosition(inTransform->Position);
-            transform.SetRotation(inTransform->Rotation);
-            transform.SetScale(inTransform->Scale);
+            auto* ts = GetTransformSystem(entity);
+            ts->SetWorldPosition(entity, inTransform->Position);
+            ts->SetWorldRotation(entity, inTransform->Rotation);
+            ts->SetWorldScale(entity, inTransform->Scale);
+        }
+
+        void Prism_TransformComponent_GetLocalPosition(uint64_t entityID, glm::vec3* outPosition)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            *outPosition = entity.Transformation().GetPosition();
+        }
+        void Prism_TransformComponent_SetLocalPosition(uint64_t entityID, glm::vec3* inPosition)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            entity.Transformation().SetPosition(*inPosition);
+        }
+        void Prism_TransformComponent_GetLocalRotation(uint64_t entityID, glm::vec3* outRotation)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            *outRotation = entity.Transformation().GetRotation();
+        }
+        void Prism_TransformComponent_SetLocalRotation(uint64_t entityID, glm::vec3* inRotation)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            entity.Transformation().SetRotation(*inRotation);
+        }
+        void Prism_TransformComponent_GetLocalScale(uint64_t entityID, glm::vec3* outScale)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            *outScale = entity.Transformation().GetScale();
+        }
+        void Prism_TransformComponent_SetLocalScale(uint64_t entityID, glm::vec3* inScale)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            entity.Transformation().SetScale(*inScale);
         }
 
 #pragma endregion

@@ -143,10 +143,8 @@ namespace Prism
 
                 auto* rs = m_ActiveScene->GetSystem<RenderSystem>();
                 if (rs)
-                {
                     rs->SetEditorCamera(m_EditorCamera);
-                    rs->Render();
-                }
+                m_ActiveScene->OnRender(ts);
 
                 if (m_DrawOnTopBoundingBoxes)
                 {
@@ -167,7 +165,8 @@ namespace Prism
                         auto viewProj = m_EditorCamera.GetViewProjection();
                         Renderer2D::BeginScene(viewProj, false);
                         glm::vec4 color = (m_SelectionMode == SelectionMode::Entity) ? glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f } : glm::vec4{ 0.2f, 0.9f, 0.2f, 1.0f };
-                        Renderer::DrawAABB(selection.Mesh->BoundingBox, selection.Entity.Transformation().GetMatrix() * selection.Mesh->Transform, color);
+                        glm::mat4 worldTransform = m_ActiveScene->GetTransformRelativeToParent(selection.Entity);
+                        Renderer::DrawAABB(selection.Mesh->BoundingBox, worldTransform * selection.Mesh->Transform, color);
                         Renderer2D::EndScene();
                         Renderer::EndRenderPass();
                     }
@@ -180,6 +179,7 @@ namespace Prism
                     m_EditorCamera.OnUpdate(ts);
 
                 m_ActiveScene->OnUpdate();
+                m_ActiveScene->OnRender(ts);
 
                 // Box2D collider debug drawing
                 {
@@ -229,8 +229,7 @@ namespace Prism
                 if (m_ViewportPanelFocused)
                     m_EditorCamera.OnUpdate(ts);
 
-                if (auto* rs = m_ActiveScene->GetSystem<RenderSystem>())
-                    rs->Render();
+                m_ActiveScene->OnRender(ts);
                 break;
             }
             }
@@ -666,8 +665,8 @@ namespace Prism
                 ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, rw, rh);
 
                 bool snap = Input::IsKeyPressed(PR_KEY_LEFT_CONTROL);
-                Transform& entityTransform = selection.Entity.Transformation();
-                glm::mat4 transformMatrix = entityTransform.GetMatrix();
+                auto& tc = selection.Entity.Transformation();
+                glm::mat4 worldMatrix = m_ActiveScene->GetTransformRelativeToParent(selection.Entity);
                 float snapValue = GetSnapValue();
                 float snapValues[3] = { snapValue, snapValue, snapValue };
                 if (m_SelectionMode == SelectionMode::Entity)
@@ -676,19 +675,30 @@ namespace Prism
                         glm::value_ptr(m_EditorCamera.GetProjectionMatrix()),
                         (ImGuizmo::OPERATION)m_GizmoType,
                         ImGuizmo::LOCAL,
-                        glm::value_ptr(transformMatrix),
+                        glm::value_ptr(worldMatrix),
                         nullptr,
                         snap ? snapValues : nullptr);
 
+                    // 世界 → 局部：移除父级变换
+                    if (selection.Entity.GetParentUUID() != 0)
+                    {
+                        Entity parent = m_ActiveScene->FindEntityByUUID(selection.Entity.GetParentUUID());
+                        if (parent)
+                        {
+                            glm::mat4 parentWorld = m_ActiveScene->GetTransformRelativeToParent(parent);
+                            worldMatrix = glm::inverse(parentWorld) * worldMatrix;
+                        }
+                    }
+
                     glm::vec3 translation, rotation, scale;
-                    Math::DecomposeTransform(transformMatrix, translation, rotation, scale);
-                    entityTransform.SetPosition(translation);
-                    entityTransform.SetRotation(glm::degrees(rotation));
-                    entityTransform.SetScale(scale);
+                    Math::DecomposeTransform(worldMatrix, translation, rotation, scale);
+                    tc.SetPosition(translation);
+                    tc.SetRotation(glm::degrees(rotation));
+                    tc.SetScale(scale);
                 }
                 else
                 {
-                    glm::mat4 transformBase = transformMatrix * selection.Mesh->Transform;
+                    glm::mat4 transformBase = worldMatrix * selection.Mesh->Transform;
                     ImGuizmo::Manipulate(glm::value_ptr(m_EditorCamera.GetViewMatrix()),
                         glm::value_ptr(m_EditorCamera.GetProjectionMatrix()),
                         (ImGuizmo::OPERATION)m_GizmoType,
@@ -697,7 +707,7 @@ namespace Prism
                         nullptr,
                         snap ? snapValues : nullptr);
 
-                    selection.Mesh->Transform = glm::inverse(transformMatrix) * transformBase;
+                    selection.Mesh->Transform = glm::inverse(worldMatrix) * transformBase;
                 }
             }
             ImGui::End();
@@ -974,9 +984,10 @@ namespace Prism
                         for (uint32_t i = 0; i < submeshes.size(); i++)
                         {
                             auto& submesh = submeshes[i];
+                            glm::mat4 worldTransform = m_ActiveScene->GetTransformRelativeToParent(entity);
                             Ray ray = {
-                                glm::inverse(entity.Transformation().GetMatrix() * submesh.Transform) * glm::vec4(origin, 1.0f),
-                                glm::inverse(glm::mat3(entity.Transformation().GetMatrix()) * glm::mat3(submesh.Transform)) * direction
+                                glm::inverse(worldTransform * submesh.Transform) * glm::vec4(origin, 1.0f),
+                                glm::inverse(glm::mat3(worldTransform) * glm::mat3(submesh.Transform)) * direction
                             };
 
                             float t;

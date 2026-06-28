@@ -67,14 +67,22 @@ namespace Prism
         void Prism_Behaviour_SetEnabled(uint64_t behaviourID, Rolky::Bool32 enabled);
 
         // TransformComponent
+        struct ScriptTransform { glm::vec3 Position; glm::vec3 Rotation; glm::vec3 Scale; glm::vec3 Up; glm::vec3 Right; glm::vec3 Forward; };
         void Prism_TransformComponent_GetPosition(uint64_t entityID, glm::vec3* outPosition);
         void Prism_TransformComponent_GetRotation(uint64_t entityID, glm::vec3* outRotation);
         void Prism_TransformComponent_GetScale(uint64_t entityID, glm::vec3* outScale);
-        void Prism_TransformComponent_SetPosition(uint64_t entityID, glm::vec3 inPosition);
-        void Prism_TransformComponent_SetRotation(uint64_t entityID, glm::vec3 inRotation);
-        void Prism_TransformComponent_SetScale(uint64_t entityID, glm::vec3 inScale);
-
-        struct ScriptTransform { glm::vec3 Position; glm::vec3 Rotation; glm::vec3 Scale; };
+        void Prism_TransformComponent_GetUp(uint64_t entityID, glm::vec3* outUP);
+        void Prism_TransformComponent_GetRight(uint64_t entityID, glm::vec3* outRight);
+        void Prism_TransformComponent_GetForward(uint64_t entityID, glm::vec3* outForward);
+        void Prism_TransformComponent_SetPosition(uint64_t entityID, glm::vec3* inPosition);
+        void Prism_TransformComponent_SetRotation(uint64_t entityID, glm::vec3* inRotation);
+        void Prism_TransformComponent_SetScale(uint64_t entityID, glm::vec3* inScale);
+        void Prism_TransformComponent_GetLocalPosition(uint64_t entityID, glm::vec3* outPosition);
+        void Prism_TransformComponent_SetLocalPosition(uint64_t entityID, glm::vec3* inPosition);
+        void Prism_TransformComponent_GetLocalRotation(uint64_t entityID, glm::vec3* outRotation);
+        void Prism_TransformComponent_SetLocalRotation(uint64_t entityID, glm::vec3* inRotation);
+        void Prism_TransformComponent_GetLocalScale(uint64_t entityID, glm::vec3* outScale);
+        void Prism_TransformComponent_SetLocalScale(uint64_t entityID, glm::vec3* inScale);
         void Prism_TransformComponent_GetTransform(uint64_t entityID, ScriptTransform* outTransform);
         void Prism_TransformComponent_SetTransform(uint64_t entityID, ScriptTransform* inTransform);
         // MeshRendererComponent

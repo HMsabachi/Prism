@@ -38,7 +38,7 @@ namespace Prism
             m_Pipeline->Shutdown();
         m_Pipeline.reset();
     }
-    void RenderSystem::OnPostLateUpdate(float dt)
+    void RenderSystem::OnRender(float dt)
     {
         Render();
     }
@@ -88,9 +88,20 @@ namespace Prism
             if (!camEntity) return;
             auto& camComp = camEntity.GetComponent<CameraComponent>();
             camComp.Camera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
-            auto& transform = camEntity.Transformation();
             m_PendingSnapshot.Camera.Projection = camComp.Camera;
-            m_PendingSnapshot.Camera.ViewMatrix = glm::inverse(transform.GetMatrix());
+            glm::mat4 worldMatrix = m_Scene->GetTransformRelativeToParent(camEntity);
+            glm::vec3 right   = glm::normalize(glm::vec3(worldMatrix[0]));
+            glm::vec3 up      = glm::normalize(glm::vec3(worldMatrix[1]));
+            glm::vec3 forward = glm::normalize(glm::vec3(worldMatrix[2]));
+            glm::vec3 newRight = glm::normalize(glm::cross(up, forward));
+            glm::vec3 newUp    = glm::normalize(glm::cross(forward, newRight));
+            glm::vec3 pos = glm::vec3(worldMatrix[3]);
+            glm::mat4 rigidWorld(1.0f);
+            rigidWorld[0] = glm::vec4(newRight, 0.0f);
+            rigidWorld[1] = glm::vec4(newUp, 0.0f);
+            rigidWorld[2] = glm::vec4(forward, 0.0f);
+            rigidWorld[3] = glm::vec4(pos, 1.0f);
+            m_PendingSnapshot.Camera.ViewMatrix = glm::inverse(rigidWorld);
         }
 
         // Process lights
@@ -101,8 +112,8 @@ namespace Prism
             for (auto entity : lights)
             {
                 auto [transformComponent, lightComponent] = lights.get<TransformComponent, DirectionalLightComponent>(entity);
-                Transform& lightTransform = transformComponent.Transformation;
-                glm::vec3 direction = -glm::normalize(glm::mat3(lightTransform.GetMatrix()) * glm::vec3(1.0f));
+                glm::mat4 worldMatrix = m_Scene->GetTransformRelativeToParent(Entity(entity, m_Scene));
+                glm::vec3 direction = -glm::normalize(glm::mat3(worldMatrix) * glm::vec3(1.0f));
                 m_Config.LightEnvironment.DirectionalLights[directionalLightIndex++] =
                 {
                     direction,
@@ -207,7 +218,7 @@ namespace Prism
 
             renderer.Mesh->OnUpdate(ts);
 
-            glm::mat4 worldTransform = transform.Transformation.GetMatrix();
+            glm::mat4 worldTransform = m_Scene->GetTransformRelativeToParent(Entity(entity, m_Scene));
             bool isSelected = (m_Scene->GetSelectedEntity() == entity);
 
             for (uint32_t i = 0; i < renderer.Mesh->GetSubmeshes().size(); i++)

@@ -8,8 +8,6 @@ namespace Example
         public float WalkingSpeed = 10.0F;
         public float RunSpeed = 20.0F;
         public float JumpForce = 50.0F;
-        public float CameraForwardOffset = 0.2F;
-        public float CameraYOffset = 0.85F;
 
         public float MouseSensitivity = 10.0F;
 
@@ -61,7 +59,6 @@ namespace Example
             UpdateRaycasting();
             UpdateMovementInput();
             UpdateRotation();
-            UpdateCameraTransform();
         }
 
         void OnFixedUpdate()
@@ -71,21 +68,23 @@ namespace Example
 
         private void UpdateRotation()
         {
+            if (Input.GetCursorMode() != CursorMode.Locked)
+                return;
+
             float ts = Time.DeltaTime;
             Vector2 currentMousePosition = Input.GetMousePosition();
             Vector2 delta = m_LastMousePosition - currentMousePosition;
-            m_CurrentYMovement = delta.X * MouseSensitivity * ts;
+            m_CurrentYMovement = delta.X * (MouseSensitivity * 10.0F) * ts;
             float xRotation = delta.Y * MouseSensitivity * ts;
 
-            if (delta.Y != 0.0F || delta.X != 0.0F)
+            if (xRotation != 0.0F)
             {
-                m_CameraTransform.Rotation += new Vector3(xRotation, m_CurrentYMovement, 0.0F);
+                m_CameraTransform.LocalRotation += new Vector3(xRotation, 0.0F, 0.0F);
             }
 
-            m_CameraTransform.Rotation = new Vector3(Mathf.Clamp(m_CameraTransform.Rotation.X, -80.0F, 80.0F), m_CameraTransform.Rotation.YZ);
+            m_CameraTransform.LocalRotation = new Vector3(Mathf.Clamp(m_CameraTransform.LocalRotation.X, -80.0F, 80.0F), 0.0F, 0.0F);
 
             m_LastMousePosition = currentMousePosition;
-            m_Transform.Rotation = new Vector3(0.0f, m_CameraTransform.Rotation.Y, 0.0f);
         }
 
         private void UpdateMovementInput()
@@ -138,7 +137,7 @@ namespace Example
 
         private void UpdateMovement()
         {
-            m_RigidBody.Rotate(new Vector3(0.0F, m_CurrentYMovement, 0.0F));
+            m_RigidBody.Rotate(Vector3.Up * m_CurrentYMovement);
 
             Vector3 movement = m_CameraTransform.Transform.Right * m_MovementDirection.X + m_CameraTransform.Transform.Forward * m_MovementDirection.Y;
             movement.Normalize();
@@ -151,13 +150,6 @@ namespace Example
                 m_RigidBody.AddForce(Vector3.Up * JumpForce, ForceMode.VelocityChange);
                 m_ShouldJump = false;
             }
-        }
-
-        private void UpdateCameraTransform()
-        {
-            Vector3 position = m_Transform.Position + m_Transform.Transform.Forward * CameraForwardOffset;
-            position.Y = m_Transform.Position.Y + CameraYOffset;
-            m_CameraTransform.Position = position;
         }
 
         public void OnCollisionBegin(float data)

@@ -66,7 +66,7 @@ namespace Prism {
 		std::vector<DirectoryInfo> m_BaseProjectDir;
 
 		ImGuiInputTextCallbackData m_Data;
-		std::map<size_t, Ref<Texture2D>> m_AssetIconMaps;
+		std::map<size_t, Ref<Texture2D>> m_AssetIconMap;
 		AssetManager m_AssetManager;
 	};
 

@@ -56,8 +56,8 @@ namespace Prism
             m_Scene->m_Registry.remove<T>(m_EntityHandle);
         }
 
-        Transform& Transformation() { return m_Scene->m_Registry.get<TransformComponent>(m_EntityHandle); }
-        const Transform& Transformation() const { return m_Scene->m_Registry.get<TransformComponent>(m_EntityHandle); }
+        TransformComponent& Transformation() { return m_Scene->m_Registry.get<TransformComponent>(m_EntityHandle); }
+        const TransformComponent& Transformation() const { return m_Scene->m_Registry.get<TransformComponent>(m_EntityHandle); }
 
 
         operator uint32_t () const { return (uint32_t)m_EntityHandle; }
@@ -78,19 +78,14 @@ namespace Prism
         UUID GetSceneUUID() { return m_Scene->GetUUID(); }
         Scene* GetScene() const { return m_Scene; }
 
-        entt::entity& Parent() { return m_Parent; }
-        const entt::entity& Parent() const { return m_Parent; }
-        std::vector<entt::entity>& Children() { return m_Children; }
-        const std::vector<entt::entity>& Children() const { return m_Children; }
-        void AddChild(Entity child) { m_Children.push_back((entt::entity)child); }
+        void SetParentUUID(UUID parent) { GetComponent<ParentComponent>().ParentHandle = parent; }
+        UUID GetParentUUID() { return GetComponent<ParentComponent>().ParentHandle; }
+        std::vector<UUID>& Children() { return GetComponent<ChildrenComponent>().Children; }
     private:
         Entity(const std::string& name);
     private:
         entt::entity m_EntityHandle;
         Scene* m_Scene = nullptr;
-
-        entt::entity m_Parent = entt::null;
-        std::vector<entt::entity> m_Children;
 
         friend class Scene;
         friend class SceneSerializer;
