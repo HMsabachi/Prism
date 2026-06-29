@@ -15,6 +15,30 @@
 #include <glm/gtx/euler_angles.hpp>
 
 namespace Prism {
+    struct WorldTRS
+    {
+        glm::vec3 Position;
+        glm::quat Rotation;
+        glm::vec3 Scale;
+    };
+    static WorldTRS ComputeWorldTRS(Scene* scene, Entity entity)
+    {
+        auto& tc = entity.Transformation();
+        WorldTRS result;
+        result.Position = tc.GetPosition();
+        result.Rotation = glm::quat(glm::radians(tc.GetRotation()));
+        result.Scale = tc.GetScale();
+
+        Entity parent = scene->FindEntityByUUID(entity.GetParentUUID());
+        if (parent)
+        {
+            WorldTRS p = ComputeWorldTRS(scene, parent);
+            result.Position = p.Position + p.Rotation * (p.Scale * result.Position);
+            result.Rotation = p.Rotation * result.Rotation;
+            result.Scale = p.Scale * result.Scale;
+        }
+        return result;
+    }
     TransformSystem::TransformSystem(Scene* scene)
         : m_Scene(scene)
     {
@@ -23,13 +47,11 @@ namespace Prism {
     {
         PR_PROFILE_FUNCTION();
 
-        // 3D: ECS -> PhysX
         {
             for (auto& actor : Physics::GetActors())
                 actor->SyncToPhysX();
         }
 
-        // 2D: ECS -> Box2D
         {
             auto view = m_Scene->GetAllEntitiesWith<RigidBody2DComponent>();
             for (auto entity : view)
@@ -92,32 +114,6 @@ namespace Prism {
             transformComponent.Right = glm::normalize(glm::rotate(world.Rotation, glm::vec3(1.0F, 0.0F, 0.0F)));
             transformComponent.Forward = glm::normalize(glm::rotate(world.Rotation, glm::vec3(0.0F, 0.0F, -1.0F)));
         }
-    }
-
-    struct WorldTRS
-    {
-        glm::vec3 Position;
-        glm::quat Rotation;
-        glm::vec3 Scale;
-    };
-
-    static WorldTRS ComputeWorldTRS(Scene* scene, Entity entity)
-    {
-        auto& tc = entity.Transformation();
-        WorldTRS result;
-        result.Position = tc.GetPosition();
-        result.Rotation = glm::quat(glm::radians(tc.GetRotation()));
-        result.Scale    = tc.GetScale();
-
-        Entity parent = scene->FindEntityByUUID(entity.GetParentUUID());
-        if (parent)
-        {
-            WorldTRS p = ComputeWorldTRS(scene, parent);
-            result.Position = p.Position + p.Rotation * (p.Scale * result.Position);
-            result.Rotation = p.Rotation * result.Rotation;
-            result.Scale    = p.Scale * result.Scale;
-        }
-        return result;
     }
 
     DecomposedTransform TransformSystem::GetWorldDecomposed(Entity entity)

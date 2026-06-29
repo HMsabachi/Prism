@@ -24,8 +24,6 @@ namespace Prism {
 		void RenderSearch();
 		void RenderBottom();
 
-		ImGuiInputTextCallback SearchCallback(ImGuiInputTextCallbackData* data);
-
 	private:
 		Ref<Texture2D> m_FolderTex;
 		Ref<Texture2D> m_FavoritesTex;
@@ -65,7 +63,6 @@ namespace Prism {
 		std::vector<DirectoryInfo> m_CurrentDir;
 		std::vector<DirectoryInfo> m_BaseProjectDir;
 
-		ImGuiInputTextCallbackData m_Data;
 		std::map<size_t, Ref<Texture2D>> m_AssetIconMap;
 		AssetManager m_AssetManager;
 	};

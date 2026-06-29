@@ -81,7 +81,7 @@ namespace Prism {
         glm::vec3 m_Position = { 0.0f, 0.0f, 0.0f };
         glm::vec3 m_Rotation = { 0.0f, 0.0f, 0.0f };
         glm::vec3 m_Scale = { 1.0f, 1.0f, 1.0f };
-        bool m_PhysicsDirty = true; // 默认 true，首帧必定同步到物理引擎
+        bool m_PhysicsDirty = true;
     };
 
     struct MeshRendererComponent

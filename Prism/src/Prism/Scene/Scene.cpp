@@ -13,6 +13,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtc/type_ptr.hpp>
 
+#include "Systems/InterpolationSystem.h"
 #include "Systems/Physics2DSystem.h"
 #include "Systems/Physics3DSystem.h"
 #include "Systems/ScriptSystem.h"
@@ -44,6 +45,7 @@ namespace Prism
         s_ActiveScenes[m_SceneID] = this;
 
         AddSystem<ScriptSystem>(this);
+        AddSystem<InterpolationSystem>(this);
         AddSystem<TransformSystem>(this);
         AddSystem<Physics3DSystem>(this);
         AddSystem<Physics2DSystem>(this);
@@ -73,9 +75,10 @@ namespace Prism
 
         for (auto* sys : m_SystemOrder) sys->OnEarlyUpdate(dt);
 
-        if (Time::ShouldFixedUpdate())
+        int fixedSteps = Time::ConsumeFixedUpdate();
+        float fixedDt = Time::GetFixedDeltaTime();
+        for (int i = 0; i < fixedSteps; i++)
         {
-            float fixedDt = Time::GetFixedDeltaTime();
             PR_PROFILE_SCOPE("FixedUpdate");
             for (auto* sys : m_SystemOrder) sys->OnFixedUpdate(fixedDt);
         }
@@ -99,7 +102,6 @@ namespace Prism
     {
         for (auto* sys : m_SystemOrder) sys->OnRuntimeStart();
         m_IsPlaying = true;
-        Time::ShouldFixedUpdate();
     }
 
     void Scene::OnRuntimeStop()

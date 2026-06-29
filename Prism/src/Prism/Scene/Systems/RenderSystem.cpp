@@ -1,5 +1,6 @@
 ﻿#include "prpch.h"
 #include "RenderSystem.h"
+#include "InterpolationSystem.h"
 #include "Physics3DSystem.h"
 
 #include "Prism/Scene/Scene.h"
@@ -89,7 +90,10 @@ namespace Prism
             auto& camComp = camEntity.GetComponent<CameraComponent>();
             camComp.Camera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
             m_PendingSnapshot.Camera.Projection = camComp.Camera;
-            glm::mat4 worldMatrix = m_Scene->GetTransformRelativeToParent(camEntity);
+            auto* interpSys = m_Scene->GetSystem<InterpolationSystem>();
+            glm::mat4 worldMatrix = (m_Scene->IsPlaying() && interpSys)
+                ? interpSys->GetInterpolatedWorldMatrix(camEntity)
+                : m_Scene->GetTransformRelativeToParent(camEntity);
             glm::vec3 right   = glm::normalize(glm::vec3(worldMatrix[0]));
             glm::vec3 up      = glm::normalize(glm::vec3(worldMatrix[1]));
             glm::vec3 forward = glm::normalize(glm::vec3(worldMatrix[2]));
@@ -209,16 +213,23 @@ namespace Prism
         glm::vec3 camPos = glm::inverse(snapshot.Camera.ViewMatrix)[3];
         auto view = m_Scene->GetRegistry().view<MeshRendererComponent>();
 
+        auto* interpSys = m_Scene->GetSystem<InterpolationSystem>();
+
         for (auto& entity : view)
         {
             auto& renderer = view.get<MeshRendererComponent>(entity);
-            auto& transform = m_Scene->GetRegistry().get<TransformComponent>(entity);
 
             if (!renderer.Mesh) continue;
 
             renderer.Mesh->OnUpdate(ts);
 
-            glm::mat4 worldTransform = m_Scene->GetTransformRelativeToParent(Entity(entity, m_Scene));
+            Entity e = { entity, m_Scene };
+
+            glm::mat4 worldTransform;
+            if (m_Scene->IsPlaying() && interpSys)
+                worldTransform = interpSys->GetInterpolatedWorldMatrix(e);
+            else
+                worldTransform = m_Scene->GetTransformRelativeToParent(e);
             bool isSelected = (m_Scene->GetSelectedEntity() == entity);
 
             for (uint32_t i = 0; i < renderer.Mesh->GetSubmeshes().size(); i++)
