@@ -207,17 +207,22 @@ namespace Prism
 
             aiColor3D aiColor;
             aiString aiTexPath;
+            bool hasAlbedoMap = false;
             if (aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &aiTexPath) == AI_SUCCESS)
             {
                 auto texPath = (parentDir / std::string(aiTexPath.data)).string();
-                auto texture = Texture2D::Create(texPath, true);
-                if (texture->Loaded())
+                if (texPath.find_first_of(".tga") == std::string::npos)
                 {
-                    material->SetTexture("u_AlbedoTexture", texture);
-                    material->SetKeyword("ALBEDO_MAP", true);
+                    auto texture = Texture2D::Create(texPath, true);
+                    if (texture->Loaded())
+                    {
+                        material->SetTexture("u_AlbedoTexture", texture);
+                        material->SetKeyword("ALBEDO_MAP", true);
+                        hasAlbedoMap = true;
+                    }
                 }
             }
-            else
+            if (!hasAlbedoMap)
             {
                 aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, aiColor);
                 material->SetColor3("u_AlbedoColor", glm::vec3{aiColor.r, aiColor.g, aiColor.b});

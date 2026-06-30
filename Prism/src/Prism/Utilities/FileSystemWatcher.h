@@ -14,7 +14,7 @@ namespace Prism
     struct FileSystemChangedEvent
     {
         FileSystemAction Action;
-        std::string Filepath;
+        std::string FilePath;
         std::string OldName;
         std::string NewName;
         bool IsDirectory;

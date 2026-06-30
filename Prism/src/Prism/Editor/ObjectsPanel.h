@@ -1,18 +1,22 @@
 #pragma once
 
 #include "Prism/Renderer/Texture.h"
+#include "Prism/Utilities/AssetManager.h"
 
 namespace Prism {
 
-	class PRISM_API ObjectsPanel
-	{
-	public:
-		ObjectsPanel();
+    class PRISM_API ObjectsPanel
+    {
+    public:
+        ObjectsPanel();
 
-		void OnImGuiRender();
+        void OnImGuiRender();
 
-	private:
-		Ref<Texture2D> m_CubeImage;
-	};
+    private:
+        void DrawObject(const char* label, AssetHandle handle);
+
+    private:
+        Ref<Texture2D> m_CubeImage;
+    };
 
 }

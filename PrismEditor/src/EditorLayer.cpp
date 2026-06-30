@@ -614,36 +614,25 @@ namespace Prism
 
             if (ImGui::BeginDragDropTarget())
             {
-                auto objectData = ImGui::AcceptDragDropPayload("scene_entity_objectP");
-                if (objectData)
-                {
-                    auto d = (DragDropData*)objectData->Data;
-                    if (strcmp(d->Type, "Mesh") == 0)
-                    {
-                        auto entity = m_EditorScene->CreateEntity(d->Name);
-                        auto importResult = ModelImporter::Import(d->SourcePath);
-                        entity.AddComponent<MeshRendererComponent>(importResult.Mesh);
-                        entity.GetComponent<MeshRendererComponent>().SetMaterials(importResult.Materials);
-                    }
-                }
-
                 auto assetData = ImGui::AcceptDragDropPayload("scene_entity_assetsP");
                 if (assetData)
                 {
-                    auto d = (DragDropData*)assetData->Data;
+                    AssetHandle assetHandle = *(AssetHandle*)assetData->Data;
 
-                    if (strcmp(d->Type, "PrismScene") == 0)
+                    if (AssetManager::IsAssetType(assetHandle, AssetType::Scene))
                     {
-                        auto sceneName = d->SourcePath;
-                        OpenScene(sceneName);
+                        auto asset = AssetManager::GetAsset<Asset>(assetHandle);
+                        OpenScene(asset->FilePath);
                     }
 
-                    if (strcmp(d->Type, "Mesh") == 0)
+                    if (AssetManager::IsAssetType(assetHandle, AssetType::Mesh))
                     {
-                        auto entity = m_EditorScene->CreateEntity(d->Name);
-                        auto importResult = ModelImporter::Import(d->SourcePath);
+                        auto asset = AssetManager::GetAsset<Asset>(assetHandle);
+                        Entity entity = m_EditorScene->CreateEntity(asset->FileName);
+                        auto importResult = ModelImporter::Import(asset->FilePath);
                         entity.AddComponent<MeshRendererComponent>(importResult.Mesh);
                         entity.GetComponent<MeshRendererComponent>().SetMaterials(importResult.Materials);
+                        SelectEntity(entity);
                     }
                 }
                 ImGui::EndDragDropTarget();

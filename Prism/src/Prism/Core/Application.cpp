@@ -15,6 +15,8 @@
 #include "Scripting/Python/PythonScriptEngine.h"
 #include "Prism/Physics/Physics.h"
 
+#include "Prism/Utilities/AssetManager.h"
+
 #include "Prism/ShaderCompiler/ShaderCompiler.h"
 
 
@@ -66,6 +68,8 @@ namespace Prism
         Renderer::Init();
         Renderer::WaitAndRender();
 
+        AssetTypes::Init();
+        AssetManager::Init();
     }
 
     Application::~Application()

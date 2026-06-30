@@ -104,7 +104,7 @@ namespace Prism {
                 std::filesystem::path filepath = "assets/" + wchar_to_string(fni.FileName);
 
                 FileSystemChangedEvent e;
-                e.Filepath = filepath.string();
+                e.FilePath = filepath.string();
                 e.NewName = filepath.filename().string();
                 e.OldName = filepath.filename().string();
                 e.IsDirectory = std::filesystem::is_directory(filepath);

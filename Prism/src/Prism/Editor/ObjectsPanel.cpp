@@ -1,6 +1,5 @@
 #include "prpch.h"
 #include "ObjectsPanel.h"
-#include "Prism/Utilities/DragDropData.h"
 #include "Prism/ImGui/ImGui.h"
 
 #include "Prism/Core/Warning.h"
@@ -8,125 +7,52 @@ PR_WARNING_DISABLE(4312)
 
 namespace Prism {
 
-	ObjectsPanel::ObjectsPanel()
-	{
-		m_CubeImage = Texture2D::Create("assets/editor/asset.png");
-	}
+    ObjectsPanel::ObjectsPanel()
+    {
+        m_CubeImage = Texture2D::Create("assets/editor/asset.png");
+    }
 
-	void ObjectsPanel::OnImGuiRender()
-	{
-		ImGui::Begin("Objects", NULL, ImGuiWindowFlags_None);
-		{
-			char buff[100] = { 0 };
-			const char* inputHint = "Start Typing To Search";
-			ImGui::PushItemWidth(ImGui::GetWindowWidth() - 20);
-			ImGui::InputTextWithHint("##SearchObjects", inputHint, buff, 100);
+    void ObjectsPanel::DrawObject(const char* label, AssetHandle handle)
+    {
+        ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(30, 30));
+        ImGui::SameLine();
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
+        ImGui::Selectable(label);
 
-			ImGui::BeginChild("##objects_window");
-			{
-				ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(30, 30));
-				ImGui::SameLine();
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-				ImGui::Selectable("Cube");
+        if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
+        {
+            ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(20, 20));
+            ImGui::SameLine();
 
-				if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
-				{
-					ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(20, 20));
-					ImGui::SameLine();
+            ImGui::Text(label);
 
-					ImGui::Text("Cube");
+            ImGui::SetDragDropPayload("scene_entity_assetsP", &handle, sizeof(AssetHandle));
+            ImGui::EndDragDropSource();
+        }
+    }
 
-					DragDropData data("Mesh", "assets/meshes/Default/Cube.fbx", "Cube");
-					ImGui::SetDragDropPayload("scene_entity_objectP", &data, sizeof(data));
-					ImGui::EndDragDropSource();
-				}
+    void ObjectsPanel::OnImGuiRender()
+    {
+        static const AssetHandle CubeHandle = AssetManager::GetAssetIDForFile("assets/meshes/Default/Cube.fbx");
+        static const AssetHandle SphereHandle = AssetManager::GetAssetIDForFile("assets/meshes/Default/Sphere.fbx");
+        static const AssetHandle CylinderHandle = AssetManager::GetAssetIDForFile("assets/meshes/Default/Cylinder.fbx");
+        static const AssetHandle TorusHandle = AssetManager::GetAssetIDForFile("assets/meshes/Default/Torus.fbx");
+        static const AssetHandle PlaneHandle = AssetManager::GetAssetIDForFile("assets/meshes/Default/Plane.fbx");
+        static const AssetHandle ConeHandle = AssetManager::GetAssetIDForFile("assets/meshes/Default/Cone.fbx");
 
-				ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(30, 30));
-				ImGui::SameLine();
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-				ImGui::Selectable("Sphere");
+        ImGui::Begin("Objects");
+        {
+            ImGui::BeginChild("##objects_window");
+            DrawObject("Cube", CubeHandle);
+            DrawObject("Sphere", SphereHandle);
+            DrawObject("Cylinder", CylinderHandle);
+            DrawObject("Torus", TorusHandle);
+            DrawObject("Plane", PlaneHandle);
+            DrawObject("Cone", ConeHandle);
+            ImGui::EndChild();
+        }
 
-				if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
-				{
-					ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(20, 20));
-					ImGui::SameLine();
-
-					ImGui::Text("Sphere");
-					DragDropData data("Mesh", "assets/meshes/Default/Sphere.fbx", "Sphere");
-					ImGui::SetDragDropPayload("scene_entity_objectP", &data, sizeof(data));
-					ImGui::EndDragDropSource();
-				}
-
-				ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(30, 30));
-				ImGui::SameLine();
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-				ImGui::Selectable("Cylinder");
-
-				if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
-				{
-					ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(20, 20));
-					ImGui::SameLine();
-
-					ImGui::Text("Cylinder");
-					DragDropData data("Mesh", "assets/meshes/Default/Cylinder.fbx", "Cylinder");
-					ImGui::SetDragDropPayload("scene_entity_objectP", &data, sizeof(data));
-					ImGui::EndDragDropSource();
-				}
-
-				ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(30, 30));
-				ImGui::SameLine();
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-				ImGui::Selectable("Torus");
-
-				if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
-				{
-					ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(20, 20));
-					ImGui::SameLine();
-
-					ImGui::Text("Torus");
-					DragDropData data("Mesh", "assets/meshes/Default/Torus.fbx", "Torus");
-					ImGui::SetDragDropPayload("scene_entity_objectP", &data, sizeof(data));
-					ImGui::EndDragDropSource();
-				}
-
-
-				ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(30, 30));
-				ImGui::SameLine();
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-				ImGui::Selectable("Plane");
-
-				if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
-				{
-					ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(20, 20));
-					ImGui::SameLine();
-
-					ImGui::Text("Plane");
-					DragDropData data("Mesh", "assets/meshes/Default/Plane.fbx", "Plane");
-					ImGui::SetDragDropPayload("scene_entity_objectP", &data, sizeof(data));
-					ImGui::EndDragDropSource();
-				}
-
-				ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(30, 30));
-				ImGui::SameLine();
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
-				ImGui::Selectable("Cone");
-
-				if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
-				{
-					ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(20, 20));
-					ImGui::SameLine();
-
-					ImGui::Text("Cone");
-					DragDropData data("Mesh", "assets/meshes/Default/Cone.fbx", "Cone");
-					ImGui::SetDragDropPayload("scene_entity_objectP", &data, sizeof(data));
-					ImGui::EndDragDropSource();
-				}
-
-				ImGui::EndChild();
-			}
-		}
-
-		ImGui::End();
-	}
+        ImGui::End();
+    }
 
 }

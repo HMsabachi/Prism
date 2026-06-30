@@ -1,19 +1,16 @@
 ﻿#pragma once
 
+#include "Prism/Asset/Asset.h"
 #include "Prism/Utilities/FileSystemWatcher.h"
 
 #include <map>
+#include <unordered_map>
 #include <vector>
 #include <string>
 #include <string_view>
 
 namespace Prism
 {
-
-    enum class AssetType
-    {
-        Scene, Mesh, Image, Audio, Script, Shader, Other
-    };
 
     class AssetTypes
     {
@@ -28,70 +25,86 @@ namespace Prism
 
     struct DirectoryInfo
     {
-        std::string Filename;
-        std::string FileType;
-        std::string AbsolutePath;
-        bool IsFile;
-
-        DirectoryInfo(const std::string& filename, const std::string& fileType, const std::string& absolutePath, bool isFile)
-            : Filename(filename), FileType(fileType), AbsolutePath(absolutePath), IsFile(isFile)
-        {
-        }
-
-        DirectoryInfo(const DirectoryInfo& other)
-            : Filename(other.Filename), FileType(other.FileType), AbsolutePath(other.AbsolutePath), IsFile(other.IsFile)
-        {
-        }
-
-        DirectoryInfo(DirectoryInfo&& other) noexcept
-            : Filename(std::move(other.Filename)), FileType(std::move(other.FileType)), AbsolutePath(std::move(other.AbsolutePath)), IsFile(std::move(other.IsFile))
-        {
-        }
-
-        DirectoryInfo& operator=(const DirectoryInfo& other)
-        {
-            Filename = other.Filename;
-            FileType = other.FileType;
-            AbsolutePath = other.AbsolutePath;
-            IsFile = other.IsFile;
-            return *this;
-        }
+        std::string DirectoryName;
+        std::string FilePath;
+        int DirectoryIndex;
+        int ParentIndex;
+        std::vector<int> ChildrenIndices;
     };
 
-    class AssetManager
+    struct SearchResults
+    {
+        std::vector<DirectoryInfo> Directories;
+        std::vector<Ref<Asset>> Assets;
+    };
+
+    class PRISM_API AssetManager
     {
     public:
         using AssetsChangeEventFn = std::function<void()>;
     public:
-        AssetManager(const AssetsChangeEventFn& callback);
+        static void Init();
+        static void SetAssetChangeCallback(const AssetsChangeEventFn& callback);
+        static void Shutdown();
 
-        std::string ParseFilename(std::string_view filepath, int delim);
-        std::string ParseFileType(std::string_view filename);
+        static DirectoryInfo& GetDirectoryInfo(int index);
+        static std::vector<Ref<Asset>> GetAssetsInDirectory(int dirIndex);
+        static std::vector<std::string> GetDirectoryNames(const std::string& filepath);
 
-        void HandleAsset(const std::string& filepath);
-        void ProcessAsset(const std::string& assetType);
-        void ConvertAsset(const std::string& assetPath, const std::string& conversionType);
+        static SearchResults SearchFiles(const std::string& query, const std::string& searchPath);
+        static std::string GetParentPath(const std::string& path);
 
-        void OnFileSystemChanged(FileSystemChangedEvent e);
+        static bool IsDirectory(const std::string& filepath);
 
-        std::vector<DirectoryInfo> GetDirectoryContents(const std::string& filepath, bool recursive = false);
-        std::vector<DirectoryInfo> SearchFiles(const std::string& query, const std::string& searchPath);
+        static AssetHandle GetAssetIDForFile(const std::string& filepath);
+        static bool IsAssetHandleValid(AssetHandle assetHandle);
 
-        std::string GetParentPath(const std::string& path);
+        template<typename T>
+        static Ref<T> GetAsset(AssetHandle assetHandle)
+        {
+            PR_CORE_ASSERT(s_LoadedAssets.find(assetHandle) != s_LoadedAssets.end());
+            return (Ref<T>)s_LoadedAssets[assetHandle];
+        }
 
-        std::vector<std::string> GetDirectoryNames(const std::string& filepath);
+        static bool IsAssetType(AssetHandle assetHandle, AssetType type)
+        {
+            return s_LoadedAssets.find(assetHandle) != s_LoadedAssets.end() && s_LoadedAssets[assetHandle]->Type == type;
+        }
+#ifdef MoveFile
+#undef MoveFile
+#endif
+        static bool MoveFile(const std::string& originalPath, const std::string& dest);
 
-        bool MoveFile(const std::string& originalPath, const std::string& dest);
+        static std::string StripExtras(const std::string& filename);
+    private:
+        static std::string ParseFilename(const std::string& filepath, const std::string& delim);
+        static std::string ParseFileType(std::string_view filename);
+        static std::string RemoveExtension(const std::string& filename);
 
-        std::string RemoveExtension(const std::string& filename);
-        std::string StripExtras(const std::string& filename);
+#ifdef RemoveDirectory
+#undef RemoveDirectory
+#endif
+        static void RemoveDirectory(DirectoryInfo& dir);
+
+        static void ImportAsset(const std::string& filepath, bool reimport = false, int parentIndex = -1);
+#ifdef CreateMetaFile
+#undef CreateMetaFile
+#endif
+        static void CreateMetaFile(const Ref<Asset>& asset);
+        static void LoadMetaData(Ref<Asset>& asset, const std::string& filepath);
+        static void ConvertAsset(const std::string& assetPath, const std::string& conversionType);
+        static int ProcessDirectory(const std::string& directoryPath, int parentIndex = -1);
+        static void ReloadAssets();
+
+        static void OnFileSystemChanged(FileSystemChangedEvent e);
+
+        static int FindParentIndexInChildren(DirectoryInfo& dir, const std::string& dirName);
+        static int FindParentIndex(const std::string& filepath);
 
     private:
-        void ImportAsset(const std::string assetPath, const std::string& assetName);
-
-    private:
-        std::vector<DirectoryInfo> m_LoadedAssets;
-        AssetsChangeEventFn m_AssetsChangeCallback;
+        static std::unordered_map<AssetHandle, Ref<Asset>> s_LoadedAssets;
+        static std::vector<DirectoryInfo> s_Directories;
+        static AssetsChangeEventFn s_AssetsChangeCallback;
     };
 
 }
