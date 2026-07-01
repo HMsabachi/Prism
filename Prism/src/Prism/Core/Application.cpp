@@ -15,7 +15,7 @@
 #include "Scripting/Python/PythonScriptEngine.h"
 #include "Prism/Physics/Physics.h"
 
-#include "Prism/Utilities/AssetManager.h"
+#include "Prism/Asset/AssetManager.h"
 
 #include "Prism/ShaderCompiler/ShaderCompiler.h"
 

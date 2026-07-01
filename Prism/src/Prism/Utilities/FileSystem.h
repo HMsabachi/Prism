@@ -13,6 +13,9 @@ namespace Prism {
 
         /** Convert any path to absolute (resolves relative paths against working directory) */
         static std::string GetAbsolutePath(const std::string& path);
+
+        /** Rename a file or directory, returns the new path */
+        static std::string Rename(const std::string& filepath, const std::string& newName);
     };
 
 }

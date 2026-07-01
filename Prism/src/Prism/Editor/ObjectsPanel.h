@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Prism/Renderer/Texture.h"
-#include "Prism/Utilities/AssetManager.h"
+#include "Prism/Asset/AssetManager.h"
 
 namespace Prism {
 

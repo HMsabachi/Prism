@@ -205,18 +205,30 @@ namespace Prism {
                 Entity e = m_Context->FindEntityByUUID(droppedHandle);
                 if (e)
                 {
-                    Entity previousParent = m_Context->FindEntityByUUID(e.GetParentUUID());
-                    if (previousParent)
+                    bool reparentToChild = false;
+                    for (auto child : e.Children())
                     {
-                        auto& parentChildren = previousParent.Children();
-                        parentChildren.erase(std::remove(parentChildren.begin(), parentChildren.end(), droppedHandle), parentChildren.end());
+                        if (child == entity.GetUUID())
+                        {
+                            reparentToChild = true;
+                            break;
+                        }
                     }
 
-                    e.SetParentUUID(entity.GetUUID());
-                    auto& children = entity.Children();
-                    children.push_back(droppedHandle);
+                    if (!reparentToChild)
+                    {
+                        Entity previousParent = m_Context->FindEntityByUUID(e.GetParentUUID());
+                        if (previousParent)
+                        {
+                            auto& parentChildren = previousParent.Children();
+                            parentChildren.erase(std::remove(parentChildren.begin(), parentChildren.end(), droppedHandle), parentChildren.end());
+                        }
 
-                    PR_CORE_INFO("Dropping Entity {0} on {1}", droppedHandle, entity.GetUUID());
+                        e.SetParentUUID(entity.GetUUID());
+                        entity.Children().push_back(droppedHandle);
+
+                        PR_CORE_INFO("Dropping Entity {0} on {1}", droppedHandle, entity.GetUUID());
+                    }
                 }
             }
 
@@ -440,14 +452,6 @@ namespace Prism {
                 if (ImGui::Button(TR("Rigidbody")))
                 {
                     entity.AddComponent<RigidBodyComponent>();
-                    ImGui::CloseCurrentPopup();
-                }
-            }
-            if (!entity.HasComponent<PhysicsMaterialComponent>())
-            {
-                if (ImGui::Button(TR("Physics Material")))
-                {
-                    entity.AddComponent<PhysicsMaterialComponent>();
                     ImGui::CloseCurrentPopup();
                 }
             }
@@ -776,18 +780,6 @@ namespace Prism {
                 }
             });
 
-        if (entity.HasComponent<PhysicsMaterialComponent>())
-        {
-            DrawComponent<PhysicsMaterialComponent>(TR("Physics Material"), entity, [](auto& component)
-                {
-                    UI::BeginPropertyGrid();
-                    UI::Property(TR("Static Friction"), component.StaticFriction);
-                    UI::Property(TR("Dynamic Friction"), component.DynamicFriction);
-                    UI::Property(TR("Bounciness"), component.Bounciness);
-                    UI::EndPropertyGrid();
-                });
-        }
-
         DrawComponent<BoxColliderComponent>(TR("Box Collider"), entity, [](auto& component)
             {
                 UI::BeginPropertyGrid();
@@ -797,6 +789,7 @@ namespace Prism {
                 }
                 UI::Property(TR("Offset"), component.Offset);
                 UI::Property(TR("Is Trigger"), component.IsTrigger);
+                UI::PropertyAssetReference("Material", component.Material, AssetType::PhysicsMat);
                 UI::EndPropertyGrid();
             });
 
@@ -808,6 +801,7 @@ namespace Prism {
                     component.DebugMesh = MeshFactory::CreateSphere(component.Radius);
                 }
                 UI::Property(TR("Is Trigger"), component.IsTrigger);
+                UI::PropertyAssetReference("Material", component.Material, AssetType::PhysicsMat);
                 UI::EndPropertyGrid();
             });
 
@@ -827,6 +821,7 @@ namespace Prism {
                     component.DebugMesh = MeshFactory::CreateCapsule(component.Radius, component.Height);
                 }
                 UI::Property(TR("Is Trigger"), component.IsTrigger);
+                UI::PropertyAssetReference("Material", component.Material, AssetType::PhysicsMat);
                 UI::EndPropertyGrid();
             });
 
@@ -891,6 +886,7 @@ namespace Prism {
                         }
                     }
                 }
+                UI::PropertyAssetReference("Material", component.Material, AssetType::PhysicsMat);
                 UI::EndPropertyGrid();
             });
 

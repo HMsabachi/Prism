@@ -9,6 +9,7 @@ namespace Prism {
     FileSystemWatcher::FileSystemChangedCallbackFn FileSystemWatcher::s_Callback;
 
     static bool s_Watching = true;
+    static bool s_IgnoreNextChange = false;
     static HANDLE s_WatcherThread;
 
     void FileSystemWatcher::SetChangeCallback(const FileSystemChangedCallbackFn& callback)
@@ -40,15 +41,20 @@ namespace Prism {
         CloseHandle(s_WatcherThread);
     }
 
+    void FileSystemWatcher::IgnoreNextChange()
+    {
+        s_IgnoreNextChange = true;
+    }
+
     unsigned long FileSystemWatcher::Watch(void* param)
     {
         LPCWSTR	filepath = L"assets";
-        char* buffer = new char[1024];
+        BYTE* buffer = new BYTE[10 * 1024];
         OVERLAPPED overlapped = { 0 };
         HANDLE handle = NULL;
         DWORD bytesReturned = 0;
 
-        ZeroMemory(buffer, 1024);
+        ZeroMemory(buffer, 10 * 1024);
 
         handle = CreateFile(
             filepath,
@@ -78,7 +84,7 @@ namespace Prism {
             DWORD status = ReadDirectoryChangesW(
                 handle,
                 buffer,
-                1024,
+                10 * 1024 * sizeof(BYTE),
                 TRUE,
                 FILE_NOTIFY_CHANGE_CREATION | FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME,
                 &bytesReturned,
@@ -94,6 +100,9 @@ namespace Prism {
 
             // If nothing changed, just continue
             if (waitOperation != WAIT_OBJECT_0)
+                continue;
+
+            if (s_IgnoreNextChange)
                 continue;
 
             std::string oldName;
@@ -145,7 +154,7 @@ namespace Prism {
 
                 if (!fni.NextEntryOffset)
                 {
-                    ZeroMemory(buffer, 1024);
+                    ZeroMemory(buffer, 10 * 1024);
                     break;
                 }
 

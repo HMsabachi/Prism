@@ -63,8 +63,9 @@ namespace Prism {
     }
 
     OpenGLTexture2D::OpenGLTexture2D(const std::string& path, bool srgb)
-        : m_FilePath(path), m_RendererID(0)
+        : m_RendererID(0)
     {
+        FilePath = path;
         PR_PROFILE_FUNCTION();
 
         int width, height, channels;
@@ -219,8 +220,9 @@ namespace Prism {
     }
 
     OpenGLTextureCube::OpenGLTextureCube(const std::string& path)
-        : m_FilePath(path) , m_RendererID(0)
+        : m_RendererID(0)
     {
+        FilePath = path;
         PR_PROFILE_FUNCTION();
 
         int width, height, channels;

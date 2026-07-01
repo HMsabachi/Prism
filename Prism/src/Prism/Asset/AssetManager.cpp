@@ -1,33 +1,19 @@
 ﻿#include "prpch.h"
 #include "AssetManager.h"
 
+#include "AssetSerializer.h"
 #include "Prism/Core/Hash.h"
 #include "Prism/Asset/ModelImporter.h"
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/Texture.h"
+#include "Prism/Utilities/StringUtils.h"
+#include "Prism/Utilities/FileSystem.h"
 
 #include "yaml-cpp/yaml.h"
 
 #include <filesystem>
 
 namespace Prism {
-
-    static std::vector<std::string> SplitString(const std::string& string, const std::string& delimiters)
-    {
-        size_t start = 0;
-        size_t end = string.find_first_of(delimiters);
-        std::vector<std::string> result;
-
-        while (end != std::string::npos)
-        {
-            result.push_back(string.substr(start, end - start));
-            start = end + 1;
-            end = string.find_first_of(delimiters, start);
-        }
-
-        result.push_back(string.substr(start));
-        return result;
-    }
 
     void AssetTypes::Init()
     {
@@ -37,6 +23,7 @@ namespace Prism {
         s_Types["blend"] = AssetType::Mesh;
         s_Types["png"] = AssetType::Texture;
         s_Types["hdr"] = AssetType::EnvMap;
+        s_Types["ppm"] = AssetType::PhysicsMat;
         s_Types["wav"] = AssetType::Audio;
         s_Types["ogg"] = AssetType::Audio;
         s_Types["cs"] = AssetType::Script;
@@ -92,32 +79,11 @@ namespace Prism {
 
         for (auto& asset : s_LoadedAssets)
         {
-            if (asset.second->ParentDirectory == dirIndex)
+            if (asset.second && asset.second->ParentDirectory == dirIndex)
                 results.push_back(asset.second);
         }
 
         return results;
-    }
-
-    std::string AssetManager::ParseFilename(const std::string& filepath, const std::string& delim)
-    {
-        std::vector<std::string> parts = SplitString(filepath, delim);
-        return parts[parts.size() - 1];
-    }
-
-    std::string AssetManager::ParseFileType(std::string_view filename)
-    {
-        size_t start;
-        size_t end = 0;
-        std::vector<std::string> out;
-
-        while ((start = filename.find_first_not_of('.', end)) != std::string_view::npos)
-        {
-            end = filename.find('.', start);
-            out.emplace_back(filename.substr(start, end - start));
-        }
-
-        return out[out.size() - 1];
     }
 
     void AssetManager::ConvertAsset(const std::string& assetPath, const std::string& conversionType)
@@ -168,7 +134,7 @@ namespace Prism {
 
     int AssetManager::FindParentIndex(const std::string& filepath)
     {
-        std::vector<std::string> parts = SplitString(filepath, "/\\");
+        std::vector<std::string> parts = Utils::SplitString(filepath, "/\\");
         std::string parentFolder = parts[parts.size() - 2];
         DirectoryInfo& assetsDirectory = GetDirectoryInfo(0);
         return FindParentIndexInChildren(assetsDirectory, parentFolder);
@@ -176,8 +142,8 @@ namespace Prism {
 
     void AssetManager::OnFileSystemChanged(FileSystemChangedEvent e)
     {
-        e.NewName = RemoveExtension(e.NewName);
-        e.OldName = RemoveExtension(e.OldName);
+        e.NewName = Utils::RemoveExtension(e.NewName);
+        e.OldName = Utils::RemoveExtension(e.OldName);
 
         int parentIndex = FindParentIndex(e.FilePath);
 
@@ -297,38 +263,29 @@ namespace Prism {
 
     bool AssetManager::IsAssetHandleValid(AssetHandle assetHandle)
     {
-        return s_LoadedAssets.find(assetHandle) != s_LoadedAssets.end();
+        return assetHandle != 0 && s_LoadedAssets.find(assetHandle) != s_LoadedAssets.end();
     }
 
-    std::vector<std::string> AssetManager::GetDirectoryNames(const std::string& filepath)
+    void AssetManager::Rename(Ref<Asset>& asset, const std::string& newName)
     {
-        std::vector<std::string> result;
-        size_t start;
-        size_t end = 0;
+        std::string newFilePath = FileSystem::Rename(asset->FilePath, newName);
+        std::string oldFilePath = asset->FilePath;
+        asset->FilePath = newFilePath;
+        asset->FileName = newName;
 
-        while ((start = filepath.find_first_not_of("/\\", end)) != std::string::npos)
+        if (std::filesystem::exists(oldFilePath + ".meta"))
         {
-            end = filepath.find("/\\", start);
-            result.push_back(filepath.substr(start, end - start));
+            FileSystem::Rename(oldFilePath + ".meta", newName + "." + asset->Extension);
+            AssetSerializer::CreateMetaFile(asset);
         }
-
-        return result;
     }
 
-    bool AssetManager::MoveFile(const std::string& originalPath, const std::string& dest)
+    void AssetManager::Rename(int directoryIndex, const std::string& newName)
     {
-        std::filesystem::rename(originalPath, dest);
-        std::string newPath = dest + "/" + ParseFilename(originalPath, "/\\");
-        return std::filesystem::exists(newPath);
-    }
-
-    std::string AssetManager::RemoveExtension(const std::string& filename)
-    {
-        std::string newName;
-        size_t end = filename.find_last_of('.');
-
-        newName = filename.substr(0, end);
-        return newName;
+        DirectoryInfo& dir = GetDirectoryInfo(directoryIndex);
+        std::string newFilePath = FileSystem::Rename(dir.FilePath, newName);
+        dir.FilePath = newFilePath;
+        dir.DirectoryName = newName;
     }
 
     std::string AssetManager::StripExtras(const std::string& filename)
@@ -366,112 +323,13 @@ namespace Prism {
 
     void AssetManager::ImportAsset(const std::string& filepath, bool reimport, int parentIndex)
     {
-        std::string extension = ParseFileType(filepath);
+        std::string extension = Utils::GetExtension(filepath);
         if (extension == "meta")
             return;
 
-        Ref<Asset> asset;
         AssetType type = AssetTypes::GetAssetTypeFromExtension(extension);
-
-        switch (type)
-        {
-            case AssetType::Scene:
-            {
-                asset = Ref<Asset>::Create();
-                break;
-            }
-            case AssetType::Mesh:
-            {
-                if (extension == "blend")
-                    asset = Ref<Asset>::Create();
-                else
-                    asset = Ref<Asset>::Create();
-                break;
-            }
-            case AssetType::Texture:
-            {
-                asset = Ref<Asset>::Create();
-                break;
-            }
-            case AssetType::EnvMap:
-            {
-                asset = Ref<Asset>::Create();
-                break;
-            }
-            case AssetType::Audio:
-            {
-                break;
-            }
-            case AssetType::Script:
-            {
-                asset = Ref<Asset>::Create();
-                break;
-            }
-            case AssetType::Shader:
-            case AssetType::Other:
-            {
-                asset = Ref<Asset>::Create();
-                break;
-            }
-        }
-
-        asset->Handle = Hash::GenerateFNVHash64(filepath);
-        asset->FilePath = filepath;
-        asset->FileName = RemoveExtension(ParseFilename(filepath, "/\\"));
-        asset->Extension = extension;
-        asset->ParentDirectory = parentIndex;
-        asset->Type = type;
-
-        bool hasMeta = std::filesystem::exists(filepath + ".meta");
-        if (hasMeta)
-            LoadMetaData(asset, filepath + ".meta");
-
-        std::replace(asset->FilePath.begin(), asset->FilePath.end(), '\\', '/');
-
-        if (!hasMeta || reimport)
-            CreateMetaFile(asset);
-
+        Ref<Asset> asset = AssetSerializer::Deserialize(filepath, parentIndex, reimport, type);
         s_LoadedAssets[asset->Handle] = asset;
-    }
-
-    void AssetManager::CreateMetaFile(const Ref<Asset>& asset)
-    {
-        if (std::filesystem::exists(asset->FilePath + ".meta"))
-            return;
-
-        YAML::Emitter out;
-        out << YAML::BeginMap;
-        out << YAML::Key << "Asset" << YAML::Value << asset->Handle;
-        out << YAML::Key << "FileName" << YAML::Value << asset->FileName;
-        out << YAML::Key << "FilePath" << YAML::Value << asset->FilePath;
-        out << YAML::Key << "Extension" << YAML::Value << asset->Extension;
-        out << YAML::Key << "Directory" << YAML::Value << asset->ParentDirectory;
-        out << YAML::Key << "Type" << YAML::Value << (int)asset->Type;
-        out << YAML::EndMap;
-
-        std::ofstream fout(asset->FilePath + ".meta");
-        fout << out.c_str();
-    }
-
-    void AssetManager::LoadMetaData(Ref<Asset>& asset, const std::string& filepath)
-    {
-        std::ifstream stream(filepath);
-        std::stringstream strStream;
-        strStream << stream.rdbuf();
-
-        YAML::Node data = YAML::Load(strStream.str());
-        if (!data["Asset"])
-        {
-            PR_CORE_ERROR("Invalid Meta File Format: {0}", filepath);
-            return;
-        }
-
-        asset->Handle = data["Asset"].as<AssetHandle>();
-        asset->FileName = data["FileName"].as<std::string>();
-        asset->FilePath = data["FilePath"].as<std::string>();
-        asset->Extension = data["Extension"].as<std::string>();
-        asset->ParentDirectory = data["Directory"].as<int>();
-        asset->Type = (AssetType)data["Type"].as<int>();
     }
 
     int AssetManager::ProcessDirectory(const std::string& directoryPath, int parentIndex)

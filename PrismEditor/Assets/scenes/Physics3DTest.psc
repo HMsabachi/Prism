@@ -40,13 +40,10 @@ Entities:
         LockRotationX: false
         LockRotationY: false
         LockRotationZ: false
-    PhysicsMaterialComponent:
-      StaticFriction: 1
-      DynamicFriction: 1
-      Bounciness: 0
     MeshColliderComponent:
       AssetPath: Assets\models\Sphere1m.fbx
       IsTrigger: false
+      Material: 0
     CSharpScriptComponent:
       Behaviours:
         - ClassID: 17473292295039821981
@@ -84,14 +81,11 @@ Entities:
         LockRotationX: false
         LockRotationY: false
         LockRotationZ: false
-    PhysicsMaterialComponent:
-      StaticFriction: 1
-      DynamicFriction: 1
-      Bounciness: 0
     BoxColliderComponent:
       Size: [1, 1, 1]
       Offset: [0, 0, 0]
       IsTrigger: false
+      Material: 0
     CSharpScriptComponent:
       Behaviours:
         []
@@ -120,13 +114,10 @@ Entities:
         LockRotationX: true
         LockRotationY: true
         LockRotationZ: true
-    PhysicsMaterialComponent:
-      StaticFriction: 1
-      DynamicFriction: 1
-      Bounciness: 0
     SphereColliderComponent:
       Radius: 0.5
       IsTrigger: false
+      Material: 0
     CSharpScriptComponent:
       Behaviours:
         - ClassID: 14697641082096727597
@@ -220,14 +211,11 @@ Entities:
         LockRotationX: false
         LockRotationY: false
         LockRotationZ: false
-    PhysicsMaterialComponent:
-      StaticFriction: 1
-      DynamicFriction: 1
-      Bounciness: 0
     BoxColliderComponent:
       Size: [1, 1, 1]
       Offset: [0, 0, 0]
       IsTrigger: false
+      Material: 0
     CSharpScriptComponent:
       Behaviours:
         - ClassID: 17473292295039821981
@@ -265,14 +253,11 @@ Entities:
         LockRotationX: false
         LockRotationY: false
         LockRotationZ: false
-    PhysicsMaterialComponent:
-      StaticFriction: 1
-      DynamicFriction: 1
-      Bounciness: 0
     BoxColliderComponent:
       Size: [1, 1, 1]
       Offset: [0, 0, 0]
       IsTrigger: false
+      Material: 0
     CSharpScriptComponent:
       Behaviours:
         []
@@ -301,14 +286,11 @@ Entities:
         LockRotationX: false
         LockRotationY: false
         LockRotationZ: false
-    PhysicsMaterialComponent:
-      StaticFriction: 1
-      DynamicFriction: 1
-      Bounciness: 0
     BoxColliderComponent:
       Size: [1, 1, 1]
       Offset: [0, 0, 0]
       IsTrigger: false
+      Material: 0
     CSharpScriptComponent:
       Behaviours:
         []
@@ -337,14 +319,11 @@ Entities:
         LockRotationX: false
         LockRotationY: false
         LockRotationZ: false
-    PhysicsMaterialComponent:
-      StaticFriction: 1
-      DynamicFriction: 1
-      Bounciness: 0
     BoxColliderComponent:
       Size: [1, 1, 1]
       Offset: [0, 0, 0]
       IsTrigger: false
+      Material: 0
     CSharpScriptComponent:
       Behaviours:
         []
@@ -373,14 +352,11 @@ Entities:
         LockRotationX: false
         LockRotationY: false
         LockRotationZ: false
-    PhysicsMaterialComponent:
-      StaticFriction: 1
-      DynamicFriction: 1
-      Bounciness: 0
     BoxColliderComponent:
       Size: [1, 1, 1]
       Offset: [0, 0, 0]
       IsTrigger: false
+      Material: 0
     CSharpScriptComponent:
       Behaviours:
         []
@@ -409,14 +385,11 @@ Entities:
         LockRotationX: false
         LockRotationY: false
         LockRotationZ: false
-    PhysicsMaterialComponent:
-      StaticFriction: 1
-      DynamicFriction: 1
-      Bounciness: 0
     BoxColliderComponent:
       Size: [1, 1, 1]
       Offset: [0, 0, 0]
       IsTrigger: false
+      Material: 0
     CSharpScriptComponent:
       Behaviours:
         []

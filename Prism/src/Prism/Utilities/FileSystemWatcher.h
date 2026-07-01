@@ -28,6 +28,7 @@ namespace Prism
         static void SetChangeCallback(const FileSystemChangedCallbackFn& callback);
         static void StartWatching();
         static void StopWatching();
+        static void IgnoreNextChange();
 
     private:
         static unsigned long Watch(void* param);

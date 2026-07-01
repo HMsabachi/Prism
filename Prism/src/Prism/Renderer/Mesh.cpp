@@ -77,12 +77,12 @@ namespace Prism {
         , m_Indices(std::move(data.Indices))
         , m_Submeshes(std::move(data.Submeshes))
         , m_IsAnimated(data.IsAnimated)
-        , m_FilePath(std::move(data.FilePath))
         , m_Importer(std::move(data.Importer))
         , m_BoneCount(data.BoneCount)
         , m_BoneInfo(std::move(data.BoneInfo))
         , m_BoneMapping(std::move(data.BoneMapping))
     {
+        FilePath = std::move(data.FilePath);
         m_Scene = m_Importer ? m_Importer->GetScene() : nullptr;
         if (m_Scene)
             m_InverseTransform = glm::inverse(Mat4FromAssimpMat4(m_Scene->mRootNode->mTransformation));
@@ -372,7 +372,7 @@ namespace Prism {
         // TODO: Convert to ImGui
         PR_MESH_LOG("------------------------------------------------------");
         PR_MESH_LOG("Vertex Buffer Dump");
-        PR_MESH_LOG("Mesh: {0}", m_FilePath);
+        PR_MESH_LOG("Mesh: {0}", FilePath);
         if (m_IsAnimated)
         {
             for (size_t i = 0; i < m_AnimatedVertices.size(); i++)

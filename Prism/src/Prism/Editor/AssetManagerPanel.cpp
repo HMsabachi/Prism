@@ -1,6 +1,8 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "AssetManagerPanel.h"
+#include "AssetEditorPanel.h"
 #include "Prism/Core/Application.h"
+#include "Prism/Core/Input.h"
 
 #include <filesystem>
 
@@ -31,6 +33,7 @@ namespace Prism {
         m_AssetIconMap[AssetTypes::GetAssetTypeID("obj")] = Texture2D::Create("assets/editor/obj.png");
         m_AssetIconMap[AssetTypes::GetAssetTypeID("wav")] = Texture2D::Create("assets/editor/wav.png");
         m_AssetIconMap[AssetTypes::GetAssetTypeID("cs")] = Texture2D::Create("assets/editor/csc.png");
+        m_AssetIconMap[AssetTypes::GetAssetTypeID("py")] = Texture2D::Create("assets/editor/pyc.png");
         m_AssetIconMap[AssetTypes::GetAssetTypeID("png")] = Texture2D::Create("assets/editor/png.png");
         m_AssetIconMap[AssetTypes::GetAssetTypeID("blend")] = Texture2D::Create("assets/editor/blend.png");
         m_AssetIconMap[AssetTypes::GetAssetTypeID("psc")] = Texture2D::Create("assets/editor/prism.png");
@@ -98,11 +101,11 @@ namespace Prism {
                 if (data)
                 {
                     std::string file = (char*)data->Data;
-                    if (AssetManager::MoveFile(file, m_MovePath))
+                    /*if (AssetManager::MoveFile(file, m_MovePath))
                     {
                         PR_CORE_INFO("Moved File: " + file + " to " + m_MovePath);
                         UpdateCurrentDirectory(m_CurrentDirIndex);
-                    }
+                    }*/
                     m_IsDragging = false;
                 }
                 ImGui::EndDragDropTarget();
@@ -124,6 +127,17 @@ namespace Prism {
                 ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0F, 0.0F, 0.0F, 0.0F));
                 ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.2F, 0.205F, 0.21F, 0.25F));
                 ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.3F, 0.3F, 0.3F, 0.3F));
+
+                if (Input::IsKeyPressed(KeyCode::Escape) || (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::IsAnyItemHovered()))
+                {
+                    if (m_SelectedAsset != 0)
+                        m_SelectedAsset = 0;
+
+                    if (m_SelectedDirectory != -1)
+                        m_SelectedDirectory = -1;
+
+                    m_RenamingSelected = false;
+                }
 
                 for (DirectoryInfo& dir : m_CurrentDirChildren)
                 {
@@ -175,6 +189,12 @@ namespace Prism {
                         if (ImGui::MenuItem("Prefab"))
                             PR_CORE_INFO("Creating Prefab...");
 
+                        if (ImGui::MenuItem("Physics Material"))
+                        {
+                            AssetManager::CreateAsset<PhysicsMaterial>("New Physics Material.ppm", AssetType::PhysicsMat, m_CurrentDirIndex, 0.6F, 0.6F, 0.0F);
+                            UpdateCurrentDirectory(m_CurrentDirIndex);
+                        }
+
                         ImGui::EndMenu();
                     }
 
@@ -200,10 +220,10 @@ namespace Prism {
                 if (data)
                 {
                     std::string a = (char*)data->Data;
-                    if (AssetManager::MoveFile(a, m_MovePath))
+                    /*if (AssetManager::MoveFile(a, m_MovePath))
                     {
                         UpdateCurrentDirectory(m_CurrentDirIndex);
-                    }
+                    }*/
 
                     m_IsDragging = false;
                 }
@@ -245,12 +265,28 @@ namespace Prism {
         ImGui::BeginGroup();
 
         float columnWidth = ImGui::GetColumnWidth();
+
+        if (m_SelectedDirectory == dirInfo.DirectoryIndex)
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25F, 0.25F, 0.25F, 0.75F));
+
         ImGui::ImageButton((ImTextureID)m_FolderTex->GetRendererID(), { columnWidth - 15.0F, columnWidth - 15.0F });
 
-        if (ImGui::IsMouseDoubleClicked(0) && ImGui::IsItemHovered())
+        if (m_SelectedDirectory == dirInfo.DirectoryIndex)
+            ImGui::PopStyleColor();
+
+        if (ImGui::IsItemHovered())
         {
-            m_PrevDirIndex = m_CurrentDirIndex;
-            UpdateCurrentDirectory(dirInfo.DirectoryIndex);
+            if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+            {
+                m_PrevDirIndex = m_CurrentDirIndex;
+                UpdateCurrentDirectory(dirInfo.DirectoryIndex);
+            }
+
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+            {
+                m_SelectedDirectory = dirInfo.DirectoryIndex;
+                m_SelectedAsset = 0;
+            }
         }
 
         if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_AcceptNoDrawDefaultRect))
@@ -265,8 +301,35 @@ namespace Prism {
 
         ImVec2 prevCursorPos = ImGui::GetCursorPos();
         ImGui::SetCursorPos(ImVec2(prevCursorPos.x + 10.0F, prevCursorPos.y - 21.0F));
-        ImGui::TextWrapped(dirInfo.DirectoryName.c_str());
+        ImGui::SetNextItemWidth(columnWidth - 15.0F);
+
+        if (m_SelectedDirectory != dirInfo.DirectoryIndex || !m_RenamingSelected)
+            ImGui::TextWrapped(dirInfo.DirectoryName.c_str());
+
         ImGui::SetCursorPos(prevCursorPos);
+
+        if (m_SelectedDirectory == dirInfo.DirectoryIndex)
+        {
+            if (!m_RenamingSelected && Input::IsKeyPressed(KeyCode::F2))
+            {
+                memset(m_RenameBuffer, 0, 512);
+                memcpy(m_RenameBuffer, dirInfo.DirectoryName.c_str(), dirInfo.DirectoryName.size());
+                m_RenamingSelected = true;
+            }
+
+            if (m_RenamingSelected)
+            {
+                ImGui::SetKeyboardFocusHere();
+                if (ImGui::InputText("##rename_dummy", m_RenameBuffer, 512, ImGuiInputTextFlags_EnterReturnsTrue))
+                {
+                    PR_CORE_INFO("Renaming to {0}", m_RenameBuffer);
+                    AssetManager::Rename(dirInfo.DirectoryIndex, m_RenameBuffer);
+                    m_RenamingSelected = false;
+                    m_SelectedDirectory = -1;
+                    UpdateCurrentDirectory(m_CurrentDirIndex);
+                }
+            }
+        }
 
         ImGui::EndGroup();
     }
@@ -274,13 +337,21 @@ namespace Prism {
     void AssetManagerPanel::RenderFileListView(Ref<Asset>& asset)
     {
         size_t fileID = AssetTypes::GetAssetTypeID(asset->Extension);
+        fileID = m_AssetIconMap.find(fileID) != m_AssetIconMap.end() ? fileID : -1;
         RendererID iconRef = m_AssetIconMap[fileID]->GetRendererID();
         ImGui::Image((ImTextureID)iconRef, ImVec2(30, 30));
 
         ImGui::SameLine();
 
-        if (ImGui::Selectable(asset->FileName.c_str(), false, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(0, 30)))
+        ImGui::Selectable(asset->FileName.c_str(), false, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(0, 30));
+
+        if (ImGui::IsItemHovered())
         {
+            if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                AssetEditorPanel::OpenEditor(asset);
+
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+                m_SelectedAsset = asset->Handle;
         }
 
         HandleDragDrop(iconRef, asset);
@@ -291,16 +362,58 @@ namespace Prism {
         ImGui::BeginGroup();
 
         size_t fileID = AssetTypes::GetAssetTypeID(asset->Extension);
+        fileID = m_AssetIconMap.find(fileID) != m_AssetIconMap.end() ? fileID : -1;
         RendererID iconRef = m_AssetIconMap[fileID]->GetRendererID();
         float columnWidth = ImGui::GetColumnWidth();
 
+        if (m_SelectedAsset == asset->Handle)
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25F, 0.25F, 0.25F, 0.75F));
+
         ImGui::ImageButton((ImTextureID)iconRef, { columnWidth - 15.0F, columnWidth - 15.0F });
+
+        if (m_SelectedAsset == asset->Handle)
+            ImGui::PopStyleColor();
+
+        if (ImGui::IsItemHovered())
+        {
+            if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+                AssetEditorPanel::OpenEditor(asset);
+
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+            {
+                m_SelectedAsset = asset->Handle;
+                m_SelectedDirectory = -1;
+            }
+        }
 
         HandleDragDrop(iconRef, asset);
 
-        std::string newFileName = AssetManager::StripExtras(asset->FileName);
-        ImVec2 prevCursorPos = ImGui::GetCursorPos();
-        ImGui::TextWrapped(newFileName.c_str());
+        ImGui::SetNextItemWidth(columnWidth - 15.0F);
+
+        if (m_SelectedAsset != asset->Handle || !m_RenamingSelected)
+            ImGui::TextWrapped(asset->FileName.c_str());
+
+        if (m_SelectedAsset == asset->Handle)
+        {
+            if (!m_RenamingSelected && Input::IsKeyPressed(KeyCode::F2))
+            {
+                memset(m_RenameBuffer, 0, 512);
+                memcpy(m_RenameBuffer, asset->FileName.c_str(), asset->FileName.size());
+                m_RenamingSelected = true;
+            }
+
+            if (m_RenamingSelected)
+            {
+                ImGui::SetKeyboardFocusHere();
+                if (ImGui::InputText("##rename_dummy", m_RenameBuffer, 512, ImGuiInputTextFlags_EnterReturnsTrue))
+                {
+                    PR_CORE_INFO("Renaming to {0}", m_RenameBuffer);
+                    AssetManager::Rename(asset, m_RenameBuffer);
+                    m_RenamingSelected = false;
+                    m_SelectedAsset = 0;
+                }
+            }
+        }
 
         ImGui::EndGroup();
     }

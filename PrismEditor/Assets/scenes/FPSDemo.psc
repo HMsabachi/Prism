@@ -29,6 +29,71 @@ PhysicsLayers:
       - Name: Default
       - Name: Ground
 Entities:
+  - Entity: 12290369221004411193
+    Parent: 0
+    Children:
+      []
+    TagComponent:
+      Tag: Torus
+    TransformComponent:
+      Position: [3.8112779, 3.3402061, 5.2788844]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      AssetPath: assets/meshes/Default/Torus.fbx
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 9087946811847071748
+    Parent: 0
+    Children:
+      []
+    TagComponent:
+      Tag: Cube1m
+    TransformComponent:
+      Position: [-0.012693193, 4.9368415, 0.010737926]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      AssetPath: assets/meshes/Cube1m.fbx
+    RigidBodyComponent:
+      BodyType: 0
+      Mass: 1
+      LinearDrag: 0
+      AngularDrag: 0.05
+      DisableGravity: false
+      IsKinematic: false
+      Layer: 0
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: false
+        LockRotationY: false
+        LockRotationZ: false
+    BoxColliderComponent:
+      Size: [1, 1, 1]
+      Offset: [0, 0, 0]
+      IsTrigger: false
+    CSharpScriptComponent:
+      Behaviours:
+        - ClassID: 17473292295039821981
+          Enabled: true
+          Fields:
+            - ID: 2824397154
+              Name: Timer
+              Type: 1
+              Value: 0
+            - ID: 3048789568
+              Name: ID
+              Type: 11
+              Value: 0
+    PythonScriptComponent:
+      Behaviours:
+        []
   - Entity: 9421913743984938135
     Parent: 0
     Children:
@@ -37,7 +102,7 @@ Entities:
       Tag: Sky Light
     TransformComponent:
       Position: [0, 0, 0]
-      Rotation: [-21.190977, 0, 0]
+      Rotation: [-21.190977, -0, 0]
       Scale: [1, 1, 1]
     CSharpScriptComponent:
       Behaviours:
@@ -87,7 +152,17 @@ Entities:
       OverrideMesh: false
     CSharpScriptComponent:
       Behaviours:
-        []
+        - ClassID: 17473292295039821981
+          Enabled: true
+          Fields:
+            - ID: 2824397154
+              Name: Timer
+              Type: 1
+              Value: 0
+            - ID: 3048789568
+              Name: ID
+              Type: 11
+              Value: 0
     PythonScriptComponent:
       Behaviours:
         []
@@ -168,7 +243,17 @@ Entities:
       IsTrigger: false
     CSharpScriptComponent:
       Behaviours:
-        []
+        - ClassID: 17473292295039821981
+          Enabled: true
+          Fields:
+            - ID: 2824397154
+              Name: Timer
+              Type: 1
+              Value: 0
+            - ID: 3048789568
+              Name: ID
+              Type: 11
+              Value: 0
     PythonScriptComponent:
       Behaviours:
         []
@@ -248,7 +333,17 @@ Entities:
       IsTrigger: false
     CSharpScriptComponent:
       Behaviours:
-        []
+        - ClassID: 17473292295039821981
+          Enabled: true
+          Fields:
+            - ID: 2824397154
+              Name: Timer
+              Type: 1
+              Value: 0
+            - ID: 3048789568
+              Name: ID
+              Type: 11
+              Value: 0
     PythonScriptComponent:
       Behaviours:
         []
@@ -328,7 +423,17 @@ Entities:
       IsTrigger: false
     CSharpScriptComponent:
       Behaviours:
-        []
+        - ClassID: 17473292295039821981
+          Enabled: true
+          Fields:
+            - ID: 2824397154
+              Name: Timer
+              Type: 1
+              Value: 0
+            - ID: 3048789568
+              Name: ID
+              Type: 11
+              Value: 0
     PythonScriptComponent:
       Behaviours:
         []
@@ -545,8 +650,8 @@ Entities:
     TagComponent:
       Tag: Camera
     TransformComponent:
-      Position: [0, 1, 0]
-      Rotation: [0, 0, 0]
+      Position: [0, 0.5, 0]
+      Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
     CameraComponent:
       Camera: some camera data...

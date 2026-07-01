@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Prism/Core/Core.h"
+#include "Prism/Asset/Asset.h"
 #include "RendererAPI.h"
 
 namespace Prism {
@@ -29,7 +30,7 @@ namespace Prism {
         ReadWrite = 2
     };
 
-    class PRISM_API Texture : public RefCounted
+    class PRISM_API Texture : public Asset
     {
     public:
         virtual ~Texture() {}

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Prism/Core/UUID.h"
 
@@ -6,12 +6,12 @@ namespace Prism {
 
     enum class AssetType
     {
-        Scene, Mesh, Texture, EnvMap, Audio, Script, Shader, Other
+        Scene, Mesh, Texture, EnvMap, Audio, Script, PhysicsMat, Shader, Other
     };
 
-    using AssetHandle = size_t;
+    using AssetHandle = UUID;
 
-    class Asset : public RefCounted
+    class PRISM_API Asset : public RefCounted
     {
     public:
         AssetHandle Handle;
@@ -23,6 +23,20 @@ namespace Prism {
         int ParentDirectory;
 
         virtual ~Asset() {}
+    };
+
+    class PhysicsMaterial : public Asset
+    {
+    public:
+        float StaticFriction;
+        float DynamicFriction;
+        float Bounciness;
+
+        PhysicsMaterial() = default;
+        PhysicsMaterial(float staticFriction, float dynamicFriction, float bounciness)
+            : StaticFriction(staticFriction), DynamicFriction(dynamicFriction), Bounciness(bounciness)
+        {
+        }
     };
 
 }

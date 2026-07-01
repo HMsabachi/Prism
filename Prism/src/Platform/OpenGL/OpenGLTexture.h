@@ -24,7 +24,7 @@ namespace Prism {
         // not present mips in data
         virtual uint32_t GetMipLevelCount() const override;
 
-        virtual const std::string& GetPath() const override { return m_FilePath; }
+        virtual const std::string& GetPath() const override { return FilePath; }
 
         virtual bool Loaded() const override { return m_Loaded; }
 
@@ -55,7 +55,6 @@ namespace Prism {
         bool m_Locked = false;
         bool m_Loaded = false;
 
-        std::string m_FilePath;
     };
 
     class PRISM_API OpenGLTextureCube : public TextureCube
@@ -79,7 +78,7 @@ namespace Prism {
         virtual void GenerateMipMap() const override;
         virtual void CopyTo(Ref<TextureCube> destination) const override;
 
-        virtual const std::string& GetPath() const override { return m_FilePath; }
+        virtual const std::string& GetPath() const override { return FilePath; }
 
         virtual RendererID GetRendererID() const override { return m_RendererID; }
 
@@ -95,6 +94,5 @@ namespace Prism {
 
         byte* m_ImageData;
 
-        std::string m_FilePath;
     };
 }

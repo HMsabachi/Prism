@@ -11,6 +11,7 @@
 #include "Prism/Renderer/MeshFactory.h"
 #include "Prism/Physics/PhysicsLayer.h"
 #include "Prism/Physics/PXPhysicsWrappers.h"
+#include "Prism/Asset/AssetManager.h"
 #include "Prism/Utilities/FileSystem.h"
 #include "Prism/Scene/Components.h"
 
@@ -325,19 +326,6 @@ namespace Prism {
             out << YAML::EndMap; // RigidBodyComponent
         }
 
-        if (entity.HasComponent<PhysicsMaterialComponent>())
-        {
-            out << YAML::Key << "PhysicsMaterialComponent";
-            out << YAML::BeginMap; // PhysicsMaterialComponent
-
-            auto& pmComponent = entity.GetComponent<PhysicsMaterialComponent>();
-            out << YAML::Key << "StaticFriction" << YAML::Value << pmComponent.StaticFriction;
-            out << YAML::Key << "DynamicFriction" << YAML::Value << pmComponent.DynamicFriction;
-            out << YAML::Key << "Bounciness" << YAML::Value << pmComponent.Bounciness;
-
-            out << YAML::EndMap; // PhysicsMaterialComponent
-        }
-
         if (entity.HasComponent<BoxColliderComponent>())
         {
             out << YAML::Key << "BoxColliderComponent";
@@ -347,6 +335,7 @@ namespace Prism {
             out << YAML::Key << "Size" << YAML::Value << bcComponent.Size;
             out << YAML::Key << "Offset" << YAML::Value << bcComponent.Offset;
             out << YAML::Key << "IsTrigger" << YAML::Value << bcComponent.IsTrigger;
+            out << YAML::Key << "Material" << YAML::Value << (bcComponent.Material ? (uint64_t)bcComponent.Material->Handle : 0);
 
             out << YAML::EndMap; // BoxColliderComponent
         }
@@ -359,6 +348,7 @@ namespace Prism {
             auto& scComponent = entity.GetComponent<SphereColliderComponent>();
             out << YAML::Key << "Radius" << YAML::Value << scComponent.Radius;
             out << YAML::Key << "IsTrigger" << YAML::Value << scComponent.IsTrigger;
+            out << YAML::Key << "Material" << YAML::Value << (scComponent.Material ? (uint64_t)scComponent.Material->Handle : 0);
 
             out << YAML::EndMap; // SphereColliderComponent
         }
@@ -372,6 +362,7 @@ namespace Prism {
             out << YAML::Key << "Radius" << YAML::Value << ccComponent.Radius;
             out << YAML::Key << "Height" << YAML::Value << ccComponent.Height;
             out << YAML::Key << "IsTrigger" << YAML::Value << ccComponent.IsTrigger;
+            out << YAML::Key << "Material" << YAML::Value << (ccComponent.Material ? (uint64_t)ccComponent.Material->Handle : 0);
 
             out << YAML::EndMap; // CapsuleColliderComponent
         }
@@ -387,6 +378,7 @@ namespace Prism {
             out << YAML::Key << "IsConvex" << YAML::Value << mcComponent.IsConvex;
             out << YAML::Key << "IsTrigger" << YAML::Value << mcComponent.IsTrigger;
             out << YAML::Key << "OverrideMesh" << YAML::Value << mcComponent.OverrideMesh;
+            out << YAML::Key << "Material" << YAML::Value << (mcComponent.Material ? (uint64_t)mcComponent.Material->Handle : 0);
 
             out << YAML::EndMap; // MeshColliderComponent
         }
@@ -917,17 +909,6 @@ namespace Prism {
                     PR_CORE_INFO("  RigidBodyComponent: Type={0}, Mass={1}", (int)component.BodyType, component.Mass);
                 }
 
-                auto physicsMaterialComponent = entity["PhysicsMaterialComponent"];
-                if (physicsMaterialComponent)
-                {
-                    auto& component = deserializedEntity.AddComponent<PhysicsMaterialComponent>();
-                    component.StaticFriction = physicsMaterialComponent["StaticFriction"].as<float>();
-                    component.DynamicFriction = physicsMaterialComponent["DynamicFriction"].as<float>();
-                    component.Bounciness = physicsMaterialComponent["Bounciness"].as<float>();
-
-                    PR_CORE_INFO("  PhysicsMaterialComponent: StaticFriction={0}, DynamicFriction={1}, Bounciness={2}", component.StaticFriction, component.DynamicFriction, component.Bounciness);
-                }
-
                 auto boxColliderComponent = entity["BoxColliderComponent"];
                 if (boxColliderComponent)
                 {
@@ -935,6 +916,11 @@ namespace Prism {
                     component.Size = boxColliderComponent["Size"].as<glm::vec3>();
                     component.Offset = boxColliderComponent["Offset"].as<glm::vec3>();
                     component.IsTrigger = boxColliderComponent["IsTrigger"] ? boxColliderComponent["IsTrigger"].as<bool>() : false;
+
+                    auto material = boxColliderComponent["Material"];
+                    if (material && AssetManager::IsAssetHandleValid(material.as<uint64_t>()))
+                        component.Material = AssetManager::GetAsset<PhysicsMaterial>(material.as<uint64_t>());
+
                     component.DebugMesh = MeshFactory::CreateBox(component.Size);
 
                     PR_CORE_INFO("  BoxColliderComponent: Size={0},{1},{2}, Offset={3},{4},{5}", component.Size.x, component.Size.y, component.Size.z, component.Offset.x, component.Offset.y, component.Offset.z);
@@ -946,6 +932,11 @@ namespace Prism {
                     auto& component = deserializedEntity.AddComponent<SphereColliderComponent>();
                     component.Radius = sphereColliderComponent["Radius"].as<float>();
                     component.IsTrigger = sphereColliderComponent["IsTrigger"] ? sphereColliderComponent["IsTrigger"].as<bool>() : false;
+
+                    auto material = sphereColliderComponent["Material"];
+                    if (material && AssetManager::IsAssetHandleValid(material.as<uint64_t>()))
+                        component.Material = AssetManager::GetAsset<PhysicsMaterial>(material.as<uint64_t>());
+
                     component.DebugMesh = MeshFactory::CreateSphere(component.Radius);
 
                     PR_CORE_INFO("  SphereColliderComponent: Radius={0}", component.Radius);
@@ -958,6 +949,11 @@ namespace Prism {
                     component.Radius = capsuleColliderComponent["Radius"].as<float>();
                     component.Height = capsuleColliderComponent["Height"].as<float>();
                     component.IsTrigger = capsuleColliderComponent["IsTrigger"] ? capsuleColliderComponent["IsTrigger"].as<bool>() : false;
+
+                    auto material = capsuleColliderComponent["Material"];
+                    if (material && AssetManager::IsAssetHandleValid(material.as<uint64_t>()))
+                        component.Material = AssetManager::GetAsset<PhysicsMaterial>(material.as<uint64_t>());
+
                     component.DebugMesh = MeshFactory::CreateCapsule(component.Radius, component.Height);
 
                     PR_CORE_INFO("  CapsuleColliderComponent: Radius={0}, Height={1}", component.Radius, component.Height);
@@ -989,10 +985,16 @@ namespace Prism {
                         component.IsTrigger = meshColliderComponent["IsTrigger"] ? meshColliderComponent["IsTrigger"].as<bool>() : false;
                         component.OverrideMesh = overrideMesh;
 
-                        if (component.IsConvex)
-                            PXPhysicsWrappers::CreateConvexMesh(component, deserializedEntity.Transformation().GetScale());
-                        else
-                            PXPhysicsWrappers::CreateTriangleMesh(component, deserializedEntity.Transformation().GetScale());
+                        auto material = meshColliderComponent["Material"];
+                        if (material && AssetManager::IsAssetHandleValid(material.as<uint64_t>()))
+                        {
+                            component.Material = AssetManager::GetAsset<PhysicsMaterial>(material.as<uint64_t>());
+
+                            if (component.IsConvex)
+                                PXPhysicsWrappers::CreateConvexMesh(component, deserializedEntity.Transformation().GetScale());
+                            else
+                                PXPhysicsWrappers::CreateTriangleMesh(component, deserializedEntity.Transformation().GetScale());
+                        }
 
                         PR_CORE_INFO("  MeshColliderComponent: IsConvex={0}, OverrideMesh={1}", component.IsConvex, overrideMesh);
                     }
@@ -1000,6 +1002,28 @@ namespace Prism {
                     {
                         PR_CORE_WARN("MeshColliderComponent in use without valid mesh!");
                     }
+                }
+
+                // NOTE: Compatibility fix for older scenes
+                auto physicsMaterialComponent = entity["PhysicsMaterialComponent"];
+                if (physicsMaterialComponent)
+                {
+                    Ref<PhysicsMaterial> material = Ref<PhysicsMaterial>::Create();
+                    material->StaticFriction = physicsMaterialComponent["StaticFriction"].as<float>();
+                    material->DynamicFriction = physicsMaterialComponent["DynamicFriction"].as<float>();
+                    material->Bounciness = physicsMaterialComponent["Bounciness"].as<float>();
+
+                    if (deserializedEntity.HasComponent<BoxColliderComponent>())
+                        deserializedEntity.GetComponent<BoxColliderComponent>().Material = material;
+
+                    if (deserializedEntity.HasComponent<SphereColliderComponent>())
+                        deserializedEntity.GetComponent<SphereColliderComponent>().Material = material;
+
+                    if (deserializedEntity.HasComponent<CapsuleColliderComponent>())
+                        deserializedEntity.GetComponent<CapsuleColliderComponent>().Material = material;
+
+                    if (deserializedEntity.HasComponent<MeshColliderComponent>())
+                        deserializedEntity.GetComponent<MeshColliderComponent>().Material = material;
                 }
 
                 // CSharpScriptComponent — 从 YAML 直接构建，OnConstruct 统一做 Meta 验证

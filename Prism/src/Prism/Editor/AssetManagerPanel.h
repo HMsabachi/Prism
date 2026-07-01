@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Prism/Utilities/AssetManager.h"
+#include "Prism/Asset/AssetManager.h"
 #include "Prism/Renderer/Texture.h"
 #include "Prism/ImGui/ImGui.h"
 
@@ -57,6 +57,7 @@ namespace Prism {
         bool m_DirectoryChanged = false;
 
         char m_InputBuffer[1024];
+        char m_RenameBuffer[512];
 
         DirectoryInfo m_CurrentDir;
         DirectoryInfo m_BaseProjectDir;
@@ -66,6 +67,9 @@ namespace Prism {
         std::vector<DirectoryInfo> m_BreadCrumbData;
 
         AssetHandle m_DraggedAssetId = 0;
+        AssetHandle m_SelectedAsset = 0;
+        int m_SelectedDirectory = -1;
+        bool m_RenamingSelected = false;
 
         std::map<size_t, Ref<Texture2D>> m_AssetIconMap;
     };

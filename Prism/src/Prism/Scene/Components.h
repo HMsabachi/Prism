@@ -12,6 +12,7 @@
 #include "Prism/Renderer/Material.h"
 #include "Prism/Scene/SceneCamera.h"
 #include "Prism/Renderer/SceneEnvironment.h"
+#include "Prism/Asset/Asset.h"
 #include "glm/gtx/quaternion.hpp"
 #include "Scripting/CSharp/CSharpField.h"
 #include "Scripting/Python/PythonField.h"
@@ -243,23 +244,13 @@ namespace Prism {
         RigidBodyComponent(const RigidBodyComponent& other) = default;
     };
 
-    // TODO: This will eventually be a resource, but that requires object referencing through the editor
-    struct PhysicsMaterialComponent
-    {
-        float StaticFriction = 1.0F;
-        float DynamicFriction = 1.0F;
-        float Bounciness = 1.0F;
-
-        PhysicsMaterialComponent() = default;
-        PhysicsMaterialComponent(const PhysicsMaterialComponent& other) = default;
-    };
-
     struct BoxColliderComponent
     {
         glm::vec3 Size = { 1.0F, 1.0F, 1.0F };
         glm::vec3 Offset = { 0.0F, 0.0F, 0.0F };
 
         bool IsTrigger = false;
+        Ref<PhysicsMaterial> Material;
 
         // The mesh that will be drawn in the editor to show the collision bounds
         Ref<Mesh> DebugMesh;
@@ -272,6 +263,7 @@ namespace Prism {
     {
         float Radius = 0.5f;
         bool IsTrigger = false;
+        Ref<PhysicsMaterial> Material;
 
         // The mesh that will be drawn in the editor to show the collision bounds
         Ref<Mesh> DebugMesh;
@@ -285,6 +277,7 @@ namespace Prism {
         float Radius = 0.5F;
         float Height = 1.0F;
         bool IsTrigger = false;
+        Ref<PhysicsMaterial> Material;
 
         Ref<Mesh> DebugMesh;
 
@@ -299,6 +292,7 @@ namespace Prism {
         bool IsConvex = false;
         bool IsTrigger = false;
         bool OverrideMesh = false;
+        Ref<PhysicsMaterial> Material;
 
         MeshColliderComponent() = default;
         MeshColliderComponent(const MeshColliderComponent& other) = default;

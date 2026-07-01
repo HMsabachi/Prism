@@ -7,6 +7,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "Prism/Core/Ref.h"
 #include "Prism/Core/Core.h"
+#include "Prism/Asset/AssetManager.h"
 
 namespace Prism {
     class Texture2D;
@@ -32,7 +33,7 @@ namespace Prism {
         PRISM_API bool Property(const std::string& label, int& value, int min = -10, int max = 10, PropertyFlag flags = PropertyFlag::None);
         PRISM_API bool Property(const std::string& label, uint32_t& value, uint32_t min = 0, uint32_t max = 10000, PropertyFlag flags = PropertyFlag::None);
         PRISM_API bool Property(const std::string& label, float& value, float min = -1.0f, float max = 1.0f, PropertyFlag flags = PropertyFlag::None);
-        PRISM_API bool Property(const std::string& label, float& value, float delta, float min, float max, PropertyFlag flags = PropertyFlag::None);
+        PRISM_API bool Property(const std::string& label, float& value, float delta, float min, float max, PropertyFlag flags = PropertyFlag::None, bool readOnly = false);
         PRISM_API bool Property(const std::string& label, glm::vec2& value, PropertyFlag flags = PropertyFlag::None);
         PRISM_API bool Property(const std::string& label, glm::vec2& value, float min, float max, PropertyFlag flags = PropertyFlag::None);
         PRISM_API bool Property(const std::string& label, glm::vec3& value, PropertyFlag flags = PropertyFlag::None);
@@ -55,6 +56,46 @@ namespace Prism {
         PRISM_API void BeginCheckboxGroup(const char* label);
         PRISM_API bool PropertyCheckboxGroup(const char* label, bool& value);
         PRISM_API void EndCheckboxGroup();
+
+        template<typename T>
+        bool PropertyAssetReference(const std::string& label, Ref<T>& object, AssetType type)
+        {
+            bool modified = false;
+
+            ImGui::Text("%s", label.c_str());
+            ImGui::NextColumn();
+            ImGui::PushItemWidth(-1);
+
+            if (object)
+            {
+                char* assetName = ((Ref<Asset>&)object)->FileName.data();
+                ImGui::InputText("##assetRef", assetName, 256, ImGuiInputTextFlags_ReadOnly);
+            }
+            else
+            {
+                ImGui::InputText("##assetRef", (char*)"Null", 256, ImGuiInputTextFlags_ReadOnly);
+            }
+
+            if (ImGui::BeginDragDropTarget())
+            {
+                auto data = ImGui::AcceptDragDropPayload("scene_entity_assetsP");
+                if (data)
+                {
+                    AssetHandle payloadHandle = *(AssetHandle*)data->Data;
+                    if (AssetManager::IsAssetType(payloadHandle, type))
+                    {
+                        object = AssetManager::GetAsset<T>(payloadHandle);
+                        modified = true;
+                    }
+                }
+                ImGui::EndDragDropTarget();
+            }
+
+            ImGui::PopItemWidth();
+            ImGui::NextColumn();
+
+            return modified;
+        }
 
     }
 }

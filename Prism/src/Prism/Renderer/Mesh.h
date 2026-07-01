@@ -5,6 +5,7 @@
 
 #include "Prism/Core/Core.h"
 #include "Prism/Core/Math/AABB.h"
+#include "Prism/Asset/Asset.h"
 
 #include <unordered_map>
 #include <string>
@@ -144,7 +145,7 @@ namespace Prism {
 
     class ModelImporter;
 
-    class PRISM_API Mesh : public RefCounted
+    class PRISM_API Mesh : public Asset
     {
     public:
 
@@ -160,7 +161,7 @@ namespace Prism {
         std::vector<Submesh>& GetSubmeshes() { return m_Submeshes; }
         const std::vector<Submesh>& GetSubmeshes() const { return m_Submeshes; }
 
-        const std::string& GetFilePath() const { return m_FilePath; }
+        const std::string& GetFilePath() const { return FilePath; }
 
         bool IsAnimated() const { return m_IsAnimated; }
 
@@ -210,8 +211,6 @@ namespace Prism {
         float m_WorldTime = 0.0f;
         float m_TimeMultiplier = 1.0f;
         bool m_AnimationPlaying = true;
-
-        std::string m_FilePath;
 
         friend class Renderer;
         friend class RenderPipeline;

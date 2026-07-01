@@ -114,7 +114,7 @@ namespace UI {
         return modified;
     }
 
-    bool Property(const std::string& label, float& value, float delta, float min, float max, PropertyFlag flags)
+    bool Property(const std::string& label, float& value, float delta, float min, float max, PropertyFlag flags, bool readOnly)
     {
         bool modified = false;
         ImGui::Text("%s", label.c_str());
@@ -122,10 +122,19 @@ namespace UI {
         ImGui::PushItemWidth(-1);
 
         std::string id = "##" + label;
-        if ((int)flags & (int)PropertyFlag::SliderProperty)
+
+        if (readOnly)
+        {
+            ImGui::InputFloat(id.c_str(), &value, 0.0F, 0.0F, "%.3f", ImGuiInputTextFlags_ReadOnly);
+        }
+        else if ((int)flags & (int)PropertyFlag::SliderProperty)
+        {
             modified = ImGui::SliderFloat(id.c_str(), &value, min, max);
+        }
         else
+        {
             modified = ImGui::DragFloat(id.c_str(), &value, delta, min, max);
+        }
 
         ImGui::PopItemWidth();
         ImGui::NextColumn();
