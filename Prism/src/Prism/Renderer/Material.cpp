@@ -1,5 +1,6 @@
 ﻿#include "prpch.h"
 #include "Material.h"
+#include "Prism/Asset/AssetManager.h"
 #include "Prism/Renderer/Buffer/UniformBuffer.h"
 #include "Prism/Renderer/Texture.h"
 #include "Prism/ShaderCompiler/PrismBindings.h"
@@ -7,9 +8,9 @@
 namespace Prism
 {
 
-    Ref<Material> Material::Create(const Ref<PrismShader>& shader)
+    Ref<Material> Material::Create(AssetHandle shaderHandle)
     {
-        return Ref<Material>::Create(shader);
+        return Ref<Material>::Create(shaderHandle);
     }
 
 
@@ -18,8 +19,9 @@ namespace Prism
         return Ref<Material>::Create(material);
     }
 
-    Material::Material(const Ref<PrismShader>& shader)
-        : m_Shader(shader)
+    Material::Material(AssetHandle shaderHandle)
+        : m_ShaderHandle(shaderHandle)
+        , m_Shader(AssetManager::GetAsset<PrismShader>(shaderHandle))
     {
         m_ReloadToken = m_Shader->AddShaderReloadedCallback(std::bind(&Material::OnShaderReloaded, this));
         AllocateStorage();
@@ -27,7 +29,8 @@ namespace Prism
 
 
     Material::Material(const Ref<Material>& material)
-        : m_Shader(material->m_Shader)
+        : m_ShaderHandle(material->m_ShaderHandle)
+        , m_Shader(material->m_Shader)
     {
         m_ReloadToken = m_Shader->AddShaderReloadedCallback(std::bind(&Material::OnShaderReloaded, this));
         AllocateStorage();
@@ -104,11 +107,12 @@ namespace Prism
         AllocateStorage();
     }
 
-    void Material::SetShader(const Ref<PrismShader>& shader)
+    void Material::SetShader(AssetHandle shaderHandle)
     {
         if (m_Shader && m_ReloadToken != 0)
             m_Shader->RemoveShaderReloadedCallback(m_ReloadToken);
-        m_Shader = shader;
+        m_ShaderHandle = shaderHandle;
+        m_Shader = AssetManager::GetAsset<PrismShader>(shaderHandle);
         m_ReloadToken = m_Shader->AddShaderReloadedCallback(std::bind(&Material::OnShaderReloaded, this));
         AllocateStorage();
         m_KeywordMask = 0;

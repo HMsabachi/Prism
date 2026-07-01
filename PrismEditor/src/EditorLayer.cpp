@@ -1,6 +1,7 @@
 ﻿#include "EditorLayer.h"
 #include "Prism/ImGui/ImGui.h"
 #include "Prism/Asset/ModelImporter.h"
+#include "Prism/Asset/AssetManager.h"
 using Prism::UI::Property;
 using Prism::UI::PropertyFlag;
 
@@ -811,14 +812,14 @@ namespace Prism
                                 std::string shaderName = currentShader->GetName();
                                 if (ImGui::BeginCombo("Shader", shaderName.c_str()))
                                 {
-                                    auto& allShaders = Renderer::GetShaderLibrary()->GetAll();
+                                    auto& allShaders = AssetManager::GetShaderLibrary()->GetAll();
                                     for (auto& [name, shader] : allShaders)
                                     {
                                         bool isSelected = (shader == currentShader);
                                         if (ImGui::Selectable(name.c_str(), isSelected))
                                         {
                                             if (shader != currentShader)
-                                                material->SetShader(shader);
+                                                material->SetShader(shader->Handle);
                                         }
                                         if (isSelected)
                                             ImGui::SetItemDefaultFocus();

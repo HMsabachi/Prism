@@ -29,6 +29,7 @@
 #include "Prism/Renderer/Material.h"
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Renderer.h"
+#include "Prism/Asset/AssetManager.h"
 
 namespace Prism::Script
 {
@@ -1082,8 +1083,8 @@ namespace Prism::Script
     {
         Python::ScriptRef argsRef(args);
         std::string shaderName = Python::ValueToString(Python::GetTupleElement(argsRef, 0));
-        const auto& shader = Renderer::GetShaderLibrary()->Get(shaderName);
-        auto* ref = new Ref<Material>(Material::Create(shader));
+        const auto& shader = AssetManager::GetShaderLibrary()->Get(shaderName);
+        auto* ref = new Ref<Material>(Material::Create(shader->Handle));
         return Python::UInt64ToValue(reinterpret_cast<uint64_t>(ref)).Detach();
     }
 

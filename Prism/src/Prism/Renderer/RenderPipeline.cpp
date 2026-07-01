@@ -6,6 +6,7 @@
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Material.h"
 #include "Prism/Renderer/Renderer.h"
+#include "Prism/Asset/AssetManager.h"
 #include "Prism/Renderer/Pipeline.h"
 #include "Prism/Renderer/Buffer/VertexBuffer.h"
 #include "Prism/Renderer/Buffer/IndexBuffer.h"
@@ -53,22 +54,22 @@ namespace Prism
         compRPSpec.TargetFramebuffer = Framebuffer::Create(compFBSpec);
         m_CompositePass = RenderPass::Create(compRPSpec);
 
-        m_CompositeShader = Renderer::GetShaderLibrary()->Get("Custom/SceneComposite");
-        m_CompositeMaterial = Material::Create(m_CompositeShader);
+        m_CompositeShader = AssetManager::GetShaderLibrary()->Get("Custom/SceneComposite");
+        m_CompositeMaterial = Material::Create(m_CompositeShader->Handle);
         m_BRDFLUT = Texture2D::Create("Assets/Textures/BRDF_LUT.tga");
 
-        auto gridShader = Renderer::GetShaderLibrary()->Get("Custom/Grid");
-        m_GridMaterial = Material::Create(gridShader);
+        auto gridShader = AssetManager::GetShaderLibrary()->Get("Custom/Grid");
+        m_GridMaterial = Material::Create(gridShader->Handle);
         m_GridMaterial->SetFloat("u_Scale", 16.025f);
         m_GridMaterial->SetFloat("u_Res", 0.025f);
 
-        auto outlineShader = Renderer::GetShaderLibrary()->Get("Standard/Outline");
-        m_OutlineMaterial = Material::Create(outlineShader);
-        m_OutlineAnimMaterial = Material::Create(outlineShader);
+        auto outlineShader = AssetManager::GetShaderLibrary()->Get("Standard/Outline");
+        m_OutlineMaterial = Material::Create(outlineShader->Handle);
+        m_OutlineAnimMaterial = Material::Create(outlineShader->Handle);
         m_OutlineAnimMaterial->SetKeyword("SKINNED", true);
 
-        auto colliderShader = Renderer::GetShaderLibrary()->Get("Debug/Collider");
-        m_ColliderMaterial = Material::Create(colliderShader);
+        auto colliderShader = AssetManager::GetShaderLibrary()->Get("Debug/Collider");
+        m_ColliderMaterial = Material::Create(colliderShader->Handle);
 
         FramebufferSpecification shadowFBSpec;
         shadowFBSpec.Width = SHADOW_MAP_SIZE;
@@ -94,9 +95,9 @@ namespace Prism
         bloomBlurRPSpec.TargetFramebuffer = Framebuffer::Create(bloomBlurFBSpec);
         m_BloomBlurPass[1] = RenderPass::Create(bloomBlurRPSpec);
 
-        auto bloomBlurShader = Renderer::GetShaderLibrary()->Get("PostProcess/BloomBlur");
+        auto bloomBlurShader = AssetManager::GetShaderLibrary()->Get("PostProcess/BloomBlur");
         if (bloomBlurShader)
-            m_BloomBlurMaterial = Material::Create(bloomBlurShader);
+            m_BloomBlurMaterial = Material::Create(bloomBlurShader->Handle);
 
         // Bloom Blend
         FramebufferSpecification bloomBlendFBSpec;
@@ -107,9 +108,9 @@ namespace Prism
         bloomBlendRPSpec.TargetFramebuffer = Framebuffer::Create(bloomBlendFBSpec);
         m_BloomBlendPass = RenderPass::Create(bloomBlendRPSpec);
 
-        auto bloomBlendShader = Renderer::GetShaderLibrary()->Get("PostProcess/BloomBlend");
+        auto bloomBlendShader = AssetManager::GetShaderLibrary()->Get("PostProcess/BloomBlend");
         if (bloomBlendShader)
-            m_BloomBlendMaterial = Material::Create(bloomBlendShader);
+            m_BloomBlendMaterial = Material::Create(bloomBlendShader->Handle);
 
         CreateFullscreenQuad();
     }

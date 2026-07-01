@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "Prism/Core/Core.h"
+#include "Prism/Asset/Asset.h"
 #include "Prism/Renderer/Shader.h"
 #include "Prism/Utilities/Delegate.h"
 #include <PrismShaderCore/Compiler.h>
@@ -30,7 +31,7 @@ namespace Prism
         std::optional<PrismShaderCompiler::PipelineState> RenderState;
     };
 
-    class PRISM_API PrismShader : public RefCounted
+    class PRISM_API PrismShader : public Asset
     {
     public:
         static Ref<PrismShader> Create(const std::string& path);
@@ -96,9 +97,7 @@ namespace Prism
         ShaderLibrary() = default;
         ~ShaderLibrary() = default;
 
-        void Add(const Ref<PrismShader>& shader);
-        void Load(const std::string& path);
-        void Load(const std::string& name, const std::string& path);
+        Ref<PrismShader> Load(const std::string& filePath);
         void LoadAll(const std::string& directory);
         bool Exists(const std::string& name) const { return m_Shaders.find(name) != m_Shaders.end(); }
 

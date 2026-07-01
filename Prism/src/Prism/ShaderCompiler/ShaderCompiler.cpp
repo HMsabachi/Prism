@@ -2,7 +2,7 @@
 #include "ShaderCompiler.h"
 
 #include "Prism/Utilities/Utilities.h"
-#include "Prism/Renderer/Renderer.h"
+#include "Prism/Asset/AssetManager.h"
 #include "Prism/Renderer/Shader/PrismShader.h"
 
 #include <PrismShaderCore/Log.h>
@@ -35,7 +35,7 @@ namespace Prism
         config.ReadFile = &Prism::File::ReadFile;
         config.OnLog = &ShaderCompiler_LogCallback;
         config.ResolveUsePass = [](const std::string& shaderName) -> CompiledShader {
-            return Renderer::GetShaderLibrary()->OnResolveUsePass(shaderName);
+            return AssetManager::GetShaderLibrary()->OnResolveUsePass(shaderName);
         };
 
         s_Instance = new PrismShaderCompiler::ShaderCompiler(config);

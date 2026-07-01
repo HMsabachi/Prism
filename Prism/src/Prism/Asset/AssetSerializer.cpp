@@ -1,8 +1,10 @@
 ﻿#include "prpch.h"
 #include "AssetSerializer.h"
+#include "Prism/Asset/AssetManager.h"
 #include "Prism/Utilities/StringUtils.h"
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/Texture.h"
+#include "Prism/Renderer/Shader/PrismShader.h"
 
 #include "yaml-cpp/yaml.h"
 
@@ -66,10 +68,15 @@ namespace Prism {
                 loadYAMLData = false;
                 break;
             }
+            case AssetType::Shader:
+            {
+                asset = AssetManager::GetShaderLibrary()->Load(filepath);
+                loadYAMLData = false;
+                break;
+            }
             case AssetType::Scene:
             case AssetType::Audio:
             case AssetType::Script:
-            case AssetType::Shader:
             case AssetType::Other:
             {
                 loadYAMLData = false;

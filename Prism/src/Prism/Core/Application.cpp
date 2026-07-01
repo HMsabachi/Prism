@@ -65,11 +65,11 @@ namespace Prism
         // 初始化 PhysX 物理引擎
         Physics::Init();
         // 初始化渲染器 Initialize Renderer
-        Renderer::Init();
-        Renderer::WaitAndRender();
 
         AssetTypes::Init();
         AssetManager::Init();
+        Renderer::Init();
+        Renderer::WaitAndRender();
     }
 
     Application::~Application()

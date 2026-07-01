@@ -9,7 +9,6 @@
 
 namespace Prism
 {
-    class ShaderLibrary;
     class Camera;
     class Mesh;
     class Material;
@@ -40,7 +39,6 @@ namespace Prism
             //renderCmd(&func);
         }
         static void Init();
-        static Ref<ShaderLibrary> GetShaderLibrary();
 
         static void Clear();
         static void Clear(float r, float g, float b, float a = 1.0f);

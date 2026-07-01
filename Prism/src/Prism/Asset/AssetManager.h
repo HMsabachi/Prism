@@ -14,6 +14,8 @@
 namespace Prism
 {
 
+    class ShaderLibrary;
+
     class AssetTypes
     {
     public:
@@ -48,6 +50,8 @@ namespace Prism
         static void Init();
         static void SetAssetChangeCallback(const AssetsChangeEventFn& callback);
         static void Shutdown();
+
+        static Ref<ShaderLibrary> GetShaderLibrary();
 
         static DirectoryInfo& GetDirectoryInfo(int index);
         static std::vector<Ref<Asset>> GetAssetsInDirectory(int dirIndex);
@@ -112,6 +116,7 @@ namespace Prism
         static std::unordered_map<AssetHandle, Ref<Asset>> s_LoadedAssets;
         static std::vector<DirectoryInfo> s_Directories;
         static AssetsChangeEventFn s_AssetsChangeCallback;
+        static Ref<ShaderLibrary> s_ShaderLibrary;
     };
 
 }

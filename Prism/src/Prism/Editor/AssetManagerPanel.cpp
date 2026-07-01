@@ -38,7 +38,7 @@ namespace Prism {
         m_AssetIconMap[AssetTypes::GetAssetTypeID("blend")] = Texture2D::Create("assets/editor/blend.png");
         m_AssetIconMap[AssetTypes::GetAssetTypeID("psc")] = Texture2D::Create("assets/editor/prism.png");
         m_AssetIconMap[AssetTypes::GetAssetTypeID("Shader")] = Texture2D::Create("assets/editor/shader.png");
-        m_AssetIconMap[AssetTypes::GetAssetTypeID("glsl")] = m_AssetIconMap[AssetTypes::GetAssetTypeID("Shader")];
+        //m_AssetIconMap[AssetTypes::GetAssetTypeID("glsl")] = m_AssetIconMap[AssetTypes::GetAssetTypeID("Shader")];
 
         m_BackbtnTex = Texture2D::Create("assets/editor/btn_back.png");
         m_FwrdbtnTex = Texture2D::Create("assets/editor/btn_fwrd.png");

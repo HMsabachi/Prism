@@ -22,11 +22,13 @@ namespace Prism
     PrismShader::PrismShader(const std::string& path)
     {
         m_FilePath = path;
+        Type = AssetType::Shader;
         Reload();
     }
 
     PrismShader::PrismShader()
     {
+        Type = AssetType::Shader;
     }
 
     PrismShader::~PrismShader()
@@ -243,25 +245,22 @@ namespace Prism
 
     // ShaderLibrary
 
-    void ShaderLibrary::Add(const Ref<PrismShader>& shader)
+    Ref<PrismShader> ShaderLibrary::Load(const std::string& filePath)
     {
-        auto& name = shader->GetName();
-        PR_CORE_ASSERT(m_Shaders.find(name) == m_Shaders.end());
-        m_Shaders[name] = shader;
-    }
-
-    void ShaderLibrary::Load(const std::string& path)
-    {
+        std::string path = filePath;
+        for (auto& c : path) if (c == '\\') c = '/';
+        if (m_PathFromName.empty()) 
+            m_PathFromName = ShaderCompiler::Get().ScanShaderDirectory("assets");
         auto shader = Ref<PrismShader>(PrismShader::Create(path));
         auto& name = shader->GetName();
-        PR_CORE_ASSERT(m_Shaders.find(name) == m_Shaders.end());
+        if (name.empty())
+        {
+            PR_CORE_ERROR("ShaderLibrary::Load - Parse failed for '{}'", path);
+            return shader;
+        }
+        if (Exists(name)) return shader;
         m_Shaders[name] = shader;
-    }
-
-    void ShaderLibrary::Load(const std::string& name, const std::string& path)
-    {
-        PR_CORE_ASSERT(m_Shaders.find(name) == m_Shaders.end());
-        m_Shaders[name] = Ref<PrismShader>(PrismShader::Create(path));
+        return shader;
     }
 
     void ShaderLibrary::LoadAll(const std::string& directory)

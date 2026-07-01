@@ -17,6 +17,7 @@
 #include "Prism/Scene/Systems/TransformSystem.h"
 #include "Scripting/CSharp/CSharpScriptMetaRegistry.h"
 #include "Prism/Renderer/Renderer.h"
+#include "Prism/Asset/AssetManager.h"
 #include "Prism/Asset/ModelImporter.h"
 #include <glm/gtc/type_ptr.hpp>
 
@@ -595,8 +596,8 @@ namespace Prism {
         {
             std::string name = shaderName;
             Rolky::String::Free(shaderName);
-            const auto& shader = Renderer::GetShaderLibrary()->Get(name);
-            return new Ref<Material>(Material::Create(shader));
+            const auto& shader = AssetManager::GetShaderLibrary()->Get(name);
+            return new Ref<Material>(Material::Create(shader->Handle));
         }
 
         void Prism_Material_Destructor(Ref<Material>* _this)

@@ -6,7 +6,7 @@
 #include "Prism/Scene/Scene.h"
 #include "Prism/Scene/Entity.h"
 #include "Prism/Scene/Components.h"
-#include "Prism/Renderer/Renderer.h"
+#include "Prism/Asset/AssetManager.h"
 #include "Prism/Renderer/RenderPass.h"
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Buffer/Framebuffer.h"
@@ -29,8 +29,8 @@ namespace Prism
         m_Pipeline = std::make_unique<RenderPipeline>();
         m_Pipeline->Initialize(1280, 720);
 
-        auto skyboxShader = Renderer::GetShaderLibrary()->Get("Custom/Skybox");
-        m_Config.SkyboxMaterial = Material::Create(skyboxShader);
+        auto skyboxShader = AssetManager::GetShaderLibrary()->Get("Custom/Skybox");
+        m_Config.SkyboxMaterial = Material::Create(skyboxShader->Handle);
     }
 
     void RenderSystem::OnDestroy()

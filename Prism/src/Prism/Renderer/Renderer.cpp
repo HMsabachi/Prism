@@ -1,6 +1,5 @@
 ﻿#include "prpch.h"
 #include "Renderer.h"
-#include "Shader/PrismShader.h"
 
 #include "RendererAPI.h"
 #include "Renderer2D.h"
@@ -18,22 +17,13 @@ namespace Prism
     {
         Ref<RenderPass> m_ActiveRenderPass;
         RenderCommandQueue m_CommandQueue;
-        Ref<ShaderLibrary> m_ShaderLibrary;
     };
 
-    static RendererData s_Data; 
+    static RendererData s_Data;
     void Renderer::Init()
     {
-        s_Data.m_ShaderLibrary = Ref<ShaderLibrary>::Create();
         Renderer::Submit([]() { RendererAPI::Init(); });
-
-        Renderer::GetShaderLibrary()->LoadAll("Assets/Shaders"); 
         Renderer2D::Init();
-    }
-
-    Ref<ShaderLibrary> Renderer::GetShaderLibrary()
-    {
-        return s_Data.m_ShaderLibrary;
     }
 
     Renderer::Renderer()

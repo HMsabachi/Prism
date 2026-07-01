@@ -1,7 +1,7 @@
 ﻿#include "prpch.h"
 #include "ModelImporter.h"
 
-#include "Prism/Renderer/Renderer.h"
+#include "Prism/Asset/AssetManager.h"
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/Material.h"
@@ -181,14 +181,14 @@ namespace Prism
         if (!scene->HasMaterials())
             return result;
 
-        auto shader = Renderer::GetShaderLibrary()->Get("Standard/PrismPBR");
+        auto shader = AssetManager::GetShaderLibrary()->Get("Standard/PrismPBR");
         std::filesystem::path parentDir = std::filesystem::path(filepath).parent_path();
 
         std::vector<Ref<Material>> materialLookup(scene->mNumMaterials);
         for (unsigned i = 0; i < scene->mNumMaterials; i++)
         {
             auto* aiMat = scene->mMaterials[i];
-            auto material = Material::Create(shader);
+            auto material = Material::Create(shader->Handle);
 
             if (meshData.IsAnimated)
                 material->SetKeyword("SKINNED", true);

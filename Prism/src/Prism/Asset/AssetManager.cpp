@@ -6,6 +6,7 @@
 #include "Prism/Asset/ModelImporter.h"
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/Texture.h"
+#include "Prism/Renderer/Shader/PrismShader.h"
 #include "Prism/Utilities/StringUtils.h"
 #include "Prism/Utilities/FileSystem.h"
 
@@ -29,7 +30,7 @@ namespace Prism {
         s_Types["cs"] = AssetType::Script;
         s_Types["py"] = AssetType::Script;
         s_Types["Shader"] = AssetType::Shader;
-        s_Types["glsl"] = AssetType::Shader;
+        //s_Types["glsl"] = AssetType::Shader;
     }
 
     size_t AssetTypes::GetAssetTypeID(const std::string& extension)
@@ -52,6 +53,7 @@ namespace Prism {
 
     void AssetManager::Init()
     {
+        s_ShaderLibrary = Ref<ShaderLibrary>::Create();
         FileSystemWatcher::SetChangeCallback(AssetManager::OnFileSystemChanged);
         ReloadAssets();
     }
@@ -61,10 +63,16 @@ namespace Prism {
         s_AssetsChangeCallback = callback;
     }
 
+    Ref<ShaderLibrary> AssetManager::GetShaderLibrary()
+    {
+        return s_ShaderLibrary;
+    }
+
     void AssetManager::Shutdown()
     {
         s_LoadedAssets.clear();
         s_Directories.clear();
+        s_ShaderLibrary.Reset();
     }
 
     DirectoryInfo& AssetManager::GetDirectoryInfo(int index)
@@ -364,5 +372,6 @@ namespace Prism {
     std::unordered_map<AssetHandle, Ref<Asset>> AssetManager::s_LoadedAssets;
     std::vector<DirectoryInfo> AssetManager::s_Directories;
     AssetManager::AssetsChangeEventFn AssetManager::s_AssetsChangeCallback;
+    Ref<ShaderLibrary> AssetManager::s_ShaderLibrary;
 
 }

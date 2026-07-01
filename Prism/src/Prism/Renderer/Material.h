@@ -16,17 +16,17 @@ namespace Prism
     class PRISM_API Material : public RefCounted
     {
     public:
-        static Ref<Material> Create(const Ref<PrismShader>& shader);
+        static Ref<Material> Create(AssetHandle shaderHandle);
         static Ref<Material> Create(const Ref<Material>& material);
 
     public:
-        Material(const Ref<PrismShader>& shader);
+        Material(AssetHandle shaderHandle);
         Material(const Ref<Material>& material);
         virtual ~Material();
 
-        // Shader
+        AssetHandle GetShaderHandle() const { return m_ShaderHandle; }
         const Ref<PrismShader>& GetShader() const { return m_Shader; }
-        void SetShader(const Ref<PrismShader>& shader);
+        void SetShader(AssetHandle shaderHandle);
 
         // Name
         const std::string& GetName() const { return m_Name; }
@@ -77,6 +77,7 @@ namespace Prism
         void WriteUniform(const std::string& name, const void* data, uint32_t size);
 
         Ref<PrismShader> m_Shader;
+        AssetHandle m_ShaderHandle = 0;
         std::string m_Name;
         Buffer m_PropertyBuffer;
         mutable Ref<UniformBuffer> m_UniformBuffer;

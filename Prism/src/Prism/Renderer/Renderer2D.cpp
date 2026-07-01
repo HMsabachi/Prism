@@ -8,6 +8,7 @@
 #include "Prism/Renderer/Shader.h"
 #include "Prism/Renderer/Shader/PrismShader.h"
 #include "Prism/Renderer/Renderer.h"
+#include "Prism/Asset/AssetManager.h"
 #include "Buffer/ObjectUniformBuffer.h"
 
 #include "Prism/ShaderCompiler/PrismBindings.h"
@@ -137,7 +138,7 @@ namespace Prism
         s_Data.WhiteTexture->GetWriteableBuffer().Write(&whiteTextureData, sizeof(uint32_t));
         s_Data.WhiteTexture->Unlock();
 
-        s_Data.TextureShader = Renderer::GetShaderLibrary()->Get("Prism/Renderer2D");
+        s_Data.TextureShader = AssetManager::GetShaderLibrary()->Get("Prism/Renderer2D");
 
         // Set all texture slots to 0
         s_Data.TextureSlots[0] = s_Data.WhiteTexture;
@@ -149,7 +150,7 @@ namespace Prism
 
         // Lines
         {
-            s_Data.LineShader = Renderer::GetShaderLibrary()->Get("Prism/Renderer2D_Line");
+            s_Data.LineShader = AssetManager::GetShaderLibrary()->Get("Prism/Renderer2D_Line");
 
             PipelineSpecification pipelineSpec;
             pipelineSpec.Layout = {
@@ -171,7 +172,7 @@ namespace Prism
 
         // Circles
         {
-            s_Data.CircleShader = Renderer::GetShaderLibrary()->Get("Prism/Renderer2D_Circle");
+            s_Data.CircleShader = AssetManager::GetShaderLibrary()->Get("Prism/Renderer2D_Circle");
 
             PipelineSpecification pipelineSpec;
             pipelineSpec.Layout = {
