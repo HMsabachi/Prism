@@ -1,23 +1,20 @@
 #pragma once
 
-#include <string>
-#include "Prism/Core/Core.h"
+#include "Prism/Asset/Asset.h"
 
 namespace Prism {
 
     class TextureCube;
 
-    struct PRISM_API Environment
+    class PRISM_API Environment : public Asset
     {
-        std::string FilePath;
+    public:
         Ref<TextureCube> RadianceMap;
         Ref<TextureCube> IrradianceMap;
 
         Environment() = default;
-        Environment(const std::string& filepath, const Ref<TextureCube>& radianceMap, const Ref<TextureCube>& irradianceMap)
-            : FilePath(filepath), RadianceMap(radianceMap), IrradianceMap(irradianceMap) {}
-
-        static Environment Load(const std::string& filepath);
+        Environment(const Ref<TextureCube>& radianceMap, const Ref<TextureCube>& irradianceMap)
+            : RadianceMap(radianceMap), IrradianceMap(irradianceMap) {}
     };
 
 }

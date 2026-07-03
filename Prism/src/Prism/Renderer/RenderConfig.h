@@ -36,7 +36,7 @@ namespace Prism
         Light SceneLight;
         float LightMultiplier = 0.3f;
         LightEnvironment LightEnvironment;
-        Environment SceneEnvironment;
+        Ref<Environment> SceneEnvironment;
         float SceneEnvironmentIntensity = 1.0f;
         Ref<TextureCube> SkyboxTexture;
         Ref<Material> SkyboxMaterial;

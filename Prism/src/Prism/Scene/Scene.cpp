@@ -135,8 +135,7 @@ namespace Prism
         idComponent.ID = {};
 
         entity.AddComponent<TransformComponent>();
-        entity.AddComponent<ParentComponent>();
-        entity.AddComponent<ChildrenComponent>();
+        entity.AddComponent<RelationshipComponent>();
         entity.AddComponent<CSharpScriptComponent>();
         entity.AddComponent<PythonScriptComponent>();
         if (!name.empty())
@@ -152,8 +151,7 @@ namespace Prism
         idComponent.ID = uuid;
 
         entity.AddComponent<TransformComponent>();
-        entity.AddComponent<ParentComponent>();
-        entity.AddComponent<ChildrenComponent>();
+        entity.AddComponent<RelationshipComponent>();
         entity.AddComponent<CSharpScriptComponent>();
         entity.AddComponent<PythonScriptComponent>();
         if (!name.empty())
@@ -205,8 +203,7 @@ namespace Prism
             newEntity = CreateEntity();
 
         CopyComponentIfExists<TransformComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        CopyComponentIfExists<ParentComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        CopyComponentIfExists<ChildrenComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<RelationshipComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<MeshRendererComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<CSharpScriptComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<PythonScriptComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
@@ -273,8 +270,7 @@ namespace Prism
 
         CopyComponent<TagComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<TransformComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<ParentComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<ChildrenComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<RelationshipComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<MeshRendererComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<CSharpScriptComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<PythonScriptComponent>(target->m_Registry, m_Registry, enttMap);

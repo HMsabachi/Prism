@@ -139,8 +139,8 @@ namespace Prism
                 m_Config.SceneEnvironment = skyLightComponent.SceneEnvironment;
                 m_Config.SceneEnvironmentIntensity = skyLightComponent.Intensity;
                 m_Config.SkyboxLod = skyLightComponent.SkyboxLod;
-                if (m_Config.SceneEnvironment.RadianceMap)
-                    m_Config.SkyboxMaterial->SetTexture("u_Texture", m_Config.SceneEnvironment.RadianceMap);
+                if (m_Config.SceneEnvironment && m_Config.SceneEnvironment->RadianceMap)
+                    m_Config.SkyboxMaterial->SetTexture("u_Texture", m_Config.SceneEnvironment->RadianceMap);
             }
         }
 

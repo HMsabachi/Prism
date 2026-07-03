@@ -260,9 +260,10 @@ namespace Prism {
 
     AssetHandle AssetManager::GetAssetIDForFile(const std::string& filepath)
     {
+        std::string normalizedPath = std::filesystem::path(filepath).string();
         for (auto&[id, asset] : s_LoadedAssets)
         {
-            if (asset->FilePath == filepath)
+            if (asset->FilePath == normalizedPath)
                 return id;
         }
 
@@ -272,6 +273,35 @@ namespace Prism {
     bool AssetManager::IsAssetHandleValid(AssetHandle assetHandle)
     {
         return assetHandle != 0 && s_LoadedAssets.find(assetHandle) != s_LoadedAssets.end();
+    }
+
+    void AssetManager::RemoveDirectory(int directory)
+    {
+        for (auto it = s_Directories.begin(); it != s_Directories.end(); )
+        {
+            if (it->DirectoryIndex == directory)
+            {
+                for (auto child : it->ChildrenIndices)
+                    RemoveDirectory(child);
+
+                auto assets = GetAssetsInDirectory(directory);
+                for (auto& asset : assets)
+                {
+                    RemoveAsset(asset->Handle);
+                }
+
+                it = s_Directories.erase(it);
+            }
+            else
+            {
+                it++;
+            }
+        }
+    }
+
+    void AssetManager::RemoveAsset(AssetHandle assetHandle)
+    {
+        s_LoadedAssets.erase(assetHandle);
     }
 
     void AssetManager::Rename(Ref<Asset>& asset, const std::string& newName)
@@ -331,12 +361,22 @@ namespace Prism {
 
     void AssetManager::ImportAsset(const std::string& filepath, bool reimport, int parentIndex)
     {
+        std::string path = filepath;
         std::string extension = Utils::GetExtension(filepath);
         if (extension == "meta")
             return;
 
         AssetType type = AssetTypes::GetAssetTypeFromExtension(extension);
-        Ref<Asset> asset = AssetSerializer::Deserialize(filepath, parentIndex, reimport, type);
+        Ref<Asset> asset = AssetSerializer::LoadAssetInfo(path, parentIndex, type);
+
+        if (s_LoadedAssets.find(asset->Handle) != s_LoadedAssets.end())
+        {
+            if (s_LoadedAssets[asset->Handle]->IsDataLoaded)
+            {
+                asset = AssetSerializer::LoadAssetData(asset);
+            }
+        }
+
         s_LoadedAssets[asset->Handle] = asset;
     }
 
@@ -366,7 +406,8 @@ namespace Prism {
 
     void AssetManager::ReloadAssets()
     {
-        ProcessDirectory("assets");
+        ProcessDirectory("Assets");
+        s_ShaderLibrary->LoadAll("Assets");
     }
 
     std::unordered_map<AssetHandle, Ref<Asset>> AssetManager::s_LoadedAssets;

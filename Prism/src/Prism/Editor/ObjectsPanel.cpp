@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "ObjectsPanel.h"
 #include "Prism/ImGui/ImGui.h"
 
@@ -9,7 +9,7 @@ namespace Prism {
 
     ObjectsPanel::ObjectsPanel()
     {
-        m_CubeImage = Texture2D::Create("assets/editor/asset.png");
+        m_CubeImage = Texture2D::Create("Assets/editor/asset.png");
     }
 
     void ObjectsPanel::DrawObject(const char* label, AssetHandle handle)
@@ -26,19 +26,19 @@ namespace Prism {
 
             ImGui::Text(label);
 
-            ImGui::SetDragDropPayload("scene_entity_assetsP", &handle, sizeof(AssetHandle));
+            ImGui::SetDragDropPayload("asset_payload", &handle, sizeof(AssetHandle));
             ImGui::EndDragDropSource();
         }
     }
 
     void ObjectsPanel::OnImGuiRender()
     {
-        static const AssetHandle CubeHandle = AssetManager::GetAssetIDForFile("assets/meshes/Default/Cube.fbx");
-        static const AssetHandle SphereHandle = AssetManager::GetAssetIDForFile("assets/meshes/Default/Sphere.fbx");
-        static const AssetHandle CylinderHandle = AssetManager::GetAssetIDForFile("assets/meshes/Default/Cylinder.fbx");
-        static const AssetHandle TorusHandle = AssetManager::GetAssetIDForFile("assets/meshes/Default/Torus.fbx");
-        static const AssetHandle PlaneHandle = AssetManager::GetAssetIDForFile("assets/meshes/Default/Plane.fbx");
-        static const AssetHandle ConeHandle = AssetManager::GetAssetIDForFile("assets/meshes/Default/Cone.fbx");
+        static const AssetHandle CubeHandle = AssetManager::GetAssetIDForFile("Assets/meshes/Default/Cube.fbx");
+        static const AssetHandle SphereHandle = AssetManager::GetAssetIDForFile("Assets/meshes/Default/Sphere.fbx");
+        static const AssetHandle CylinderHandle = AssetManager::GetAssetIDForFile("Assets/meshes/Default/Cylinder.fbx");
+        static const AssetHandle TorusHandle = AssetManager::GetAssetIDForFile("Assets/meshes/Default/Torus.fbx");
+        static const AssetHandle PlaneHandle = AssetManager::GetAssetIDForFile("Assets/meshes/Default/Plane.fbx");
+        static const AssetHandle ConeHandle = AssetManager::GetAssetIDForFile("Assets/meshes/Default/Cone.fbx");
 
         ImGui::Begin("Objects");
         {

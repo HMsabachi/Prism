@@ -14,7 +14,6 @@
 
 #include "Prism/Editor/AssetManagerPanel.h"
 #include "Prism/Editor/ObjectsPanel.h"
-#include "Prism/Utilities/DragDropData.h"
 
 namespace Prism
 {

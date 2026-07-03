@@ -5,6 +5,7 @@
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Shader/PrismShader.h"
+#include "Prism/Renderer/RenderPipeline.h"
 
 #include "yaml-cpp/yaml.h"
 
@@ -36,41 +37,65 @@ namespace Prism {
         fout << out.c_str();
     }
 
-    Ref<Asset> AssetSerializer::Deserialize(const std::string& filepath, int parentIndex, bool reimport, AssetType type)
+    Ref<Asset> AssetSerializer::LoadAssetInfo(const std::string& filepath, int parentIndex, AssetType type)
     {
         Ref<Asset> asset = Ref<Asset>::Create();
-
         std::string extension = Utils::GetExtension(filepath);
+        asset->FilePath = filepath;
+        std::replace(asset->FilePath.begin(), asset->FilePath.end(), '\\', '/');
+
+        bool hasMeta = std::filesystem::exists(asset->FilePath + ".meta");
+        if (hasMeta)
+        {
+            LoadMetaData(asset);
+        }
+        else
+        {
+            asset->Handle = UUID();
+            asset->FileName = Utils::RemoveExtension(Utils::GetFilename(filepath));
+            asset->Extension = Utils::GetExtension(filepath);
+            asset->ParentDirectory = parentIndex;
+            asset->Type = type;
+        }
+
+        asset->ParentDirectory = parentIndex;
+        asset->IsDataLoaded = false;
+
+        if (!hasMeta)
+            CreateMetaFile(asset);
+
+        return asset;
+    }
+
+    Ref<Asset> AssetSerializer::LoadAssetData(Ref<Asset>& asset)
+    {
+        Ref<Asset> temp = asset;
 
         bool loadYAMLData = true;
 
-        switch (type)
+        switch (asset->Type)
         {
             case AssetType::Mesh:
             {
-                // NOTE: Mesh now inherits Asset, but has no filepath constructor yet.
-                // Mesh loading via filepath goes through ModelImporter::Import().
-                // ImportAsset registers a generic Ref<Asset> placeholder for now.
                 loadYAMLData = false;
                 break;
             }
             case AssetType::Texture:
             {
-                asset = Texture2D::Create(filepath);
+                asset = Texture2D::Create(asset->FilePath);
                 loadYAMLData = false;
                 break;
             }
             case AssetType::EnvMap:
             {
-                // TODO
-                /*auto [radiance, irradiance] = SceneRenderer::CreateEnvironmentMap(filepath);
-                asset = Ref<Environment>::Create(radiance, irradiance);*/
+                auto [radiance, irradiance] = RenderPipeline::CreateEnvironmentMap(asset->FilePath);
+                asset = Ref<Environment>::Create(radiance, irradiance);
                 loadYAMLData = false;
                 break;
             }
             case AssetType::Shader:
             {
-                asset = AssetManager::GetShaderLibrary()->Load(filepath);
+                asset = AssetManager::GetShaderLibrary()->Load(asset->FilePath);
                 loadYAMLData = false;
                 break;
             }
@@ -86,42 +111,30 @@ namespace Prism {
 
         if (loadYAMLData)
         {
-            asset = DeserializeYAML(filepath, type);
+            asset = DeserializeYAML(asset);
             PR_CORE_ASSERT(asset, "Failed to load asset");
         }
 
-        bool hasMeta = std::filesystem::exists(filepath + ".meta");
-        asset->FilePath = filepath;
-        std::replace(asset->FilePath.begin(), asset->FilePath.end(), '\\', '/');
-
-        if (hasMeta)
-        {
-            LoadMetaData(asset);
-        }
-        else
-        {
-            asset->Handle = UUID();
-            asset->FileName = Utils::RemoveExtension(Utils::GetFilename(filepath));
-            asset->Extension = Utils::GetExtension(filepath);
-            asset->ParentDirectory = parentIndex;
-            asset->Type = type;
-        }
-
-        if (!hasMeta)
-            CreateMetaFile(asset);
+        asset->Handle = temp->Handle;
+        asset->FilePath = temp->FilePath;
+        asset->FileName = temp->FileName;
+        asset->Extension = temp->Extension;
+        asset->ParentDirectory = temp->ParentDirectory;
+        asset->Type = temp->Type;
+        asset->IsDataLoaded = true;
 
         return asset;
     }
 
-    Ref<Asset> AssetSerializer::DeserializeYAML(const std::string& filepath, AssetType type)
+    Ref<Asset> AssetSerializer::DeserializeYAML(const Ref<Asset>& asset)
     {
-        std::ifstream stream(filepath);
+        std::ifstream stream(asset->FilePath);
         std::stringstream strStream;
         strStream << stream.rdbuf();
 
         YAML::Node data = YAML::Load(strStream.str());
 
-        if (type == AssetType::PhysicsMat)
+        if (asset->Type == AssetType::PhysicsMat)
         {
             float staticFriction = data["StaticFriction"].as<float>();
             float dynamicFriction = data["DynamicFriction"].as<float>();

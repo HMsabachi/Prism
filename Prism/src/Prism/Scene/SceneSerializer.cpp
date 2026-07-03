@@ -178,19 +178,15 @@ namespace Prism {
         out << YAML::Key << "Entity";
         out << YAML::Value << uuid;
 
-        if (entity.HasComponent<ParentComponent>())
+        if (entity.HasComponent<RelationshipComponent>())
         {
-            auto& parent = entity.GetComponent<ParentComponent>();
-            out << YAML::Key << "Parent" << YAML::Value << parent.ParentHandle;
-        }
+            auto& relationshipComponent = entity.GetComponent<RelationshipComponent>();
+            out << YAML::Key << "Parent" << YAML::Value << relationshipComponent.ParentHandle;
 
-        if (entity.HasComponent<ChildrenComponent>())
-        {
-            auto& childrenComponent = entity.GetComponent<ChildrenComponent>();
             out << YAML::Key << "Children";
             out << YAML::Value << YAML::BeginSeq;
 
-            for (auto child : childrenComponent.Children)
+            for (auto child : relationshipComponent.Children)
             {
                 out << YAML::BeginMap;
                 out << YAML::Key << "Handle" << YAML::Value << child;
@@ -566,8 +562,8 @@ namespace Prism {
             out << YAML::Key << "Intensity" << YAML::Value << slc.Intensity;
             out << YAML::Key << "Angle" << YAML::Value << slc.Angle;
             out << YAML::Key << "SkyboxLod" << YAML::Value << slc.SkyboxLod;
-            if (!slc.SceneEnvironment.FilePath.empty())
-                out << YAML::Key << "AssetPath" << YAML::Value << FileSystem::GetRelativePath(slc.SceneEnvironment.FilePath);
+            if (slc.SceneEnvironment)
+                out << YAML::Key << "EnvironmentMap" << YAML::Value << slc.SceneEnvironment->Handle;
             out << YAML::EndMap;
         }
 
@@ -583,7 +579,8 @@ namespace Prism {
         out << YAML::Key << "Environment";
         out << YAML::Value;
         out << YAML::BeginMap;
-        out << YAML::Key << "AssetPath" << YAML::Value << FileSystem::GetRelativePath(cfg.SceneEnvironment.FilePath);
+        if (cfg.SceneEnvironment)
+            out << YAML::Key << "EnvironmentMap" << YAML::Value << cfg.SceneEnvironment->Handle;
         const auto& light = cfg.SceneLight;
         out << YAML::Key << "Light" << YAML::Value;
         out << YAML::BeginMap;
@@ -684,9 +681,17 @@ namespace Prism {
         auto environment = data["Environment"];
         if (environment)
         {
-            std::string envPath = environment["AssetPath"].as<std::string>();
             auto& cfg = m_Scene->GetSystem<RenderSystem>()->GetConfig();
-            cfg.SceneEnvironment = Environment::Load(envPath);
+            AssetHandle assetHandle;
+            if (environment["EnvironmentMap"])
+                assetHandle = environment["EnvironmentMap"].as<uint64_t>();
+            else if (environment["AssetPath"])
+            {
+                std::string filepath = environment["AssetPath"].as<std::string>();
+                assetHandle = AssetManager::GetAssetIDForFile(filepath);
+            }
+            if (AssetManager::IsAssetHandleValid(assetHandle))
+                cfg.SceneEnvironment = AssetManager::GetAsset<Environment>(assetHandle);
 
             auto lightNode = environment["Light"];
             if (lightNode)
@@ -712,7 +717,7 @@ namespace Prism {
         auto physicsLayers = data["PhysicsLayers"];
         if (physicsLayers)
         {
-            for (auto layer : physicsLayers)
+            for (const auto& layer : physicsLayers)
             {
                 PhysicsLayerManager::AddLayer(layer["Name"].as<std::string>(), false);
             }
@@ -751,8 +756,9 @@ namespace Prism {
 
                 Entity deserializedEntity = m_Scene->CreateEntityWithID(uuid, name);
 
+                auto& relationshipComponent = deserializedEntity.GetComponent<RelationshipComponent>();
                 uint64_t parentHandle = entity["Parent"] ? entity["Parent"].as<uint64_t>() : 0;
-                deserializedEntity.GetComponent<ParentComponent>().ParentHandle = parentHandle;
+                relationshipComponent.ParentHandle = parentHandle;
 
                 auto children = entity["Children"];
                 if (children)
@@ -760,7 +766,7 @@ namespace Prism {
                     for (auto child : children)
                     {
                         uint64_t childHandle = child["Handle"].as<uint64_t>();
-                        deserializedEntity.GetComponent<ChildrenComponent>().Children.push_back(childHandle);
+                        relationshipComponent.Children.push_back(childHandle);
                     }
                 }
 
@@ -1185,18 +1191,19 @@ namespace Prism {
                     component.Intensity = skyLightComponent["Intensity"] ? skyLightComponent["Intensity"].as<float>() : 1.0f;
                     component.Angle = skyLightComponent["Angle"] ? skyLightComponent["Angle"].as<float>() : 0.0f;
                     component.SkyboxLod = skyLightComponent["SkyboxLod"] ? skyLightComponent["SkyboxLod"].as<float>() : 0.0f;
-                    if (skyLightComponent["AssetPath"])
+
+                    AssetHandle assetHandle;
+                    if (skyLightComponent["EnvironmentMap"])
+                        assetHandle = skyLightComponent["EnvironmentMap"].as<uint64_t>();
+                    else if (skyLightComponent["AssetPath"])
                     {
-                        std::string envPath = skyLightComponent["AssetPath"].as<std::string>();
-                        if (!CheckPath(envPath))
-                        {
-                            missingPaths.emplace_back(envPath);
-                        }
-                        else
-                        {
-                            component.SceneEnvironment = Environment::Load(envPath);
-                        }
+                        std::string filepath = skyLightComponent["AssetPath"].as<std::string>();
+                        assetHandle = AssetManager::GetAssetIDForFile(filepath);
                     }
+
+                    if (AssetManager::IsAssetHandleValid(assetHandle))
+                        component.SceneEnvironment = AssetManager::GetAsset<Environment>(assetHandle);
+
                     PR_CORE_INFO("  SkyLightComponent: Intensity={0}", component.Intensity);
                 }
             }

@@ -20,8 +20,7 @@ namespace Prism
     }
 
     Material::Material(AssetHandle shaderHandle)
-        : m_ShaderHandle(shaderHandle)
-        , m_Shader(AssetManager::GetAsset<PrismShader>(shaderHandle))
+        : m_Shader(AssetManager::GetAsset<PrismShader>(shaderHandle))
     {
         m_ReloadToken = m_Shader->AddShaderReloadedCallback(std::bind(&Material::OnShaderReloaded, this));
         AllocateStorage();
@@ -29,8 +28,7 @@ namespace Prism
 
 
     Material::Material(const Ref<Material>& material)
-        : m_ShaderHandle(material->m_ShaderHandle)
-        , m_Shader(material->m_Shader)
+        : m_Shader(material->m_Shader)
     {
         m_ReloadToken = m_Shader->AddShaderReloadedCallback(std::bind(&Material::OnShaderReloaded, this));
         AllocateStorage();
@@ -111,7 +109,6 @@ namespace Prism
     {
         if (m_Shader && m_ReloadToken != 0)
             m_Shader->RemoveShaderReloadedCallback(m_ReloadToken);
-        m_ShaderHandle = shaderHandle;
         m_Shader = AssetManager::GetAsset<PrismShader>(shaderHandle);
         m_ReloadToken = m_Shader->AddShaderReloadedCallback(std::bind(&Material::OnShaderReloaded, this));
         AllocateStorage();

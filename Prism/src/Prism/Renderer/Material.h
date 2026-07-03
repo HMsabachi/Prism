@@ -24,7 +24,7 @@ namespace Prism
         Material(const Ref<Material>& material);
         virtual ~Material();
 
-        AssetHandle GetShaderHandle() const { return m_ShaderHandle; }
+        AssetHandle GetShaderHandle() const { return m_Shader->Handle; }
         const Ref<PrismShader>& GetShader() const { return m_Shader; }
         void SetShader(AssetHandle shaderHandle);
 
@@ -77,7 +77,6 @@ namespace Prism
         void WriteUniform(const std::string& name, const void* data, uint32_t size);
 
         Ref<PrismShader> m_Shader;
-        AssetHandle m_ShaderHandle = 0;
         std::string m_Name;
         Buffer m_PropertyBuffer;
         mutable Ref<UniformBuffer> m_UniformBuffer;

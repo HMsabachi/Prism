@@ -21,6 +21,7 @@ namespace Prism {
         std::string FileName;
         std::string Extension;
         int ParentDirectory;
+        bool IsDataLoaded = false;
 
         virtual ~Asset() {}
     };

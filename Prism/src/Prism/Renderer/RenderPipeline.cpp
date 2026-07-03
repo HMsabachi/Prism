@@ -562,10 +562,10 @@ namespace Prism
             directionalLight.Radiance, directionalLight.Multiplier);
         m_FrameUBO.Upload();
         m_FrameUBO.Bind();
-        if (config.SceneEnvironment.RadianceMap && config.SceneEnvironment.IrradianceMap)
+        if (config.SceneEnvironment && config.SceneEnvironment->RadianceMap && config.SceneEnvironment->IrradianceMap)
         {
-            config.SceneEnvironment.RadianceMap->Bind(Config::PRISM_ENV_RADIANCE);
-            config.SceneEnvironment.IrradianceMap->Bind(Config::PRISM_ENV_IRRADIANCE);
+            config.SceneEnvironment->RadianceMap->Bind(Config::PRISM_ENV_RADIANCE);
+            config.SceneEnvironment->IrradianceMap->Bind(Config::PRISM_ENV_IRRADIANCE);
         }
         m_BRDFLUT->Bind(Config::PRISM_ENV_BRDF_LUT);
     }

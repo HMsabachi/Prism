@@ -58,7 +58,7 @@ namespace Prism {
         PRISM_API void EndCheckboxGroup();
 
         template<typename T>
-        bool PropertyAssetReference(const std::string& label, Ref<T>& object, AssetType type)
+        inline bool PropertyAssetReference(const std::string& label, Ref<T>& object, AssetType type)
         {
             bool modified = false;
 
@@ -78,7 +78,7 @@ namespace Prism {
 
             if (ImGui::BeginDragDropTarget())
             {
-                auto data = ImGui::AcceptDragDropPayload("scene_entity_assetsP");
+                auto data = ImGui::AcceptDragDropPayload("asset_payload");
                 if (data)
                 {
                     AssetHandle payloadHandle = *(AssetHandle*)data->Data;

@@ -171,6 +171,10 @@ namespace Prism {
 
         ImGuiTreeNodeFlags node_flags = (entity == m_SelectionContext ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
         node_flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
+
+        if (entity.Children().empty())
+            node_flags |= ImGuiTreeNodeFlags_Leaf;
+
         bool opened = ImGui::TreeNodeEx((void*)(uint32_t)entity, node_flags, name);
         if (ImGui::IsItemClicked())
         {
@@ -205,17 +209,7 @@ namespace Prism {
                 Entity e = m_Context->FindEntityByUUID(droppedHandle);
                 if (e)
                 {
-                    bool reparentToChild = false;
-                    for (auto child : e.Children())
-                    {
-                        if (child == entity.GetUUID())
-                        {
-                            reparentToChild = true;
-                            break;
-                        }
-                    }
-
-                    if (!reparentToChild)
+                    if (!entity.IsDescendantOf(e))
                     {
                         Entity previousParent = m_Context->FindEntityByUUID(e.GetParentUUID());
                         if (previousParent)
@@ -633,28 +627,8 @@ namespace Prism {
 
         DrawComponent<SkyLightComponent>(TR("Sky Light"), entity, [](auto& component)
             {
-                ImGui::Columns(3);
-                ImGui::SetColumnWidth(0, 100);
-                ImGui::SetColumnWidth(1, 300);
-                ImGui::SetColumnWidth(2, 40);
-                ImGui::Text(TR("File Path"));
-                ImGui::NextColumn();
-                ImGui::PushItemWidth(-1);
-                if (!component.SceneEnvironment.FilePath.empty())
-                    ImGui::InputText("##envfilepath", (char*)component.SceneEnvironment.FilePath.c_str(), 256, ImGuiInputTextFlags_ReadOnly);
-                else
-                    ImGui::InputText("##envfilepath", (char*)"Empty", 256, ImGuiInputTextFlags_ReadOnly);
-                ImGui::PopItemWidth();
-                ImGui::NextColumn();
-                if (ImGui::Button("...##openenv"))
-                {
-                    std::string file = Application::Get().OpenFile("*.hdr");
-                    if (!file.empty())
-                        component.SceneEnvironment = Environment::Load(file);
-                }
-                ImGui::Columns(1);
-
                 UI::BeginPropertyGrid();
+                UI::PropertyAssetReference("Environment Map", component.SceneEnvironment, AssetType::EnvMap);
                 UI::Property(TR("Intensity"), component.Intensity, 0.01f, 0.0f, 5.0f);
                 UI::Property(TR("Angle"), component.Angle, 0.01f, 0.0f, 360.0f);
                 UI::Property(TR("Skybox LOD"), component.SkyboxLod, 0.01f, 0.0f, 10.0f);

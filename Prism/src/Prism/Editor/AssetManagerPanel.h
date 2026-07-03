@@ -5,8 +5,60 @@
 #include "Prism/ImGui/ImGui.h"
 
 #include <map>
+#include <functional>
 
 namespace Prism {
+
+    template<typename T>
+    struct SelectionStack
+    {
+    public:
+        void Select(T item)
+        {
+            m_Selections.push_back(item);
+        }
+
+        void Deselect(T item)
+        {
+            for (auto it = m_Selections.begin(); it != m_Selections.end(); it++)
+            {
+                if (*it == item)
+                {
+                    m_Selections.erase(it);
+                    break;
+                }
+            }
+        }
+
+        bool IsSelected(T item) const
+        {
+            for (auto selection : m_Selections)
+            {
+                if (selection == item)
+                    return true;
+            }
+
+            return false;
+        }
+
+        void Clear()
+        {
+            m_Selections.clear();
+        }
+
+        size_t SelectionCount() const
+        {
+            return m_Selections.size();
+        }
+
+        T* GetSelectionData()
+        {
+            return m_Selections.data();
+        }
+
+    private:
+        std::vector<T> m_Selections;
+    };
 
     class PRISM_API AssetManagerPanel
     {
@@ -24,6 +76,8 @@ namespace Prism {
         void RenderDirectoriesGridView(DirectoryInfo& dirInfo);
         void RenderBreadCrumbs();
         void RenderBottom();
+
+        void HandleRenaming(const std::string& name, const std::function<void()>& callback);
 
         void UpdateCurrentDirectory(int dirIndex);
 
@@ -55,6 +109,7 @@ namespace Prism {
         bool m_DisplayListView = false;
         bool m_UpdateBreadCrumbs = true;
         bool m_DirectoryChanged = false;
+        bool m_IsAnyItemHovered = false;
 
         char m_InputBuffer[1024];
         char m_RenameBuffer[512];
@@ -67,8 +122,8 @@ namespace Prism {
         std::vector<DirectoryInfo> m_BreadCrumbData;
 
         AssetHandle m_DraggedAssetId = 0;
-        AssetHandle m_SelectedAsset = 0;
-        int m_SelectedDirectory = -1;
+        SelectionStack<AssetHandle> m_SelectedAssets;
+        SelectionStack<int> m_SelectedDirectories;
         bool m_RenamingSelected = false;
 
         std::map<size_t, Ref<Texture2D>> m_AssetIconMap;

@@ -16,6 +16,9 @@ namespace Prism {
 
         /** Rename a file or directory, returns the new path */
         static std::string Rename(const std::string& filepath, const std::string& newName);
+
+        /** Delete a file or directory (Windows: sends to recycle bin) */
+        static bool DeleteFile(const std::string& filepath);
     };
 
 }

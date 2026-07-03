@@ -3,6 +3,8 @@
 #include "Prism/Utilities/Utilities.h"
 #include "Prism/ShaderCompiler/ShaderCompiler.h"
 #include "Prism/Core/Hash.h"
+#include "Prism/Asset/AssetManager.h"
+#include "Prism/Asset/AssetSerializer.h"
 
 #include "Platform/OpenGL/OpenGLShader.h"
 
@@ -270,11 +272,11 @@ namespace Prism
         uint32_t success = 0, failed = 0;
         for (auto& [name, path] : m_PathFromName)
         {
+            AssetHandle handle = AssetManager::GetAssetIDForFile(path);
+            Ref<PrismShader> shader = AssetManager::GetAsset<PrismShader>(handle);
             if (Exists(name)) { success++; continue; }
-            auto shader = Ref<PrismShader>(PrismShader::Create(path));
             if (shader->GetName().empty())
             {
-                PR_CORE_ERROR("Parse failed, skipping: {}", path);
                 failed++;
                 continue;
             }
