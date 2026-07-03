@@ -18,7 +18,7 @@ PR_WARNING_DISABLE(4312)
 #include "Prism/Editor/PhysicsSettingsWindow.h"
 #include "Prism/Editor/AssetEditorPanel.h"
 #include "Prism/Math/Math.h"
-#include "Prism/Utilities/FileSystemWatcher.h"
+#include "Prism/Utilities/FileSystem.h"
 
 #include <filesystem>
 
@@ -80,13 +80,13 @@ namespace Prism
             //serializer.Deserialize("Assets/Scenes/FPSDemo.psc");
             //m_SceneFilePath = "Assets/Scenes/FPSDemo.psc";
 
-            FileSystemWatcher::StartWatching();
+            FileSystem::StartWatching();
             AssetEditorPanel::RegisterDefaultEditors();
         }
 
         void EditorLayer::OnDetach()
         {
-            FileSystemWatcher::StopWatching();
+            FileSystem::StopWatching();
             if (m_SceneState == SceneState::Play)
                 OnSceneStop();
              m_SceneHierarchyPanel = nullptr;

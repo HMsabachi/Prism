@@ -37,9 +37,13 @@ namespace Prism {
         fout << out.c_str();
     }
 
-    Ref<Asset> AssetSerializer::LoadAssetInfo(const std::string& filepath, int parentIndex, AssetType type)
+    Ref<Asset> AssetSerializer::LoadAssetInfo(const std::string& filepath, AssetHandle parentHandle, AssetType type)
     {
         Ref<Asset> asset = Ref<Asset>::Create();
+
+        if (type == AssetType::Directory)
+            asset = Ref<Directory>::Create();
+
         std::string extension = Utils::GetExtension(filepath);
         asset->FilePath = filepath;
         std::replace(asset->FilePath.begin(), asset->FilePath.end(), '\\', '/');
@@ -51,14 +55,13 @@ namespace Prism {
         }
         else
         {
-            asset->Handle = UUID();
+            asset->Handle = filepath == "Assets" ? UUID(0) : UUID();
             asset->FileName = Utils::RemoveExtension(Utils::GetFilename(filepath));
             asset->Extension = Utils::GetExtension(filepath);
-            asset->ParentDirectory = parentIndex;
             asset->Type = type;
         }
 
-        asset->ParentDirectory = parentIndex;
+        asset->ParentDirectory = parentHandle;
         asset->IsDataLoaded = false;
 
         if (!hasMeta)
@@ -69,6 +72,9 @@ namespace Prism {
 
     Ref<Asset> AssetSerializer::LoadAssetData(Ref<Asset>& asset)
     {
+        if (asset->Type == AssetType::Directory)
+            return asset;
+
         Ref<Asset> temp = asset;
 
         bool loadYAMLData = true;
@@ -163,7 +169,6 @@ namespace Prism {
         asset->FileName = data["FileName"].as<std::string>();
         asset->FilePath = data["FilePath"].as<std::string>();
         asset->Extension = data["Extension"].as<std::string>();
-        asset->ParentDirectory = data["Directory"].as<int>();
         asset->Type = (AssetType)data["Type"].as<int>();
     }
 

@@ -12,6 +12,9 @@ namespace Prism {
 
     void PhysicsMaterialEditor::Render()
     {
+        if (!m_Asset)
+            SetOpen(false);
+
         UI::BeginPropertyGrid();
         UI::Property("Static Friction", m_Asset->StaticFriction);
         UI::Property("Dynamic Friction", m_Asset->DynamicFriction);
@@ -28,6 +31,9 @@ namespace Prism {
 
     void TextureEditor::Render()
     {
+        if (!m_Asset)
+            SetOpen(false);
+
         float textureWidth = (float)m_Asset->GetWidth();
         float textureHeight = (float)m_Asset->GetHeight();
         float bitsPerPixel = (float)Texture::GetBPP(m_Asset->GetFormat());

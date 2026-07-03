@@ -14,7 +14,7 @@ namespace Prism {
             SerializeAsset(asset, asset->Type);
         }
 
-        static Ref<Asset> LoadAssetInfo(const std::string& filepath, int parentIndex, AssetType type);
+        static Ref<Asset> LoadAssetInfo(const std::string& filepath, AssetHandle parentHandle, AssetType type);
         static Ref<Asset> LoadAssetData(Ref<Asset>& asset);
 
     private:
