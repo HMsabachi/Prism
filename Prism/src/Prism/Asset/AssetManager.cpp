@@ -90,35 +90,7 @@ namespace Prism {
         return results;
     }
 
-    void AssetManager::ConvertAsset(const std::string& assetPath, const std::string& conversionType)
-    {
-        std::string path = std::filesystem::temp_directory_path().string();
-        std::ofstream fileStream(path + "export.py");
-
-        fileStream << "import bpy\n";
-        fileStream << "import sys\n";
-
-        if (conversionType == "fbx")
-            fileStream << "bpy.ops.export_scene.fbx(filepath=r'" + path + "asset.fbx" + "', axis_forward='-Z', axis_up='Y')\n";
-
-        if (conversionType == "obj")
-            fileStream << "bpy.ops.export_scene.obj(filepath=r'" + path + "asset.obj" + "', axis_forward='-Z', axis_up='Y')\n";
-
-        fileStream.close();
-
-        std::string blender_base_path = "C:\\Program Files\\Blender Foundation\\Blender 2.90\\blender.exe";
-        std::string p_asset_path = '"' + assetPath + '"';
-        std::string p_blender_path = '"' + blender_base_path + '"';
-        std::string p_script_path = '"' + path + "export.py" + '"';
-
-        std::string convCommand = '"' + p_blender_path + " " + p_asset_path + " --background --python " + p_script_path + "" + '"';
-
-        PR_CORE_INFO(convCommand.c_str());
-
-        system(convCommand.c_str());
-    }
-
-    AssetHandle AssetManager::FindParentHandleInChildren(Ref<Directory>& dir, const std::string& dirName)
+AssetHandle AssetManager::FindParentHandleInChildren(Ref<Directory>& dir, const std::string& dirName)
     {
         if (dir->FileName == dirName)
             return dir->Handle;

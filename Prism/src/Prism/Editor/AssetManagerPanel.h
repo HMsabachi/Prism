@@ -97,7 +97,7 @@ namespace Prism {
         bool m_IsDragging = false;
         bool m_UpdateBreadCrumbs = true;
         bool m_IsAnyItemHovered = false;
-        bool m_SkipRenderingThisFrame = false;
+        bool m_UpdateDirectoryNextFrame = false;
 
         char m_InputBuffer[MAX_INPUT_BUFFER_LENGTH];
 

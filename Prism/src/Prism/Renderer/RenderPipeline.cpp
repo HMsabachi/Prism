@@ -380,8 +380,6 @@ namespace Prism
         if (!debugList.empty())
         {
             Renderer::Submit([]() {
-                glStencilFunc(GL_ALWAYS, 1, 0xff);
-                glStencilMask(0);
                 glLineWidth(3);
                 glEnable(GL_LINE_SMOOTH);
                 glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -416,10 +414,7 @@ namespace Prism
 
             Renderer::Submit([]() {
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-                glStencilMask(0xff);
-                glStencilFunc(GL_ALWAYS, 1, 0xff);
                 glEnable(GL_DEPTH_TEST);
-                glDisable(GL_STENCIL_TEST);
             });
         }
 

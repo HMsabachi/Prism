@@ -28,6 +28,7 @@ namespace Prism
         static bool Exists(const std::string& filepath);
         static std::string Rename(const std::string& filepath, const std::string& newName);
         static bool DeleteFile(const std::string& filepath);
+        static bool MoveFile(const std::string& filepath, const std::string& dest);
 
         /** Convert absolute path to relative (relative to working directory) */
         static std::string GetRelativePath(const std::string& absolutePath);

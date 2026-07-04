@@ -1,6 +1,6 @@
 Scene: Scene Name
 Environment:
-  AssetPath: ""
+  EnvironmentMap: 9998254420492741016
   Light:
     Direction: [-0.5, -1, -0.5]
     Radiance: [1, 1, 1]
@@ -14,79 +14,70 @@ Environment:
 PhysicsLayers:
   []
 Entities:
-  - Entity: 4155768779932166321
+  - Entity: 4437702480284700836
+    Parent: 0
+    Children:
+      []
     TagComponent:
-      Tag: Camera
+      Tag: TransformTest
     TransformComponent:
-      Position: [12.441303, 1.8964186, 0]
+      Position: [0, 2.4613252, 5.79594]
       Rotation: [0, -0, 0]
       Scale: [1, 1, 1]
-    CameraComponent:
-      Camera: some camera data...
-      Primary: true
+    MeshRendererComponent:
+      AssetPath: Assets/meshes/Tests/TransformTest.fbx
     CSharpScriptComponent:
       Behaviours:
         []
     PythonScriptComponent:
       Behaviours:
         []
-  - Entity: 8599118811544175475
+  - Entity: 6385741144206808496
+    Parent: 0
+    Children:
+      []
+    TagComponent:
+      Tag: TestScene
+    TransformComponent:
+      Position: [-3.6650949, 1.8218101, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      AssetPath: Assets/meshes/TestScene.fbx
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 10252406678423167503
+    Parent: 0
+    Children:
+      []
     TagComponent:
       Tag: Cylinder
     TransformComponent:
-      Position: [2.1474607, 1.3011947, -7.035705]
+      Position: [6.996212, 3.6148028, 4.905213]
       Rotation: [0, -0, 0]
-      Scale: [0.012400007, 0.012400007, 0.012400007]
+      Scale: [1, 1, 1]
     MeshRendererComponent:
-      AssetPath: assets/meshes/Default/Cylinder.fbx
+      AssetPath: Assets/meshes/Default/Cylinder.fbx
     CSharpScriptComponent:
       Behaviours:
         []
     PythonScriptComponent:
       Behaviours:
         []
-  - Entity: 15345554648795530648
-    TagComponent:
-      Tag: Cube
-    TransformComponent:
-      Position: [0, -1.8848879, 0]
-      Rotation: [0, -0, 0]
-      Scale: [15.16655, 1, 15.522981]
-    MeshRendererComponent:
-      AssetPath: assets/meshes/Default/Cube.fbx
-    RigidBodyComponent:
-      BodyType: 0
-      Mass: 1
-      LinearDrag: 0
-      AngularDrag: 0.05
-      DisableGravity: false
-      IsKinematic: false
-      Layer: 0
-      Constraints:
-        LockPositionX: false
-        LockPositionY: false
-        LockPositionZ: false
-        LockRotationX: false
-        LockRotationY: false
-        LockRotationZ: false
-    BoxColliderComponent:
-      Size: [2, 2, 2]
-      Offset: [0, 0, 0]
-      IsTrigger: false
-      Material: 0
-    CSharpScriptComponent:
-      Behaviours:
-        []
-    PythonScriptComponent:
-      Behaviours:
-        []
-  - Entity: 3530056565078259526
+  - Entity: 12701462489340545265
+    Parent: 0
+    Children:
+      []
     TagComponent:
       Tag: Directional Light
     TransformComponent:
       Position: [0, 0, 0]
-      Rotation: [-8.2, 70.6, 62.8]
-      Scale: [1, 1, 1]
+      Rotation: [21.408594, 30.226818, 57.53708]
+      Scale: [0.9999999, 0.9998923, 0.9999461]
     CSharpScriptComponent:
       Behaviours:
         []
@@ -95,71 +86,64 @@ Entities:
         []
     DirectionalLightComponent:
       Radiance: [1, 1, 1]
-      Intensity: 1
+      Intensity: 2
       CastShadows: true
       SoftShadows: true
       LightSize: 0.5
-  - Entity: 3785092971802201435
+  - Entity: 6339274599783244545
+    Parent: 0
+    Children:
+      []
     TagComponent:
-      Tag: Sphere
+      Tag: Torus
     TransformComponent:
-      Position: [0, 0.6566484, 0]
+      Position: [0, 8.116162, 0]
       Rotation: [0, -0, 0]
-      Scale: [0.01, 0.01, 0.01]
+      Scale: [4.08, 4.08, 4.08]
     MeshRendererComponent:
-      AssetPath: assets/meshes/Default/Sphere.fbx
-    RigidBodyComponent:
-      BodyType: 1
-      Mass: 1
-      LinearDrag: 0
-      AngularDrag: 0.05
-      DisableGravity: false
-      IsKinematic: false
-      Layer: 0
-      Constraints:
-        LockPositionX: false
-        LockPositionY: false
-        LockPositionZ: false
-        LockRotationX: true
-        LockRotationY: true
-        LockRotationZ: true
-    SphereColliderComponent:
-      Radius: 100
-      IsTrigger: false
-      Material: 0
+      AssetPath: Assets/meshes/Default/Torus.fbx
     CSharpScriptComponent:
       Behaviours:
-        - ClassID: 4621281492369714213
-          Enabled: true
-          Fields:
-            - ID: 316217235
-              Name: WalkingSpeed
-              Type: 1
-              Value: 10
-            - ID: 2138685965
-              Name: RunSpeed
-              Type: 1
-              Value: 20
-            - ID: 868800460
-              Name: JumpForce
-              Type: 1
-              Value: 5
-            - ID: 1585848256
-              Name: CameraForwardOffset
-              Type: 1
-              Value: 0.2
-            - ID: 3048789568
-              Name: ID
-              Type: 11
-              Value: 0
-            - ID: 2756558778
-              Name: CameraYOffset
-              Type: 1
-              Value: 0.85
-            - ID: 1438023815
-              Name: MouseSensitivity
-              Type: 1
-              Value: 10
+        []
     PythonScriptComponent:
       Behaviours:
         []
+  - Entity: 480167885545322113
+    Parent: 0
+    Children:
+      []
+    TagComponent:
+      Tag: Cube
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [12, 1, 12.81]
+    MeshRendererComponent:
+      AssetPath: Assets/meshes/Default/Cube.fbx
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 11770117328004185642
+    Parent: 0
+    Children:
+      []
+    TagComponent:
+      Tag: Sky Light
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+    SkyLightComponent:
+      Intensity: 1
+      Angle: 0
+      SkyboxLod: 0
+      EnvironmentMap: 9998254420492741016

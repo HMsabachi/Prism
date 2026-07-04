@@ -80,12 +80,12 @@ namespace Prism
         }
 
         template<typename T>
-        static Ref<T> GetAsset(AssetHandle assetHandle)
+        static Ref<T> GetAsset(AssetHandle assetHandle, bool loadData = true)
         {
             PR_CORE_ASSERT(s_LoadedAssets.find(assetHandle) != s_LoadedAssets.end());
             Ref<Asset> asset = s_LoadedAssets[assetHandle];
 
-            if (!asset->IsDataLoaded)
+            if (!asset->IsDataLoaded && loadData)
                 asset = AssetSerializer::LoadAssetData(asset);
 
             return asset.As<T>();
@@ -99,7 +99,6 @@ namespace Prism
         static std::string StripExtras(const std::string& filename);
     private:
         static void ImportAsset(const std::string& filepath, AssetHandle parentHandle);
-        static void ConvertAsset(const std::string& assetPath, const std::string& conversionType);
         static AssetHandle ProcessDirectory(const std::string& directoryPath, AssetHandle parentHandle);
         static void ReloadAssets();
 

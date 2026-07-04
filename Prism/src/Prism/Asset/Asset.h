@@ -6,7 +6,7 @@ namespace Prism {
 
     enum class AssetType
     {
-        Scene, Mesh, Texture, EnvMap, Audio, Script, PhysicsMat, Shader, Directory, Other
+        Scene, Mesh, Texture, EnvMap, Audio, Script, PhysicsMat, Shader, Directory, Other, Any
     };
 
     using AssetHandle = UUID;

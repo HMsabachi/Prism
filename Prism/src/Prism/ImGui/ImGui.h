@@ -58,7 +58,7 @@ namespace Prism {
         PRISM_API void EndCheckboxGroup();
 
         template<typename T>
-        inline bool PropertyAssetReference(const std::string& label, Ref<T>& object, AssetType type)
+        inline bool PropertyAssetReference(const std::string& label, Ref<T>& object, AssetType type = AssetType::Any)
         {
             bool modified = false;
 
@@ -82,7 +82,7 @@ namespace Prism {
                 if (data)
                 {
                     AssetHandle payloadHandle = *(AssetHandle*)data->Data;
-                    if (AssetManager::IsAssetType(payloadHandle, type))
+                    if (type == AssetType::Any || AssetManager::IsAssetType(payloadHandle, type))
                     {
                         object = AssetManager::GetAsset<T>(payloadHandle);
                         modified = true;
