@@ -666,7 +666,7 @@ namespace Prism
 
                 bool snap = Input::IsKeyPressed(PR_KEY_LEFT_CONTROL);
                 auto& tc = selection.Entity.Transformation();
-                glm::mat4 worldMatrix = m_ActiveScene->GetTransformRelativeToParent(selection.Entity);
+                glm::mat4 transform = m_ActiveScene->GetTransformRelativeToParent(selection.Entity);
                 float snapValue = GetSnapValue();
                 float snapValues[3] = { snapValue, snapValue, snapValue };
                 if (m_SelectionMode == SelectionMode::Entity)
@@ -675,30 +675,35 @@ namespace Prism
                         glm::value_ptr(m_EditorCamera.GetProjectionMatrix()),
                         (ImGuizmo::OPERATION)m_GizmoType,
                         ImGuizmo::LOCAL,
-                        glm::value_ptr(worldMatrix),
+                        glm::value_ptr(transform),
                         nullptr,
                         snap ? snapValues : nullptr);
 
-                    // 世界 → 局部：移除父级变换
-                    if (selection.Entity.GetParentUUID() != 0)
-                    {
-                        Entity parent = m_ActiveScene->FindEntityByUUID(selection.Entity.GetParentUUID());
-                        if (parent)
-                        {
-                            glm::mat4 parentWorld = m_ActiveScene->GetTransformRelativeToParent(parent);
-                            worldMatrix = glm::inverse(parentWorld) * worldMatrix;
-                        }
-                    }
-
                     glm::vec3 translation, rotation, scale;
-                    Math::DecomposeTransform(worldMatrix, translation, rotation, scale);
-                    tc.SetPosition(translation);
-                    tc.SetRotation(glm::degrees(rotation));
-                    tc.SetScale(scale);
+                    Math::DecomposeTransform(transform, translation, rotation, scale);
+
+                    Entity parent = m_ActiveScene->FindEntityByUUID(selection.Entity.GetParentUUID());
+                    if (parent)
+                    {
+                        glm::vec3 parentTranslation, parentRotation, parentScale;
+                        Math::DecomposeTransform(m_ActiveScene->GetTransformRelativeToParent(parent), parentTranslation, parentRotation, parentScale);
+
+                        glm::vec3 deltaRotation = (rotation - parentRotation) - glm::radians(tc.GetRotation());
+                        tc.SetPosition(translation - parentTranslation);
+                        tc.SetRotation(tc.GetRotation() + glm::degrees(deltaRotation));
+                        tc.SetScale(scale);
+                    }
+                    else
+                    {
+                        glm::vec3 deltaRotation = rotation - glm::radians(tc.GetRotation());
+                        tc.SetPosition(translation);
+                        tc.SetRotation(tc.GetRotation() + glm::degrees(deltaRotation));
+                        tc.SetScale(scale);
+                    }
                 }
                 else
                 {
-                    glm::mat4 transformBase = worldMatrix * selection.Mesh->Transform;
+                    glm::mat4 transformBase = transform * selection.Mesh->Transform;
                     ImGuizmo::Manipulate(glm::value_ptr(m_EditorCamera.GetViewMatrix()),
                         glm::value_ptr(m_EditorCamera.GetProjectionMatrix()),
                         (ImGuizmo::OPERATION)m_GizmoType,
@@ -707,7 +712,7 @@ namespace Prism
                         nullptr,
                         snap ? snapValues : nullptr);
 
-                    selection.Mesh->Transform = glm::inverse(worldMatrix) * transformBase;
+                    selection.Mesh->Transform = glm::inverse(transform) * transformBase;
                 }
             }
             ImGui::End();
@@ -1049,7 +1054,7 @@ namespace Prism
 
         void EditorLayer::OnEntityDeleted(Entity e)
         {
-            if (m_SelectionContext[0].Entity == e)
+            if (m_SelectionContext.size() > 0 && m_SelectionContext[0].Entity == e)
             {
                 m_SelectionContext.clear();
                 m_EditorScene->SetSelectedEntity({});

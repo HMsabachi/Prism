@@ -33,12 +33,12 @@ namespace Prism {
 
     void ObjectsPanel::OnImGuiRender()
     {
-        static const AssetHandle CubeHandle = AssetManager::GetAssetIDForFile("Assets/meshes/Default/Cube.fbx");
-        static const AssetHandle SphereHandle = AssetManager::GetAssetIDForFile("Assets/meshes/Default/Sphere.fbx");
-        static const AssetHandle CylinderHandle = AssetManager::GetAssetIDForFile("Assets/meshes/Default/Cylinder.fbx");
-        static const AssetHandle TorusHandle = AssetManager::GetAssetIDForFile("Assets/meshes/Default/Torus.fbx");
-        static const AssetHandle PlaneHandle = AssetManager::GetAssetIDForFile("Assets/meshes/Default/Plane.fbx");
-        static const AssetHandle ConeHandle = AssetManager::GetAssetIDForFile("Assets/meshes/Default/Cone.fbx");
+        static const AssetHandle CubeHandle = AssetManager::GetAssetHandleFromFilePath("Assets/meshes/Default/Cube.fbx");
+        static const AssetHandle SphereHandle = AssetManager::GetAssetHandleFromFilePath("Assets/meshes/Default/Sphere.fbx");
+        static const AssetHandle CylinderHandle = AssetManager::GetAssetHandleFromFilePath("Assets/meshes/Default/Cylinder.fbx");
+        static const AssetHandle TorusHandle = AssetManager::GetAssetHandleFromFilePath("Assets/meshes/Default/Torus.fbx");
+        static const AssetHandle PlaneHandle = AssetManager::GetAssetHandleFromFilePath("Assets/meshes/Default/Plane.fbx");
+        static const AssetHandle ConeHandle = AssetManager::GetAssetHandleFromFilePath("Assets/meshes/Default/Cone.fbx");
 
         ImGui::Begin("Objects");
         {

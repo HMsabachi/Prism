@@ -687,7 +687,7 @@ namespace Prism {
             else if (environment["AssetPath"])
             {
                 std::string filepath = environment["AssetPath"].as<std::string>();
-                assetHandle = AssetManager::GetAssetIDForFile(filepath);
+                assetHandle = AssetManager::GetAssetHandleFromFilePath(filepath);
             }
             if (AssetManager::IsAssetHandleValid(assetHandle))
                 cfg.SceneEnvironment = AssetManager::GetAsset<Environment>(assetHandle);
@@ -1196,7 +1196,7 @@ namespace Prism {
                     else if (skyLightComponent["AssetPath"])
                     {
                         std::string filepath = skyLightComponent["AssetPath"].as<std::string>();
-                        assetHandle = AssetManager::GetAssetIDForFile(filepath);
+                        assetHandle = AssetManager::GetAssetHandleFromFilePath(filepath);
                     }
 
                     if (AssetManager::IsAssetHandleValid(assetHandle))

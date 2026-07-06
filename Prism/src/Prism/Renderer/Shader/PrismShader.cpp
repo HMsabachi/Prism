@@ -272,7 +272,7 @@ namespace Prism
         uint32_t success = 0, failed = 0;
         for (auto& [name, path] : m_PathFromName)
         {
-            AssetHandle handle = AssetManager::GetAssetIDForFile(path);
+            AssetHandle handle = AssetManager::GetAssetHandleFromFilePath(path);
             Ref<PrismShader> shader = AssetManager::GetAsset<PrismShader>(handle);
             if (Exists(name)) { success++; continue; }
             if (shader->GetName().empty())

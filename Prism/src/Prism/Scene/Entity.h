@@ -82,6 +82,8 @@ namespace Prism
         UUID GetParentUUID() { return GetComponent<RelationshipComponent>().ParentHandle; }
         std::vector<UUID>& Children() { return GetComponent<RelationshipComponent>().Children; }
 
+        bool HasParent() { return m_Scene->FindEntityByUUID(GetParentUUID()); }
+
         bool IsAncesterOf(Entity entity)
         {
             const auto& children = Children();
