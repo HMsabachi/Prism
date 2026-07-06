@@ -31,12 +31,11 @@ class Physics:
         result = _Prism.Prism_Physics_Raycast(origin, direction, maxDistance)
         if result is None:
             return False
-        entityID, position, normal, distance = result
         if hit is not None:
-            hit.EntityID = entityID
-            hit.Position = position
-            hit.Normal = normal
-            hit.Distance = distance
+            hit.EntityID = result.EntityID
+            hit.Position = Vector3(result.Position)
+            hit.Normal = Vector3(result.Normal)
+            hit.Distance = result.Distance
         return True
 
     @staticmethod
@@ -79,19 +78,20 @@ class Physics:
         raise NotImplementedError("OverlapSphereNonAlloc is only available in C#")
 
     @staticmethod
-    def _HitDataToCollider(data: tuple) -> Collider:
-        """Convert native overlap hit tuple to a Collider object."""
-        colliderType = data[1]
-        entityID = data[0]
-        isTrigger = data[2]
+    def _HitDataToCollider(data) -> Collider:
+        """Convert native OverlapHitData to a Collider object."""
+        colliderType = data.ColliderType
+        entityID = data.EntityID
+        isTrigger = data.IsTrigger
+        sd = data.ShapeData
         if colliderType == 0:  # Box
             return BoxCollider(entityID, isTrigger,
-                Vector3(data[3], data[4], data[5]),
-                Vector3(data[6], data[7], data[8]))
+                Vector3(sd[0], sd[1], sd[2]),
+                Vector3(sd[3], sd[4], sd[5]))
         elif colliderType == 1:  # Sphere
-            return SphereCollider(entityID, isTrigger, data[3])
+            return SphereCollider(entityID, isTrigger, sd[0])
         elif colliderType == 2:  # Capsule
-            return CapsuleCollider(entityID, isTrigger, data[3], data[4])
+            return CapsuleCollider(entityID, isTrigger, sd[0], sd[1])
         elif colliderType == 3:  # Mesh
-            return MeshCollider(entityID, isTrigger, data[3])
+            return MeshCollider(entityID, isTrigger, data.MeshHandle)
         return None

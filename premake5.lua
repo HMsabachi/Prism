@@ -130,7 +130,7 @@ project "Prism"
         cppdialect "C++20"
         systemversion "latest"
 
-        buildoptions { "/utf-8" }
+        buildoptions { "/utf-8", "/bigobj" }
 
         defines
         {

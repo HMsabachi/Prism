@@ -8,7 +8,7 @@ using Prism::UI::PropertyFlag;
 #include "Prism/ImGui/ImGuizmo.h"
 #include "Prism/Core/LanguageManager.h"
 #include "Scripting/CSharp/CSharpScriptEngine.h"
-// #include "Scripting/Python/PythonScriptEngine.h"  // [Python Disabled]
+#include "Scripting/Python/PythonScriptEngine.h"
 #include "Prism/Scene/Systems/Physics2DSystem.h"
 #include "Prism/Scene/Systems/RenderSystem.h"
 #include "Prism/Core/Warning.h"
@@ -66,7 +66,7 @@ namespace Prism
             m_ActiveScene = m_EditorScene;
             UpdateWindowTitle("Untitled Scene");
             CSharpScriptEngine::SetSceneContext(m_EditorScene);
-            // PythonScriptEngine::SetSceneContext(m_EditorScene);  // [Python Disabled]
+            PythonScriptEngine::SetSceneContext(m_EditorScene);
             m_SceneHierarchyPanel = CreateScope<SceneHierarchyPanel>(m_EditorScene);
             m_SceneHierarchyPanel->SetSelectionChangedCallback(std::bind(&EditorLayer::SelectEntity, this, std::placeholders::_1));
             m_SceneHierarchyPanel->SetEntityDeletedCallback(std::bind(&EditorLayer::OnEntityDeleted, this, std::placeholders::_1));
@@ -122,7 +122,7 @@ namespace Prism
 
             m_SelectionContext.clear();
             CSharpScriptEngine::SetSceneContext(m_EditorScene);
-            // PythonScriptEngine::SetSceneContext(m_EditorScene);  // [Python Disabled]
+            PythonScriptEngine::SetSceneContext(m_EditorScene);
             m_SceneHierarchyPanel->SetContext(m_EditorScene);
 
             Input::SetCursorMode(CursorMode::Normal);
@@ -377,7 +377,7 @@ namespace Prism
             m_ActiveScene = m_EditorScene;
             m_SceneHierarchyPanel->SetContext(m_EditorScene);
             CSharpScriptEngine::SetSceneContext(m_EditorScene);
-            // PythonScriptEngine::SetSceneContext(m_EditorScene);  // [Python Disabled]
+            PythonScriptEngine::SetSceneContext(m_EditorScene);
             UpdateWindowTitle("Untitled Scene");
             m_SceneFilePath = std::string();
 
@@ -406,7 +406,7 @@ namespace Prism
             UpdateWindowTitle(path.filename().string());
             m_SceneHierarchyPanel->SetContext(m_EditorScene);
             CSharpScriptEngine::SetSceneContext(m_EditorScene);
-            // PythonScriptEngine::SetSceneContext(m_EditorScene);  // [Python Disabled]
+            PythonScriptEngine::SetSceneContext(m_EditorScene);
 
             m_EditorScene->SetSelectedEntity({});
             m_SelectionContext.clear();
@@ -748,7 +748,7 @@ namespace Prism
                         CSharpScriptEngine::BuildAssembly();
                         CSharpScriptEngine::ReloadAppAssembly("assets/scripts/net9.0/Game.dll");
 #endif
-                        // PythonScriptEngine::ReloadPythonScripts();  // [Python Disabled]
+                        PythonScriptEngine::ReloadPythonScripts();
                     }
                     ImGui::MenuItem(TR("Reload assembly on play"), nullptr, &m_ReloadScriptOnPlay);
                     ImGui::EndMenu();

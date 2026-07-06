@@ -1,6 +1,6 @@
 from Prism import Behaviour, Entity, Time
 from Prism.Math import Vector3
-from Prism.Math.Matrix4 import Matrix4
+from Prism.Component import TransformComponent
 
 
 class BasicController(Behaviour):
@@ -12,12 +12,11 @@ class BasicController(Behaviour):
 
     def OnUpdate(self):
         ts = Time.DeltaTime
-        transform = self.Entity.GetTransform()
 
-        playerTranslation = self.m_PlayerEntity.GetTransform().Translation
-        translation = transform.Translation
-        translation.XY = playerTranslation.XY
-        translation.z = playerTranslation.z + self.DistanceFromPlayer
-        translation.y = max(translation.y, 2.0)
-        transform.Translation = translation
-        self.Entity.SetTransform(transform)
+        playerPos = self.m_PlayerEntity.Transform.Position
+        myPos = self.Entity.Transform.Position
+        myPos.x = playerPos.x
+        myPos.y = playerPos.y
+        myPos.z = playerPos.z + self.DistanceFromPlayer
+        myPos.y = max(myPos.y, 2.0)
+        self.Entity.Transform.Position = myPos

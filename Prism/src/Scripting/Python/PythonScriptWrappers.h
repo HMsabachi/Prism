@@ -36,7 +36,7 @@ namespace Prism::PythonScript
     void Prism_Log_LogMessage(int32_t level, const char* message);
 #pragma endregion
 
-#pragma region Time
+    // Time
     float Prism_Time_GetDeltaTime();
     float Prism_Time_GetUnscaledDeltaTime();
     float Prism_Time_GetTime();
@@ -46,21 +46,18 @@ namespace Prism::PythonScript
     void Prism_Time_SetTimeScale(float scale);
     float Prism_Time_GetTimeScale();
     void Prism_Time_SetFixedDeltaTime(float fixedDeltaTime);
-#pragma endregion
 
-#pragma region Math
+    // Math
     float Prism_Noise_PerlinNoise(float x, float y);
-#pragma endregion
 
-#pragma region Input
+    // Input
     bool Prism_Input_IsKeyPressed(uint16_t key);
     glm::vec2 Prism_Input_GetMousePosition();
     void Prism_Input_SetCursorMode(int mode);
     int Prism_Input_GetCursorMode();
     bool Prism_Input_IsMouseButtonPressed(uint16_t button);
-#pragma endregion
 
-#pragma region Entity
+    // Entity
     void Prism_Entity_CreateComponent(uint64_t entityID, pybind11::object cls);
     bool Prism_Entity_HasComponent(uint64_t entityID, pybind11::object cls);
     uint64_t Prism_Entity_FindEntityByTag(const char* tag);
@@ -69,9 +66,8 @@ namespace Prism::PythonScript
     uint64_t Prism_Entity_GetBehaviour(uint64_t entityID, pybind11::object cls);
     bool Prism_Behaviour_GetEnabled(uint64_t behaviourID);
     void Prism_Behaviour_SetEnabled(uint64_t behaviourID, bool enabled);
-#pragma endregion
 
-#pragma region TransformComponent
+    // TransformComponent
     struct ScriptTransform { glm::vec3 Position; glm::vec3 Rotation; glm::vec3 Scale; glm::vec3 Up; glm::vec3 Right; glm::vec3 Forward; };
     glm::vec3 Prism_TransformComponent_GetPosition(uint64_t entityID);
     glm::vec3 Prism_TransformComponent_GetRotation(uint64_t entityID);
@@ -90,9 +86,8 @@ namespace Prism::PythonScript
     void Prism_TransformComponent_SetLocalScale(uint64_t entityID, const glm::vec3& scale);
     ScriptTransform Prism_TransformComponent_GetTransform(uint64_t entityID);
     void Prism_TransformComponent_SetTransform(uint64_t entityID, const ScriptTransform& transform);
-#pragma endregion
 
-#pragma region MeshRendererComponent
+    // MeshRendererComponent
     uint64_t Prism_MeshRendererComponent_GetMesh(uint64_t entityID);
     void Prism_MeshRendererComponent_SetMesh(uint64_t entityID, uint64_t meshHandle);
     uint64_t Prism_MeshRendererComponent_GetMaterial(uint64_t entityID, uint64_t index);
@@ -100,26 +95,22 @@ namespace Prism::PythonScript
     uint64_t Prism_MeshRendererComponent_GetMaterialCount(uint64_t entityID);
     std::vector<uint64_t> Prism_MeshRendererComponent_GetMaterials(uint64_t entityID);
     void Prism_MeshRendererComponent_SetMaterials(uint64_t entityID, const std::vector<uint64_t>& handles);
-#pragma endregion
 
-#pragma region Mesh
+    // Mesh
     uint64_t Prism_Mesh_Constructor(const char* filepath);
     void Prism_Mesh_Destructor(uint64_t handle);
     uint64_t Prism_MeshFactory_CreatePlane(float width, float height);
-#pragma endregion
 
-#pragma region Texture2D
+    // Texture2D
     uint64_t Prism_Texture2D_Constructor(uint32_t width, uint32_t height);
     void Prism_Texture2D_Destructor(uint64_t handle);
-#pragma endregion
 
-#pragma region RigidBody2DComponent
+    // RigidBody2DComponent
     void Prism_RigidBody2DComponent_ApplyLinearImpulse(uint64_t entityID, const glm::vec2& impulse, const glm::vec2& offset, bool wake);
     glm::vec2 Prism_RigidBody2DComponent_GetLinearVelocity(uint64_t entityID);
     void Prism_RigidBody2DComponent_SetLinearVelocity(uint64_t entityID, const glm::vec2& velocity);
-#pragma endregion
 
-#pragma region RigidBodyComponent
+    // RigidBodyComponent
     void Prism_RigidBodyComponent_AddForce(uint64_t entityID, const glm::vec3& force, int32_t forceMode);
     void Prism_RigidBodyComponent_AddTorque(uint64_t entityID, const glm::vec3& torque, int32_t forceMode);
     glm::vec3 Prism_RigidBodyComponent_GetLinearVelocity(uint64_t entityID);
@@ -131,18 +122,16 @@ namespace Prism::PythonScript
     uint32_t Prism_RigidBodyComponent_GetBodyType(uint64_t entityID);
     glm::vec3 Prism_RigidBodyComponent_GetAngularVelocity(uint64_t entityID);
     void Prism_RigidBodyComponent_SetAngularVelocity(uint64_t entityID, const glm::vec3& velocity);
-#pragma endregion
 
-#pragma region Physics
+    // Physics
     std::optional<RaycastHit> Prism_Physics_Raycast(const glm::vec3& origin, const glm::vec3& direction, float maxDistance);
     std::vector<OverlapHitData> Prism_Physics_OverlapBox(const glm::vec3& origin, const glm::vec3& halfSize);
     std::vector<OverlapHitData> Prism_Physics_OverlapCapsule(const glm::vec3& origin, float radius, float halfHeight);
     std::vector<OverlapHitData> Prism_Physics_OverlapSphere(const glm::vec3& origin, float radius);
     float Prism_Physics_GetGravity();
     void Prism_Physics_SetGravity(float gravity);
-#pragma endregion
 
-#pragma region Material
+    // Material
     uint64_t Prism_Material_Constructor(const char* shaderName);
     void Prism_Material_Destructor(uint64_t handle);
     void Prism_Material_SetFloat(uint64_t handle, const char* uniform, float value);
@@ -157,6 +146,5 @@ namespace Prism::PythonScript
     void Prism_Material_SetTexture(uint64_t handle, const char* uniform, uint64_t textureHandle);
     void Prism_Material_SetKeyword(uint64_t handle, const char* name, bool enabled);
     bool Prism_Material_IsKeywordEnabled(uint64_t handle, const char* name);
-#pragma endregion
 
 } // namespace Prism::PythonScript

@@ -29,8 +29,8 @@ using namespace Prism;
 
 namespace Prism
 {
-    extern std::unordered_map<uint64_t, std::function<void(Entity &)>> s_PythonCreateComponentFuncs;
-    extern std::unordered_map<uint64_t, std::function<bool(Entity &)>> s_PythonHasComponentFuncs;
+    extern std::unordered_map<uint64_t, std::function<void(Entity&)>> s_PythonCreateComponentFuncs;
+    extern std::unordered_map<uint64_t, std::function<bool(Entity&)>> s_PythonHasComponentFuncs;
 }
 
 #include "PythonScriptTypeCasters.h"
@@ -46,15 +46,15 @@ namespace Prism
         {
             WeakRef<Scene> scene = PythonScriptEngine::GetCurrentSceneContext();
             PR_CORE_ASSERT(scene, "No active scene!");
-            const auto &entityMap = scene->GetEntityMap();
+            const auto& entityMap = scene->GetEntityMap();
             PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(),
-                           "Invalid entity ID or entity doesn't exist in scene!");
+                "Invalid entity ID or entity doesn't exist in scene!");
             return entityMap.at(entityID);
         }
 
-        //  Region: Log
+#pragma region Log
 
-        void Prism_Log_LogMessage(int32_t level, const char *message)
+        void Prism_Log_LogMessage(int32_t level, const char* message)
         {
             std::string msg = "[Python] ";
             msg += message;
@@ -82,7 +82,7 @@ namespace Prism
             }
         }
 
-        //  Region: Time
+#pragma region Time
 
         float Prism_Time_GetDeltaTime() { return Time::GetDeltaTime(); }
         float Prism_Time_GetUnscaledDeltaTime() { return Time::GetUnscaledDeltaTime(); }
@@ -94,23 +94,24 @@ namespace Prism
         float Prism_Time_GetTimeScale() { return Time::GetTimeScale(); }
         void Prism_Time_SetFixedDeltaTime(float fixedDeltaTime) { Time::SetFixedDeltaTime(fixedDeltaTime); }
 
-        //  Region: Math
+#pragma endregion
+#pragma region Math
 
         float Prism_Noise_PerlinNoise(float x, float y) { return Noise::PerlinNoise(x, y); }
 
-        //  Region: Input
+#pragma region Input
 
         bool Prism_Input_IsKeyPressed(uint16_t key) { return Input::IsKeyPressed((KeyCode)key); }
         glm::vec2 Prism_Input_GetMousePosition()
         {
             auto [x, y] = Input::GetMousePosition();
-            return {x, y};
+            return { x, y };
         }
         void Prism_Input_SetCursorMode(int mode) { Input::SetCursorMode((CursorMode)mode); }
         int Prism_Input_GetCursorMode() { return (int)Input::GetCursorMode(); }
         bool Prism_Input_IsMouseButtonPressed(uint16_t button) { return Input::IsMouseButtonPressed((MouseButton)button); }
 
-        //  Region: Entity
+#pragma region Entity
 
         void Prism_Entity_CreateComponent(uint64_t entityID, py::object cls)
         {
@@ -126,13 +127,13 @@ namespace Prism
             return s_PythonHasComponentFuncs.at(typeId)(entity);
         }
 
-        uint64_t Prism_Entity_FindEntityByTag(const char *tag)
+        uint64_t Prism_Entity_FindEntityByTag(const char* tag)
         {
             WeakRef<Scene> scene = PythonScriptEngine::GetCurrentSceneContext();
             PR_CORE_ASSERT(scene, "No active scene!");
             std::string tagStr(tag);
-            const auto &entityMap = scene->GetEntityMap();
-            for (const auto &[id, entity] : entityMap)
+            const auto& entityMap = scene->GetEntityMap();
+            for (const auto& [id, entity] : entityMap)
             {
                 if (entity.HasComponent<TagComponent>() &&
                     entity.GetComponent<TagComponent>().Tag == tagStr)
@@ -146,7 +147,7 @@ namespace Prism
             Entity entity = GetEntityFromEntityID(entityID);
             std::string className = cls.attr("__module__").cast<std::string>() + "." + cls.attr("__qualname__").cast<std::string>();
             UUID classID = PythonScriptMetaRegistry::GenerateClassID(className);
-            auto *ss = PythonScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
+            auto* ss = PythonScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
             UUID behaviourID = ss->AddPythonBehaviour(entity, classID);
             return (uint64_t)behaviourID;
         }
@@ -154,7 +155,7 @@ namespace Prism
         void Prism_Entity_RemoveBehaviour(uint64_t entityID, uint64_t behaviourID)
         {
             Entity entity = GetEntityFromEntityID(entityID);
-            auto *ss = PythonScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
+            auto* ss = PythonScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
             ss->RemovePythonBehaviour(entity, UUID(behaviourID));
         }
 
@@ -163,8 +164,8 @@ namespace Prism
             Entity entity = GetEntityFromEntityID(entityID);
             std::string className = cls.attr("__module__").cast<std::string>() + "." + cls.attr("__qualname__").cast<std::string>();
             UUID classID = PythonScriptMetaRegistry::GenerateClassID(className);
-            auto &comp = entity.GetComponent<PythonScriptComponent>();
-            for (auto &[bid, binding] : comp.Behaviours)
+            auto& comp = entity.GetComponent<PythonScriptComponent>();
+            for (auto& [bid, binding] : comp.Behaviours)
             {
                 if (binding.ClassID == classID)
                     return (uint64_t)binding.BehaviourID;
@@ -174,19 +175,19 @@ namespace Prism
 
         bool Prism_Behaviour_GetEnabled(uint64_t behaviourID)
         {
-            auto *ss = PythonScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
+            auto* ss = PythonScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
             return ss->GetEnabled(UUID(behaviourID));
         }
 
         void Prism_Behaviour_SetEnabled(uint64_t behaviourID, bool enabled)
         {
-            auto *ss = PythonScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
+            auto* ss = PythonScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
             ss->SetEnabled(UUID(behaviourID), enabled);
         }
 
-        //  Region: TransformComponent
+#pragma region TransformComponent
 
-        static TransformSystem *GetTransformSystem(Entity entity)
+        static TransformSystem* GetTransformSystem(Entity entity)
         {
             return entity.GetScene()->GetSystem<TransformSystem>();
         }
@@ -219,17 +220,17 @@ namespace Prism
             return GetEntityFromEntityID(entityID).Transformation().Forward;
         }
 
-        void Prism_TransformComponent_SetPosition(uint64_t entityID, const glm::vec3 &position)
+        void Prism_TransformComponent_SetPosition(uint64_t entityID, const glm::vec3& position)
         {
             Entity entity = GetEntityFromEntityID(entityID);
             GetTransformSystem(entity)->SetWorldPosition(entity, position);
         }
-        void Prism_TransformComponent_SetRotation(uint64_t entityID, const glm::vec3 &rotation)
+        void Prism_TransformComponent_SetRotation(uint64_t entityID, const glm::vec3& rotation)
         {
             Entity entity = GetEntityFromEntityID(entityID);
             GetTransformSystem(entity)->SetWorldRotation(entity, rotation);
         }
-        void Prism_TransformComponent_SetScale(uint64_t entityID, const glm::vec3 &scale)
+        void Prism_TransformComponent_SetScale(uint64_t entityID, const glm::vec3& scale)
         {
             Entity entity = GetEntityFromEntityID(entityID);
             GetTransformSystem(entity)->SetWorldScale(entity, scale);
@@ -239,13 +240,13 @@ namespace Prism
         {
             Entity entity = GetEntityFromEntityID(entityID);
             auto world = GetTransformSystem(entity)->GetWorldDecomposed(entity);
-            auto &tc = entity.Transformation();
-            return {world.Position, world.Rotation, world.Scale, tc.Up, tc.Right, tc.Forward};
+            auto& tc = entity.Transformation();
+            return { world.Position, world.Rotation, world.Scale, tc.Up, tc.Right, tc.Forward };
         }
-        void Prism_TransformComponent_SetTransform(uint64_t entityID, const ScriptTransform &transform)
+        void Prism_TransformComponent_SetTransform(uint64_t entityID, const ScriptTransform& transform)
         {
             Entity entity = GetEntityFromEntityID(entityID);
-            auto *ts = GetTransformSystem(entity);
+            auto* ts = GetTransformSystem(entity);
             ts->SetWorldPosition(entity, transform.Position);
             ts->SetWorldRotation(entity, transform.Rotation);
             ts->SetWorldScale(entity, transform.Scale);
@@ -255,7 +256,7 @@ namespace Prism
         {
             return GetEntityFromEntityID(entityID).Transformation().GetPosition();
         }
-        void Prism_TransformComponent_SetLocalPosition(uint64_t entityID, const glm::vec3 &position)
+        void Prism_TransformComponent_SetLocalPosition(uint64_t entityID, const glm::vec3& position)
         {
             GetEntityFromEntityID(entityID).Transformation().SetPosition(position);
         }
@@ -263,7 +264,7 @@ namespace Prism
         {
             return GetEntityFromEntityID(entityID).Transformation().GetRotation();
         }
-        void Prism_TransformComponent_SetLocalRotation(uint64_t entityID, const glm::vec3 &rotation)
+        void Prism_TransformComponent_SetLocalRotation(uint64_t entityID, const glm::vec3& rotation)
         {
             GetEntityFromEntityID(entityID).Transformation().SetRotation(rotation);
         }
@@ -271,31 +272,31 @@ namespace Prism
         {
             return GetEntityFromEntityID(entityID).Transformation().GetScale();
         }
-        void Prism_TransformComponent_SetLocalScale(uint64_t entityID, const glm::vec3 &scale)
+        void Prism_TransformComponent_SetLocalScale(uint64_t entityID, const glm::vec3& scale)
         {
             GetEntityFromEntityID(entityID).Transformation().SetScale(scale);
         }
 
-        //  Region: MeshRendererComponent
+#pragma region MeshRendererComponent
 
         uint64_t Prism_MeshRendererComponent_GetMesh(uint64_t entityID)
         {
             Entity entity = GetEntityFromEntityID(entityID);
-            auto &mc = entity.GetComponent<MeshRendererComponent>();
+            auto& mc = entity.GetComponent<MeshRendererComponent>();
             return reinterpret_cast<uintptr_t>(new Ref<Mesh>(mc.Mesh));
         }
 
         void Prism_MeshRendererComponent_SetMesh(uint64_t entityID, uint64_t meshHandle)
         {
             Entity entity = GetEntityFromEntityID(entityID);
-            auto &mc = entity.GetComponent<MeshRendererComponent>();
+            auto& mc = entity.GetComponent<MeshRendererComponent>();
             mc.Mesh = meshHandle ? *reinterpret_cast<Ref<Mesh> *>(meshHandle) : nullptr;
         }
 
         uint64_t Prism_MeshRendererComponent_GetMaterial(uint64_t entityID, uint64_t index)
         {
             Entity entity = GetEntityFromEntityID(entityID);
-            auto &mc = entity.GetComponent<MeshRendererComponent>();
+            auto& mc = entity.GetComponent<MeshRendererComponent>();
             PR_CORE_ASSERT(index < mc.Materials.size(), "Material index out of range");
             return reinterpret_cast<uintptr_t>(new Ref<Material>(mc.Materials[index]));
         }
@@ -303,7 +304,7 @@ namespace Prism
         void Prism_MeshRendererComponent_SetMaterial(uint64_t entityID, uint64_t materialHandle, uint64_t index)
         {
             Entity entity = GetEntityFromEntityID(entityID);
-            auto &mc = entity.GetComponent<MeshRendererComponent>();
+            auto& mc = entity.GetComponent<MeshRendererComponent>();
             PR_CORE_ASSERT(index < mc.Materials.size(), "Material index out of range");
             mc.Materials[index] = *reinterpret_cast<Ref<Material> *>(materialHandle);
         }
@@ -337,15 +338,15 @@ namespace Prism
             for (size_t i = 0; i < handles.size(); ++i)
             {
                 if (handles[i])
-                    mc.Materials[i] = *reinterpret_cast<Ref<Material>*>(handles[i]);
+                    mc.Materials[i] = *reinterpret_cast<Ref<Material> *>(handles[i]);
                 else
                     mc.Materials[i] = nullptr;
             }
         }
 
-        //  Region: Mesh
+#pragma region Mesh
 
-        uint64_t Prism_Mesh_Constructor(const char *filepath)
+        uint64_t Prism_Mesh_Constructor(const char* filepath)
         {
             auto result = ModelImporter::Import(filepath);
             return reinterpret_cast<uintptr_t>(new Ref<Mesh>(result.Mesh));
@@ -353,7 +354,7 @@ namespace Prism
 
         void Prism_Mesh_Destructor(uint64_t handle)
         {
-            delete reinterpret_cast<Ref<Mesh> *>(handle);
+            delete reinterpret_cast<Ref<Mesh>*>(handle);
         }
 
         uint64_t Prism_MeshFactory_CreatePlane(float width, float height)
@@ -362,7 +363,7 @@ namespace Prism
                 new Ref<Mesh>(ModelImporter::Import("assets/models/Plane1m.obj").Mesh));
         }
 
-        //  Region: Texture2D
+#pragma region Texture2D
 
         uint64_t Prism_Texture2D_Constructor(uint32_t width, uint32_t height)
         {
@@ -372,48 +373,48 @@ namespace Prism
 
         void Prism_Texture2D_Destructor(uint64_t handle)
         {
-            delete reinterpret_cast<Ref<Texture2D> *>(handle);
+            delete reinterpret_cast<Ref<Texture2D>*>(handle);
         }
 
-        //  Region: RigidBody2DComponent
+#pragma region RigidBody2DComponent
 
         void Prism_RigidBody2DComponent_ApplyLinearImpulse(
-            uint64_t entityID, const glm::vec2 &impulse, const glm::vec2 &offset, bool wake)
+            uint64_t entityID, const glm::vec2& impulse, const glm::vec2& offset, bool wake)
         {
             Entity entity = GetEntityFromEntityID(entityID);
-            auto &rb2d = entity.GetComponent<RigidBody2DComponent>();
-            b2Body *body = static_cast<b2Body *>(rb2d.RuntimeBody);
+            auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
+            b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
             body->ApplyLinearImpulse(b2Vec2(impulse.x, impulse.y),
-                                     b2Vec2(offset.x, offset.y), wake);
+                b2Vec2(offset.x, offset.y), wake);
         }
 
         glm::vec2 Prism_RigidBody2DComponent_GetLinearVelocity(uint64_t entityID)
         {
             Entity entity = GetEntityFromEntityID(entityID);
-            auto &rb2d = entity.GetComponent<RigidBody2DComponent>();
-            b2Body *body = static_cast<b2Body *>(rb2d.RuntimeBody);
-            const b2Vec2 &v = body->GetLinearVelocity();
-            return {v.x, v.y};
+            auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
+            b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
+            const b2Vec2& v = body->GetLinearVelocity();
+            return { v.x, v.y };
         }
 
-        void Prism_RigidBody2DComponent_SetLinearVelocity(uint64_t entityID, const glm::vec2 &velocity)
+        void Prism_RigidBody2DComponent_SetLinearVelocity(uint64_t entityID, const glm::vec2& velocity)
         {
             Entity entity = GetEntityFromEntityID(entityID);
-            auto &rb2d = entity.GetComponent<RigidBody2DComponent>();
-            b2Body *body = static_cast<b2Body *>(rb2d.RuntimeBody);
+            auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
+            b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
             body->SetLinearVelocity(b2Vec2(velocity.x, velocity.y));
         }
 
-        //  Region: RigidBodyComponent
+#pragma region RigidBodyComponent
 
-        void Prism_RigidBodyComponent_AddForce(uint64_t entityID, const glm::vec3 &force, int32_t forceMode)
+        void Prism_RigidBodyComponent_AddForce(uint64_t entityID, const glm::vec3& force, int32_t forceMode)
         {
             Entity entity = GetEntityFromEntityID(entityID);
             PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
             Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
             actor->AddForce(force, (ForceMode)forceMode);
         }
-        void Prism_RigidBodyComponent_AddTorque(uint64_t entityID, const glm::vec3 &torque, int32_t forceMode)
+        void Prism_RigidBodyComponent_AddTorque(uint64_t entityID, const glm::vec3& torque, int32_t forceMode)
         {
             Entity entity = GetEntityFromEntityID(entityID);
             PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
@@ -426,13 +427,13 @@ namespace Prism
             PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
             return Physics::GetActorForEntity(entity)->GetLinearVelocity();
         }
-        void Prism_RigidBodyComponent_SetLinearVelocity(uint64_t entityID, const glm::vec3 &velocity)
+        void Prism_RigidBodyComponent_SetLinearVelocity(uint64_t entityID, const glm::vec3& velocity)
         {
             Entity entity = GetEntityFromEntityID(entityID);
             PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
             Physics::GetActorForEntity(entity)->SetLinearVelocity(velocity);
         }
-        void Prism_RigidBodyComponent_Rotate(uint64_t entityID, const glm::vec3 &rotation)
+        void Prism_RigidBodyComponent_Rotate(uint64_t entityID, const glm::vec3& rotation)
         {
             Entity entity = GetEntityFromEntityID(entityID);
             PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
@@ -464,25 +465,25 @@ namespace Prism
             PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
             return Physics::GetActorForEntity(entity)->GetAngularVelocity();
         }
-        void Prism_RigidBodyComponent_SetAngularVelocity(uint64_t entityID, const glm::vec3 &velocity)
+        void Prism_RigidBodyComponent_SetAngularVelocity(uint64_t entityID, const glm::vec3& velocity)
         {
             Entity entity = GetEntityFromEntityID(entityID);
             PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
             Physics::GetActorForEntity(entity)->SetAngularVelocity(velocity);
         }
 
-        //  Region: Physics
+#pragma region Physics
 
         // Shared helper — populates OverlapHitData from PxOverlapHit
-        static OverlapHitData FillOverlapHit(physx::PxOverlapHit &pxHit)
+        static OverlapHitData FillOverlapHit(physx::PxOverlapHit& pxHit)
         {
-            Entity &entity = *(Entity *)pxHit.actor->userData;
+            Entity& entity = *(Entity*)pxHit.actor->userData;
             OverlapHitData data{};
             data.EntityID = entity.GetUUID();
 
             if (entity.HasComponent<BoxColliderComponent>())
             {
-                auto &bc = entity.GetComponent<BoxColliderComponent>();
+                auto& bc = entity.GetComponent<BoxColliderComponent>();
                 data.ColliderType = 0;
                 data.IsTrigger = bc.IsTrigger;
                 data.ShapeData[0] = bc.Size.x;
@@ -495,7 +496,7 @@ namespace Prism
             }
             else if (entity.HasComponent<SphereColliderComponent>())
             {
-                auto &sc = entity.GetComponent<SphereColliderComponent>();
+                auto& sc = entity.GetComponent<SphereColliderComponent>();
                 data.ColliderType = 1;
                 data.IsTrigger = sc.IsTrigger;
                 data.ShapeData[0] = sc.Radius;
@@ -503,7 +504,7 @@ namespace Prism
             }
             else if (entity.HasComponent<CapsuleColliderComponent>())
             {
-                auto &cc = entity.GetComponent<CapsuleColliderComponent>();
+                auto& cc = entity.GetComponent<CapsuleColliderComponent>();
                 data.ColliderType = 2;
                 data.IsTrigger = cc.IsTrigger;
                 data.ShapeData[0] = cc.Radius;
@@ -512,7 +513,7 @@ namespace Prism
             }
             else if (entity.HasComponent<MeshColliderComponent>())
             {
-                auto &mc = entity.GetComponent<MeshColliderComponent>();
+                auto& mc = entity.GetComponent<MeshColliderComponent>();
                 data.ColliderType = 3;
                 data.IsTrigger = mc.IsTrigger;
                 data.MeshHandle = new Ref<Mesh>(mc.CollisionMesh);
@@ -520,7 +521,7 @@ namespace Prism
             return data;
         }
 
-        std::optional<RaycastHit> Prism_Physics_Raycast(const glm::vec3 &origin, const glm::vec3 &direction, float maxDistance)
+        std::optional<RaycastHit> Prism_Physics_Raycast(const glm::vec3& origin, const glm::vec3& direction, float maxDistance)
         {
             RaycastHit hit;
             if (PXPhysicsWrappers::Raycast(origin, direction, maxDistance, &hit))
@@ -528,7 +529,7 @@ namespace Prism
             return std::nullopt;
         }
 
-        std::vector<OverlapHitData> Prism_Physics_OverlapBox(const glm::vec3 &origin, const glm::vec3 &halfSize)
+        std::vector<OverlapHitData> Prism_Physics_OverlapBox(const glm::vec3& origin, const glm::vec3& halfSize)
         {
             std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS> buffer;
             uint32_t count;
@@ -542,7 +543,7 @@ namespace Prism
             return results;
         }
 
-        std::vector<OverlapHitData> Prism_Physics_OverlapCapsule(const glm::vec3 &origin, float radius, float halfHeight)
+        std::vector<OverlapHitData> Prism_Physics_OverlapCapsule(const glm::vec3& origin, float radius, float halfHeight)
         {
             std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS> buffer;
             uint32_t count;
@@ -556,7 +557,7 @@ namespace Prism
             return results;
         }
 
-        std::vector<OverlapHitData> Prism_Physics_OverlapSphere(const glm::vec3 &origin, float radius)
+        std::vector<OverlapHitData> Prism_Physics_OverlapSphere(const glm::vec3& origin, float radius)
         {
             std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS> buffer;
             uint32_t count;
@@ -574,67 +575,67 @@ namespace Prism
         void Prism_Physics_SetGravity(float gravity) { Physics::SetGravity(gravity); }
 
         // Material
-        static Ref<Material> &DerefMaterial(uint64_t handle)
+        static Ref<Material>& DerefMaterial(uint64_t handle)
         {
             return *reinterpret_cast<Ref<Material> *>(handle);
         }
 
-        uint64_t Prism_Material_Constructor(const char *shaderName)
+        uint64_t Prism_Material_Constructor(const char* shaderName)
         {
-            const auto &shader = AssetManager::GetShaderLibrary()->Get(shaderName);
+            const auto& shader = AssetManager::GetShaderLibrary()->Get(shaderName);
             return reinterpret_cast<uintptr_t>(new Ref<Material>(Material::Create(shader->Handle)));
         }
 
         void Prism_Material_Destructor(uint64_t handle)
         {
-            delete reinterpret_cast<Ref<Material> *>(handle);
+            delete reinterpret_cast<Ref<Material>*>(handle);
         }
 
-        void Prism_Material_SetFloat(uint64_t handle, const char *uniform, float value)
+        void Prism_Material_SetFloat(uint64_t handle, const char* uniform, float value)
         {
             DerefMaterial(handle)->SetFloat(uniform, value);
         }
-        void Prism_Material_SetInt(uint64_t handle, const char *uniform, int value)
+        void Prism_Material_SetInt(uint64_t handle, const char* uniform, int value)
         {
             DerefMaterial(handle)->SetInt(uniform, value);
         }
-        void Prism_Material_SetBool(uint64_t handle, const char *uniform, bool value)
+        void Prism_Material_SetBool(uint64_t handle, const char* uniform, bool value)
         {
             DerefMaterial(handle)->SetBool(uniform, value);
         }
-        void Prism_Material_SetVector2(uint64_t handle, const char *uniform, const glm::vec2 &value)
+        void Prism_Material_SetVector2(uint64_t handle, const char* uniform, const glm::vec2& value)
         {
             DerefMaterial(handle)->SetVec2(uniform, value);
         }
-        void Prism_Material_SetVector3(uint64_t handle, const char *uniform, const glm::vec3 &value)
+        void Prism_Material_SetVector3(uint64_t handle, const char* uniform, const glm::vec3& value)
         {
             DerefMaterial(handle)->SetVec3(uniform, value);
         }
-        void Prism_Material_SetVector4(uint64_t handle, const char *uniform, const glm::vec4 &value)
+        void Prism_Material_SetVector4(uint64_t handle, const char* uniform, const glm::vec4& value)
         {
             DerefMaterial(handle)->SetVec4(uniform, value);
         }
-        void Prism_Material_SetColor3(uint64_t handle, const char *uniform, const glm::vec3 &value)
+        void Prism_Material_SetColor3(uint64_t handle, const char* uniform, const glm::vec3& value)
         {
             DerefMaterial(handle)->SetColor3(uniform, value);
         }
-        void Prism_Material_SetColor(uint64_t handle, const char *uniform, const glm::vec4 &value)
+        void Prism_Material_SetColor(uint64_t handle, const char* uniform, const glm::vec4& value)
         {
             DerefMaterial(handle)->SetColor(uniform, value);
         }
-        void Prism_Material_SetMatrix4(uint64_t handle, const char *uniform, const glm::mat4 &value)
+        void Prism_Material_SetMatrix4(uint64_t handle, const char* uniform, const glm::mat4& value)
         {
             DerefMaterial(handle)->SetMatrix4(uniform, value);
         }
-        void Prism_Material_SetTexture(uint64_t handle, const char *uniform, uint64_t textureHandle)
+        void Prism_Material_SetTexture(uint64_t handle, const char* uniform, uint64_t textureHandle)
         {
             DerefMaterial(handle)->SetTexture(uniform, *reinterpret_cast<Ref<Texture2D> *>(textureHandle));
         }
-        void Prism_Material_SetKeyword(uint64_t handle, const char *name, bool enabled)
+        void Prism_Material_SetKeyword(uint64_t handle, const char* name, bool enabled)
         {
             DerefMaterial(handle)->SetKeyword(name, enabled);
         }
-        bool Prism_Material_IsKeywordEnabled(uint64_t handle, const char *name)
+        bool Prism_Material_IsKeywordEnabled(uint64_t handle, const char* name)
         {
             return DerefMaterial(handle)->IsKeywordEnabled(name);
         }
@@ -642,3 +643,359 @@ namespace Prism
     }
 } // namespace Prism::PythonScript
 
+// PriseNative Register
+PYBIND11_MODULE(PrismNative, m)
+{
+    using namespace Prism;
+    using namespace Prism::PythonScript;
+
+    py::class_<RaycastHit>(m, "RaycastHit")
+        .def_readwrite("EntityID", &RaycastHit::EntityID)
+        .def_readwrite("Position", &RaycastHit::Position)
+        .def_readwrite("Normal", &RaycastHit::Normal)
+        .def_readwrite("Distance", &RaycastHit::Distance);
+
+    py::class_<OverlapHitData>(m, "OverlapHitData")
+        .def_readwrite("EntityID", &OverlapHitData::EntityID)
+        .def_readwrite("ColliderType", &OverlapHitData::ColliderType)
+        .def_readwrite("IsTrigger", &OverlapHitData::IsTrigger)
+        .def_property_readonly("ShapeData", [](const OverlapHitData& d)
+            {
+                py::list shapeData;
+                for (int i = 0; i < 6; ++i)
+                    shapeData.append(PyFloat_FromDouble(d.ShapeData[i]));
+                return shapeData; })
+        .def_property_readonly("MeshHandle", [](const OverlapHitData& d) -> uint64_t
+            { return reinterpret_cast<uintptr_t>(d.MeshHandle); });
+
+    py::class_<ScriptTransform>(m, "ScriptTransform")
+        .def(py::init<>())
+        .def_readwrite("Position", &ScriptTransform::Position)
+        .def_readwrite("Rotation", &ScriptTransform::Rotation)
+        .def_readwrite("Scale", &ScriptTransform::Scale)
+        .def_readwrite("Up", &ScriptTransform::Up)
+        .def_readwrite("Right", &ScriptTransform::Right)
+        .def_readwrite("Forward", &ScriptTransform::Forward);
+
+#define BIND_MODULE_FUNCTION(name) m.def(#name, &Prism::PythonScript::name)
+    // Log
+    BIND_MODULE_FUNCTION(Prism_Log_LogMessage);
+    // Time
+    BIND_MODULE_FUNCTION(Prism_Time_GetDeltaTime);
+    BIND_MODULE_FUNCTION(Prism_Time_GetUnscaledDeltaTime);
+    BIND_MODULE_FUNCTION(Prism_Time_GetTime);
+    BIND_MODULE_FUNCTION(Prism_Time_GetUnscaledTime);
+    BIND_MODULE_FUNCTION(Prism_Time_GetFixedDeltaTime);
+    BIND_MODULE_FUNCTION(Prism_Time_GetFrameCount);
+    BIND_MODULE_FUNCTION(Prism_Time_SetTimeScale);
+    BIND_MODULE_FUNCTION(Prism_Time_GetTimeScale);
+    BIND_MODULE_FUNCTION(Prism_Time_SetFixedDeltaTime);
+    // Math
+    BIND_MODULE_FUNCTION(Prism_Noise_PerlinNoise);
+    // Input
+    BIND_MODULE_FUNCTION(Prism_Input_IsKeyPressed);
+    BIND_MODULE_FUNCTION(Prism_Input_GetMousePosition);
+    BIND_MODULE_FUNCTION(Prism_Input_SetCursorMode);
+    BIND_MODULE_FUNCTION(Prism_Input_GetCursorMode);
+    BIND_MODULE_FUNCTION(Prism_Input_IsMouseButtonPressed);
+    // Entity
+    BIND_MODULE_FUNCTION(Prism_Entity_CreateComponent);
+    BIND_MODULE_FUNCTION(Prism_Entity_HasComponent);
+    BIND_MODULE_FUNCTION(Prism_Entity_FindEntityByTag);
+    BIND_MODULE_FUNCTION(Prism_Entity_AddBehaviour);
+    BIND_MODULE_FUNCTION(Prism_Entity_RemoveBehaviour);
+    BIND_MODULE_FUNCTION(Prism_Entity_GetBehaviour);
+    BIND_MODULE_FUNCTION(Prism_Behaviour_GetEnabled);
+    BIND_MODULE_FUNCTION(Prism_Behaviour_SetEnabled);
+    // TransformComponent
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetPosition);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetRotation);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetScale);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetUp);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetRight);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetForward);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_SetPosition);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_SetRotation);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_SetScale);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetLocalPosition);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_SetLocalPosition);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetLocalRotation);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_SetLocalRotation);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetLocalScale);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_SetLocalScale);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetTransform);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_SetTransform);
+    // MeshRendererComponent
+    BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_GetMesh);
+    BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_SetMesh);
+    BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_GetMaterial);
+    BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_SetMaterial);
+    BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_GetMaterialCount);
+    BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_GetMaterials);
+    BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_SetMaterials);
+    // Mesh
+    BIND_MODULE_FUNCTION(Prism_Mesh_Constructor);
+    BIND_MODULE_FUNCTION(Prism_Mesh_Destructor);
+    BIND_MODULE_FUNCTION(Prism_MeshFactory_CreatePlane);
+    // Texture2D
+    BIND_MODULE_FUNCTION(Prism_Texture2D_Constructor);
+    BIND_MODULE_FUNCTION(Prism_Texture2D_Destructor);
+    // RigidBody2DComponent
+    BIND_MODULE_FUNCTION(Prism_RigidBody2DComponent_ApplyLinearImpulse);
+    BIND_MODULE_FUNCTION(Prism_RigidBody2DComponent_GetLinearVelocity);
+    BIND_MODULE_FUNCTION(Prism_RigidBody2DComponent_SetLinearVelocity);
+    // RigidBodyComponent
+    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_AddForce);
+    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_AddTorque);
+    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_GetLinearVelocity);
+    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_SetLinearVelocity);
+    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_Rotate);
+    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_GetLayer);
+    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_GetMass);
+    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_SetMass);
+    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_GetBodyType);
+    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_GetAngularVelocity);
+    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_SetAngularVelocity);
+    // Physics
+    BIND_MODULE_FUNCTION(Prism_Physics_Raycast);
+    BIND_MODULE_FUNCTION(Prism_Physics_OverlapBox);
+    BIND_MODULE_FUNCTION(Prism_Physics_OverlapCapsule);
+    BIND_MODULE_FUNCTION(Prism_Physics_OverlapSphere);
+    BIND_MODULE_FUNCTION(Prism_Physics_GetGravity);
+    BIND_MODULE_FUNCTION(Prism_Physics_SetGravity);
+    // Material
+    BIND_MODULE_FUNCTION(Prism_Material_Constructor);
+    BIND_MODULE_FUNCTION(Prism_Material_Destructor);
+    BIND_MODULE_FUNCTION(Prism_Material_SetFloat);
+    BIND_MODULE_FUNCTION(Prism_Material_SetInt);
+    BIND_MODULE_FUNCTION(Prism_Material_SetBool);
+    BIND_MODULE_FUNCTION(Prism_Material_SetVector2);
+    BIND_MODULE_FUNCTION(Prism_Material_SetVector3);
+    BIND_MODULE_FUNCTION(Prism_Material_SetVector4);
+    BIND_MODULE_FUNCTION(Prism_Material_SetColor3);
+    BIND_MODULE_FUNCTION(Prism_Material_SetColor);
+    BIND_MODULE_FUNCTION(Prism_Material_SetMatrix4);
+    BIND_MODULE_FUNCTION(Prism_Material_SetTexture);
+    BIND_MODULE_FUNCTION(Prism_Material_SetKeyword);
+    BIND_MODULE_FUNCTION(Prism_Material_IsKeywordEnabled);
+}
+
+namespace Prism::PythonScript
+{
+
+    class PythonEntity
+    {
+        uint64_t m_EntityID = 0;
+
+    public:
+        PythonEntity(uint64_t id = 0) : m_EntityID(id) {}
+
+        uint64_t GetID() const { return m_EntityID; }
+        void SetID(uint64_t id)
+        {
+            m_EntityID = id;
+            PR_CORE_TRACE("[Python] Created Entity {0}", id);
+        }
+
+        pybind11::object GetComponent(pybind11::object cls)
+        {
+            py::object behaviourClass = py::module::import("Prism").attr("Behaviour");
+
+            if (PyObject_IsSubclass(cls.ptr(), behaviourClass.ptr()) && cls.ptr() != behaviourClass.ptr())
+            {
+                uint64_t bid = Prism_Entity_GetBehaviour(m_EntityID, cls);
+                if (bid != 0)
+                {
+                    UUID sceneID = PythonScriptEngine::GetCurrentSceneContext()->GetUUID();
+                    py::object* obj = PythonScriptEngine::GetScriptObject(sceneID, UUID(bid));
+                    if (obj)
+                        return *obj;
+                }
+                return py::none();
+            }
+
+            if (Prism_Entity_HasComponent(m_EntityID, cls))
+            {
+                py::object component = cls();
+                component.attr("Entity") = py::cast(this);
+                return component;
+            }
+            return py::none();
+        }
+
+        pybind11::object CreateComponent(pybind11::object cls)
+        {
+            py::object behaviourClass = py::module::import("Prism").attr("Behaviour");
+
+            if (PyObject_IsSubclass(cls.ptr(), behaviourClass.ptr()) && cls.ptr() != behaviourClass.ptr())
+            {
+                uint64_t bid = Prism_Entity_AddBehaviour(m_EntityID, cls);
+                UUID sceneID = PythonScriptEngine::GetCurrentSceneContext()->GetUUID();
+                py::object* obj = PythonScriptEngine::GetScriptObject(sceneID, UUID(bid));
+                if (obj)
+                    return *obj;
+                return py::none();
+            }
+
+            Prism_Entity_CreateComponent(m_EntityID, cls);
+            py::object component = cls();
+            component.attr("Entity") = py::cast(this);
+            return component;
+        }
+
+        bool HasComponent(pybind11::object cls)
+        {
+            py::object behaviourClass = py::module::import("Prism").attr("Behaviour");
+
+            if (PyObject_IsSubclass(cls.ptr(), behaviourClass.ptr()) && cls.ptr() != behaviourClass.ptr())
+            {
+                uint64_t bid = Prism_Entity_GetBehaviour(m_EntityID, cls);
+                return bid != 0;
+            }
+            return Prism_Entity_HasComponent(m_EntityID, cls);
+        }
+
+        pybind11::object GetTransform()
+        {
+            py::object transformCompClass = py::module::import("Prism").attr("Component").attr("TransformComponent");
+            return GetComponent(transformCompClass);
+        }
+
+        static pybind11::object FindEntityByTag(const char* tag)
+        {
+            uint64_t eid = Prism_Entity_FindEntityByTag(tag);
+            return eid ? py::cast(PythonEntity(eid)) : py::none();
+        }
+
+        static pybind11::object FindEntityByID(uint64_t id)
+        {
+            return py::cast(PythonEntity(id));
+        }
+    };
+
+    class PythonComponent
+    {
+    protected:
+        pybind11::object m_Entity;
+        uint64_t m_EntityID = 0;
+
+    public:
+        pybind11::object GetEntity() const { return m_Entity; }
+
+        void SetEntity(pybind11::object entity)
+        {
+            m_Entity = entity;
+            m_EntityID = entity.attr("ID").cast<uint64_t>();
+        }
+    };
+
+    class PythonTransformComponent : public PythonComponent
+    {
+    public:
+        glm::vec3 GetPosition() { return Prism_TransformComponent_GetPosition(m_EntityID); }
+        void SetPosition(const glm::vec3& v) { Prism_TransformComponent_SetPosition(m_EntityID, v); }
+        glm::vec3 GetRotation() { return Prism_TransformComponent_GetRotation(m_EntityID); }
+        void SetRotation(const glm::vec3& v) { Prism_TransformComponent_SetRotation(m_EntityID, v); }
+        glm::vec3 GetScale() { return Prism_TransformComponent_GetScale(m_EntityID); }
+        void SetScale(const glm::vec3& v) { Prism_TransformComponent_SetScale(m_EntityID, v); }
+
+        glm::vec3 GetLocalPosition() { return Prism_TransformComponent_GetLocalPosition(m_EntityID); }
+        void SetLocalPosition(const glm::vec3& v) { Prism_TransformComponent_SetLocalPosition(m_EntityID, v); }
+        glm::vec3 GetLocalRotation() { return Prism_TransformComponent_GetLocalRotation(m_EntityID); }
+        void SetLocalRotation(const glm::vec3& v) { Prism_TransformComponent_SetLocalRotation(m_EntityID, v); }
+        glm::vec3 GetLocalScale() { return Prism_TransformComponent_GetLocalScale(m_EntityID); }
+        void SetLocalScale(const glm::vec3& v) { Prism_TransformComponent_SetLocalScale(m_EntityID, v); }
+
+        glm::vec3 GetForward() { return Prism_TransformComponent_GetForward(m_EntityID); }
+        glm::vec3 GetRight() { return Prism_TransformComponent_GetRight(m_EntityID); }
+        glm::vec3 GetUp() { return Prism_TransformComponent_GetUp(m_EntityID); }
+
+        ScriptTransform GetTransform() { return Prism_TransformComponent_GetTransform(m_EntityID); }
+        void SetTransform(const ScriptTransform& t) { Prism_TransformComponent_SetTransform(m_EntityID, t); }
+    };
+
+    class PythonBehaviour : public PythonComponent
+    {
+        uint64_t m_BehaviourID = 0;
+
+    public:
+        uint64_t GetID() const { return m_BehaviourID; }
+        void SetID(uint64_t id) { m_BehaviourID = id; }
+
+        bool GetEnabled() { return Prism_Behaviour_GetEnabled(m_BehaviourID); }
+        void SetEnabled(bool enabled) { Prism_Behaviour_SetEnabled(m_BehaviourID, enabled); }
+
+        pybind11::object GetTransform()
+        {
+            if (!m_Entity.is_none())
+                return m_Entity.attr("Transform");
+            return pybind11::none();
+        }
+
+        pybind11::object GetComponent(pybind11::object cls)
+        {
+            if (!m_Entity.is_none())
+                return m_Entity.attr("GetComponent")(cls);
+            return pybind11::none();
+        }
+
+        bool HasComponent(pybind11::object cls)
+        {
+            if (!m_Entity.is_none())
+                return m_Entity.attr("HasComponent")(cls).cast<bool>();
+            return false;
+        }
+
+        pybind11::object CreateComponent(pybind11::object cls)
+        {
+            if (!m_Entity.is_none())
+                return m_Entity.attr("CreateComponent")(cls);
+            return pybind11::none();
+        }
+    };
+
+} // namespace Prism::PythonScript
+
+// PrismEngine Module Registe
+
+PYBIND11_MODULE(PrismEngine, m)
+{
+    using namespace Prism::PythonScript;
+
+    py::class_<PythonEntity>(m, "Entity")
+        .def(py::init<uint64_t>(), py::arg("id") = 0)
+        .def_property("ID", &PythonEntity::GetID, &PythonEntity::SetID)
+        .def_property_readonly("_id", &PythonEntity::GetID)
+        .def("GetComponent", &PythonEntity::GetComponent)
+        .def("CreateComponent", &PythonEntity::CreateComponent)
+        .def("HasComponent", &PythonEntity::HasComponent)
+        .def_property_readonly("Transform", &PythonEntity::GetTransform)
+        .def_static("FindEntityByTag", &PythonEntity::FindEntityByTag)
+        .def_static("FindEntityByID", &PythonEntity::FindEntityByID);
+
+    py::class_<PythonComponent>(m, "Component")
+        .def(py::init<>())
+        .def_property("Entity", &PythonComponent::GetEntity, &PythonComponent::SetEntity);
+
+    py::class_<PythonTransformComponent, PythonComponent>(m, "TransformComponent")
+        .def(py::init<>())
+        .def_property("Position", &PythonTransformComponent::GetPosition, &PythonTransformComponent::SetPosition)
+        .def_property("Rotation", &PythonTransformComponent::GetRotation, &PythonTransformComponent::SetRotation)
+        .def_property("Scale", &PythonTransformComponent::GetScale, &PythonTransformComponent::SetScale)
+        .def_property("LocalPosition", &PythonTransformComponent::GetLocalPosition, &PythonTransformComponent::SetLocalPosition)
+        .def_property("LocalRotation", &PythonTransformComponent::GetLocalRotation, &PythonTransformComponent::SetLocalRotation)
+        .def_property("LocalScale", &PythonTransformComponent::GetLocalScale, &PythonTransformComponent::SetLocalScale)
+        .def_property_readonly("Forward", &PythonTransformComponent::GetForward)
+        .def_property_readonly("Right", &PythonTransformComponent::GetRight)
+        .def_property_readonly("Up", &PythonTransformComponent::GetUp)
+        .def_property("Transform", &PythonTransformComponent::GetTransform, &PythonTransformComponent::SetTransform);
+
+    py::class_<PythonBehaviour, PythonComponent>(m, "Behaviour")
+        .def(py::init<>())
+        .def_property("ID", &PythonBehaviour::GetID, &PythonBehaviour::SetID)
+        .def_property("Enabled", &PythonBehaviour::GetEnabled, &PythonBehaviour::SetEnabled)
+        .def_property_readonly("Transform", &PythonBehaviour::GetTransform)
+        .def("GetComponent", &PythonBehaviour::GetComponent)
+        .def("HasComponent", &PythonBehaviour::HasComponent)
+        .def("CreateComponent", &PythonBehaviour::CreateComponent);
+}

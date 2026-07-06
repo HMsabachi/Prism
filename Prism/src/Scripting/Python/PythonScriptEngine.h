@@ -1,6 +1,4 @@
-#pragma once
-#include <pybind11/pybind11.h>
-#include <pybind11/embed.h>
+﻿#pragma once
 #include "Prism/Core/Core.h"
 #include "Prism/Core/UUID.h"
 #include "Prism/Core/Ref.h"
@@ -8,6 +6,11 @@
 #include "Prism/Utilities/Delegate.h"
 #include "PythonScriptStorage.h"
 #include <unordered_map>
+
+namespace pybind11
+{
+    class object;
+}
 
 namespace Prism
 {

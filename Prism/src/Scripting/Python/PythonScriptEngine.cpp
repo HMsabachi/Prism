@@ -13,6 +13,7 @@
 
 namespace py = pybind11;
 extern "C" PyObject* PyInit_PrismNative();
+extern "C" PyObject* PyInit_PrismEngine();
 namespace Prism
 {
     WeakRef<Scene> PythonScriptEngine::s_SceneContext;
@@ -29,6 +30,7 @@ namespace Prism
             return;
 
         PyImport_AppendInittab("PrismNative", PyInit_PrismNative);
+        PyImport_AppendInittab("PrismEngine", PyInit_PrismEngine);
         py::initialize_interpreter();
         py::exec("import sys; sys.path.append('Assets/scripts/Python')");
 

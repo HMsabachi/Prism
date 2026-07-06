@@ -11,4 +11,4 @@ class Texture2D:
             self._handle = 0
 
     def SetData(self, data):
-        _Prism.Prism_Texture2D_SetData(self._handle, tuple(data))
+        raise NotImplementedError("Texture2D.SetData is not yet implemented in Python bindings")

@@ -1,6 +1,7 @@
-#pragma once
+﻿#pragma once
 #include "PythonField.h"
 #include <pybind11/pybind11.h>
+#include "PythonScriptTypeCasters.h"
 
 namespace Prism {
 

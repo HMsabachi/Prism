@@ -1,13 +1,7 @@
 import PrismNative as _Prism
 from Prism.Math.Vector2 import Vector2
 from Prism.Math.Vector3 import Vector3
-from Prism.Entity import Entity as Ent
-
-class Component:
-    """所有组件的基类，持有所属 Entity 的引用。"""
-    Entity: "Ent" = None
-    def __init__(self):
-        pass
+from PrismEngine import Component
 
 
 # ════════════════════════════════════════════
@@ -26,125 +20,16 @@ class ForceMode:
 # ════════════════════════════════════════════
 
 class TagComponent(Component):
-    """实体的 Tag 标签读写。"""
+    """标记组件，Tag 通过 C++ ECS 直接管理。"""
 
     def __init__(self):
         super().__init__()
-
-    @property
-    def Tag(self) -> str:
-        return _Prism.Prism_TagComponent_GetTag(self.Entity._id)
-
-    @Tag.setter
-    def Tag(self, value: str):
-        _Prism.Prism_TagComponent_SetTag(self.Entity._id, value)
 
 
 # ════════════════════════════════════════════
 #  TransformComponent
 # ════════════════════════════════════════════
-
-class TransformComponent(Component):
-    def __init__(self):
-        super().__init__()
-
-    @property
-    def Position(self):
-        return Vector3(_Prism.Prism_TransformComponent_GetPosition(self.Entity._id))
-
-    @Position.setter
-    def Position(self, value):
-        _Prism.Prism_TransformComponent_SetPosition(self.Entity._id, value)
-
-    @property
-    def Rotation(self):
-        return Vector3(_Prism.Prism_TransformComponent_GetRotation(self.Entity._id)) * (180.0 / 3.141592653589793)
-
-    @Rotation.setter
-    def Rotation(self, value):
-        _Prism.Prism_TransformComponent_SetRotation(self.Entity._id, value)
-
-    @property
-    def Scale(self):
-        return Vector3(_Prism.Prism_TransformComponent_GetScale(self.Entity._id))
-
-    @Scale.setter
-    def Scale(self, value):
-        _Prism.Prism_TransformComponent_SetScale(self.Entity._id, value)
-
-    @property
-    def LocalPosition(self):
-        return Vector3(_Prism.Prism_TransformComponent_GetLocalPosition(self.Entity._id))
-
-    @LocalPosition.setter
-    def LocalPosition(self, value):
-        _Prism.Prism_TransformComponent_SetLocalPosition(self.Entity._id, value)
-
-    @property
-    def LocalRotation(self):
-        return Vector3(_Prism.Prism_TransformComponent_GetLocalRotation(self.Entity._id)) * (180.0 / 3.141592653589793)
-
-    @LocalRotation.setter
-    def LocalRotation(self, value):
-        _Prism.Prism_TransformComponent_SetLocalRotation(self.Entity._id, value)
-
-    @property
-    def LocalScale(self):
-        return Vector3(_Prism.Prism_TransformComponent_GetLocalScale(self.Entity._id))
-
-    @LocalScale.setter
-    def LocalScale(self, value):
-        _Prism.Prism_TransformComponent_SetLocalScale(self.Entity._id, value)
-
-    @property
-    def Forward(self):
-        result = _Prism.Prism_TransformComponent_GetTransform(self.Entity._id)
-        return Vector3(result[5])
-
-    @property
-    def Right(self):
-        result = _Prism.Prism_TransformComponent_GetTransform(self.Entity._id)
-        return Vector3(result[4])
-
-    @property
-    def Up(self):
-        result = _Prism.Prism_TransformComponent_GetTransform(self.Entity._id)
-        return Vector3(result[3])
-
-    @property
-    def Transform(self):
-        from Prism.Core.Transform import Transform as T
-        result = _Prism.Prism_TransformComponent_GetTransform(self.Entity._id)
-        return T(Vector3(result[0]), Vector3(result[1]), Vector3(result[2]),
-                 Vector3(result[3]), Vector3(result[4]), Vector3(result[5]))
-
-    @Transform.setter
-    def Transform(self, value):
-        _Prism.Prism_TransformComponent_SetTransform(
-            self.Entity._id,
-            value.Position, value.Rotation, value.Scale
-        )
-
-    @property
-    def LocalTransform(self):
-        from Prism.Core.Transform import Transform as T
-        return T(self.LocalPosition, self.LocalRotation, self.LocalScale,
-                 Vector3(0, 0, 0), Vector3(0, 0, 0), Vector3(0, 0, 0))
-
-    @LocalTransform.setter
-    def LocalTransform(self, value):
-        self.LocalPosition = value.Position
-        self.LocalRotation = value.Rotation
-        self.LocalScale = value.Scale
-
-    def SetPosition(self, x, y, z):
-        _Prism.Prism_TransformComponent_SetPosition(self.Entity._id, Vector3(x, y, z))
-
-    def SetRotation(self, x, y, z):
-        _Prism.Prism_TransformComponent_SetRotation(self.Entity._id, Vector3(x, y, z))
-
-    def SetScale(self, x, y, z):
-        _Prism.Prism_TransformComponent_SetScale(self.Entity._id, Vector3(x, y, z))
+from PrismEngine import TransformComponent
 
 
 # ════════════════════════════════════════════

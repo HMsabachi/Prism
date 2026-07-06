@@ -54,9 +54,7 @@ class PlayerSphere(Behaviour):
         self.m_PhysicsBody.SetLinearVelocity(linearVelocity)
 
         if Input.IsKeyPressed(KeyCodes.R):
-            transform = self.Entity.GetTransform()
-            transform.Translation = Vector3(0.0, 0.0, 0.0)
-            self.Entity.SetTransform(transform)
+            self.m_Transform.Position = Vector3(0.0, 0.0, 0.0)
     
     @property
     def _colliding(self):

@@ -12,6 +12,7 @@
 #include "Scripting/Python/PythonScriptEngine.h"
 #include "Scripting/CSharp/CSharpScriptMetaRegistry.h"
 #include "Scripting/Python/PythonScriptMetaRegistry.h"
+#include <pybind11/pybind11.h>
 
 namespace Prism {
 

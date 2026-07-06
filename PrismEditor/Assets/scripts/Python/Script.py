@@ -1,7 +1,6 @@
 import math
 from Prism import Behaviour, Input, Time, KeyCodes, Log
 from Prism.Math import Vector3
-from Prism.Math.Matrix4 import Matrix4
 
 
 class Script(Behaviour):
@@ -17,8 +16,7 @@ class Script(Behaviour):
         self.time += Time.DeltaTime
         if self.time > 100.0:
             self.time = 0.0
-        transform = self.Entity.GetTransform()
-        translation = transform.Translation
-        translation.x = math.sin(self.time) * self.Speed
-        transform.Translation = translation
-        self.Entity.SetTransform(transform)
+
+        pos = self.Entity.Transform.Position
+        pos.x = math.sin(self.time) * self.Speed
+        self.Entity.Transform.Position = pos

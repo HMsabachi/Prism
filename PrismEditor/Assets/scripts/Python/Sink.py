@@ -1,6 +1,5 @@
 from Prism import Behaviour, Time
 from Prism.Math import Vector3
-from Prism.Math.Matrix4 import Matrix4
 
 
 class Sink(Behaviour):
@@ -11,10 +10,7 @@ class Sink(Behaviour):
 
     def OnUpdate(self):
         ts = Time.DeltaTime
-        transform = self.Entity.GetTransform()
-        translation = transform.Translation
 
-        translation.y -= self.SinkSpeed * ts
-
-        transform.Translation = translation
-        self.Entity.SetTransform(transform)
+        pos = self.Entity.Transform.Position
+        pos.y -= self.SinkSpeed * ts
+        self.Entity.Transform.Position = pos

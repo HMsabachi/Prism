@@ -4,7 +4,6 @@ from Prism import (
 )
 from Prism.Math import Vector2, Vector3, Vector4
 from Prism.Math.Mathf import Mathf
-from Prism.Math.Matrix4 import Matrix4
 from Prism.Renderer import Color, Texture2D, MeshFactory
 import Noise as NoiseUtil
 
@@ -53,18 +52,17 @@ class MapGenerator(Behaviour):
         material.SetTexture("u_AlbedoTexture", texture)
 
         transformComponent = self.GetComponent(TransformComponent)
-        position = self.Entity.GetTransform().Translation
-        transformComponent.Transform = Matrix4.Scale(Vector3(10.0, 1.0, 10.0)) * Matrix4.Translate(position)
+        position = transformComponent.Position
+        transformComponent.Scale = Vector3(10.0, 1.0, 10.0)
+        transformComponent.Position = position
 
     def OnCreate(self):
         self.GenerateMap()
 
     def OnUpdate(self):
         ts = Time.DeltaTime
-        transform = self.Entity.GetTransform()
-        translation = transform.Translation
-        translation.y += ts * self.Speed
+        pos = self.Entity.Transform.Position
+        pos.y += ts * self.Speed
         if Input.IsKeyPressed(KeyCodes.Space):
-            translation.y -= 10.0
-        transform.Translation = translation
-        self.Entity.SetTransform(transform)
+            pos.y -= 10.0
+        self.Entity.Transform.Position = pos

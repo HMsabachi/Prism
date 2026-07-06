@@ -1,7 +1,11 @@
-#pragma once
+﻿#pragma once
 #include "Prism/Core/UUID.h"
-#include <pybind11/pybind11.h>
 #include <unordered_map>
+
+namespace pybind11
+{
+    class object;
+}
 
 namespace Prism {
 

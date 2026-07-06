@@ -95,19 +95,17 @@ class SmokeTest(Behaviour):
 
         eid = self.Entity.ID
 
-        _Prism.Prism_TransformComponent_SetPosition(eid, (0.0, 0.0, 0.0))
+        _Prism.Prism_TransformComponent_SetPosition(eid, Vector3(0.0, 0.0, 0.0))
 
         pos = _Prism.Prism_TransformComponent_GetPosition(eid)
-        assert len(pos) == 3, f"位置 tuple 长度应为 3, 实际 {len(pos)}"
-        x, y, z = pos
+        x, y, z = pos.x, pos.y, pos.z
         Log.Info(f"[SmokeTest] ✓ Transform: position=({x:.1f}, {y:.1f}, {z:.1f})")
         assert abs(x - 0.0) < 0.001, f"x 应为 0.0, 实际 {x}"
         assert abs(y - 0.0) < 0.001, f"y 应为 0.0, 实际 {y}"
         assert abs(z - 0.0) < 0.001, f"z 应为 0.0, 实际 {z}"
 
-        mat = _Prism.Prism_Entity_GetTransform(eid)
-        assert len(mat) == 16, f"矩阵 tuple 长度应为 16, 实际 {len(mat)}"
-        Log.Info(f"[SmokeTest] ✓ Transform: GetTransform 返回 16 元素矩阵")
+        transform = _Prism.Prism_TransformComponent_GetTransform(eid)
+        Log.Info(f"[SmokeTest] ✓ Transform: GetTransform pos=({transform.Position.x:.1f}, {transform.Position.y:.1f}, {transform.Position.z:.1f})")
 
     def _TestPublicFields(self):
         Log.Info(f"[SmokeTest] Public fields: "
