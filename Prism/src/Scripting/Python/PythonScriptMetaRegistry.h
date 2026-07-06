@@ -1,10 +1,13 @@
 ﻿#pragma once
 #include "ScriptTypes.h"
-#include "Scripting/Python/Interop/PythonScriptCore.h"
-
 #include <string>
-#include <unordered_map>
 #include <vector>
+
+namespace pybind11
+{
+    class module_;
+    class object;
+}
 
 namespace Prism
 {
@@ -14,27 +17,22 @@ namespace Prism
     public:
         static void Init();
         static void Shutdown();
-
         static void BuildCache();
 
         static ScriptClassMetadata* GetClassMetadata(UUID classID);
         static ScriptClassMetadata* GetClassMetadata(const std::string& fullName);
+        static ScriptFieldMetadata* GetFieldMetadata(UUID classID, const std::string& fieldName);
         static std::vector<ScriptClassMetadata*> GetAllBehaviourClasses();
 
         static UUID GenerateClassID(const std::string& str);
+
     private:
-        static void ScanDirectory(const std::string& dirPath, const std::string& packagePrefix,
-                                  Python::ScriptClass& behaviourClass);
-        static void ScanModule(Python::ScriptModule& mod, const std::string& moduleName,
-                               Python::ScriptClass& behaviourClass);
-
-        static void ReadPythonDefaultFieldValue(ScriptFieldMetadata& meta,
-                                                Python::ScriptObject& obj,
-                                                const std::string& fieldName);
-
+        static bool s_Initialized;
         static std::unordered_map<UUID, ScriptClassMetadata> s_Classes;
         static std::unordered_map<UUID, std::string> s_ClassIDToFullName;
-        static bool s_Initialized;
+
+        static void ScanModule(pybind11::module_& mod, const std::string& moduleName, pybind11::object& behaviourClass);
+        static void ScanDirectory(const std::string& dirPath, const std::string& packagePrefix, pybind11::object& behaviourClass);
     };
 
 }

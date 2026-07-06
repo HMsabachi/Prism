@@ -4,20 +4,20 @@
 #include "PythonScriptStorage.h"
 #include "PythonScriptMetaRegistry.h"
 
-#include <Python.h>
+#include <pybind11/pybind11.h>
+#include <pybind11/embed.h>
 
 #include "Prism/Scene/Scene.h"
 
 #include <filesystem>
-#include <algorithm>
-#include <imgui.h>
 
+namespace py = pybind11;
+extern "C" PyObject* PyInit_PrismNative();
 namespace Prism
 {
-    // Static members
     WeakRef<Scene> PythonScriptEngine::s_SceneContext;
     bool PythonScriptEngine::s_Initialized = false;
-    std::unordered_map<UUID, std::unordered_map<UUID, Python::ScriptObject>> PythonScriptEngine::s_PythonScriptObjects;
+    std::unordered_map<UUID, std::unordered_map<UUID, py::object>> PythonScriptEngine::s_PythonScriptObjects;
     PythonScriptEngine::ReloadDelegate PythonScriptEngine::s_PreUnloadCallbacks;
     PythonScriptEngine::ReloadDelegate PythonScriptEngine::s_PostReloadCallbacks;
 
@@ -28,16 +28,14 @@ namespace Prism
         if (s_Initialized)
             return;
 
-        if (!Python::ScriptHost::Initialize())
-        {
-            PR_CORE_ERROR("[Python] 初始化解释器失败！");
-            return;
-        }
+        PyImport_AppendInittab("PrismNative", PyInit_PrismNative);
+        py::initialize_interpreter();
+        py::exec("import sys; sys.path.append('Assets/scripts/Python')");
 
         PythonScriptEngineRegistry::RegisterAll();
 
         s_Initialized = true;
-        PR_CORE_TRACE("[Python] Python 运行时已初始化");
+        PR_CORE_TRACE("[Python] Python 运行时已初始化 (pybind11)");
 
         PythonScriptMetaRegistry::BuildCache();
     }
@@ -50,7 +48,8 @@ namespace Prism
             return;
 
         PythonScriptMetaRegistry::Shutdown();
-        Python::ScriptHost::Shutdown();
+        ReleaseAll();
+        py::finalize_interpreter();
         s_Initialized = false;
         s_SceneContext = nullptr;
         PR_CORE_INFO("[Python] Python 解释器已关闭");
@@ -73,7 +72,7 @@ namespace Prism
         return s_SceneContext;
     }
 
-    Python::ScriptObject* PythonScriptEngine::GetScriptObject(UUID sceneID, UUID scriptID)
+    py::object* PythonScriptEngine::GetScriptObject(UUID sceneID, UUID scriptID)
     {
         auto sceneIt = s_PythonScriptObjects.find(sceneID);
         if (sceneIt == s_PythonScriptObjects.end())
@@ -97,64 +96,85 @@ namespace Prism
         }
     }
 
+    UUID PythonScriptEngine::Instantiate(UUID scriptID, const std::string& className, PythonScriptStorage& storage)
+    {
+        try
+        {
+            std::string moduleName = className;
+            std::string clsName = className;
+            auto dotPos = className.rfind('.');
+            if (dotPos != std::string::npos)
+            {
+                moduleName = className.substr(0, dotPos);
+                clsName = className.substr(dotPos + 1);
+            }
+
+            py::module_ mod = py::module::import(moduleName.c_str());
+            PR_CORE_ASSERT(mod, "Python module not found!");
+            py::object cls = mod.attr(clsName.c_str());
+            PR_CORE_ASSERT(cls, "Python class not found!");
+
+            py::object obj = cls();
+            UUID sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
+            auto& sceneMap = s_PythonScriptObjects[sceneID];
+            auto [it, inserted] = sceneMap.emplace(scriptID, std::move(obj));
+            PR_CORE_ASSERT(inserted, "ScriptID collision in s_PythonScriptObjects!");
+            it->second.attr("ID") = py::cast((uint64_t)scriptID);
+            storage.Store(scriptID, &it->second);
+            return scriptID;
+        }
+        catch (py::error_already_set& e)
+        {
+            PR_CORE_ERROR("[Python] Instantiate({0}): {1}", className, e.what());
+            return 0;
+        }
+    }
+
     UUID PythonScriptEngine::AddBehaviour(Entity& entity, PythonBehaviourBinding& binding)
     {
-        UUID sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
-        PR_CORE_ASSERT(sceneID, "没有场景上下文");
-
-        UUID entityID = entity.GetUUID();
-
-        auto* meta = PythonScriptMetaRegistry::GetClassMetadata(binding.ClassID);
-        if (!meta)
+        try
         {
-            PR_CORE_ERROR("[Python] Cannot add behaviour: class metadata not found for ClassID {0}", (uint64_t)binding.ClassID);
+            UUID sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
+            PR_CORE_ASSERT(sceneID, "没有场景上下文");
+
+            auto* meta = PythonScriptMetaRegistry::GetClassMetadata(binding.ClassID);
+            if (!meta)
+            {
+                PR_CORE_ERROR("[Python] Cannot add behaviour: class metadata not found for ClassID {0}", (uint64_t)binding.ClassID);
+                return 0;
+            }
+
+            py::module_ mod = py::module::import(meta->ModuleName.c_str());
+            py::object cls = mod.attr(meta->ClassName.c_str());
+            py::object obj = cls();
+
+            for (auto& [hash, field] : binding.Fields)
+            {
+                Buffer& buf = field.GetBuffer();
+                if (buf.Data && buf.Size > 0)
+                    field.SetInstance(&obj);
+            }
+
+            py::object* entityObj = GetScriptObject(sceneID, entity.GetUUID());
+            if (entityObj)
+                obj.attr("Entity") = *entityObj;
+
+            UUID behaviourID = binding.BehaviourID;
+            auto& sceneMap = s_PythonScriptObjects[sceneID];
+            auto [it, inserted] = sceneMap.emplace(behaviourID, std::move(obj));
+            PR_CORE_ASSERT(inserted, "BehaviourID collision in s_PythonScriptObjects!");
+
+            for (auto& [hash, field] : binding.Fields)
+                field.SetInstance(&it->second);
+
+            PR_CORE_INFO("[Python] Added behaviour {0} ({1}) to entity {2}", meta->ClassName, (uint64_t)behaviourID, (uint64_t)entity.GetUUID());
+            return behaviourID;
+        }
+        catch (py::error_already_set& e)
+        {
+            PR_CORE_ERROR("[Python] AddBehaviour: {0}", e.what());
             return 0;
         }
-
-        Python::ScriptModule mod = Python::ScriptModule::Import(meta->ModuleName.c_str());
-        if (!mod.IsValid())
-        {
-            PR_CORE_ERROR("[Python] Cannot add behaviour: module not found {0}", meta->ModuleName);
-            return 0;
-        }
-
-        Python::ScriptClass cls = Python::ScriptClass::From(mod, meta->ClassName.c_str());
-        if (!cls.IsValid())
-        {
-            PR_CORE_ERROR("[Python] Cannot add behaviour: class {0} not found in {1}", meta->ClassName, meta->ModuleName);
-            return 0;
-        }
-
-        Python::ScriptObject obj = cls.CreateInstance();
-        if (!obj.IsValid())
-        {
-            PR_CORE_ERROR("[Python] Failed to create instance of {0}", meta->ClassName);
-            return 0;
-        }
-
-        // Push field values from C++ buffer to Python instance
-        for (auto& [hash, field] : binding.Fields)
-        {
-            Buffer& buf = field.GetBuffer();
-            if (buf.Data && buf.Size > 0)
-                obj.SetFieldRaw(field.GetName().c_str(), buf.Data);
-        }
-
-        Python::ScriptObject* entityObj = GetScriptObject(sceneID, entityID);
-        if (entityObj)
-            obj.SetAttribute("Entity", entityObj->GetRef());
-
-        UUID behaviourID = binding.BehaviourID;
-        auto& sceneMap = s_PythonScriptObjects[sceneID];
-        auto [it, inserted] = sceneMap.emplace(behaviourID, std::move(obj));
-        PR_CORE_ASSERT(inserted, "BehaviourID collision in s_PythonScriptObjects!");
-
-        // Bind fields to the now-stable Python object
-        for (auto& [hash, field] : binding.Fields)
-            field.SetInstance(&it->second);
-
-        PR_CORE_INFO("[Python] Added behaviour {0} ({1}) to entity {2}", meta->ClassName, (uint64_t)behaviourID, (uint64_t)entityID);
-        return behaviourID;
     }
 
     void PythonScriptEngine::RemoveBehaviour(Entity& entity, UUID behaviourID)
@@ -182,7 +202,6 @@ namespace Prism
         s_PythonScriptObjects.clear();
     }
 
-    // ── 回调注册/解绑 ──
     PythonScriptEngine::ReloadCallbackToken PythonScriptEngine::RegisterPreUnloadCallback(ReloadDelegate::FuncType cb)
     {
         return s_PreUnloadCallbacks.Add(std::move(cb));
@@ -206,16 +225,14 @@ namespace Prism
 
         s_PreUnloadCallbacks();
 
-        s_PythonScriptObjects.clear();
+        ReleaseAll();
         PythonScriptMetaRegistry::Shutdown();
-        Python::ScriptHost::Shutdown();
 
-        Python::ScriptHost::Initialize();
-        PythonScriptEngineRegistry::RegisterAll();
         PythonScriptMetaRegistry::BuildCache();
 
         s_PostReloadCallbacks();
 
         PR_CORE_INFO("[Python] Script reload complete.");
     }
+
 }

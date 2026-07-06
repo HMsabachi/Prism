@@ -16,3 +16,6 @@
 [submodule "Prism/vendor/PrismShaderCompiler"]
 	path = Prism/vendor/PrismShaderCompiler
 	url = git@github.com:HMsabachi/PrismShaderCompiler.git
+[submodule "Prism/vendor/pybind11"]
+	path = Prism/vendor/pybind11
+	url = git@github.com:HMsabachi/pybind11.git

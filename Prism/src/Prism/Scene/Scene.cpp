@@ -258,7 +258,6 @@ namespace Prism
 
         CSharpScriptEngine::SetSceneContext(target);
         PythonScriptEngine::SetSceneContext(target);
-
         std::unordered_map<UUID, entt::entity> enttMap;
         auto idComponents = m_Registry.view<IDComponent>();
         for (auto entity : idComponents)
@@ -289,8 +288,7 @@ namespace Prism
 
 
         CSharpScriptEngine::SetSceneContext(this);
-        PythonScriptEngine::SetSceneContext(this);
-
+        PythonScriptEngine::SetSceneContext(this);  
         if (auto* p2d = GetSystem<Physics2DSystem>())
             if (auto* targetP2d = target->GetSystem<Physics2DSystem>())
                 targetP2d->SetGravity(p2d->GetGravity());

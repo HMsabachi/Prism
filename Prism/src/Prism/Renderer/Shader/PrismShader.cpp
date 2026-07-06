@@ -252,7 +252,7 @@ namespace Prism
         std::string path = filePath;
         for (auto& c : path) if (c == '\\') c = '/';
         if (m_PathFromName.empty()) 
-            m_PathFromName = ShaderCompiler::Get().ScanShaderDirectory("assets");
+            m_PathFromName = ShaderCompiler::Get().ScanShaderDirectory("Assets");
         auto shader = Ref<PrismShader>(PrismShader::Create(path));
         auto& name = shader->GetName();
         if (name.empty())

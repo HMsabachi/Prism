@@ -1,11 +1,14 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "PythonScriptEngineRegistry.h"
 #include "PythonScriptWrappers.h"
-#include "Scripting/Python/Interop/PythonScriptCore.h"
+#include "PythonScriptTypeCasters.h"
+#include <pybind11/pybind11.h>
 
 #include "Prism/Scene/Components.h"
 #include "Prism/Scene/Entity.h"
 #include "Prism/Utilities/TypeInfo.h"
+
+namespace py = pybind11;
 
 namespace Prism
 {
@@ -13,167 +16,175 @@ namespace Prism
     std::unordered_map<uint64_t, std::function<bool(Entity&)>> s_PythonHasComponentFuncs;
 
     template<typename TComponent>
-    static void RegisterPythonComponent()
+    static void RegisterPythonComponent(py::module_& pyComponentModule)
     {
         const TypeNameString& name = TypeInfo<TComponent, true>().Name();
-
-        // 获取 Python 组件类对象
-        Python::ScriptModule mod = Python::ScriptModule::Import("Prism.Component");
-        PR_CORE_ASSERT(mod.IsValid(), "Python module Prism.Component not found!");
-        Python::ScriptClass cls = Python::ScriptClass::From(mod, name.data());
-        PR_CORE_ASSERT(cls.IsValid(), "Python class {} not found in Prism.Component!", name);
-
-        // 用 Python 类型对象地址做 key（与 id(cls) 等效）
-        uint64_t typeId = cls.GetTypeId();
+        py::object cls = pyComponentModule.attr(name.data());
+        uint64_t typeId = reinterpret_cast<uint64_t>(cls.ptr());
         s_PythonCreateComponentFuncs[typeId] = [](Entity& e) { e.AddComponent<TComponent>(); };
-        s_PythonHasComponentFuncs[typeId] = [](Entity& e) { return e.HasComponent<TComponent>(); };
+        s_PythonHasComponentFuncs[typeId]    = [](Entity& e) { return e.HasComponent<TComponent>(); };
     }
 
     static void InitComponentTypes()
     {
-        RegisterPythonComponent<TagComponent>();
-        RegisterPythonComponent<TransformComponent>();
-        RegisterPythonComponent<MeshRendererComponent>();
-        RegisterPythonComponent<CameraComponent>();
-        RegisterPythonComponent<SpriteRendererComponent>();
-        RegisterPythonComponent<RigidBody2DComponent>();
-        RegisterPythonComponent<BoxCollider2DComponent>();
-        RegisterPythonComponent<CircleCollider2DComponent>();
-        RegisterPythonComponent<RigidBodyComponent>();
-        RegisterPythonComponent<BoxColliderComponent>();
-        RegisterPythonComponent<SphereColliderComponent>();
-        RegisterPythonComponent<CapsuleColliderComponent>();
-    }
-
-
-    void PythonScriptEngineRegistry::RegisterAll()
-    {
         s_PythonCreateComponentFuncs.clear();
         s_PythonHasComponentFuncs.clear();
 
-        using namespace Prism::Script;
-        Python::NativeModule mod("PrismNative");
+        py::module_ compMod = py::module::import("Prism.Component");
 
-#define PR_PYTHON_FUNCTION(func, doc) mod.AddFunction(#func, func, doc)
-        // Log
-        PR_PYTHON_FUNCTION(Prism_Log_LogMessage, "Log(level, message)");
-
-        // Time
-        PR_PYTHON_FUNCTION(Prism_Time_GetDeltaTime, "GetDeltaTime() -> float");
-        PR_PYTHON_FUNCTION(Prism_Time_GetTime, "GetTime() -> float");
-        PR_PYTHON_FUNCTION(Prism_Time_GetUnscaledDeltaTime, "GetUnscaledDeltaTime() -> float");
-        PR_PYTHON_FUNCTION(Prism_Time_GetUnscaledTime, "GetUnscaledTime() -> float");
-        PR_PYTHON_FUNCTION(Prism_Time_GetFixedDeltaTime, "GetFixedDeltaTime() -> float");
-        PR_PYTHON_FUNCTION(Prism_Time_GetFrameCount, "GetFrameCount() -> uint64");
-        PR_PYTHON_FUNCTION(Prism_Time_GetTimeScale, "GetTimeScale() -> float");
-        PR_PYTHON_FUNCTION(Prism_Time_SetTimeScale, "SetTimeScale(scale)");
-        PR_PYTHON_FUNCTION(Prism_Time_SetFixedDeltaTime, "SetFixedDeltaTime(fixedDeltaTime)");
-
-        // Math
-        PR_PYTHON_FUNCTION(Prism_Noise_PerlinNoise, "PerlinNoise(x, y) -> float");
-
-        // Input
-        PR_PYTHON_FUNCTION(Prism_Input_IsKeyPressed, "IsKeyPressed(key) -> bool");
-        PR_PYTHON_FUNCTION(Prism_Input_GetMousePosition, "GetMousePosition() -> vec2");
-        PR_PYTHON_FUNCTION(Prism_Input_SetCursorMode, "SetCursorMode(mode)");
-        PR_PYTHON_FUNCTION(Prism_Input_GetCursorMode, "GetCursorMode() -> int");
-        PR_PYTHON_FUNCTION(Prism_Input_IsMouseButtonPressed, "IsMouseButtonPressed(button) -> bool");
-
-        // Entity
-        PR_PYTHON_FUNCTION(Prism_Entity_CreateComponent, "CreateComponent(entityID, typeName)");
-        PR_PYTHON_FUNCTION(Prism_Entity_HasComponent, "HasComponent(entityID, typeName) -> bool");
-        PR_PYTHON_FUNCTION(Prism_Entity_AddBehaviour, "AddBehaviour(entityID, cls) -> object");
-        PR_PYTHON_FUNCTION(Prism_Entity_FindEntityByTag, "FindEntityByTag(tag) -> uint64");
-        PR_PYTHON_FUNCTION(Prism_Entity_RemoveBehaviour, "RemoveBehaviour(entityID, behaviourID)");
-        PR_PYTHON_FUNCTION(Prism_Entity_GetBehaviour, "GetBehaviour(entityID, cls) -> object");
-        PR_PYTHON_FUNCTION(Prism_Behaviour_GetEnabled, "GetEnabled(behaviourID) -> bool");
-        PR_PYTHON_FUNCTION(Prism_Behaviour_SetEnabled, "SetEnabled(behaviourID, enabled)");
-
-        // TagComponent
-        PR_PYTHON_FUNCTION(Prism_TagComponent_GetTag, "GetTag(entityID) -> string");
-        PR_PYTHON_FUNCTION(Prism_TagComponent_SetTag, "SetTag(entityID, tag)");
-
-        // TransformComponent
-        PR_PYTHON_FUNCTION(Prism_TransformComponent_GetPosition, "GetPosition(entityID) -> vec3");
-        PR_PYTHON_FUNCTION(Prism_TransformComponent_SetPosition, "SetPosition(entityID, vec3)");
-        PR_PYTHON_FUNCTION(Prism_TransformComponent_GetRotation, "GetRotation(entityID) -> vec3 degrees");
-        PR_PYTHON_FUNCTION(Prism_TransformComponent_SetRotation, "SetRotation(entityID, vec3) degrees");
-        PR_PYTHON_FUNCTION(Prism_TransformComponent_GetScale, "GetScale(entityID) -> vec3");
-        PR_PYTHON_FUNCTION(Prism_TransformComponent_SetScale, "SetScale(entityID, vec3)");
-        PR_PYTHON_FUNCTION(Prism_TransformComponent_GetTransform, "GetTransform(entityID) -> (position, rotation, scale, up, right, forward) world");
-        PR_PYTHON_FUNCTION(Prism_TransformComponent_SetTransform, "SetTransform(entityID, position, rotation, scale) world");
-        PR_PYTHON_FUNCTION(Prism_TransformComponent_GetLocalPosition, "GetLocalPosition(entityID) -> vec3");
-        PR_PYTHON_FUNCTION(Prism_TransformComponent_SetLocalPosition, "SetLocalPosition(entityID, vec3)");
-        PR_PYTHON_FUNCTION(Prism_TransformComponent_GetLocalRotation, "GetLocalRotation(entityID) -> vec3");
-        PR_PYTHON_FUNCTION(Prism_TransformComponent_SetLocalRotation, "SetLocalRotation(entityID, vec3)");
-        PR_PYTHON_FUNCTION(Prism_TransformComponent_GetLocalScale, "GetLocalScale(entityID) -> vec3");
-        PR_PYTHON_FUNCTION(Prism_TransformComponent_SetLocalScale, "SetLocalScale(entityID, vec3)");
-
-        // RigidBody2DComponent
-        PR_PYTHON_FUNCTION(Prism_RigidBody2DComponent_ApplyLinearImpulse, "ApplyLinearImpulse(entityID, impulse, offset, wake)");
-        PR_PYTHON_FUNCTION(Prism_RigidBody2DComponent_GetLinearVelocity, "GetLinearVelocity(entityID) -> vec2");
-        PR_PYTHON_FUNCTION(Prism_RigidBody2DComponent_SetLinearVelocity, "SetLinearVelocity(entityID, velocity)");
-
-        // RigidBodyComponent (3D)
-        PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_AddForce, "AddForce(entityID, force, forceMode)");
-        PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_AddTorque, "AddTorque(entityID, torque, forceMode)");
-        PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_GetLinearVelocity, "GetLinearVelocity(entityID) -> vec3");
-        PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_SetLinearVelocity, "SetLinearVelocity(entityID, velocity)");
-        PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_Rotate, "Rotate(entityID, rotation)");
-        PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_GetLayer, "GetLayer(entityID) -> uint");
-        PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_GetMass, "GetMass(entityID) -> float");
-        PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_SetMass, "SetMass(entityID, mass)");
-        PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_GetBodyType, "GetBodyType(entityID) -> uint");
-        PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_GetAngularVelocity, "GetAngularVelocity(entityID) -> vec3");
-        PR_PYTHON_FUNCTION(Prism_RigidBodyComponent_SetAngularVelocity, "SetAngularVelocity(entityID, velocity)");
-        // Physics
-        PR_PYTHON_FUNCTION(Prism_Physics_Raycast, "Raycast(origin, direction, maxDistance) -> (entityID, pos, normal, distance) or None");
-        PR_PYTHON_FUNCTION(Prism_Physics_OverlapBox, "OverlapBox(origin, halfSize) -> tuple of Collider or None");
-        PR_PYTHON_FUNCTION(Prism_Physics_OverlapSphere, "OverlapSphere(origin, radius) -> tuple of Collider or None");
-        PR_PYTHON_FUNCTION(Prism_Physics_OverlapCapsule, "OverlapCapsule(origin, radius, halfHeight) -> tuple of Collider or None");
-        PR_PYTHON_FUNCTION(Prism_Physics_GetGravity, "GetGravity() -> float");
-        PR_PYTHON_FUNCTION(Prism_Physics_SetGravity, "SetGravity(gravity)");
-
-        // Mesh
-        PR_PYTHON_FUNCTION(Prism_Mesh_Constructor, "Mesh(cpp_handle, filepath)");
-        PR_PYTHON_FUNCTION(Prism_Mesh_Destructor, "~Mesh(cpp_handle)");
-
-        // MeshFactory
-        PR_PYTHON_FUNCTION(Prism_MeshFactory_CreatePlane, "CreatePlane(width, height) -> handle");
-
-        // MeshRendererComponent
-        PR_PYTHON_FUNCTION(Prism_MeshRendererComponent_GetMesh, "GetMesh(entityID) -> handle");
-        PR_PYTHON_FUNCTION(Prism_MeshRendererComponent_SetMesh, "SetMesh(entityID, handle)");
-        PR_PYTHON_FUNCTION(Prism_MeshRendererComponent_GetMaterial, "GetMaterial(entityID, index) -> handle");
-        PR_PYTHON_FUNCTION(Prism_MeshRendererComponent_SetMaterial, "SetMaterial(entityID, index, handle)");
-        PR_PYTHON_FUNCTION(Prism_MeshRendererComponent_GetMaterialCount, "GetMaterialCount(entityID) -> uint64");
-        PR_PYTHON_FUNCTION(Prism_MeshRendererComponent_GetMaterials, "GetMaterials(entityID) -> tuple of handles");
-        PR_PYTHON_FUNCTION(Prism_MeshRendererComponent_SetMaterials, "SetMaterials(entityID, handles)");
-
-        // Texture2D
-        PR_PYTHON_FUNCTION(Prism_Texture2D_Constructor, "Texture2D(cpp_handle, width, height)");
-        PR_PYTHON_FUNCTION(Prism_Texture2D_Destructor, "~Texture2D(cpp_handle)");
-        PR_PYTHON_FUNCTION(Prism_Texture2D_SetData, "SetData(cpp_handle, data)");
-
-        // Material
-        PR_PYTHON_FUNCTION(Prism_Material_Constructor, "Material(cpp_handle, shaderName)");
-        PR_PYTHON_FUNCTION(Prism_Material_Destructor, "~Material(cpp_handle)");
-        PR_PYTHON_FUNCTION(Prism_Material_SetFloat, "SetFloat(cpp_handle, uniform, value)");
-        PR_PYTHON_FUNCTION(Prism_Material_SetInt, "SetInt(cpp_handle, uniform, value)");
-        PR_PYTHON_FUNCTION(Prism_Material_SetBool, "SetBool(cpp_handle, uniform, value)");
-        PR_PYTHON_FUNCTION(Prism_Material_SetVector2, "SetVec2(cpp_handle, uniform, vec2)");
-        PR_PYTHON_FUNCTION(Prism_Material_SetColor3, "SetColor3(cpp_handle, uniform, vec3)");
-        PR_PYTHON_FUNCTION(Prism_Material_SetColor, "SetColor(cpp_handle, uniform, vec4)");
-        PR_PYTHON_FUNCTION(Prism_Material_SetMatrix4, "SetMatrix4(cpp_handle, uniform, mat4)");
-        PR_PYTHON_FUNCTION(Prism_Material_SetVector3, "SetVector3(cpp_handle, uniform, vec3)");
-        PR_PYTHON_FUNCTION(Prism_Material_SetVector4, "SetVector4(cpp_handle, uniform, vec4)");
-        PR_PYTHON_FUNCTION(Prism_Material_SetTexture, "SetTexture(cpp_handle, uniform, texHandle)");
-        PR_PYTHON_FUNCTION(Prism_Material_SetKeyword, "SetKeyword(cpp_handle, name, enabled)");
-        PR_PYTHON_FUNCTION(Prism_Material_IsKeywordEnabled, "IsKeywordEnabled(cpp_handle, name) -> bool");
-
-
-        mod.Register();
-        InitComponentTypes();
-        PR_CORE_TRACE("[Python] PrismNative 模块已注册");
+        RegisterPythonComponent<TagComponent>(compMod);
+        RegisterPythonComponent<TransformComponent>(compMod);
+        RegisterPythonComponent<MeshRendererComponent>(compMod);
+        RegisterPythonComponent<CameraComponent>(compMod);
+        RegisterPythonComponent<SpriteRendererComponent>(compMod);
+        RegisterPythonComponent<RigidBody2DComponent>(compMod);
+        RegisterPythonComponent<BoxCollider2DComponent>(compMod);
+        RegisterPythonComponent<CircleCollider2DComponent>(compMod);
+        RegisterPythonComponent<RigidBodyComponent>(compMod);
+        RegisterPythonComponent<BoxColliderComponent>(compMod);
+        RegisterPythonComponent<SphereColliderComponent>(compMod);
+        RegisterPythonComponent<CapsuleColliderComponent>(compMod);
     }
+
+    void PythonScriptEngineRegistry::RegisterAll()
+    {
+        InitComponentTypes();
+    }
+}
+
+PYBIND11_MODULE(PrismNative, m)
+{
+    using namespace Prism;
+    using namespace Prism::PythonScript;
+
+    py::class_<RaycastHit>(m, "RaycastHit")
+        .def_readwrite("EntityID", &RaycastHit::EntityID)
+        .def_readwrite("Position", &RaycastHit::Position)
+        .def_readwrite("Normal", &RaycastHit::Normal)
+        .def_readwrite("Distance", &RaycastHit::Distance);
+
+    py::class_<OverlapHitData>(m, "OverlapHitData")
+        .def_readwrite("EntityID", &OverlapHitData::EntityID)
+        .def_readwrite("ColliderType", &OverlapHitData::ColliderType)
+        .def_readwrite("IsTrigger", &OverlapHitData::IsTrigger)
+        .def_property_readonly("ShapeData", [](const OverlapHitData& d) {
+            py::list shapeData;
+            for (int i = 0; i < 6; ++i)
+                shapeData.append(PyFloat_FromDouble(d.ShapeData[i]));
+            return shapeData;
+        })
+        .def_property_readonly("MeshHandle", [](const OverlapHitData& d) -> uint64_t {
+            return reinterpret_cast<uintptr_t>(d.MeshHandle);
+        });
+
+    py::class_<ScriptTransform>(m, "ScriptTransform")
+        .def_readwrite("Position", &ScriptTransform::Position)
+        .def_readwrite("Rotation", &ScriptTransform::Rotation)
+        .def_readwrite("Scale", &ScriptTransform::Scale)
+        .def_readwrite("Up", &ScriptTransform::Up)
+        .def_readwrite("Right", &ScriptTransform::Right)
+        .def_readwrite("Forward", &ScriptTransform::Forward);
+
+#define BIND_MODULE_FUNCTION(name) m.def(#name, &Prism::PythonScript::name)
+
+    // Log
+    BIND_MODULE_FUNCTION(Prism_Log_LogMessage);
+    // Time
+    BIND_MODULE_FUNCTION(Prism_Time_GetDeltaTime);
+    BIND_MODULE_FUNCTION(Prism_Time_GetUnscaledDeltaTime);
+    BIND_MODULE_FUNCTION(Prism_Time_GetTime);
+    BIND_MODULE_FUNCTION(Prism_Time_GetUnscaledTime);
+    BIND_MODULE_FUNCTION(Prism_Time_GetFixedDeltaTime);
+    BIND_MODULE_FUNCTION(Prism_Time_GetFrameCount);
+    BIND_MODULE_FUNCTION(Prism_Time_SetTimeScale);
+    BIND_MODULE_FUNCTION(Prism_Time_GetTimeScale);
+    BIND_MODULE_FUNCTION(Prism_Time_SetFixedDeltaTime);
+    // Math
+    BIND_MODULE_FUNCTION(Prism_Noise_PerlinNoise);
+    // Input
+    BIND_MODULE_FUNCTION(Prism_Input_IsKeyPressed);
+    BIND_MODULE_FUNCTION(Prism_Input_GetMousePosition);
+    BIND_MODULE_FUNCTION(Prism_Input_SetCursorMode);
+    BIND_MODULE_FUNCTION(Prism_Input_GetCursorMode);
+    BIND_MODULE_FUNCTION(Prism_Input_IsMouseButtonPressed);
+    // Entity
+    BIND_MODULE_FUNCTION(Prism_Entity_CreateComponent);
+    BIND_MODULE_FUNCTION(Prism_Entity_HasComponent);
+    BIND_MODULE_FUNCTION(Prism_Entity_FindEntityByTag);
+    BIND_MODULE_FUNCTION(Prism_Entity_AddBehaviour);
+    BIND_MODULE_FUNCTION(Prism_Entity_RemoveBehaviour);
+    BIND_MODULE_FUNCTION(Prism_Entity_GetBehaviour);
+    BIND_MODULE_FUNCTION(Prism_Behaviour_GetEnabled);
+    BIND_MODULE_FUNCTION(Prism_Behaviour_SetEnabled);
+    // TransformComponent
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetPosition);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetRotation);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetScale);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetUp);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetRight);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetForward);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_SetPosition);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_SetRotation);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_SetScale);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetLocalPosition);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_SetLocalPosition);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetLocalRotation);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_SetLocalRotation);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetLocalScale);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_SetLocalScale);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetTransform);
+    BIND_MODULE_FUNCTION(Prism_TransformComponent_SetTransform);
+    // MeshRendererComponent
+    BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_GetMesh);
+    BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_SetMesh);
+    BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_GetMaterial);
+    BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_SetMaterial);
+    BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_GetMaterialCount);
+    BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_GetMaterials);
+    BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_SetMaterials);
+    // Mesh
+    BIND_MODULE_FUNCTION(Prism_Mesh_Constructor);
+    BIND_MODULE_FUNCTION(Prism_Mesh_Destructor);
+    BIND_MODULE_FUNCTION(Prism_MeshFactory_CreatePlane);
+    // Texture2D
+    BIND_MODULE_FUNCTION(Prism_Texture2D_Constructor);
+    BIND_MODULE_FUNCTION(Prism_Texture2D_Destructor);
+    // RigidBody2DComponent
+    BIND_MODULE_FUNCTION(Prism_RigidBody2DComponent_ApplyLinearImpulse);
+    BIND_MODULE_FUNCTION(Prism_RigidBody2DComponent_GetLinearVelocity);
+    BIND_MODULE_FUNCTION(Prism_RigidBody2DComponent_SetLinearVelocity);
+    // RigidBodyComponent
+    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_AddForce);
+    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_AddTorque);
+    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_GetLinearVelocity);
+    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_SetLinearVelocity);
+    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_Rotate);
+    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_GetLayer);
+    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_GetMass);
+    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_SetMass);
+    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_GetBodyType);
+    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_GetAngularVelocity);
+    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_SetAngularVelocity);
+    // Physics
+    BIND_MODULE_FUNCTION(Prism_Physics_Raycast);
+    BIND_MODULE_FUNCTION(Prism_Physics_OverlapBox);
+    BIND_MODULE_FUNCTION(Prism_Physics_OverlapCapsule);
+    BIND_MODULE_FUNCTION(Prism_Physics_OverlapSphere);
+    BIND_MODULE_FUNCTION(Prism_Physics_GetGravity);
+    BIND_MODULE_FUNCTION(Prism_Physics_SetGravity);
+    // Material
+    BIND_MODULE_FUNCTION(Prism_Material_Constructor);
+    BIND_MODULE_FUNCTION(Prism_Material_Destructor);
+    BIND_MODULE_FUNCTION(Prism_Material_SetFloat);
+    BIND_MODULE_FUNCTION(Prism_Material_SetInt);
+    BIND_MODULE_FUNCTION(Prism_Material_SetBool);
+    BIND_MODULE_FUNCTION(Prism_Material_SetVector2);
+    BIND_MODULE_FUNCTION(Prism_Material_SetVector3);
+    BIND_MODULE_FUNCTION(Prism_Material_SetVector4);
+    BIND_MODULE_FUNCTION(Prism_Material_SetColor3);
+    BIND_MODULE_FUNCTION(Prism_Material_SetColor);
+    BIND_MODULE_FUNCTION(Prism_Material_SetMatrix4);
+    BIND_MODULE_FUNCTION(Prism_Material_SetTexture);
+    BIND_MODULE_FUNCTION(Prism_Material_SetKeyword);
+    BIND_MODULE_FUNCTION(Prism_Material_IsKeywordEnabled);
 }

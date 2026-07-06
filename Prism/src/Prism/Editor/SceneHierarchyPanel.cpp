@@ -18,6 +18,7 @@
 #include "Scripting/CSharp/CSharpScriptEngine.h"
 #include "Scripting/Python/PythonScriptMetaRegistry.h"
 #include "Scripting/Python/PythonScriptEngine.h"
+#include "Scripting/Python/PythonField.inl"
 #include "Prism/Scene/Systems/ScriptSystem.h"
 #include "Prism/Scene/Components.h"
 #include <assimp/scene.h>

@@ -4,7 +4,7 @@
 namespace Prism
 {
 
-    void PythonScriptStorage::Store(UUID scriptID, Python::ScriptObject* obj)
+    void PythonScriptStorage::Store(UUID scriptID, pybind11::object* obj)
     {
         EntityStorage[scriptID] = { scriptID, obj };
     }

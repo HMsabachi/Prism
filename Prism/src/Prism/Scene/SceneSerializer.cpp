@@ -13,7 +13,6 @@
 #include "Prism/Physics/PXPhysicsWrappers.h"
 #include "Prism/Asset/AssetManager.h"
 #include "Prism/Utilities/FileSystem.h"
-#include "Prism/Scene/Components.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
@@ -23,7 +22,7 @@
 #include <Prism/Core/Hash.h>
 #include "Scripting/CSharp/CSharpScriptMetaRegistry.h"
 #include "Scripting/Python/PythonScriptMetaRegistry.h"
-#include "Prism/Scene/Systems/ScriptSystem.h"
+#include "Scripting/Python/PythonField.inl"
 
 #include <iostream>
 #include <fstream>
@@ -1101,7 +1100,6 @@ namespace Prism {
                     PR_CORE_INFO("  CSharpScriptComponent: loaded");
                 }
 
-                // PythonScriptComponent — 从 YAML 直接构建，OnConstruct 统一做 Meta 验证
                 auto pythonScriptComponent = entity["PythonScriptComponent"];
                 if (pythonScriptComponent)
                 {

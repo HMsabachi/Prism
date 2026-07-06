@@ -1,15 +1,12 @@
 from typing import Optional
 import PrismNative as _Prism
-from Prism.Core.Transform import Transform
 from Prism.Core import Log
 
 
 class Entity:
     _id: int
-    _transform: Optional[Transform]
     def __init__(self, entity_id: int = 0):
         self._id: int = entity_id
-        self._transform: Optional[Transform] = None
 
     def __del__(self):
         Log.Trace("Destroyed Entity {}", self._id)
@@ -24,10 +21,9 @@ class Entity:
         Log.Trace("Created Entity {}", self._id)
 
     @property
-    def Transform(self) -> "Transform":
-        if self._transform is None:
-            self._transform = Transform(self._id)
-        return self._transform
+    def Transform(self):
+        from Prism.Component import TransformComponent
+        return self.GetComponent(TransformComponent)
 
     def HasComponent(self, cls) -> bool:
         from Prism.Behaviour import Behaviour

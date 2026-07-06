@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "ISystem.h"
 #include "Prism/Scene/Entity.h"
@@ -55,7 +55,6 @@ namespace Prism {
         void DestroyCSharpBehaviour(Entity entity, CSharpBehaviourBinding& binding);
         void DestroyPythonBehaviour(Entity entity, PythonBehaviourBinding& binding);
 
-        // ── 热重载回调 ──
         void OnCSharpPreUnload();
         void OnCSharpPostReload();
         void OnPythonPreUnload();
@@ -69,7 +68,6 @@ namespace Prism {
         std::unordered_map<UUID, CSharpBehaviourBinding*> m_CSharpBindingMap;
         std::unordered_map<UUID, PythonBehaviourBinding*> m_PythonBindingMap;
 
-        // ── 热重载状态 ──
         CSharpScriptEngine::ReloadCallbackToken m_CSharpPreUnloadToken = 0;
         CSharpScriptEngine::ReloadCallbackToken m_CSharpPostReloadToken = 0;
         PythonScriptEngine::ReloadCallbackToken m_PythonPreUnloadToken = 0;

@@ -29,6 +29,7 @@ IncludeDir["Box2D"] = "Prism/vendor/box2d/include"
 IncludeDir["PhysX"] = "Prism/vendor/PhysX/include"
 IncludeDir["PrismShaderCore"] = "Prism/vendor/PrismShaderCompiler/PrismShaderCore/include/"
 IncludeDir["Python"] = "vendor/Python/include/Python"
+IncludeDir["pybind11"] = "Prism/vendor/pybind11/include"
 
 LibraryDir = {}
 LibraryDir["nethost"] = "Prism/vendor/nethost"
@@ -91,6 +92,7 @@ project "Prism"
         "%{IncludeDir.Box2D}",
         "%{IncludeDir.PhysX}",
         "%{IncludeDir.Python}",
+        "%{IncludeDir.pybind11}",
         "%{IncludeDir.PrismShaderCore}"
     }
 
@@ -228,7 +230,8 @@ project "PrismEditor"
         "%{IncludeDir.entt}",
         "%{IncludeDir.Rolky}",
         "%{IncludeDir.Python}",
-        "%{IncludeDir.PrismShaderCore}"
+        "%{IncludeDir.PrismShaderCore}",
+        "%{IncludeDir.pybind11}"
     }
 
     links

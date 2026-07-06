@@ -15,6 +15,16 @@
 
 namespace Prism {
 
+    template<typename... Args>
+    static void PyCallMethod(pybind11::object* obj, const char* method, Args&&... args)
+    {
+        if (!obj) return;
+        try { obj->attr(method)(std::forward<Args>(args)...); }
+        catch (pybind11::error_already_set& e) {
+            PR_CORE_ERROR("[Python] {0}: {1}", method, e.what());
+        }
+    }
+
     ScriptSystem::ScriptSystem(Scene* scene)
         : m_Scene(scene)
     {
@@ -103,8 +113,8 @@ namespace Prism {
                     if (!binding.Enabled) continue;
                     if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnUpdate)) continue;
                     auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
-                    if (obj && obj->IsValid())
-                        obj->Invoke<void>("OnUpdate");
+                    if (obj)
+                        PyCallMethod(obj, "OnUpdate");
                 }
             }
         }
@@ -144,8 +154,8 @@ namespace Prism {
                     if (!binding.Enabled) continue;
                     if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::LateUpdate)) continue;
                     auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
-                    if (obj && obj->IsValid())
-                        obj->Invoke<void>("LateUpdate");
+                    if (obj)
+                        PyCallMethod(obj, "LateUpdate");
                 }
             }
         }
@@ -190,8 +200,8 @@ namespace Prism {
                     if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnFixedUpdate))
                         continue;
                     auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
-                    if (obj && obj->IsValid())
-                        obj->Invoke<void>("OnFixedUpdate");
+                    if (obj)
+                        PyCallMethod(obj, "OnFixedUpdate");
                 }
             }
         }
@@ -287,8 +297,8 @@ namespace Prism {
                 if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnCollisionBegin))
                     continue;
                 auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
-                if (obj && obj->IsValid())
-                    obj->Invoke<void>("OnCollisionBegin", 0.0f);
+                if (obj)
+                    PyCallMethod(obj, "OnCollisionBegin", 0.0f);
             }
         }
     }
@@ -321,8 +331,8 @@ namespace Prism {
                 if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnCollisionEnd))
                     continue;
                 auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
-                if (obj && obj->IsValid())
-                    obj->Invoke<void>("OnCollisionEnd", 0.0f);
+                if (obj)
+                    PyCallMethod(obj, "OnCollisionEnd", 0.0f);
             }
         }
     }
@@ -355,8 +365,8 @@ namespace Prism {
                 if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnTriggerBegin))
                     continue;
                 auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
-                if (obj && obj->IsValid())
-                    obj->Invoke<void>("OnTriggerBegin", 0.0f);
+                if (obj)
+                    PyCallMethod(obj, "OnTriggerBegin", 0.0f);
             }
         }
     }
@@ -389,8 +399,8 @@ namespace Prism {
                 if (!(binding.LifecycleMask & (uint16_t)LifecycleMethod::OnTriggerEnd))
                     continue;
                 auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
-                if (obj && obj->IsValid())
-                    obj->Invoke<void>("OnTriggerEnd", 0.0f);
+                if (obj)
+                    PyCallMethod(obj, "OnTriggerEnd", 0.0f);
             }
         }
     }
@@ -521,12 +531,12 @@ namespace Prism {
             UUID sceneID = m_Scene->GetUUID();
             auto* obj = PythonScriptEngine::GetScriptObject(sceneID, behaviourID);
             auto& binding = it->second;
-            if (obj && obj->IsValid())
+            if (obj)
             {
                 if ((binding.LifecycleMask & (uint16_t)LifecycleMethod::OnDisable) && binding.Enabled)
-                    obj->Invoke<void>("OnDisable");
+                    PyCallMethod(obj, "OnDisable");
                 if (binding.LifecycleMask & (uint16_t)LifecycleMethod::OnDestroy)
-                    obj->Invoke<void>("OnDestroy");
+                    PyCallMethod(obj, "OnDestroy");
             }
             for (auto& [hash, field] : binding.Fields)
                 field.ClearInstance();
@@ -587,12 +597,12 @@ namespace Prism {
             {
                 UUID sceneID = m_Scene->GetUUID();
                 auto* obj = PythonScriptEngine::GetScriptObject(sceneID, behaviourID);
-                if (obj && obj->IsValid())
+                if (obj)
                 {
                     if (!enabled && (binding->LifecycleMask & (uint16_t)LifecycleMethod::OnDisable))
-                        obj->Invoke<void>("OnDisable");
+                        PyCallMethod(obj, "OnDisable");
                     else if (enabled && (binding->LifecycleMask & (uint16_t)LifecycleMethod::OnEnable))
-                        obj->Invoke<void>("OnEnable");
+                        PyCallMethod(obj, "OnEnable");
                 }
             }
         }
@@ -625,21 +635,22 @@ namespace Prism {
         PythonScriptEngine::SetSceneContext(m_Scene);
         UUID sceneID = m_Scene->GetUUID();
         auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
-        if (!obj || !obj->IsValid())
+        if (!obj)
             PythonScriptEngine::AddBehaviour(entity, binding);
 
         obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
-        if (!obj || !obj->IsValid())
+        if (!obj)
             return;
 
-        obj->SetField<uint64_t>("ID", (uint64_t)binding.BehaviourID);
+        try { obj->attr("ID") = pybind11::cast((uint64_t)binding.BehaviourID); }
+        catch (pybind11::error_already_set& e) { PR_CORE_ERROR("[Python] SetField ID: {0}", e.what()); }
 
         if (binding.LifecycleMask & (uint16_t)LifecycleMethod::Awake)
-            obj->Invoke<void>("Awake");
+            PyCallMethod(obj, "Awake");
         if (binding.LifecycleMask & (uint16_t)LifecycleMethod::OnCreate)
-            obj->Invoke<void>("OnCreate");
+            PyCallMethod(obj, "OnCreate");
         if ((binding.LifecycleMask & (uint16_t)LifecycleMethod::OnEnable) && binding.Enabled)
-            obj->Invoke<void>("OnEnable");
+            PyCallMethod(obj, "OnEnable");
     }
 
     void ScriptSystem::DestroyCSharpBehaviour(Entity entity, CSharpBehaviourBinding& binding)
@@ -664,12 +675,12 @@ namespace Prism {
         PythonScriptEngine::SetSceneContext(m_Scene);
         UUID sceneID = m_Scene->GetUUID();
         auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
-        if (obj && obj->IsValid())
+        if (obj)
         {
             if ((binding.LifecycleMask & (uint16_t)LifecycleMethod::OnDisable) && binding.Enabled)
-                obj->Invoke<void>("OnDisable");
+                PyCallMethod(obj, "OnDisable");
             if (binding.LifecycleMask & (uint16_t)LifecycleMethod::OnDestroy)
-                obj->Invoke<void>("OnDestroy");
+                PyCallMethod(obj, "OnDestroy");
         }
         for (auto& [hash, field] : binding.Fields)
             field.ClearInstance();

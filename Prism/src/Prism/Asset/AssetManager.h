@@ -86,7 +86,10 @@ namespace Prism
             Ref<Asset> asset = s_LoadedAssets[assetHandle];
 
             if (!asset->IsDataLoaded && loadData)
+            {
                 asset = AssetSerializer::LoadAssetData(asset);
+                s_LoadedAssets[assetHandle] = asset;
+            }
 
             return asset.As<T>();
         }

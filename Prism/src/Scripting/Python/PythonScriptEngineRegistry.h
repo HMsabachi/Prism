@@ -5,14 +5,14 @@
 
 namespace Prism
 {
-	class Entity;
+    class Entity;
 
-	extern std::unordered_map<uint64_t, std::function<void(Entity&)>> s_PythonCreateComponentFuncs;
-	extern std::unordered_map<uint64_t, std::function<bool(Entity&)>> s_PythonHasComponentFuncs;
+    extern std::unordered_map<uint64_t, std::function<void(Entity&)>> s_PythonCreateComponentFuncs;
+    extern std::unordered_map<uint64_t, std::function<bool(Entity&)>> s_PythonHasComponentFuncs;
 
-	class PRISM_API PythonScriptEngineRegistry
-	{
-	public:
-		static void RegisterAll();
-	};
+    class PythonScriptEngineRegistry
+    {
+    public:
+        static void RegisterAll();
+    };
 }

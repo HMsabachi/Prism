@@ -1,6 +1,6 @@
 Scene: Scene Name
 Environment:
-  EnvironmentMap: 14179924526552686784
+  EnvironmentMap: 17360247782952478988
   Light:
     Direction: [-0.477, -1, -0.015]
     Radiance: [1, 1, 1]
@@ -79,7 +79,7 @@ Entities:
       Size: [1, 1, 1]
       Offset: [0, 0, 0]
       IsTrigger: false
-      Material: 9066220942698591394
+      Material: 0
     CSharpScriptComponent:
       Behaviours:
         []
@@ -117,7 +117,7 @@ Entities:
       IsConvex: true
       IsTrigger: false
       OverrideMesh: false
-      Material: 3870565896864502459
+      Material: 0
     CSharpScriptComponent:
       Behaviours:
         - ClassID: 4621281492369714213
@@ -198,7 +198,7 @@ Entities:
     SphereColliderComponent:
       Radius: 0.5
       IsTrigger: false
-      Material: 3211541847963995256
+      Material: 0
     CSharpScriptComponent:
       Behaviours:
         []
@@ -235,7 +235,7 @@ Entities:
     SphereColliderComponent:
       Radius: 0.5
       IsTrigger: false
-      Material: 16911763826882819716
+      Material: 0
     CSharpScriptComponent:
       Behaviours:
         []
@@ -272,7 +272,7 @@ Entities:
     SphereColliderComponent:
       Radius: 0.5
       IsTrigger: false
-      Material: 13241879931461540723
+      Material: 0
     CSharpScriptComponent:
       Behaviours:
         - ClassID: 17473292295039821981
@@ -319,7 +319,7 @@ Entities:
     SphereColliderComponent:
       Radius: 0.5
       IsTrigger: false
-      Material: 10263435008139422684
+      Material: 0
     CSharpScriptComponent:
       Behaviours:
         []
@@ -356,7 +356,7 @@ Entities:
     SphereColliderComponent:
       Radius: 0.5
       IsTrigger: false
-      Material: 11746243844868759121
+      Material: 0
     CSharpScriptComponent:
       Behaviours:
         - ClassID: 17473292295039821981
@@ -403,7 +403,7 @@ Entities:
     SphereColliderComponent:
       Radius: 0.5
       IsTrigger: false
-      Material: 14937333723800904855
+      Material: 0
     CSharpScriptComponent:
       Behaviours:
         []
@@ -441,7 +441,7 @@ Entities:
       Size: [1, 1, 1]
       Offset: [0, 0, 0]
       IsTrigger: false
-      Material: 5520653945700068251
+      Material: 0
     CSharpScriptComponent:
       Behaviours:
         - ClassID: 17473292295039821981
@@ -488,7 +488,7 @@ Entities:
     SphereColliderComponent:
       Radius: 0.5
       IsTrigger: false
-      Material: 12131842520822875313
+      Material: 0
     CSharpScriptComponent:
       Behaviours:
         []
@@ -523,26 +523,17 @@ Entities:
         LockRotationY: false
         LockRotationZ: false
     MeshColliderComponent:
-      IsConvex: true
+      IsConvex: false
       IsTrigger: false
       OverrideMesh: false
-      Material: 10198986711095733713
+      Material: 0
     CSharpScriptComponent:
       Behaviours:
-        - ClassID: 17473292295039821981
-          Enabled: true
-          Fields:
-            - ID: 2824397154
-              Name: Timer
-              Type: 1
-              Value: 0
-            - ID: 3048789568
-              Name: ID
-              Type: 11
-              Value: 0
+        []
     PythonScriptComponent:
       Behaviours:
-        []
+        - ClassID: 8019244560703880993
+          Enabled: true
   - Entity: 9421913743984938135
     Parent: 0
     Children:
@@ -563,7 +554,7 @@ Entities:
       Intensity: 0.2
       Angle: 0
       SkyboxLod: 1
-      EnvironmentMap: 14179924526552686784
+      EnvironmentMap: 17360247782952478988
   - Entity: 9087946811847071748
     Parent: 0
     Children:

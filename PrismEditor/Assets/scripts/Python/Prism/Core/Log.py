@@ -41,4 +41,3 @@ class Log:
     def Critical(message: str, *args) -> None:
         Log._Log(LogLevel.Critical, str(message), *args)
 
-Log.Info("Log API loaded successfully.")
