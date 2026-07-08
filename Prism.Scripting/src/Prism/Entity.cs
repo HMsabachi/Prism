@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Numerics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Rolky.Managed.Interop;
 namespace Prism
 {
@@ -21,7 +17,7 @@ namespace Prism
         {
             if (typeof(T).IsSubclassOf(typeof(Behaviour)))
             {
-                unsafe { return InternalCalls.Prism_Entity_GetBehaviour(ID, typeof(T)) != IntPtr.Zero; }
+                unsafe { return InternalCalls.Prism_Entity_GetBehaviour(ID, typeof(T)).Get() != null; }
             }
             unsafe { return InternalCalls.Prism_Entity_HasComponent(ID, typeof(T)); }
         }
@@ -32,13 +28,11 @@ namespace Prism
                 unsafe
                 {
                     NativeString className = typeof(T).FullName;
-                    IntPtr handle = InternalCalls.Prism_Entity_AddBehaviour(ID, className);
-                    if (handle == IntPtr.Zero) throw new MissingReferenceException();
-                    object? obj = GCHandle.FromIntPtr(handle).Target;
+                    Behaviour? obj = InternalCalls.Prism_Entity_AddBehaviour(ID, typeof(T));
                     if (obj == null) throw new NullReferenceException();
-                    T behaviour = (T)obj;
-                    behaviour.Entity = this;
-                    return behaviour;
+                    obj.Entity = this;
+                    if (obj is T behaviour) return behaviour;
+                    else throw new InvalidCastException($"Failed to cast Behaviour to {typeof(T).FullName}");
                 }
             }
             else
@@ -55,11 +49,10 @@ namespace Prism
             {
                 unsafe
                 {
-                    IntPtr handle = InternalCalls.Prism_Entity_GetBehaviour(ID, typeof(T));
-                    if (handle == IntPtr.Zero) throw new NullReferenceException();
-                    object? behaviour = GCHandle.FromIntPtr(handle).Target;
-                    if (behaviour == null) throw new NullReferenceException();
-                    return (T)behaviour;
+                    Behaviour? obj = InternalCalls.Prism_Entity_GetBehaviour(ID, typeof(T));
+                    if (obj == null) throw new NullReferenceException();
+                    if (obj is T behaviour) return behaviour;
+                    else throw new InvalidCastException($"Failed to cast Behaviour to {typeof(T).FullName}");
                 }
             }
             if (HasComponent<T>())

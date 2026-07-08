@@ -111,170 +111,9 @@ namespace Prism
         int Prism_Input_GetCursorMode() { return (int)Input::GetCursorMode(); }
         bool Prism_Input_IsMouseButtonPressed(uint16_t button) { return Input::IsMouseButtonPressed((MouseButton)button); }
 
-#pragma region Entity
-
-        void Prism_Entity_CreateComponent(uint64_t entityID, py::object cls)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            uint64_t typeId = reinterpret_cast<uint64_t>(cls.ptr());
-            s_PythonCreateComponentFuncs.at(typeId)(entity);
-        }
-
-        bool Prism_Entity_HasComponent(uint64_t entityID, py::object cls)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            uint64_t typeId = reinterpret_cast<uint64_t>(cls.ptr());
-            return s_PythonHasComponentFuncs.at(typeId)(entity);
-        }
-
-        uint64_t Prism_Entity_FindEntityByTag(const char* tag)
-        {
-            WeakRef<Scene> scene = PythonScriptEngine::GetCurrentSceneContext();
-            PR_CORE_ASSERT(scene, "No active scene!");
-            std::string tagStr(tag);
-            const auto& entityMap = scene->GetEntityMap();
-            for (const auto& [id, entity] : entityMap)
-            {
-                if (entity.HasComponent<TagComponent>() &&
-                    entity.GetComponent<TagComponent>().Tag == tagStr)
-                    return id;
-            }
-            return 0;
-        }
-
-        uint64_t Prism_Entity_AddBehaviour(uint64_t entityID, py::object cls)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            std::string className = cls.attr("__module__").cast<std::string>() + "." + cls.attr("__qualname__").cast<std::string>();
-            UUID classID = PythonScriptMetaRegistry::GenerateClassID(className);
-            auto* ss = PythonScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
-            UUID behaviourID = ss->AddPythonBehaviour(entity, classID);
-            return (uint64_t)behaviourID;
-        }
-
-        void Prism_Entity_RemoveBehaviour(uint64_t entityID, uint64_t behaviourID)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            auto* ss = PythonScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
-            ss->RemovePythonBehaviour(entity, UUID(behaviourID));
-        }
-
-        uint64_t Prism_Entity_GetBehaviour(uint64_t entityID, py::object cls)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            std::string className = cls.attr("__module__").cast<std::string>() + "." + cls.attr("__qualname__").cast<std::string>();
-            UUID classID = PythonScriptMetaRegistry::GenerateClassID(className);
-            auto& comp = entity.GetComponent<PythonScriptComponent>();
-            for (auto& [bid, binding] : comp.Behaviours)
-            {
-                if (binding.ClassID == classID)
-                    return (uint64_t)binding.BehaviourID;
-            }
-            return 0;
-        }
-
-        bool Prism_Behaviour_GetEnabled(uint64_t behaviourID)
-        {
-            auto* ss = PythonScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
-            return ss->GetEnabled(UUID(behaviourID));
-        }
-
-        void Prism_Behaviour_SetEnabled(uint64_t behaviourID, bool enabled)
-        {
-            auto* ss = PythonScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
-            ss->SetEnabled(UUID(behaviourID), enabled);
-        }
-
-#pragma region TransformComponent
-
         static TransformSystem* GetTransformSystem(Entity entity)
         {
             return entity.GetScene()->GetSystem<TransformSystem>();
-        }
-
-        glm::vec3 Prism_TransformComponent_GetPosition(uint64_t entityID)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            return GetTransformSystem(entity)->GetWorldPosition(entity);
-        }
-        glm::vec3 Prism_TransformComponent_GetRotation(uint64_t entityID)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            return GetTransformSystem(entity)->GetWorldRotation(entity);
-        }
-        glm::vec3 Prism_TransformComponent_GetScale(uint64_t entityID)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            return GetTransformSystem(entity)->GetWorldScale(entity);
-        }
-        glm::vec3 Prism_TransformComponent_GetUp(uint64_t entityID)
-        {
-            return GetEntityFromEntityID(entityID).Transformation().Up;
-        }
-        glm::vec3 Prism_TransformComponent_GetRight(uint64_t entityID)
-        {
-            return GetEntityFromEntityID(entityID).Transformation().Right;
-        }
-        glm::vec3 Prism_TransformComponent_GetForward(uint64_t entityID)
-        {
-            return GetEntityFromEntityID(entityID).Transformation().Forward;
-        }
-
-        void Prism_TransformComponent_SetPosition(uint64_t entityID, const glm::vec3& position)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            GetTransformSystem(entity)->SetWorldPosition(entity, position);
-        }
-        void Prism_TransformComponent_SetRotation(uint64_t entityID, const glm::vec3& rotation)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            GetTransformSystem(entity)->SetWorldRotation(entity, rotation);
-        }
-        void Prism_TransformComponent_SetScale(uint64_t entityID, const glm::vec3& scale)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            GetTransformSystem(entity)->SetWorldScale(entity, scale);
-        }
-
-        ScriptTransform Prism_TransformComponent_GetTransform(uint64_t entityID)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            auto world = GetTransformSystem(entity)->GetWorldDecomposed(entity);
-            auto& tc = entity.Transformation();
-            return { world.Position, world.Rotation, world.Scale, tc.Up, tc.Right, tc.Forward };
-        }
-        void Prism_TransformComponent_SetTransform(uint64_t entityID, const ScriptTransform& transform)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            auto* ts = GetTransformSystem(entity);
-            ts->SetWorldPosition(entity, transform.Position);
-            ts->SetWorldRotation(entity, transform.Rotation);
-            ts->SetWorldScale(entity, transform.Scale);
-        }
-
-        glm::vec3 Prism_TransformComponent_GetLocalPosition(uint64_t entityID)
-        {
-            return GetEntityFromEntityID(entityID).Transformation().GetPosition();
-        }
-        void Prism_TransformComponent_SetLocalPosition(uint64_t entityID, const glm::vec3& position)
-        {
-            GetEntityFromEntityID(entityID).Transformation().SetPosition(position);
-        }
-        glm::vec3 Prism_TransformComponent_GetLocalRotation(uint64_t entityID)
-        {
-            return GetEntityFromEntityID(entityID).Transformation().GetRotation();
-        }
-        void Prism_TransformComponent_SetLocalRotation(uint64_t entityID, const glm::vec3& rotation)
-        {
-            GetEntityFromEntityID(entityID).Transformation().SetRotation(rotation);
-        }
-        glm::vec3 Prism_TransformComponent_GetLocalScale(uint64_t entityID)
-        {
-            return GetEntityFromEntityID(entityID).Transformation().GetScale();
-        }
-        void Prism_TransformComponent_SetLocalScale(uint64_t entityID, const glm::vec3& scale)
-        {
-            GetEntityFromEntityID(entityID).Transformation().SetScale(scale);
         }
 
 #pragma region MeshRendererComponent
@@ -698,33 +537,6 @@ PYBIND11_MODULE(PrismNative, m)
     BIND_MODULE_FUNCTION(Prism_Input_SetCursorMode);
     BIND_MODULE_FUNCTION(Prism_Input_GetCursorMode);
     BIND_MODULE_FUNCTION(Prism_Input_IsMouseButtonPressed);
-    // Entity
-    BIND_MODULE_FUNCTION(Prism_Entity_CreateComponent);
-    BIND_MODULE_FUNCTION(Prism_Entity_HasComponent);
-    BIND_MODULE_FUNCTION(Prism_Entity_FindEntityByTag);
-    BIND_MODULE_FUNCTION(Prism_Entity_AddBehaviour);
-    BIND_MODULE_FUNCTION(Prism_Entity_RemoveBehaviour);
-    BIND_MODULE_FUNCTION(Prism_Entity_GetBehaviour);
-    BIND_MODULE_FUNCTION(Prism_Behaviour_GetEnabled);
-    BIND_MODULE_FUNCTION(Prism_Behaviour_SetEnabled);
-    // TransformComponent
-    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetPosition);
-    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetRotation);
-    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetScale);
-    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetUp);
-    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetRight);
-    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetForward);
-    BIND_MODULE_FUNCTION(Prism_TransformComponent_SetPosition);
-    BIND_MODULE_FUNCTION(Prism_TransformComponent_SetRotation);
-    BIND_MODULE_FUNCTION(Prism_TransformComponent_SetScale);
-    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetLocalPosition);
-    BIND_MODULE_FUNCTION(Prism_TransformComponent_SetLocalPosition);
-    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetLocalRotation);
-    BIND_MODULE_FUNCTION(Prism_TransformComponent_SetLocalRotation);
-    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetLocalScale);
-    BIND_MODULE_FUNCTION(Prism_TransformComponent_SetLocalScale);
-    BIND_MODULE_FUNCTION(Prism_TransformComponent_GetTransform);
-    BIND_MODULE_FUNCTION(Prism_TransformComponent_SetTransform);
     // MeshRendererComponent
     BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_GetMesh);
     BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_SetMesh);
@@ -789,6 +601,8 @@ namespace Prism::PythonScript
 
     public:
         PythonEntity(uint64_t id = 0) : m_EntityID(id) {}
+        ~PythonEntity() { PR_CORE_TRACE("[Python] Destroyed Entity {0}", m_EntityID); }
+        std::string __Repr__() { return fmt::format(" <Entity ID = {}>", m_EntityID); }
 
         uint64_t GetID() const { return m_EntityID; }
         void SetID(uint64_t id)
@@ -803,18 +617,28 @@ namespace Prism::PythonScript
 
             if (PyObject_IsSubclass(cls.ptr(), behaviourClass.ptr()) && cls.ptr() != behaviourClass.ptr())
             {
-                uint64_t bid = Prism_Entity_GetBehaviour(m_EntityID, cls);
-                if (bid != 0)
+                // Behaviour lookup
+                Entity entity = GetEntityFromEntityID(m_EntityID);
+                std::string className = cls.attr("__module__").cast<std::string>() + "." + cls.attr("__qualname__").cast<std::string>();
+                UUID classID = PythonScriptMetaRegistry::GenerateClassID(className);
+                auto& comp = entity.GetComponent<PythonScriptComponent>();
+                for (auto& [bid, binding] : comp.Behaviours)
                 {
-                    UUID sceneID = PythonScriptEngine::GetCurrentSceneContext()->GetUUID();
-                    py::object* obj = PythonScriptEngine::GetScriptObject(sceneID, UUID(bid));
-                    if (obj)
-                        return *obj;
+                    if (binding.ClassID == classID)
+                    {
+                        UUID sceneID = PythonScriptEngine::GetCurrentSceneContext()->GetUUID();
+                        py::object* obj = PythonScriptEngine::GetScriptObject(sceneID, UUID(bid));
+                        if (obj) return *obj;
+                        break;
+                    }
                 }
                 return py::none();
             }
 
-            if (Prism_Entity_HasComponent(m_EntityID, cls))
+            // Component lookup
+            Entity entity = GetEntityFromEntityID(m_EntityID);
+            uint64_t typeId = reinterpret_cast<uint64_t>(cls.ptr());
+            if (s_PythonHasComponentFuncs.count(typeId) && s_PythonHasComponentFuncs.at(typeId)(entity))
             {
                 py::object component = cls();
                 component.attr("Entity") = py::cast(this);
@@ -829,15 +653,20 @@ namespace Prism::PythonScript
 
             if (PyObject_IsSubclass(cls.ptr(), behaviourClass.ptr()) && cls.ptr() != behaviourClass.ptr())
             {
-                uint64_t bid = Prism_Entity_AddBehaviour(m_EntityID, cls);
+                Entity entity = GetEntityFromEntityID(m_EntityID);
+                std::string className = cls.attr("__module__").cast<std::string>() + "." + cls.attr("__qualname__").cast<std::string>();
+                UUID classID = PythonScriptMetaRegistry::GenerateClassID(className);
+                auto* ss = PythonScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
+                uint64_t bid = (uint64_t)ss->AddPythonBehaviour(entity, classID);
                 UUID sceneID = PythonScriptEngine::GetCurrentSceneContext()->GetUUID();
                 py::object* obj = PythonScriptEngine::GetScriptObject(sceneID, UUID(bid));
-                if (obj)
-                    return *obj;
+                if (obj) return *obj;
                 return py::none();
             }
 
-            Prism_Entity_CreateComponent(m_EntityID, cls);
+            Entity entity = GetEntityFromEntityID(m_EntityID);
+            uint64_t typeId = reinterpret_cast<uint64_t>(cls.ptr());
+            s_PythonCreateComponentFuncs.at(typeId)(entity);
             py::object component = cls();
             component.attr("Entity") = py::cast(this);
             return component;
@@ -849,10 +678,18 @@ namespace Prism::PythonScript
 
             if (PyObject_IsSubclass(cls.ptr(), behaviourClass.ptr()) && cls.ptr() != behaviourClass.ptr())
             {
-                uint64_t bid = Prism_Entity_GetBehaviour(m_EntityID, cls);
-                return bid != 0;
+                Entity entity = GetEntityFromEntityID(m_EntityID);
+                std::string className = cls.attr("__module__").cast<std::string>() + "." + cls.attr("__qualname__").cast<std::string>();
+                UUID classID = PythonScriptMetaRegistry::GenerateClassID(className);
+                auto& comp = entity.GetComponent<PythonScriptComponent>();
+                for (auto& [bid, binding] : comp.Behaviours)
+                    if (binding.ClassID == classID) return true;
+                return false;
             }
-            return Prism_Entity_HasComponent(m_EntityID, cls);
+
+            Entity entity = GetEntityFromEntityID(m_EntityID);
+            uint64_t typeId = reinterpret_cast<uint64_t>(cls.ptr());
+            return s_PythonHasComponentFuncs.count(typeId) && s_PythonHasComponentFuncs.at(typeId)(entity);
         }
 
         pybind11::object GetTransform()
@@ -863,8 +700,17 @@ namespace Prism::PythonScript
 
         static pybind11::object FindEntityByTag(const char* tag)
         {
-            uint64_t eid = Prism_Entity_FindEntityByTag(tag);
-            return eid ? py::cast(PythonEntity(eid)) : py::none();
+            WeakRef<Scene> scene = PythonScriptEngine::GetCurrentSceneContext();
+            PR_CORE_ASSERT(scene, "No active scene!");
+            std::string tagStr(tag);
+            const auto& entityMap = scene->GetEntityMap();
+            for (const auto& [id, entity] : entityMap)
+            {
+                if (entity.HasComponent<TagComponent>() &&
+                    entity.GetComponent<TagComponent>().Tag == tagStr)
+                    return py::cast(PythonEntity(id));
+            }
+            return py::none();
         }
 
         static pybind11::object FindEntityByID(uint64_t id)
@@ -892,26 +738,55 @@ namespace Prism::PythonScript
     class PythonTransformComponent : public PythonComponent
     {
     public:
-        glm::vec3 GetPosition() { return Prism_TransformComponent_GetPosition(m_EntityID); }
-        void SetPosition(const glm::vec3& v) { Prism_TransformComponent_SetPosition(m_EntityID, v); }
-        glm::vec3 GetRotation() { return Prism_TransformComponent_GetRotation(m_EntityID); }
-        void SetRotation(const glm::vec3& v) { Prism_TransformComponent_SetRotation(m_EntityID, v); }
-        glm::vec3 GetScale() { return Prism_TransformComponent_GetScale(m_EntityID); }
-        void SetScale(const glm::vec3& v) { Prism_TransformComponent_SetScale(m_EntityID, v); }
+        glm::vec3 GetPosition() {
+            Entity e = GetEntityFromEntityID(m_EntityID);
+            return GetTransformSystem(e)->GetWorldPosition(e);
+        }
+        void SetPosition(const glm::vec3& v) {
+            Entity e = GetEntityFromEntityID(m_EntityID);
+            GetTransformSystem(e)->SetWorldPosition(e, v);
+        }
+        glm::vec3 GetRotation() {
+            Entity e = GetEntityFromEntityID(m_EntityID);
+            return GetTransformSystem(e)->GetWorldRotation(e);
+        }
+        void SetRotation(const glm::vec3& v) {
+            Entity e = GetEntityFromEntityID(m_EntityID);
+            GetTransformSystem(e)->SetWorldRotation(e, v);
+        }
+        glm::vec3 GetScale() {
+            Entity e = GetEntityFromEntityID(m_EntityID);
+            return GetTransformSystem(e)->GetWorldScale(e);
+        }
+        void SetScale(const glm::vec3& v) {
+            Entity e = GetEntityFromEntityID(m_EntityID);
+            GetTransformSystem(e)->SetWorldScale(e, v);
+        }
 
-        glm::vec3 GetLocalPosition() { return Prism_TransformComponent_GetLocalPosition(m_EntityID); }
-        void SetLocalPosition(const glm::vec3& v) { Prism_TransformComponent_SetLocalPosition(m_EntityID, v); }
-        glm::vec3 GetLocalRotation() { return Prism_TransformComponent_GetLocalRotation(m_EntityID); }
-        void SetLocalRotation(const glm::vec3& v) { Prism_TransformComponent_SetLocalRotation(m_EntityID, v); }
-        glm::vec3 GetLocalScale() { return Prism_TransformComponent_GetLocalScale(m_EntityID); }
-        void SetLocalScale(const glm::vec3& v) { Prism_TransformComponent_SetLocalScale(m_EntityID, v); }
+        glm::vec3 GetLocalPosition() { return GetEntityFromEntityID(m_EntityID).Transformation().GetPosition(); }
+        void SetLocalPosition(const glm::vec3& v) { GetEntityFromEntityID(m_EntityID).Transformation().SetPosition(v); }
+        glm::vec3 GetLocalRotation() { return GetEntityFromEntityID(m_EntityID).Transformation().GetRotation(); }
+        void SetLocalRotation(const glm::vec3& v) { GetEntityFromEntityID(m_EntityID).Transformation().SetRotation(v); }
+        glm::vec3 GetLocalScale() { return GetEntityFromEntityID(m_EntityID).Transformation().GetScale(); }
+        void SetLocalScale(const glm::vec3& v) { GetEntityFromEntityID(m_EntityID).Transformation().SetScale(v); }
 
-        glm::vec3 GetForward() { return Prism_TransformComponent_GetForward(m_EntityID); }
-        glm::vec3 GetRight() { return Prism_TransformComponent_GetRight(m_EntityID); }
-        glm::vec3 GetUp() { return Prism_TransformComponent_GetUp(m_EntityID); }
+        glm::vec3 GetForward() { return GetEntityFromEntityID(m_EntityID).Transformation().Forward; }
+        glm::vec3 GetRight() { return GetEntityFromEntityID(m_EntityID).Transformation().Right; }
+        glm::vec3 GetUp() { return GetEntityFromEntityID(m_EntityID).Transformation().Up; }
 
-        ScriptTransform GetTransform() { return Prism_TransformComponent_GetTransform(m_EntityID); }
-        void SetTransform(const ScriptTransform& t) { Prism_TransformComponent_SetTransform(m_EntityID, t); }
+        ScriptTransform GetTransform() {
+            Entity e = GetEntityFromEntityID(m_EntityID);
+            auto world = GetTransformSystem(e)->GetWorldDecomposed(e);
+            auto& tc = e.Transformation();
+            return { world.Position, world.Rotation, world.Scale, tc.Up, tc.Right, tc.Forward };
+        }
+        void SetTransform(const ScriptTransform& t) {
+            Entity e = GetEntityFromEntityID(m_EntityID);
+            auto* ts = GetTransformSystem(e);
+            ts->SetWorldPosition(e, t.Position);
+            ts->SetWorldRotation(e, t.Rotation);
+            ts->SetWorldScale(e, t.Scale);
+        }
     };
 
     class PythonBehaviour : public PythonComponent
@@ -922,8 +797,14 @@ namespace Prism::PythonScript
         uint64_t GetID() const { return m_BehaviourID; }
         void SetID(uint64_t id) { m_BehaviourID = id; }
 
-        bool GetEnabled() { return Prism_Behaviour_GetEnabled(m_BehaviourID); }
-        void SetEnabled(bool enabled) { Prism_Behaviour_SetEnabled(m_BehaviourID, enabled); }
+        bool GetEnabled() {
+            auto* ss = PythonScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
+            return ss->GetEnabled(UUID(m_BehaviourID));
+        }
+        void SetEnabled(bool enabled) {
+            auto* ss = PythonScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
+            ss->SetEnabled(UUID(m_BehaviourID), enabled);
+        }
 
         pybind11::object GetTransform()
         {
@@ -954,6 +835,20 @@ namespace Prism::PythonScript
         }
     };
 
+    class PythonMesh
+    {
+        uint64_t m_Handle = 0;
+    public:
+        PythonMesh(uint64_t handle) : m_Handle(handle) {}
+        PythonMesh(const char* filepath)
+        {
+            auto result = ModelImporter::Import(filepath);
+            m_Handle = reinterpret_cast<uint64_t>(new Ref<Mesh>(result.Mesh));
+        }
+        ~PythonMesh() { if (m_Handle) delete reinterpret_cast<Ref<Mesh>*>(m_Handle); }
+        std::string __Repr__() { return fmt::format(" <Mesh Handle = {}>", m_Handle); }
+    };
+
 } // namespace Prism::PythonScript
 
 // PrismEngine Module Registe
@@ -964,6 +859,7 @@ PYBIND11_MODULE(PrismEngine, m)
 
     py::class_<PythonEntity>(m, "Entity")
         .def(py::init<uint64_t>(), py::arg("id") = 0)
+        .def("__repr__", &PythonEntity::__Repr__)
         .def_property("ID", &PythonEntity::GetID, &PythonEntity::SetID)
         .def_property_readonly("_id", &PythonEntity::GetID)
         .def("GetComponent", &PythonEntity::GetComponent)
@@ -998,4 +894,9 @@ PYBIND11_MODULE(PrismEngine, m)
         .def("GetComponent", &PythonBehaviour::GetComponent)
         .def("HasComponent", &PythonBehaviour::HasComponent)
         .def("CreateComponent", &PythonBehaviour::CreateComponent);
+
+    py::class_<PythonMesh>(m, "Mesh")
+        .def(py::init<uint64_t>())
+        .def(py::init<const char*>())
+        .def("__repr__", &PythonMesh::__Repr__);
 }

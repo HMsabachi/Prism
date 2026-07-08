@@ -95,6 +95,7 @@ namespace Prism {
 
 			Data = new byte[size];
 			Size = size;
+            memset(Data, 0, Size);
 		}
 
 		void ZeroInitialize()

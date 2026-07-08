@@ -41,6 +41,9 @@ namespace Prism
         if (nameStr == "Prism.Vector2" || nameStr == "System.Numerics.Vector2")     return ScriptFieldType::Vector2;
         if (nameStr == "Prism.Vector3" || nameStr == "System.Numerics.Vector3")     return ScriptFieldType::Vector3;
         if (nameStr == "Prism.Vector4" || nameStr == "System.Numerics.Vector4")     return ScriptFieldType::Vector4;
+        if (nameStr == "Prism.Mesh")                  return ScriptFieldType::MeshRef;
+        if (nameStr == "Prism.Material")              return ScriptFieldType::MaterialRef;
+        if (nameStr == "Prism.Texture2D")             return ScriptFieldType::Texture2DRef;
 
         return ScriptFieldType::None;
     }
@@ -119,6 +122,14 @@ namespace Prism
                 PR_CSHARP_META_INFO("    默认值 {0} = ({1}, {2}, {3}, {4})", fieldName, val.x, val.y, val.z, val.w);
                 break;
             }
+            case ScriptFieldType::MeshRef:
+            case ScriptFieldType::MaterialRef:
+            case ScriptFieldType::Texture2DRef:
+            {
+                void* nullPtr = nullptr;
+                meta.DefaultValue = Buffer::Copy(&nullPtr, sizeof(void*));
+                break;
+            }
             default:
                 break;
         }
@@ -195,6 +206,7 @@ namespace Prism
                 ScriptFieldMetadata fieldMeta;
                 fieldMeta.Name = fieldNameStr;
                 fieldMeta.Type = prismFieldType;
+                fieldMeta.ManagedType = &fieldType;
 
                 if (prismFieldType != ScriptFieldType::None)
                     ReadDefaultFieldValue(fieldMeta, tempInstance, fieldNameStr);

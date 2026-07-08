@@ -57,35 +57,8 @@ namespace Prism::PythonScript
     int Prism_Input_GetCursorMode();
     bool Prism_Input_IsMouseButtonPressed(uint16_t button);
 
-    // Entity
-    void Prism_Entity_CreateComponent(uint64_t entityID, pybind11::object cls);
-    bool Prism_Entity_HasComponent(uint64_t entityID, pybind11::object cls);
-    uint64_t Prism_Entity_FindEntityByTag(const char* tag);
-    uint64_t Prism_Entity_AddBehaviour(uint64_t entityID, pybind11::object cls);
-    void Prism_Entity_RemoveBehaviour(uint64_t entityID, uint64_t behaviourID);
-    uint64_t Prism_Entity_GetBehaviour(uint64_t entityID, pybind11::object cls);
-    bool Prism_Behaviour_GetEnabled(uint64_t behaviourID);
-    void Prism_Behaviour_SetEnabled(uint64_t behaviourID, bool enabled);
-
     // TransformComponent
     struct ScriptTransform { glm::vec3 Position; glm::vec3 Rotation; glm::vec3 Scale; glm::vec3 Up; glm::vec3 Right; glm::vec3 Forward; };
-    glm::vec3 Prism_TransformComponent_GetPosition(uint64_t entityID);
-    glm::vec3 Prism_TransformComponent_GetRotation(uint64_t entityID);
-    glm::vec3 Prism_TransformComponent_GetScale(uint64_t entityID);
-    glm::vec3 Prism_TransformComponent_GetUp(uint64_t entityID);
-    glm::vec3 Prism_TransformComponent_GetRight(uint64_t entityID);
-    glm::vec3 Prism_TransformComponent_GetForward(uint64_t entityID);
-    void Prism_TransformComponent_SetPosition(uint64_t entityID, const glm::vec3& position);
-    void Prism_TransformComponent_SetRotation(uint64_t entityID, const glm::vec3& rotation);
-    void Prism_TransformComponent_SetScale(uint64_t entityID, const glm::vec3& scale);
-    glm::vec3 Prism_TransformComponent_GetLocalPosition(uint64_t entityID);
-    void Prism_TransformComponent_SetLocalPosition(uint64_t entityID, const glm::vec3& position);
-    glm::vec3 Prism_TransformComponent_GetLocalRotation(uint64_t entityID);
-    void Prism_TransformComponent_SetLocalRotation(uint64_t entityID, const glm::vec3& rotation);
-    glm::vec3 Prism_TransformComponent_GetLocalScale(uint64_t entityID);
-    void Prism_TransformComponent_SetLocalScale(uint64_t entityID, const glm::vec3& scale);
-    ScriptTransform Prism_TransformComponent_GetTransform(uint64_t entityID);
-    void Prism_TransformComponent_SetTransform(uint64_t entityID, const ScriptTransform& transform);
 
     // MeshRendererComponent
     uint64_t Prism_MeshRendererComponent_GetMesh(uint64_t entityID);

@@ -417,7 +417,7 @@ namespace Prism {
             binding.LifecycleMask = meta->LifecycleMask;
             for (auto& [hash, fieldMeta] : meta->Fields)
             {
-                CSharpField field(fieldMeta.Name, fieldMeta.Type);
+                CSharpField field(fieldMeta.Name, fieldMeta.Type, fieldMeta.ManagedType);
                 if (fieldMeta.DefaultValue.Data && fieldMeta.DefaultValue.Size > 0)
                     field.SetBuffer(fieldMeta.DefaultValue);
                 binding.Fields[hash] = std::move(field);

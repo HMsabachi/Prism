@@ -161,20 +161,18 @@ namespace Prism {
             return 0;
         }
 
-        void* Prism_Entity_AddBehaviour(uint64_t entityID, Rolky::String className)
+        Rolky::ManagedObject Prism_Entity_AddBehaviour(uint64_t entityID, Rolky::ReflectionType type)
         {
             Entity entity = GetEntityFromEntityID(entityID);
-            std::string classNameStr = className;
-            Rolky::String::Free(className);
-
-            UUID classID = CSharpScriptMetaRegistry::GenerateClassID(classNameStr);
+            Rolky::Type mType = type;
+            UUID classID = CSharpScriptMetaRegistry::GenerateClassID(mType.GetFullName());
             auto* ss = CSharpScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
             UUID behaviourID = ss->AddCSharpBehaviour(entity, classID);
 
             UUID sceneID = CSharpScriptEngine::GetCurrentSceneContext()->GetUUID();
             auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, behaviourID);
             PR_CORE_ASSERT(obj && obj->IsValid(), "Failed to get created behaviour instance!");
-            return obj->m_Handle;
+            return *obj;
         }
 
         void Prism_Entity_RemoveBehaviour(uint64_t entityID, uint64_t behaviourID)
@@ -185,7 +183,7 @@ namespace Prism {
             ss->RemoveCSharpBehaviour(entity, bid);
         }
 
-        void* Prism_Entity_GetBehaviour(uint64_t entityID, Rolky::ReflectionType type)
+        Rolky::ManagedObject Prism_Entity_GetBehaviour(uint64_t entityID, Rolky::ReflectionType type)
         {
             Entity entity = GetEntityFromEntityID(entityID);
             Rolky::Type mType = type;
@@ -198,11 +196,10 @@ namespace Prism {
                 if (binding.ClassID == classID)
                 {
                     auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
-                    if (obj)
-                        return obj->m_Handle;
+                    if (obj) return *obj;
                 }
             }
-            return nullptr;
+            return Rolky::ManagedObject();
         }
 
         Rolky::Bool32 Prism_Behaviour_GetEnabled(uint64_t behaviourID)

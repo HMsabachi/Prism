@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Prism/Core/Core.h"
 #include "Prism/Core/UUID.h"
 #include "Prism/Core/Buffer.h"
@@ -6,6 +6,8 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+namespace Rolky { class Type; }
 
 namespace Prism
 {
@@ -18,7 +20,8 @@ namespace Prism
         Int8, Int16, Int32, Int64,
         UInt8, UInt16, UInt32, UInt64,
         Vector2, Vector3, Vector4,
-        Object
+        Object,
+        MeshRef, MaterialRef, Texture2DRef
     };
 
     inline uint64_t DataTypeSize(ScriptFieldType type)
@@ -41,6 +44,10 @@ namespace Prism
         case Prism::ScriptFieldType::Vector3: return sizeof(glm::vec3);
         case Prism::ScriptFieldType::Vector4: return sizeof(glm::vec4);
         case Prism::ScriptFieldType::Object: return sizeof(void*);
+        case Prism::ScriptFieldType::MeshRef:
+        case Prism::ScriptFieldType::MaterialRef:
+        case Prism::ScriptFieldType::Texture2DRef:
+            return sizeof(void*);
         default: PR_CORE_ASSERT(false, "未注册的类型");
         }
 
@@ -52,6 +59,7 @@ namespace Prism
         std::string Name;
         ScriptFieldType Type = ScriptFieldType::None;
         Buffer DefaultValue;
+        Rolky::Type* ManagedType = nullptr;
     };
 
     enum class LifecycleMethod : uint16_t

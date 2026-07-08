@@ -6,6 +6,7 @@
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Shader/PrismShader.h"
 #include "Prism/Renderer/RenderPipeline.h"
+#include "ModelImporter.h"
 
 #include "yaml-cpp/yaml.h"
 
@@ -83,6 +84,9 @@ namespace Prism {
         {
             case AssetType::Mesh:
             {
+                auto result = ModelImporter::Import(temp->FilePath);
+                if (result.Mesh)
+                    asset = result.Mesh;
                 loadYAMLData = false;
                 break;
             }

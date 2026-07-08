@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 
 using Rolky.Managed.Interop;
 
@@ -31,6 +30,10 @@ namespace Prism
         // Entity
         internal static delegate* unmanaged[Cdecl]<UInt64, ReflectionType, void> Prism_Entity_CreateComponent;
         internal static delegate* unmanaged[Cdecl]<UInt64, ReflectionType, Bool32> Prism_Entity_HasComponent;
+        internal static delegate* unmanaged[Cdecl]<NativeString, UInt64> Prism_Entity_FindEntityByTag;
+        internal static delegate* unmanaged[Cdecl]<UInt64, ReflectionType, NativeInstance<Behaviour>> Prism_Entity_AddBehaviour;
+        internal static delegate* unmanaged[Cdecl]<UInt64, ReflectionType, NativeInstance<Behaviour>> Prism_Entity_GetBehaviour;
+        internal static delegate* unmanaged[Cdecl]<UInt64, UInt64, void> Prism_Entity_RemoveBehaviour;
         // MeshRendererComponent
         internal static delegate* unmanaged[Cdecl]<UInt64, IntPtr> Prism_MeshRendererComponent_GetMesh;
         internal static delegate* unmanaged[Cdecl]<UInt64, IntPtr, void> Prism_MeshRendererComponent_SetMesh;
@@ -93,11 +96,7 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<float> Prism_Physics_GetGravity;
         internal static delegate* unmanaged[Cdecl]<float, void> Prism_Physics_SetGravity;
 
-        // Entity
-        internal static delegate* unmanaged[Cdecl]<NativeString, UInt64> Prism_Entity_FindEntityByTag;
-        internal static delegate* unmanaged[Cdecl]<UInt64, NativeString, IntPtr> Prism_Entity_AddBehaviour;
-        internal static delegate* unmanaged[Cdecl]<UInt64, ReflectionType, IntPtr> Prism_Entity_GetBehaviour;
-        internal static delegate* unmanaged[Cdecl]<UInt64, UInt64, void> Prism_Entity_RemoveBehaviour;
+        // Behaviour
         internal static delegate* unmanaged[Cdecl]<UInt64, Bool32> Prism_Behaviour_GetEnabled;
         internal static delegate* unmanaged[Cdecl]<UInt64, Bool32, void> Prism_Behaviour_SetEnabled;
 

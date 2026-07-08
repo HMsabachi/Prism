@@ -143,12 +143,26 @@ namespace Prism
             PR_CORE_ERROR("[CSharp] Failed to create instance of {0}", meta->FullName);
             return 0;
         }
-
+        auto& editorAssignableAttribType = s_EngineAssemblyData->Assembly->GetLocalType("Prism.EditorAssignableAttribute");
         for (auto& [hash, field] : binding.Fields)
         {
-            Buffer buf = field.GetBuffer();
-            if (buf.Data && buf.Size > 0)
-                instance.SetFieldValueRaw(field.GetName(), buf.Data);
+            if (field.GetManagedType()->HasAttribute(editorAssignableAttribType))
+            {
+                if (field.GetBuffer().Data && field.GetBuffer().Size > 0)
+                {
+                    auto fieldType = field.GetManagedType();
+                    Ref<Asset> asset = field.GetValue<Ref<Asset>>();
+                    if (!asset) continue;
+                    Ref<Asset>* assetPtr = new Ref<Asset>(asset);
+                    auto object = fieldType->CreateInstance(assetPtr);
+                    instance.SetFieldValue(field.GetName(), object);
+                }
+            }
+            else
+            {
+                if (field.GetBuffer().Data && field.GetBuffer().Size > 0)
+                    instance.SetFieldValueRaw(field.GetName(), field.GetBuffer().Data);
+            }
         }
 
         instance.SetPropertyValueRaw("Entity", entityObj);

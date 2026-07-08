@@ -445,8 +445,15 @@ namespace Prism {
                         case ScriptFieldType::Vector4:
                             out << field.GetValue<glm::vec4>();
                             break;
+                        case ScriptFieldType::MeshRef:
+                        case ScriptFieldType::MaterialRef:
+                        case ScriptFieldType::Texture2DRef:
                         case ScriptFieldType::Object:
-                            // TODO: Serialize object references (e.g. assets, entities)
+                            if (field.GetValue<Ref<Asset>>()) out << (uint64_t)field.GetValue<Ref<Asset>>()->Handle;
+                            else out << 0;
+                            break;
+                        default: 
+                            out << "Unsupported field type";
                             break;
                         }
                         out << YAML::EndMap;
@@ -527,7 +534,10 @@ namespace Prism {
                             out << field.GetValue<glm::vec4>();
                             break;
                         case ScriptFieldType::Object:
-                            // TODO: Serialize object references (e.g. assets, entities)
+                            out << (uint64_t)field.GetValue<Ref<Asset>>()->Handle;
+                            break;
+                        default:
+                            out << "Unsupported field type";
                             break;
                         }
                         out << YAML::EndMap;
@@ -1065,7 +1075,13 @@ namespace Prism {
                                     ScriptFieldType fieldType = (ScriptFieldType)fieldNode["Type"].as<uint16_t>();
                                     uint32_t fieldHash = HashFieldName(fieldName);
 
-                                    CSharpField field(fieldName, fieldType);
+                                    Rolky::Type* managedType = nullptr;
+                                    if (auto* classMeta = CSharpScriptMetaRegistry::GetClassMetadata(classID))
+                                    {
+                                        if (auto* fieldMeta = CSharpScriptMetaRegistry::GetFieldMetadata(classID, fieldName))
+                                            managedType = fieldMeta->ManagedType;
+                                    }
+                                    CSharpField field(fieldName, fieldType, managedType);
                                     if (fieldNode["Value"])
                                     {
                                         switch (fieldType)
@@ -1084,7 +1100,16 @@ namespace Prism {
                                         case ScriptFieldType::Vector2: field.SetValue(fieldNode["Value"].as<glm::vec2>()); break;
                                         case ScriptFieldType::Vector3: field.SetValue(fieldNode["Value"].as<glm::vec3>()); break;
                                         case ScriptFieldType::Vector4: field.SetValue(fieldNode["Value"].as<glm::vec4>()); break;
-                                        case ScriptFieldType::Object: break;
+                                        case ScriptFieldType::Object:  break;
+                                        case ScriptFieldType::MeshRef:
+                                        {
+                                            uint64_t meshHandle = fieldNode["Value"].as<uint64_t>();
+                                            if (AssetManager::IsAssetHandleValid(meshHandle))
+                                                field.SetValue(AssetManager::GetAsset<Mesh>(meshHandle));
+                                            break;
+                                        }   
+                                        case ScriptFieldType::MaterialRef:
+                                        case ScriptFieldType::Texture2DRef: break;
                                         default: break;
                                         }
                                     }

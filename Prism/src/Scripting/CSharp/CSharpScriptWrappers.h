@@ -5,6 +5,7 @@ namespace Rolky
 {
     class String;
     class ReflectionType;
+    class ManagedObject;
 }
 
 namespace Prism
@@ -60,9 +61,9 @@ namespace Prism
         void Prism_Entity_CreateComponent(uint64_t entityID, Rolky::ReflectionType type);
         Rolky::Bool32 Prism_Entity_HasComponent(uint64_t entityID, Rolky::ReflectionType type);
         uint64_t Prism_Entity_FindEntityByTag(Rolky::String tag);
-        void* Prism_Entity_AddBehaviour(uint64_t entityID, Rolky::String className);
+        Rolky::ManagedObject Prism_Entity_AddBehaviour(uint64_t entityID, Rolky::ReflectionType type);
         void Prism_Entity_RemoveBehaviour(uint64_t entityID, uint64_t behaviourID);
-        void* Prism_Entity_GetBehaviour(uint64_t entityID, Rolky::ReflectionType type);
+        Rolky::ManagedObject Prism_Entity_GetBehaviour(uint64_t entityID, Rolky::ReflectionType type);
         Rolky::Bool32 Prism_Behaviour_GetEnabled(uint64_t behaviourID);
         void Prism_Behaviour_SetEnabled(uint64_t behaviourID, Rolky::Bool32 enabled);
 
