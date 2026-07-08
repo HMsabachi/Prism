@@ -73,10 +73,6 @@ namespace Prism::PythonScript
     void Prism_Mesh_Destructor(uint64_t handle);
     uint64_t Prism_MeshFactory_CreatePlane(float width, float height);
 
-    // Texture2D
-    uint64_t Prism_Texture2D_Constructor(uint32_t width, uint32_t height);
-    void Prism_Texture2D_Destructor(uint64_t handle);
-
     // RigidBody2DComponent
     void Prism_RigidBody2DComponent_ApplyLinearImpulse(uint64_t entityID, const glm::vec2& impulse, const glm::vec2& offset, bool wake);
     glm::vec2 Prism_RigidBody2DComponent_GetLinearVelocity(uint64_t entityID);

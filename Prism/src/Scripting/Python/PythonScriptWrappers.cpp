@@ -202,19 +202,6 @@ namespace Prism
                 new Ref<Mesh>(ModelImporter::Import("assets/models/Plane1m.obj").Mesh));
         }
 
-#pragma region Texture2D
-
-        uint64_t Prism_Texture2D_Constructor(uint32_t width, uint32_t height)
-        {
-            return reinterpret_cast<uintptr_t>(
-                new Ref<Texture2D>(Texture2D::Create(TextureFormat::RGBA, width, height)));
-        }
-
-        void Prism_Texture2D_Destructor(uint64_t handle)
-        {
-            delete reinterpret_cast<Ref<Texture2D>*>(handle);
-        }
-
 #pragma region RigidBody2DComponent
 
         void Prism_RigidBody2DComponent_ApplyLinearImpulse(
@@ -545,13 +532,8 @@ PYBIND11_MODULE(PrismNative, m)
     BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_GetMaterialCount);
     BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_GetMaterials);
     BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_SetMaterials);
-    // Mesh
-    BIND_MODULE_FUNCTION(Prism_Mesh_Constructor);
-    BIND_MODULE_FUNCTION(Prism_Mesh_Destructor);
+
     BIND_MODULE_FUNCTION(Prism_MeshFactory_CreatePlane);
-    // Texture2D
-    BIND_MODULE_FUNCTION(Prism_Texture2D_Constructor);
-    BIND_MODULE_FUNCTION(Prism_Texture2D_Destructor);
     // RigidBody2DComponent
     BIND_MODULE_FUNCTION(Prism_RigidBody2DComponent_ApplyLinearImpulse);
     BIND_MODULE_FUNCTION(Prism_RigidBody2DComponent_GetLinearVelocity);
@@ -594,6 +576,108 @@ PYBIND11_MODULE(PrismNative, m)
 
 namespace Prism::PythonScript
 {
+    class PythonAsset
+    {
+    protected:
+        uint64_t m_Handle = 0;
+    public:
+        PythonAsset(uint64_t handle) : m_Handle(handle) {}
+        PythonAsset(const PythonAsset& other) : m_Handle(reinterpret_cast<uint64_t>(new Ref<Asset>(*reinterpret_cast<Ref<Asset>*>(other.m_Handle)))) {}
+        PythonAsset& operator=(const PythonAsset& other)
+        {
+            if (m_Handle) delete (Ref<Asset>*)(m_Handle);
+            m_Handle = reinterpret_cast<uint64_t>(new Ref<Asset>(*reinterpret_cast<Ref<Asset>*>(other.m_Handle)));
+            return *this;
+        }
+        PythonAsset(PythonAsset&& other) noexcept : m_Handle(other.m_Handle) { other.m_Handle = 0; }
+        PythonAsset& operator=(PythonAsset&& other) noexcept
+        {
+            if (m_Handle) delete (Ref<Asset>*)(m_Handle);
+            m_Handle = other.m_Handle;
+            other.m_Handle = 0;
+            return *this;
+        }
+        virtual ~PythonAsset() { if (m_Handle) delete (Ref<Asset>*)(m_Handle); m_Handle = 0; }
+        virtual std::string __Repr__() { return fmt::format(" <Asset Handle = {}>", m_Handle); }
+        virtual uint64_t GetHandle() const { return m_Handle; }
+    public:
+        Ref<Asset>& GetInstance() const { return *reinterpret_cast<Ref<Asset>*>(m_Handle); }
+    };
+
+    class PythonMesh : public PythonAsset
+    {
+    public:
+        PythonMesh(uint64_t handle) : PythonAsset(handle) {}
+        PythonMesh(const char* filepath) : PythonAsset(0)
+        {
+            auto result = ModelImporter::Import(filepath);
+            m_Handle = reinterpret_cast<uint64_t>(new Ref<Mesh>(result.Mesh));
+        }
+        virtual ~PythonMesh() override { if (m_Handle) delete (Ref<Mesh>*)(m_Handle); m_Handle = 0; }
+        virtual std::string __Repr__() override { return fmt::format(" <Mesh Handle = {}>", m_Handle); }
+    public:
+        Ref<Mesh>& GetInstance() const { return *reinterpret_cast<Ref<Mesh>*>(m_Handle); }
+    };
+
+    class PythonTexture2D : public PythonAsset
+    {
+    public:
+        PythonTexture2D(uint64_t handle) : PythonAsset(handle) {}
+        PythonTexture2D(uint32_t width, uint32_t height) : PythonAsset(0) { m_Handle = reinterpret_cast<uint64_t>(new Ref<Texture2D>(Texture2D::Create(TextureFormat::RGBA, width, height))); }
+        virtual ~PythonTexture2D() override { if (m_Handle) delete (Ref<Texture2D>*)(m_Handle); m_Handle = 0; }
+        virtual std::string __Repr__() override
+        {
+            std::string result;
+            auto& texture = GetInstance();
+            if (texture)
+            {
+                result = fmt::format(" <Texture2D Handle = {} Width = {} height = {}>"
+                    , m_Handle, texture->GetWidth(), texture->GetHeight());
+            }
+            else result = fmt::format(" <Texture2D Handle = {}>", m_Handle);
+            return result;
+        }
+    public:
+        Ref<Texture2D>& GetInstance() const { return *reinterpret_cast<Ref<Texture2D>*>(m_Handle); }
+    };
+
+    class PythonMaterial : public PythonAsset
+    {
+    public:
+        PythonMaterial(uint64_t handle) : PythonAsset(handle) {}
+        PythonMaterial(const char* shaderName) : PythonAsset(0)
+        {
+            const auto& shader = AssetManager::GetShaderLibrary()->Get(shaderName);
+            m_Handle = reinterpret_cast<uint64_t>(new Ref<Material>(Material::Create(shader->Handle)));
+        }
+        virtual ~PythonMaterial() override { if (m_Handle) delete (Ref<Material>*)(m_Handle); m_Handle = 0; }
+        virtual std::string __Repr__() override
+        {
+            std::string result;
+            if (m_Handle)
+            {
+                auto& material = *reinterpret_cast<Ref<Material>*>(m_Handle);
+                result = fmt::format(" <Material Handle = {} Shader = {}>"
+                    , m_Handle, material->GetShader()->GetName());
+            }
+            else result = fmt::format(" <Material Handle = {}>", m_Handle);
+            return result;
+        }
+        void SetFloat(const char* uniform, float value) { GetInstance()->SetFloat(uniform, value); }
+        void SetInt(const char* uniform, int value) { GetInstance()->SetInt(uniform, value); }
+        void SetBool(const char* uniform, bool value) { GetInstance()->SetBool(uniform, value); }
+        void SetVector2(const char* uniform, const glm::vec2& value) { GetInstance()->SetVec2(uniform, value); }
+        void SetVector3(const char* uniform, const glm::vec3& value) { GetInstance()->SetVec3(uniform, value); }
+        void SetVector4(const char* uniform, const glm::vec4& value) { GetInstance()->SetVec4(uniform, value); }
+        void SetColor3(const char* uniform, const glm::vec3& value) { GetInstance()->SetColor3(uniform, value); }
+        void SetColor(const char* uniform, const glm::vec4& value) { GetInstance()->SetColor(uniform, value); }
+        void SetMatrix4(const char* uniform, const glm::mat4& value) { GetInstance()->SetMatrix4(uniform, value); }
+        void SetTexture(const char* uniform, const PythonTexture2D& texture) { GetInstance()->SetTexture(uniform, texture.GetInstance()); }
+        void SetKeyword(const char* name, bool enabled) { GetInstance()->SetKeyword(name, enabled); }
+        bool IsKeywordEnabled(const char* name) { return GetInstance()->IsKeywordEnabled(name); }
+    public:
+        Ref<Material>& GetInstance() const { return *reinterpret_cast<Ref<Material>*>(m_Handle); }
+    };
 
     class PythonEntity
     {
@@ -733,59 +817,125 @@ namespace Prism::PythonScript
             m_Entity = entity;
             m_EntityID = entity.attr("ID").cast<uint64_t>();
         }
+    protected:
+        Entity GetEntityImpt() const
+        {
+            WeakRef<Scene> scene = PythonScriptEngine::GetCurrentSceneContext();
+            PR_CORE_ASSERT(scene, "No active scene!");
+            const auto& entityMap = scene->GetEntityMap();
+            PR_CORE_ASSERT(entityMap.find(m_EntityID) != entityMap.end(),
+                "Invalid entity ID or entity doesn't exist in scene!");
+            return entityMap.at(m_EntityID);
+        }
     };
 
     class PythonTransformComponent : public PythonComponent
     {
     public:
-        glm::vec3 GetPosition() {
-            Entity e = GetEntityFromEntityID(m_EntityID);
-            return GetTransformSystem(e)->GetWorldPosition(e);
-        }
-        void SetPosition(const glm::vec3& v) {
-            Entity e = GetEntityFromEntityID(m_EntityID);
-            GetTransformSystem(e)->SetWorldPosition(e, v);
-        }
-        glm::vec3 GetRotation() {
-            Entity e = GetEntityFromEntityID(m_EntityID);
-            return GetTransformSystem(e)->GetWorldRotation(e);
-        }
-        void SetRotation(const glm::vec3& v) {
-            Entity e = GetEntityFromEntityID(m_EntityID);
-            GetTransformSystem(e)->SetWorldRotation(e, v);
-        }
-        glm::vec3 GetScale() {
-            Entity e = GetEntityFromEntityID(m_EntityID);
-            return GetTransformSystem(e)->GetWorldScale(e);
-        }
-        void SetScale(const glm::vec3& v) {
-            Entity e = GetEntityFromEntityID(m_EntityID);
-            GetTransformSystem(e)->SetWorldScale(e, v);
-        }
+        glm::vec3 GetPosition() const { return GetEntityImpt().Transformation().GetPosition(); }
+        void SetPosition(const glm::vec3& v) { GetEntityImpt().Transformation().SetPosition(v); }
+        glm::vec3 GetRotation() const { return GetEntityImpt().Transformation().GetRotation(); }
+        void SetRotation(const glm::vec3& v) { GetEntityImpt().Transformation().SetRotation(v); }
+        glm::vec3 GetScale() const { return GetEntityImpt().Transformation().GetScale(); }
+        void SetScale(const glm::vec3& v) { GetEntityImpt().Transformation().SetScale(v); }
+        glm::vec3 GetLocalPosition() const { return GetEntityImpt().Transformation().GetPosition(); }
+        void SetLocalPosition(const glm::vec3& v) { GetEntityImpt().Transformation().SetPosition(v); }
+        glm::vec3 GetLocalRotation() const { return GetEntityImpt().Transformation().GetRotation(); }
+        void SetLocalRotation(const glm::vec3& v) { GetEntityImpt().Transformation().SetRotation(v); }
+        glm::vec3 GetLocalScale() const { return GetEntityImpt().Transformation().GetScale(); }
+        void SetLocalScale(const glm::vec3& v) { GetEntityImpt().Transformation().SetScale(v); }
 
-        glm::vec3 GetLocalPosition() { return GetEntityFromEntityID(m_EntityID).Transformation().GetPosition(); }
-        void SetLocalPosition(const glm::vec3& v) { GetEntityFromEntityID(m_EntityID).Transformation().SetPosition(v); }
-        glm::vec3 GetLocalRotation() { return GetEntityFromEntityID(m_EntityID).Transformation().GetRotation(); }
-        void SetLocalRotation(const glm::vec3& v) { GetEntityFromEntityID(m_EntityID).Transformation().SetRotation(v); }
-        glm::vec3 GetLocalScale() { return GetEntityFromEntityID(m_EntityID).Transformation().GetScale(); }
-        void SetLocalScale(const glm::vec3& v) { GetEntityFromEntityID(m_EntityID).Transformation().SetScale(v); }
+        glm::vec3 GetForward() const { return GetEntityImpt().Transformation().Forward; }
+        glm::vec3 GetRight() const { return GetEntityImpt().Transformation().Right; }
+        glm::vec3 GetUp() const { return GetEntityImpt().Transformation().Up; }
 
-        glm::vec3 GetForward() { return GetEntityFromEntityID(m_EntityID).Transformation().Forward; }
-        glm::vec3 GetRight() { return GetEntityFromEntityID(m_EntityID).Transformation().Right; }
-        glm::vec3 GetUp() { return GetEntityFromEntityID(m_EntityID).Transformation().Up; }
-
-        ScriptTransform GetTransform() {
-            Entity e = GetEntityFromEntityID(m_EntityID);
+        ScriptTransform GetTransform() const {
+            Entity e = GetEntityImpt();
             auto world = GetTransformSystem(e)->GetWorldDecomposed(e);
             auto& tc = e.Transformation();
             return { world.Position, world.Rotation, world.Scale, tc.Up, tc.Right, tc.Forward };
         }
         void SetTransform(const ScriptTransform& t) {
-            Entity e = GetEntityFromEntityID(m_EntityID);
+            Entity e = GetEntityImpt();
             auto* ts = GetTransformSystem(e);
             ts->SetWorldPosition(e, t.Position);
             ts->SetWorldRotation(e, t.Rotation);
             ts->SetWorldScale(e, t.Scale);
+        }
+    };
+
+    class PythonMeshRendererComponent : public PythonComponent
+    {
+    public:
+        PythonMesh GetMesh() const
+        {
+            Entity e = GetEntityImpt();
+            auto& mc = e.GetComponent<MeshRendererComponent>();
+            if (mc.Mesh)
+                return PythonMesh(reinterpret_cast<uint64_t>(new Ref<Mesh>(mc.Mesh)));
+            return PythonMesh((uint64_t)0);
+        }
+        void SetMesh(const PythonMesh& mesh)
+        {
+            Entity e = GetEntityImpt();
+            auto& mc = e.GetComponent<MeshRendererComponent>();
+            if (mesh.GetHandle())
+                mc.Mesh = *reinterpret_cast<Ref<Mesh>*>(mesh.GetHandle());
+            else
+                mc.Mesh = nullptr;
+        }
+        PythonMaterial GetMaterial(uint32_t index = 0) const
+        {
+            Entity e = GetEntityImpt();
+            auto& mc = e.GetComponent<MeshRendererComponent>();
+            if (!mc.Materials.empty() && mc.Materials[index])
+                return PythonMaterial(reinterpret_cast<uint64_t>(new Ref<Material>(mc.Materials[index])));
+            return PythonMaterial((uint64_t)0);
+        }
+        void SetMaterial(const PythonMaterial& material, uint32_t index = 0)
+        {
+            Entity e = GetEntityImpt();
+            auto& mc = e.GetComponent<MeshRendererComponent>();
+            if (!mc.Materials.empty())
+            {
+                if (material.GetHandle())
+                    mc.Materials[index] = *reinterpret_cast<Ref<Material>*>(material.GetHandle());
+                else PR_CORE_WARN("[Python] Attempted to set null material on MeshRendererComponent!");
+            }
+        }
+        std::vector<PythonMaterial> GetMaterials() const
+        {
+            Entity e = GetEntityImpt();
+            auto& mc = e.GetComponent<MeshRendererComponent>();
+            std::vector<PythonMaterial> result;
+            result.reserve(mc.Materials.size());
+            for (auto& mat : mc.Materials)
+            {
+                if (mat)
+                    result.emplace_back(reinterpret_cast<uint64_t>(new Ref<Material>(mat)));
+                else
+                    result.emplace_back(static_cast<uint64_t>(0));
+            }
+            return result;
+        }
+        void SetMaterials(const std::vector<PythonMaterial>& materials)
+        {
+            Entity e = GetEntityImpt();
+            auto& mc = e.GetComponent<MeshRendererComponent>();
+            mc.Materials.resize(materials.size());
+            for (size_t i = 0; i < materials.size(); ++i)
+            {
+                if (materials[i].GetHandle())
+                    mc.Materials[i] = *reinterpret_cast<Ref<Material>*>(materials[i].GetHandle());
+                else
+                    mc.Materials[i] = nullptr;
+            }
+        }
+        uint32_t GetMaterialCount() const
+        {
+            Entity e = GetEntityImpt();
+            auto& mc = e.GetComponent<MeshRendererComponent>();
+            return (uint32_t)mc.Materials.size();
         }
     };
 
@@ -835,30 +985,8 @@ namespace Prism::PythonScript
         }
     };
 
-    class PythonAsset
-    {
-    protected:
-        uint64_t m_Handle = 0;
-    public :
-        PythonAsset(uint64_t handle) : m_Handle(handle) {}
-        virtual ~PythonAsset() { if (m_Handle) delete (Ref<Asset>*)(m_Handle); m_Handle = 0;}
-        virtual std::string __Repr__() { return fmt::format(" <Asset Handle = {}>", m_Handle); }
-    };
 
-    class PythonMesh : public PythonAsset
-    {
-    public:
-        PythonMesh(uint64_t handle) : PythonAsset(handle) {}
-        PythonMesh(const char* filepath) : PythonAsset(0)
-        {
-            auto result = ModelImporter::Import(filepath);
-            m_Handle = reinterpret_cast<uint64_t>(new Ref<Mesh>(result.Mesh));
-        }
-        virtual ~PythonMesh() override { if (m_Handle) delete (Ref<Mesh>*)(m_Handle); m_Handle = 0; }
-        virtual std::string __Repr__() override { return fmt::format(" <Mesh Handle = {}>", m_Handle); }
-        uint64_t GetHandle() const { return m_Handle; } // TODO: Remove this
-    };
-
+   
 } // namespace Prism::PythonScript
 
 // PrismEngine Module Registe
@@ -866,6 +994,35 @@ namespace Prism::PythonScript
 PYBIND11_MODULE(PrismEngine, m)
 {
     using namespace Prism::PythonScript;
+
+    py::class_<PythonAsset>(m, "Asset")
+        .def(py::init<uint64_t>())
+        .def("__repr__", &PythonAsset::__Repr__)
+        .def_property_readonly("_handle", &PythonMesh::GetHandle); // TODO: Remove this
+    py::class_<PythonMesh, PythonAsset>(m, "Mesh")
+        .def(py::init<uint64_t>())
+        .def(py::init<const char*>())
+        .def("__repr__", &PythonMesh::__Repr__);
+    py::class_<PythonTexture2D, PythonAsset>(m, "Texture2D")
+        .def(py::init<uint64_t>())
+        .def(py::init<uint32_t, uint32_t>())
+        .def("__repr__", &PythonTexture2D::__Repr__);
+    py::class_<PythonMaterial, PythonAsset>(m, "Material")
+        .def(py::init<uint64_t>())
+        .def(py::init<const char*>())
+        .def("__repr__", &PythonMaterial::__Repr__)
+        .def("SetFloat", &PythonMaterial::SetFloat)
+        .def("SetInt", &PythonMaterial::SetInt)
+        .def("SetBool", &PythonMaterial::SetBool)
+        .def("SetVector2", &PythonMaterial::SetVector2)
+        .def("SetVector3", &PythonMaterial::SetVector3)
+        .def("SetVector4", &PythonMaterial::SetVector4)
+        .def("SetColor3", &PythonMaterial::SetColor3)
+        .def("SetColor", &PythonMaterial::SetColor)
+        .def("SetMatrix4", &PythonMaterial::SetMatrix4)
+        .def("SetTexture", &PythonMaterial::SetTexture)
+        .def("SetKeyword", &PythonMaterial::SetKeyword)
+        .def("IsKeywordEnabled", &PythonMaterial::IsKeywordEnabled);
 
     py::class_<PythonEntity>(m, "Entity")
         .def(py::init<uint64_t>(), py::arg("id") = 0)
@@ -882,7 +1039,6 @@ PYBIND11_MODULE(PrismEngine, m)
     py::class_<PythonComponent>(m, "Component")
         .def(py::init<>())
         .def_property("Entity", &PythonComponent::GetEntity, &PythonComponent::SetEntity);
-
     py::class_<PythonTransformComponent, PythonComponent>(m, "TransformComponent")
         .def(py::init<>())
         .def_property("Position", &PythonTransformComponent::GetPosition, &PythonTransformComponent::SetPosition)
@@ -895,7 +1051,16 @@ PYBIND11_MODULE(PrismEngine, m)
         .def_property_readonly("Right", &PythonTransformComponent::GetRight)
         .def_property_readonly("Up", &PythonTransformComponent::GetUp)
         .def_property("Transform", &PythonTransformComponent::GetTransform, &PythonTransformComponent::SetTransform);
-
+    py::class_<PythonMeshRendererComponent, PythonComponent>(m, "MeshRendererComponent")
+        .def(py::init<>())
+        .def_property("Mesh", &PythonMeshRendererComponent::GetMesh, &PythonMeshRendererComponent::SetMesh)
+        .def_property("Material",
+            [](const PythonMeshRendererComponent& self) { return self.GetMaterial(0); },
+            [](PythonMeshRendererComponent& self, const PythonMaterial& mat) { self.SetMaterial(mat, 0); })
+        .def_property("Materials", &PythonMeshRendererComponent::GetMaterials, &PythonMeshRendererComponent::SetMaterials)
+        .def_property_readonly("MaterialCount", &PythonMeshRendererComponent::GetMaterialCount)
+        .def("GetMaterial", &PythonMeshRendererComponent::GetMaterial)
+        .def("SetMaterial", &PythonMeshRendererComponent::SetMaterial);
     py::class_<PythonBehaviour, PythonComponent>(m, "Behaviour")
         .def(py::init<>())
         .def_property("ID", &PythonBehaviour::GetID, &PythonBehaviour::SetID)
@@ -904,16 +1069,6 @@ PYBIND11_MODULE(PrismEngine, m)
         .def("GetComponent", &PythonBehaviour::GetComponent)
         .def("HasComponent", &PythonBehaviour::HasComponent)
         .def("CreateComponent", &PythonBehaviour::CreateComponent);
-
-    py::class_<PythonAsset>(m, "Asset")
-        .def(py::init<uint64_t>())
-        .def("__repr__", &PythonAsset::__Repr__);
-
-    py::class_<PythonMesh, PythonAsset>(m, "Mesh")
-        .def(py::init<uint64_t>())
-        .def(py::init<const char*>())
-        .def("__repr__", &PythonMesh::__Repr__)
-        .def_property_readonly("_handle", &PythonMesh::GetHandle);
 }
 
 

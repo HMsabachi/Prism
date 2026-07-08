@@ -36,54 +36,7 @@ from PrismEngine import TransformComponent
 #  MeshRendererComponent
 # ════════════════════════════════════════════
 
-class MeshRendererComponent(Component):
-    def __init__(self):
-        super().__init__()
-
-    @property
-    def Mesh(self):
-        from Prism.Renderer.Mesh import Mesh
-        handle = _Prism.Prism_MeshRendererComponent_GetMesh(self.Entity._id)
-        return Mesh(handle) if handle else None
-
-    @Mesh.setter
-    def Mesh(self, value):
-        h = value._handle if value else 0
-        _Prism.Prism_MeshRendererComponent_SetMesh(self.Entity._id, h)
-
-    @property
-    def Material(self):
-        from Prism.Renderer.Material import Material
-        handle = _Prism.Prism_MeshRendererComponent_GetMaterial(self.Entity._id, 0)
-        return Material(handle) if handle else None
-
-    @Material.setter
-    def Material(self, value):
-        h = value._handle if value else 0
-        _Prism.Prism_MeshRendererComponent_SetMaterial(self.Entity._id, 0, h)
-
-    @property
-    def Materials(self):
-        from Prism.Renderer.Material import Material
-        handles = _Prism.Prism_MeshRendererComponent_GetMaterials(self.Entity._id)
-        return [Material(h) if h else None for h in handles]
-
-    @Materials.setter
-    def Materials(self, value):
-        handles = tuple(m._handle if m and m._handle else 0 for m in value)
-        _Prism.Prism_MeshRendererComponent_SetMaterials(self.Entity._id, handles)
-
-    def GetMaterial(self, index):
-        from Prism.Renderer.Material import Material
-        handle = _Prism.Prism_MeshRendererComponent_GetMaterial(self.Entity._id, index)
-        return Material(handle) if handle else None
-
-    def SetMaterial(self, index, material):
-        h = material._handle if material else 0
-        _Prism.Prism_MeshRendererComponent_SetMaterial(self.Entity._id, index, h)
-
-    def GetMaterialCount(self):
-        return _Prism.Prism_MeshRendererComponent_GetMaterialCount(self.Entity._id)
+from PrismEngine import MeshRendererComponent
 
 
 # ════════════════════════════════════════════
@@ -95,13 +48,6 @@ class CameraComponent(Component):
 
     def __init__(self):
         super().__init__()
-
-
-# ════════════════════════════════════════════
-#  MaterialComponent
-# ════════════════════════════════════════════
-
-# MaterialComponent removed — use MeshRendererComponent.GetMaterial/SetMaterial instead
 
 
 # ════════════════════════════════════════════

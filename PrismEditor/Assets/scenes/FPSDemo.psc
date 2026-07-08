@@ -532,8 +532,7 @@ Entities:
         []
     PythonScriptComponent:
       Behaviours:
-        - ClassID: 8019244560703880993
-          Enabled: true
+        []
   - Entity: 9421913743984938135
     Parent: 0
     Children:
@@ -599,6 +598,8 @@ Entities:
               Name: mesh
               Type: 16
               Value: 5207199360870571751
+        - ClassID: 8019244560703880993
+          Enabled: true
   - Entity: 12290369221004411193
     Parent: 0
     Children:
