@@ -12,6 +12,8 @@ T PythonField::GetValue() const
     return inst ? inst->attr(m_Name.c_str()).template cast<T>() : m_ValueBuffer.Read<T>();
 }
 
+
+
 template<typename T>
 void PythonField::SetValue(const T& value)
 {
@@ -22,4 +24,11 @@ void PythonField::SetValue(const T& value)
         m_ValueBuffer.Write(&value, sizeof(T));
 }
 
+template<>
+inline void PythonField::SetValue<pybind11::object>(const pybind11::object& value)
+{
+    auto* inst = static_cast<pybind11::object*>(m_Instance);
+    if (inst)
+        inst->attr(m_Name.c_str()) = value;
+}
 }

@@ -1149,6 +1149,22 @@ namespace Prism {
                                         field.SetValue(val);
                                     break;
                                 }
+                                case ScriptFieldType::MeshRef:
+                                {
+                                    Ref<Mesh>& asset = *field.GetBuffer().As<Ref<Mesh>>();
+                                    std::string label = field.GetName() + "(Mesh)";
+                                    if (UI::PropertyAssetReference(label, asset, AssetType::Mesh))
+                                    {
+                                        if (field.IsRuntime())
+                                        {
+                                            auto fieldType = field.GetPyType();
+                                            Ref<Mesh>* assetPtr = new Ref<Mesh>(asset);
+                                            auto object = (*fieldType)((uint64_t)assetPtr);
+                                            field.SetValue(object);
+                                        }
+                                    }
+                                    break;
+                                }
                                 default:
                                     break;
                             }

@@ -437,7 +437,7 @@ namespace Prism {
             binding.LifecycleMask = meta->LifecycleMask;
             for (auto& [hash, fieldMeta] : meta->Fields)
             {
-                PythonField field(fieldMeta.Name, fieldMeta.Type);
+                PythonField field(fieldMeta.Name, fieldMeta.Type, fieldMeta.PyType);
                 if (fieldMeta.DefaultValue.Data && fieldMeta.DefaultValue.Size > 0)
                     field.SetBuffer(fieldMeta.DefaultValue);
                 binding.Fields[hash] = std::move(field);

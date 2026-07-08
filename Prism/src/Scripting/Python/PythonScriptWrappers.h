@@ -22,7 +22,6 @@ namespace Prism
 
 namespace Prism::PythonScript
 {
-
 #pragma region Log
     enum class LogLevel : int32_t
     {

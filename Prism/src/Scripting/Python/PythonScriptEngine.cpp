@@ -3,6 +3,7 @@
 #include "PythonScriptEngineRegistry.h"
 #include "PythonScriptStorage.h"
 #include "PythonScriptMetaRegistry.h"
+#include "PythonField.inl"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/embed.h>
@@ -21,6 +22,33 @@ namespace Prism
     std::unordered_map<UUID, std::unordered_map<UUID, py::object>> PythonScriptEngine::s_PythonScriptObjects;
     PythonScriptEngine::ReloadDelegate PythonScriptEngine::s_PreUnloadCallbacks;
     PythonScriptEngine::ReloadDelegate PythonScriptEngine::s_PostReloadCallbacks;
+
+    static bool IsSubClassOf(const py::object& obj, const py::object& baseClass)
+    {
+        try
+        {
+            py::module_ inspect = py::module::import("builtins");
+            return py::bool_(inspect.attr("issubclass")(obj, baseClass));
+        }
+        catch (py::error_already_set& e)
+        {
+            PR_CORE_ERROR("[Python] IsSubClassOf({0}): {1}", (std::string)py::str(baseClass), e.what());
+            return false;
+        }
+    }
+    template<typename... Args>
+    static py::object instantiateClass(const py::object& cls, Args&&... args)
+    {
+        try
+        {
+            return cls(std::forward<Args>(args)...);
+        }
+        catch (py::error_already_set& e)
+        {
+            PR_CORE_ERROR("[Python] instantiateClass({0}): {1}", (std::string)py::str(cls), e.what());
+            return py::none();
+        }
+    }
 
     void PythonScriptEngine::Initialize()
     {
@@ -165,9 +193,20 @@ namespace Prism
             auto& sceneMap = s_PythonScriptObjects[sceneID];
             auto [it, inserted] = sceneMap.emplace(behaviourID, std::move(obj));
             PR_CORE_ASSERT(inserted, "BehaviourID collision in s_PythonScriptObjects!");
-
+            auto& instance = it->second;
             for (auto& [hash, field] : binding.Fields)
-                field.SetInstance(&it->second);
+            {
+                py::object* fieldType = field.GetPyType();
+                if (IsSubClassOf(*fieldType, *GetPythonType(PYTHON_TYPE_ASSET)))
+                {
+                    auto asset = field.GetBuffer().As<Ref<Asset>>();
+                    if (!asset) continue;
+                    Ref<Asset>* assetPtr = new Ref<Asset>(*asset);
+                    auto object = instantiateClass(*fieldType, (uint64_t)assetPtr);
+                    instance.attr(field.GetName().c_str()) = object;
+                }
+                field.SetInstance(&instance);
+            }
 
             PR_CORE_INFO("[Python] Added behaviour {0} ({1}) to entity {2}", meta->ClassName, (uint64_t)behaviourID, (uint64_t)entity.GetUUID());
             return behaviourID;

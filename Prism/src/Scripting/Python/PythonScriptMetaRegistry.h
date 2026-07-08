@@ -11,6 +11,9 @@ namespace pybind11
 
 namespace Prism
 {
+    void RegisterAllPythonTypes();
+    void ClearAllPythonTypes();
+    pybind11::object* GetPythonType(const UUID id);
 
     class PRISM_API PythonScriptMetaRegistry
     {

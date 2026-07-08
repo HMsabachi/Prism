@@ -2,15 +2,40 @@
 #include "Prism/Core/Core.h"
 #include "Prism/Core/UUID.h"
 #include "Prism/Core/Buffer.h"
+#include "Prism/Core/Hash.h"
 
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 namespace Rolky { class Type; }
+namespace pybind11 { class module_; class object; }
 
 namespace Prism
 {
+    // Python 类型标识符
+    // Field
+    constexpr uint64_t PYTHON_TYPE_NONE = Hash::GenerateFNVHash64("PYTHON_TYPE_NONE");
+    constexpr uint64_t PYTHON_TYPE_FLOAT = Hash::GenerateFNVHash64("PYTHON_TYPE_FLOAT");
+    constexpr uint64_t PYTHON_TYPE_DOUBLE = Hash::GenerateFNVHash64("PYTHON_TYPE_DOUBLE");
+    constexpr uint64_t PYTHON_TYPE_BOOL = Hash::GenerateFNVHash64("PYTHON_TYPE_BOOL");
+    constexpr uint64_t PYTHON_TYPE_INT8 = Hash::GenerateFNVHash64("PYTHON_TYPE_INT8");
+    constexpr uint64_t PYTHON_TYPE_INT16 = Hash::GenerateFNVHash64("PYTHON_TYPE_INT16");
+    constexpr uint64_t PYTHON_TYPE_INT32 = Hash::GenerateFNVHash64("PYTHON_TYPE_INT32");
+    constexpr uint64_t PYTHON_TYPE_INT64 = Hash::GenerateFNVHash64("PYTHON_TYPE_INT64");
+    constexpr uint64_t PYTHON_TYPE_UINT8 = Hash::GenerateFNVHash64("PYTHON_TYPE_UINT8");
+    constexpr uint64_t PYTHON_TYPE_UINT16 = Hash::GenerateFNVHash64("PYTHON_TYPE_UINT16");
+    constexpr uint64_t PYTHON_TYPE_UINT32 = Hash::GenerateFNVHash64("PYTHON_TYPE_UINT32");
+    constexpr uint64_t PYTHON_TYPE_UINT64 = Hash::GenerateFNVHash64("PYTHON_TYPE_UINT64");
+    constexpr uint64_t PYTHON_TYPE_VECTOR2 = Hash::GenerateFNVHash64("PYTHON_TYPE_VECTOR2");
+    constexpr uint64_t PYTHON_TYPE_VECTOR3 = Hash::GenerateFNVHash64("PYTHON_TYPE_VECTOR3");
+    constexpr uint64_t PYTHON_TYPE_VECTOR4 = Hash::GenerateFNVHash64("PYTHON_TYPE_VECTOR4");
+    constexpr uint64_t PYTHON_TYPE_OBJECT = Hash::GenerateFNVHash64("PYTHON_TYPE_OBJECT");
+    constexpr uint64_t PYTHON_TYPE_MESHREF = Hash::GenerateFNVHash64("PYTHON_TYPE_MESHREF");
+    constexpr uint64_t PYTHON_TYPE_MATERIALREF = Hash::GenerateFNVHash64("PYTHON_TYPE_MATERIALREF");
+    constexpr uint64_t PYTHON_TYPE_TEXTURE2DREF = Hash::GenerateFNVHash64("PYTHON_TYPE_TEXTURE2DREF");
+
+    constexpr uint64_t PYTHON_TYPE_ASSET = Hash::GenerateFNVHash("PYTHON_TYPE_ASSET");
 
     enum class ScriptFieldType : uint16_t
     {
@@ -28,7 +53,7 @@ namespace Prism
     {
         switch (type)
         {
-        case Prism::ScriptFieldType::None: PR_CORE_ASSERT(false, "未注册的类型");
+        case Prism::ScriptFieldType::None: PR_CORE_ASSERT(false, "未注册的类型") return 0;
         case Prism::ScriptFieldType::Float: return sizeof(float);
         case Prism::ScriptFieldType::Double: return sizeof(double);
         case Prism::ScriptFieldType::Bool: return sizeof(bool);
@@ -60,6 +85,7 @@ namespace Prism
         ScriptFieldType Type = ScriptFieldType::None;
         Buffer DefaultValue;
         Rolky::Type* ManagedType = nullptr;
+        pybind11::object* PyType = nullptr;
     };
 
     enum class LifecycleMethod : uint16_t
@@ -87,8 +113,4 @@ namespace Prism
         uint16_t LifecycleMask = 0;
         std::unordered_map<uint32_t, ScriptFieldMetadata> Fields;  // key = FNV hash of field name
     };
-
-    // ── Python 标注 → ScriptFieldType 映射 ──
-    PRISM_API ScriptFieldType GetFieldTypeFromPythonAnnotation(const std::string& annotation);
-
 }

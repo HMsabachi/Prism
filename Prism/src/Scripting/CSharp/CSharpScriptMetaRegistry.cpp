@@ -9,13 +9,15 @@
 #include <Rolky/String.hpp>
 #include <glm/glm.hpp>
 
-#define PR_CSHARP_META_INFO(...)  PR_CORE_INFO("[C# Meta] "  __VA_ARGS__)
-#define PR_CSHARP_META_WARN(...)  PR_CORE_WARN("[C# Meta] "  __VA_ARGS__)
-#define PR_CSHARP_META_ERROR(...) PR_CORE_ERROR("[C# Meta] " __VA_ARGS__)
+#define PR_CSHARP_META_INFO(...)  PR_CORE_INFO("[CSharp Meta] "  __VA_ARGS__)
+#define PR_CSHARP_META_WARN(...)  PR_CORE_WARN("[CSharp Meta] "  __VA_ARGS__)
+#define PR_CSHARP_META_ERROR(...) PR_CORE_ERROR("[CSharp Meta] " __VA_ARGS__)
 
 namespace Prism
 {
 
+
+    std::unordered_map<int32_t, Rolky::Type> CSharpScriptMetaRegistry::s_TypeCache;
     std::unordered_map<UUID, ScriptClassMetadata> CSharpScriptMetaRegistry::s_Classes;
     std::unordered_map<UUID, std::string> CSharpScriptMetaRegistry::s_ClassIDToFullName;
     Rolky::Type* CSharpScriptMetaRegistry::s_BehaviourType = nullptr;
@@ -149,6 +151,7 @@ namespace Prism
                 continue;
 
             UUID classID = GenerateClassID(nameStr);
+            s_TypeCache[type.GetTypeId()] = type;
             auto& classMeta = s_Classes[classID];
             classMeta.ClassID = classID;
             classMeta.FullName = nameStr;
@@ -203,10 +206,11 @@ namespace Prism
                 uint32_t fieldHash = (uint32_t)(uint64_t)GenerateClassID(fieldNameStr);
                 PR_CSHARP_META_INFO("    字段: {0} : {1}", fieldNameStr, (int)prismFieldType);
 
+                s_TypeCache[fieldType.GetTypeId()] = fieldType;
                 ScriptFieldMetadata fieldMeta;
                 fieldMeta.Name = fieldNameStr;
                 fieldMeta.Type = prismFieldType;
-                fieldMeta.ManagedType = &fieldType;
+                fieldMeta.ManagedType = &s_TypeCache[fieldType.GetTypeId()];
 
                 if (prismFieldType != ScriptFieldType::None)
                     ReadDefaultFieldValue(fieldMeta, tempInstance, fieldNameStr);
@@ -285,6 +289,7 @@ namespace Prism
             }
         }
 
+        s_TypeCache.clear();
         s_Classes.clear();
         s_ClassIDToFullName.clear();
         s_BehaviourType = nullptr;
@@ -300,6 +305,7 @@ namespace Prism
                 for (auto& [hash, fieldMeta] : classMeta.Fields)
                     if (fieldMeta.DefaultValue)
                         fieldMeta.DefaultValue.Free();
+            s_TypeCache.clear();
             s_Classes.clear();
             s_ClassIDToFullName.clear();
             s_BehaviourType = nullptr;

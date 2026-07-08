@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "PythonScriptMetaRegistry.h"
 #include "Prism/Core/Log.h"
 #include "Prism/Core/Hash.h"
@@ -22,6 +22,7 @@ namespace Prism
         return UUID(Hash::GenerateFNVHash64(str));
     }
 
+
     static void ReadPythonDefaultFieldValue(ScriptFieldMetadata& meta, py::object& obj, const std::string& fieldName)
     {
         try
@@ -33,30 +34,35 @@ namespace Prism
                 {
                     float f = val.cast<float>();
                     meta.DefaultValue = Buffer::Copy(&f, sizeof(float));
+                    meta.PyType = GetPythonType(PYTHON_TYPE_FLOAT);
                     break;
                 }
                 case ScriptFieldType::Bool:
                 {
                     bool b = val.cast<bool>();
                     meta.DefaultValue = Buffer::Copy(&b, sizeof(bool));
+                    meta.PyType = GetPythonType(PYTHON_TYPE_BOOL);
                     break;
                 }
                 case ScriptFieldType::Int32:
                 {
                     int32_t i = val.cast<int32_t>();
                     meta.DefaultValue = Buffer::Copy(&i, sizeof(int32_t));
+                    meta.PyType = GetPythonType(PYTHON_TYPE_INT32);
                     break;
                 }
                 case ScriptFieldType::Int64:
                 {
                     int64_t i = val.cast<int64_t>();
                     meta.DefaultValue = Buffer::Copy(&i, sizeof(int64_t));
+                    meta.PyType = GetPythonType(PYTHON_TYPE_INT64);
                     break;
                 }
                 case ScriptFieldType::Double:
                 {
                     double d = val.cast<double>();
                     meta.DefaultValue = Buffer::Copy(&d, sizeof(double));
+                    meta.PyType = GetPythonType(PYTHON_TYPE_DOUBLE);
                     break;
                 }
                 case ScriptFieldType::Vector2:
@@ -64,6 +70,7 @@ namespace Prism
                     py::buffer_info info = py::buffer(val).request();
                     float* f = static_cast<float*>(info.ptr);
                     meta.DefaultValue = Buffer::Copy(f, sizeof(float) * 2);
+                    meta.PyType = GetPythonType(PYTHON_TYPE_VECTOR2);
                     break;
                 }
                 case ScriptFieldType::Vector3:
@@ -71,6 +78,7 @@ namespace Prism
                     py::buffer_info info = py::buffer(val).request();
                     float* f = static_cast<float*>(info.ptr);
                     meta.DefaultValue = Buffer::Copy(f, sizeof(float) * 3);
+                    meta.PyType = GetPythonType(PYTHON_TYPE_VECTOR3);
                     break;
                 }
                 case ScriptFieldType::Vector4:
@@ -78,6 +86,28 @@ namespace Prism
                     py::buffer_info info = py::buffer(val).request();
                     float* f = static_cast<float*>(info.ptr);
                     meta.DefaultValue = Buffer::Copy(f, sizeof(float) * 4);
+                    meta.PyType = GetPythonType(PYTHON_TYPE_VECTOR4);
+                    break;
+                }
+                case ScriptFieldType::MeshRef:
+                {
+                    void* nullPtr = nullptr;
+                    meta.DefaultValue = Buffer::Copy(&nullPtr, sizeof(void*));
+                    meta.PyType = GetPythonType(PYTHON_TYPE_MESHREF);
+                    break;
+                }
+                case ScriptFieldType::MaterialRef:
+                {
+                    void* nullPtr = nullptr;
+                    meta.DefaultValue = Buffer::Copy(&nullPtr, sizeof(void*));
+                    meta.PyType = GetPythonType(PYTHON_TYPE_MATERIALREF);
+                    break;
+                }
+                case ScriptFieldType::Texture2DRef:
+                {
+                    void* nullPtr = nullptr;
+                    meta.DefaultValue = Buffer::Copy(&nullPtr, sizeof(void*));
+                    meta.PyType = GetPythonType(PYTHON_TYPE_TEXTURE2DREF);
                     break;
                 }
                 default:
@@ -141,24 +171,28 @@ namespace Prism
                 for (auto& annItem : ann)
                 {
                     std::string fieldName = py::str(annItem.first);
-                    std::string typeAnnotation = py::str(annItem.second);
+                    //std::string typeAnnotation = py::str(annItem.second);
+                    py::object typeObj = py::reinterpret_borrow<py::object>(annItem.second);
 
                     if (fieldName.empty() || fieldName[0] == '_')
                         continue;
 
                     ScriptFieldType fieldType = ScriptFieldType::None;
-                    if (typeAnnotation == "float") fieldType = ScriptFieldType::Float;
-                    else if (typeAnnotation == "int") fieldType = ScriptFieldType::Int32;
-                    else if (typeAnnotation == "bool") fieldType = ScriptFieldType::Bool;
-                    else if (typeAnnotation == "str") fieldType = ScriptFieldType::Object;
-                    else if (typeAnnotation.find("Vector2") != std::string::npos) fieldType = ScriptFieldType::Vector2;
-                    else if (typeAnnotation.find("Vector3") != std::string::npos) fieldType = ScriptFieldType::Vector3;
-                    else if (typeAnnotation.find("Vector4") != std::string::npos) fieldType = ScriptFieldType::Vector4;
+                    if (typeObj.is(*GetPythonType(PYTHON_TYPE_FLOAT))) fieldType = ScriptFieldType::Float;
+                    else if (typeObj.is(*GetPythonType(PYTHON_TYPE_INT32))) fieldType = ScriptFieldType::Int32;
+                    else if (typeObj.is(*GetPythonType(PYTHON_TYPE_BOOL))) fieldType = ScriptFieldType::Bool;
+                    else if (typeObj.is(*GetPythonType(PYTHON_TYPE_OBJECT))) fieldType = ScriptFieldType::Object;
+                    else if (typeObj.is(*GetPythonType(PYTHON_TYPE_VECTOR2))) fieldType = ScriptFieldType::Vector2;
+                    else if (typeObj.is(*GetPythonType(PYTHON_TYPE_VECTOR3))) fieldType = ScriptFieldType::Vector3;
+                    else if (typeObj.is(*GetPythonType(PYTHON_TYPE_VECTOR4))) fieldType = ScriptFieldType::Vector4;
+                    else if (typeObj.is(*GetPythonType(PYTHON_TYPE_MESHREF))) fieldType = ScriptFieldType::MeshRef;
+                    //else if (typeObj.is(*GetPythonType(PYTHON_TYPE_MATERIALREF))) fieldType = ScriptFieldType::MaterialRef;
+                    //else if (typeObj.is(*GetPythonType(PYTHON_TYPE_TEXTURE2DREF))) fieldType = ScriptFieldType::Texture2DRef;
 
                     if (fieldType == ScriptFieldType::None) continue;
+                    PR_CORE_INFO("[Python Meta]     字段: {0} : {1}", fieldName, (std::string)py::str(typeObj));
 
                     uint32_t fieldHash = (uint32_t)(uint64_t)PythonScriptMetaRegistry::GenerateClassID(fieldName);
-                    PR_CORE_INFO("[Python Meta]     字段: {0} : {1}", fieldName, typeAnnotation);
 
                     ScriptFieldMetadata fieldMeta;
                     fieldMeta.Name = fieldName;
@@ -253,7 +287,7 @@ namespace Prism
             for (auto& [hash, fieldMeta] : classMeta.Fields)
                 if (fieldMeta.DefaultValue)
                     fieldMeta.DefaultValue.Free();
-
+        ClearAllPythonTypes();
         s_Classes.clear();
         s_ClassIDToFullName.clear();
         s_Initialized = false;
@@ -267,9 +301,11 @@ namespace Prism
                 for (auto& [hash, fieldMeta] : classMeta.Fields)
                     if (fieldMeta.DefaultValue)
                         fieldMeta.DefaultValue.Free();
+            ClearAllPythonTypes();
             s_Classes.clear();
             s_ClassIDToFullName.clear();
         }
+        RegisterAllPythonTypes();
 
         PR_CORE_INFO("[Python Meta] 开始扫描 Python Behaviour 类...");
 

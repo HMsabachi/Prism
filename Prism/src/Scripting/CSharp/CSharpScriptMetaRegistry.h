@@ -33,6 +33,7 @@ namespace Prism
         static void BuildCacheForAssembly(Rolky::ManagedAssembly& assembly);
         static ScriptFieldType GetFieldTypeFromManagedType(Rolky::Type* type);
 
+        static std::unordered_map<int32_t, Rolky::Type> s_TypeCache;
         static std::unordered_map<UUID, ScriptClassMetadata> s_Classes;
         static std::unordered_map<UUID, std::string> s_ClassIDToFullName;
         static Rolky::Type* s_BehaviourType;

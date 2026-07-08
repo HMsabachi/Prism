@@ -23,6 +23,7 @@
 #include <PhysX/PxPhysicsAPI.h>
 #include "Prism/Physics/PhysicsUtil.h"
 #include "PythonScriptWrappers.h"
+#include "PythonScriptTypeCasters.h"
 
 namespace py = pybind11;
 using namespace Prism;
@@ -33,7 +34,6 @@ namespace Prism
     extern std::unordered_map<uint64_t, std::function<bool(Entity&)>> s_PythonHasComponentFuncs;
 }
 
-#include "PythonScriptTypeCasters.h"
 
 //  Helper
 
@@ -835,18 +835,28 @@ namespace Prism::PythonScript
         }
     };
 
-    class PythonMesh
+    class PythonAsset
     {
+    protected:
         uint64_t m_Handle = 0;
+    public :
+        PythonAsset(uint64_t handle) : m_Handle(handle) {}
+        virtual ~PythonAsset() { if (m_Handle) delete (Ref<Asset>*)(m_Handle); m_Handle = 0;}
+        virtual std::string __Repr__() { return fmt::format(" <Asset Handle = {}>", m_Handle); }
+    };
+
+    class PythonMesh : public PythonAsset
+    {
     public:
-        PythonMesh(uint64_t handle) : m_Handle(handle) {}
-        PythonMesh(const char* filepath)
+        PythonMesh(uint64_t handle) : PythonAsset(handle) {}
+        PythonMesh(const char* filepath) : PythonAsset(0)
         {
             auto result = ModelImporter::Import(filepath);
             m_Handle = reinterpret_cast<uint64_t>(new Ref<Mesh>(result.Mesh));
         }
-        ~PythonMesh() { if (m_Handle) delete reinterpret_cast<Ref<Mesh>*>(m_Handle); }
-        std::string __Repr__() { return fmt::format(" <Mesh Handle = {}>", m_Handle); }
+        virtual ~PythonMesh() override { if (m_Handle) delete (Ref<Mesh>*)(m_Handle); m_Handle = 0; }
+        virtual std::string __Repr__() override { return fmt::format(" <Mesh Handle = {}>", m_Handle); }
+        uint64_t GetHandle() const { return m_Handle; } // TODO: Remove this
     };
 
 } // namespace Prism::PythonScript
@@ -895,8 +905,78 @@ PYBIND11_MODULE(PrismEngine, m)
         .def("HasComponent", &PythonBehaviour::HasComponent)
         .def("CreateComponent", &PythonBehaviour::CreateComponent);
 
-    py::class_<PythonMesh>(m, "Mesh")
+    py::class_<PythonAsset>(m, "Asset")
+        .def(py::init<uint64_t>())
+        .def("__repr__", &PythonAsset::__Repr__);
+
+    py::class_<PythonMesh, PythonAsset>(m, "Mesh")
         .def(py::init<uint64_t>())
         .def(py::init<const char*>())
-        .def("__repr__", &PythonMesh::__Repr__);
+        .def("__repr__", &PythonMesh::__Repr__)
+        .def_property_readonly("_handle", &PythonMesh::GetHandle);
 }
+
+
+// Python Type Registration
+
+namespace Prism
+{
+    static std::unordered_map<UUID, pybind11::object> s_PythonTypeCache;
+
+    static constexpr uint64_t GenerateTypeID(std::string_view name)
+    {
+        return Hash::GenerateFNVHash64(name.data());
+    }
+
+    void RegisterAllPythonTypes()
+    {
+        s_PythonTypeCache.clear();
+        try
+        {
+            py::module_ builtins = py::module_::import("builtins");
+            py::module_ math = py::module_::import("Prism.Math");
+            py::module_ prism = py::module_::import("Prism");
+            using namespace Prism::PythonScript;
+            s_PythonTypeCache[PYTHON_TYPE_NONE] = py::type::of(py::none());
+            s_PythonTypeCache[PYTHON_TYPE_FLOAT] = builtins.attr("float");
+            s_PythonTypeCache[PYTHON_TYPE_DOUBLE] = builtins.attr("float");
+            s_PythonTypeCache[PYTHON_TYPE_BOOL] = builtins.attr("bool");
+            s_PythonTypeCache[PYTHON_TYPE_INT8] = builtins.attr("int");
+            s_PythonTypeCache[PYTHON_TYPE_INT16] = builtins.attr("int");
+            s_PythonTypeCache[PYTHON_TYPE_INT32] = builtins.attr("int");
+            s_PythonTypeCache[PYTHON_TYPE_INT64] = builtins.attr("int");
+            s_PythonTypeCache[PYTHON_TYPE_UINT8] = builtins.attr("int");
+            s_PythonTypeCache[PYTHON_TYPE_UINT16] = builtins.attr("int");
+            s_PythonTypeCache[PYTHON_TYPE_UINT32] = builtins.attr("int");
+            s_PythonTypeCache[PYTHON_TYPE_UINT64] = builtins.attr("int");
+            s_PythonTypeCache[PYTHON_TYPE_VECTOR2] = math.attr("Vector2");
+            s_PythonTypeCache[PYTHON_TYPE_VECTOR3] = math.attr("Vector3");
+            s_PythonTypeCache[PYTHON_TYPE_VECTOR4] = math.attr("Vector4");
+            s_PythonTypeCache[PYTHON_TYPE_OBJECT] = builtins.attr("object");
+            s_PythonTypeCache[PYTHON_TYPE_MESHREF] = py::type::of<PythonMesh>();
+            //s_PythonTypeCache[PYTHON_TYPE_MATERIALREF] = prism.attr("Material");
+            //s_PythonTypeCache[PYTHON_TYPE_TEXTURE2DREF] = prism.attr("Texture2D");
+            s_PythonTypeCache[PYTHON_TYPE_ASSET] = py::type::of<PythonAsset>();
+
+            for (const auto& [id, type] : s_PythonTypeCache)
+                PR_CORE_INFO("[Python Meta] 注册类型: {} -> {}", id, (std::string)pybind11::str(type));
+            
+        }
+        catch (py::error_already_set& e)
+        {
+            PR_CORE_WARN("[Python Meta] 注册类型异常: {}", e.what());
+            PyErr_Clear();
+        }
+    }
+
+    void ClearAllPythonTypes()
+    {
+        s_PythonTypeCache.clear();
+    }
+
+    pybind11::object* GetPythonType(const UUID id)
+    {
+        return s_PythonTypeCache.count(id) ? &s_PythonTypeCache.at(id) : nullptr;
+    }
+
+} // namespace Prism::PythonScript

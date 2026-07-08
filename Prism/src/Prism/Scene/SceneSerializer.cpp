@@ -533,8 +533,12 @@ namespace Prism {
                         case ScriptFieldType::Vector4:
                             out << field.GetValue<glm::vec4>();
                             break;
+                        case ScriptFieldType::MeshRef:
+                        case ScriptFieldType::MaterialRef:
+                        case ScriptFieldType::Texture2DRef:
                         case ScriptFieldType::Object:
-                            out << (uint64_t)field.GetValue<Ref<Asset>>()->Handle;
+                            if (field.GetValue<Ref<Asset>>()) out << (uint64_t)field.GetValue<Ref<Asset>>()->Handle;
+                            else out << 0;
                             break;
                         default:
                             out << "Unsupported field type";
@@ -1159,7 +1163,7 @@ namespace Prism {
                                     ScriptFieldType fieldType = (ScriptFieldType)fieldNode["Type"].as<uint16_t>();
                                     uint32_t fieldHash = HashFieldName(fieldName);
 
-                                    PythonField field(fieldName, fieldType);
+                                    PythonField field(fieldName, fieldType, nullptr);
                                     if (fieldNode["Value"])
                                     {
                                         switch (fieldType)
@@ -1178,6 +1182,15 @@ namespace Prism {
                                         case ScriptFieldType::Vector2: field.SetValue(fieldNode["Value"].as<glm::vec2>()); break;
                                         case ScriptFieldType::Vector3: field.SetValue(fieldNode["Value"].as<glm::vec3>()); break;
                                         case ScriptFieldType::Vector4: field.SetValue(fieldNode["Value"].as<glm::vec4>()); break;
+                                        case ScriptFieldType::MeshRef:
+                                        {
+                                            uint64_t meshHandle = fieldNode["Value"].as<uint64_t>();
+                                            if (AssetManager::IsAssetHandleValid(meshHandle))
+                                                field.SetValue(AssetManager::GetAsset<Mesh>(meshHandle));
+                                            break;
+                                        }
+                                        case ScriptFieldType::MaterialRef:
+                                        case ScriptFieldType::Texture2DRef:
                                         case ScriptFieldType::Object: break;
                                         default: break;
                                         }

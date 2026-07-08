@@ -1,16 +1,34 @@
-# PrismEngine 原生模块类型存根
+# PrismEngine 原生模块类型
 
-from typing import Optional, Type, TypeVar
+import ctypes
+from typing import (Any, Callable, Generator, Generic, Iterable, List, Literal,
+                    Optional, SupportsInt, Tuple, Type, TypeVar, Union,
+                    overload)
 
 T = TypeVar("T")
+
+# Math
 
 class vec3: ...
 
 class vec4: ...
 
-class Entity:
-    """C++ PythonEntity 的 Python 绑定。"""
+# Assets 
+class Asset:
+    @overload
+    def __init__(self, handle: int) -> None: ...
+    def __repr__(self) -> str: ...
 
+class Mesh(Asset):
+    @overload
+    def __init__(self, handle: int) -> None: ...
+    @overload
+    def __init__(self, filePath: str) -> None: ...
+    def __repr__(self) -> str: ...
+
+# ECS
+
+class Entity:
     def __init__(self, id: int = 0) -> None: ...
 
     @property
@@ -19,7 +37,7 @@ class Entity:
     def ID(self, value: int) -> None: ...
 
     @property
-    def Transform(self) -> "TransformComponent": ...
+    def Transform(self) -> TransformComponent: ...
 
     def GetComponent(self, cls: Type[T]) -> Optional[T]: ...
     def CreateComponent(self, cls: Type[T]) -> Optional[T]: ...
@@ -33,8 +51,6 @@ class Entity:
 
 
 class Component:
-    """C++ PythonComponent 的 Python 绑定。所有组件的基类。"""
-
     def __init__(self) -> None: ...
 
     @property
@@ -44,8 +60,6 @@ class Component:
 
 
 class TransformComponent(Component):
-    """C++ PythonTransformComponent 的 Python 绑定。Rotation 单位为角度。"""
-
     def __init__(self) -> None: ...
 
     @property
@@ -92,8 +106,6 @@ class TransformComponent(Component):
 
 
 class Behaviour(Component):
-    """C++ PythonBehaviour 的 Python 绑定。用户脚本继承此类。"""
-
     def __init__(self) -> None: ...
 
     @property
@@ -114,6 +126,7 @@ class Behaviour(Component):
     def CreateComponent(self, cls: Type[T]) -> Optional[T]: ...
 
 
+# Native Data Structures
 class ScriptTransform:
     """Transform 数据容器。"""
     Position: vec3
