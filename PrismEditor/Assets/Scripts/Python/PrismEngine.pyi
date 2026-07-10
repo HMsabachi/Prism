@@ -1,8 +1,8 @@
 # PrismEngine 原生模块类型
 
 import ctypes
-from typing import (Any, Callable, Generator, Generic, Iterable, List, Literal,
-                    Optional, SupportsInt, Tuple, Type, TypeVar, Union,
+from typing import (Any, Callable, Generator, Generic, Iterable, List, Literal, 
+                    Optional, SupportsInt, Tuple, Type, TypeVar, Union, ClassVar,
                     overload)
 
 T = TypeVar("T")
@@ -11,6 +11,10 @@ T = TypeVar("T")
 class vec2: ...
 class vec3: ...
 class vec4: ...
+
+class Noise:
+    @staticmethod
+    def PerlinNoise(x: float, y: float) -> float: ...
 
 # Assets 
 class Asset:
@@ -47,7 +51,9 @@ class Material(Asset):
     def SetTexture(self, uniform: str, texture: Texture2D) -> None: ...
     def SetKeyword(self, name: str, enabled: bool) -> None: ...
     def IsKeywordEnabled(self, name: str) -> bool: ...
-
+class MeshFactory:
+    @staticmethod
+    def CreatePlane(width: float, height: float) -> Mesh: ...
 
 # ECS
 
@@ -69,10 +75,71 @@ class Entity:
 
 class Component:
     def __init__(self) -> None: ...
+    def __repr__(self) -> str: ...
     @property
     def Entity(self) -> Optional[Entity]: ...
     @Entity.setter
     def Entity(self, value: Entity) -> None: ...
+
+class TagComponent(Component):
+    def __init__(self) -> None: ...
+    def __repr__(self) -> str: ...
+    @property
+    def Tag(self) -> str: ...
+    @Tag.setter
+    def Tag(self, value: str) -> None: ...
+
+class CameraComponent(Component):
+    def __init__(self) -> None: ...
+    def __repr__(self) -> str: ...
+
+class ScriptComponent(Component):
+    def __init__(self) -> None: ...
+
+class SpriteRendererComponent(Component):
+    def __init__(self) -> None: ...
+
+class RigidBody2DComponent(Component):
+    def __init__(self) -> None: ...
+    def ApplyLinearImpulse(self, impulse: vec2, offset: vec2, wake: bool = True) -> None: ...
+    @property
+    def LinearVelocity(self) -> vec2: ...
+    @LinearVelocity.setter
+    def LinearVelocity(self, value: vec2) -> None: ...
+    def GetLinearVelocity(self) -> vec2: ...
+    def SetLinearVelocity(self, value: vec2) -> None: ...
+class BoxCollider2DComponent(Component):
+    def __init__(self) -> None: ...
+class CircleCollider2DComponent(Component):
+    def __init__(self) -> None: ...
+
+class RigidBodyComponent(Component):
+    def __init__(self) -> None: ...
+    def AddForce(self, force: vec3, forceMode: int = ForceMode.Force) -> None: ...
+    def AddTorque(self, torque: vec3, forceMode: int = ForceMode.Force) -> None: ...
+    def Rotate(self, rotation: vec3) -> None: ...
+    @property
+    def LinearVelocity(self) -> vec3: ...
+    @LinearVelocity.setter
+    def LinearVelocity(self, value: vec3) -> None: ...
+    def GetLinearVelocity(self) -> vec3: ...
+    def SetLinearVelocity(self, value: vec3) -> None: ...
+    @property
+    def Layer(self) -> int: ...
+    @property
+    def Mass(self) -> float: ...
+    @Mass.setter
+    def Mass(self, value: float) -> None: ...
+    def GetMass(self) -> float: ...
+    def SetMass(self, value: float) -> None: ...
+    @property
+    def BodyType(self) -> int: ...
+class BoxColliderComponent(Component):
+    def __init__(self) -> None: ...
+class CircleColliderComponent(Component):
+    def __init__(self) -> None: ...
+class CapsuleColliderComponent(Component):
+    def __init__(self) -> None: ...
 
 class TransformComponent(Component):
     def __init__(self) -> None: ...
@@ -128,7 +195,7 @@ class MeshRendererComponent(Component):
     @property
     def MaterialCount(self) -> int: ...
     def GetMaterial(self, index: int) -> Optional[Material]: ...
-    def SetMaterial(self, index: int, material: Optional[Material]) -> None: ...
+    def SetMaterial(self, material: Optional[Material], index: int = 0) -> None: ...
 
 class Behaviour(Component):
     def __init__(self) -> None: ...
@@ -146,7 +213,241 @@ class Behaviour(Component):
     def HasComponent(self, cls: type) -> bool: ...
     def CreateComponent(self, cls: Type[T]) -> Optional[T]: ...
 
+# Collider Classes
+class Collider:
+    def __repr__(self) -> str: ...
+    def __str__(self) -> str: ...
+    @property
+    def Entity(self) -> Entity: ...
+    @property
+    def RigidBody(self) -> Optional[RigidBodyComponent]: ...
+    @property
+    def IsTrigger(self) -> bool: ...
+
+class BoxCollider(Collider):
+    @property
+    def Size(self) -> vec3: ...
+    @property
+    def Offset(self) -> vec3: ...
+
+class SphereCollider(Collider):
+    @property
+    def Radius(self) -> float: ...
+
+class CapsuleCollider(Collider):
+    @property
+    def Radius(self) -> float: ...
+    @property
+    def Height(self) -> float: ...
+    
+class MeshCollider(Collider):
+    @property
+    def Mesh(self) -> Optional[Mesh]: ...
+
+# Core Classes
+class Input:
+    @staticmethod
+    def IsKeyPressed(keycode: int) -> bool: ...
+    @staticmethod
+    def IsMouseButtonPressed(button: int) -> bool: ...
+    @staticmethod
+    def GetMousePosition() -> vec2: ...
+    @staticmethod
+    def SetCursorMode(mode: int) -> None: ...
+    @staticmethod
+    def GetCursorMode() -> int: ...
+
+class Time:
+    DeltaTime: ClassVar[float]
+    UnscaledDeltaTime: ClassVar[float]
+    Time: ClassVar[float]
+    UnscaledTime: ClassVar[float]
+    FixedDeltaTime: ClassVar[float]
+    FrameCount: ClassVar[int]
+    TimeScale: ClassVar[float]
+
+class Log:
+    @staticmethod
+    def Trace(message: str) -> None: ...
+    @staticmethod
+    def Debug(message: str) -> None: ...
+    @staticmethod
+    def Info(message: str) -> None: ...
+    @staticmethod
+    def Warn(message: str) -> None: ...
+    @staticmethod
+    def Error(message: str) -> None: ...
+    @staticmethod
+    def Critical(message: str) -> None: ...
+
+class Physics:
+    Gravity: ClassVar[float]
+    @staticmethod
+    def Raycast(origin: vec3, direction: vec3, maxDistance: float = 100, hit: Optional[RaycastHit] = None) -> bool: ...
+    @staticmethod
+    def OverlapBox(origin: vec3, halfSize: vec3) -> list[Collider]: ...
+    @staticmethod
+    def OverlapSphere(origin: vec3, radius: float) -> list[Collider]: ...
+    @staticmethod
+    def OverlapCapsule(origin: vec3, radius: float, halfHeight: float) -> list[Collider]: ...
+
+
 # Native Data Structures
+class RaycastHit:
+    def __init__(self) -> None: ...
+    @property
+    def EntityID(self) -> int: ...
+    @property
+    def Point(self) -> vec3: ...
+    @property
+    def Normal(self) -> vec3: ...
+    @property
+    def Distance(self) -> float: ...
+
+class ForceMode:
+    Force : int
+    Impulse : int
+    VelocityChange : int
+    Acceleration : int
+
+class CursorMode:
+    Normal : int
+    Hidden : int
+    Locked : int
+
+class MouseButton:
+    Button0 : int
+    Button1 : int
+    Button2 : int
+    Button3 : int
+    Button4 : int
+    Button5 : int
+    Left : int
+    Right : int
+    Middle : int
+
+class KeyCode:
+    Space: int
+    Apostrophe: int
+    Comma: int
+    Minus: int
+    Period: int
+    Slash: int
+    D0: int
+    D1: int
+    D2: int
+    D3: int
+    D4: int
+    D5: int
+    D6: int
+    D7: int
+    D8: int
+    D9: int
+    Semicolon: int
+    Equal: int
+    A: int
+    B: int
+    C: int
+    D: int
+    E: int
+    F: int
+    G: int
+    H: int
+    I: int
+    J: int
+    K: int
+    L: int
+    M: int
+    N: int
+    O: int
+    P: int
+    Q: int
+    R: int
+    S: int
+    T: int
+    U: int
+    V: int
+    W: int
+    X: int
+    Y: int
+    Z: int
+    LeftBracket: int
+    Backslash: int
+    RightBracket: int
+    GraveAccent: int
+    World1: int
+    World2: int
+    Escape: int
+    Enter: int
+    Tab: int
+    Backspace: int
+    Insert: int
+    Delete: int
+    Right: int
+    Left: int
+    Down: int
+    Up: int
+    PageUp: int
+    PageDown: int
+    Home: int
+    End: int
+    CapsLock: int
+    ScrollLock: int
+    NumLock: int
+    PrintScreen: int
+    Pause: int
+    F1: int
+    F2: int
+    F3: int
+    F4: int
+    F5: int
+    F6: int
+    F7: int
+    F8: int
+    F9: int
+    F10: int
+    F11: int
+    F12: int
+    F13: int
+    F14: int
+    F15: int
+    F16: int
+    F17: int
+    F18: int
+    F19: int
+    F20: int
+    F21: int
+    F22: int
+    F23: int
+    F24: int
+    F25: int
+    KP0: int
+    KP1: int
+    KP2: int
+    KP3: int
+    KP4: int
+    KP5: int
+    KP6: int
+    KP7: int
+    KP8: int
+    KP9: int
+    KPDecimal: int
+    KPDivide: int
+    KPMultiply: int
+    KPSubtract: int
+    KPAdd: int
+    KPEnter: int
+    KPEqual: int
+    LeftShift: int
+    LeftControl: int
+    LeftAlt: int
+    LeftSuper: int
+    RightShift: int
+    RightControl: int
+    RightAlt: int
+    RightSuper: int
+    Menu: int
+
 class ScriptTransform:
     """Transform 数据容器。"""
     Position: vec3

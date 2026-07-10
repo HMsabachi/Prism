@@ -6,6 +6,7 @@
 #include "Prism/Physics/PXPhysicsWrappers.h"
 #include "Prism/Physics/Physics.h"
 #include "Prism/Physics/PhysicsActor.h"
+#include "Prism/Physics/PhysicsUtil.h"
 #include "Prism/Scene/Scene.h"
 #include "Prism/Scene/Entity.h"
 #include "Prism/Scene/Components.h"
@@ -15,15 +16,14 @@
 #include "Scripting/Python/PythonScriptMetaRegistry.h"
 #include "Prism/Asset/AssetManager.h"
 #include "Prism/Asset/ModelImporter.h"
+#include "PythonScriptWrappers.h"
+#include "PythonScriptTypeCasters.h"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <box2d/box2d.h>
 #include <PhysX/PxPhysicsAPI.h>
-#include "Prism/Physics/PhysicsUtil.h"
-#include "PythonScriptWrappers.h"
-#include "PythonScriptTypeCasters.h"
 
 namespace py = pybind11;
 using namespace Prism;
@@ -33,10 +33,7 @@ namespace Prism
     extern std::unordered_map<uint64_t, std::function<void(Entity&)>> s_PythonCreateComponentFuncs;
     extern std::unordered_map<uint64_t, std::function<bool(Entity&)>> s_PythonHasComponentFuncs;
 }
-
-
 //  Helper
-
 namespace Prism
 {
     namespace PythonScript
@@ -52,530 +49,59 @@ namespace Prism
             return entityMap.at(entityID);
         }
 
-#pragma region Log
-
-        void Prism_Log_LogMessage(int32_t level, const char* message)
-        {
-            std::string msg = "[Python] ";
-            msg += message;
-            auto lvl = static_cast<LogLevel>(level);
-            switch (lvl)
-            {
-            case LogLevel::Trace:
-                PR_CORE_TRACE(msg);
-                break;
-            case LogLevel::Debug:
-                PR_CORE_INFO(msg);
-                break;
-            case LogLevel::Info:
-                PR_CORE_INFO(msg);
-                break;
-            case LogLevel::Warn:
-                PR_CORE_WARN(msg);
-                break;
-            case LogLevel::Error:
-                PR_CORE_ERROR(msg);
-                break;
-            case LogLevel::Critical:
-                PR_CORE_FATAL(msg);
-                break;
-            }
-        }
-
-#pragma region Time
-
-        float Prism_Time_GetDeltaTime() { return Time::GetDeltaTime(); }
-        float Prism_Time_GetUnscaledDeltaTime() { return Time::GetUnscaledDeltaTime(); }
-        float Prism_Time_GetTime() { return Time::GetTime(); }
-        float Prism_Time_GetUnscaledTime() { return Time::GetUnscaledTime(); }
-        float Prism_Time_GetFixedDeltaTime() { return Time::GetFixedDeltaTime(); }
-        int64_t Prism_Time_GetFrameCount() { return (int64_t)Time::GetFrameCount(); }
-        void Prism_Time_SetTimeScale(float scale) { Time::SetTimeScale(scale); }
-        float Prism_Time_GetTimeScale() { return Time::GetTimeScale(); }
-        void Prism_Time_SetFixedDeltaTime(float fixedDeltaTime) { Time::SetFixedDeltaTime(fixedDeltaTime); }
-
-#pragma endregion
-#pragma region Math
-
-        float Prism_Noise_PerlinNoise(float x, float y) { return Noise::PerlinNoise(x, y); }
-
-#pragma region Input
-
-        bool Prism_Input_IsKeyPressed(uint16_t key) { return Input::IsKeyPressed((KeyCode)key); }
-        glm::vec2 Prism_Input_GetMousePosition()
-        {
-            auto [x, y] = Input::GetMousePosition();
-            return { x, y };
-        }
-        void Prism_Input_SetCursorMode(int mode) { Input::SetCursorMode((CursorMode)mode); }
-        int Prism_Input_GetCursorMode() { return (int)Input::GetCursorMode(); }
-        bool Prism_Input_IsMouseButtonPressed(uint16_t button) { return Input::IsMouseButtonPressed((MouseButton)button); }
-
         static TransformSystem* GetTransformSystem(Entity entity)
         {
             return entity.GetScene()->GetSystem<TransformSystem>();
         }
-
-#pragma region MeshRendererComponent
-
-        uint64_t Prism_MeshRendererComponent_GetMesh(uint64_t entityID)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            auto& mc = entity.GetComponent<MeshRendererComponent>();
-            return reinterpret_cast<uintptr_t>(new Ref<Mesh>(mc.Mesh));
-        }
-
-        void Prism_MeshRendererComponent_SetMesh(uint64_t entityID, uint64_t meshHandle)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            auto& mc = entity.GetComponent<MeshRendererComponent>();
-            mc.Mesh = meshHandle ? *reinterpret_cast<Ref<Mesh> *>(meshHandle) : nullptr;
-        }
-
-        uint64_t Prism_MeshRendererComponent_GetMaterial(uint64_t entityID, uint64_t index)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            auto& mc = entity.GetComponent<MeshRendererComponent>();
-            PR_CORE_ASSERT(index < mc.Materials.size(), "Material index out of range");
-            return reinterpret_cast<uintptr_t>(new Ref<Material>(mc.Materials[index]));
-        }
-
-        void Prism_MeshRendererComponent_SetMaterial(uint64_t entityID, uint64_t materialHandle, uint64_t index)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            auto& mc = entity.GetComponent<MeshRendererComponent>();
-            PR_CORE_ASSERT(index < mc.Materials.size(), "Material index out of range");
-            mc.Materials[index] = *reinterpret_cast<Ref<Material> *>(materialHandle);
-        }
-
-        uint64_t Prism_MeshRendererComponent_GetMaterialCount(uint64_t entityID)
-        {
-            return GetEntityFromEntityID(entityID).GetComponent<MeshRendererComponent>().Materials.size();
-        }
-
-        std::vector<uint64_t> Prism_MeshRendererComponent_GetMaterials(uint64_t entityID)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            auto& mc = entity.GetComponent<MeshRendererComponent>();
-            std::vector<uint64_t> result;
-            result.reserve(mc.Materials.size());
-            for (auto& mat : mc.Materials)
-            {
-                if (mat)
-                    result.push_back(reinterpret_cast<uintptr_t>(new Ref<Material>(mat)));
-                else
-                    result.push_back(0);
-            }
-            return result;
-        }
-
-        void Prism_MeshRendererComponent_SetMaterials(uint64_t entityID, const std::vector<uint64_t>& handles)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            auto& mc = entity.GetComponent<MeshRendererComponent>();
-            mc.Materials.resize(handles.size());
-            for (size_t i = 0; i < handles.size(); ++i)
-            {
-                if (handles[i])
-                    mc.Materials[i] = *reinterpret_cast<Ref<Material> *>(handles[i]);
-                else
-                    mc.Materials[i] = nullptr;
-            }
-        }
-
-#pragma region Mesh
-
-        uint64_t Prism_Mesh_Constructor(const char* filepath)
-        {
-            auto result = ModelImporter::Import(filepath);
-            return reinterpret_cast<uintptr_t>(new Ref<Mesh>(result.Mesh));
-        }
-
-        void Prism_Mesh_Destructor(uint64_t handle)
-        {
-            delete reinterpret_cast<Ref<Mesh>*>(handle);
-        }
-
-        uint64_t Prism_MeshFactory_CreatePlane(float width, float height)
-        {
-            return reinterpret_cast<uintptr_t>(
-                new Ref<Mesh>(ModelImporter::Import("assets/models/Plane1m.obj").Mesh));
-        }
-
-#pragma region RigidBody2DComponent
-
-        void Prism_RigidBody2DComponent_ApplyLinearImpulse(
-            uint64_t entityID, const glm::vec2& impulse, const glm::vec2& offset, bool wake)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
-            b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
-            body->ApplyLinearImpulse(b2Vec2(impulse.x, impulse.y),
-                b2Vec2(offset.x, offset.y), wake);
-        }
-
-        glm::vec2 Prism_RigidBody2DComponent_GetLinearVelocity(uint64_t entityID)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
-            b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
-            const b2Vec2& v = body->GetLinearVelocity();
-            return { v.x, v.y };
-        }
-
-        void Prism_RigidBody2DComponent_SetLinearVelocity(uint64_t entityID, const glm::vec2& velocity)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
-            b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
-            body->SetLinearVelocity(b2Vec2(velocity.x, velocity.y));
-        }
-
-#pragma region RigidBodyComponent
-
-        void Prism_RigidBodyComponent_AddForce(uint64_t entityID, const glm::vec3& force, int32_t forceMode)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
-            Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
-            actor->AddForce(force, (ForceMode)forceMode);
-        }
-        void Prism_RigidBodyComponent_AddTorque(uint64_t entityID, const glm::vec3& torque, int32_t forceMode)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
-            Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
-            actor->AddTorque(torque, (ForceMode)forceMode);
-        }
-        glm::vec3 Prism_RigidBodyComponent_GetLinearVelocity(uint64_t entityID)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
-            return Physics::GetActorForEntity(entity)->GetLinearVelocity();
-        }
-        void Prism_RigidBodyComponent_SetLinearVelocity(uint64_t entityID, const glm::vec3& velocity)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
-            Physics::GetActorForEntity(entity)->SetLinearVelocity(velocity);
-        }
-        void Prism_RigidBodyComponent_Rotate(uint64_t entityID, const glm::vec3& rotation)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
-            Physics::GetActorForEntity(entity)->Rotate(rotation);
-        }
-        uint32_t Prism_RigidBodyComponent_GetLayer(uint64_t entityID)
-        {
-            return GetEntityFromEntityID(entityID).GetComponent<RigidBodyComponent>().Layer;
-        }
-        float Prism_RigidBodyComponent_GetMass(uint64_t entityID)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
-            return Physics::GetActorForEntity(entity)->GetMass();
-        }
-        void Prism_RigidBodyComponent_SetMass(uint64_t entityID, float mass)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
-            Physics::GetActorForEntity(entity)->SetMass(mass);
-        }
-        uint32_t Prism_RigidBodyComponent_GetBodyType(uint64_t entityID)
-        {
-            return (uint32_t)GetEntityFromEntityID(entityID).GetComponent<RigidBodyComponent>().BodyType;
-        }
-        glm::vec3 Prism_RigidBodyComponent_GetAngularVelocity(uint64_t entityID)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
-            return Physics::GetActorForEntity(entity)->GetAngularVelocity();
-        }
-        void Prism_RigidBodyComponent_SetAngularVelocity(uint64_t entityID, const glm::vec3& velocity)
-        {
-            Entity entity = GetEntityFromEntityID(entityID);
-            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
-            Physics::GetActorForEntity(entity)->SetAngularVelocity(velocity);
-        }
-
-#pragma region Physics
-
-        // Shared helper — populates OverlapHitData from PxOverlapHit
-        static OverlapHitData FillOverlapHit(physx::PxOverlapHit& pxHit)
-        {
-            Entity& entity = *(Entity*)pxHit.actor->userData;
-            OverlapHitData data{};
-            data.EntityID = entity.GetUUID();
-
-            if (entity.HasComponent<BoxColliderComponent>())
-            {
-                auto& bc = entity.GetComponent<BoxColliderComponent>();
-                data.ColliderType = 0;
-                data.IsTrigger = bc.IsTrigger;
-                data.ShapeData[0] = bc.Size.x;
-                data.ShapeData[1] = bc.Size.y;
-                data.ShapeData[2] = bc.Size.z;
-                data.ShapeData[3] = bc.Offset.x;
-                data.ShapeData[4] = bc.Offset.y;
-                data.ShapeData[5] = bc.Offset.z;
-                data.MeshHandle = nullptr;
-            }
-            else if (entity.HasComponent<SphereColliderComponent>())
-            {
-                auto& sc = entity.GetComponent<SphereColliderComponent>();
-                data.ColliderType = 1;
-                data.IsTrigger = sc.IsTrigger;
-                data.ShapeData[0] = sc.Radius;
-                data.MeshHandle = nullptr;
-            }
-            else if (entity.HasComponent<CapsuleColliderComponent>())
-            {
-                auto& cc = entity.GetComponent<CapsuleColliderComponent>();
-                data.ColliderType = 2;
-                data.IsTrigger = cc.IsTrigger;
-                data.ShapeData[0] = cc.Radius;
-                data.ShapeData[1] = cc.Height;
-                data.MeshHandle = nullptr;
-            }
-            else if (entity.HasComponent<MeshColliderComponent>())
-            {
-                auto& mc = entity.GetComponent<MeshColliderComponent>();
-                data.ColliderType = 3;
-                data.IsTrigger = mc.IsTrigger;
-                data.MeshHandle = new Ref<Mesh>(mc.CollisionMesh);
-            }
-            return data;
-        }
-
-        std::optional<RaycastHit> Prism_Physics_Raycast(const glm::vec3& origin, const glm::vec3& direction, float maxDistance)
-        {
-            RaycastHit hit;
-            if (PXPhysicsWrappers::Raycast(origin, direction, maxDistance, &hit))
-                return hit;
-            return std::nullopt;
-        }
-
-        std::vector<OverlapHitData> Prism_Physics_OverlapBox(const glm::vec3& origin, const glm::vec3& halfSize)
-        {
-            std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS> buffer;
-            uint32_t count;
-            std::vector<OverlapHitData> results;
-            if (PXPhysicsWrappers::OverlapBox(origin, halfSize, buffer, &count))
-            {
-                results.reserve(count);
-                for (uint32_t i = 0; i < count; ++i)
-                    results.push_back(FillOverlapHit(buffer[i]));
-            }
-            return results;
-        }
-
-        std::vector<OverlapHitData> Prism_Physics_OverlapCapsule(const glm::vec3& origin, float radius, float halfHeight)
-        {
-            std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS> buffer;
-            uint32_t count;
-            std::vector<OverlapHitData> results;
-            if (PXPhysicsWrappers::OverlapCapsule(origin, radius, halfHeight, buffer, &count))
-            {
-                results.reserve(count);
-                for (uint32_t i = 0; i < count; ++i)
-                    results.push_back(FillOverlapHit(buffer[i]));
-            }
-            return results;
-        }
-
-        std::vector<OverlapHitData> Prism_Physics_OverlapSphere(const glm::vec3& origin, float radius)
-        {
-            std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS> buffer;
-            uint32_t count;
-            std::vector<OverlapHitData> results;
-            if (PXPhysicsWrappers::OverlapSphere(origin, radius, buffer, &count))
-            {
-                results.reserve(count);
-                for (uint32_t i = 0; i < count; ++i)
-                    results.push_back(FillOverlapHit(buffer[i]));
-            }
-            return results;
-        }
-
-        float Prism_Physics_GetGravity() { return Physics::GetGravity(); }
-        void Prism_Physics_SetGravity(float gravity) { Physics::SetGravity(gravity); }
-
-        // Material
-        static Ref<Material>& DerefMaterial(uint64_t handle)
-        {
-            return *reinterpret_cast<Ref<Material> *>(handle);
-        }
-
-        uint64_t Prism_Material_Constructor(const char* shaderName)
-        {
-            const auto& shader = AssetManager::GetShaderLibrary()->Get(shaderName);
-            return reinterpret_cast<uintptr_t>(new Ref<Material>(Material::Create(shader->Handle)));
-        }
-
-        void Prism_Material_Destructor(uint64_t handle)
-        {
-            delete reinterpret_cast<Ref<Material>*>(handle);
-        }
-
-        void Prism_Material_SetFloat(uint64_t handle, const char* uniform, float value)
-        {
-            DerefMaterial(handle)->SetFloat(uniform, value);
-        }
-        void Prism_Material_SetInt(uint64_t handle, const char* uniform, int value)
-        {
-            DerefMaterial(handle)->SetInt(uniform, value);
-        }
-        void Prism_Material_SetBool(uint64_t handle, const char* uniform, bool value)
-        {
-            DerefMaterial(handle)->SetBool(uniform, value);
-        }
-        void Prism_Material_SetVector2(uint64_t handle, const char* uniform, const glm::vec2& value)
-        {
-            DerefMaterial(handle)->SetVec2(uniform, value);
-        }
-        void Prism_Material_SetVector3(uint64_t handle, const char* uniform, const glm::vec3& value)
-        {
-            DerefMaterial(handle)->SetVec3(uniform, value);
-        }
-        void Prism_Material_SetVector4(uint64_t handle, const char* uniform, const glm::vec4& value)
-        {
-            DerefMaterial(handle)->SetVec4(uniform, value);
-        }
-        void Prism_Material_SetColor3(uint64_t handle, const char* uniform, const glm::vec3& value)
-        {
-            DerefMaterial(handle)->SetColor3(uniform, value);
-        }
-        void Prism_Material_SetColor(uint64_t handle, const char* uniform, const glm::vec4& value)
-        {
-            DerefMaterial(handle)->SetColor(uniform, value);
-        }
-        void Prism_Material_SetMatrix4(uint64_t handle, const char* uniform, const glm::mat4& value)
-        {
-            DerefMaterial(handle)->SetMatrix4(uniform, value);
-        }
-        void Prism_Material_SetTexture(uint64_t handle, const char* uniform, uint64_t textureHandle)
-        {
-            DerefMaterial(handle)->SetTexture(uniform, *reinterpret_cast<Ref<Texture2D> *>(textureHandle));
-        }
-        void Prism_Material_SetKeyword(uint64_t handle, const char* name, bool enabled)
-        {
-            DerefMaterial(handle)->SetKeyword(name, enabled);
-        }
-        bool Prism_Material_IsKeywordEnabled(uint64_t handle, const char* name)
-        {
-            return DerefMaterial(handle)->IsKeywordEnabled(name);
-        }
-
     }
 } // namespace Prism::PythonScript
 
-// PriseNative Register
-PYBIND11_MODULE(PrismNative, m)
-{
-    using namespace Prism;
-    using namespace Prism::PythonScript;
-
-    py::class_<RaycastHit>(m, "RaycastHit")
-        .def_readwrite("EntityID", &RaycastHit::EntityID)
-        .def_readwrite("Position", &RaycastHit::Position)
-        .def_readwrite("Normal", &RaycastHit::Normal)
-        .def_readwrite("Distance", &RaycastHit::Distance);
-
-    py::class_<OverlapHitData>(m, "OverlapHitData")
-        .def_readwrite("EntityID", &OverlapHitData::EntityID)
-        .def_readwrite("ColliderType", &OverlapHitData::ColliderType)
-        .def_readwrite("IsTrigger", &OverlapHitData::IsTrigger)
-        .def_property_readonly("ShapeData", [](const OverlapHitData& d)
-            {
-                py::list shapeData;
-                for (int i = 0; i < 6; ++i)
-                    shapeData.append(PyFloat_FromDouble(d.ShapeData[i]));
-                return shapeData; })
-        .def_property_readonly("MeshHandle", [](const OverlapHitData& d) -> uint64_t
-            { return reinterpret_cast<uintptr_t>(d.MeshHandle); });
-
-    py::class_<ScriptTransform>(m, "ScriptTransform")
-        .def(py::init<>())
-        .def_readwrite("Position", &ScriptTransform::Position)
-        .def_readwrite("Rotation", &ScriptTransform::Rotation)
-        .def_readwrite("Scale", &ScriptTransform::Scale)
-        .def_readwrite("Up", &ScriptTransform::Up)
-        .def_readwrite("Right", &ScriptTransform::Right)
-        .def_readwrite("Forward", &ScriptTransform::Forward);
-
-#define BIND_MODULE_FUNCTION(name) m.def(#name, &Prism::PythonScript::name)
-    // Log
-    BIND_MODULE_FUNCTION(Prism_Log_LogMessage);
-    // Time
-    BIND_MODULE_FUNCTION(Prism_Time_GetDeltaTime);
-    BIND_MODULE_FUNCTION(Prism_Time_GetUnscaledDeltaTime);
-    BIND_MODULE_FUNCTION(Prism_Time_GetTime);
-    BIND_MODULE_FUNCTION(Prism_Time_GetUnscaledTime);
-    BIND_MODULE_FUNCTION(Prism_Time_GetFixedDeltaTime);
-    BIND_MODULE_FUNCTION(Prism_Time_GetFrameCount);
-    BIND_MODULE_FUNCTION(Prism_Time_SetTimeScale);
-    BIND_MODULE_FUNCTION(Prism_Time_GetTimeScale);
-    BIND_MODULE_FUNCTION(Prism_Time_SetFixedDeltaTime);
-    // Math
-    BIND_MODULE_FUNCTION(Prism_Noise_PerlinNoise);
-    // Input
-    BIND_MODULE_FUNCTION(Prism_Input_IsKeyPressed);
-    BIND_MODULE_FUNCTION(Prism_Input_GetMousePosition);
-    BIND_MODULE_FUNCTION(Prism_Input_SetCursorMode);
-    BIND_MODULE_FUNCTION(Prism_Input_GetCursorMode);
-    BIND_MODULE_FUNCTION(Prism_Input_IsMouseButtonPressed);
-    // MeshRendererComponent
-    BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_GetMesh);
-    BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_SetMesh);
-    BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_GetMaterial);
-    BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_SetMaterial);
-    BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_GetMaterialCount);
-    BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_GetMaterials);
-    BIND_MODULE_FUNCTION(Prism_MeshRendererComponent_SetMaterials);
-
-    BIND_MODULE_FUNCTION(Prism_MeshFactory_CreatePlane);
-    // RigidBody2DComponent
-    BIND_MODULE_FUNCTION(Prism_RigidBody2DComponent_ApplyLinearImpulse);
-    BIND_MODULE_FUNCTION(Prism_RigidBody2DComponent_GetLinearVelocity);
-    BIND_MODULE_FUNCTION(Prism_RigidBody2DComponent_SetLinearVelocity);
-    // RigidBodyComponent
-    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_AddForce);
-    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_AddTorque);
-    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_GetLinearVelocity);
-    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_SetLinearVelocity);
-    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_Rotate);
-    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_GetLayer);
-    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_GetMass);
-    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_SetMass);
-    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_GetBodyType);
-    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_GetAngularVelocity);
-    BIND_MODULE_FUNCTION(Prism_RigidBodyComponent_SetAngularVelocity);
-    // Physics
-    BIND_MODULE_FUNCTION(Prism_Physics_Raycast);
-    BIND_MODULE_FUNCTION(Prism_Physics_OverlapBox);
-    BIND_MODULE_FUNCTION(Prism_Physics_OverlapCapsule);
-    BIND_MODULE_FUNCTION(Prism_Physics_OverlapSphere);
-    BIND_MODULE_FUNCTION(Prism_Physics_GetGravity);
-    BIND_MODULE_FUNCTION(Prism_Physics_SetGravity);
-    // Material
-    BIND_MODULE_FUNCTION(Prism_Material_Constructor);
-    BIND_MODULE_FUNCTION(Prism_Material_Destructor);
-    BIND_MODULE_FUNCTION(Prism_Material_SetFloat);
-    BIND_MODULE_FUNCTION(Prism_Material_SetInt);
-    BIND_MODULE_FUNCTION(Prism_Material_SetBool);
-    BIND_MODULE_FUNCTION(Prism_Material_SetVector2);
-    BIND_MODULE_FUNCTION(Prism_Material_SetVector3);
-    BIND_MODULE_FUNCTION(Prism_Material_SetVector4);
-    BIND_MODULE_FUNCTION(Prism_Material_SetColor3);
-    BIND_MODULE_FUNCTION(Prism_Material_SetColor);
-    BIND_MODULE_FUNCTION(Prism_Material_SetMatrix4);
-    BIND_MODULE_FUNCTION(Prism_Material_SetTexture);
-    BIND_MODULE_FUNCTION(Prism_Material_SetKeyword);
-    BIND_MODULE_FUNCTION(Prism_Material_IsKeywordEnabled);
-}
-
 namespace Prism::PythonScript
 {
+    class PythonNoise
+    {
+    public:
+        static float PerlinNoise(float x, float y) { return Noise::PerlinNoise(x, y); }
+    };
+
+    struct PythonTransform
+    { glm::vec3 Position; glm::vec3 Rotation; glm::vec3 Scale; glm::vec3 Up; glm::vec3 Right; glm::vec3 Forward; };
+
+    class PythonInput
+    {
+    public:
+        static bool IsKeyPressed(KeyCode key) { return Input::IsKeyPressed(key); }
+        static glm::vec2 GetMousePosition() { auto [x, y] = Input::GetMousePosition(); return { x, y }; }
+        static void SetCursorMode(CursorMode mode) { Input::SetCursorMode(mode); }
+        static CursorMode GetCursorMode() { return Input::GetCursorMode(); }
+        static bool IsMouseButtonPressed(MouseButton button) { return Input::IsMouseButtonPressed(button); }
+    };
+
+    class PythonTime
+    {
+    public:
+        static float GetDeltaTime() { return Time::GetDeltaTime(); }
+        static float GetUnscaledDeltaTime() { return Time::GetUnscaledDeltaTime(); }
+        static float GetTime() { return Time::GetTime(); }
+        static float GetUnscaledTime() { return Time::GetUnscaledTime(); }
+        static int64_t GetFrameCount() { return (int64_t)Time::GetFrameCount(); }
+        static float GetFixedDeltaTime() { return Time::GetFixedDeltaTime(); }
+        static void SetFixedDeltaTime(float fixedDeltaTime) { Time::SetFixedDeltaTime(fixedDeltaTime); }
+        static float GetTimeScale() { return Time::GetTimeScale(); }
+        static void SetTimeScale(float scale) { Time::SetTimeScale(scale); }
+    };
+
+    class PythonLog
+    {
+    public:
+        static void Trace(const char* message) { PR_CORE_TRACE("[Python] {}", message); }
+        static void Debug(const char* message) { PR_CORE_TRACE("[Python] {}", message); }
+        static void Info(const char* message) { PR_CORE_INFO("[Python] {}", message); }
+        static void Warn(const char* message) { PR_CORE_WARN("[Python] {}", message); }
+        static void Error(const char* message) { PR_CORE_ERROR("[Python] {}", message); }
+        static void Critical(const char* message) { PR_CORE_FATAL("[Python] {}", message); }
+    };
+
     class PythonAsset
     {
     protected:
@@ -705,7 +231,7 @@ namespace Prism::PythonScript
                 Entity entity = GetEntityFromEntityID(m_EntityID);
                 std::string className = cls.attr("__module__").cast<std::string>() + "." + cls.attr("__qualname__").cast<std::string>();
                 UUID classID = PythonScriptMetaRegistry::GenerateClassID(className);
-                auto& comp = entity.GetComponent<PythonScriptComponent>();
+                auto& comp = entity.GetComponent<Prism::PythonScriptComponent>();
                 for (auto& [bid, binding] : comp.Behaviours)
                 {
                     if (binding.ClassID == classID)
@@ -765,7 +291,7 @@ namespace Prism::PythonScript
                 Entity entity = GetEntityFromEntityID(m_EntityID);
                 std::string className = cls.attr("__module__").cast<std::string>() + "." + cls.attr("__qualname__").cast<std::string>();
                 UUID classID = PythonScriptMetaRegistry::GenerateClassID(className);
-                auto& comp = entity.GetComponent<PythonScriptComponent>();
+                auto& comp = entity.GetComponent<Prism::PythonScriptComponent>();
                 for (auto& [bid, binding] : comp.Behaviours)
                     if (binding.ClassID == classID) return true;
                 return false;
@@ -810,6 +336,8 @@ namespace Prism::PythonScript
         uint64_t m_EntityID = 0;
 
     public:
+        virtual ~PythonComponent() = default;
+        virtual std::string __Repr__() { return fmt::format(" <Component EntityID = {}>", m_EntityID); }
         pybind11::object GetEntity() const { return m_Entity; }
 
         void SetEntity(pybind11::object entity)
@@ -817,6 +345,7 @@ namespace Prism::PythonScript
             m_Entity = entity;
             m_EntityID = entity.attr("ID").cast<uint64_t>();
         }
+        
     protected:
         Entity GetEntityImpt() const
         {
@@ -827,6 +356,151 @@ namespace Prism::PythonScript
                 "Invalid entity ID or entity doesn't exist in scene!");
             return entityMap.at(m_EntityID);
         }
+    };
+
+    class PythonTagComponent : public PythonComponent
+    {
+        public:
+        std::string GetTag() const { return GetEntityImpt().GetComponent<TagComponent>().Tag; }
+        void SetTag(const std::string& tag) { GetEntityImpt().GetComponent<TagComponent>().Tag = tag; }
+        virtual std::string __Repr__() override { return fmt::format(" <TagComponent Tag = {}>", GetTag()); }
+    };
+
+    class PythonScriptComponent : public PythonComponent
+    {
+    };
+
+    class PythonCameraComponent : public PythonComponent
+    {
+    public:
+        virtual std::string __Repr__() override { return fmt::format(" <CameraComponent> {}", m_EntityID); }
+    };
+
+    class PythonSpriteRendererComponent : public PythonComponent
+    {
+    };
+
+    class PythonBoxCollider2DComponent : public PythonComponent
+    {
+    };
+
+    class PythonCircleCollider2DComponent : public PythonComponent
+    {
+    };
+
+    class PythonRigidBody2DComponent : public PythonComponent
+    {
+    public:
+        virtual std::string __Repr__() override { return fmt::format(" <RigidBody2DComponent> {}", m_EntityID); }
+        void ApplyLinearImpulse(const glm::vec2& impulse, const glm::vec2& offset, bool wake)
+        {
+            Entity entity = GetEntityImpt();
+            auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
+            b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
+            body->ApplyLinearImpulse(b2Vec2(impulse.x, impulse.y), b2Vec2(offset.x, offset.y), wake);
+        }
+        glm::vec2 GetLinearVelocity() const
+        {
+            Entity entity = GetEntityImpt();
+            auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
+            b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
+            const b2Vec2& v = body->GetLinearVelocity();
+            return { v.x, v.y };
+        }
+        void SetLinearVelocity(const glm::vec2& velocity)
+        {
+            Entity entity = GetEntityImpt();
+            auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
+            b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
+            body->SetLinearVelocity(b2Vec2(velocity.x, velocity.y));
+        }
+    };
+
+    class PythonRigidBodyComponent : public PythonComponent
+    {
+    public:
+        virtual std::string __Repr__() override { return fmt::format(" <RigidBodyComponent> {}", m_EntityID); }
+        void AddForce(const glm::vec3& force, ForceMode mode)
+        {
+            Entity entity = GetEntityImpt();
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
+            Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+            actor->AddForce(force, (ForceMode)mode);
+        }
+        void AddTorque(const glm::vec3& torque, ForceMode mode)
+        {
+            Entity entity = GetEntityImpt();
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
+            Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+            actor->AddTorque(torque, (ForceMode)mode);
+        }
+        glm::vec3 GetLinearVelocity() const
+        {
+            Entity entity = GetEntityImpt();
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
+            return Physics::GetActorForEntity(entity)->GetLinearVelocity();
+        }
+        void SetLinearVelocity(const glm::vec3& velocity)
+        {
+            Entity entity = GetEntityImpt();
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
+            Physics::GetActorForEntity(entity)->SetLinearVelocity(velocity);
+        }
+        void Rotate(const glm::vec3& rotation)
+        {
+            Entity entity = GetEntityImpt();
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
+            Physics::GetActorForEntity(entity)->Rotate(rotation);
+        }
+        float GetMass() const
+        {
+            Entity entity = GetEntityImpt();
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
+            return Physics::GetActorForEntity(entity)->GetMass();
+        }
+        void SetMass(float mass)
+        {
+            Entity entity = GetEntityImpt();
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
+            Physics::GetActorForEntity(entity)->SetMass(mass);
+        }
+        glm::vec3 GetAngularVelocity() const
+        {
+            Entity entity = GetEntityImpt();
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
+            return Physics::GetActorForEntity(entity)->GetAngularVelocity();
+        }
+        void SetAngularVelocity(const glm::vec3& velocity)
+        {
+            Entity entity = GetEntityImpt();
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
+            Physics::GetActorForEntity(entity)->SetAngularVelocity(velocity);
+        }
+        uint32_t GetLayer() const
+        {
+            Entity entity = GetEntityImpt();
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
+            return entity.GetComponent<RigidBodyComponent>().Layer;
+        }
+        uint32_t GetBodyType() const
+        {
+            Entity entity = GetEntityImpt();
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>(), "No RigidBodyComponent!");
+            return (uint32_t)entity.GetComponent<RigidBodyComponent>().BodyType;
+        }
+
+    };
+
+    class PythonBoxColliderComponent : public PythonComponent
+    {
+    };
+
+    class PythonSphereColliderComponent : public PythonComponent
+    {
+    };
+
+    class PythonCapsuleColliderComponent : public PythonComponent
+    {
     };
 
     class PythonTransformComponent : public PythonComponent
@@ -849,13 +523,13 @@ namespace Prism::PythonScript
         glm::vec3 GetRight() const { return GetEntityImpt().Transformation().Right; }
         glm::vec3 GetUp() const { return GetEntityImpt().Transformation().Up; }
 
-        ScriptTransform GetTransform() const {
+        PythonTransform GetTransform() const {
             Entity e = GetEntityImpt();
             auto world = GetTransformSystem(e)->GetWorldDecomposed(e);
             auto& tc = e.Transformation();
             return { world.Position, world.Rotation, world.Scale, tc.Up, tc.Right, tc.Forward };
         }
-        void SetTransform(const ScriptTransform& t) {
+        void SetTransform(const PythonTransform& t) {
             Entity e = GetEntityImpt();
             auto* ts = GetTransformSystem(e);
             ts->SetWorldPosition(e, t.Position);
@@ -985,8 +659,198 @@ namespace Prism::PythonScript
         }
     };
 
+    class PythonCollider
+    {
+    private:
+        PythonEntity m_Entity;
+        bool m_IsTrigger = false;
+    public:
+        PythonCollider(const PythonEntity& entity, bool isTrigger)
+            : m_Entity(entity), m_IsTrigger(isTrigger) {}
+        virtual ~PythonCollider() = default;
+        virtual std::string __Repr__() { return fmt::format(" <Collider>"); }
+        virtual std::string __Str__() { return fmt::format("Collider({}, {}, {})", GetColliderType(), m_Entity.GetID(), m_IsTrigger); }
+        PythonEntity GetEntity() const { return m_Entity; }
+        PythonRigidBodyComponent GetRigidBody() const
+        {
+            Entity entity = GetEntityImpt();
+            if (entity.HasComponent<RigidBodyComponent>())
+            {
+                PythonRigidBodyComponent rb;
+                rb.SetEntity(py::cast(m_Entity));
+                return rb;
+            }
+            throw std::runtime_error("Entity does not have a RigidBodyComponent!");
+        }
+        bool IsTrigger() const { return m_IsTrigger; }
+    protected:
+        Entity GetEntityImpt() const
+        {
+            WeakRef<Scene> scene = PythonScriptEngine::GetCurrentSceneContext();
+            PR_CORE_ASSERT(scene, "No active scene!");
+            const auto& entityMap = scene->GetEntityMap();
+            PR_CORE_ASSERT(entityMap.find(m_Entity.GetID()) != entityMap.end(),
+                "Invalid entity ID or entity doesn't exist in scene!");
+            return entityMap.at(m_Entity.GetID());
+        }
+        virtual std::string GetColliderType() const { return "Collder"; }
+    };
 
-   
+    class PythonBoxCollider : public PythonCollider
+    {
+    private:
+        glm::vec3 m_Size;
+        glm::vec3 m_Offset;
+    public:
+        PythonBoxCollider(const PythonEntity& entity, bool isTrigger, const glm::vec3& size, const glm::vec3& offset)
+            : PythonCollider(entity, isTrigger), m_Size(size), m_Offset(offset) {}
+        glm::vec3 GetSize() const { return m_Size; }
+        glm::vec3 GetOffset() const { return m_Offset; }
+    protected:
+        virtual std::string GetColliderType() const override { return "BoxCollider"; }
+    };
+
+    class PythonSphereCollider : public PythonCollider
+    {
+    private:
+        float m_Radius;
+    public:
+        PythonSphereCollider(const PythonEntity& entity, bool isTrigger, float radius)
+            : PythonCollider(entity, isTrigger), m_Radius(radius) {}
+        float GetRadius() const { return m_Radius; }
+    protected:
+        virtual std::string GetColliderType() const override { return "SphereCollider"; }
+    };
+
+    class PythonCapsuleCollider : public PythonCollider
+    {
+    private:
+        float m_Radius;
+        float m_Height;
+    public:
+        PythonCapsuleCollider(const PythonEntity& entity, bool isTrigger, float radius, float height)
+            : PythonCollider(entity, isTrigger), m_Radius(radius), m_Height(height) {}
+        float GetRadius() const { return m_Radius; }
+        float GetHeight() const { return m_Height; }
+    protected:
+        virtual std::string GetColliderType() const override { return "CapsuleCollider"; }
+    };
+
+    class PythonMeshCollider : public PythonCollider
+    {
+    private:
+        PythonMesh m_Mesh;
+    public:
+        PythonMeshCollider(const PythonEntity& entity, bool isTrigger, const PythonMesh& mesh )
+            : PythonCollider(entity, isTrigger), m_Mesh(mesh) {}
+        PythonMesh GetMesh() const { return m_Mesh; }
+    protected:
+        virtual std::string GetColliderType() const override { return "MeshCollider"; }
+    };
+
+    class PythonPhysics
+    {
+        using ColliderList = std::vector<std::shared_ptr<PythonCollider>>;
+    public:
+        static float GetGravity() { return Physics::GetGravity(); }
+        static void SetGravity(float gravity) { Physics::SetGravity(gravity); }
+        static bool Raycast(const glm::vec3& origin, const glm::vec3& direction, float maxDistance, RaycastHit* raycastHit)
+        {
+            RaycastHit hit;
+            if (PXPhysicsWrappers::Raycast(origin, direction, maxDistance, &hit))
+            {
+                if (raycastHit) *raycastHit = hit;
+                return true;
+            }
+            return false;
+        }
+        static ColliderList OverlapBox(const glm::vec3& origin, const glm::vec3& halfSize)
+        {
+            std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS> buffer;
+            uint32_t count;
+            ColliderList results;
+            if (PXPhysicsWrappers::OverlapBox(origin, halfSize, buffer, &count))
+            {
+                results.reserve(count);
+                for (uint32_t i = 0; i < count; ++i)
+                    results.push_back(FillOverlapHit(buffer[i]));
+            }
+            return results;
+        }
+        static ColliderList OverlapSphere(const glm::vec3& origin, float radius)
+        {
+            std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS> buffer;
+            uint32_t count;
+            ColliderList results;
+            if (PXPhysicsWrappers::OverlapSphere(origin, radius, buffer, &count))
+            {
+                results.reserve(count);
+                for (uint32_t i = 0; i < count; ++i)
+                    results.push_back(FillOverlapHit(buffer[i]));
+            }
+            return results;
+        }
+        static ColliderList OverlapCapsule(const glm::vec3& origin, float radius, float halfHeight)
+        {
+            std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS> buffer;
+            uint32_t count;
+            ColliderList results;
+            if (PXPhysicsWrappers::OverlapCapsule(origin, radius, halfHeight, buffer, &count))
+            {
+                results.reserve(count);
+                for (uint32_t i = 0; i < count; ++i)
+                    results.push_back(FillOverlapHit(buffer[i]));
+            }
+            return results;
+        }
+    private:
+        static std::shared_ptr<PythonCollider> FillOverlapHit(physx::PxOverlapHit& pxHit)
+        {
+            Entity& entity = *(Entity*)pxHit.actor->userData;
+            if (entity.HasComponent<BoxColliderComponent>())
+            {
+                auto& bc = entity.GetComponent<BoxColliderComponent>();
+                auto boxCollider = std::make_shared<PythonBoxCollider>(
+                    PythonEntity(entity.GetUUID()), bc.IsTrigger, bc.Size, bc.Offset
+                );
+                return boxCollider;
+            }
+            else if (entity.HasComponent<SphereColliderComponent>())
+            {
+                auto& sc = entity.GetComponent<SphereColliderComponent>();
+                auto sphereCollider = std::make_shared<PythonSphereCollider>(
+                    PythonEntity(entity.GetUUID()), sc.IsTrigger, sc.Radius
+                );
+                return sphereCollider;
+            }
+            else if (entity.HasComponent<CapsuleColliderComponent>())
+            {
+                auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+                auto capsuleCollider = std::make_shared<PythonCapsuleCollider>(
+                    PythonEntity(entity.GetUUID()), cc.IsTrigger, cc.Radius, cc.Height
+                );
+                return capsuleCollider;
+            }
+            else if (entity.HasComponent<MeshColliderComponent>())
+            {
+                auto& mc = entity.GetComponent<MeshColliderComponent>();
+                auto meshCollider = std::make_shared<PythonMeshCollider>(
+                    PythonEntity(entity.GetUUID()), mc.IsTrigger, PythonMesh(reinterpret_cast<uint64_t>(new Ref<Mesh>(mc.CollisionMesh)))
+                );
+                return meshCollider;
+            }
+            return nullptr;
+        }
+    };
+
+    class PythonMeshFactory
+    {
+    public:
+        static PythonMesh CreatePlane(float width, float height)
+        {
+            return reinterpret_cast<uint64_t>(new Ref<Mesh>(ModelImporter::Import("assets/models/Plane1m.obj").Mesh));
+        }
+    };
 } // namespace Prism::PythonScript
 
 // PrismEngine Module Registe
@@ -994,6 +858,33 @@ namespace Prism::PythonScript
 PYBIND11_MODULE(PrismEngine, m)
 {
     using namespace Prism::PythonScript;
+
+    py::class_<PythonNoise>(m, "Noise")
+        .def_static("PerlinNoise", &PythonNoise::PerlinNoise);
+
+    py::class_<PythonInput>(m, "Input")
+        .def_static("IsKeyPressed", &PythonInput::IsKeyPressed)
+        .def_static("GetMousePosition", &PythonInput::GetMousePosition)
+        .def_static("SetCursorMode", &PythonInput::SetCursorMode)
+        .def_static("GetCursorMode", &PythonInput::GetCursorMode)
+        .def_static("IsMouseButtonPressed", &PythonInput::IsMouseButtonPressed);
+
+    py::class_<PythonTime>(m, "Time")
+        .def_property_readonly_static("DeltaTime", &PythonTime::GetDeltaTime)
+        .def_property_readonly_static("UnscaledDeltaTime", &PythonTime::GetUnscaledDeltaTime)
+        .def_property_readonly_static("Time", &PythonTime::GetTime)
+        .def_property_readonly_static("UnscaledTime", &PythonTime::GetUnscaledTime)
+        .def_property_readonly_static("FrameCount", &PythonTime::GetFrameCount)
+        .def_property_static("TimeScale", &PythonTime::GetTimeScale, &PythonTime::SetTimeScale)
+        .def_property_static("FixedDeltaTime", &PythonTime::GetFixedDeltaTime, &PythonTime::SetFixedDeltaTime);
+
+    py::class_<PythonLog>(m, "Log")
+        .def_static("Trace", &PythonLog::Trace)
+        .def_static("Debug", &PythonLog::Debug)
+        .def_static("Info", &PythonLog::Info)
+        .def_static("Warn", &PythonLog::Warn)
+        .def_static("Error", &PythonLog::Error)
+        .def_static("Critical", &PythonLog::Critical);
 
     py::class_<PythonAsset>(m, "Asset")
         .def(py::init<uint64_t>())
@@ -1023,6 +914,8 @@ PYBIND11_MODULE(PrismEngine, m)
         .def("SetTexture", &PythonMaterial::SetTexture)
         .def("SetKeyword", &PythonMaterial::SetKeyword)
         .def("IsKeywordEnabled", &PythonMaterial::IsKeywordEnabled);
+    py::class_<PythonMeshFactory>(m, "MeshFactory")
+        .def_static("CreatePlane", &PythonMeshFactory::CreatePlane);
 
     py::class_<PythonEntity>(m, "Entity")
         .def(py::init<uint64_t>(), py::arg("id") = 0)
@@ -1039,6 +932,54 @@ PYBIND11_MODULE(PrismEngine, m)
     py::class_<PythonComponent>(m, "Component")
         .def(py::init<>())
         .def_property("Entity", &PythonComponent::GetEntity, &PythonComponent::SetEntity);
+    py::class_<PythonTagComponent, PythonComponent>(m, "TagComponent")
+        .def(py::init<>())
+        .def("__repr__", &PythonTagComponent::__Repr__)
+        .def_property("Tag", &PythonTagComponent::GetTag, &PythonTagComponent::SetTag);
+    py::class_<PythonCameraComponent, PythonComponent>(m, "CameraComponent")
+        .def(py::init<>())
+        .def("__repr__", &PythonCameraComponent::__Repr__);
+    py::class_<::Prism::PythonScript::PythonScriptComponent, PythonComponent>(m, "ScriptComponent")
+        .def(py::init<>());
+    py::class_<PythonSpriteRendererComponent, PythonComponent>(m, "SpriteRendererComponent")
+        .def(py::init<>());
+    py::class_<PythonRigidBody2DComponent, PythonComponent>(m, "RigidBody2DComponent")
+        .def(py::init<>())
+        .def("__repr__", &PythonRigidBody2DComponent::__Repr__)
+        .def("ApplyLinearImpulse", &PythonRigidBody2DComponent::ApplyLinearImpulse)
+        .def("GetLinearVelocity", &PythonRigidBody2DComponent::GetLinearVelocity)
+        .def("SetLinearVelocity", &PythonRigidBody2DComponent::SetLinearVelocity)
+        .def_property("LinearVelocity", &PythonRigidBody2DComponent::GetLinearVelocity, &PythonRigidBody2DComponent::SetLinearVelocity);
+    py::class_<PythonBoxCollider2DComponent, PythonComponent>(m, "BoxCollider2DComponent")
+        .def(py::init<>());
+    py::class_<PythonCircleCollider2DComponent, PythonComponent>(m, "CircleCollider2DComponent")
+        .def(py::init<>());
+
+    py::class_<PythonRigidBodyComponent, PythonComponent>(m, "RigidBodyComponent")
+        .def(py::init<>())
+        .def("__repr__", &PythonRigidBodyComponent::__Repr__)
+        .def("AddForce", &PythonRigidBodyComponent::AddForce)
+        .def("AddTorque", &PythonRigidBodyComponent::AddTorque)
+        .def_property("LinearVelocity", &PythonRigidBodyComponent::GetLinearVelocity, &PythonRigidBodyComponent::SetLinearVelocity)
+        .def("GetLinearVelocity", &PythonRigidBodyComponent::GetLinearVelocity)
+        .def("SetLinearVelocity", &PythonRigidBodyComponent::SetLinearVelocity)
+        .def("Rotate", &PythonRigidBodyComponent::Rotate)
+        .def_property("Mass", &PythonRigidBodyComponent::GetMass, &PythonRigidBodyComponent::SetMass)
+        .def("GetMass", &PythonRigidBodyComponent::GetMass)
+        .def("SetMass", &PythonRigidBodyComponent::SetMass)
+        .def_property("AngularVelocity", &PythonRigidBodyComponent::GetAngularVelocity, &PythonRigidBodyComponent::SetAngularVelocity)
+        .def("GetAngularVelocity", &PythonRigidBodyComponent::GetAngularVelocity)
+        .def("SetAngularVelocity", &PythonRigidBodyComponent::SetAngularVelocity)
+        .def_property_readonly("Layer", &PythonRigidBodyComponent::GetLayer)
+        .def_property_readonly("BodyType", &PythonRigidBodyComponent::GetBodyType);
+
+    py::class_<PythonBoxColliderComponent, PythonComponent>(m, "BoxColliderComponent")
+        .def(py::init<>());
+    py::class_<PythonSphereColliderComponent, PythonComponent>(m, "SphereColliderComponent")
+        .def(py::init<>());
+    py::class_<PythonCapsuleColliderComponent, PythonComponent>(m, "CapsuleColliderComponent")
+        .def(py::init<>());
+
     py::class_<PythonTransformComponent, PythonComponent>(m, "TransformComponent")
         .def(py::init<>())
         .def_property("Position", &PythonTransformComponent::GetPosition, &PythonTransformComponent::SetPosition)
@@ -1069,6 +1010,193 @@ PYBIND11_MODULE(PrismEngine, m)
         .def("GetComponent", &PythonBehaviour::GetComponent)
         .def("HasComponent", &PythonBehaviour::HasComponent)
         .def("CreateComponent", &PythonBehaviour::CreateComponent);
+
+    py::class_<PythonCollider>(m, "Collider")
+        .def("__repr__", &PythonCollider::__Repr__)
+        .def("__str__", &PythonCollider::__Str__)
+        .def_property_readonly("Entity", &PythonCollider::GetEntity)
+        .def_property_readonly("RigidBody", &PythonCollider::GetRigidBody)
+        .def_property_readonly("IsTrigger", &PythonCollider::IsTrigger);
+    py::class_<PythonBoxCollider, PythonCollider>(m, "BoxCollider")
+        .def_property_readonly("Size", &PythonBoxCollider::GetSize)
+        .def_property_readonly("Offset", &PythonBoxCollider::GetOffset);
+    py::class_<PythonSphereCollider, PythonCollider>(m, "SphereCollider")
+        .def_property_readonly("Radius", &PythonSphereCollider::GetRadius);
+    py::class_<PythonCapsuleCollider, PythonCollider>(m, "CapsuleCollider")
+        .def_property_readonly("Radius", &PythonCapsuleCollider::GetRadius)
+        .def_property_readonly("Height", &PythonCapsuleCollider::GetHeight);
+    py::class_<PythonMeshCollider, PythonCollider>(m, "MeshCollider")
+        .def_property_readonly("Mesh", &PythonMeshCollider::GetMesh);
+
+    py::class_<PythonPhysics>(m, "Physics")
+        .def_property_static("Gravity", &PythonPhysics::GetGravity, &PythonPhysics::SetGravity)
+        .def_static("Raycast", &PythonPhysics::Raycast,
+            py::arg("origin"), py::arg("direction"), py::arg("maxDistance") = 100.0f, py::arg("raycastHit") = py::none())
+        .def_static("OverlapBox", &PythonPhysics::OverlapBox)
+        .def_static("OverlapSphere", &PythonPhysics::OverlapSphere)
+        .def_static("OverlapCapsule", &PythonPhysics::OverlapCapsule);
+
+
+#pragma region EnumClass
+    py::class_<RaycastHit>(m, "RaycastHit")
+        .def(py::init<>())
+        .def_readwrite("EntityID", &RaycastHit::EntityID)
+        .def_readwrite("Position", &RaycastHit::Position)
+        .def_readwrite("Normal", &RaycastHit::Normal)
+        .def_readwrite("Distance", &RaycastHit::Distance);
+
+    py::class_<PythonTransform>(m, "ScriptTransform")
+        .def(py::init<>())
+        .def_readwrite("Position", &PythonTransform::Position)
+        .def_readwrite("Rotation", &PythonTransform::Rotation)
+        .def_readwrite("Scale", &PythonTransform::Scale)
+        .def_readwrite("Up", &PythonTransform::Up)
+        .def_readwrite("Right", &PythonTransform::Right)
+        .def_readwrite("Forward", &PythonTransform::Forward);
+
+    py::enum_<ForceMode>(m, "ForceMode")
+        .value("Force", ForceMode::Force)
+        .value("Impulse", ForceMode::Impulse)
+        .value("VelocityChange", ForceMode::VelocityChange)
+        .value("Acceleration", ForceMode::Acceleration);
+    py::enum_<CursorMode>(m, "CursorMode")
+        .value("Normal", CursorMode::Normal)
+        .value("Hidden", CursorMode::Hidden)
+        .value("Locked", CursorMode::Locked);
+    py::enum_<MouseButton>(m, "MouseButton")
+        .value("Left", MouseButton::Left)
+        .value("Right", MouseButton::Right)
+        .value("Middle", MouseButton::Middle)
+        .value("Button0", MouseButton::Button0)
+        .value("Button1", MouseButton::Button1)
+        .value("Button2", MouseButton::Button2)
+        .value("Button3", MouseButton::Button3)
+        .value("Button4", MouseButton::Button4)
+        .value("Button5", MouseButton::Button5);
+    py::enum_<KeyCode>(m, "KeyCode")
+        .value("Space", KeyCode::Space)
+        .value("Apostrophe", KeyCode::Apostrophe)
+        .value("Comma", KeyCode::Comma)
+        .value("Minus", KeyCode::Minus)
+        .value("Period", KeyCode::Period)
+        .value("Slash", KeyCode::Slash)
+        .value("D0", KeyCode::D0)
+        .value("D1", KeyCode::D1)
+        .value("D2", KeyCode::D2)
+        .value("D3", KeyCode::D3)
+        .value("D4", KeyCode::D4)
+        .value("D5", KeyCode::D5)
+        .value("D6", KeyCode::D6)
+        .value("D7", KeyCode::D7)
+        .value("D8", KeyCode::D8)
+        .value("D9", KeyCode::D9)
+        .value("Semicolon", KeyCode::Semicolon)
+        .value("Equal", KeyCode::Equal)
+        .value("A", KeyCode::A)
+        .value("B", KeyCode::B)
+        .value("C", KeyCode::C)
+        .value("D", KeyCode::D)
+        .value("E", KeyCode::E)
+        .value("F", KeyCode::F)
+        .value("G", KeyCode::G)
+        .value("H", KeyCode::H)
+        .value("I", KeyCode::I)
+        .value("J", KeyCode::J)
+        .value("K", KeyCode::K)
+        .value("L", KeyCode::L)
+        .value("M", KeyCode::M)
+        .value("N", KeyCode::N)
+        .value("O", KeyCode::O)
+        .value("P", KeyCode::P)
+        .value("Q", KeyCode::Q)
+        .value("R", KeyCode::R)
+        .value("S", KeyCode::S)
+        .value("T", KeyCode::T)
+        .value("U", KeyCode::U)
+        .value("V", KeyCode::V)
+        .value("W", KeyCode::W)
+        .value("X", KeyCode::X)
+        .value("Y", KeyCode::Y)
+        .value("Z", KeyCode::Z)
+        .value("LeftBracket", KeyCode::LeftBracket)
+        .value("Backslash", KeyCode::Backslash)
+        .value("RightBracket", KeyCode::RightBracket)
+        .value("GraveAccent", KeyCode::GraveAccent)
+        .value("World1", KeyCode::World1)
+        .value("World2", KeyCode::World2)
+        .value("Escape", KeyCode::Escape)
+        .value("Enter", KeyCode::Enter)
+        .value("Tab", KeyCode::Tab)
+        .value("Backspace", KeyCode::Backspace)
+        .value("Insert", KeyCode::Insert)
+        .value("Delete", KeyCode::Delete)
+        .value("Right", KeyCode::Right)
+        .value("Left", KeyCode::Left)
+        .value("Down", KeyCode::Down)
+        .value("Up", KeyCode::Up)
+        .value("PageUp", KeyCode::PageUp)
+        .value("PageDown", KeyCode::PageDown)
+        .value("Home", KeyCode::Home)
+        .value("End", KeyCode::End)
+        .value("CapsLock", KeyCode::CapsLock)
+        .value("ScrollLock", KeyCode::ScrollLock)
+        .value("NumLock", KeyCode::NumLock)
+        .value("PrintScreen", KeyCode::PrintScreen)
+        .value("Pause", KeyCode::Pause)
+        .value("F1", KeyCode::F1)
+        .value("F2", KeyCode::F2)
+        .value("F3", KeyCode::F3)
+        .value("F4", KeyCode::F4)
+        .value("F5", KeyCode::F5)
+        .value("F6", KeyCode::F6)
+        .value("F7", KeyCode::F7)
+        .value("F8", KeyCode::F8)
+        .value("F9", KeyCode::F9)
+        .value("F10", KeyCode::F10)
+        .value("F11", KeyCode::F11)
+        .value("F12", KeyCode::F12)
+        .value("F13", KeyCode::F13)
+        .value("F14", KeyCode::F14)
+        .value("F15", KeyCode::F15)
+        .value("F16", KeyCode::F16)
+        .value("F17", KeyCode::F17)
+        .value("F18", KeyCode::F18)
+        .value("F19", KeyCode::F19)
+        .value("F20", KeyCode::F20)
+        .value("F21", KeyCode::F21)
+        .value("F22", KeyCode::F22)
+        .value("F23", KeyCode::F23)
+        .value("F24", KeyCode::F24)
+        .value("F25", KeyCode::F25)
+        .value("KP0", KeyCode::KP0)
+        .value("KP1", KeyCode::KP1)
+        .value("KP2", KeyCode::KP2)
+        .value("KP3", KeyCode::KP3)
+        .value("KP4", KeyCode::KP4)
+        .value("KP5", KeyCode::KP5)
+        .value("KP6", KeyCode::KP6)
+        .value("KP7", KeyCode::KP7)
+        .value("KP8", KeyCode::KP8)
+        .value("KP9", KeyCode::KP9)
+        .value("KPDecimal", KeyCode::KPDecimal)
+        .value("KPDivide", KeyCode::KPDivide)
+        .value("KPMultiply", KeyCode::KPMultiply)
+        .value("KPSubtract", KeyCode::KPSubtract)
+        .value("KPAdd", KeyCode::KPAdd)
+        .value("KPEnter", KeyCode::KPEnter)
+        .value("KPEqual", KeyCode::KPEqual)
+        .value("LeftShift", KeyCode::LeftShift)
+        .value("LeftControl", KeyCode::LeftControl)
+        .value("LeftAlt", KeyCode::LeftAlt)
+        .value("LeftSuper", KeyCode::LeftSuper)
+        .value("RightShift", KeyCode::RightShift)
+        .value("RightControl", KeyCode::RightControl)
+        .value("RightAlt", KeyCode::RightAlt)
+        .value("RightSuper", KeyCode::RightSuper)
+        .value("Menu", KeyCode::Menu);
+        
+#pragma endregion
+
 }
 
 
@@ -1109,8 +1237,8 @@ namespace Prism
             s_PythonTypeCache[PYTHON_TYPE_VECTOR4] = math.attr("Vector4");
             s_PythonTypeCache[PYTHON_TYPE_OBJECT] = builtins.attr("object");
             s_PythonTypeCache[PYTHON_TYPE_MESHREF] = py::type::of<PythonMesh>();
-            //s_PythonTypeCache[PYTHON_TYPE_MATERIALREF] = prism.attr("Material");
-            //s_PythonTypeCache[PYTHON_TYPE_TEXTURE2DREF] = prism.attr("Texture2D");
+            s_PythonTypeCache[PYTHON_TYPE_MATERIALREF] = py::type::of<PythonMaterial>();
+            s_PythonTypeCache[PYTHON_TYPE_TEXTURE2DREF] = py::type::of<PythonTexture2D>();
             s_PythonTypeCache[PYTHON_TYPE_ASSET] = py::type::of<PythonAsset>();
 
             for (const auto& [id, type] : s_PythonTypeCache)

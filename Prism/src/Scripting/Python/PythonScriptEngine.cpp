@@ -13,7 +13,6 @@
 #include <filesystem>
 
 namespace py = pybind11;
-extern "C" PyObject* PyInit_PrismNative();
 extern "C" PyObject* PyInit_PrismEngine();
 namespace Prism
 {
@@ -57,7 +56,6 @@ namespace Prism
         if (s_Initialized)
             return;
 
-        PyImport_AppendInittab("PrismNative", PyInit_PrismNative);
         PyImport_AppendInittab("PrismEngine", PyInit_PrismEngine);
         py::initialize_interpreter();
         py::exec("import sys; sys.path.append('Assets/scripts/Python')");

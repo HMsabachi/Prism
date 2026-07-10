@@ -27,23 +27,31 @@ namespace Prism
 
     static void InitComponentTypes()
     {
-        s_PythonCreateComponentFuncs.clear();
-        s_PythonHasComponentFuncs.clear();
+        try
+        {
+            s_PythonCreateComponentFuncs.clear();
+            s_PythonHasComponentFuncs.clear();
 
-        py::module_ compMod = py::module::import("Prism.Component");
+            py::module_ compMod = py::module::import("Prism.Component");
 
-        RegisterPythonComponent<TagComponent>(compMod);
-        RegisterPythonComponent<TransformComponent>(compMod);
-        RegisterPythonComponent<MeshRendererComponent>(compMod);
-        RegisterPythonComponent<CameraComponent>(compMod);
-        RegisterPythonComponent<SpriteRendererComponent>(compMod);
-        RegisterPythonComponent<RigidBody2DComponent>(compMod);
-        RegisterPythonComponent<BoxCollider2DComponent>(compMod);
-        RegisterPythonComponent<CircleCollider2DComponent>(compMod);
-        RegisterPythonComponent<RigidBodyComponent>(compMod);
-        RegisterPythonComponent<BoxColliderComponent>(compMod);
-        RegisterPythonComponent<SphereColliderComponent>(compMod);
-        RegisterPythonComponent<CapsuleColliderComponent>(compMod);
+            RegisterPythonComponent<TagComponent>(compMod);
+            RegisterPythonComponent<TransformComponent>(compMod);
+            RegisterPythonComponent<MeshRendererComponent>(compMod);
+            RegisterPythonComponent<CameraComponent>(compMod);
+            RegisterPythonComponent<SpriteRendererComponent>(compMod);
+            RegisterPythonComponent<RigidBody2DComponent>(compMod);
+            RegisterPythonComponent<BoxCollider2DComponent>(compMod);
+            RegisterPythonComponent<CircleCollider2DComponent>(compMod);
+            RegisterPythonComponent<RigidBodyComponent>(compMod);
+            RegisterPythonComponent<BoxColliderComponent>(compMod);
+            RegisterPythonComponent<SphereColliderComponent>(compMod);
+            RegisterPythonComponent<CapsuleColliderComponent>(compMod);
+        }
+        catch (const py::error_already_set& e)
+        {
+            PR_CORE_ERROR("Failed to import Prism.Component module: {0}", e.what());
+            return;
+        }
     }
 
     void PythonScriptEngineRegistry::RegisterAll()

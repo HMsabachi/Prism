@@ -75,7 +75,7 @@ premake5 xcode4        # macOS Xcode
 - 统一生命周期 + 2D/3D 碰撞回调（`OnCollisionBegin` / `OnCollisionEnd` / `OnCollision2DBegin` / `OnCollision2DEnd`）
 - `__annotations__` 类型注解自动暴露为编辑器公共字段
 - **API 与 C# 端对称**：Core、Math、Renderer、Physics、Behaviour
-- **CPython C API 原生桥接**：`PrismNative` 动态注册模块
+- **pybind11 原生桥接**：`PrismEngine` 模块提供完整 ECS + 资产 + 物理 API
 - **PGLM 数学类型桥接**：Python Buffer Protocol 双向转换 glm ↔ pyglm
 
 ### 物理系统
@@ -167,7 +167,7 @@ Prism/
 │   │   └── Windows/               # Windows 平台层（GLFW 窗口、输入）
 │   ├── src/Scripting/             # 多语言脚本引擎
 │   │   ├── CSharp/                # C++/C# 互操作（Rolky、InternalCall）
-│   │   └── Python/                # Python 脚本引擎（CPython 嵌入、PrismNative 桥接）
+│   │   └── Python/                # Python 脚本引擎（CPython 嵌入、pybind11 桥接）
 │   │       └── Interop/           # Python C API RAII + glm ↔ pyglm 转换
 │   └── vendor/
 │       ├── PrismShaderCompiler/   # 自定义着色器编译器（PSL 解析、多后端代码生成）
@@ -234,7 +234,7 @@ Prism/
 - [x] **PrismShaderCompiler**：PSL 自定义着色器语言 + 多后端交叉编译（GLSL/HLSL/MSL/SPIR-V）+ Shader 变体系统
 - [x] **渲染管线重构**：SceneRenderer → RenderSystem + RenderPipeline、Geometry Pass + Composite Pass
 - [x] **级联阴影映射（CSM）+ PCF 软阴影**：4 级联、PSSM 视锥分割、纹素对齐、可配置最大阴影距离
-- [x] **Python 3.13 多语言脚本系统**：CPython 嵌入式、PrismNative 桥接、PGLM 数学转换
+- [x] **Python 3.13 多语言脚本系统**：CPython 嵌入式、pybind11 桥接、PGLM 数学转换
 - [x] **3D 物理系统（PhysX）**：刚体、4 种碰撞体、物理材质、触发器、碰撞回调、射线检测
 - [x] **资产管理系统**：EditorAssetManager / RuntimeAssetManager、AssetRegistry、ModelImporter
 - [ ] 资产引用与完整序列化管线
