@@ -1,20 +1,33 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "SceneHierarchyPanel.h"
 
-#include <imgui.h>
+#include "Prism/ImGui/ImGui.h"
 
 #include "Prism/Core/Application.h"
+#include "Prism/Core/Warning.h"
 #include "Prism/Renderer/Mesh.h"
+#include "Prism/Renderer/MeshFactory.h"
+#include "Prism/Asset/ModelImporter.h"
+#include "Prism/Physics/Physics.h"
+#include "Prism/Physics/PhysicsActor.h"
+#include "Prism/Physics/PXPhysicsWrappers.h"
+#include "Prism/Physics/PhysicsLayer.h"
+#include "Prism/Math/Math.h"
+#include "Prism/Utilities/FileSystem.h"
 #include "Prism/Core/LanguageManager.h"
 #include "Scripting/CSharp/CSharpScriptMetaRegistry.h"
 #include "Scripting/CSharp/CSharpScriptEngine.h"
 #include "Scripting/Python/PythonScriptMetaRegistry.h"
 #include "Scripting/Python/PythonScriptEngine.h"
+#include "Scripting/Python/PythonField.inl"
+#include "Prism/Scene/Systems/ScriptSystem.h"
+#include "Prism/Scene/Components.h"
 #include <assimp/scene.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+PR_WARNING_DISABLE(4312)
 
 // TODO:
 // - Eventually change imgui node IDs to be entity/asset GUID
@@ -50,21 +63,78 @@ namespace Prism {
     void SceneHierarchyPanel::OnImGuiRender()
     {
         ImGui::Begin("Scene Hierarchy");
+        ImRect windowRect = { ImGui::GetWindowContentRegionMin(), ImGui::GetWindowContentRegionMax() };
+
         if (m_Context)
         {
             uint32_t entityCount = 0, meshCount = 0;
             for (auto& entityid : m_Context->m_Registry.view<entt::entity>())
             {
                 Entity e(entityid, m_Context.Raw());
-                if (e.HasComponent<IDComponent>())
+                if (e.HasComponent<IDComponent>() && e.GetParentUUID() == 0)
                     DrawEntityNode(e);
+            }
+
+            if (ImGui::BeginDragDropTargetCustom(windowRect, ImGui::GetCurrentWindow()->ID))
+            {
+                const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("scene_entity_hierarchy", ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
+
+                if (payload)
+                {
+                    UUID droppedHandle = *((UUID*)payload->Data);
+                    Entity e = m_Context->FindEntityByUUID(droppedHandle);
+                    if (e)
+                    {
+                        Entity previousParent = m_Context->FindEntityByUUID(e.GetParentUUID());
+                        if (previousParent)
+                        {
+                            auto& children = previousParent.Children();
+                            children.erase(std::remove(children.begin(), children.end(), droppedHandle), children.end());
+
+                            glm::mat4 parentTransform = m_Context->GetTransformRelativeToParent(previousParent);
+                            glm::vec3 parentTranslation, parentRotation, parentScale;
+                            Math::DecomposeTransform(parentTransform, parentTranslation, parentRotation, parentScale);
+
+                            e.Transformation().SetPosition(e.Transformation().GetPosition() + parentTranslation);
+                        }
+
+                        e.SetParentUUID(0);
+                    }
+                }
+
+                ImGui::EndDragDropTarget();
             }
 
             if (ImGui::BeginPopupContextWindow("CreateEntityPopup", ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverExistingPopup))
             {
-                if (ImGui::MenuItem(TR("Create Empty Entity")))
+                if (ImGui::BeginMenu(TR("Create")))
                 {
-                    m_Context->CreateEntity("Empty Entity");
+                    if (ImGui::MenuItem(TR("Empty Entity")))
+                    {
+                        auto newEntity = m_Context->CreateEntity("Empty Entity");
+                        SetSelected(newEntity);
+                    }
+                    if (ImGui::MenuItem(TR("Mesh")))
+                    {
+                        auto newEntity = m_Context->CreateEntity("Mesh");
+                        newEntity.AddComponent<MeshRendererComponent>();
+                        SetSelected(newEntity);
+                    }
+                    ImGui::Separator();
+                    if (ImGui::MenuItem(TR("Directional Light")))
+                    {
+                        auto newEntity = m_Context->CreateEntity("Directional Light");
+                        newEntity.AddComponent<DirectionalLightComponent>();
+                        newEntity.Transformation().SetRotation(glm::degrees(glm::eulerAngles(glm::quat(glm::radians(glm::vec3{ 80.0f, 10.0f, 0.0f })))));
+                        SetSelected(newEntity);
+                    }
+                    if (ImGui::MenuItem(TR("Sky Light")))
+                    {
+                        auto newEntity = m_Context->CreateEntity("Sky Light");
+                        newEntity.AddComponent<SkyLightComponent>();
+                        SetSelected(newEntity);
+                    }
+                    ImGui::EndMenu();
                 }
                 ImGui::EndPopup();
             }
@@ -76,110 +146,6 @@ namespace Prism {
             if (m_SelectionContext)
             {
                 DrawComponents(m_SelectionContext);
-
-                if (ImGui::Button(TR("Add Component")))
-                    ImGui::OpenPopup("AddComponentPanel");
-
-                if (ImGui::BeginPopup("AddComponentPanel"))
-                {
-                    if (!m_SelectionContext.HasComponent<CameraComponent>())
-                    {
-                        if (ImGui::Button(TR("Camera")))
-                        {
-                            m_SelectionContext.AddComponent<CameraComponent>();
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    if (!m_SelectionContext.HasComponent<MeshComponent>())
-                    {
-                        if (ImGui::Button(TR("Mesh")))
-                        {
-                            m_SelectionContext.AddComponent<MeshComponent>();
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    if (!m_SelectionContext.HasComponent<SpriteRendererComponent>())
-                    {
-                        if (ImGui::Button(TR("Sprite Renderer")))
-                        {
-                            m_SelectionContext.AddComponent<SpriteRendererComponent>();
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    if (!m_SelectionContext.HasComponent<RigidBody2DComponent>())
-                    {
-                        if (ImGui::Button(TR("Rigidbody 2D")))
-                        {
-                            m_SelectionContext.AddComponent<RigidBody2DComponent>();
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    if (!m_SelectionContext.HasComponent<BoxCollider2DComponent>())
-                    {
-                        if (ImGui::Button(TR("Box Collider 2D")))
-                        {
-                            m_SelectionContext.AddComponent<BoxCollider2DComponent>();
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    if (!m_SelectionContext.HasComponent<CircleCollider2DComponent>())
-                    {
-                        if (ImGui::Button(TR("Circle Collider 2D")))
-                        {
-                            m_SelectionContext.AddComponent<CircleCollider2DComponent>();
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    if (!m_SelectionContext.HasComponent<RigidBodyComponent>())
-                    {
-                        if (ImGui::Button(TR("Rigidbody")))
-                        {
-                            m_SelectionContext.AddComponent<RigidBodyComponent>();
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    if (!m_SelectionContext.HasComponent<PhysicsMaterialComponent>())
-                    {
-                        if (ImGui::Button(TR("Physics Material")))
-                        {
-                            m_SelectionContext.AddComponent<PhysicsMaterialComponent>();
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    if (!m_SelectionContext.HasComponent<BoxColliderComponent>())
-                    {
-                        if (ImGui::Button(TR("Box Collider")))
-                        {
-                            m_SelectionContext.AddComponent<BoxColliderComponent>();
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    if (!m_SelectionContext.HasComponent<SphereColliderComponent>())
-                    {
-                        if (ImGui::Button(TR("Sphere Collider")))
-                        {
-                            m_SelectionContext.AddComponent<SphereColliderComponent>();
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    if (!m_SelectionContext.HasComponent<CapsuleColliderComponent>())
-                    {
-                        if (ImGui::Button(TR("Capsule Collider")))
-                        {
-                            m_SelectionContext.AddComponent<CapsuleColliderComponent>();
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    if (!m_SelectionContext.HasComponent<MeshColliderComponent>())
-                    {
-                        if (ImGui::Button(TR("Mesh Collider")))
-                        {
-                            m_SelectionContext.AddComponent<MeshColliderComponent>();
-                            ImGui::CloseCurrentPopup();
-                        }
-                    }
-                    ImGui::EndPopup();
-                }
             }
         }
         ImGui::End();
@@ -211,6 +177,11 @@ namespace Prism {
             name = entity.GetComponent<TagComponent>().Tag.c_str();
 
         ImGuiTreeNodeFlags node_flags = (entity == m_SelectionContext ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_OpenOnArrow;
+        node_flags |= ImGuiTreeNodeFlags_SpanAvailWidth;
+
+        if (entity.Children().empty())
+            node_flags |= ImGuiTreeNodeFlags_Leaf;
+
         bool opened = ImGui::TreeNodeEx((void*)(uint32_t)entity, node_flags, name);
         if (ImGui::IsItemClicked())
         {
@@ -227,13 +198,54 @@ namespace Prism {
 
             ImGui::EndPopup();
         }
+        if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
+        {
+            UUID entityId = entity.GetUUID();
+            ImGui::Text(entity.GetComponent<TagComponent>().Tag.c_str());
+            ImGui::SetDragDropPayload("scene_entity_hierarchy", &entityId, sizeof(UUID));
+            ImGui::EndDragDropSource();
+        }
+
+        if (ImGui::BeginDragDropTarget())
+        {
+            const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("scene_entity_hierarchy", ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
+
+            if (payload)
+            {
+                UUID droppedHandle = *((UUID*)payload->Data);
+                Entity e = m_Context->FindEntityByUUID(droppedHandle);
+                if (e)
+                {
+                    if (!entity.IsDescendantOf(e))
+                    {
+                        Entity previousParent = m_Context->FindEntityByUUID(e.GetParentUUID());
+                        if (previousParent)
+                        {
+                            auto& parentChildren = previousParent.Children();
+                            parentChildren.erase(std::remove(parentChildren.begin(), parentChildren.end(), droppedHandle), parentChildren.end());
+                        }
+
+                        glm::mat4 parentTransform = m_Context->GetTransformRelativeToParent(entity);
+                        glm::vec3 parentTranslation, parentRotation, parentScale;
+                        Math::DecomposeTransform(parentTransform, parentTranslation, parentRotation, parentScale);
+
+                        e.Transformation().SetPosition(e.Transformation().GetPosition() - parentTranslation);
+                        e.SetParentUUID(entity.GetUUID());
+                        entity.Children().push_back(droppedHandle);
+                    }
+                }
+            }
+
+            ImGui::EndDragDropTarget();
+        }
+
         if (opened)
         {
-            if (entity.HasComponent<MeshComponent>())
+            for (auto child : entity.Children())
             {
-                auto mesh = entity.GetComponent<MeshComponent>().Mesh;
-                // if (mesh)
-                // 	DrawMeshNode(mesh);
+                Entity e = m_Context->FindEntityByUUID(child);
+                if (e)
+                    DrawEntityNode(e);
             }
 
             ImGui::TreePop();
@@ -303,221 +315,42 @@ namespace Prism {
 
     }
 
-    static int s_UIContextID = 0;
-    static uint32_t s_Counter = 0;
-    static char s_IDBuffer[16];
-
-    static void PushID()
-    {
-        ImGui::PushID(s_UIContextID++);
-        s_Counter = 0;
-    }
-
-    static void PopID()
-    {
-        ImGui::PopID();
-        s_UIContextID--;
-    }
-
-    static void BeginPropertyGrid()
-    {
-        PushID();
-        ImGui::Columns(2);
-    }
-
-    static bool Property(const char* label, std::string& value, bool error = false)
-    {
-        bool modified = false;
-
-        ImGui::Text(label);
-        ImGui::NextColumn();
-        ImGui::PushItemWidth(-1);
-
-        char buffer[256];
-        strcpy(buffer, value.c_str());
-
-        s_IDBuffer[0] = '#';
-        s_IDBuffer[1] = '#';
-        memset(s_IDBuffer + 2, 0, 14);
-        itoa(s_Counter++, s_IDBuffer + 2, 16);
-
-        if (error)
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.2f, 0.2f, 1.0f));
-        if (ImGui::InputText(s_IDBuffer, buffer, 256))
-        {
-            value = buffer;
-            modified = true;
-        }
-        if (error)
-            ImGui::PopStyleColor();
-        ImGui::PopItemWidth();
-        ImGui::NextColumn();
-
-        return modified;
-    }
-
-    static void Property(const char* label, const char* value)
-    {
-        ImGui::Text(label);
-        ImGui::NextColumn();
-        ImGui::PushItemWidth(-1);
-
-        s_IDBuffer[0] = '#';
-        s_IDBuffer[1] = '#';
-        memset(s_IDBuffer + 2, 0, 14);
-        itoa(s_Counter++, s_IDBuffer + 2, 16);
-        ImGui::InputText(s_IDBuffer, (char*)value, 256, ImGuiInputTextFlags_ReadOnly);
-
-        ImGui::PopItemWidth();
-        ImGui::NextColumn();
-    }
-
-    static bool Property(const char* label, bool& value)
-    {
-        bool modified = false;
-
-        ImGui::Text(label);
-        ImGui::NextColumn();
-        ImGui::PushItemWidth(-1);
-
-        s_IDBuffer[0] = '#';
-        s_IDBuffer[1] = '#';
-        memset(s_IDBuffer + 2, 0, 14);
-        itoa(s_Counter++, s_IDBuffer + 2, 16);
-        if (ImGui::Checkbox(s_IDBuffer, &value))
-            modified = true;
-
-        ImGui::PopItemWidth();
-        ImGui::NextColumn();
-
-        return modified;
-    }
-
-    static bool Property(const char* label, int& value)
-    {
-        bool modified = false;
-
-        ImGui::Text(label);
-        ImGui::NextColumn();
-        ImGui::PushItemWidth(-1);
-
-        s_IDBuffer[0] = '#';
-        s_IDBuffer[1] = '#';
-        memset(s_IDBuffer + 2, 0, 14);
-        itoa(s_Counter++, s_IDBuffer + 2, 16);
-        if (ImGui::DragInt(s_IDBuffer, &value))
-            modified = true;
-
-        ImGui::PopItemWidth();
-        ImGui::NextColumn();
-
-        return modified;
-    }
-
-    static bool Property(const char* label, float& value, float delta = 0.1f)
-    {
-        bool modified = false;
-
-        ImGui::Text(label);
-        ImGui::NextColumn();
-        ImGui::PushItemWidth(-1);
-
-        s_IDBuffer[0] = '#';
-        s_IDBuffer[1] = '#';
-        memset(s_IDBuffer + 2, 0, 14);
-        itoa(s_Counter++, s_IDBuffer + 2, 16);
-        if (ImGui::DragFloat(s_IDBuffer, &value, delta))
-            modified = true;
-
-        ImGui::PopItemWidth();
-        ImGui::NextColumn();
-
-        return modified;
-    }
-
-    static bool Property(const char* label, glm::vec2& value, float delta = 0.1f)
-    {
-        bool modified = false;
-
-        ImGui::Text(label);
-        ImGui::NextColumn();
-        ImGui::PushItemWidth(-1);
-
-        s_IDBuffer[0] = '#';
-        s_IDBuffer[1] = '#';
-        memset(s_IDBuffer + 2, 0, 14);
-        itoa(s_Counter++, s_IDBuffer + 2, 16);
-        if (ImGui::DragFloat2(s_IDBuffer, glm::value_ptr(value), delta))
-            modified = true;
-
-        ImGui::PopItemWidth();
-        ImGui::NextColumn();
-
-        return modified;
-    }
-
-    static bool Property(const char* label, glm::vec3& value, float delta = 0.1f)
-    {
-        bool modified = false;
-
-        ImGui::Text(label);
-        ImGui::NextColumn();
-        ImGui::PushItemWidth(-1);
-
-        s_IDBuffer[0] = '#';
-        s_IDBuffer[1] = '#';
-        memset(s_IDBuffer + 2, 0, 14);
-        itoa(s_Counter++, s_IDBuffer + 2, 16);
-        if (ImGui::DragFloat3(s_IDBuffer, glm::value_ptr(value), delta))
-            modified = true;
-
-        ImGui::PopItemWidth();
-        ImGui::NextColumn();
-
-        return modified;
-    }
-
-    static bool Property(const char* label, glm::vec4& value, float delta = 0.1f)
-    {
-        bool modified = false;
-
-        ImGui::Text(label);
-        ImGui::NextColumn();
-        ImGui::PushItemWidth(-1);
-
-        s_IDBuffer[0] = '#';
-        s_IDBuffer[1] = '#';
-        memset(s_IDBuffer + 2, 0, 14);
-        itoa(s_Counter++, s_IDBuffer + 2, 16);
-        if (ImGui::DragFloat4(s_IDBuffer, glm::value_ptr(value), delta))
-            modified = true;
-
-        ImGui::PopItemWidth();
-        ImGui::NextColumn();
-
-        return modified;
-    }
-
-    static void EndPropertyGrid()
-    {
-        ImGui::Columns(1);
-        PopID();
-    }
-
     template<typename T, typename UIFunction>
     static void DrawComponent(const std::string& name, Entity entity, UIFunction uiFunction)
     {
         if (entity.HasComponent<T>())
         {
+            const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
+
             auto& component = entity.GetComponent<T>();
-            const ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_DefaultOpen;
-            bool open = ImGui::TreeNodeEx((void*)((uint32_t)entity | (uint32_t)typeid(T).hash_code()), flags, "%s", name.c_str());
+            ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
+
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+            float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
+            ImGui::Separator();
+            bool open = ImGui::TreeNodeEx((void*)typeid(T).hash_code(), treeNodeFlags, "%s", name.c_str());
+            ImGui::PopStyleVar();
+            ImGui::SameLine(contentRegionAvailable.x - lineHeight * 0.5f);
+            if (ImGui::Button("+", ImVec2{ lineHeight, lineHeight }))
+                ImGui::OpenPopup("ComponentSettings");
+
+            bool removeComponent = false;
+            if (ImGui::BeginPopup("ComponentSettings"))
+            {
+                if (ImGui::MenuItem(TR("Remove component")))
+                    removeComponent = true;
+
+                ImGui::EndPopup();
+            }
+
             if (open)
             {
                 uiFunction(component);
                 ImGui::TreePop();
             }
-            ImGui::Separator();
+
+            if (removeComponent)
+                entity.RemoveComponent<T>();
         }
     }
 
@@ -527,80 +360,186 @@ namespace Prism {
 
         auto id = entity.GetComponent<IDComponent>().ID;
 
+        ImVec2 contentRegionAvailable = ImGui::GetContentRegionAvail();
+
         if (entity.HasComponent<TagComponent>())
         {
             auto& tag = entity.GetComponent<TagComponent>().Tag;
             char buffer[256];
             memset(buffer, 0, 256);
             memcpy(buffer, tag.c_str(), tag.length());
+            ImGui::PushItemWidth(contentRegionAvailable.x * 0.5f);
             if (ImGui::InputText("##Tag", buffer, 256))
             {
                 tag = std::string(buffer);
             }
+            ImGui::PopItemWidth();
         }
 
         // ID
         ImGui::SameLine();
         ImGui::TextDisabled("%llx", id);
+        float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
+        ImVec2 textSize = ImGui::CalcTextSize(TR("Add Component"));
+        ImGui::SameLine(contentRegionAvailable.x - (textSize.x + GImGui->Style.FramePadding.y));
+        if (ImGui::Button(TR("Add Component")))
+            ImGui::OpenPopup("AddComponentPanel");
 
-        ImGui::Separator();
+        if (ImGui::BeginPopup("AddComponentPanel"))
+        {
+            if (!entity.HasComponent<CameraComponent>())
+            {
+                if (ImGui::Button(TR("Camera")))
+                {
+                    entity.AddComponent<CameraComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!entity.HasComponent<MeshRendererComponent>())
+            {
+                if (ImGui::Button(TR("Mesh")))
+                {
+                    entity.AddComponent<MeshRendererComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!entity.HasComponent<SpriteRendererComponent>())
+            {
+                if (ImGui::Button(TR("Sprite Renderer")))
+                {
+                    entity.AddComponent<SpriteRendererComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!entity.HasComponent<DirectionalLightComponent>())
+            {
+                if (ImGui::Button(TR("Directional Light")))
+                {
+                    entity.AddComponent<DirectionalLightComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!entity.HasComponent<SkyLightComponent>())
+            {
+                if (ImGui::Button(TR("Sky Light")))
+                {
+                    entity.AddComponent<SkyLightComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!entity.HasComponent<RigidBody2DComponent>())
+            {
+                if (ImGui::Button(TR("Rigidbody 2D")))
+                {
+                    entity.AddComponent<RigidBody2DComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!entity.HasComponent<BoxCollider2DComponent>())
+            {
+                if (ImGui::Button(TR("Box Collider 2D")))
+                {
+                    entity.AddComponent<BoxCollider2DComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!entity.HasComponent<CircleCollider2DComponent>())
+            {
+                if (ImGui::Button(TR("Circle Collider 2D")))
+                {
+                    entity.AddComponent<CircleCollider2DComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!entity.HasComponent<RigidBodyComponent>())
+            {
+                if (ImGui::Button(TR("Rigidbody")))
+                {
+                    entity.AddComponent<RigidBodyComponent>();
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!entity.HasComponent<BoxColliderComponent>())
+            {
+                if (ImGui::Button(TR("Box Collider")))
+                {
+                    auto& component = entity.AddComponent<BoxColliderComponent>();
+                    component.DebugMesh = MeshFactory::CreateBox(component.Size);
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!entity.HasComponent<SphereColliderComponent>())
+            {
+                if (ImGui::Button(TR("Sphere Collider")))
+                {
+                    auto& component = entity.AddComponent<SphereColliderComponent>();
+                    component.DebugMesh = MeshFactory::CreateSphere(component.Radius);
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!entity.HasComponent<CapsuleColliderComponent>())
+            {
+                if (ImGui::Button(TR("Capsule Collider")))
+                {
+                    auto& component = entity.AddComponent<CapsuleColliderComponent>();
+                    component.DebugMesh = MeshFactory::CreateCapsule(component.Radius, component.Height);
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            if (!entity.HasComponent<MeshColliderComponent>())
+            {
+                if (ImGui::Button(TR("Mesh Collider")))
+                {
+                    MeshColliderComponent& component = entity.AddComponent<MeshColliderComponent>();
+                    if (entity.HasComponent<MeshRendererComponent>())
+                    {
+                        auto mesh = entity.GetComponent<MeshRendererComponent>().Mesh;
+                        if (mesh)
+                        {
+                            component.CollisionMesh = mesh;
+                            PXPhysicsWrappers::CreateTriangleMesh(component, entity.Transformation().GetScale());
+                        }
+                    }
+                    ImGui::CloseCurrentPopup();
+                }
+            }
+            ImGui::EndPopup();
+        }
 
         if (entity.HasComponent<TransformComponent>())
         {
-            auto& tc = entity.GetComponent<TransformComponent>();
-            if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(TransformComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, TR("Transform")))
+            const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
+            auto& transform = entity.Transformation();
+
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+            ImGui::Separator();
+            bool open = ImGui::TreeNodeEx((void*)typeid(TransformComponent).hash_code(), treeNodeFlags, "%s", TR("Transform"));
+            ImGui::PopStyleVar();
+
+            if (open)
             {
-                glm::vec3 rotation = glm::degrees(glm::eulerAngles(tc.Rotation));
+                glm::vec3 translation = transform.GetPosition();
+                glm::vec3 rotation = transform.GetRotation();
+                glm::vec3 scale = transform.GetScale();
 
-                ImGui::Columns(2);
-                ImGui::Text(TR("Translation"));
-                ImGui::NextColumn();
-                ImGui::PushItemWidth(-1);
+                bool updateTransform = false;
+                updateTransform |= UI::DrawVec3Control(TR("Translation"), translation);
+                updateTransform |= UI::DrawVec3Control(TR("Rotation"), rotation);
+                updateTransform |= UI::DrawVec3Control(TR("Scale"), scale, 1.0f);
 
-                if (ImGui::DragFloat3("##translation", glm::value_ptr(tc.Position), 0.25f))
+                if (updateTransform)
                 {
-                    entity.SetPosition(tc.Position);
+                    transform.SetPosition(translation);
+                    transform.SetRotation(rotation);
+                    transform.SetScale(scale);
                 }
-
-                ImGui::PopItemWidth();
-                ImGui::NextColumn();
-
-                ImGui::Text(TR("Rotation"));
-                ImGui::NextColumn();
-                ImGui::PushItemWidth(-1);
-
-                if (ImGui::DragFloat3("##rotation", glm::value_ptr(rotation), 0.25f))
-                {
-                    entity.SetRotation(glm::radians(rotation));
-                }
-
-                ImGui::PopItemWidth();
-                ImGui::NextColumn();
-
-                ImGui::Text(TR("Scale"));
-                ImGui::NextColumn();
-                ImGui::PushItemWidth(-1);
-
-                if (ImGui::DragFloat3("##scale", glm::value_ptr(tc.Scale), 0.25f))
-                {
-                    entity.SetScale(tc.Scale);
-                }
-
-                ImGui::PopItemWidth();
-                ImGui::NextColumn();
-
-                ImGui::Columns(1);
 
                 ImGui::TreePop();
             }
-            ImGui::Separator();
         }
 
 
-        if (entity.HasComponent<MeshComponent>())
-        {
-            auto& mc = entity.GetComponent<MeshComponent>();
-            if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(TransformComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, TR("Mesh")))
+        DrawComponent<MeshRendererComponent>(TR("Mesh"), entity, [](auto& component)
             {
                 ImGui::Columns(3);
                 ImGui::SetColumnWidth(0, 100);
@@ -609,8 +548,8 @@ namespace Prism {
                 ImGui::Text(TR("File Path"));
                 ImGui::NextColumn();
                 ImGui::PushItemWidth(-1);
-                if (mc.Mesh)
-                    ImGui::InputText("##meshfilepath", (char*)mc.Mesh->GetFilePath().c_str(), 256, ImGuiInputTextFlags_ReadOnly);
+                if (component.Mesh)
+                    ImGui::InputText("##meshfilepath", (char*)component.Mesh->GetFilePath().c_str(), 256, ImGuiInputTextFlags_ReadOnly);
                 else
                     ImGui::InputText("##meshfilepath", (char*)"Null", 256, ImGuiInputTextFlags_ReadOnly);
                 ImGui::PopItemWidth();
@@ -619,23 +558,20 @@ namespace Prism {
                 {
                     std::string file = Application::Get().OpenFile();
                     if (!file.empty())
-                        mc.Mesh = Ref<Mesh>::Create(file);
+                    {
+                        auto result = ModelImporter::Import(FileSystem::GetRelativePath(file));
+                        component.Mesh = result.Mesh;
+                        component.SetMaterials(result.Materials);
+                    }
                 }
                 ImGui::NextColumn();
                 ImGui::Columns(1);
-                ImGui::TreePop();
-            }
-            ImGui::Separator();
-        }
+            });
 
-        if (entity.HasComponent<CameraComponent>())
-        {
-            auto& cc = entity.GetComponent<CameraComponent>();
-            if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(CameraComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, TR("Camera")))
+        DrawComponent<CameraComponent>(TR("Camera"), entity, [](auto& component)
             {
-                // Projection Type
                 const char* projTypeStrings[] = { TR("Perspective"), TR("Orthographic") };
-                const char* currentProj = projTypeStrings[(int)cc.Camera.GetProjectionType()];
+                const char* currentProj = projTypeStrings[(int)component.Camera.GetProjectionType()];
                 if (ImGui::BeginCombo(TR("Projection"), currentProj))
                 {
                     for (int type = 0; type < 2; type++)
@@ -644,7 +580,7 @@ namespace Prism {
                         if (ImGui::Selectable(projTypeStrings[type], is_selected))
                         {
                             currentProj = projTypeStrings[type];
-                            cc.Camera.SetProjectionType((SceneCamera::ProjectionType)type);
+                            component.Camera.SetProjectionType((SceneCamera::ProjectionType)type);
                         }
                         if (is_selected)
                             ImGui::SetItemDefaultFocus();
@@ -652,55 +588,62 @@ namespace Prism {
                     ImGui::EndCombo();
                 }
 
-                BeginPropertyGrid();
-                // Perspective parameters
-                if (cc.Camera.GetProjectionType() == SceneCamera::ProjectionType::Perspective)
+                UI::BeginPropertyGrid();
+                if (component.Camera.GetProjectionType() == SceneCamera::ProjectionType::Perspective)
                 {
-                    float verticalFOV = cc.Camera.GetPerspectiveVerticalFOV();
-                    if (Property(TR("Vertical FOV"), verticalFOV))
-                        cc.Camera.SetPerspectiveVerticalFOV(verticalFOV);
+                    float verticalFOV = component.Camera.GetPerspectiveVerticalFOV();
+                    if (UI::Property(TR("Vertical FOV"), verticalFOV))
+                        component.Camera.SetPerspectiveVerticalFOV(verticalFOV);
 
-                    float nearClip = cc.Camera.GetPerspectiveNearClip();
-                    if (Property(TR("Near Clip"), nearClip))
-                        cc.Camera.SetPerspectiveNearClip(nearClip);
+                    float nearClip = component.Camera.GetPerspectiveNearClip();
+                    if (UI::Property(TR("Near Clip"), nearClip))
+                        component.Camera.SetPerspectiveNearClip(nearClip);
                     ImGui::SameLine();
-                    float farClip = cc.Camera.GetPerspectiveFarClip();
-                    if (Property(TR("Far Clip"), farClip))
-                        cc.Camera.SetPerspectiveFarClip(farClip);
+                    float farClip = component.Camera.GetPerspectiveFarClip();
+                    if (UI::Property(TR("Far Clip"), farClip))
+                        component.Camera.SetPerspectiveFarClip(farClip);
                 }
-
-                // Orthographic parameters
-                else if (cc.Camera.GetProjectionType() == SceneCamera::ProjectionType::Orthographic)
+                else if (component.Camera.GetProjectionType() == SceneCamera::ProjectionType::Orthographic)
                 {
-                    float orthoSize = cc.Camera.GetOrthographicSize();
-                    if (Property(TR("Size"), orthoSize))
-                        cc.Camera.SetOrthographicSize(orthoSize);
+                    float orthoSize = component.Camera.GetOrthographicSize();
+                    if (UI::Property(TR("Size"), orthoSize))
+                        component.Camera.SetOrthographicSize(orthoSize);
 
-                    float nearClip = cc.Camera.GetOrthographicNearClip();
-                    if (Property(TR("Near Clip"), nearClip))
-                        cc.Camera.SetOrthographicNearClip(nearClip);
+                    float nearClip = component.Camera.GetOrthographicNearClip();
+                    if (UI::Property(TR("Near Clip"), nearClip))
+                        component.Camera.SetOrthographicNearClip(nearClip);
                     ImGui::SameLine();
-                    float farClip = cc.Camera.GetOrthographicFarClip();
-                    if (Property(TR("Far Clip"), farClip))
-                        cc.Camera.SetOrthographicFarClip(farClip);
+                    float farClip = component.Camera.GetOrthographicFarClip();
+                    if (UI::Property(TR("Far Clip"), farClip))
+                        component.Camera.SetOrthographicFarClip(farClip);
                 }
+                UI::EndPropertyGrid();
+            });
 
-                EndPropertyGrid();
-                ImGui::TreePop();
-            }
-            ImGui::Separator();
-        }
-
-        if (entity.HasComponent<SpriteRendererComponent>())
-        {
-            auto& src = entity.GetComponent<SpriteRendererComponent>();
-            if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(SpriteRendererComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, TR("Sprite Renderer")))
+        DrawComponent<SpriteRendererComponent>(TR("Sprite Renderer"), entity, [](auto& component)
             {
+            });
 
-                ImGui::TreePop();
-            }
-            ImGui::Separator();
-        }
+        DrawComponent<DirectionalLightComponent>(TR("Directional Light"), entity, [](auto& component)
+            {
+                UI::BeginPropertyGrid();
+                UI::PropertyColor(TR("Radiance"), component.Radiance);
+                UI::Property(TR("Intensity"), component.Intensity);
+                UI::Property(TR("Cast Shadows"), component.CastShadows);
+                UI::Property(TR("Soft Shadows"), component.SoftShadows);
+                UI::Property(TR("Source Size"), component.LightSize);
+                UI::EndPropertyGrid();
+            });
+
+        DrawComponent<SkyLightComponent>(TR("Sky Light"), entity, [](auto& component)
+            {
+                UI::BeginPropertyGrid();
+                UI::PropertyAssetReference("Environment Map", component.SceneEnvironment, AssetType::EnvMap);
+                UI::Property(TR("Intensity"), component.Intensity, 0.01f, 0.0f, 5.0f);
+                UI::Property(TR("Angle"), component.Angle, 0.01f, 0.0f, 360.0f);
+                UI::Property(TR("Skybox LOD"), component.SkyboxLod, 0.01f, 0.0f, 10.0f);
+                UI::EndPropertyGrid();
+            });
 
         DrawComponent<RigidBody2DComponent>(TR("Rigidbody 2D"), entity, [](auto& component)
             {
@@ -723,26 +666,26 @@ namespace Prism {
 
                 if (component.BodyType == RigidBody2DComponent::Type::Dynamic)
                 {
-                    BeginPropertyGrid();
-                    Property(TR("Fixed Rotation"), component.FixedRotation);
-                    EndPropertyGrid();
+                    UI::BeginPropertyGrid();
+                    UI::Property(TR("Fixed Rotation"), component.FixedRotation);
+                    UI::EndPropertyGrid();
                 }
             });
 
         DrawComponent<BoxCollider2DComponent>(TR("Box Collider 2D"), entity, [](auto& component)
             {
-                Property(TR("Offset"), component.Offset);
-                Property(TR("Size"), component.Size);
-                Property(TR("Density"), component.Density);
-                Property(TR("Friction"), component.Friction);
+                UI::Property(TR("Offset"), component.Offset);
+                UI::Property(TR("Size"), component.Size);
+                UI::Property(TR("Density"), component.Density);
+                UI::Property(TR("Friction"), component.Friction);
             });
 
         DrawComponent<CircleCollider2DComponent>(TR("Circle Collider 2D"), entity, [](auto& component)
             {
-                Property(TR("Offset"), component.Offset);
-                Property(TR("Radius"), component.Radius);
-                Property(TR("Density"), component.Density);
-                Property(TR("Friction"), component.Friction);
+                UI::Property(TR("Offset"), component.Offset);
+                UI::Property(TR("Radius"), component.Radius);
+                UI::Property(TR("Density"), component.Density);
+                UI::Property(TR("Friction"), component.Friction);
             });
 
         DrawComponent<RigidBodyComponent>(TR("Rigidbody"), entity, [](auto& component)
@@ -764,93 +707,184 @@ namespace Prism {
                     ImGui::EndCombo();
                 }
 
+                // Layer has been removed, set to Default layer
+                if (!PhysicsLayerManager::IsLayerValid(component.Layer))
+                    component.Layer = 0;
+
+                uint32_t currentLayer = component.Layer;
+                const PhysicsLayer& layerInfo = PhysicsLayerManager::GetLayer(currentLayer);
+                ImGui::TextUnformatted(TR("Layer"));
+                ImGui::SameLine();
+                if (ImGui::BeginCombo("##LayerSelection", layerInfo.Name.c_str()))
+                {
+                    for (const auto& layer : PhysicsLayerManager::GetLayers())
+                    {
+                        bool is_selected = (currentLayer == layer.LayerID);
+                        if (ImGui::Selectable(layer.Name.c_str(), is_selected))
+                        {
+                            currentLayer = layer.LayerID;
+                            component.Layer = layer.LayerID;
+                        }
+                        if (is_selected)
+                            ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
+
                 if (component.BodyType == RigidBodyComponent::Type::Dynamic)
                 {
-                    BeginPropertyGrid();
-                    Property(TR("Mass"), component.Mass);
-                    Property(TR("Is Kinematic"), component.IsKinematic);
-                    EndPropertyGrid();
+                    UI::BeginPropertyGrid();
+                    UI::Property(TR("Mass"), component.Mass);
+                    UI::Property(TR("Linear Drag"), component.LinearDrag);
+                    UI::Property(TR("Angular Drag"), component.AngularDrag);
+                    UI::Property(TR("Disable Gravity"), component.DisableGravity);
+                    UI::Property(TR("Is Kinematic"), component.IsKinematic);
+                    UI::EndPropertyGrid();
 
                     if (ImGui::TreeNode(TR("Constraints")))
                     {
-                        BeginPropertyGrid();
-                        Property(TR("Position X"), component.LockPositionX);
-                        Property(TR("Position Y"), component.LockPositionY);
-                        Property(TR("Position Z"), component.LockPositionZ);
-                        Property(TR("Rotation X"), component.LockRotationX);
-                        Property(TR("Rotation Y"), component.LockRotationY);
-                        Property(TR("Rotation Z"), component.LockRotationZ);
-                        EndPropertyGrid();
+                        UI::BeginPropertyGrid();
+
+                        UI::BeginCheckboxGroup(TR("Freeze Position"));
+                        UI::PropertyCheckboxGroup("X", component.LockPositionX);
+                        UI::PropertyCheckboxGroup("Y", component.LockPositionY);
+                        UI::PropertyCheckboxGroup("Z", component.LockPositionZ);
+                        UI::EndCheckboxGroup();
+
+                        UI::BeginCheckboxGroup(TR("Freeze Rotation"));
+                        UI::PropertyCheckboxGroup("X", component.LockRotationX);
+                        UI::PropertyCheckboxGroup("Y", component.LockRotationY);
+                        UI::PropertyCheckboxGroup("Z", component.LockRotationZ);
+                        UI::EndCheckboxGroup();
+
+                        UI::EndPropertyGrid();
 
                         ImGui::TreePop();
                     }
                 }
             });
 
-        if (entity.HasComponent<PhysicsMaterialComponent>())
-        {
-            DrawComponent<PhysicsMaterialComponent>(TR("Physics Material"), entity, [](auto& component)
-                {
-                    BeginPropertyGrid();
-                    Property(TR("Static Friction"), component.StaticFriction);
-                    Property(TR("Dynamic Friction"), component.DynamicFriction);
-                    Property(TR("Bounciness"), component.Bounciness);
-                    EndPropertyGrid();
-                });
-        }
-
         DrawComponent<BoxColliderComponent>(TR("Box Collider"), entity, [](auto& component)
             {
-                BeginPropertyGrid();
-                Property(TR("Size"), component.Size);
-                Property(TR("Offset"), component.Offset);
-                EndPropertyGrid();
+                UI::BeginPropertyGrid();
+                if (UI::Property(TR("Size"), component.Size))
+                {
+                    component.DebugMesh = MeshFactory::CreateBox(component.Size);
+                }
+                UI::Property(TR("Offset"), component.Offset);
+                UI::Property(TR("Is Trigger"), component.IsTrigger);
+                UI::PropertyAssetReference("Material", component.Material, AssetType::PhysicsMat);
+                UI::EndPropertyGrid();
             });
 
         DrawComponent<SphereColliderComponent>(TR("Sphere Collider"), entity, [](auto& component)
             {
-                BeginPropertyGrid();
-                Property(TR("Radius"), component.Radius);
-                EndPropertyGrid();
+                UI::BeginPropertyGrid();
+                if (UI::Property(TR("Radius"), component.Radius))
+                {
+                    component.DebugMesh = MeshFactory::CreateSphere(component.Radius);
+                }
+                UI::Property(TR("Is Trigger"), component.IsTrigger);
+                UI::PropertyAssetReference("Material", component.Material, AssetType::PhysicsMat);
+                UI::EndPropertyGrid();
             });
 
         DrawComponent<CapsuleColliderComponent>(TR("Capsule Collider"), entity, [](auto& component)
             {
-                BeginPropertyGrid();
-                Property(TR("Radius"), component.Radius);
-                Property(TR("Height"), component.Height);
-                EndPropertyGrid();
+                UI::BeginPropertyGrid();
+                bool changed = false;
+
+                if (UI::Property(TR("Radius"), component.Radius))
+                    changed = true;
+
+                if (UI::Property(TR("Height"), component.Height))
+                    changed = true;
+
+                if (changed)
+                {
+                    component.DebugMesh = MeshFactory::CreateCapsule(component.Radius, component.Height);
+                }
+                UI::Property(TR("Is Trigger"), component.IsTrigger);
+                UI::PropertyAssetReference("Material", component.Material, AssetType::PhysicsMat);
+                UI::EndPropertyGrid();
             });
 
-        DrawComponent<MeshColliderComponent>(TR("Mesh Collider"), entity, [](auto& component)
+        DrawComponent<MeshColliderComponent>(TR("Mesh Collider"), entity, [&](auto& component)
             {
-                ImGui::Columns(3);
-                ImGui::SetColumnWidth(0, 100);
-                ImGui::SetColumnWidth(1, 300);
-                ImGui::SetColumnWidth(2, 40);
-                ImGui::Text("File Path");
-                ImGui::NextColumn();
-                ImGui::PushItemWidth(-1);
-                if (component.CollisionMesh)
-                    ImGui::InputText("##meshcolliderfilepath", (char*)component.CollisionMesh->GetFilePath().c_str(), 256, ImGuiInputTextFlags_ReadOnly);
-                else
-                    ImGui::InputText("##meshcolliderfilepath", (char*)"Null", 256, ImGuiInputTextFlags_ReadOnly);
-                ImGui::PopItemWidth();
-                ImGui::NextColumn();
-                if (ImGui::Button("...##openmeshcollider"))
+                if (component.OverrideMesh)
                 {
-                    std::string file = Application::Get().OpenFile();
-                    if (!file.empty())
-                        component.CollisionMesh = Ref<Mesh>::Create(file);
+                    ImGui::Columns(3);
+                    ImGui::SetColumnWidth(0, 100);
+                    ImGui::SetColumnWidth(1, 300);
+                    ImGui::SetColumnWidth(2, 40);
+                    ImGui::Text("File Path");
+                    ImGui::NextColumn();
+                    ImGui::PushItemWidth(-1);
+                    if (component.CollisionMesh)
+                        ImGui::InputText("##meshcolliderfilepath", (char*)component.CollisionMesh->GetFilePath().c_str(), 256, ImGuiInputTextFlags_ReadOnly);
+                    else
+                        ImGui::InputText("##meshcolliderfilepath", (char*)"Null", 256, ImGuiInputTextFlags_ReadOnly);
+                    ImGui::PopItemWidth();
+                    ImGui::NextColumn();
+                    if (ImGui::Button("...##openmeshcollider"))
+                    {
+                        std::string file = Application::Get().OpenFile();
+                        if (!file.empty())
+                        {
+                            auto importResult = ModelImporter::Import(FileSystem::GetRelativePath(file));
+                            if (importResult.Mesh)
+                            {
+                                component.CollisionMesh = importResult.Mesh;
+                                if (component.IsConvex)
+                                    PXPhysicsWrappers::CreateConvexMesh(component, entity.Transformation().GetScale(), true);
+                                else
+                                    PXPhysicsWrappers::CreateTriangleMesh(component, entity.Transformation().GetScale(), true);
+                            }
+                        }
+                    }
+                    ImGui::Columns(1);
                 }
-                ImGui::NextColumn();
-                ImGui::Columns(1);
+
+                UI::BeginPropertyGrid();
+                if (UI::Property(TR("Is Convex"), component.IsConvex))
+                {
+                    component.ProcessedMeshes.clear();
+                    if (component.IsConvex)
+                        PXPhysicsWrappers::CreateConvexMesh(component, entity.Transformation().GetScale(), true);
+                    else
+                        PXPhysicsWrappers::CreateTriangleMesh(component, entity.Transformation().GetScale(), true);
+                }
+                UI::Property(TR("Is Trigger"), component.IsTrigger);
+                if (UI::Property(TR("Override Mesh"), component.OverrideMesh))
+                {
+                    if (!component.OverrideMesh && entity.HasComponent<MeshRendererComponent>())
+                    {
+                        auto mesh = entity.GetComponent<MeshRendererComponent>().Mesh;
+                        if (mesh)
+                        {
+                            component.CollisionMesh = mesh;
+                            if (component.IsConvex)
+                                PXPhysicsWrappers::CreateConvexMesh(component, entity.Transformation().GetScale(), true);
+                            else
+                                PXPhysicsWrappers::CreateTriangleMesh(component, entity.Transformation().GetScale(), true);
+                        }
+                    }
+                }
+                UI::PropertyAssetReference("Material", component.Material, AssetType::PhysicsMat);
+                UI::EndPropertyGrid();
             });
 
         // CSharpScriptComponent
         if (entity.HasComponent<CSharpScriptComponent>())
         {
-            if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(CSharpScriptComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, TR("C# Script")))
+            const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
+
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+            ImGui::Separator();
+            bool open = ImGui::TreeNodeEx((void*)typeid(CSharpScriptComponent).hash_code(), treeNodeFlags, "%s", TR("C# Script"));
+            ImGui::PopStyleVar();
+
+            if (open)
             {
                 auto& comp = entity.GetComponent<CSharpScriptComponent>();
 
@@ -870,18 +904,8 @@ namespace Prism {
                         {
                             if (ImGui::MenuItem(meta->FullName.c_str()))
                             {
-                                CSharpBehaviourBinding binding;
-                                binding.BehaviourID = UUID();
-                                binding.ClassName = meta->FullName;
-                                binding.LifecycleMask = meta->LifecycleMask;
-                                for (auto& [hash, fieldMeta] : meta->Fields)
-                                {
-                                    CSharpField field(fieldMeta.Name, fieldMeta.Type);
-                                    if (fieldMeta.DefaultValue.Data && fieldMeta.DefaultValue.Size > 0)
-                                        field.SetBuffer(fieldMeta.DefaultValue);
-                                    binding.Fields[hash] = std::move(field);
-                                }
-                                comp.Behaviours.push_back(std::move(binding));
+                                auto* ss = m_Context->GetSystem<ScriptSystem>();
+                                ss->AddCSharpBehaviour(m_SelectionContext, meta->ClassID);
                             }
                         }
                     }
@@ -890,7 +914,7 @@ namespace Prism {
 
                 UUID pendingRemove = 0;
                 int idx = 0;
-                for (auto& binding : comp.Behaviours)
+                for (auto& [bid, binding] : comp.Behaviours)
                 {
                     ImGui::PushID(idx++);
                     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.2f, 0.2f, 0.6f));
@@ -899,13 +923,20 @@ namespace Prism {
                     ImGui::PopStyleColor();
                     ImGui::SameLine();
 
-                    std::string shortName = binding.ClassName;
-                    auto dotPos = shortName.rfind('.');
-                    if (dotPos != std::string::npos)
-                        shortName = shortName.substr(dotPos + 1);
+                    std::string shortName;
+                    if (auto* meta = CSharpScriptMetaRegistry::GetClassMetadata(binding.ClassID))
+                        shortName = meta->ClassName;
 
                     if (ImGui::TreeNodeEx(shortName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
                     {
+                        {
+                            auto* ss = m_Context->GetSystem<ScriptSystem>();
+                            bool enabled = ss->GetEnabled(binding.BehaviourID);
+                            if (ImGui::Checkbox("Enabled", &enabled))
+                                ss->SetEnabled(binding.BehaviourID, enabled);
+                            ImGui::Separator();
+                        }
+
                         for (auto& [hash, field] : binding.Fields)
                         {
                             ImGui::PushID(hash);
@@ -960,6 +991,22 @@ namespace Prism {
                                         field.SetValue(val);
                                     break;
                                 }
+                                case ScriptFieldType::MeshRef:
+                                {
+                                    Ref<Mesh>& asset = *field.GetBuffer().As<Ref<Mesh>>();
+                                    std::string label = field.GetName() + "(Mesh)";
+                                    if (UI::PropertyAssetReference(label, asset, AssetType::Mesh))
+                                    {
+                                        if (field.IsRuntime())
+                                        {
+                                            auto fieldType = field.GetManagedType();
+                                            Ref<Mesh>* assetPtr = new Ref<Mesh>(asset);
+                                            auto object = fieldType->CreateInstance(assetPtr);
+                                            field.SetValue(object);
+                                        }
+                                    }
+                                    break;
+                                }
                                 default:
                                     break;
                             }
@@ -972,19 +1019,25 @@ namespace Prism {
 
                 if (pendingRemove)
                 {
-                    CSharpScriptEngine::SetSceneContext(m_Context);
-                    CSharpScriptEngine::RemoveBehaviour(entity, pendingRemove);
+                    auto* ss = m_Context->GetSystem<ScriptSystem>();
+                    ss->RemoveCSharpBehaviour(entity, pendingRemove);
                 }
 
                 ImGui::TreePop();
             }
-            ImGui::Separator();
         }
 
         // PythonScriptComponent
         if (entity.HasComponent<PythonScriptComponent>())
         {
-            if (ImGui::TreeNodeEx((void*)((uint32_t)entity | typeid(PythonScriptComponent).hash_code()), ImGuiTreeNodeFlags_DefaultOpen, TR("Python Script")))
+            const ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_DefaultOpen | ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowItemOverlap | ImGuiTreeNodeFlags_FramePadding;
+
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{ 4, 4 });
+            ImGui::Separator();
+            bool open = ImGui::TreeNodeEx((void*)typeid(PythonScriptComponent).hash_code(), treeNodeFlags, "%s", TR("Python Script"));
+            ImGui::PopStyleVar();
+
+            if (open)
             {
                 auto& comp = entity.GetComponent<PythonScriptComponent>();
 
@@ -1004,19 +1057,8 @@ namespace Prism {
                         {
                             if (ImGui::MenuItem(meta->FullName.c_str()))
                             {
-                                PythonBehaviourBinding binding;
-                                binding.BehaviourID = UUID();
-                                binding.ClassName = meta->ClassName;
-                                binding.ModuleName = meta->ModuleName;
-                                binding.LifecycleMask = meta->LifecycleMask;
-                                for (auto& [hash, fieldMeta] : meta->Fields)
-                                {
-                                    PythonField field(fieldMeta.Name, fieldMeta.Type);
-                                    if (fieldMeta.DefaultValue.Data && fieldMeta.DefaultValue.Size > 0)
-                                        field.SetBuffer(fieldMeta.DefaultValue);
-                                    binding.Fields[hash] = std::move(field);
-                                }
-                                comp.Behaviours.push_back(std::move(binding));
+                                auto* ss = m_Context->GetSystem<ScriptSystem>();
+                                ss->AddPythonBehaviour(entity, meta->ClassID);
                             }
                         }
                     }
@@ -1025,7 +1067,7 @@ namespace Prism {
 
                 UUID pendingRemove = 0;
                 int idx = 0;
-                for (auto& binding : comp.Behaviours)
+                for (auto& [bid, binding] : comp.Behaviours)
                 {
                     ImGui::PushID(idx++);
                     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.8f, 0.2f, 0.2f, 0.6f));
@@ -1034,13 +1076,20 @@ namespace Prism {
                     ImGui::PopStyleColor();
                     ImGui::SameLine();
 
-                    std::string shortName = binding.ClassName;
-                    auto dotPos = shortName.rfind('.');
-                    if (dotPos != std::string::npos)
-                        shortName = shortName.substr(dotPos + 1);
+                    std::string shortName;
+                    if (auto* meta = PythonScriptMetaRegistry::GetClassMetadata(binding.ClassID))
+                        shortName = meta->ClassName;
 
                     if (ImGui::TreeNodeEx(shortName.c_str(), ImGuiTreeNodeFlags_DefaultOpen))
                     {
+                        {
+                            auto* ss = m_Context->GetSystem<ScriptSystem>();
+                            bool enabled = ss->GetEnabled(binding.BehaviourID);
+                            if (ImGui::Checkbox("Enabled", &enabled))
+                                ss->SetEnabled(binding.BehaviourID, enabled);
+                            ImGui::Separator();
+                        }
+
                         for (auto& [hash, field] : binding.Fields)
                         {
                             ImGui::PushID(hash);
@@ -1109,6 +1158,22 @@ namespace Prism {
                                         field.SetValue(val);
                                     break;
                                 }
+                                case ScriptFieldType::MeshRef:
+                                {
+                                    Ref<Mesh>& asset = *field.GetBuffer().As<Ref<Mesh>>();
+                                    std::string label = field.GetName() + "(Mesh)";
+                                    if (UI::PropertyAssetReference(label, asset, AssetType::Mesh))
+                                    {
+                                        if (field.IsRuntime())
+                                        {
+                                            auto fieldType = field.GetPyType();
+                                            Ref<Mesh>* assetPtr = new Ref<Mesh>(asset);
+                                            auto object = (*fieldType)((uint64_t)assetPtr);
+                                            field.SetValue(object);
+                                        }
+                                    }
+                                    break;
+                                }
                                 default:
                                     break;
                             }
@@ -1121,13 +1186,12 @@ namespace Prism {
 
                 if (pendingRemove)
                 {
-                    PythonScriptEngine::SetSceneContext(m_Context);
-                    PythonScriptEngine::RemoveBehaviour(entity, pendingRemove);
+                    auto* ss = m_Context->GetSystem<ScriptSystem>();
+                    ss->RemovePythonBehaviour(entity, pendingRemove);
                 }
 
                 ImGui::TreePop();
             }
-            ImGui::Separator();
         }
 
     }

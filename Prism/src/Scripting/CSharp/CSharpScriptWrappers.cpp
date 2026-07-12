@@ -1,0 +1,1105 @@
+﻿#include "prpch.h"
+#include "CSharpScriptWrappers.h"
+#include "Prism/Renderer/Material.h"
+#include "Prism/Renderer/Texture.h"
+#include "Prism/Core/Math/Noise.h"
+
+#include "Prism/Core/Input.h"
+#include "Prism/Physics/PXPhysicsWrappers.h"
+#include "Prism/Physics/Physics.h"
+#include "Prism/Physics/PhysicsActor.h"
+#include "Prism/Scene/Scene.h"
+#include "Prism/Scene/Entity.h"
+#include "Prism/Scene/Components.h"
+
+#include "Scripting/CSharp/CSharpScriptEngine.h"
+#include "Prism/Scene/Systems/ScriptSystem.h"
+#include "Prism/Scene/Systems/TransformSystem.h"
+#include "Scripting/CSharp/CSharpScriptMetaRegistry.h"
+#include "Prism/Renderer/Renderer.h"
+#include "Prism/Asset/AssetManager.h"
+#include "Prism/Asset/ModelImporter.h"
+#include <glm/gtc/type_ptr.hpp>
+
+#include <Rolky/String.hpp>
+#include <Rolky/Type.hpp>
+#include <Rolky/Array.hpp>
+
+#include <box2d/box2d.h>
+#include <PhysX/PxPhysicsAPI.h>
+#include "Prism/Physics/PhysicsUtil.h"
+
+// Node: 在C#端Bool类型为4字节的Rolky::Bool32，而不是C++的bool类型，因此在这里使用Rolky::Bool32来保持一致性。
+
+namespace Prism {
+    extern std::unordered_map<Rolky::TypeId, std::function<void(Entity&)>> s_CreateComponentFuncs;
+    extern std::unordered_map<Rolky::TypeId, std::function<Rolky::Bool32(Entity&)>> s_HasComponentFuncs;
+}
+
+namespace Prism {
+    namespace Script
+    {
+
+        static Entity GetEntityFromEntityID(uint64_t entityID)
+        {
+            WeakRef<Scene> scene = CSharpScriptEngine::GetCurrentSceneContext();
+            PR_CORE_ASSERT(scene, "No active scene!");
+            const auto& entityMap = scene->GetEntityMap();
+            PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
+            return entityMap.at(entityID);
+        }
+
+
+#pragma region Log
+
+        void Prism_Log_LogMessage(LogLevel level, Rolky::String inFormattedMessage)
+        {
+            std::string message = inFormattedMessage;
+            message = "[CSharp] " + message;
+            switch (level)
+            {
+            case LogLevel::Trace:
+                PR_CORE_TRACE(message);
+                break;
+            case LogLevel::Debug:
+                PR_CORE_INFO(message);
+                break;
+            case LogLevel::Info:
+                PR_CORE_INFO(message);
+                break;
+            case LogLevel::Warn:
+                PR_CORE_WARN(message);
+                break;
+            case LogLevel::Error:
+                PR_CORE_ERROR(message);
+                break;
+            case LogLevel::Critical:
+                PR_CORE_FATAL(message);
+                break;
+            }
+            Rolky::String::Free(inFormattedMessage);
+        }
+
+#pragma endregion
+
+#pragma region Time
+        float Prism_Time_GetDeltaTime(){ return Time::GetDeltaTime(); }
+        float Prism_Time_GetUnscaledDeltaTime(){ return Time::GetUnscaledDeltaTime(); }
+        float Prism_Time_GetTime(){ return Time::GetTime(); }
+        float Prism_Time_GetUnscaledTime(){ return Time::GetUnscaledTime(); }
+        float Prism_Time_GetFixedDeltaTime(){ return Time::GetFixedDeltaTime(); }
+        int64_t Prism_Time_GetFrameCount(){ return (int64_t)Time::GetFrameCount(); }
+        void Prism_Time_SetTimeScale(float scale){ Time::SetTimeScale(scale);}
+        float Prism_Time_GetTimeScale(){ return Time::GetTimeScale();}
+        void Prism_Time_SetFixedDeltaTime(float fixedDeltaTime) { Time::SetFixedDeltaTime(fixedDeltaTime); }
+#pragma endregion
+
+#pragma region Math
+        float Prism_Noise_PerlinNoise(float x, float y)
+        {
+            return Noise::PerlinNoise(x, y);
+        }
+#pragma endregion
+
+#pragma region Input
+        Rolky::Bool32 Prism_Input_IsKeyPressed(KeyCode key)
+        {
+            return Input::IsKeyPressed(key);
+        }
+
+        void Prism_Input_GetMousePosition(glm::vec2* outPosition)
+        {
+            auto [x, y] = Input::GetMousePosition();
+            *outPosition = { x, y };
+        }
+
+        void Prism_Input_SetCursorMode(CursorMode mode)
+        {
+            Input::SetCursorMode(mode);
+        }
+
+        CursorMode Prism_Input_GetCursorMode()
+        {
+            return Input::GetCursorMode();
+        }
+
+        Rolky::Bool32 Prism_Input_IsMouseButtonPressed(MouseButton button)
+        {
+            return Input::IsMouseButtonPressed(button);
+        }
+#pragma endregion
+
+#pragma region Entity
+        void Prism_Entity_CreateComponent(uint64_t entityID, Rolky::ReflectionType type)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            Rolky::Type mType = type;
+            s_CreateComponentFuncs[mType.GetTypeId()](entity);
+        }
+
+        Rolky::Bool32 Prism_Entity_HasComponent(uint64_t entityID, Rolky::ReflectionType type)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            Rolky::Type mType = type;
+            Rolky::Bool32 result = s_HasComponentFuncs[mType.GetTypeId()](entity);
+            return result;
+        }
+
+        uint64_t Prism_Entity_FindEntityByTag(Rolky::String tag)
+        {
+            WeakRef<Scene> scene = CSharpScriptEngine::GetCurrentSceneContext();
+            PR_CORE_ASSERT(scene, "No active scene!");
+            std::string tagStr = tag;
+            Rolky::String::Free(tag);
+
+            const auto& entityMap = scene->GetEntityMap();
+            for (const auto& [id, entity] : entityMap)
+            {
+                if (entity.HasComponent<TagComponent>() && entity.GetComponent<TagComponent>().Tag == tagStr)
+                    return id;
+            }
+            return 0;
+        }
+
+        Rolky::ManagedObject Prism_Entity_AddBehaviour(uint64_t entityID, Rolky::ReflectionType type)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            Rolky::Type mType = type;
+            UUID classID = CSharpScriptMetaRegistry::GenerateClassID(mType.GetFullName());
+            auto* ss = CSharpScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
+            UUID behaviourID = ss->AddCSharpBehaviour(entity, classID);
+
+            UUID sceneID = CSharpScriptEngine::GetCurrentSceneContext()->GetUUID();
+            auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, behaviourID);
+            PR_CORE_ASSERT(obj && obj->IsValid(), "Failed to get created behaviour instance!");
+            return *obj;
+        }
+
+        void Prism_Entity_RemoveBehaviour(uint64_t entityID, uint64_t behaviourID)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            UUID bid(behaviourID);
+            auto* ss = CSharpScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
+            ss->RemoveCSharpBehaviour(entity, bid);
+        }
+
+        Rolky::ManagedObject Prism_Entity_GetBehaviour(uint64_t entityID, Rolky::ReflectionType type)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            Rolky::Type mType = type;
+            UUID classID = CSharpScriptMetaRegistry::GenerateClassID(mType.GetFullName());
+
+            auto& comp = entity.GetComponent<CSharpScriptComponent>();
+            UUID sceneID = CSharpScriptEngine::GetCurrentSceneContext()->GetUUID();
+            for (auto& [bid, binding] : comp.Behaviours)
+            {
+                if (binding.ClassID == classID)
+                {
+                    auto* obj = CSharpScriptEngine::GetManagedObject(sceneID, binding.BehaviourID);
+                    if (obj) return *obj;
+                }
+            }
+            return Rolky::ManagedObject();
+        }
+
+        Rolky::Bool32 Prism_Behaviour_GetEnabled(uint64_t behaviourID)
+        {
+            auto* ss = CSharpScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
+            return ss->GetEnabled(UUID(behaviourID));
+        }
+
+        void Prism_Behaviour_SetEnabled(uint64_t behaviourID, Rolky::Bool32 enabled)
+        {
+            auto* ss = CSharpScriptEngine::GetCurrentSceneContext()->GetSystem<ScriptSystem>();
+            ss->SetEnabled(UUID(behaviourID), enabled);
+        }
+
+
+#pragma endregion
+
+#pragma region TransformComponent
+        static TransformSystem* GetTransformSystem(Entity entity)
+        {
+            return entity.GetScene()->GetSystem<TransformSystem>();
+        }
+
+        void Prism_TransformComponent_GetPosition(uint64_t entityID, glm::vec3* outPosition)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            *outPosition = GetTransformSystem(entity)->GetWorldPosition(entity);
+        }
+        void Prism_TransformComponent_GetRotation(uint64_t entityID, glm::vec3* outRotation)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            *outRotation = GetTransformSystem(entity)->GetWorldRotation(entity);
+        }
+        void Prism_TransformComponent_GetScale(uint64_t entityID, glm::vec3* outScale)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            *outScale = GetTransformSystem(entity)->GetWorldScale(entity);
+        }
+
+        void Prism_TransformComponent_GetUp(uint64_t entityID, glm::vec3* outUP)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            *outUP = entity.Transformation().Up;
+        }
+        void Prism_TransformComponent_GetRight(uint64_t entityID, glm::vec3* outRight)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            *outRight = entity.Transformation().Right;
+        }
+        void Prism_TransformComponent_GetForward(uint64_t entityID, glm::vec3* outForward)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            *outForward = entity.Transformation().Forward;
+        }
+
+        void Prism_TransformComponent_SetPosition(uint64_t entityID, glm::vec3* inPosition)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            GetTransformSystem(entity)->SetWorldPosition(entity, *inPosition);
+        }
+        void Prism_TransformComponent_SetRotation(uint64_t entityID, glm::vec3* inRotation)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            GetTransformSystem(entity)->SetWorldRotation(entity, *inRotation);
+        }
+        void Prism_TransformComponent_SetScale(uint64_t entityID, glm::vec3* inScale)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            GetTransformSystem(entity)->SetWorldScale(entity, *inScale);
+        }
+
+        void Prism_TransformComponent_GetTransform(uint64_t entityID, ScriptTransform* outTransform)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            auto world = GetTransformSystem(entity)->GetWorldDecomposed(entity);
+            auto& tc = entity.Transformation();
+            outTransform->Position = world.Position;
+            outTransform->Rotation = world.Rotation;
+            outTransform->Scale    = world.Scale;
+            outTransform->Up       = tc.Up;
+            outTransform->Right    = tc.Right;
+            outTransform->Forward  = tc.Forward;
+        }
+        void Prism_TransformComponent_SetTransform(uint64_t entityID, ScriptTransform* inTransform)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            auto* ts = GetTransformSystem(entity);
+            ts->SetWorldPosition(entity, inTransform->Position);
+            ts->SetWorldRotation(entity, inTransform->Rotation);
+            ts->SetWorldScale(entity, inTransform->Scale);
+        }
+
+        void Prism_TransformComponent_GetLocalPosition(uint64_t entityID, glm::vec3* outPosition)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            *outPosition = entity.Transformation().GetPosition();
+        }
+        void Prism_TransformComponent_SetLocalPosition(uint64_t entityID, glm::vec3* inPosition)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            entity.Transformation().SetPosition(*inPosition);
+        }
+        void Prism_TransformComponent_GetLocalRotation(uint64_t entityID, glm::vec3* outRotation)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            *outRotation = entity.Transformation().GetRotation();
+        }
+        void Prism_TransformComponent_SetLocalRotation(uint64_t entityID, glm::vec3* inRotation)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            entity.Transformation().SetRotation(*inRotation);
+        }
+        void Prism_TransformComponent_GetLocalScale(uint64_t entityID, glm::vec3* outScale)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            *outScale = entity.Transformation().GetScale();
+        }
+        void Prism_TransformComponent_SetLocalScale(uint64_t entityID, glm::vec3* inScale)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            entity.Transformation().SetScale(*inScale);
+        }
+
+#pragma endregion
+#pragma region MeshRendererComponent
+
+        void* Prism_MeshRendererComponent_GetMesh(uint64_t entityID)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            auto& meshComponent = entity.GetComponent<MeshRendererComponent>();
+            return new Ref<Mesh>(meshComponent.Mesh);
+        }
+
+        void Prism_MeshRendererComponent_SetMesh(uint64_t entityID, Ref<Mesh>* inMesh)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            auto& meshComponent = entity.GetComponent<MeshRendererComponent>();
+            meshComponent.Mesh = inMesh ? *inMesh : nullptr;
+        }
+        void Prism_MeshRendererComponent_GetMaterial(uint64_t entityID, Ref<Material>** outMaterial, uint64_t index)
+        {
+            PR_CORE_TRACE(entityID);
+            Entity entity = GetEntityFromEntityID(entityID);
+            auto& meshComponent = entity.GetComponent<MeshRendererComponent>();
+            if (index >= meshComponent.Materials.size()) PR_CORE_ERROR("Material index out of range");
+            *outMaterial = new Ref<Material>(meshComponent.Materials[index]);
+        }
+
+        void Prism_MeshRendererComponent_SetMaterial(uint64_t entityID, Ref<Material>* inMaterial, uint64_t index)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            auto& meshComponent = entity.GetComponent<MeshRendererComponent>();
+            if (index >= meshComponent.Materials.size()) PR_CORE_ERROR("Material index out of range");
+            meshComponent.Materials[index] = *inMaterial;
+        }
+
+        uint64_t Prism_MeshRendererComponent_GetMaterialCount(uint64_t entityID)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            auto& mc = entity.GetComponent<MeshRendererComponent>();
+            return mc.Materials.size();
+        }
+
+        void Prism_MeshRendererComponent_GetMaterials(uint64_t entityID, void** outHandles)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            auto& mc = entity.GetComponent<MeshRendererComponent>();
+            for (size_t i = 0; i < mc.Materials.size(); i++)
+            {
+                if (mc.Materials[i])
+                    outHandles[i] = new Ref<Material>(mc.Materials[i]);
+                else
+                    outHandles[i] = nullptr;
+            }
+        }
+
+        void Prism_MeshRendererComponent_SetMaterials(uint64_t entityID, void** inHandles, uint64_t count)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            auto& mc = entity.GetComponent<MeshRendererComponent>();
+            mc.Materials.resize(count);
+            for (uint64_t i = 0; i < count; i++)
+            {
+                if (inHandles[i])
+                {
+                    auto& matRef = *static_cast<Ref<Material>*>(inHandles[i]);
+                    mc.Materials[i] = matRef;
+                }
+                else
+                    mc.Materials[i] = nullptr;
+            }
+        }
+
+#pragma endregion
+        
+#pragma region Mesh
+        
+
+        Prism::Ref<Prism::Mesh>* Prism_Mesh_Constructor(Rolky::String filepath)
+        {
+            std::string path = filepath;
+            Rolky::String::Free(filepath);
+            auto result = ModelImporter::Import(path);
+            return new Ref<Mesh>(result.Mesh);
+        }
+
+        void Prism_Mesh_Destructor(Ref<Mesh>* _this)
+        {
+            Ref<Mesh>* instance = (Ref<Mesh>*)_this;
+            delete _this;
+        }
+
+
+        void* Prism_MeshFactory_CreatePlane(float width, float height)
+        {
+            return new Ref<Mesh>(ModelImporter::Import("assets/models/Plane1m.obj").Mesh);
+        }
+
+#pragma endregion
+
+#pragma region Texture2D
+        void* Prism_Texture2D_Constructor(uint32_t width, uint32_t height)
+        {
+            auto result = Texture2D::Create(TextureFormat::RGBA, width, height);
+            return new Ref<Texture2D>(result);
+        }
+
+        void Prism_Texture2D_Destructor(Ref<Texture2D>* _this)
+        {
+            delete _this;
+        }
+
+        void Prism_Texture2D_SetData(Ref<Texture2D>* _this, Rolky::Array<glm::vec4> inData, int32_t count)
+        {
+            Ref<Texture2D>& instance = *_this;
+            uint32_t dataSize = count * sizeof(glm::vec4) / 4;
+            instance->Lock();
+            Buffer buffer = instance->GetWriteableBuffer();
+            PR_CORE_ASSERT(dataSize <= buffer.Size);
+            uint8_t* pixels = (uint8_t*)buffer.Data;
+            uint32_t index = 0;
+            for (uint32_t i = 0; i < instance->GetWidth() * instance->GetHeight(); i++)
+            {
+                glm::vec4& value = inData[i];
+                *pixels++ = (uint32_t)(value.x * 255.0f);
+                *pixels++ = (uint32_t)(value.y * 255.0f);
+                *pixels++ = (uint32_t)(value.z * 255.0f);
+                *pixels++ = (uint32_t)(value.w * 255.0f);
+            }
+            inData.Free(inData);
+            instance->Unlock();
+        }
+
+#pragma endregion
+
+#pragma region RigidBody2DComponent
+        void Prism_RigidBody2DComponent_ApplyLinearImpulse(uint64_t entityID, glm::vec2* impulse, glm::vec2* offset, Rolky::Bool32 wake)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
+            b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
+            b2Vec2 b2Impulse(impulse->x, impulse->y);
+            b2Vec2 b2Point(offset->x, offset->y);
+            body->ApplyLinearImpulse(b2Impulse, b2Point, wake);
+        }
+
+        void Prism_RigidBody2DComponent_GetLinearVelocity(uint64_t entityID, glm::vec2* outVelocity)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
+            b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
+            const b2Vec2& velocity = body->GetLinearVelocity();
+            *outVelocity = glm::vec2(velocity.x, velocity.y);
+        }
+
+        void Prism_RigidBody2DComponent_SetLinearVelocity(uint64_t entityID, glm::vec2* velocity)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            auto& rb2d = entity.GetComponent<RigidBody2DComponent>();
+            b2Body* body = static_cast<b2Body*>(rb2d.RuntimeBody);
+            body->SetLinearVelocity(b2Vec2(velocity->x, velocity->y));
+        }
+
+        #pragma endregion
+
+#pragma region RigidBodyComponent
+        void Prism_RigidBodyComponent_AddForce(uint64_t entityID, glm::vec3* force, int32_t forceMode)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+
+            if (!entity.HasComponent<RigidBodyComponent>())
+            {
+                PR_CORE_WARN("Trying to add force to entity without RigidBodyComponent! EntityID({0})", entityID);
+                return;
+            }
+
+            Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+            actor->AddForce(*force, (ForceMode)forceMode);
+        }
+
+        void Prism_RigidBodyComponent_AddTorque(uint64_t entityID, glm::vec3* torque, int32_t forceMode)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+
+            if (!entity.HasComponent<RigidBodyComponent>())
+            {
+                PR_CORE_WARN("Trying to add torque to entity without RigidBodyComponent! EntityID({0})", entityID);
+                return;
+            }
+
+            Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+            actor->AddTorque(*torque, (ForceMode)forceMode);
+        }
+
+        void Prism_RigidBodyComponent_GetLinearVelocity(uint64_t entityID, glm::vec3* outVelocity)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
+            Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+            *outVelocity = actor->GetLinearVelocity();
+        }
+
+        void Prism_RigidBodyComponent_SetLinearVelocity(uint64_t entityID, glm::vec3* velocity)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
+            Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+            actor->SetLinearVelocity(*velocity);
+        }
+
+        void Prism_RigidBodyComponent_Rotate(uint64_t entityID, glm::vec3* rotation)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
+            Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+            actor->Rotate(*rotation);
+        }
+
+        uint32_t Prism_RigidBodyComponent_GetLayer(uint64_t entityID)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
+            auto& component = entity.GetComponent<RigidBodyComponent>();
+            return component.Layer;
+        }
+
+        float Prism_RigidBodyComponent_GetMass(uint64_t entityID)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
+            Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+            return actor->GetMass();
+        }
+
+        void Prism_RigidBodyComponent_SetMass(uint64_t entityID, float mass)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
+            Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+            actor->SetMass(mass);
+        }
+
+        uint32_t Prism_RigidBodyComponent_GetBodyType(uint64_t entityID)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
+            auto& component = entity.GetComponent<RigidBodyComponent>();
+            return (uint32_t)component.BodyType;
+        }
+
+        void Prism_RigidBodyComponent_GetAngularVelocity(uint64_t entityID, glm::vec3* outVelocity)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
+            Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+            *outVelocity = actor->GetAngularVelocity();
+        }
+
+        void Prism_RigidBodyComponent_SetAngularVelocity(uint64_t entityID, glm::vec3* velocity)
+        {
+            Entity entity = GetEntityFromEntityID(entityID);
+            PR_CORE_ASSERT(entity.HasComponent<RigidBodyComponent>());
+            Ref<PhysicsActor> actor = Physics::GetActorForEntity(entity);
+            actor->SetAngularVelocity(*velocity);
+        }
+
+#pragma endregion
+
+#pragma region Material
+        Ref<Material>* Prism_Material_Constructor(Rolky::String shaderName)
+        {
+            std::string name = shaderName;
+            Rolky::String::Free(shaderName);
+            const auto& shader = AssetManager::GetShaderLibrary()->Get(name);
+            return new Ref<Material>(Material::Create(shader->Handle));
+        }
+
+        void Prism_Material_Destructor(Ref<Material>* _this)
+        {
+            delete _this;
+        }
+
+
+        void Prism_Material_SetFloat(Ref<Material>* _this, Rolky::String uniform, float value)
+        {
+            (*_this)->SetFloat(uniform, value);
+            uniform.Free(uniform);
+        }
+
+        void Prism_Material_SetInt(Ref<Material>* _this, Rolky::String uniform, int value)
+        {
+            (*_this)->SetInt(uniform, value);
+            uniform.Free(uniform);
+        }
+
+        void Prism_Material_SetBool(Ref<Material>* _this, Rolky::String uniform, Rolky::Bool32 value)
+        {
+            (*_this)->SetBool(uniform, value);
+            uniform.Free(uniform);
+        }
+
+        void Prism_Material_SetVector2(Ref<Material>* _this, Rolky::String uniform, glm::vec2* value)
+        {
+            (*_this)->SetVec2(uniform, *value);
+            uniform.Free(uniform);
+        }
+
+        void Prism_Material_SetColor3(Ref<Material>* _this, Rolky::String uniform, glm::vec3* value)
+        {
+            (*_this)->SetColor3(uniform, *value);
+            uniform.Free(uniform);
+        }
+
+        void Prism_Material_SetColor(Ref<Material>* _this, Rolky::String uniform, glm::vec4* value)
+        {
+            (*_this)->SetColor(uniform, *value);
+            uniform.Free(uniform);
+        }
+
+        void Prism_Material_SetMatrix4(Ref<Material>* _this, Rolky::String uniform, glm::mat4* value)
+        {
+            (*_this)->SetMatrix4(uniform, *value);
+            uniform.Free(uniform);
+        }
+
+        void Prism_Material_SetTexture(Ref<Material>* _this, Rolky::String uniform, Ref<Texture2D>* texture)
+        {
+            (*_this)->SetTexture(uniform, *texture);
+            uniform.Free(uniform);
+        }
+
+        void Prism_Material_SetVector3(Ref<Material>* _this, Rolky::String uniform, glm::vec3* value)
+        {
+            (*_this)->SetVec3(uniform, *value);
+            uniform.Free(uniform);
+        }
+
+        void Prism_Material_SetVector4(Ref<Material>* _this, Rolky::String uniform, glm::vec4* value)
+        {
+            (*_this)->SetVec4(uniform, *value);
+            uniform.Free(uniform);
+        }
+
+        void Prism_Material_SetKeyword(Ref<Material>* _this, Rolky::String name, Rolky::Bool32 enabled)
+        {
+            std::string kwName = name;
+            name.Free(name);
+            (*_this)->SetKeyword(kwName, enabled);
+        }
+
+        Rolky::Bool32 Prism_Material_IsKeywordEnabled(Ref<Material>* _this, Rolky::String name)
+        {
+            std::string kwName = name;
+            name.Free(name);
+            return (*_this)->IsKeywordEnabled(kwName);
+        }
+
+#pragma endregion
+
+#pragma region Physics
+        Rolky::Bool32 Prism_Physics_Raycast(glm::vec3* origin, glm::vec3* direction, float maxDistance, RaycastHit* hit)
+        {
+            return PXPhysicsWrappers::Raycast(*origin, *direction, maxDistance, hit);
+        }
+
+        void Prism_Physics_OverlapBox(glm::vec3* origin, glm::vec3* halfSize, Rolky::Array<OverlapHitData>* outResults)
+        {
+            std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS> buffer;
+            uint32_t count;
+            if (PXPhysicsWrappers::OverlapBox(*origin, *halfSize, buffer, &count))
+            {
+                auto results = Rolky::Array<OverlapHitData>::New(count);
+                uint32_t arrayIndex = 0;
+
+                for (uint32_t i = 0; i < count; i++)
+                {
+                    Entity& entity = *(Entity*)buffer[i].actor->userData;
+
+                    if (entity.HasComponent<BoxColliderComponent>())
+                    {
+                        auto& bc = entity.GetComponent<BoxColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 0; // Box
+                        data.IsTrigger = bc.IsTrigger;
+                        data.ShapeData[0] = bc.Size.x;
+                        data.ShapeData[1] = bc.Size.y;
+                        data.ShapeData[2] = bc.Size.z;
+                        data.ShapeData[3] = bc.Offset.x;
+                        data.ShapeData[4] = bc.Offset.y;
+                        data.ShapeData[5] = bc.Offset.z;
+                        data.MeshHandle = nullptr;
+                        results[arrayIndex++] = data;
+                    }
+                    else if (entity.HasComponent<SphereColliderComponent>())
+                    {
+                        auto& sc = entity.GetComponent<SphereColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 1; // Sphere
+                        data.IsTrigger = sc.IsTrigger;
+                        data.ShapeData[0] = sc.Radius;
+                        data.MeshHandle = nullptr;
+                        results[arrayIndex++] = data;
+                    }
+                    else if (entity.HasComponent<CapsuleColliderComponent>())
+                    {
+                        auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 2; // Capsule
+                        data.IsTrigger = cc.IsTrigger;
+                        data.ShapeData[0] = cc.Radius;
+                        data.ShapeData[1] = cc.Height;
+                        data.MeshHandle = nullptr;
+                        results[arrayIndex++] = data;
+                    }
+                    else if (entity.HasComponent<MeshColliderComponent>())
+                    {
+                        auto& mc = entity.GetComponent<MeshColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 3; // Mesh
+                        data.IsTrigger = mc.IsTrigger;
+                        data.MeshHandle = new Ref<Mesh>(mc.CollisionMesh);
+                        results[arrayIndex++] = data;
+                    }
+                }
+
+                *outResults = results;
+            }
+        }
+
+        void Prism_Physics_OverlapSphere(glm::vec3* origin, float radius, Rolky::Array<OverlapHitData>* outResults)
+        {
+            std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS> buffer;
+            uint32_t count;
+            if (PXPhysicsWrappers::OverlapSphere(*origin, radius, buffer, &count))
+            {
+                auto results = Rolky::Array<OverlapHitData>::New(count);
+                uint32_t arrayIndex = 0;
+
+                for (uint32_t i = 0; i < count; i++)
+                {
+                    Entity& entity = *(Entity*)buffer[i].actor->userData;
+
+                    if (entity.HasComponent<BoxColliderComponent>())
+                    {
+                        auto& bc = entity.GetComponent<BoxColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 0; // Box
+                        data.IsTrigger = bc.IsTrigger;
+                        data.ShapeData[0] = bc.Size.x;
+                        data.ShapeData[1] = bc.Size.y;
+                        data.ShapeData[2] = bc.Size.z;
+                        data.ShapeData[3] = bc.Offset.x;
+                        data.ShapeData[4] = bc.Offset.y;
+                        data.ShapeData[5] = bc.Offset.z;
+                        data.MeshHandle = nullptr;
+                        results[arrayIndex++] = data;
+                    }
+                    else if (entity.HasComponent<SphereColliderComponent>())
+                    {
+                        auto& sc = entity.GetComponent<SphereColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 1; // Sphere
+                        data.IsTrigger = sc.IsTrigger;
+                        data.ShapeData[0] = sc.Radius;
+                        data.MeshHandle = nullptr;
+                        results[arrayIndex++] = data;
+                    }
+                    else if (entity.HasComponent<CapsuleColliderComponent>())
+                    {
+                        auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 2; // Capsule
+                        data.IsTrigger = cc.IsTrigger;
+                        data.ShapeData[0] = cc.Radius;
+                        data.ShapeData[1] = cc.Height;
+                        data.MeshHandle = nullptr;
+                        results[arrayIndex++] = data;
+                    }
+                    else if (entity.HasComponent<MeshColliderComponent>())
+                    {
+                        auto& mc = entity.GetComponent<MeshColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 3; // Mesh
+                        data.IsTrigger = mc.IsTrigger;
+                        data.MeshHandle = new Ref<Mesh>(mc.CollisionMesh);
+                        results[arrayIndex++] = data;
+                    }
+                }
+
+                *outResults = results;
+            }
+        }
+
+        void Prism_Physics_OverlapCapsule(glm::vec3* origin, float radius, float halfHeight, Rolky::Array<OverlapHitData>* outResults)
+        {
+            std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS> buffer;
+            uint32_t count;
+            if (PXPhysicsWrappers::OverlapCapsule(*origin, radius, halfHeight, buffer, &count))
+            {
+                auto results = Rolky::Array<OverlapHitData>::New(count);
+                uint32_t arrayIndex = 0;
+
+                for (uint32_t i = 0; i < count; i++)
+                {
+                    Entity& entity = *(Entity*)buffer[i].actor->userData;
+
+                    if (entity.HasComponent<BoxColliderComponent>())
+                    {
+                        auto& bc = entity.GetComponent<BoxColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 0;
+                        data.IsTrigger = bc.IsTrigger;
+                        data.ShapeData[0] = bc.Size.x;
+                        data.ShapeData[1] = bc.Size.y;
+                        data.ShapeData[2] = bc.Size.z;
+                        data.ShapeData[3] = bc.Offset.x;
+                        data.ShapeData[4] = bc.Offset.y;
+                        data.ShapeData[5] = bc.Offset.z;
+                        data.MeshHandle = nullptr;
+                        results[arrayIndex++] = data;
+                    }
+                    else if (entity.HasComponent<SphereColliderComponent>())
+                    {
+                        auto& sc = entity.GetComponent<SphereColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 1;
+                        data.IsTrigger = sc.IsTrigger;
+                        data.ShapeData[0] = sc.Radius;
+                        data.MeshHandle = nullptr;
+                        results[arrayIndex++] = data;
+                    }
+                    else if (entity.HasComponent<CapsuleColliderComponent>())
+                    {
+                        auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 2;
+                        data.IsTrigger = cc.IsTrigger;
+                        data.ShapeData[0] = cc.Radius;
+                        data.ShapeData[1] = cc.Height;
+                        data.MeshHandle = nullptr;
+                        results[arrayIndex++] = data;
+                    }
+                    else if (entity.HasComponent<MeshColliderComponent>())
+                    {
+                        auto& mc = entity.GetComponent<MeshColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 3;
+                        data.IsTrigger = mc.IsTrigger;
+                        data.MeshHandle = new Ref<Mesh>(mc.CollisionMesh);
+                        results[arrayIndex++] = data;
+                    }
+                }
+
+                *outResults = results;
+            }
+        }
+
+        void Prism_Physics_OverlapBoxNonAlloc(glm::vec3* origin, glm::vec3* halfSize, OverlapHitData* outBuffer, int32_t bufferSize, int32_t* outCount)
+        {
+            std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS> buffer;
+            uint32_t count = 0;
+            if (PXPhysicsWrappers::OverlapBox(*origin, *halfSize, buffer, &count))
+            {
+                if (count > (uint32_t)bufferSize)
+                    count = bufferSize;
+
+                for (uint32_t i = 0; i < count; i++)
+                {
+                    Entity& entity = *(Entity*)buffer[i].actor->userData;
+
+                    if (entity.HasComponent<BoxColliderComponent>())
+                    {
+                        auto& bc = entity.GetComponent<BoxColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 0;
+                        data.IsTrigger = bc.IsTrigger;
+                        data.ShapeData[0] = bc.Size.x;
+                        data.ShapeData[1] = bc.Size.y;
+                        data.ShapeData[2] = bc.Size.z;
+                        data.ShapeData[3] = bc.Offset.x;
+                        data.ShapeData[4] = bc.Offset.y;
+                        data.ShapeData[5] = bc.Offset.z;
+                        data.MeshHandle = nullptr;
+                        outBuffer[i] = data;
+                    }
+                    else if (entity.HasComponent<SphereColliderComponent>())
+                    {
+                        auto& sc = entity.GetComponent<SphereColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 1;
+                        data.IsTrigger = sc.IsTrigger;
+                        data.ShapeData[0] = sc.Radius;
+                        data.MeshHandle = nullptr;
+                        outBuffer[i] = data;
+                    }
+                    else if (entity.HasComponent<CapsuleColliderComponent>())
+                    {
+                        auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 2;
+                        data.IsTrigger = cc.IsTrigger;
+                        data.ShapeData[0] = cc.Radius;
+                        data.ShapeData[1] = cc.Height;
+                        data.MeshHandle = nullptr;
+                        outBuffer[i] = data;
+                    }
+                    else if (entity.HasComponent<MeshColliderComponent>())
+                    {
+                        auto& mc = entity.GetComponent<MeshColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 3;
+                        data.IsTrigger = mc.IsTrigger;
+                        data.MeshHandle = new Ref<Mesh>(mc.CollisionMesh);
+                        outBuffer[i] = data;
+                    }
+                }
+            }
+            *outCount = count;
+        }
+
+        void Prism_Physics_OverlapCapsuleNonAlloc(glm::vec3* origin, float radius, float halfHeight, OverlapHitData* outBuffer, int32_t bufferSize, int32_t* outCount)
+        {
+            std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS> buffer;
+            uint32_t count = 0;
+            if (PXPhysicsWrappers::OverlapCapsule(*origin, radius, halfHeight, buffer, &count))
+            {
+                if (count > (uint32_t)bufferSize)
+                    count = bufferSize;
+
+                for (uint32_t i = 0; i < count; i++)
+                {
+                    Entity& entity = *(Entity*)buffer[i].actor->userData;
+
+                    if (entity.HasComponent<BoxColliderComponent>())
+                    {
+                        auto& bc = entity.GetComponent<BoxColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 0;
+                        data.IsTrigger = bc.IsTrigger;
+                        data.ShapeData[0] = bc.Size.x;
+                        data.ShapeData[1] = bc.Size.y;
+                        data.ShapeData[2] = bc.Size.z;
+                        data.ShapeData[3] = bc.Offset.x;
+                        data.ShapeData[4] = bc.Offset.y;
+                        data.ShapeData[5] = bc.Offset.z;
+                        data.MeshHandle = nullptr;
+                        outBuffer[i] = data;
+                    }
+                    else if (entity.HasComponent<SphereColliderComponent>())
+                    {
+                        auto& sc = entity.GetComponent<SphereColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 1;
+                        data.IsTrigger = sc.IsTrigger;
+                        data.ShapeData[0] = sc.Radius;
+                        data.MeshHandle = nullptr;
+                        outBuffer[i] = data;
+                    }
+                    else if (entity.HasComponent<CapsuleColliderComponent>())
+                    {
+                        auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 2;
+                        data.IsTrigger = cc.IsTrigger;
+                        data.ShapeData[0] = cc.Radius;
+                        data.ShapeData[1] = cc.Height;
+                        data.MeshHandle = nullptr;
+                        outBuffer[i] = data;
+                    }
+                    else if (entity.HasComponent<MeshColliderComponent>())
+                    {
+                        auto& mc = entity.GetComponent<MeshColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 3;
+                        data.IsTrigger = mc.IsTrigger;
+                        data.MeshHandle = new Ref<Mesh>(mc.CollisionMesh);
+                        outBuffer[i] = data;
+                    }
+                }
+            }
+            *outCount = count;
+        }
+
+        void Prism_Physics_OverlapSphereNonAlloc(glm::vec3* origin, float radius, OverlapHitData* outBuffer, int32_t bufferSize, int32_t* outCount)
+        {
+            std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS> buffer;
+            uint32_t count = 0;
+            if (PXPhysicsWrappers::OverlapSphere(*origin, radius, buffer, &count))
+            {
+                if (count > (uint32_t)bufferSize)
+                    count = bufferSize;
+
+                for (uint32_t i = 0; i < count; i++)
+                {
+                    Entity& entity = *(Entity*)buffer[i].actor->userData;
+
+                    if (entity.HasComponent<BoxColliderComponent>())
+                    {
+                        auto& bc = entity.GetComponent<BoxColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 0;
+                        data.IsTrigger = bc.IsTrigger;
+                        data.ShapeData[0] = bc.Size.x;
+                        data.ShapeData[1] = bc.Size.y;
+                        data.ShapeData[2] = bc.Size.z;
+                        data.ShapeData[3] = bc.Offset.x;
+                        data.ShapeData[4] = bc.Offset.y;
+                        data.ShapeData[5] = bc.Offset.z;
+                        data.MeshHandle = nullptr;
+                        outBuffer[i] = data;
+                    }
+                    else if (entity.HasComponent<SphereColliderComponent>())
+                    {
+                        auto& sc = entity.GetComponent<SphereColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 1;
+                        data.IsTrigger = sc.IsTrigger;
+                        data.ShapeData[0] = sc.Radius;
+                        data.MeshHandle = nullptr;
+                        outBuffer[i] = data;
+                    }
+                    else if (entity.HasComponent<CapsuleColliderComponent>())
+                    {
+                        auto& cc = entity.GetComponent<CapsuleColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 2;
+                        data.IsTrigger = cc.IsTrigger;
+                        data.ShapeData[0] = cc.Radius;
+                        data.ShapeData[1] = cc.Height;
+                        data.MeshHandle = nullptr;
+                        outBuffer[i] = data;
+                    }
+                    else if (entity.HasComponent<MeshColliderComponent>())
+                    {
+                        auto& mc = entity.GetComponent<MeshColliderComponent>();
+                        OverlapHitData data{};
+                        data.EntityID = entity.GetUUID();
+                        data.ColliderType = 3;
+                        data.IsTrigger = mc.IsTrigger;
+                        data.MeshHandle = new Ref<Mesh>(mc.CollisionMesh);
+                        outBuffer[i] = data;
+                    }
+                }
+            }
+            *outCount = count;
+        }
+
+        float Prism_Physics_GetGravity()
+        {
+            return Physics::GetGravity();
+        }
+
+        void Prism_Physics_SetGravity(float gravity)
+        {
+            Physics::SetGravity(gravity);
+        }
+#pragma endregion
+
+    }
+}

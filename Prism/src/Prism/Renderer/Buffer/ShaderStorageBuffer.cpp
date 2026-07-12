@@ -12,6 +12,7 @@ namespace Prism
 		case RendererAPIType::None:   return nullptr;
 		case RendererAPIType::OpenGL:  return Ref<OpenGLShaderStorageBuffer>::Create(size, usage);
 		}
+        return nullptr;
 	}
 
 }

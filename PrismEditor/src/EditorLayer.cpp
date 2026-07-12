@@ -1,13 +1,24 @@
-#include "EditorLayer.h"
-#include "EditorProperty.h"
+﻿#include "EditorLayer.h"
+#include "Prism/ImGui/ImGui.h"
+#include "Prism/Asset/ModelImporter.h"
+#include "Prism/Asset/AssetManager.h"
+using Prism::UI::Property;
+using Prism::UI::PropertyFlag;
 
 #include "Prism/ImGui/ImGuizmo.h"
 #include "Prism/Core/LanguageManager.h"
 #include "Scripting/CSharp/CSharpScriptEngine.h"
 #include "Scripting/Python/PythonScriptEngine.h"
 #include "Prism/Scene/Systems/Physics2DSystem.h"
+#include "Prism/Scene/Systems/RenderSystem.h"
+#include "Prism/Core/Warning.h"
+PR_WARNING_DISABLE(4312)
 
-PRISM_API void PrismConnectPhysXDebugger();
+#include "Prism/Physics/Physics.h"
+#include "Prism/Editor/PhysicsSettingsWindow.h"
+#include "Prism/Editor/AssetEditorPanel.h"
+#include "Prism/Math/Math.h"
+#include "Prism/Utilities/FileSystem.h"
 
 #include <filesystem>
 
@@ -28,7 +39,7 @@ namespace Prism
 
 
         EditorLayer::EditorLayer()
-            : m_SceneType(SceneType::Model), m_EditorCamera(glm::perspectiveFov(glm::radians(45.0f), 1280.0f, 720.0f, 0.1f, 10000.0f))
+            : m_SceneType(SceneType::Model), m_EditorCamera(glm::perspectiveFov(glm::radians(45.0f), 1280.0f, 720.0f, 0.1f, 1000.0f))
         {
 
         }
@@ -40,78 +51,6 @@ namespace Prism
 
         void EditorLayer::OnAttach()
         {
-            #pragma region ImGui Color
-            ImVec4* colors = ImGui::GetStyle().Colors;
-            colors[ImGuiCol_Text] = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
-            colors[ImGuiCol_TextDisabled] = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
-            colors[ImGuiCol_WindowBg] = ImVec4(0.16f, 0.16f, 0.16f, 1.00f);
-            colors[ImGuiCol_ChildBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-            colors[ImGuiCol_PopupBg] = ImVec4(0.11f, 0.11f, 0.14f, 0.94f);
-            colors[ImGuiCol_Border] = ImVec4(0.25f, 0.25f, 0.30f, 0.50f);
-            colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-            colors[ImGuiCol_FrameBg] = ImVec4(0.58f, 0.58f, 0.58f, 0.54f);
-            colors[ImGuiCol_FrameBgHovered] = ImVec4(0.96f, 0.00f, 0.00f, 0.40f);
-            colors[ImGuiCol_FrameBgActive] = ImVec4(1.00f, 0.00f, 0.00f, 0.67f);
-            colors[ImGuiCol_TitleBg] = ImVec4(0.07f, 0.07f, 0.09f, 1.00f);
-            colors[ImGuiCol_TitleBgActive] = ImVec4(0.64f, 0.06f, 0.00f, 1.00f);
-            colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.00f, 0.00f, 0.00f, 0.51f);
-            colors[ImGuiCol_MenuBarBg] = ImVec4(0.12f, 0.12f, 0.15f, 1.00f);
-            colors[ImGuiCol_ScrollbarBg] = ImVec4(0.02f, 0.02f, 0.02f, 0.53f);
-            colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
-            colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.41f, 0.41f, 0.41f, 1.00f);
-            colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.51f, 0.51f, 0.51f, 1.00f);
-            colors[ImGuiCol_CheckMark] = ImVec4(0.12f, 1.00f, 0.00f, 1.00f);
-            colors[ImGuiCol_SliderGrab] = ImVec4(0.26f, 1.00f, 0.12f, 1.00f);
-            colors[ImGuiCol_SliderGrabActive] = ImVec4(0.98f, 0.26f, 0.26f, 1.00f);
-            colors[ImGuiCol_Button] = ImVec4(1.00f, 0.00f, 0.00f, 0.69f);
-            colors[ImGuiCol_ButtonHovered] = ImVec4(0.98f, 0.26f, 0.26f, 0.80f);
-            colors[ImGuiCol_ButtonActive] = ImVec4(0.98f, 0.06f, 0.06f, 1.00f);
-            colors[ImGuiCol_Header] = ImVec4(0.85f, 0.85f, 0.85f, 0.31f);
-            colors[ImGuiCol_HeaderHovered] = ImVec4(1.00f, 0.00f, 0.00f, 0.62f);
-            colors[ImGuiCol_HeaderActive] = ImVec4(0.98f, 0.26f, 0.26f, 1.00f);
-            colors[ImGuiCol_Separator] = ImVec4(1.00f, 1.00f, 1.00f, 0.50f);
-            colors[ImGuiCol_SeparatorHovered] = ImVec4(0.10f, 0.40f, 0.75f, 0.78f);
-            colors[ImGuiCol_SeparatorActive] = ImVec4(0.10f, 0.40f, 0.75f, 1.00f);
-            colors[ImGuiCol_ResizeGrip] = ImVec4(1.00f, 1.00f, 1.00f, 0.38f);
-            colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.98f, 0.26f, 0.26f, 0.67f);
-            colors[ImGuiCol_ResizeGripActive] = ImVec4(0.97f, 0.00f, 0.00f, 0.95f);
-            colors[ImGuiCol_Tab] = ImVec4(0.80f, 0.00f, 0.00f, 0.86f);
-            colors[ImGuiCol_TabHovered] = ImVec4(0.98f, 0.26f, 0.26f, 0.80f);
-            colors[ImGuiCol_TabActive] = ImVec4(1.00f, 0.07f, 0.07f, 1.00f);
-            colors[ImGuiCol_TabUnfocused] = ImVec4(0.07f, 0.10f, 0.15f, 0.97f);
-            colors[ImGuiCol_TabUnfocusedActive] = ImVec4(1.00f, 0.00f, 0.00f, 1.00f);
-            colors[ImGuiCol_DockingPreview] = ImVec4(1.00f, 0.36f, 0.36f, 0.70f);
-            colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.20f, 0.20f, 0.20f, 1.00f);
-            colors[ImGuiCol_PlotLines] = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
-            colors[ImGuiCol_PlotLinesHovered] = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
-            colors[ImGuiCol_PlotHistogram] = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
-            colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
-            colors[ImGuiCol_TableHeaderBg] = ImVec4(0.19f, 0.19f, 0.19f, 1.00f);
-            colors[ImGuiCol_TableBorderStrong] = ImVec4(0.31f, 0.31f, 0.35f, 1.00f);
-            colors[ImGuiCol_TableBorderLight] = ImVec4(0.23f, 0.23f, 0.25f, 1.00f);
-            colors[ImGuiCol_TableRowBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-            colors[ImGuiCol_TableRowBgAlt] = ImVec4(1.00f, 1.00f, 1.00f, 0.06f);
-            colors[ImGuiCol_TextSelectedBg] = ImVec4(0.26f, 0.59f, 0.98f, 0.35f);
-            colors[ImGuiCol_DragDropTarget] = ImVec4(1.00f, 0.00f, 0.00f, 0.90f);
-            colors[ImGuiCol_NavHighlight] = ImVec4(0.26f, 0.59f, 0.98f, 1.00f);
-            colors[ImGuiCol_NavWindowingHighlight] = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
-            colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
-            colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.10f, 0.10f, 0.15f, 0.60f);
-
-
-
-            #pragma endregion
-            #pragma region ImGuizmo Style
-            ImGuizmo::Style& style = ImGuizmo::GetStyle();
-            style.TranslationLineThickness = 3.0f;
-            style.TranslationLineArrowSize = 9.0f;
-            style.RotationLineThickness = 2.0f;
-            style.RotationOuterLineThickness = 3.0f;
-            style.ScaleLineThickness = 3.0f;
-            style.ScaleLineCircleSize = 9.0f;
-            style.HatchedAxisLineThickness = 6.0f;
-            style.CenterCircleSize = 9.0f;
-            #pragma endregion
 
             using namespace glm;
 
@@ -123,20 +62,31 @@ namespace Prism
             // 语言设置
             LanguageManager::Get().LoadLanguage("Assets/Lang/en-US.yml");
 
-            m_EditorScene = Ref<Scene>::Create();
+            m_EditorScene = Ref<Scene>::Create("EditorScene", true);
+            m_ActiveScene = m_EditorScene;
             UpdateWindowTitle("Untitled Scene");
             CSharpScriptEngine::SetSceneContext(m_EditorScene);
             PythonScriptEngine::SetSceneContext(m_EditorScene);
             m_SceneHierarchyPanel = CreateScope<SceneHierarchyPanel>(m_EditorScene);
             m_SceneHierarchyPanel->SetSelectionChangedCallback(std::bind(&EditorLayer::SelectEntity, this, std::placeholders::_1));
             m_SceneHierarchyPanel->SetEntityDeletedCallback(std::bind(&EditorLayer::OnEntityDeleted, this, std::placeholders::_1));
+
+            m_AssetManagerPanel = CreateScope<AssetManagerPanel>();
+            m_ObjectsPanel = CreateScope<ObjectsPanel>();
+
             SceneSerializer serializer(m_EditorScene);
-            serializer.Deserialize("Assets/Scenes/Physics3DTest.psc");
-            m_SceneFilePath = "Assets/Scenes/Physics3DTest.psc";
+            //serializer.Deserialize("Assets/Scenes/Physics3DTest.psc");
+            //m_SceneFilePath = "Assets/Scenes/Physics3DTest.psc";
+            //serializer.Deserialize("Assets/Scenes/FPSDemo.psc");
+            //m_SceneFilePath = "Assets/Scenes/FPSDemo.psc";
+
+            FileSystem::StartWatching();
+            AssetEditorPanel::RegisterDefaultEditors();
         }
 
         void EditorLayer::OnDetach()
         {
+            FileSystem::StopWatching();
             if (m_SceneState == SceneState::Play)
                 OnSceneStop();
              m_SceneHierarchyPanel = nullptr;
@@ -149,13 +99,14 @@ namespace Prism
 
             m_SceneState = SceneState::Play;
 
-            if (m_ReloadScriptOnPlay)
-                CSharpScriptEngine::ReloadAssembly("assets/scripts/ExampleApp.dll");
+            //if (m_ReloadScriptOnPlay)
+                //CSharpScriptEngine::ReloadAppAssembly("assets/scripts/ExampleApp.dll");
 
             m_RuntimeScene = Ref<Scene>::Create();
             m_EditorScene->CopyTo(m_RuntimeScene);
 
             m_RuntimeScene->OnRuntimeStart();
+            m_ActiveScene = m_RuntimeScene;
             m_SceneHierarchyPanel->SetContext(m_RuntimeScene);
             UpdateWindowTitle("Runtime Scene");
         }
@@ -167,11 +118,15 @@ namespace Prism
 
             // Unload runtime scene
             m_RuntimeScene = nullptr;
+            m_ActiveScene = m_EditorScene;
 
             m_SelectionContext.clear();
             CSharpScriptEngine::SetSceneContext(m_EditorScene);
             PythonScriptEngine::SetSceneContext(m_EditorScene);
             m_SceneHierarchyPanel->SetContext(m_EditorScene);
+
+            Input::SetCursorMode(CursorMode::Normal);
+
             UpdateWindowTitle("Untitled Scene");
         }
 
@@ -193,14 +148,16 @@ namespace Prism
                 if (m_ViewportPanelFocused)
                     m_EditorCamera.OnUpdate(ts);
 
-                m_EditorScene->OnRenderEditor(m_EditorCamera);
+                auto* rs = m_ActiveScene->GetSystem<RenderSystem>();
+                if (rs)
+                    rs->SetEditorCamera(m_EditorCamera);
+                m_ActiveScene->OnRender(ts);
 
                 if (m_DrawOnTopBoundingBoxes)
                 {
-                    Renderer::BeginRenderPass(SceneRenderer::GetFinalRenderPass(), false);
+                    Renderer::BeginRenderPass(rs->GetFinalRenderPass(), false);
                     auto viewProj = m_EditorCamera.GetViewProjection();
                     Renderer2D::BeginScene(viewProj, false);
-                    // TODO: Renderer::DrawAABB(m_MeshEntity.GetComponent<MeshComponent>(), m_MeshEntity.GetComponent<TransformComponent>());
                     Renderer2D::EndScene();
                     Renderer::EndRenderPass();
                 }
@@ -209,13 +166,14 @@ namespace Prism
                 {
                     auto& selection = m_SelectionContext[0];
 
-                    if (selection.Mesh && selection.Entity.HasComponent<MeshComponent>())
+                    if (selection.Mesh && selection.Entity.HasComponent<MeshRendererComponent>())
                     {
-                        Renderer::BeginRenderPass(SceneRenderer::GetFinalRenderPass(), false);
+                        Renderer::BeginRenderPass(rs->GetFinalRenderPass(), false);
                         auto viewProj = m_EditorCamera.GetViewProjection();
                         Renderer2D::BeginScene(viewProj, false);
                         glm::vec4 color = (m_SelectionMode == SelectionMode::Entity) ? glm::vec4{ 1.0f, 1.0f, 1.0f, 1.0f } : glm::vec4{ 0.2f, 0.9f, 0.2f, 1.0f };
-                        Renderer::DrawAABB(selection.Mesh->BoundingBox, selection.Entity.GetComponent<TransformComponent>().GetTransform() * selection.Mesh->Transform, color);
+                        glm::mat4 worldTransform = m_ActiveScene->GetTransformRelativeToParent(selection.Entity);
+                        Renderer::DrawAABB(selection.Mesh->BoundingBox, worldTransform * selection.Mesh->Transform, color);
                         Renderer2D::EndScene();
                         Renderer::EndRenderPass();
                     }
@@ -227,31 +185,45 @@ namespace Prism
                 if (m_ViewportPanelFocused)
                     m_EditorCamera.OnUpdate(ts);
 
-                m_RuntimeScene->OnUpdate();
-                m_RuntimeScene->OnFixedUpdate();
-                m_RuntimeScene->OnRenderRuntime();
+                m_ActiveScene->OnUpdate();
+                m_ActiveScene->OnRender(ts);
 
                 // Box2D collider debug drawing
                 {
-                    Renderer::BeginRenderPass(SceneRenderer::GetFinalRenderPass(), false);
+                    Renderer::BeginRenderPass(m_ActiveScene->GetSystem<RenderSystem>()->GetFinalRenderPass(), false);
                     auto viewProj = m_EditorCamera.GetViewProjection();
                     Renderer2D::BeginScene(viewProj, false);
                     {
-                        auto boxColliderView = m_RuntimeScene->GetAllEntitiesWith<BoxCollider2DComponent>();
+                        auto boxColliderView = m_ActiveScene->GetAllEntitiesWith<BoxCollider2DComponent>();
                         for (auto e : boxColliderView)
                         {
-                            Entity entity = { e, m_RuntimeScene.Raw() };
+                            Entity entity = { e, m_ActiveScene.Raw() };
                             if (!entity.HasComponent<TransformComponent>())
                                 continue;
 
-                            auto& tc = entity.Transform();
+                            auto& tc = entity.Transformation();
                             auto& boxCollider = entity.GetComponent<BoxCollider2DComponent>();
 
-                            glm::vec3 position = tc.Position + glm::vec3(boxCollider.Offset, 0.0f);
-                            float angle = glm::eulerAngles(tc.Rotation).z;
+                            glm::vec3 position = tc.GetPosition() + glm::vec3(boxCollider.Offset, 0.0f);
+                            float angle = tc.GetRotation().z;
                             glm::vec2 size = boxCollider.Size * 2.0f;
 
-                            Renderer2D::DrawRotatedQuad(position, size, angle, glm::vec4(0.5f, 0.0f, 0.5f, 0.3f));
+                            Renderer2D::DrawRotatedRect(position, size, angle, glm::vec4(0.5f, 0.0f, 0.5f, 0.3f));
+                        }
+
+                        auto circleColliderView = m_ActiveScene->GetAllEntitiesWith<CircleCollider2DComponent>();
+                        for (auto e : circleColliderView)
+                        {
+                            Entity entity = { e, m_ActiveScene.Raw() };
+                            if (!entity.HasComponent<TransformComponent>())
+                                continue;
+
+                            auto& tc = entity.Transformation();
+                            auto& circleCollider = entity.GetComponent<CircleCollider2DComponent>();
+
+                            glm::vec3 position = tc.GetPosition() + glm::vec3(circleCollider.Offset, 0.0f);
+
+                            Renderer2D::DrawCircle(position, circleCollider.Radius, glm::vec4(0.5f, 0.0f, 0.5f, 0.3f));
                         }
                     }
                     Renderer2D::EndScene();
@@ -264,7 +236,7 @@ namespace Prism
                 if (m_ViewportPanelFocused)
                     m_EditorCamera.OnUpdate(ts);
 
-                m_RuntimeScene->OnRenderRuntime();
+                m_ActiveScene->OnRender(ts);
                 break;
             }
             }
@@ -272,16 +244,17 @@ namespace Prism
 
         void EditorLayer::ShowBoundingBoxes(bool show, bool onTop /*= false*/)
         {
-            SceneRenderer::GetOptions().ShowBoundingBoxes = show && !onTop;
+            if (auto* rs = m_ActiveScene->GetSystem<RenderSystem>())
+                rs->GetOptions().ShowBoundingBoxes = show && !onTop;
             m_DrawOnTopBoundingBoxes = show && onTop;
         }
 
         void EditorLayer::SelectEntity(Entity entity)
         {
             SelectedSubmesh selection;
-            if (entity.HasComponent<MeshComponent>())
+            if (entity.HasComponent<MeshRendererComponent>())
             {
-                auto& meshComp = entity.GetComponent<MeshComponent>();
+                auto& meshComp = entity.GetComponent<MeshRendererComponent>();
 
                 if (meshComp.Mesh)
                 {
@@ -306,80 +279,112 @@ namespace Prism
             return 0.0f;
         }
 
-        void EditorLayer::DrawMaterialProperty(const PropertyDeclaration& prop, MaterialInstance& materialInstance)
+        void EditorLayer::DrawMaterialProperty(const PrismShaderCompiler::AST::ShaderUniform& uni, Material& material)
         {
-            const auto& name = prop.GetName();
-            const auto& displayName = prop.GetDisplayName();
+            const auto& name = uni.Name;
+            const auto& displayName = uni.DisplayName.empty() ? uni.Name : uni.DisplayName;
 
-            switch (prop.GetType())
+            switch (uni.Type)
             {
-            case PropertyDeclarationType::Float:
+            case PrismShaderCompiler::PropertyType::Float:
             {
-                auto& value = materialInstance.Get<float>(name);
-                Property(displayName, value);
+                float value = material.GetFloat(name);
+                if (Property(displayName, value))
+                    material.SetFloat(name, value);
                 break;
             }
-            case PropertyDeclarationType::Range:
+            case PrismShaderCompiler::PropertyType::Range:
             {
-                auto& range = materialInstance.Get<Type::Range>(name);
-                Property(displayName, range.value, range.min, range.max, PropertyFlag::SliderProperty);
+                float value = material.GetFloat(name);
+                if (Property(displayName, value, uni.RangeMin, uni.RangeMax, PropertyFlag::SliderProperty))
+                    material.SetFloat(name, value);
                 break;
             }
-            case PropertyDeclarationType::Color:
-            case PropertyDeclarationType::Color3:
+            case PrismShaderCompiler::PropertyType::Color:
             {
-                auto& color = materialInstance.Get<glm::vec3>(name);
-                Property(displayName, color, PropertyFlag::ColorProperty);
+                glm::vec4 color = material.GetColor(name);
+                if (Property(displayName, color, PropertyFlag::ColorProperty))
+                    material.SetColor(name, color);
                 break;
             }
-            case PropertyDeclarationType::Vector2:
+            case PrismShaderCompiler::PropertyType::Color3:
             {
-                auto& vec2 = materialInstance.Get<glm::vec2>(name);
-                Property(displayName, vec2);
+                glm::vec3 color = material.GetColor3(name);
+                if (Property(displayName, color, PropertyFlag::ColorProperty))
+                    material.SetColor3(name, color);
                 break;
             }
-            case PropertyDeclarationType::Vector3:
+            case PrismShaderCompiler::PropertyType::Vector2:
             {
-                auto& vec3 = materialInstance.Get<glm::vec3>(name);
-                Property(displayName, vec3);
+                glm::vec2 vec2 = material.GetVec2(name);
+                if (Property(displayName, vec2))
+                    material.SetVec2(name, vec2);
                 break;
             }
-            case PropertyDeclarationType::Vector4:
+            case PrismShaderCompiler::PropertyType::Vector3:
             {
-                auto& vec4 = materialInstance.Get<glm::vec4>(name);
-                Property(displayName, vec4);
+                glm::vec3 vec3 = material.GetVec3(name);
+                if (Property(displayName, vec3))
+                    material.SetVec3(name, vec3);
                 break;
             }
-            case PropertyDeclarationType::Int:
+            case PrismShaderCompiler::PropertyType::Vector4:
             {
-                auto& value = materialInstance.Get<Type::Int>(name);
-                Property(displayName, value);
+                glm::vec4 vec4 = material.GetVec4(name);
+                if (Property(displayName, vec4))
+                    material.SetVec4(name, vec4);
                 break;
             }
-            case PropertyDeclarationType::Bool:
+            case PrismShaderCompiler::PropertyType::Int:
             {
-                bool& b = materialInstance.Get<Type::Bool>(name);
-                Property(displayName, b);
+                int value = material.GetInt(name);
+                if (Property(displayName, value))
+                    material.SetInt(name, value);
                 break;
             }
-            case PropertyDeclarationType::Texture2D:
+            case PrismShaderCompiler::PropertyType::Bool:
             {
-                Ref<Texture2D> texture = materialInstance.TryGetResource<Texture2D>(name);
-                if (Property(displayName, texture, m_CheckerboardTex->GetRendererID()))
+                bool value = material.GetBool(name);
+                if (Property(displayName, value))
+                    material.SetBool(name, value);
+                break;
+            }
+            case PrismShaderCompiler::PropertyType::Texture2D:
+            {
+                auto texture2D = material.GetTexture2D(name);
+                if (Property(displayName, texture2D, m_CheckerboardTex->GetRendererID()))
                 {
                     std::string filename = Application::Get().OpenFile("");
                     if (!filename.empty())
-                        materialInstance.Set(name, Texture2D::Create(filename));
+                        material.SetTexture(name, Texture2D::Create(filename));
                 }
                 break;
             }
-            case PropertyDeclarationType::TextureCube:
+            case PrismShaderCompiler::PropertyType::TextureCube:
             {
-                Ref<TextureCube> texture = materialInstance.TryGetResource<TextureCube>(name);
-                Property(displayName, texture, m_CheckerboardTex->GetRendererID());
+                auto textureCube = material.GetTextureCube(name);
+                Property(displayName, textureCube, m_CheckerboardTex->GetRendererID());
                 break;
             }
+            default:
+                break;
             }
+        }
+
+        void EditorLayer::NewScene()
+        {
+            m_EditorScene = Ref<Scene>::Create("Empty Scene", true);
+            m_ActiveScene = m_EditorScene;
+            m_SceneHierarchyPanel->SetContext(m_EditorScene);
+            CSharpScriptEngine::SetSceneContext(m_EditorScene);
+            PythonScriptEngine::SetSceneContext(m_EditorScene);
+            UpdateWindowTitle("Untitled Scene");
+            m_SceneFilePath = std::string();
+
+            m_EditorScene->SetSelectedEntity({});
+            m_SelectionContext.clear();
+
+            m_EditorCamera = EditorCamera(glm::perspectiveFov(glm::radians(45.0f), 1280.0f, 720.0f, 0.1f, 1000.0f));
         }
 
         void EditorLayer::OpenScene()
@@ -387,22 +392,26 @@ namespace Prism
             auto& app = Application::Get();
             std::string filepath = app.OpenFile("Prism Scene (*.psc)\0*.psc\0");
             if (!filepath.empty())
-            {
-                Ref<Scene> newScene = Ref<Scene>::Create();
-                SceneSerializer serializer(newScene);
-                serializer.Deserialize(filepath);
-                m_EditorScene = newScene;
-                std::filesystem::path path = filepath;
-                UpdateWindowTitle(path.filename().string());
-                m_SceneHierarchyPanel->SetContext(m_EditorScene);
-                CSharpScriptEngine::SetSceneContext(m_EditorScene);
-        PythonScriptEngine::SetSceneContext(m_EditorScene);
+                OpenScene(filepath);
+        }
 
-                m_EditorScene->SetSelectedEntity({});
-                m_SelectionContext.clear();
+        void EditorLayer::OpenScene(const std::string& filepath)
+        {
+            Ref<Scene> newScene = Ref<Scene>::Create();
+            SceneSerializer serializer(newScene);
+            serializer.Deserialize(filepath);
+            m_EditorScene = newScene;
+            m_ActiveScene = m_EditorScene;
+            std::filesystem::path path = filepath;
+            UpdateWindowTitle(path.filename().string());
+            m_SceneHierarchyPanel->SetContext(m_EditorScene);
+            CSharpScriptEngine::SetSceneContext(m_EditorScene);
+            PythonScriptEngine::SetSceneContext(m_EditorScene);
 
-                m_SceneFilePath = filepath;
-            }
+            m_EditorScene->SetSelectedEntity({});
+            m_SelectionContext.clear();
+
+            m_SceneFilePath = filepath;
         }
 
         void EditorLayer::SaveScene()
@@ -468,61 +477,25 @@ namespace Prism
 
             // Submit the DockSpace
             ImGuiIO& io = ImGui::GetIO();
+            ImGuiStyle& style = ImGui::GetStyle();
+            float minWinSizeX = style.WindowMinSize.x;
+            style.WindowMinSize.x = 370.0f;
             if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
             {
                 ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
                 ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
             }
+            style.WindowMinSize.x = minWinSizeX;
             // Editor Panel ------------------------------------------------------------------------------
 
 
             ImGui::Begin("Model");
 
             ImGui::Begin("Environment");
-            if (ImGui::Button(TR("Load Environment Map")))
-            {
-                std::string filename = Application::Get().OpenFile("*.hdr");
-                if (filename != "")
-                    m_EditorScene->SetEnvironment(Environment::Load(filename));
-            }
-
-            ImGui::SliderFloat(TR("Skybox LOD"), &m_EditorScene->GetSkyboxLod(), 0.0f, 11.0f);
             ImGui::Columns(2);
             ImGui::AlignTextToFramePadding();
-
-            auto& light = m_EditorScene->GetLight();
-            Property(TR("Light Direction"), light.Direction, PropertyFlag::SliderProperty);
-            Property(TR("Light Radiance"), light.Radiance, PropertyFlag::ColorProperty);
-            Property(TR("Light Multiplier"), light.Multiplier, 0.0f, 5.0f, PropertyFlag::SliderProperty);
-
-            // Shadow
             {
-                auto shadowScene = m_SceneState == SceneState::Edit ? m_EditorScene : m_RuntimeScene;
-                if (shadowScene)
-                {
-                    bool shadowEnabled = shadowScene->IsShadowEnabled();
-                    if (Property(TR("Shadows"), shadowEnabled))
-                        shadowScene->SetShadowEnabled(shadowEnabled);
-
-                    if (shadowEnabled)
-                    {
-                        float shadowBias = shadowScene->GetShadowBias();
-                        if (Property(TR("Shadow Bias"), shadowBias, 0.0f, 0.05f, PropertyFlag::SliderProperty))
-                            shadowScene->SetShadowBias(shadowBias);
-
-                        float shadowNormalBias = shadowScene->GetShadowNormalBias();
-                        if (Property(TR("Normal Bias"), shadowNormalBias, 0.0f, 1.0f, PropertyFlag::SliderProperty))
-                            shadowScene->SetShadowNormalBias(shadowNormalBias);
-
-                        float cascadeCount = (float)shadowScene->GetCascadeCount();
-                        if (Property(TR("Cascades"), cascadeCount, 1.0f, 4.0f, PropertyFlag::SliderProperty))
-                            shadowScene->SetCascadeCount((uint32_t)cascadeCount);
-                    }
-                }
-            }
-
-            {
-                auto* scene = m_SceneState == SceneState::Edit ? m_EditorScene.Raw() : m_RuntimeScene.Raw();
+                auto* scene = m_ActiveScene.Raw();
                 if (auto* p2d = scene ? scene->GetSystem<Physics2DSystem>() : nullptr)
                 {
                     float physics2DGravity = p2d->GetGravity();
@@ -530,14 +503,12 @@ namespace Prism
                         p2d->SetGravity(physics2DGravity);
                 }
             }
-            Property(TR("Exposure"), m_EditorCamera.GetExposure(), 0.0f, 5.0f, PropertyFlag::SliderProperty);
-
-            Property(TR("Radiance Prefiltering"), m_RadiancePrefilter);
             Property(TR("Env Map Rotation"), m_EnvMapRotation, -360.0f, 360.0f, PropertyFlag::SliderProperty);
             if (Property(TR("Show Bounding Boxes"), m_UIShowBoundingBoxes))
                 ShowBoundingBoxes(m_UIShowBoundingBoxes, m_UIShowBoundingBoxesOnTop);
             if (m_UIShowBoundingBoxes && Property(TR("On Top"), m_UIShowBoundingBoxesOnTop))
                 ShowBoundingBoxes(m_UIShowBoundingBoxes, m_UIShowBoundingBoxesOnTop);
+
             char* label = m_SelectionMode == SelectionMode::Entity ? const_cast<char*>(TR("Entity")) : const_cast<char*>(TR("Mesh"));
             if (ImGui::Button(label))
             {
@@ -551,7 +522,7 @@ namespace Prism
             ImGui::Separator();
             {
                 ImGui::Text(TR("Mesh"));
-                //auto meshComponent = m_MeshEntity.GetComponent<MeshComponent>();
+                //auto meshComponent = m_MeshEntity.GetComponent<MeshRendererComponent>();
                 //std::string fullpath = meshComponent.Mesh ? meshComponent.Mesh->GetFilePath() : "None";
                 //size_t found = fullpath.find_last_of("/\\");
                 //std::string path = found != std::string::npos ? fullpath.substr(found + 1) : fullpath;
@@ -632,13 +603,47 @@ namespace Prism
             m_ViewportPanelFocused = ImGui::IsWindowFocused();
             auto viewportOffset = ImGui::GetCursorPos();
             auto viewportSize = ImGui::GetContentRegionAvail();
-            SceneRenderer::SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
-            m_EditorScene->SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
-            if (m_RuntimeScene)
-                m_RuntimeScene->SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
+            //viewportSize.x *= 2;
+            //viewportSize.y *= 2;
+            if (auto* rs = m_ActiveScene->GetSystem<RenderSystem>())
+                rs->SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
             m_EditorCamera.SetProjectionMatrix(glm::perspectiveFov(glm::radians(45.0f), viewportSize.x, viewportSize.y, 0.1f, 10000.0f));
             m_EditorCamera.SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
-            ImGui::Image((void*)SceneRenderer::GetFinalColorBufferRendererID(), viewportSize, { 0, 1 }, { 1, 0 });
+            //viewportSize.x *= 0.5;
+            //viewportSize.y *= 0.5;
+
+            if (auto* rs = m_ActiveScene->GetSystem<RenderSystem>())
+                ImGui::Image((void*)rs->GetFinalColorBufferID(), viewportSize, { 0, 1 }, { 1, 0 });
+
+            if (ImGui::BeginDragDropTarget())
+            {
+                auto assetData = ImGui::AcceptDragDropPayload("asset_payload");
+                if (assetData)
+                {
+                    int count = assetData->DataSize / sizeof(AssetHandle);
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        AssetHandle assetHandle = *(((AssetHandle*)assetData->Data) + i);
+                        Ref<Asset> asset = AssetManager::GetAsset<Asset>(assetHandle);
+
+                        if (count == 1 && asset->Type == AssetType::Scene)
+                        {
+                            OpenScene(asset->FilePath);
+                        }
+
+                        if (asset->Type == AssetType::Mesh)
+                        {
+                            Entity entity = m_EditorScene->CreateEntity(asset->FileName);
+                            auto importResult = ModelImporter::Import(asset->FilePath);
+                            entity.AddComponent<MeshRendererComponent>(importResult.Mesh);
+                            entity.GetComponent<MeshRendererComponent>().SetMaterials(importResult.Materials);
+                            SelectEntity(entity);
+                        }
+                    }
+                }
+                ImGui::EndDragDropTarget();
+            }
 
             static int counter = 0;
             auto windowSize = ImGui::GetWindowSize();
@@ -660,8 +665,8 @@ namespace Prism
                 ImGuizmo::SetRect(ImGui::GetWindowPos().x, ImGui::GetWindowPos().y, rw, rh);
 
                 bool snap = Input::IsKeyPressed(PR_KEY_LEFT_CONTROL);
-                auto& tc = selection.Entity.Transform();
-                glm::mat4 entityTransform = tc.GetTransform();
+                auto& tc = selection.Entity.Transformation();
+                glm::mat4 transform = m_ActiveScene->GetTransformRelativeToParent(selection.Entity);
                 float snapValue = GetSnapValue();
                 float snapValues[3] = { snapValue, snapValue, snapValue };
                 if (m_SelectionMode == SelectionMode::Entity)
@@ -670,14 +675,35 @@ namespace Prism
                         glm::value_ptr(m_EditorCamera.GetProjectionMatrix()),
                         (ImGuizmo::OPERATION)m_GizmoType,
                         ImGuizmo::LOCAL,
-                        glm::value_ptr(entityTransform),
+                        glm::value_ptr(transform),
                         nullptr,
                         snap ? snapValues : nullptr);
-                    tc.SetTransform(entityTransform);
+
+                    glm::vec3 translation, rotation, scale;
+                    Math::DecomposeTransform(transform, translation, rotation, scale);
+
+                    Entity parent = m_ActiveScene->FindEntityByUUID(selection.Entity.GetParentUUID());
+                    if (parent)
+                    {
+                        glm::vec3 parentTranslation, parentRotation, parentScale;
+                        Math::DecomposeTransform(m_ActiveScene->GetTransformRelativeToParent(parent), parentTranslation, parentRotation, parentScale);
+
+                        glm::vec3 deltaRotation = (rotation - parentRotation) - glm::radians(tc.GetRotation());
+                        tc.SetPosition(translation - parentTranslation);
+                        tc.SetRotation(tc.GetRotation() + glm::degrees(deltaRotation));
+                        tc.SetScale(scale);
+                    }
+                    else
+                    {
+                        glm::vec3 deltaRotation = rotation - glm::radians(tc.GetRotation());
+                        tc.SetPosition(translation);
+                        tc.SetRotation(tc.GetRotation() + glm::degrees(deltaRotation));
+                        tc.SetScale(scale);
+                    }
                 }
                 else
                 {
-                    glm::mat4 transformBase = entityTransform * selection.Mesh->Transform;
+                    glm::mat4 transformBase = transform * selection.Mesh->Transform;
                     ImGuizmo::Manipulate(glm::value_ptr(m_EditorCamera.GetViewMatrix()),
                         glm::value_ptr(m_EditorCamera.GetProjectionMatrix()),
                         (ImGuizmo::OPERATION)m_GizmoType,
@@ -686,7 +712,7 @@ namespace Prism
                         nullptr,
                         snap ? snapValues : nullptr);
 
-                    selection.Mesh->Transform = glm::inverse(entityTransform) * transformBase;
+                    selection.Mesh->Transform = glm::inverse(transform) * transformBase;
                 }
             }
             ImGui::End();
@@ -697,10 +723,8 @@ namespace Prism
             {
                 if (ImGui::BeginMenu(TR("File")))
                 {
-                    if (ImGui::MenuItem(TR("New Scene")))
-                    {
-
-                    }
+                    if (ImGui::MenuItem(TR("New Scene"), "Ctrl+N"))
+                        NewScene();
                     if (ImGui::MenuItem(TR("Open Scene..."), "Ctrl+O"))
                     {
                         OpenScene();
@@ -721,18 +745,24 @@ namespace Prism
 
                 if (ImGui::BeginMenu(TR("Script")))
                 {
-                    if (ImGui::MenuItem(TR("Reload C# Assembly")))
-                        CSharpScriptEngine::ReloadAssembly("assets/scripts/ExampleApp.dll");
+                    if (ImGui::MenuItem(TR("Reload Assembly")))
+                    {
+#ifdef PR_DEBUG
+                        CSharpScriptEngine::ReloadAppAssembly("assets/scripts/net9.0/ExampleApp.dll");
+#else
+                        CSharpScriptEngine::BuildAssembly();
+                        CSharpScriptEngine::ReloadAppAssembly("assets/scripts/net9.0/Game.dll");
+#endif
+                        PythonScriptEngine::ReloadPythonScripts();
+                    }
                     ImGui::MenuItem(TR("Reload assembly on play"), nullptr, &m_ReloadScriptOnPlay);
                     ImGui::EndMenu();
                 }
 
-                if (ImGui::BeginMenu("Debug"))
+                if (ImGui::BeginMenu(TR("Edit")))
                 {
-                    if (ImGui::MenuItem("Connect To PVD"))
-                    {
-                        PrismConnectPhysXDebugger();
-                    }
+                    ImGui::MenuItem(TR("Physics Settings"), nullptr, &m_ShowPhysicsSettings);
+
                     ImGui::EndMenu();
                 }
 
@@ -757,19 +787,21 @@ namespace Prism
             if (m_SelectionContext.size())
             {
                 Entity selectedEntity = m_SelectionContext.front().Entity;
-                if (selectedEntity.HasComponent<MeshComponent>())
+                if (selectedEntity.HasComponent<MeshRendererComponent>())
                 {
-                    Ref<Mesh> mesh = selectedEntity.GetComponent<MeshComponent>().Mesh;
+                    auto& meshComp = selectedEntity.GetComponent<MeshRendererComponent>();
+                    Ref<Mesh> mesh = meshComp.Mesh;
                     if (mesh)
                     {
-                        auto& materials = mesh->GetMaterials();
+                        auto& materials = meshComp.Materials;
                         static uint32_t selectedMaterialIndex = 0;
                         for (uint32_t i = 0; i < materials.size(); i++)
                         {
-                            auto& materialInstance = materials[i];
+                            auto& material = materials[i];
+                            if (!material) continue;
 
                             ImGuiTreeNodeFlags node_flags = (selectedMaterialIndex == i ? ImGuiTreeNodeFlags_Selected : 0) | ImGuiTreeNodeFlags_Leaf;
-                            bool opened = ImGui::TreeNodeEx((void*)(&materialInstance), node_flags, materialInstance->GetName().c_str());
+                            bool opened = ImGui::TreeNodeEx((void*)(&material), node_flags, material->GetName().c_str());
                             if (ImGui::IsItemClicked())
                             {
                                 selectedMaterialIndex = i;
@@ -783,20 +815,20 @@ namespace Prism
                         // Selected material
                         if (selectedMaterialIndex < materials.size())
                         {
-                            auto& materialInstance = materials[selectedMaterialIndex];
+                            auto& material = materials[selectedMaterialIndex];
                             {
-                                auto currentShader = materialInstance->GetShader();
+                                auto currentShader = material->GetShader();
                                 std::string shaderName = currentShader->GetName();
                                 if (ImGui::BeginCombo("Shader", shaderName.c_str()))
                                 {
-                                    auto& allShaders = Renderer::GetShaderLibrary()->GetAll();
+                                    auto& allShaders = AssetManager::GetShaderLibrary()->GetAll();
                                     for (auto& [name, shader] : allShaders)
                                     {
                                         bool isSelected = (shader == currentShader);
                                         if (ImGui::Selectable(name.c_str(), isSelected))
                                         {
                                             if (shader != currentShader)
-                                                materialInstance->SetShader(shader);
+                                                material->SetShader(shader->Handle);
                                         }
                                         if (isSelected)
                                             ImGui::SetItemDefaultFocus();
@@ -806,15 +838,15 @@ namespace Prism
                             }
 
                             ImGui::Columns(2);
-                            auto& decl = materialInstance->GetShader()->GetDeclaration();
-                            for (const auto& prop : decl)
+                            auto& uniforms = material->GetShader()->GetUniforms();
+                            for (const auto& uni : uniforms)
                             {
-                                DrawMaterialProperty(prop, *materialInstance);
+                                DrawMaterialProperty(uni, *material);
                             }
                             ImGui::Columns(1);
 
                             // Keyword toggles
-                            auto shader = materialInstance->GetShader();
+                            auto shader = material->GetShader();
                             const auto& keywords = shader->GetKeywords();
                             if (!keywords.empty())
                             {
@@ -822,9 +854,9 @@ namespace Prism
                                 ImGui::Text(TR("Shader Keywords"));
                                 for (const auto& kw : keywords)
                                 {
-                                    bool enabled = materialInstance->IsKeywordEnabled(kw.Name);
+                                    bool enabled = material->IsKeywordEnabled(kw.Name);
                                     if (ImGui::Checkbox(kw.Name.c_str(), &enabled))
-                                        materialInstance->SetKeyword(kw.Name, enabled);
+                                        material->SetKeyword(kw.Name, enabled);
                                 }
                             }
                         }
@@ -833,15 +865,19 @@ namespace Prism
             }
 
             ImGui::End();
-            CSharpScriptEngine::OnImGuiRender();
+            //CSharpScriptEngine::OnImGuiRender();
             //PythonScriptEngine::OnImGuiRender();
-
+            PhysicsSettingsWindow::OnImGuiRender(m_ShowPhysicsSettings);
+            m_ActiveScene->OnImGuiRender();
+            m_AssetManagerPanel->OnImGuiRender();
+            m_ObjectsPanel->OnImGuiRender();
+            AssetEditorPanel::OnImGuiRender();
             ImGui::End();
         #endif
 
-            static bool show_demo_window = true;
-            if (show_demo_window)
-                ImGui::ShowDemoWindow(&show_demo_window);
+            //static bool show_demo_window = true;
+            //if (show_demo_window)
+            //    ImGui::ShowDemoWindow(&show_demo_window);
             //ImGui::ShowStyleEditor();
         }
 
@@ -850,11 +886,7 @@ namespace Prism
             if (m_SceneState == SceneState::Edit)
             {
                 if (m_ViewportPanelMouseOver)
-                    m_EditorScene->OnEvent(e);
-            }
-            else if (m_SceneState == SceneState::Play)
-            {
-                m_RuntimeScene->OnEvent(e);
+                    m_ActiveScene->OnEvent(e);
             }
             if (m_AllowViewportCameraEvents)
                             m_EditorCamera.OnEvent(e);
@@ -880,6 +912,15 @@ namespace Prism
                 case KeyCode::R:
                     m_GizmoType = ImGuizmo::OPERATION::SCALE;
                     break;
+                case KeyCode::F:
+                {
+                    if (m_SelectionContext.size() == 0)
+                        break;
+
+                    Entity selectedEntity = m_SelectionContext[0].Entity;
+                    m_EditorCamera.Focus(selectedEntity.Transformation().GetPosition());
+                    break;
+                }
                 case KeyCode::Delete:
                     if (m_SelectionContext.size())
                     {
@@ -899,7 +940,8 @@ namespace Prism
                 {
                 case KeyCode::G:
                     // Toggle grid
-                    SceneRenderer::GetOptions().ShowGrid = !SceneRenderer::GetOptions().ShowGrid;
+                    if (auto* rs = m_ActiveScene->GetSystem<RenderSystem>())
+                        rs->GetOptions().ShowGrid = !rs->GetOptions().ShowGrid;
                     break;
                 case KeyCode::B:
                     // Toggle bounding boxes
@@ -912,6 +954,9 @@ namespace Prism
                         Entity selectedEntity = m_SelectionContext[0].Entity;
                         m_EditorScene->DuplicateEntity(selectedEntity);
                     }
+                    break;
+                case KeyCode::N:
+                    NewScene();
                     break;
                 case KeyCode::O:
                     OpenScene();
@@ -941,22 +986,23 @@ namespace Prism
 
                     m_SelectionContext.clear();
                     m_EditorScene->SetSelectedEntity({});
-                    auto meshEntities = m_EditorScene->GetAllEntitiesWith<MeshComponent>();
+                    auto meshEntities = m_EditorScene->GetAllEntitiesWith<MeshRendererComponent>();
                     for (auto e : meshEntities)
                     {
                         Entity entity = { e, m_EditorScene.Raw() };
-                        auto mesh = entity.GetComponent<MeshComponent>().Mesh;
+                        auto mesh = entity.GetComponent<MeshRendererComponent>().Mesh;
                         if (!mesh)
                             continue;
 
                         auto& submeshes = mesh->GetSubmeshes();
-                        float lastT = std::numeric_limits<float>::max();
+                        constexpr float lastT = std::numeric_limits<float>::max();
                         for (uint32_t i = 0; i < submeshes.size(); i++)
                         {
                             auto& submesh = submeshes[i];
+                            glm::mat4 worldTransform = m_ActiveScene->GetTransformRelativeToParent(entity);
                             Ray ray = {
-                                glm::inverse(entity.Transform().GetTransform() * submesh.Transform) * glm::vec4(origin, 1.0f),
-                                glm::inverse(glm::mat3(entity.Transform().GetTransform()) * glm::mat3(submesh.Transform)) * direction
+                                glm::inverse(worldTransform * submesh.Transform) * glm::vec4(origin, 1.0f),
+                                glm::inverse(glm::mat3(worldTransform) * glm::mat3(submesh.Transform)) * direction
                             };
 
                             float t;
@@ -1017,7 +1063,7 @@ namespace Prism
 
         void EditorLayer::OnEntityDeleted(Entity e)
         {
-            if (m_SelectionContext[0].Entity == e)
+            if (m_SelectionContext.size() > 0 && m_SelectionContext[0].Entity == e)
             {
                 m_SelectionContext.clear();
                 m_EditorScene->SetSelectedEntity({});

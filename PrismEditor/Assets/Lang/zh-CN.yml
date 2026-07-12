@@ -98,5 +98,16 @@ translations:
   Bounciness: 弹性
   Height: 高度
 
+  # ===== 物理设置面板 =====
+  Physics Settings: 物理设置
+  Fixed Timestep (Default 0.0167): "固定时间步长 (默认 0.0167)"
+  Gravity (Default -9.81): "重力 (默认 -9.81)"
+  Broadphase Type: 粗测阶段算法
+  Sweep And Prune: "扫描裁剪 (SAP)"
+  Multi Box Pruning: "多盒裁剪 (MBP)"
+  Automatic Box Pruning: "自动盒裁剪 (ABP)"
+  World Bounds (Min): 世界边界 (最小)
+  World Bounds (Max): 世界边界 (最大)
+  Grid Subdivisions: 网格细分
   # ===== 脚本属性 =====
   Module Name: 模块名称

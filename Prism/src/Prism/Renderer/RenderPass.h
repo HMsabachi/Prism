@@ -2,24 +2,24 @@
 
 #include "Prism/Core/Core.h"
 
-#include "Buffer/Framebuffer.h"
-
 namespace Prism {
 
-	struct PRISM_API RenderPassSpecification
-	{
-		Ref<Framebuffer> TargetFramebuffer;
-	};
+    class Framebuffer;
 
-	class PRISM_API RenderPass : public RefCounted
-	{
-	public:
-		virtual ~RenderPass() {}
+    struct PRISM_API RenderPassSpecification
+    {
+        Ref<Framebuffer> TargetFramebuffer;
+    };
 
-		virtual RenderPassSpecification& GetSpecification() = 0;
-		virtual const RenderPassSpecification& GetSpecification() const = 0;
+    class PRISM_API RenderPass : public RefCounted
+    {
+    public:
+        virtual ~RenderPass() {}
 
-		static Ref<RenderPass> Create(const RenderPassSpecification& spec);
-	};
+        virtual RenderPassSpecification& GetSpecification() = 0;
+        virtual const RenderPassSpecification& GetSpecification() const = 0;
+
+        static Ref<RenderPass> Create(const RenderPassSpecification& spec);
+    };
 
 }

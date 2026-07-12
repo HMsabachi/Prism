@@ -1,4 +1,4 @@
-# Prism Core API
+# Prism 核心 API
 from Prism.Core.Input import Input
 from Prism.Core.Time import Time
 from Prism.Core.Log import Log

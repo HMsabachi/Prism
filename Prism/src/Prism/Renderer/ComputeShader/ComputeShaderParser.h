@@ -2,7 +2,7 @@
 
 namespace Prism
 {
-	class ComputeShaderResult;
+	struct ComputeShaderResult;
 }
 
 namespace Prism

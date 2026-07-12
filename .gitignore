@@ -6,6 +6,7 @@ bin/
 bin-int/
 build/
 obj/
+Logs/
 Future/
 __pycache__/
 **/__pycache__/
@@ -16,6 +17,8 @@ Prism.Scripting/Prism.Scripting.csproj
 
 
 # Files
+*.meta
+*.pxm
 **.pyc
 CLAUDE.md
 *.json

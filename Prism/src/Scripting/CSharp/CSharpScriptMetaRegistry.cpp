@@ -1,26 +1,29 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "CSharpScriptMetaRegistry.h"
 #include "CSharpScriptEngine.h"
 
 #include <Prism/Core/Hash.h>
 
+#include <Rolky/Attribute.hpp>
 #include <Rolky/ManagedObject.hpp>
 #include <Rolky/String.hpp>
 #include <glm/glm.hpp>
 
-#define PR_CSHARP_META_INFO(...)  PR_CORE_INFO("[C# Meta] "  __VA_ARGS__)
-#define PR_CSHARP_META_WARN(...)  PR_CORE_WARN("[C# Meta] "  __VA_ARGS__)
-#define PR_CSHARP_META_ERROR(...) PR_CORE_ERROR("[C# Meta] " __VA_ARGS__)
+#define PR_CSHARP_META_INFO(...)  PR_CORE_INFO("[CSharp Meta] "  __VA_ARGS__)
+#define PR_CSHARP_META_WARN(...)  PR_CORE_WARN("[CSharp Meta] "  __VA_ARGS__)
+#define PR_CSHARP_META_ERROR(...) PR_CORE_ERROR("[CSharp Meta] " __VA_ARGS__)
 
 namespace Prism
 {
 
+
+    std::unordered_map<int32_t, Rolky::Type> CSharpScriptMetaRegistry::s_TypeCache;
     std::unordered_map<UUID, ScriptClassMetadata> CSharpScriptMetaRegistry::s_Classes;
-    std::unordered_map<std::string, UUID> CSharpScriptMetaRegistry::s_FullNameToID;
+    std::unordered_map<UUID, std::string> CSharpScriptMetaRegistry::s_ClassIDToFullName;
     Rolky::Type* CSharpScriptMetaRegistry::s_BehaviourType = nullptr;
     bool CSharpScriptMetaRegistry::s_Initialized = false;
 
-    UUID CSharpScriptMetaRegistry::GenerateScriptID(const std::string& str)
+    UUID CSharpScriptMetaRegistry::GenerateClassID(const std::string& str)
     {
         return UUID(Hash::GenerateFNVHash64(str));
     }
@@ -40,6 +43,9 @@ namespace Prism
         if (nameStr == "Prism.Vector2" || nameStr == "System.Numerics.Vector2")     return ScriptFieldType::Vector2;
         if (nameStr == "Prism.Vector3" || nameStr == "System.Numerics.Vector3")     return ScriptFieldType::Vector3;
         if (nameStr == "Prism.Vector4" || nameStr == "System.Numerics.Vector4")     return ScriptFieldType::Vector4;
+        if (nameStr == "Prism.Mesh")                  return ScriptFieldType::MeshRef;
+        if (nameStr == "Prism.Material")              return ScriptFieldType::MaterialRef;
+        if (nameStr == "Prism.Texture2D")             return ScriptFieldType::Texture2DRef;
 
         return ScriptFieldType::None;
     }
@@ -118,6 +124,14 @@ namespace Prism
                 PR_CSHARP_META_INFO("    默认值 {0} = ({1}, {2}, {3}, {4})", fieldName, val.x, val.y, val.z, val.w);
                 break;
             }
+            case ScriptFieldType::MeshRef:
+            case ScriptFieldType::MaterialRef:
+            case ScriptFieldType::Texture2DRef:
+            {
+                void* nullPtr = nullptr;
+                meta.DefaultValue = Buffer::Copy(&nullPtr, sizeof(void*));
+                break;
+            }
             default:
                 break;
         }
@@ -136,19 +150,20 @@ namespace Prism
             if (!type.IsSubclassOf(*s_BehaviourType))
                 continue;
 
-            UUID scriptID = GenerateScriptID(nameStr);
-            auto& classMeta = s_Classes[scriptID];
-            classMeta.ScriptID = scriptID;
+            UUID classID = GenerateClassID(nameStr);
+            s_TypeCache[type.GetTypeId()] = type;
+            auto& classMeta = s_Classes[classID];
+            classMeta.ClassID = classID;
             classMeta.FullName = nameStr;
 
             auto dotPos = nameStr.rfind('.');
             classMeta.ModuleName = (dotPos != std::string::npos) ? nameStr.substr(0, dotPos) : nameStr;
             classMeta.ClassName = (dotPos != std::string::npos) ? nameStr.substr(dotPos + 1) : nameStr;
 
-            s_FullNameToID[nameStr] = scriptID;
+            s_ClassIDToFullName[classID] = nameStr;
 
             PR_CSHARP_META_INFO("模块: {0}", classMeta.ModuleName);
-            PR_CSHARP_META_INFO("  类: {0} (ID={1})", nameStr, (uint64_t)scriptID);
+            PR_CSHARP_META_INFO("  类: {0} (ID={1})", nameStr, (uint64_t)classID);
 
             Rolky::ManagedObject tempInstance = type.CreateInstance();
             if (!tempInstance.IsValid())
@@ -161,6 +176,18 @@ namespace Prism
             {
                 if (field.GetAccessibility() != Rolky::TypeAccessibility::Public)
                     continue;
+
+                bool nonSerialized = false;
+                for (auto& attr : field.GetAttributes())
+                {
+                    std::string attrName = attr.GetType().GetFullName().operator std::string();
+                    if (attrName == "System.NonSerializedAttribute")
+                    {
+                        nonSerialized = true;
+                        break;
+                    }
+                }
+                if (nonSerialized) continue;
 
                 Rolky::ScopedString fieldName = field.GetName();
                 std::string fieldNameStr = fieldName;
@@ -176,12 +203,14 @@ namespace Prism
                     continue;
                 }
 
-                uint32_t fieldHash = (uint32_t)(uint64_t)GenerateScriptID(fieldNameStr);
+                uint32_t fieldHash = (uint32_t)(uint64_t)GenerateClassID(fieldNameStr);
                 PR_CSHARP_META_INFO("    字段: {0} : {1}", fieldNameStr, (int)prismFieldType);
 
+                s_TypeCache[fieldType.GetTypeId()] = fieldType;
                 ScriptFieldMetadata fieldMeta;
                 fieldMeta.Name = fieldNameStr;
                 fieldMeta.Type = prismFieldType;
+                fieldMeta.ManagedType = &s_TypeCache[fieldType.GetTypeId()];
 
                 if (prismFieldType != ScriptFieldType::None)
                     ReadDefaultFieldValue(fieldMeta, tempInstance, fieldNameStr);
@@ -229,6 +258,10 @@ namespace Prism
                     classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnCollisionBegin;
                 if (checkMethod("OnCollisionEnd", 1, "System.Single"))
                     classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnCollisionEnd;
+                if (checkMethod("OnTriggerBegin", 1, "System.Single"))
+                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnTriggerBegin;
+                if (checkMethod("OnTriggerEnd", 1, "System.Single"))
+                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnTriggerEnd;
             }
 
             tempInstance.Destroy();
@@ -256,14 +289,28 @@ namespace Prism
             }
         }
 
+        s_TypeCache.clear();
         s_Classes.clear();
-        s_FullNameToID.clear();
+        s_ClassIDToFullName.clear();
         s_BehaviourType = nullptr;
         s_Initialized = false;
     }
 
     void CSharpScriptMetaRegistry::BuildCache()
     {
+        
+        if (!s_Classes.empty())
+        {
+            for (auto& [id, classMeta] : s_Classes)
+                for (auto& [hash, fieldMeta] : classMeta.Fields)
+                    if (fieldMeta.DefaultValue)
+                        fieldMeta.DefaultValue.Free();
+            s_TypeCache.clear();
+            s_Classes.clear();
+            s_ClassIDToFullName.clear();
+            s_BehaviourType = nullptr;
+        }
+
         PR_CSHARP_META_INFO("开始扫描 C# Behaviour 类...");
 
         auto& engineAssembly = CSharpScriptEngine::GetEngineAssembly();
@@ -276,18 +323,15 @@ namespace Prism
         PR_CSHARP_META_INFO("扫描完成: {0} 个 Behaviour 类", s_Classes.size());
     }
 
-    ScriptClassMetadata* CSharpScriptMetaRegistry::GetClassMetadata(UUID scriptID)
+    ScriptClassMetadata* CSharpScriptMetaRegistry::GetClassMetadata(UUID classID)
     {
-        auto it = s_Classes.find(scriptID);
+        auto it = s_Classes.find(classID);
         return it != s_Classes.end() ? &it->second : nullptr;
     }
 
     ScriptClassMetadata* CSharpScriptMetaRegistry::GetClassMetadata(const std::string& fullName)
     {
-        auto it = s_FullNameToID.find(fullName);
-        if (it == s_FullNameToID.end())
-            return nullptr;
-        return GetClassMetadata(it->second);
+        return GetClassMetadata(GenerateClassID(fullName));
     }
 
     std::vector<ScriptClassMetadata*> CSharpScriptMetaRegistry::GetAllBehaviourClasses()
@@ -305,7 +349,7 @@ namespace Prism
         if (!classMeta)
             return nullptr;
 
-        uint32_t fieldHash = (uint32_t)(uint64_t)GenerateScriptID(fieldName);
+        uint32_t fieldHash = (uint32_t)(uint64_t)GenerateClassID(fieldName);
         auto it = classMeta->Fields.find(fieldHash);
         return it != classMeta->Fields.end() ? &it->second : nullptr;
     }

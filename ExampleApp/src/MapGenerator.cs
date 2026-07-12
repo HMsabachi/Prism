@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -41,26 +41,25 @@ namespace Example
             texture.SetData(colorMap);
 
             Log.Trace("HasComponent - TransformComponent = {0}", HasComponent<TransformComponent>());
-            Log.Trace("HasComponent - ScriptComponent = {0}", HasComponent<ScriptComponent>());
-            Log.Trace("HasComponent - MeshComponent = {0}", HasComponent<MeshComponent>());
+            Log.Trace("HasComponent - MeshRendererComponent = {0}", HasComponent<MeshRendererComponent>());
 
-            MeshComponent meshComponent = GetComponent<MeshComponent>();
+            MeshRendererComponent meshComponent = GetComponent<MeshRendererComponent>();
             if (meshComponent == null)
             {
-                Log.Trace("MeshComponent is null!");
-                meshComponent = CreateComponent<MeshComponent>();
+                Log.Trace("MeshRendererComponent is null!");
+                meshComponent = CreateComponent<MeshRendererComponent>();
             }
             meshComponent.Mesh = MeshFactory.CreatePlane(1.0f, 1.0f);
 
-            Log.Trace("Mesh has {0} materials!", meshComponent.Mesh.GetMaterialCount());
+            Log.Trace("Mesh has {0} materials!", meshComponent.GetMaterialCount());
 
-            MaterialInstance material = meshComponent.Mesh.GetMaterial(1);
+            Material material = meshComponent.GetMaterial(1);
             material.SetKeyword("ALBEDO_MAP", true);
-            material.Set("u_AlbedoTexture", texture);
+            material.SetTexture("u_AlbedoTexture", texture);
 
             TransformComponent transformComponent = GetComponent<TransformComponent>();
-            Vector3 position = Entity.GetTransform().Translation;
-            transformComponent.Transform = Matrix4.Scale(new Vector3(10f, 1.0f, 10f)) * Matrix4.Translate(position);
+            /*Vector3 position = Entity.GetTransform().Translation;
+            transformComponent.Transform = Matrix4.Scale(new Vector3(10f, 1.0f, 10f)) * Matrix4.Translate(position);*/
         }
 
         private void OnCreate()
@@ -71,7 +70,7 @@ namespace Example
         private void OnUpdate()
         {
             float ts = Time.DeltaTime;
-            Matrix4 transform = Entity.GetTransform();
+            /*Matrix4 transform = Entity.GetTransform();
             Vector3 translation = transform.Translation;
             translation.Y += ts * Speed;
             if (Input.IsKeyPressed(KeyCode.Space))
@@ -79,7 +78,7 @@ namespace Example
                 translation.Y -= 10.0f;
             }
             transform.Translation = translation;
-            Entity.SetTransform(transform);
+            Entity.SetTransform(transform);*/
         }
     }
 }

@@ -3,13 +3,13 @@ using System.Runtime.InteropServices;
 
 namespace Prism
 {
-    [StructLayout(LayoutKind.Explicit)]
+    [StructLayout(LayoutKind.Sequential)]
     public struct Vector4 : IEquatable<Vector4>, IFormattable
     {
-        [FieldOffset(0)] public float X;
-        [FieldOffset(4)] public float Y;
-        [FieldOffset(8)] public float Z;
-        [FieldOffset(12)] public float W;
+        public float X;
+        public float Y;
+        public float Z;
+        public float W;
 
         public Vector4(float scalar)
         {

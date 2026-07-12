@@ -17,16 +17,23 @@ Shader "Custom/MyFirstShader"
             Name "ForwardBase"
             GLSL
             {
-                #include "PrismBuiltin.glsl"
+                #include "PrismCommon.glsl"
                 attribute vec3 aPos : POSITION;
                 attribute vec2 aUV : TEXCOORD0;
                 attribute vec3 aNormal : NORMAL;
-                VARYING vec2 vUV;
-                VARYING vec3 vNormal;
+
+                layout(location = 0) out vec4 FragColor;
+
+                varying VertexOutput
+                {
+                    vec2 UV;
+                    vec3 Normal;
+                } vs_Output;
                 void main()
                 {
                     gl_Position = Prism_ViewProjection * Prism_Model * vec4(aPos, 1.0);
-                    vUV = aUV;
+                    vs_Output.UV = aUV;
+                    vs_Output.Normal = mat3(Prism_Model) * aNormal;
                 }
 
                 void frag()

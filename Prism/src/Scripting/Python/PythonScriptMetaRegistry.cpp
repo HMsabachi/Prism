@@ -1,221 +1,235 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "PythonScriptMetaRegistry.h"
 #include "Prism/Core/Log.h"
-#include <Prism/Core/Hash.h>
+#include "Prism/Core/Hash.h"
+#include "Scripting/ScriptTypes.h"
+
+#include <pybind11/pybind11.h>
 
 #include <filesystem>
 #include <algorithm>
 
+namespace py = pybind11;
+
 namespace Prism
 {
-#define PR_PYTHON_META_INFO(...)  PR_CORE_INFO("[Python Meta] "  __VA_ARGS__)
-#define PR_PYTHON_META_WARN(...)  PR_CORE_WARN("[Python Meta] "  __VA_ARGS__)
-#define PR_PYTHON_META_ERROR(...) PR_CORE_ERROR("[Python Meta] " __VA_ARGS__)
-
     std::unordered_map<UUID, ScriptClassMetadata> PythonScriptMetaRegistry::s_Classes;
-    std::unordered_map<std::string, UUID> PythonScriptMetaRegistry::s_FullNameToID;
+    std::unordered_map<UUID, std::string> PythonScriptMetaRegistry::s_ClassIDToFullName;
     bool PythonScriptMetaRegistry::s_Initialized = false;
 
-    UUID PythonScriptMetaRegistry::GenerateScriptID(const std::string& str)
+    UUID PythonScriptMetaRegistry::GenerateClassID(const std::string& str)
     {
         return UUID(Hash::GenerateFNVHash64(str));
     }
 
-    void PythonScriptMetaRegistry::ReadPythonDefaultFieldValue(ScriptFieldMetadata& meta,
-                                                               Python::ScriptObject& obj,
-                                                               const std::string& fieldName)
+
+    static void ReadPythonDefaultFieldValue(ScriptFieldMetadata& meta, py::object& obj, const std::string& fieldName)
     {
-        switch (meta.Type)
+        try
         {
-            case ScriptFieldType::Float:
+            py::object val = obj.attr(fieldName.c_str());
+            switch (meta.Type)
             {
-                float val = obj.GetField<float>(fieldName.c_str());
-                meta.DefaultValue = Buffer::Copy(&val, sizeof(float));
-                PR_PYTHON_META_INFO("    默认值 {0} = {1}", fieldName, val);
-                break;
+                case ScriptFieldType::Float:
+                {
+                    float f = val.cast<float>();
+                    meta.DefaultValue = Buffer::Copy(&f, sizeof(float));
+                    meta.PyType = GetPythonType(PYTHON_TYPE_FLOAT);
+                    break;
+                }
+                case ScriptFieldType::Bool:
+                {
+                    bool b = val.cast<bool>();
+                    meta.DefaultValue = Buffer::Copy(&b, sizeof(bool));
+                    meta.PyType = GetPythonType(PYTHON_TYPE_BOOL);
+                    break;
+                }
+                case ScriptFieldType::Int32:
+                {
+                    int32_t i = val.cast<int32_t>();
+                    meta.DefaultValue = Buffer::Copy(&i, sizeof(int32_t));
+                    meta.PyType = GetPythonType(PYTHON_TYPE_INT32);
+                    break;
+                }
+                case ScriptFieldType::Int64:
+                {
+                    int64_t i = val.cast<int64_t>();
+                    meta.DefaultValue = Buffer::Copy(&i, sizeof(int64_t));
+                    meta.PyType = GetPythonType(PYTHON_TYPE_INT64);
+                    break;
+                }
+                case ScriptFieldType::Double:
+                {
+                    double d = val.cast<double>();
+                    meta.DefaultValue = Buffer::Copy(&d, sizeof(double));
+                    meta.PyType = GetPythonType(PYTHON_TYPE_DOUBLE);
+                    break;
+                }
+                case ScriptFieldType::Vector2:
+                {
+                    py::buffer_info info = py::buffer(val).request();
+                    float* f = static_cast<float*>(info.ptr);
+                    meta.DefaultValue = Buffer::Copy(f, sizeof(float) * 2);
+                    meta.PyType = GetPythonType(PYTHON_TYPE_VECTOR2);
+                    break;
+                }
+                case ScriptFieldType::Vector3:
+                {
+                    py::buffer_info info = py::buffer(val).request();
+                    float* f = static_cast<float*>(info.ptr);
+                    meta.DefaultValue = Buffer::Copy(f, sizeof(float) * 3);
+                    meta.PyType = GetPythonType(PYTHON_TYPE_VECTOR3);
+                    break;
+                }
+                case ScriptFieldType::Vector4:
+                {
+                    py::buffer_info info = py::buffer(val).request();
+                    float* f = static_cast<float*>(info.ptr);
+                    meta.DefaultValue = Buffer::Copy(f, sizeof(float) * 4);
+                    meta.PyType = GetPythonType(PYTHON_TYPE_VECTOR4);
+                    break;
+                }
+                case ScriptFieldType::MeshRef:
+                {
+                    void* nullPtr = nullptr;
+                    meta.DefaultValue = Buffer::Copy(&nullPtr, sizeof(void*));
+                    meta.PyType = GetPythonType(PYTHON_TYPE_MESHREF);
+                    break;
+                }
+                case ScriptFieldType::MaterialRef:
+                {
+                    void* nullPtr = nullptr;
+                    meta.DefaultValue = Buffer::Copy(&nullPtr, sizeof(void*));
+                    meta.PyType = GetPythonType(PYTHON_TYPE_MATERIALREF);
+                    break;
+                }
+                case ScriptFieldType::Texture2DRef:
+                {
+                    void* nullPtr = nullptr;
+                    meta.DefaultValue = Buffer::Copy(&nullPtr, sizeof(void*));
+                    meta.PyType = GetPythonType(PYTHON_TYPE_TEXTURE2DREF);
+                    break;
+                }
+                default:
+                    break;
             }
-            case ScriptFieldType::Bool:
-            {
-                bool val = obj.GetField<bool>(fieldName.c_str());
-                meta.DefaultValue = Buffer::Copy(&val, sizeof(bool));
-                PR_PYTHON_META_INFO("    默认值 {0} = {1}", fieldName, val ? "True" : "False");
-                break;
-            }
-            case ScriptFieldType::Int32:
-            {
-                int32_t val = obj.GetField<int32_t>(fieldName.c_str());
-                meta.DefaultValue = Buffer::Copy(&val, sizeof(int32_t));
-                PR_PYTHON_META_INFO("    默认值 {0} = {1}", fieldName, val);
-                break;
-            }
-            case ScriptFieldType::Int64:
-            {
-                int64_t val = obj.GetField<int64_t>(fieldName.c_str());
-                meta.DefaultValue = Buffer::Copy(&val, sizeof(int64_t));
-                PR_PYTHON_META_INFO("    默认值 {0} = {1}", fieldName, val);
-                break;
-            }
-            case ScriptFieldType::Int8:
-            case ScriptFieldType::Int16:
-            {
-                int32_t val = obj.GetField<int32_t>(fieldName.c_str());
-                meta.DefaultValue = Buffer::Copy(&val, sizeof(int32_t));
-                PR_PYTHON_META_INFO("    默认值 {0} = {1}", fieldName, val);
-                break;
-            }
-            case ScriptFieldType::UInt8:
-            case ScriptFieldType::UInt16:
-            {
-                uint64_t val = obj.GetField<uint64_t>(fieldName.c_str());
-                meta.DefaultValue = Buffer::Copy(&val, sizeof(uint64_t));
-                PR_PYTHON_META_INFO("    默认值 {0} = {1}", fieldName, val);
-                break;
-            }
-            case ScriptFieldType::Double:
-            {
-                double val = obj.GetField<double>(fieldName.c_str());
-                meta.DefaultValue = Buffer::Copy(&val, sizeof(double));
-                PR_PYTHON_META_INFO("    默认值 {0} = {1}", fieldName, val);
-                break;
-            }
-            case ScriptFieldType::UInt32:
-            case ScriptFieldType::UInt64:
-            {
-                uint64_t val = obj.GetField<uint64_t>(fieldName.c_str());
-                meta.DefaultValue = Buffer::Copy(&val, sizeof(uint64_t));
-                PR_PYTHON_META_INFO("    默认值 {0} = {1}", fieldName, val);
-                break;
-            }
-            case ScriptFieldType::Vector2:
-            {
-                float vec[2];
-                obj.GetFieldRaw(fieldName.c_str(), vec);
-                meta.DefaultValue = Buffer::Copy(vec, sizeof(float) * 2);
-                PR_PYTHON_META_INFO("    默认值 {0} = ({1}, {2})", fieldName, vec[0], vec[1]);
-                break;
-            }
-            case ScriptFieldType::Vector3:
-            {
-                float vec[3];
-                obj.GetFieldRaw(fieldName.c_str(), vec);
-                meta.DefaultValue = Buffer::Copy(vec, sizeof(float) * 3);
-                PR_PYTHON_META_INFO("    默认值 {0} = ({1}, {2}, {3})", fieldName, vec[0], vec[1], vec[2]);
-                break;
-            }
-            case ScriptFieldType::Vector4:
-            {
-                float vec[4];
-                obj.GetFieldRaw(fieldName.c_str(), vec);
-                meta.DefaultValue = Buffer::Copy(vec, sizeof(float) * 4);
-                PR_PYTHON_META_INFO("    默认值 {0} = ({1}, {2}, {3}, {4})", fieldName, vec[0], vec[1], vec[2], vec[3]);
-                break;
-            }
-            default:
-                break;
+        }
+        catch (py::error_already_set& e)
+        {
+            PR_CORE_WARN("[Python Meta] 读取默认值异常: {}", e.what());
+            PyErr_Clear();
         }
     }
 
-    void PythonScriptMetaRegistry::ScanModule(Python::ScriptModule& mod, const std::string& moduleName,
-                                              Python::ScriptClass& behaviourClass)
+    void PythonScriptMetaRegistry::ScanModule(py::module_& mod, const std::string& moduleName, py::object& behaviourClass)
     {
-        std::vector<std::string> names = mod.GetNames();
+        py::dict modDict = mod.attr("__dict__");
 
-        for (const auto& name : names)
+        for (auto& item : modDict)
         {
-            if (!name.empty() && name[0] == '_')
+            std::string name = py::str(item.first);
+            if (name.empty() || name[0] == '_')
                 continue;
 
-            Python::ScriptClass cls = Python::ScriptClass::From(mod, name.c_str());
-            if (!cls.IsValid())
+            py::object cls = py::reinterpret_borrow<py::object>(item.second);
+            if (!py::isinstance(cls, (PyObject*)&PyType_Type))
                 continue;
 
-            if (!cls.IsSubclassOf(behaviourClass))
+            if (!PyObject_IsSubclass(cls.ptr(), behaviourClass.ptr()))
                 continue;
 
-            std::string fullName = cls.GetFullName();
-            if (fullName.empty())
-                fullName = moduleName + "." + name;
-
+            std::string fullName = cls.attr("__module__").cast<std::string>() + "." + name;
             if (fullName.find("Prism.") == 0)
                 continue;
 
-            UUID scriptID = GenerateScriptID(fullName);
-
-            if (s_Classes.find(scriptID) != s_Classes.end())
+            UUID classID = PythonScriptMetaRegistry::GenerateClassID(fullName);
+            if (PythonScriptMetaRegistry::s_Classes.find(classID) != PythonScriptMetaRegistry::s_Classes.end())
                 continue;
 
-            PR_PYTHON_META_INFO("模块: {0}", moduleName);
-            PR_PYTHON_META_INFO("  类: {0} (ID={1})", fullName, (uint64_t)scriptID);
+            PR_CORE_INFO("[Python Meta] 模块: {0}", moduleName);
+            PR_CORE_INFO("[Python Meta]   类: {0} (ID={1})", fullName, (uint64_t)classID);
 
-            auto& classMeta = s_Classes[scriptID];
-            classMeta.ScriptID = scriptID;
+            auto& classMeta = PythonScriptMetaRegistry::s_Classes[classID];
+            classMeta.ClassID = classID;
             classMeta.FullName = fullName;
             classMeta.ModuleName = moduleName;
-            classMeta.ClassName = cls.GetName();
-            s_FullNameToID[fullName] = scriptID;
+            classMeta.ClassName = name;
+            PythonScriptMetaRegistry::s_ClassIDToFullName[classID] = fullName;
 
-            Python::ScriptObject tempInstance = cls.CreateInstance();
-            if (!tempInstance.IsValid())
+            py::object tempInstance;
+            try { tempInstance = cls(); }
+            catch (py::error_already_set& e)
             {
-                PR_PYTHON_META_WARN("  无法创建临时实例: {0}", fullName);
-                continue;
+                PR_CORE_WARN("[Python Meta] 无法实例化 {}.{}: {}", moduleName, name, e.what());
+                PyErr_Clear();
             }
+            if (!tempInstance) continue;
 
-            std::vector<Python::ScriptClass::FieldInfo> fields = cls.GetFields();
-            for (const auto& field : fields)
+            if (py::hasattr(cls, "__annotations__"))
             {
-                ScriptFieldType fieldType = GetFieldTypeFromPythonAnnotation(field.TypeAnnotation);
-                if (fieldType == ScriptFieldType::None)
+                py::dict ann = cls.attr("__annotations__");
+                for (auto& annItem : ann)
                 {
-                    PR_PYTHON_META_WARN("  未知类型标注: {0}: {1}", field.Name, field.TypeAnnotation);
-                    continue;
+                    std::string fieldName = py::str(annItem.first);
+                    //std::string typeAnnotation = py::str(annItem.second);
+                    py::object typeObj = py::reinterpret_borrow<py::object>(annItem.second);
+
+                    if (fieldName.empty() || fieldName[0] == '_')
+                        continue;
+
+                    ScriptFieldType fieldType = ScriptFieldType::None;
+                    if (typeObj.is(*GetPythonType(PYTHON_TYPE_FLOAT))) fieldType = ScriptFieldType::Float;
+                    else if (typeObj.is(*GetPythonType(PYTHON_TYPE_INT32))) fieldType = ScriptFieldType::Int32;
+                    else if (typeObj.is(*GetPythonType(PYTHON_TYPE_BOOL))) fieldType = ScriptFieldType::Bool;
+                    else if (typeObj.is(*GetPythonType(PYTHON_TYPE_OBJECT))) fieldType = ScriptFieldType::Object;
+                    else if (typeObj.is(*GetPythonType(PYTHON_TYPE_VECTOR2))) fieldType = ScriptFieldType::Vector2;
+                    else if (typeObj.is(*GetPythonType(PYTHON_TYPE_VECTOR3))) fieldType = ScriptFieldType::Vector3;
+                    else if (typeObj.is(*GetPythonType(PYTHON_TYPE_VECTOR4))) fieldType = ScriptFieldType::Vector4;
+                    else if (typeObj.is(*GetPythonType(PYTHON_TYPE_MESHREF))) fieldType = ScriptFieldType::MeshRef;
+                    //else if (typeObj.is(*GetPythonType(PYTHON_TYPE_MATERIALREF))) fieldType = ScriptFieldType::MaterialRef;
+                    //else if (typeObj.is(*GetPythonType(PYTHON_TYPE_TEXTURE2DREF))) fieldType = ScriptFieldType::Texture2DRef;
+
+                    if (fieldType == ScriptFieldType::None) continue;
+                    PR_CORE_INFO("[Python Meta]     字段: {0} : {1}", fieldName, (std::string)py::str(typeObj));
+
+                    uint32_t fieldHash = (uint32_t)(uint64_t)PythonScriptMetaRegistry::GenerateClassID(fieldName);
+
+                    ScriptFieldMetadata fieldMeta;
+                    fieldMeta.Name = fieldName;
+                    fieldMeta.Type = fieldType;
+
+                    try
+                    {
+                        if (py::hasattr(tempInstance, fieldName.c_str()))
+                            ReadPythonDefaultFieldValue(fieldMeta, tempInstance, fieldName);
+                    }
+                    catch (...)
+                    {
+                        PR_CORE_WARN("[Python Meta] 读取字段默认值异常: {0}.{1}", fullName, fieldName);
+                    }
+
+                    classMeta.Fields[fieldHash] = std::move(fieldMeta);
                 }
-
-                uint32_t fieldHash = (uint32_t)(uint64_t)GenerateScriptID(field.Name);
-                PR_PYTHON_META_INFO("    字段: {0} : {1}", field.Name, field.TypeAnnotation);
-
-                ScriptFieldMetadata fieldMeta;
-                fieldMeta.Name = field.Name;
-                fieldMeta.Type = fieldType;
-
-                if (field.HasDefault)
-                    ReadPythonDefaultFieldValue(fieldMeta, tempInstance, field.Name);
-
-                classMeta.Fields[fieldHash] = std::move(fieldMeta);
             }
 
-            // Scan lifecycle methods with signature matching
-            {
-                auto checkMethod = [&](const char* name, int userArgCount) {
-                    return cls.HasMethodWithArity(name, userArgCount);
-                };
-
-                if (checkMethod("Awake", 0))
-                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::Awake;
-                if (checkMethod("OnEnable", 0))
-                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnEnable;
-                if (checkMethod("OnDisable", 0))
-                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnDisable;
-                if (checkMethod("OnCreate", 0))
-                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnCreate;
-                if (checkMethod("OnUpdate", 0))
-                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnUpdate;
-                if (checkMethod("LateUpdate", 0))
-                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::LateUpdate;
-                if (checkMethod("OnFixedUpdate", 0))
-                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnFixedUpdate;
-                if (checkMethod("OnDestroy", 0))
-                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnDestroy;
-                if (checkMethod("OnCollisionBegin", 1))
-                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnCollisionBegin;
-                if (checkMethod("OnCollisionEnd", 1))
-                    classMeta.LifecycleMask |= (uint16_t)LifecycleMethod::OnCollisionEnd;
-            }
+            uint16_t mask = 0;
+            if (py::hasattr(cls, "Awake"))            mask |= (uint16_t)LifecycleMethod::Awake;
+            if (py::hasattr(cls, "OnEnable"))         mask |= (uint16_t)LifecycleMethod::OnEnable;
+            if (py::hasattr(cls, "OnDisable"))        mask |= (uint16_t)LifecycleMethod::OnDisable;
+            if (py::hasattr(cls, "OnCreate"))         mask |= (uint16_t)LifecycleMethod::OnCreate;
+            if (py::hasattr(cls, "OnUpdate"))         mask |= (uint16_t)LifecycleMethod::OnUpdate;
+            if (py::hasattr(cls, "LateUpdate"))       mask |= (uint16_t)LifecycleMethod::LateUpdate;
+            if (py::hasattr(cls, "OnFixedUpdate"))    mask |= (uint16_t)LifecycleMethod::OnFixedUpdate;
+            if (py::hasattr(cls, "OnDestroy"))        mask |= (uint16_t)LifecycleMethod::OnDestroy;
+            if (py::hasattr(cls, "OnCollisionBegin")) mask |= (uint16_t)LifecycleMethod::OnCollisionBegin;
+            if (py::hasattr(cls, "OnCollisionEnd"))   mask |= (uint16_t)LifecycleMethod::OnCollisionEnd;
+            if (py::hasattr(cls, "OnTriggerBegin"))   mask |= (uint16_t)LifecycleMethod::OnTriggerBegin;
+            if (py::hasattr(cls, "OnTriggerEnd"))     mask |= (uint16_t)LifecycleMethod::OnTriggerEnd;
+            classMeta.LifecycleMask = mask;
         }
     }
 
-    void PythonScriptMetaRegistry::ScanDirectory(const std::string& dirPath, const std::string& packagePrefix,
-                                                 Python::ScriptClass& behaviourClass)
+    void PythonScriptMetaRegistry::ScanDirectory(const std::string& dirPath, const std::string& packagePrefix, py::object& behaviourClass)
     {
         namespace fs = std::filesystem;
 
@@ -240,92 +254,96 @@ namespace Prism
                 if (!packagePrefix.empty())
                     moduleName = packagePrefix + "." + moduleName;
 
-                Python::ScriptModule mod = Python::ScriptModule::Import(moduleName.c_str());
-                if (!mod.IsValid())
+                try
                 {
-                    PR_PYTHON_META_WARN("无法导入模块: {0}", moduleName);
-                    continue;
+                    py::module_ mod = py::module::import(moduleName.c_str());
+                    ScanModule(mod, moduleName, behaviourClass);
                 }
-
-                ScanModule(mod, moduleName, behaviourClass);
+                catch (py::error_already_set& e)
+                {
+                    PR_CORE_WARN("[Python Meta] 无法导入模块: {0}\n  {1}", moduleName, e.what());
+                    PyErr_Clear();
+                }
             }
             else if (entry.is_directory())
             {
                 std::string subPrefix = packagePrefix.empty() ? filename : packagePrefix + "." + filename;
-                std::string subPkgPath = entry.path().string();
-
-                fs::path initPy = entry.path() / "__init__.py";
-                if (fs::exists(initPy))
-                {
-                    Python::ScriptModule pkgMod = Python::ScriptModule::Import(subPrefix.c_str());
-                    if (pkgMod.IsValid())
-                        ScanModule(pkgMod, subPrefix, behaviourClass);
-                }
-
-                ScanDirectory(subPkgPath, subPrefix, behaviourClass);
+                ScanDirectory(entry.path().string(), subPrefix, behaviourClass);
             }
         }
     }
 
     void PythonScriptMetaRegistry::Init()
     {
-        if (s_Initialized)
-            return;
+        if (s_Initialized) return;
         s_Initialized = true;
     }
 
     void PythonScriptMetaRegistry::Shutdown()
     {
-        if (!s_Initialized)
-            return;
+        if (!s_Initialized) return;
 
         for (auto& [id, classMeta] : s_Classes)
-        {
             for (auto& [hash, fieldMeta] : classMeta.Fields)
-            {
                 if (fieldMeta.DefaultValue)
                     fieldMeta.DefaultValue.Free();
-            }
-        }
-
+        ClearAllPythonTypes();
         s_Classes.clear();
-        s_FullNameToID.clear();
+        s_ClassIDToFullName.clear();
         s_Initialized = false;
     }
 
     void PythonScriptMetaRegistry::BuildCache()
     {
-        PR_PYTHON_META_INFO("开始扫描 Python Behaviour 类...");
-
-        Python::ScriptModule prismMod = Python::ScriptModule::Import("Prism");
-        if (!prismMod.IsValid())
+        if (!s_Classes.empty())
         {
-            PR_PYTHON_META_ERROR("无法导入 Prism 模块");
-            return;
+            for (auto& [id, classMeta] : s_Classes)
+                for (auto& [hash, fieldMeta] : classMeta.Fields)
+                    if (fieldMeta.DefaultValue)
+                        fieldMeta.DefaultValue.Free();
+            ClearAllPythonTypes();
+            s_Classes.clear();
+            s_ClassIDToFullName.clear();
+        }
+        RegisterAllPythonTypes();
+
+        PR_CORE_INFO("[Python Meta] 开始扫描 Python Behaviour 类...");
+
+        try
+        {
+            py::module_ prismMod = py::module::import("Prism");
+            py::object behaviourClass = prismMod.attr("Behaviour");
+            ScanDirectory("Assets/scripts/Python", "", behaviourClass);
+        }
+        catch (py::error_already_set& e)
+        {
+            PR_CORE_WARN("[Python Meta] Prism.Behaviour 不可用，跳过扫描: {}", e.what());
+            PyErr_Clear();
         }
 
-        Python::ScriptClass behaviourClass = Python::ScriptClass::From(prismMod, "Behaviour");
-        if (!behaviourClass.IsValid())
-        {
-            PR_PYTHON_META_ERROR("无法获取 Prism.Behaviour 类");
-            return;
-        }
-
-        ScanDirectory("Assets/scripts/Python", "", behaviourClass);
-
-        PR_PYTHON_META_INFO("扫描完成: {0} 个 Behaviour 类", s_Classes.size());
+        PR_CORE_INFO("[Python Meta] 扫描完成: {0} 个 Behaviour 类", s_Classes.size());
     }
 
-    ScriptClassMetadata* PythonScriptMetaRegistry::GetClassMetadata(UUID scriptID)
+    ScriptClassMetadata* PythonScriptMetaRegistry::GetClassMetadata(UUID classID)
     {
-        auto it = s_Classes.find(scriptID);
+        auto it = s_Classes.find(classID);
         return it != s_Classes.end() ? &it->second : nullptr;
     }
 
     ScriptClassMetadata* PythonScriptMetaRegistry::GetClassMetadata(const std::string& fullName)
     {
-        auto it = s_FullNameToID.find(fullName);
-        return it != s_FullNameToID.end() ? GetClassMetadata(it->second) : nullptr;
+        return GetClassMetadata(GenerateClassID(fullName));
+    }
+
+    ScriptFieldMetadata* PythonScriptMetaRegistry::GetFieldMetadata(UUID classID, const std::string& fieldName)
+    {
+        auto* classMeta = GetClassMetadata(classID);
+        if (!classMeta)
+            return nullptr;
+
+        uint32_t fieldHash = (uint32_t)(uint64_t)GenerateClassID(fieldName);
+        auto it = classMeta->Fields.find(fieldHash);
+        return it != classMeta->Fields.end() ? &it->second : nullptr;
     }
 
     std::vector<ScriptClassMetadata*> PythonScriptMetaRegistry::GetAllBehaviourClasses()

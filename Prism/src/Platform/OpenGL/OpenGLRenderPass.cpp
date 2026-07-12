@@ -3,15 +3,15 @@
 
 namespace Prism {
 
-	OpenGLRenderPass::OpenGLRenderPass(const RenderPassSpecification& spec)
-		: m_Specification(spec)
-	{
+    OpenGLRenderPass::OpenGLRenderPass(const RenderPassSpecification& spec)
+        : m_Specification(spec)
+    {
 
-	}
+    }
 
-	OpenGLRenderPass::~OpenGLRenderPass()
-	{
+    OpenGLRenderPass::~OpenGLRenderPass()
+    {
 
-	}
+    }
 
 }

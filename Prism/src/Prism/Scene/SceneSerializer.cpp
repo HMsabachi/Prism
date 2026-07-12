@@ -1,10 +1,18 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "SceneSerializer.h"
 
 #include "Entity.h"
 #include "Components.h"
+#include "Systems/RenderSystem.h"
+#include "Prism/Asset/ModelImporter.h"
 
 #include "yaml-cpp/yaml.h"
+
+#include "Prism/Renderer/MeshFactory.h"
+#include "Prism/Physics/PhysicsLayer.h"
+#include "Prism/Physics/PXPhysicsWrappers.h"
+#include "Prism/Asset/AssetManager.h"
+#include "Prism/Utilities/FileSystem.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/quaternion.hpp>
@@ -14,6 +22,7 @@
 #include <Prism/Core/Hash.h>
 #include "Scripting/CSharp/CSharpScriptMetaRegistry.h"
 #include "Scripting/Python/PythonScriptMetaRegistry.h"
+#include "Scripting/Python/PythonField.inl"
 
 #include <iostream>
 #include <fstream>
@@ -168,6 +177,23 @@ namespace Prism {
         out << YAML::Key << "Entity";
         out << YAML::Value << uuid;
 
+        if (entity.HasComponent<RelationshipComponent>())
+        {
+            auto& relationshipComponent = entity.GetComponent<RelationshipComponent>();
+            out << YAML::Key << "Parent" << YAML::Value << relationshipComponent.ParentHandle;
+
+            out << YAML::Key << "Children";
+            out << YAML::Value << YAML::BeginSeq;
+
+            for (auto child : relationshipComponent.Children)
+            {
+                out << YAML::BeginMap;
+                out << YAML::Key << "Handle" << YAML::Value << child;
+                out << YAML::EndMap;
+            }
+            out << YAML::EndSeq;
+        }
+
         if (entity.HasComponent<TagComponent>())
         {
             out << YAML::Key << "TagComponent";
@@ -184,29 +210,23 @@ namespace Prism {
             out << YAML::Key << "TransformComponent";
             out << YAML::BeginMap; // TransformComponent
 
-            auto& tc = entity.GetComponent<TransformComponent>();
-            out << YAML::Key << "Position" << YAML::Value << tc.Position;
-            out << YAML::Key << "Rotation" << YAML::Value << tc.Rotation;
-            out << YAML::Key << "Scale" << YAML::Value << tc.Scale;
+            auto& transform = entity.Transformation();
+            out << YAML::Key << "Position" << YAML::Value << transform.GetPosition();
+            out << YAML::Key << "Rotation" << YAML::Value << transform.GetRotation();
+            out << YAML::Key << "Scale" << YAML::Value << transform.GetScale();
 
             out << YAML::EndMap; // TransformComponent
         }
 
-        if (entity.HasComponent<MeshComponent>())
+        if (entity.HasComponent<MeshRendererComponent>())
         {
-            out << YAML::Key << "MeshComponent";
-            out << YAML::BeginMap; // MeshComponent
+            out << YAML::Key << "MeshRendererComponent";
+            out << YAML::BeginMap;
 
-            auto mesh = entity.GetComponent<MeshComponent>().Mesh;
-            out << YAML::Key << "AssetPath" << YAML::Value << mesh->GetFilePath();
+            auto mesh = entity.GetComponent<MeshRendererComponent>().Mesh;
+            out << YAML::Key << "AssetPath" << YAML::Value << FileSystem::GetRelativePath(mesh->GetFilePath());
 
-            out << YAML::EndMap; // MeshComponent
-        }
-        if (entity.HasComponent<MaterialComponent>())
-        {
-            out << YAML::Key << "MaterialComponent";
-            out << YAML::BeginMap; // MaterialComponent
-            out << YAML::EndMap; // MaterialComponent
+            out << YAML::EndMap;
         }
 
         if (entity.HasComponent<CameraComponent>())
@@ -283,28 +303,22 @@ namespace Prism {
             auto& rbComponent = entity.GetComponent<RigidBodyComponent>();
             out << YAML::Key << "BodyType" << YAML::Value << (int)rbComponent.BodyType;
             out << YAML::Key << "Mass" << YAML::Value << rbComponent.Mass;
+            out << YAML::Key << "LinearDrag" << YAML::Value << rbComponent.LinearDrag;
+            out << YAML::Key << "AngularDrag" << YAML::Value << rbComponent.AngularDrag;
+            out << YAML::Key << "DisableGravity" << YAML::Value << rbComponent.DisableGravity;
             out << YAML::Key << "IsKinematic" << YAML::Value << rbComponent.IsKinematic;
+            out << YAML::Key << "Layer" << YAML::Value << rbComponent.Layer;
+            out << YAML::Key << "Constraints";
+            out << YAML::BeginMap; // Constraints
             out << YAML::Key << "LockPositionX" << YAML::Value << rbComponent.LockPositionX;
             out << YAML::Key << "LockPositionY" << YAML::Value << rbComponent.LockPositionY;
             out << YAML::Key << "LockPositionZ" << YAML::Value << rbComponent.LockPositionZ;
             out << YAML::Key << "LockRotationX" << YAML::Value << rbComponent.LockRotationX;
             out << YAML::Key << "LockRotationY" << YAML::Value << rbComponent.LockRotationY;
             out << YAML::Key << "LockRotationZ" << YAML::Value << rbComponent.LockRotationZ;
+            out << YAML::EndMap; // Constraints
 
             out << YAML::EndMap; // RigidBodyComponent
-        }
-
-        if (entity.HasComponent<PhysicsMaterialComponent>())
-        {
-            out << YAML::Key << "PhysicsMaterialComponent";
-            out << YAML::BeginMap; // PhysicsMaterialComponent
-
-            auto& pmComponent = entity.GetComponent<PhysicsMaterialComponent>();
-            out << YAML::Key << "StaticFriction" << YAML::Value << pmComponent.StaticFriction;
-            out << YAML::Key << "DynamicFriction" << YAML::Value << pmComponent.DynamicFriction;
-            out << YAML::Key << "Bounciness" << YAML::Value << pmComponent.Bounciness;
-
-            out << YAML::EndMap; // PhysicsMaterialComponent
         }
 
         if (entity.HasComponent<BoxColliderComponent>())
@@ -315,6 +329,8 @@ namespace Prism {
             auto& bcComponent = entity.GetComponent<BoxColliderComponent>();
             out << YAML::Key << "Size" << YAML::Value << bcComponent.Size;
             out << YAML::Key << "Offset" << YAML::Value << bcComponent.Offset;
+            out << YAML::Key << "IsTrigger" << YAML::Value << bcComponent.IsTrigger;
+            out << YAML::Key << "Material" << YAML::Value << (bcComponent.Material ? (uint64_t)bcComponent.Material->Handle : 0);
 
             out << YAML::EndMap; // BoxColliderComponent
         }
@@ -326,6 +342,8 @@ namespace Prism {
 
             auto& scComponent = entity.GetComponent<SphereColliderComponent>();
             out << YAML::Key << "Radius" << YAML::Value << scComponent.Radius;
+            out << YAML::Key << "IsTrigger" << YAML::Value << scComponent.IsTrigger;
+            out << YAML::Key << "Material" << YAML::Value << (scComponent.Material ? (uint64_t)scComponent.Material->Handle : 0);
 
             out << YAML::EndMap; // SphereColliderComponent
         }
@@ -338,6 +356,8 @@ namespace Prism {
             auto& ccComponent = entity.GetComponent<CapsuleColliderComponent>();
             out << YAML::Key << "Radius" << YAML::Value << ccComponent.Radius;
             out << YAML::Key << "Height" << YAML::Value << ccComponent.Height;
+            out << YAML::Key << "IsTrigger" << YAML::Value << ccComponent.IsTrigger;
+            out << YAML::Key << "Material" << YAML::Value << (ccComponent.Material ? (uint64_t)ccComponent.Material->Handle : 0);
 
             out << YAML::EndMap; // CapsuleColliderComponent
         }
@@ -348,8 +368,12 @@ namespace Prism {
             out << YAML::BeginMap; // MeshColliderComponent
 
             auto& mcComponent = entity.GetComponent<MeshColliderComponent>();
-            if (mcComponent.CollisionMesh)
-                out << YAML::Key << "AssetPath" << YAML::Value << mcComponent.CollisionMesh->GetFilePath();
+            if (mcComponent.OverrideMesh && mcComponent.CollisionMesh)
+                out << YAML::Key << "AssetPath" << YAML::Value << FileSystem::GetRelativePath(mcComponent.CollisionMesh->GetFilePath());
+            out << YAML::Key << "IsConvex" << YAML::Value << mcComponent.IsConvex;
+            out << YAML::Key << "IsTrigger" << YAML::Value << mcComponent.IsTrigger;
+            out << YAML::Key << "OverrideMesh" << YAML::Value << mcComponent.OverrideMesh;
+            out << YAML::Key << "Material" << YAML::Value << (mcComponent.Material ? (uint64_t)mcComponent.Material->Handle : 0);
 
             out << YAML::EndMap; // MeshColliderComponent
         }
@@ -361,11 +385,11 @@ namespace Prism {
             out << YAML::BeginMap;
             out << YAML::Key << "Behaviours";
             out << YAML::BeginSeq;
-            for (auto& binding : comp.Behaviours)
+            for (auto& [bid, binding] : comp.Behaviours)
             {
                 out << YAML::BeginMap;
-                out << YAML::Key << "ID" << YAML::Value << (uint64_t)binding.BehaviourID;
-                out << YAML::Key << "ClassName" << YAML::Value << binding.ClassName;
+                out << YAML::Key << "ClassID" << YAML::Value << (uint64_t)binding.ClassID;
+                out << YAML::Key << "Enabled" << YAML::Value << binding.Enabled;
                 if (!binding.Fields.empty())
                 {
                     out << YAML::Key << "Fields";
@@ -421,8 +445,15 @@ namespace Prism {
                         case ScriptFieldType::Vector4:
                             out << field.GetValue<glm::vec4>();
                             break;
+                        case ScriptFieldType::MeshRef:
+                        case ScriptFieldType::MaterialRef:
+                        case ScriptFieldType::Texture2DRef:
                         case ScriptFieldType::Object:
-                            // TODO: Serialize object references (e.g. assets, entities)
+                            if (field.GetValue<Ref<Asset>>()) out << (uint64_t)field.GetValue<Ref<Asset>>()->Handle;
+                            else out << 0;
+                            break;
+                        default: 
+                            out << "Unsupported field type";
                             break;
                         }
                         out << YAML::EndMap;
@@ -442,12 +473,11 @@ namespace Prism {
             out << YAML::BeginMap;
             out << YAML::Key << "Behaviours";
             out << YAML::BeginSeq;
-            for (auto& binding : comp.Behaviours)
+            for (auto& [bid, binding] : comp.Behaviours)
             {
                 out << YAML::BeginMap;
-                out << YAML::Key << "ID" << YAML::Value << (uint64_t)binding.BehaviourID;
-                out << YAML::Key << "ClassName" << YAML::Value << binding.ClassName;
-                out << YAML::Key << "ModuleName" << YAML::Value << binding.ModuleName;
+                out << YAML::Key << "ClassID" << YAML::Value << (uint64_t)binding.ClassID;
+                out << YAML::Key << "Enabled" << YAML::Value << binding.Enabled;
                 if (!binding.Fields.empty())
                 {
                     out << YAML::Key << "Fields";
@@ -503,8 +533,15 @@ namespace Prism {
                         case ScriptFieldType::Vector4:
                             out << field.GetValue<glm::vec4>();
                             break;
+                        case ScriptFieldType::MeshRef:
+                        case ScriptFieldType::MaterialRef:
+                        case ScriptFieldType::Texture2DRef:
                         case ScriptFieldType::Object:
-                            // TODO: Serialize object references (e.g. assets, entities)
+                            if (field.GetValue<Ref<Asset>>()) out << (uint64_t)field.GetValue<Ref<Asset>>()->Handle;
+                            else out << 0;
+                            break;
+                        default:
+                            out << "Unsupported field type";
                             break;
                         }
                         out << YAML::EndMap;
@@ -517,30 +554,62 @@ namespace Prism {
             out << YAML::EndMap;
         }
 
+        if (entity.HasComponent<DirectionalLightComponent>())
+        {
+            auto& dlc = entity.GetComponent<DirectionalLightComponent>();
+            out << YAML::Key << "DirectionalLightComponent";
+            out << YAML::BeginMap;
+            out << YAML::Key << "Radiance" << YAML::Value << dlc.Radiance;
+            out << YAML::Key << "Intensity" << YAML::Value << dlc.Intensity;
+            out << YAML::Key << "CastShadows" << YAML::Value << dlc.CastShadows;
+            out << YAML::Key << "SoftShadows" << YAML::Value << dlc.SoftShadows;
+            out << YAML::Key << "LightSize" << YAML::Value << dlc.LightSize;
+            out << YAML::EndMap;
+        }
+
+        if (entity.HasComponent<SkyLightComponent>())
+        {
+            auto& slc = entity.GetComponent<SkyLightComponent>();
+            out << YAML::Key << "SkyLightComponent";
+            out << YAML::BeginMap;
+            out << YAML::Key << "Intensity" << YAML::Value << slc.Intensity;
+            out << YAML::Key << "Angle" << YAML::Value << slc.Angle;
+            out << YAML::Key << "SkyboxLod" << YAML::Value << slc.SkyboxLod;
+            if (slc.SceneEnvironment)
+                out << YAML::Key << "EnvironmentMap" << YAML::Value << slc.SceneEnvironment->Handle;
+            out << YAML::EndMap;
+        }
+
         out << YAML::EndMap; // Entity
     }
 
     static void SerializeEnvironment(YAML::Emitter& out, const Ref<Scene>& scene)
     {
+        auto* rs = scene->GetSystem<RenderSystem>();
+        if (!rs) return;
+        auto& cfg = rs->GetConfig();
+
         out << YAML::Key << "Environment";
         out << YAML::Value;
-        out << YAML::BeginMap; // Environment
-        out << YAML::Key << "AssetPath" << YAML::Value << scene->GetEnvironment().FilePath;
-        const auto& light = scene->GetLight();
+        out << YAML::BeginMap;
+        if (cfg.SceneEnvironment)
+            out << YAML::Key << "EnvironmentMap" << YAML::Value << cfg.SceneEnvironment->Handle;
+        const auto& light = cfg.SceneLight;
         out << YAML::Key << "Light" << YAML::Value;
-        out << YAML::BeginMap; // Light
+        out << YAML::BeginMap;
         out << YAML::Key << "Direction" << YAML::Value << light.Direction;
         out << YAML::Key << "Radiance" << YAML::Value << light.Radiance;
         out << YAML::Key << "Multiplier" << YAML::Value << light.Multiplier;
-        out << YAML::EndMap; // Light
+        out << YAML::EndMap;
         out << YAML::Key << "Shadow" << YAML::Value;
-        out << YAML::BeginMap; // Shadow
-        out << YAML::Key << "Enabled" << YAML::Value << scene->IsShadowEnabled();
-        out << YAML::Key << "Bias" << YAML::Value << scene->GetShadowBias();
-        out << YAML::Key << "NormalBias" << YAML::Value << scene->GetShadowNormalBias();
-        out << YAML::Key << "CascadeCount" << YAML::Value << scene->GetCascadeCount();
-        out << YAML::EndMap; // Shadow
-        out << YAML::EndMap; // Environment
+        out << YAML::BeginMap;
+        out << YAML::Key << "Enabled" << YAML::Value << cfg.ShadowsEnabled;
+        out << YAML::Key << "Bias" << YAML::Value << cfg.ShadowBias;
+        out << YAML::Key << "NormalBias" << YAML::Value << cfg.ShadowNormalBias;
+        out << YAML::Key << "CascadeCount" << YAML::Value << cfg.CascadeCount;
+        out << YAML::Key << "MaxDistance" << YAML::Value << cfg.MaxShadowDistance;
+        out << YAML::EndMap;
+        out << YAML::EndMap;
     }
 
     void SceneSerializer::Serialize(const std::string& filepath)
@@ -550,6 +619,32 @@ namespace Prism {
         out << YAML::Key << "Scene";
         out << YAML::Value << "Scene Name";
         SerializeEnvironment(out, m_Scene);
+
+        out << YAML::Key << "PhysicsLayers";
+        out << YAML::Value << YAML::BeginSeq;
+
+        for (const auto& layer : PhysicsLayerManager::GetLayers())
+        {
+            // Never serialize the Default layer
+            if (layer.LayerID == 0)
+                continue;
+
+            out << YAML::BeginMap;
+            out << YAML::Key << "Name" << YAML::Value << layer.Name;
+
+            out << YAML::Key << "CollidesWith" << YAML::Value;
+            out << YAML::BeginSeq;
+            for (const auto& collisionLayer : PhysicsLayerManager::GetLayerCollisions(layer.LayerID))
+            {
+                out << YAML::BeginMap;
+                out << YAML::Key << "Name" << YAML::Value << collisionLayer.Name;
+                out << YAML::EndMap;
+            }
+            out << YAML::EndSeq;
+            out << YAML::EndMap;
+        }
+        out << YAML::EndSeq;
+
         out << YAML::Key << "Entities";
         out << YAML::Value << YAML::BeginSeq;
         for (auto entityID : m_Scene->m_Registry.view<entt::entity>())
@@ -572,6 +667,17 @@ namespace Prism {
         PR_CORE_ASSERT(false);
     }
 
+    static bool CheckPath(const std::string& path)
+    {
+        FILE* f = fopen(path.c_str(), "rb");
+        if (f)
+        {
+            fclose(f);
+            return true;
+        }
+        return false;
+    }
+
     bool SceneSerializer::Deserialize(const std::string& filepath)
     {
         std::ifstream stream(filepath);
@@ -588,13 +694,22 @@ namespace Prism {
         auto environment = data["Environment"];
         if (environment)
         {
-            std::string envPath = environment["AssetPath"].as<std::string>();
-            m_Scene->SetEnvironment(Environment::Load(envPath));
+            auto& cfg = m_Scene->GetSystem<RenderSystem>()->GetConfig();
+            AssetHandle assetHandle;
+            if (environment["EnvironmentMap"])
+                assetHandle = environment["EnvironmentMap"].as<uint64_t>();
+            else if (environment["AssetPath"])
+            {
+                std::string filepath = environment["AssetPath"].as<std::string>();
+                assetHandle = AssetManager::GetAssetHandleFromFilePath(filepath);
+            }
+            if (AssetManager::IsAssetHandleValid(assetHandle))
+                cfg.SceneEnvironment = AssetManager::GetAsset<Environment>(assetHandle);
 
             auto lightNode = environment["Light"];
             if (lightNode)
             {
-                auto& light = m_Scene->GetLight();
+                auto& light = cfg.SceneLight;
                 light.Direction = lightNode["Direction"].as<glm::vec3>();
                 light.Radiance = lightNode["Radiance"].as<glm::vec3>();
                 light.Multiplier = lightNode["Multiplier"].as<float>();
@@ -602,12 +717,41 @@ namespace Prism {
             auto shadowNode = environment["Shadow"];
             if (shadowNode)
             {
-                m_Scene->SetShadowEnabled(shadowNode["Enabled"].as<bool>());
-                m_Scene->SetShadowBias(shadowNode["Bias"].as<float>());
-                m_Scene->SetShadowNormalBias(shadowNode["NormalBias"].as<float>());
-                m_Scene->SetCascadeCount(shadowNode["CascadeCount"].as<uint32_t>());
+                cfg.ShadowsEnabled = shadowNode["Enabled"].as<bool>();
+                cfg.ShadowBias = shadowNode["Bias"].as<float>();
+                cfg.ShadowNormalBias = shadowNode["NormalBias"].as<float>();
+                cfg.CascadeCount = shadowNode["CascadeCount"].as<uint32_t>();
+                cfg.MaxShadowDistance = shadowNode["MaxDistance"].as<float>(200.0f);
             }
         }
+
+        PhysicsLayerManager::ClearLayers();
+
+        auto physicsLayers = data["PhysicsLayers"];
+        if (physicsLayers)
+        {
+            for (const auto& layer : physicsLayers)
+            {
+                PhysicsLayerManager::AddLayer(layer["Name"].as<std::string>(), false);
+            }
+
+            for (auto layer : physicsLayers)
+            {
+                const PhysicsLayer& layerInfo = PhysicsLayerManager::GetLayer(layer["Name"].as<std::string>());
+
+                auto collidesWith = layer["CollidesWith"];
+                if (collidesWith)
+                {
+                    for (auto collisionLayer : collidesWith)
+                    {
+                        const auto& otherLayer = PhysicsLayerManager::GetLayer(collisionLayer["Name"].as<std::string>());
+                        PhysicsLayerManager::SetLayerCollision(layerInfo.LayerID, otherLayer.LayerID, true);
+                    }
+                }
+            }
+        }
+
+        std::vector<std::string> missingPaths;
 
         auto entities = data["Entities"];
         if (entities)
@@ -625,22 +769,36 @@ namespace Prism {
 
                 Entity deserializedEntity = m_Scene->CreateEntityWithID(uuid, name);
 
+                auto& relationshipComponent = deserializedEntity.GetComponent<RelationshipComponent>();
+                uint64_t parentHandle = entity["Parent"] ? entity["Parent"].as<uint64_t>() : 0;
+                relationshipComponent.ParentHandle = parentHandle;
+
+                auto children = entity["Children"];
+                if (children)
+                {
+                    for (auto child : children)
+                    {
+                        uint64_t childHandle = child["Handle"].as<uint64_t>();
+                        relationshipComponent.Children.push_back(childHandle);
+                    }
+                }
+
                 auto transformComponent = entity["TransformComponent"];
                 if (transformComponent)
                 {
                     // Entities always have transforms
-                    auto& tc = deserializedEntity.GetComponent<TransformComponent>();
+                    auto& transform = deserializedEntity.Transformation();
                     glm::vec3 translation = transformComponent["Position"].as<glm::vec3>();
-                    glm::quat rotation = transformComponent["Rotation"].as<glm::quat>();
+                    glm::vec3 rotation = transformComponent["Rotation"].as<glm::vec3>();
                     glm::vec3 scale = transformComponent["Scale"].as<glm::vec3>();
 
-                    tc.Position = translation;
-                    tc.Rotation = rotation;
-                    tc.Scale = scale;
+                    transform.SetPosition(translation);
+                    transform.SetRotation(rotation);
+                    transform.SetScale(scale);
 
                     PR_CORE_INFO("  Entity Transform:");
                     PR_CORE_INFO("    Translation: {0}, {1}, {2}", translation.x, translation.y, translation.z);
-                    PR_CORE_INFO("    Rotation: {0}, {1}, {2}, {3}", rotation.w, rotation.x, rotation.y, rotation.z);
+                    PR_CORE_INFO("    Rotation: {0}, {1}, {2}", rotation.x, rotation.y, rotation.z);
                     PR_CORE_INFO("    Scale: {0}, {1}, {2}", scale.x, scale.y, scale.z);
                 }
 
@@ -671,23 +829,30 @@ namespace Prism {
                     }
                 }
 
-                auto meshComponent = entity["MeshComponent"];
+                auto meshComponent = entity["MeshRendererComponent"];
                 if (meshComponent)
                 {
                     std::string meshPath = meshComponent["AssetPath"].as<std::string>();
-                    // TEMP (because script creates mesh component...)
-                    if (!deserializedEntity.HasComponent<MeshComponent>())
-                        deserializedEntity.AddComponent<MeshComponent>(Ref<Mesh>::Create(meshPath));
+                    if (!deserializedEntity.HasComponent<MeshRendererComponent>())
+                    {
+                        if (!CheckPath(meshPath))
+                        {
+                            missingPaths.emplace_back(meshPath);
+                            Ref<Mesh> mesh;
+                            deserializedEntity.AddComponent<MeshRendererComponent>(mesh);
+                        }
+                        else
+                        {
+                            auto result = ModelImporter::Import(meshPath);
+                            deserializedEntity.AddComponent<MeshRendererComponent>(result.Mesh);
+                            auto& comp = deserializedEntity.GetComponent<MeshRendererComponent>();
+                            comp.SetMaterials(result.Materials);
+                        }
+                    }
 
                     PR_CORE_INFO("  Mesh Asset Path: {0}", meshPath);
                 }
 
-                auto materialComponent = entity["MaterialComponent"];
-                if (materialComponent)
-                {
-                    deserializedEntity.AddComponent<MaterialComponent>();
-                    PR_CORE_INFO("  MaterialComponent present.");
-                }
 
                 auto cameraComponent = entity["CameraComponent"];
                 if (cameraComponent)
@@ -748,26 +913,19 @@ namespace Prism {
                     auto& component = deserializedEntity.AddComponent<RigidBodyComponent>();
                     component.BodyType = (RigidBodyComponent::Type)rigidBodyComponent["BodyType"].as<int>();
                     component.Mass = rigidBodyComponent["Mass"] ? rigidBodyComponent["Mass"].as<float>() : 1.0f;
+                    component.LinearDrag = rigidBodyComponent["LinearDrag"] ? rigidBodyComponent["LinearDrag"].as<float>() : 0.0F;
+                    component.AngularDrag = rigidBodyComponent["AngularDrag"] ? rigidBodyComponent["AngularDrag"].as<float>() : 0.05F;
+                    component.DisableGravity = rigidBodyComponent["DisableGravity"] ? rigidBodyComponent["DisableGravity"].as<bool>() : false;
                     component.IsKinematic = rigidBodyComponent["IsKinematic"] ? rigidBodyComponent["IsKinematic"].as<bool>() : false;
-                    component.LockPositionX = rigidBodyComponent["LockPositionX"] ? rigidBodyComponent["LockPositionX"].as<bool>() : false;
-                    component.LockPositionY = rigidBodyComponent["LockPositionY"] ? rigidBodyComponent["LockPositionY"].as<bool>() : false;
-                    component.LockPositionZ = rigidBodyComponent["LockPositionZ"] ? rigidBodyComponent["LockPositionZ"].as<bool>() : false;
-                    component.LockRotationX = rigidBodyComponent["LockRotationX"] ? rigidBodyComponent["LockRotationX"].as<bool>() : false;
-                    component.LockRotationY = rigidBodyComponent["LockRotationY"] ? rigidBodyComponent["LockRotationY"].as<bool>() : false;
-                    component.LockRotationZ = rigidBodyComponent["LockRotationZ"] ? rigidBodyComponent["LockRotationZ"].as<bool>() : false;
+                    component.Layer = rigidBodyComponent["Layer"] ? rigidBodyComponent["Layer"].as<uint32_t>() : 0;
+                    component.LockPositionX = rigidBodyComponent["Constraints"]["LockPositionX"].as<bool>();
+                    component.LockPositionY = rigidBodyComponent["Constraints"]["LockPositionY"].as<bool>();
+                    component.LockPositionZ = rigidBodyComponent["Constraints"]["LockPositionZ"].as<bool>();
+                    component.LockRotationX = rigidBodyComponent["Constraints"]["LockRotationX"].as<bool>();
+                    component.LockRotationY = rigidBodyComponent["Constraints"]["LockRotationY"].as<bool>();
+                    component.LockRotationZ = rigidBodyComponent["Constraints"]["LockRotationZ"].as<bool>();
 
                     PR_CORE_INFO("  RigidBodyComponent: Type={0}, Mass={1}", (int)component.BodyType, component.Mass);
-                }
-
-                auto physicsMaterialComponent = entity["PhysicsMaterialComponent"];
-                if (physicsMaterialComponent)
-                {
-                    auto& component = deserializedEntity.AddComponent<PhysicsMaterialComponent>();
-                    component.StaticFriction = physicsMaterialComponent["StaticFriction"].as<float>();
-                    component.DynamicFriction = physicsMaterialComponent["DynamicFriction"].as<float>();
-                    component.Bounciness = physicsMaterialComponent["Bounciness"].as<float>();
-
-                    PR_CORE_INFO("  PhysicsMaterialComponent: StaticFriction={0}, DynamicFriction={1}, Bounciness={2}", component.StaticFriction, component.DynamicFriction, component.Bounciness);
                 }
 
                 auto boxColliderComponent = entity["BoxColliderComponent"];
@@ -776,6 +934,13 @@ namespace Prism {
                     auto& component = deserializedEntity.AddComponent<BoxColliderComponent>();
                     component.Size = boxColliderComponent["Size"].as<glm::vec3>();
                     component.Offset = boxColliderComponent["Offset"].as<glm::vec3>();
+                    component.IsTrigger = boxColliderComponent["IsTrigger"] ? boxColliderComponent["IsTrigger"].as<bool>() : false;
+
+                    auto material = boxColliderComponent["Material"];
+                    if (material && AssetManager::IsAssetHandleValid(material.as<uint64_t>()))
+                        component.Material = AssetManager::GetAsset<PhysicsMaterial>(material.as<uint64_t>());
+
+                    component.DebugMesh = MeshFactory::CreateBox(component.Size);
 
                     PR_CORE_INFO("  BoxColliderComponent: Size={0},{1},{2}, Offset={3},{4},{5}", component.Size.x, component.Size.y, component.Size.z, component.Offset.x, component.Offset.y, component.Offset.z);
                 }
@@ -785,6 +950,13 @@ namespace Prism {
                 {
                     auto& component = deserializedEntity.AddComponent<SphereColliderComponent>();
                     component.Radius = sphereColliderComponent["Radius"].as<float>();
+                    component.IsTrigger = sphereColliderComponent["IsTrigger"] ? sphereColliderComponent["IsTrigger"].as<bool>() : false;
+
+                    auto material = sphereColliderComponent["Material"];
+                    if (material && AssetManager::IsAssetHandleValid(material.as<uint64_t>()))
+                        component.Material = AssetManager::GetAsset<PhysicsMaterial>(material.as<uint64_t>());
+
+                    component.DebugMesh = MeshFactory::CreateSphere(component.Radius);
 
                     PR_CORE_INFO("  SphereColliderComponent: Radius={0}", component.Radius);
                 }
@@ -795,6 +967,13 @@ namespace Prism {
                     auto& component = deserializedEntity.AddComponent<CapsuleColliderComponent>();
                     component.Radius = capsuleColliderComponent["Radius"].as<float>();
                     component.Height = capsuleColliderComponent["Height"].as<float>();
+                    component.IsTrigger = capsuleColliderComponent["IsTrigger"] ? capsuleColliderComponent["IsTrigger"].as<bool>() : false;
+
+                    auto material = capsuleColliderComponent["Material"];
+                    if (material && AssetManager::IsAssetHandleValid(material.as<uint64_t>()))
+                        component.Material = AssetManager::GetAsset<PhysicsMaterial>(material.as<uint64_t>());
+
+                    component.DebugMesh = MeshFactory::CreateCapsule(component.Radius, component.Height);
 
                     PR_CORE_INFO("  CapsuleColliderComponent: Radius={0}, Height={1}", component.Radius, component.Height);
                 }
@@ -802,27 +981,94 @@ namespace Prism {
                 auto meshColliderComponent = entity["MeshColliderComponent"];
                 if (meshColliderComponent)
                 {
-                    std::string meshPath = meshColliderComponent["AssetPath"].as<std::string>();
-                    deserializedEntity.AddComponent<MeshColliderComponent>(Ref<Mesh>::Create(meshPath));
+                    Ref<Mesh> collisionMesh = deserializedEntity.HasComponent<MeshRendererComponent>() ? deserializedEntity.GetComponent<MeshRendererComponent>().Mesh : nullptr;
+                    bool overrideMesh = meshColliderComponent["OverrideMesh"] ? meshColliderComponent["OverrideMesh"].as<bool>() : false;
 
-                    PR_CORE_INFO("  MeshColliderComponent: AssetPath={0}", meshPath);
+                    if (overrideMesh)
+                    {
+                        std::string meshPath = meshColliderComponent["AssetPath"].as<std::string>();
+                        if (!CheckPath(meshPath))
+                        {
+                            missingPaths.emplace_back(meshPath);
+                        }
+                        else
+                        {
+                            collisionMesh = ModelImporter::Import(meshPath).Mesh;
+                        }
+                    }
+
+                    if (collisionMesh)
+                    {
+                        auto& component = deserializedEntity.AddComponent<MeshColliderComponent>(collisionMesh);
+                        component.IsConvex = meshColliderComponent["IsConvex"] ? meshColliderComponent["IsConvex"].as<bool>() : false;
+                        component.IsTrigger = meshColliderComponent["IsTrigger"] ? meshColliderComponent["IsTrigger"].as<bool>() : false;
+                        component.OverrideMesh = overrideMesh;
+
+                        auto material = meshColliderComponent["Material"];
+                        if (material && AssetManager::IsAssetHandleValid(material.as<uint64_t>()))
+                        {
+                            component.Material = AssetManager::GetAsset<PhysicsMaterial>(material.as<uint64_t>());
+
+                            if (component.IsConvex)
+                                PXPhysicsWrappers::CreateConvexMesh(component, deserializedEntity.Transformation().GetScale());
+                            else
+                                PXPhysicsWrappers::CreateTriangleMesh(component, deserializedEntity.Transformation().GetScale());
+                        }
+
+                        PR_CORE_INFO("  MeshColliderComponent: IsConvex={0}, OverrideMesh={1}", component.IsConvex, overrideMesh);
+                    }
+                    else
+                    {
+                        PR_CORE_WARN("MeshColliderComponent in use without valid mesh!");
+                    }
                 }
 
-                // CSharpScriptComponent — deserialize Behaviours
+                // NOTE: Compatibility fix for older scenes
+                auto physicsMaterialComponent = entity["PhysicsMaterialComponent"];
+                if (physicsMaterialComponent)
+                {
+                    Ref<PhysicsMaterial> material = Ref<PhysicsMaterial>::Create();
+                    material->StaticFriction = physicsMaterialComponent["StaticFriction"].as<float>();
+                    material->DynamicFriction = physicsMaterialComponent["DynamicFriction"].as<float>();
+                    material->Bounciness = physicsMaterialComponent["Bounciness"].as<float>();
+
+                    if (deserializedEntity.HasComponent<BoxColliderComponent>())
+                        deserializedEntity.GetComponent<BoxColliderComponent>().Material = material;
+
+                    if (deserializedEntity.HasComponent<SphereColliderComponent>())
+                        deserializedEntity.GetComponent<SphereColliderComponent>().Material = material;
+
+                    if (deserializedEntity.HasComponent<CapsuleColliderComponent>())
+                        deserializedEntity.GetComponent<CapsuleColliderComponent>().Material = material;
+
+                    if (deserializedEntity.HasComponent<MeshColliderComponent>())
+                        deserializedEntity.GetComponent<MeshColliderComponent>().Material = material;
+                }
+
+                // CSharpScriptComponent — 从 YAML 直接构建，OnConstruct 统一做 Meta 验证
                 auto csharpScriptComponent = entity["CSharpScriptComponent"];
                 if (csharpScriptComponent)
                 {
-                    auto& comp = deserializedEntity.GetComponent<CSharpScriptComponent>();
+                    CSharpScriptComponent comp;
                     auto behavioursNode = csharpScriptComponent["Behaviours"];
                     if (behavioursNode)
                     {
                         for (auto bindingNode : behavioursNode)
                         {
+                            UUID classID;
+                            if (bindingNode["ClassID"])
+                                classID = (UUID)bindingNode["ClassID"].as<uint64_t>();
+                            else if (bindingNode["ClassName"])
+                            {
+                                std::string className = bindingNode["ClassName"].as<std::string>();
+                                classID = CSharpScriptMetaRegistry::GenerateClassID(className);
+                            }
+
                             CSharpBehaviourBinding binding;
-                            binding.BehaviourID = (UUID)bindingNode["ID"].as<uint64_t>();
-                            binding.ClassName = bindingNode["ClassName"].as<std::string>();
-                            if (auto* meta = CSharpScriptMetaRegistry::GetClassMetadata(binding.ClassName))
-                                binding.LifecycleMask = meta->LifecycleMask;
+                            binding.BehaviourID = UUID();
+                            binding.ClassID = classID;
+                            if (bindingNode["Enabled"])
+                                binding.Enabled = bindingNode["Enabled"].as<bool>();
 
                             auto fieldsNode = bindingNode["Fields"];
                             if (fieldsNode)
@@ -831,107 +1077,82 @@ namespace Prism {
                                 {
                                     std::string fieldName = fieldNode["Name"].as<std::string>();
                                     ScriptFieldType fieldType = (ScriptFieldType)fieldNode["Type"].as<uint16_t>();
-                                    CSharpField field(fieldName, fieldType);
+                                    uint32_t fieldHash = HashFieldName(fieldName);
 
+                                    Rolky::Type* managedType = nullptr;
+                                    if (auto* classMeta = CSharpScriptMetaRegistry::GetClassMetadata(classID))
+                                    {
+                                        if (auto* fieldMeta = CSharpScriptMetaRegistry::GetFieldMetadata(classID, fieldName))
+                                            managedType = fieldMeta->ManagedType;
+                                    }
+                                    CSharpField field(fieldName, fieldType, managedType);
                                     if (fieldNode["Value"])
                                     {
-                                        switch (field.GetType())
+                                        switch (fieldType)
                                         {
-                                        case ScriptFieldType::Float:
-                                            field.SetValue(fieldNode["Value"].as<float>());
+                                        case ScriptFieldType::Float:   field.SetValue(fieldNode["Value"].as<float>()); break;
+                                        case ScriptFieldType::Double:  field.SetValue(fieldNode["Value"].as<double>()); break;
+                                        case ScriptFieldType::Bool:    field.SetValue(fieldNode["Value"].as<bool>()); break;
+                                        case ScriptFieldType::Int8:    field.SetValue(fieldNode["Value"].as<int8_t>()); break;
+                                        case ScriptFieldType::Int16:   field.SetValue(fieldNode["Value"].as<int16_t>()); break;
+                                        case ScriptFieldType::Int32:   field.SetValue(fieldNode["Value"].as<int32_t>()); break;
+                                        case ScriptFieldType::Int64:   field.SetValue(fieldNode["Value"].as<int64_t>()); break;
+                                        case ScriptFieldType::UInt8:   field.SetValue(fieldNode["Value"].as<uint8_t>()); break;
+                                        case ScriptFieldType::UInt16:  field.SetValue(fieldNode["Value"].as<uint16_t>()); break;
+                                        case ScriptFieldType::UInt32:  field.SetValue(fieldNode["Value"].as<uint32_t>()); break;
+                                        case ScriptFieldType::UInt64:  field.SetValue(fieldNode["Value"].as<uint64_t>()); break;
+                                        case ScriptFieldType::Vector2: field.SetValue(fieldNode["Value"].as<glm::vec2>()); break;
+                                        case ScriptFieldType::Vector3: field.SetValue(fieldNode["Value"].as<glm::vec3>()); break;
+                                        case ScriptFieldType::Vector4: field.SetValue(fieldNode["Value"].as<glm::vec4>()); break;
+                                        case ScriptFieldType::Object:  break;
+                                        case ScriptFieldType::MeshRef:
+                                        {
+                                            uint64_t meshHandle = fieldNode["Value"].as<uint64_t>();
+                                            if (AssetManager::IsAssetHandleValid(meshHandle))
+                                                field.SetValue(AssetManager::GetAsset<Mesh>(meshHandle));
                                             break;
-                                        case ScriptFieldType::Double:
-                                            field.SetValue(fieldNode["Value"].as<double>());
-                                            break;
-                                        case ScriptFieldType::Bool:
-                                            field.SetValue(fieldNode["Value"].as<bool>());
-                                            break;
-                                        case ScriptFieldType::Int8:
-                                            field.SetValue(fieldNode["Value"].as<int8_t>());
-                                            break;
-                                        case ScriptFieldType::Int16:
-                                            field.SetValue(fieldNode["Value"].as<int16_t>());
-                                            break;
-                                        case ScriptFieldType::Int32:
-                                            field.SetValue(fieldNode["Value"].as<int32_t>());
-                                            break;
-                                        case ScriptFieldType::Int64:
-                                            field.SetValue(fieldNode["Value"].as<int64_t>());
-                                            break;
-                                        case ScriptFieldType::UInt8:
-                                            field.SetValue(fieldNode["Value"].as<uint8_t>());
-                                            break;
-                                        case ScriptFieldType::UInt16:
-                                            field.SetValue(fieldNode["Value"].as<uint16_t>());
-                                            break;
-                                        case ScriptFieldType::UInt32:
-                                            field.SetValue(fieldNode["Value"].as<uint32_t>());
-                                            break;
-                                        case ScriptFieldType::UInt64:
-                                            field.SetValue(fieldNode["Value"].as<uint64_t>());
-                                            break;
-                                        case ScriptFieldType::Vector2:
-                                            field.SetValue(fieldNode["Value"].as<glm::vec2>());
-                                            break;
-                                        case ScriptFieldType::Vector3:
-                                            field.SetValue(fieldNode["Value"].as<glm::vec3>());
-                                            break;
-                                        case ScriptFieldType::Vector4:
-                                            field.SetValue(fieldNode["Value"].as<glm::vec4>());
-                                            break;
-                                        case ScriptFieldType::Object:
-                                            // TODO: Serialize object references (e.g. assets, entities)
-                                            break;
+                                        }   
+                                        case ScriptFieldType::MaterialRef:
+                                        case ScriptFieldType::Texture2DRef: break;
+                                        default: break;
                                         }
                                     }
-
-                                    uint32_t fieldHash = HashFieldName(fieldName);
                                     binding.Fields[fieldHash] = std::move(field);
                                 }
                             }
-
-                            // Reconcile: rebuild fields from current metadata (script may have changed)
-                            if (auto* meta = CSharpScriptMetaRegistry::GetClassMetadata(binding.ClassName))
-                            {
-                                auto oldFields = std::move(binding.Fields);
-                                for (auto& [hash, fieldMeta] : meta->Fields)
-                                {
-                                    auto it = oldFields.find(hash);
-                                    if (it != oldFields.end() && it->second.GetType() == fieldMeta.Type)
-                                        binding.Fields[hash] = std::move(it->second);
-                                    else
-                                    {
-                                        CSharpField field(fieldMeta.Name, fieldMeta.Type);
-                                        if (fieldMeta.DefaultValue.Data && fieldMeta.DefaultValue.Size > 0)
-                                            field.SetBuffer(fieldMeta.DefaultValue);
-                                        binding.Fields[hash] = std::move(field);
-                                    }
-                                }
-                            }
-
-                            comp.Behaviours.push_back(std::move(binding));
+                            comp.Behaviours[binding.BehaviourID] = std::move(binding);
                         }
                     }
-
-                    PR_CORE_INFO("  CSharpScriptComponent: {0} Behaviours loaded", comp.Behaviours.size());
+                    auto& registry = m_Scene->GetRegistry();
+                    registry.remove<CSharpScriptComponent>((entt::entity)deserializedEntity);
+                    registry.emplace<CSharpScriptComponent>((entt::entity)deserializedEntity, std::move(comp));
+                    PR_CORE_INFO("  CSharpScriptComponent: loaded");
                 }
 
-                // PythonScriptComponent — deserialize Behaviours
                 auto pythonScriptComponent = entity["PythonScriptComponent"];
                 if (pythonScriptComponent)
                 {
-                    auto& comp = deserializedEntity.GetComponent<PythonScriptComponent>();
+                    PythonScriptComponent comp;
                     auto behavioursNode = pythonScriptComponent["Behaviours"];
                     if (behavioursNode)
                     {
                         for (auto bindingNode : behavioursNode)
                         {
+                            UUID classID;
+                            if (bindingNode["ClassID"])
+                                classID = (UUID)bindingNode["ClassID"].as<uint64_t>();
+                            else if (bindingNode["ClassName"] && bindingNode["ModuleName"])
+                            {
+                                std::string className = bindingNode["ClassName"].as<std::string>();
+                                std::string moduleName = bindingNode["ModuleName"].as<std::string>();
+                                classID = PythonScriptMetaRegistry::GenerateClassID(moduleName + "." + className);
+                            }
+
                             PythonBehaviourBinding binding;
-                            binding.BehaviourID = (UUID)bindingNode["ID"].as<uint64_t>();
-                            binding.ClassName = bindingNode["ClassName"].as<std::string>();
-                            binding.ModuleName = bindingNode["ModuleName"].as<std::string>();
-                            if (auto* meta = PythonScriptMetaRegistry::GetClassMetadata(binding.ModuleName + "." + binding.ClassName))
-                                binding.LifecycleMask = meta->LifecycleMask;
+                            binding.BehaviourID = UUID();
+                            binding.ClassID = classID;
+                            if (bindingNode["Enabled"])
+                                binding.Enabled = bindingNode["Enabled"].as<bool>();
 
                             auto fieldsNode = bindingNode["Fields"];
                             if (fieldsNode)
@@ -940,92 +1161,100 @@ namespace Prism {
                                 {
                                     std::string fieldName = fieldNode["Name"].as<std::string>();
                                     ScriptFieldType fieldType = (ScriptFieldType)fieldNode["Type"].as<uint16_t>();
-                                    PythonField field(fieldName, fieldType);
+                                    uint32_t fieldHash = HashFieldName(fieldName);
 
+                                    PythonField field(fieldName, fieldType, nullptr);
                                     if (fieldNode["Value"])
                                     {
-                                        switch (field.GetType())
+                                        switch (fieldType)
                                         {
-                                        case ScriptFieldType::Float:
-                                            field.SetValue(fieldNode["Value"].as<float>());
-                                            break;
-                                        case ScriptFieldType::Double:
-                                            field.SetValue(fieldNode["Value"].as<double>());
-                                            break;
-                                        case ScriptFieldType::Bool:
-                                            field.SetValue(fieldNode["Value"].as<bool>());
-                                            break;
-                                        case ScriptFieldType::Int8:
-                                            field.SetValue(fieldNode["Value"].as<int8_t>());
-                                            break;
-                                        case ScriptFieldType::Int16:
-                                            field.SetValue(fieldNode["Value"].as<int16_t>());
-                                            break;
-                                        case ScriptFieldType::Int32:
-                                            field.SetValue(fieldNode["Value"].as<int32_t>());
-                                            break;
-                                        case ScriptFieldType::Int64:
-                                            field.SetValue(fieldNode["Value"].as<int64_t>());
-                                            break;
-                                        case ScriptFieldType::UInt8:
-                                            field.SetValue(fieldNode["Value"].as<uint8_t>());
-                                            break;
-                                        case ScriptFieldType::UInt16:
-                                            field.SetValue(fieldNode["Value"].as<uint16_t>());
-                                            break;
-                                        case ScriptFieldType::UInt32:
-                                            field.SetValue(fieldNode["Value"].as<uint32_t>());
-                                            break;
-                                        case ScriptFieldType::UInt64:
-                                            field.SetValue(fieldNode["Value"].as<uint64_t>());
-                                            break;
-                                        case ScriptFieldType::Vector2:
-                                            field.SetValue(fieldNode["Value"].as<glm::vec2>());
-                                            break;
-                                        case ScriptFieldType::Vector3:
-                                            field.SetValue(fieldNode["Value"].as<glm::vec3>());
-                                            break;
-                                        case ScriptFieldType::Vector4:
-                                            field.SetValue(fieldNode["Value"].as<glm::vec4>());
-                                            break;
-                                        case ScriptFieldType::Object:
-                                            // TODO: Serialize object references (e.g. assets, entities)
+                                        case ScriptFieldType::Float:   field.SetValue(fieldNode["Value"].as<float>()); break;
+                                        case ScriptFieldType::Double:  field.SetValue(fieldNode["Value"].as<double>()); break;
+                                        case ScriptFieldType::Bool:    field.SetValue(fieldNode["Value"].as<bool>()); break;
+                                        case ScriptFieldType::Int8:    field.SetValue(fieldNode["Value"].as<int8_t>()); break;
+                                        case ScriptFieldType::Int16:   field.SetValue(fieldNode["Value"].as<int16_t>()); break;
+                                        case ScriptFieldType::Int32:   field.SetValue(fieldNode["Value"].as<int32_t>()); break;
+                                        case ScriptFieldType::Int64:   field.SetValue(fieldNode["Value"].as<int64_t>()); break;
+                                        case ScriptFieldType::UInt8:   field.SetValue(fieldNode["Value"].as<uint8_t>()); break;
+                                        case ScriptFieldType::UInt16:  field.SetValue(fieldNode["Value"].as<uint16_t>()); break;
+                                        case ScriptFieldType::UInt32:  field.SetValue(fieldNode["Value"].as<uint32_t>()); break;
+                                        case ScriptFieldType::UInt64:  field.SetValue(fieldNode["Value"].as<uint64_t>()); break;
+                                        case ScriptFieldType::Vector2: field.SetValue(fieldNode["Value"].as<glm::vec2>()); break;
+                                        case ScriptFieldType::Vector3: field.SetValue(fieldNode["Value"].as<glm::vec3>()); break;
+                                        case ScriptFieldType::Vector4: field.SetValue(fieldNode["Value"].as<glm::vec4>()); break;
+                                        case ScriptFieldType::MeshRef:
+                                        {
+                                            uint64_t meshHandle = fieldNode["Value"].as<uint64_t>();
+                                            if (AssetManager::IsAssetHandleValid(meshHandle))
+                                                field.SetValue(AssetManager::GetAsset<Mesh>(meshHandle));
                                             break;
                                         }
+                                        case ScriptFieldType::MaterialRef:
+                                        case ScriptFieldType::Texture2DRef:
+                                        case ScriptFieldType::Object: break;
+                                        default: break;
+                                        }
                                     }
-
-                                    uint32_t fieldHash = HashFieldName(fieldName);
                                     binding.Fields[fieldHash] = std::move(field);
                                 }
                             }
-
-                            // Reconcile: rebuild fields from current metadata (script may have changed)
-                            if (auto* meta = PythonScriptMetaRegistry::GetClassMetadata(binding.ModuleName + "." + binding.ClassName))
-                            {
-                                auto oldFields = std::move(binding.Fields);
-                                for (auto& [hash, fieldMeta] : meta->Fields)
-                                {
-                                    auto it = oldFields.find(hash);
-                                    if (it != oldFields.end() && it->second.GetType() == fieldMeta.Type)
-                                        binding.Fields[hash] = std::move(it->second);
-                                    else
-                                    {
-                                        PythonField field(fieldMeta.Name, fieldMeta.Type);
-                                        if (fieldMeta.DefaultValue.Data && fieldMeta.DefaultValue.Size > 0)
-                                            field.SetBuffer(fieldMeta.DefaultValue);
-                                        binding.Fields[hash] = std::move(field);
-                                    }
-                                }
-                            }
-
-                            comp.Behaviours.push_back(std::move(binding));
+                            comp.Behaviours[binding.BehaviourID] = std::move(binding);
                         }
                     }
+                    auto& registry = m_Scene->GetRegistry();
+                    registry.remove<PythonScriptComponent>((entt::entity)deserializedEntity);
+                    registry.emplace<PythonScriptComponent>((entt::entity)deserializedEntity, std::move(comp));
+                    PR_CORE_INFO("  PythonScriptComponent: loaded");
+                }
 
-                    PR_CORE_INFO("  PythonScriptComponent: {0} Behaviours loaded", comp.Behaviours.size());
+                auto directionalLightComponent = entity["DirectionalLightComponent"];
+                if (directionalLightComponent)
+                {
+                    auto& component = deserializedEntity.AddComponent<DirectionalLightComponent>();
+                    if (directionalLightComponent["Radiance"])
+                        component.Radiance = directionalLightComponent["Radiance"].as<glm::vec3>();
+                    component.Intensity = directionalLightComponent["Intensity"] ? directionalLightComponent["Intensity"].as<float>() : 1.0f;
+                    component.CastShadows = directionalLightComponent["CastShadows"] ? directionalLightComponent["CastShadows"].as<bool>() : true;
+                    component.SoftShadows = directionalLightComponent["SoftShadows"] ? directionalLightComponent["SoftShadows"].as<bool>() : true;
+                    component.LightSize = directionalLightComponent["LightSize"] ? directionalLightComponent["LightSize"].as<float>() : 0.5f;
+                    PR_CORE_INFO("  DirectionalLightComponent: Intensity={0}", component.Intensity);
+                }
+
+                auto skyLightComponent = entity["SkyLightComponent"];
+                if (skyLightComponent)
+                {
+                    auto& component = deserializedEntity.AddComponent<SkyLightComponent>();
+                    component.Intensity = skyLightComponent["Intensity"] ? skyLightComponent["Intensity"].as<float>() : 1.0f;
+                    component.Angle = skyLightComponent["Angle"] ? skyLightComponent["Angle"].as<float>() : 0.0f;
+                    component.SkyboxLod = skyLightComponent["SkyboxLod"] ? skyLightComponent["SkyboxLod"].as<float>() : 0.0f;
+
+                    AssetHandle assetHandle;
+                    if (skyLightComponent["EnvironmentMap"])
+                        assetHandle = skyLightComponent["EnvironmentMap"].as<uint64_t>();
+                    else if (skyLightComponent["AssetPath"])
+                    {
+                        std::string filepath = skyLightComponent["AssetPath"].as<std::string>();
+                        assetHandle = AssetManager::GetAssetHandleFromFilePath(filepath);
+                    }
+
+                    if (AssetManager::IsAssetHandleValid(assetHandle))
+                        component.SceneEnvironment = AssetManager::GetAsset<Environment>(assetHandle);
+
+                    PR_CORE_INFO("  SkyLightComponent: Intensity={0}", component.Intensity);
                 }
             }
         }
+        if (missingPaths.size())
+        {
+            PR_CORE_ERROR("The following files could not be loaded:");
+            for (auto& path : missingPaths)
+            {
+                PR_CORE_ERROR("  {0}", path);
+            }
+
+            return false;
+        }
+
         return true;
     }
 

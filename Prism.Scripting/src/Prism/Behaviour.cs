@@ -1,10 +1,24 @@
-using System;
+﻿using System;
 
 namespace Prism
 {
     public abstract class Behaviour : Component
     {
-        public bool Enabled { get; set; } = true;
+        public ulong ID;
+
+        public bool Enabled
+        {
+            get
+            {
+                if (ID == 0) return true;
+                unsafe { return InternalCalls.Prism_Behaviour_GetEnabled(ID); }
+            }
+            set
+            {
+                if (ID == 0) return;
+                unsafe { InternalCalls.Prism_Behaviour_SetEnabled(ID, value); }
+            }
+        }
 
         public TransformComponent Transform => Entity.Transform;
 

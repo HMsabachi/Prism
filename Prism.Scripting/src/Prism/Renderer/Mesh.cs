@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 
 namespace Prism
 {
+    [EditorAssignable]
     public class Mesh
     {
         public Mesh(string filepath)
@@ -20,53 +21,8 @@ namespace Prism
             unsafe { InternalCalls.Prism_Mesh_Destructor(m_UnmanagedInstance); }
         }
 
-        public Material BaseMaterial
-        {
-            get
-            {
-                unsafe { return new Material(InternalCalls.Prism_Mesh_GetMaterial(m_UnmanagedInstance)); }
-            }
-        }
-
-        public MaterialInstance GetMaterial(int index)
-        {
-            unsafe
-            {
-                return new MaterialInstance(InternalCalls.Prism_Mesh_GetMaterialByIndex(m_UnmanagedInstance, index));
-            }
-        }
-
-        public void SetMaterial(int index, MaterialInstance material)
-        {
-            unsafe
-            {
-                InternalCalls.Prism_Mesh_SetMaterialByIndex(m_UnmanagedInstance, index, material?.m_UnmanagedInstance ?? IntPtr.Zero);
-            }
-        }
-
-        public void SetOverrideMaterial(MaterialInstance material)
-        {
-            unsafe
-            {
-                InternalCalls.Prism_Mesh_SetOverrideMaterial(m_UnmanagedInstance, material?.m_UnmanagedInstance ?? IntPtr.Zero);
-            }
-        }
-
-        public MaterialInstance GetOverrideMaterial()
-        {
-            unsafe
-            {
-                IntPtr ptr = InternalCalls.Prism_Mesh_GetOverrideMaterial(m_UnmanagedInstance);
-                return ptr != IntPtr.Zero ? new MaterialInstance(ptr) : null;
-            }
-        }
-
-        public int GetMaterialCount()
-        {
-            unsafe { return InternalCalls.Prism_Mesh_GetMaterialCount(m_UnmanagedInstance); }
-        }
+        public override string ToString() => $"Mesh({m_UnmanagedInstance})";
 
         internal IntPtr m_UnmanagedInstance;
-
     }
 }

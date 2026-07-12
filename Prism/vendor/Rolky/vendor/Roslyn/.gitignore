@@ -1,0 +1,2 @@
+# Ignore temp restore directory from download.ps1
+_temp_restore/

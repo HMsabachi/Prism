@@ -68,7 +68,7 @@ float RadicalInverse_VdC(uint bits)
     bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
     bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
     bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
-    return float(bits) * 2.3283064365386963e-10; // / 0x100000000
+    return float(bits) * 2.3283064e-10; // 0x100000000
 }
 
 vec2 Hammersley(uint i, uint N)
@@ -93,14 +93,13 @@ vec3 ImportanceSampleGGX(vec2 Xi, float Roughness, vec3 N)
 	return TangentX * H.x + TangentY * H.y + N * H.z;
 }
 
-float TotalWeight = 0.0;
-
 vec3 PrefilterEnvMap(float Roughness, vec3 R)
 {
 	vec3 N = R;
 	vec3 V = R;
 	vec3 PrefilteredColor = vec3(0.0);
 	int NumSamples = 1024;
+	float TotalWeight = 0.0;
 	for(int i = 0; i < NumSamples; i++)
 	{
 		vec2 Xi = Hammersley(i, NumSamples);
@@ -109,7 +108,7 @@ vec3 PrefilterEnvMap(float Roughness, vec3 R)
 		float NoL = clamp(dot(N, L), 0.0, 1.0);
 		if (NoL > 0)
 		{
-			PrefilteredColor += texture(u_EnvRadianceTex, L).rgb * NoL;
+			PrefilteredColor += texture(Prism_EnvRadianceTex, L).rgb * NoL;
 			TotalWeight += NoL;
 		}
 	}

@@ -1,8 +1,14 @@
-#pragma once
+﻿#pragma once
 #include <stdint.h>
 #include "Core.h"
 namespace Prism
 {
+    namespace RefUtils {
+        void PRISM_API AddToLiveReferences(void* instance);
+        void PRISM_API RemoveFromLiveReferences(void* instance);
+        bool PRISM_API IsLive(void* instance);
+        size_t PRISM_API GetLiveReferenceCount();
+    }
     class PRISM_API RefCounted
     {
     public:
@@ -19,14 +25,8 @@ namespace Prism
 
         uint32_t GetRefCount() const { return m_RefCount; }
     private:
-        mutable uint32_t m_RefCount = 0;
+        mutable std::atomic<uint32_t> m_RefCount{ 0 };
     };
-
-    namespace RefUtils {
-        void PRISM_API AddToLiveReferences(void* instance);
-        void PRISM_API RemoveFromLiveReferences(void* instance);
-        bool PRISM_API IsLive(void* instance);
-    }
 
     template<typename T>
     class Ref

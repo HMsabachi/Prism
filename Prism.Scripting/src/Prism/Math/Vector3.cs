@@ -29,6 +29,13 @@ namespace Prism
             Z = 0f;
         }
 
+        public Vector3(float scalar, Vector2 yz)
+        {
+            X = scalar;
+            Y = yz.X;
+            Z = yz.Y;
+        }
+
         public Vector3(Vector4 vector)
         {
             X = vector.X;
@@ -42,8 +49,8 @@ namespace Prism
         public static Vector3 Down => new(0f, -1f, 0f);
         public static Vector3 Left => new(-1f, 0f, 0f);
         public static Vector3 Right => new(1f, 0f, 0f);
-        public static Vector3 Forward => new(0f, 0f, 1f);
-        public static Vector3 Back => new(0f, 0f, -1f);
+        public static Vector3 Forward => new(0f, 0f, -1f);
+        public static Vector3 Back => new(0f, 0f, 1f);
 
         public float Magnitude => MathF.Sqrt(SqrMagnitude);
         public float SqrMagnitude => X * X + Y * Y + Z * Z;

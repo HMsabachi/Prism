@@ -1,30 +1,31 @@
-#pragma once
+﻿#pragma once
 
-#include "Prism/Renderer/Buffer/Buffer.h"
-#include "Prism/Renderer/Shader/PrismShader.h"
+#include "Prism/Renderer/Buffer/VertexBuffer.h"
 
 namespace Prism {
 
-	struct PipelineSpecification
-	{
-		Ref<PrismShader> Shader;
-		VertexBufferLayout Layout;
-	};
+    class PrismShader;
 
-	class Pipeline : public RefCounted
-	{
-	public:
-		virtual ~Pipeline() = default;
+    struct PipelineSpecification
+    {
+        Ref<PrismShader> Shader;
+        VertexBufferLayout Layout;
+    };
 
-		virtual PipelineSpecification& GetSpecification() = 0;
-		virtual const PipelineSpecification& GetSpecification() const = 0;
+    class Pipeline : public RefCounted
+    {
+    public:
+        virtual ~Pipeline() = default;
 
-		virtual void Invalidate() = 0;
+        virtual PipelineSpecification& GetSpecification() = 0;
+        virtual const PipelineSpecification& GetSpecification() const = 0;
 
-		// TEMP: remove this when render command buffers are a thing
-		virtual void Bind() = 0;
+        virtual void Invalidate() = 0;
 
-		static Ref<Pipeline> Create(const PipelineSpecification& spec);
-	};
+        // TEMP: remove this when render command buffers are a thing
+        virtual void Bind() const = 0;
+
+        static Ref<Pipeline> Create(const PipelineSpecification& spec);
+    };
 
 }

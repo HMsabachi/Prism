@@ -22,23 +22,40 @@ Shader "Standard/Outline"
             Name "ForwardBase"
             GLSL
             {
-                #include "PrismBuiltin.glsl"
+                #pragma shader_feature SKINNED
+                #include "PrismCommon.glsl"
 
                 attribute vec3 a_Position : POSITION;
                 attribute vec2 a_TexCoord : TEXCOORD0; // 暂时这样需要修改
+            #ifdef SKINNED
+                attribute ivec4 a_BoneIndices : BONEINDICES;
+                attribute vec4 a_BoneWeights : BONEWEIGHTS;
+            #endif
 
-                VARYING VertexOutput
+                layout(location = 0) out vec4 FragColor;
+
+                varying VertexOutput
                 {
                     vec2 TexCoord;
                 } vs_Output;
 
                 void main()
                 {
+                #ifdef SKINNED
+                    mat4 boneTransform = Prism_Bones[a_BoneIndices[0]] * a_BoneWeights[0];
+                    boneTransform += Prism_Bones[a_BoneIndices[1]] * a_BoneWeights[1];
+                    boneTransform += Prism_Bones[a_BoneIndices[2]] * a_BoneWeights[2];
+                    boneTransform += Prism_Bones[a_BoneIndices[3]] * a_BoneWeights[3];
+
+                    vec4 localPosition = boneTransform * vec4(a_Position, 1.0);
+                    gl_Position = Prism_ViewProjection * Prism_Model * localPosition;
+                #else
                     gl_Position = Prism_ViewProjection * Prism_Model * vec4(a_Position, 1.0);
+                #endif
                     vs_Output.TexCoord = a_TexCoord;
                 }
 
- 
+
                 void frag()
                 {
                     FragColor = u_MainColor;

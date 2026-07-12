@@ -1,9 +1,6 @@
 ﻿#pragma once
 
 #include "Prism/Core/Layer.h"
-#include "Prism/Events/MouseEvent.h"
-#include "Prism/Events/KeyEvent.h"
-#include "Prism/Events/ApplicationEvent.h"
 
 struct ImGuiIO;
 
@@ -24,6 +21,8 @@ namespace Prism
 	public:
 		void Begin();
 		void End();
+
+		void SetDarkThemeColors();
 	private:
 
 

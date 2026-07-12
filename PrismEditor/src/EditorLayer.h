@@ -1,16 +1,19 @@
-#pragma once
+﻿#pragma once
 #include <Prism.h>
+#include "Prism/Events/KeyEvent.h"
+#include "Prism/Events/MouseEvent.h"
 
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
 #include "glm/gtc/type_ptr.hpp"
 
 
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtx/quaternion.hpp>
 
 #include <string>
+
+#include "Prism/Editor/AssetManagerPanel.h"
+#include "Prism/Editor/ObjectsPanel.h"
 
 namespace Prism
 {
@@ -37,9 +40,11 @@ namespace Prism
         void ShowBoundingBoxes(bool show, bool onTop = false);
         void UpdateWindowTitle(const std::string& sceneName);
         void SelectEntity(Entity entity);
-        void DrawMaterialProperty(const PropertyDeclaration& prop, MaterialInstance& materialInstance);
+        void DrawMaterialProperty(const PrismShaderCompiler::AST::ShaderUniform& uni, Material& material);
 
+        void NewScene();
         void OpenScene();
+        void OpenScene(const std::string& filepath);
         void SaveScene();
         void SaveSceneAs();
     private:
@@ -62,10 +67,12 @@ namespace Prism
 
         float GetSnapValue();
     private:
-        std::vector<Ref<MaterialInstance>> m_MetalSphereMaterialInstances;
-        std::vector<Ref<MaterialInstance>> m_DielectricSphereMaterialInstances;
+        std::vector<Ref<Material>> m_MetalSphereMaterialInstances;
+        std::vector<Ref<Material>> m_DielectricSphereMaterialInstances;
     private:
         Scope<SceneHierarchyPanel> m_SceneHierarchyPanel;
+        Scope<AssetManagerPanel> m_AssetManagerPanel;
+        Scope<ObjectsPanel> m_ObjectsPanel;
 
         Ref<Scene> m_ActiveScene;
         Ref<Scene> m_RuntimeScene, m_EditorScene;
@@ -90,7 +97,7 @@ namespace Prism
         Ref<Texture2D> m_CheckerboardTex;
         Ref<Texture2D> m_PlayButtonTex;
 
-        glm::vec2 m_ViewportBounds[2];
+        glm::vec2 m_ViewportBounds[2]{};
         int m_GizmoType = -1; //  no gizmo
         float m_SnapValue = 0.5f;
         float m_RotationSnapValue = 45.0f;
@@ -103,6 +110,8 @@ namespace Prism
         bool m_ViewportPanelMouseOver = false;
         bool m_ViewportPanelFocused = false;
         bool m_ReloadScriptOnPlay = false;
+
+        bool m_ShowPhysicsSettings = false;
         std::string m_SceneFilePath;
 
         enum class SceneState

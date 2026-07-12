@@ -1,261 +1,89 @@
-#pragma once
+﻿#pragma once
 
 #include "Shader/PrismShader.h"
-#include "Shader/ShaderVariant.h"
-#include <unordered_set>
+#include "Prism/Core/Buffer.h"
+#include <glm/glm.hpp>
+#include <string>
+#include <vector>
 
 namespace Prism
 {
-	class PRISM_API Material : public RefCounted
-	{
-		friend class MaterialInstance;
+    class UniformBuffer;
+    class Texture;
+    class Texture2D;
+    class TextureCube;
 
-	public:
-		static Ref<Material> Create(const Ref<PrismShader>& shader);
-	public:
-		Material(const Ref<PrismShader>& shader);
-		virtual ~Material();
+    class PRISM_API Material : public RefCounted
+    {
+    public:
+        static Ref<Material> Create(AssetHandle shaderHandle);
+        static Ref<Material> Create(const Ref<Material>& material);
 
-		void Bind();
+    public:
+        Material(AssetHandle shaderHandle);
+        Material(const Ref<Material>& material);
+        virtual ~Material();
 
-		// Multi-Pass API
-		uint32_t GetPassCount() const { return m_Shader->GetPassCount(); }
-		void BindPass(uint32_t passIndex);
+        AssetHandle GetShaderHandle() const { return m_Shader->Handle; }
+        const Ref<PrismShader>& GetShader() const { return m_Shader; }
+        void SetShader(AssetHandle shaderHandle);
 
-		// Keyword API
-		void SetKeyword(const std::string& name, bool enabled);
-		bool IsKeywordEnabled(const std::string& name) const;
-		KeywordMask GetKeywordMask() const { return m_KeywordMask; }
+        // Name
+        const std::string& GetName() const { return m_Name; }
+        void SetName(const std::string& name) { m_Name = name; }
 
-	#pragma region Set函数
-		template <typename T>
-		void Set(const std::string& name, const T& value)
-		{
-			auto decl = FindPropertyDeclaration(name);
-			if (!decl)
-			{
-				PR_CORE_WARN("Material::Set - Could not find uniform with name '{0}'", name);
-				return;
-			}
-			auto& buffer = m_PropertyBuffer;
-			buffer.Write((byte*)&value, sizeof(T), decl->GetOffset());
-			for (auto mi : m_MaterialInstances)
-				mi->OnMaterialValueUpdated(decl);
-		}
-		void Set(const std::string& name, const Ref<Texture2D>& texture)
-		{
-			auto decl = FindPropertyDeclaration(name);
-			if (!decl)
-			{
-				PR_CORE_WARN("Material::Set - Could not find uniform with name '{0}'", name);
-				return;
-			}
-			auto& buffer = m_PropertyBuffer;
-			auto& tex = *(PropertyType::Texture2D*)&buffer[decl->GetOffset()];
-			uint32_t slot = tex.slot;
-			if (m_Textures.size() <= slot)
-				m_Textures.resize((size_t)slot + 1);
-			m_Textures[slot] = texture;
-		}
-		void Set(const std::string& name, const Ref<TextureCube>& texture)
-		{
-			auto decl = FindPropertyDeclaration(name);
-			if (!decl)
-			{
-				PR_CORE_WARN("Material::Set - Could not find uniform with name '{0}'", name);
-				return;
-			}
-			auto& buffer = m_PropertyBuffer;
-			auto& tex = *(PropertyType::TextureCube*)&buffer[decl->GetOffset()];
-			uint32_t slot = tex.slot;
-			if (m_Textures.size() <= slot)
-				m_Textures.resize((size_t)slot + 1);
-			m_Textures[slot] = texture;
-		}
-	#pragma endregion
+#pragma region Get/Set Material Data
+        void SetBool(const std::string& name, bool value);
+        void SetInt(const std::string& name, int value);
+        void SetFloat(const std::string& name, float value);
+        void SetVec2(const std::string& name, const glm::vec2& value);
+        void SetVec3(const std::string& name, const glm::vec3& value);
+        void SetVec4(const std::string& name, const glm::vec4& value);
+        void SetColor3(const std::string& name, const glm::vec3& value);
+        void SetColor(const std::string& name, const glm::vec4& value);
+        void SetMatrix3(const std::string& name, const glm::mat3& value);
+        void SetMatrix4(const std::string& name, const glm::mat4& value);
+        void SetTexture(const std::string& name, const Ref<Texture2D>& texture);
+        void SetTexture(const std::string& name, const Ref<TextureCube>& texture);
+        bool GetBool(const std::string& name) const;
+        int GetInt(const std::string& name) const;
+        float GetFloat(const std::string& name) const;
+        glm::vec2 GetVec2(const std::string& name) const;
+        glm::vec3 GetVec3(const std::string& name) const;
+        glm::vec4 GetVec4(const std::string& name) const;
+        glm::vec3 GetColor3(const std::string& name) const;
+        glm::vec4 GetColor(const std::string& name) const;
+        glm::mat3 GetMatrix3(const std::string& name) const;
+        glm::mat4 GetMatrix4(const std::string& name) const;
+        Ref<Texture2D> GetTexture2D(const std::string& name) const;
+        Ref<TextureCube> GetTextureCube(const std::string& name) const;
+#pragma endregion
+        bool HasProperty(const std::string& name) const;
+        // Keywords
+        void SetKeyword(const std::string& name, bool enabled);
+        bool IsKeywordEnabled(const std::string& name) const;
+        KeywordMask GetKeywordMask() const { return m_KeywordMask; }
 
-		template<typename T>
-		T& Get(const std::string& name)
-		{
-			auto decl = FindPropertyDeclaration(name);
-			if (!decl)
-			{
-				PR_CORE_WARN("Material::Get - Could not find uniform with name '{0}'", name);
-				static T s_Default{};
-				return s_Default;
-			}
-			auto& buffer = m_PropertyBuffer;
-			return buffer.Read<T>(decl->GetOffset());
-		}
+        Ref<Shader> GetProgram(uint32_t passIndex = 0) const;
+        void BindProgram(uint32_t passIndex = 0) const;
+        void BindUniform() const;
+        void BindTexture() const;
+        void Bind(uint32_t passIndex = 0) const;
+        uint32_t GetPassCount() const { return m_Shader->GetPassCount(); }
 
-		template<typename T>
-		Ref<T> GetResource(const std::string& name)
-		{
-			auto decl = FindPropertyDeclaration(name);
-			if (!decl)
-			{
-				PR_CORE_WARN("Material::GetResource - Could not find uniform with name '{0}'", name);
-				return nullptr;
-			}
-			auto& buffer = m_PropertyBuffer;
-			auto& tex = *(PropertyType::Texture2D*)&buffer[decl->GetOffset()];
-			uint32_t slot = tex.slot;
-			if (slot >= m_Textures.size())
-			{
-				PR_CORE_WARN("Material::GetResource - Texture slot {0} is invalid for uniform '{1}'", slot, name);
-				return nullptr;
-			}
-			return m_Textures[slot];
-		}
+    private:
+        void AllocateStorage();
+        void OnShaderReloaded();
+        void WriteUniform(const std::string& name, const void* data, uint32_t size);
 
-	private:
-		const PropertyDeclaration* FindPropertyDeclaration(const std::string& name) const;
-		void AllocateStorage();
-		void OnShaderReloaded();
-		void BindTextures();
-		const ShaderCommand& GetShaderCommand() { return m_ShaderCommand; }
-		void InitTextures();
-		Buffer& GetPropertyBuffer() { return m_PropertyBuffer; }
-
-	private:
-		Ref<PrismShader> m_Shader;
-		std::unordered_set<MaterialInstance*> m_MaterialInstances;
-		Buffer m_PropertyBuffer;
-		ShaderCommand m_ShaderCommand;
-		std::vector<Ref<Texture>> m_Textures;
-		KeywordMask m_KeywordMask = 0;
-	};
-
-	class PRISM_API MaterialInstance : public RefCounted
-	{
-		friend class Material;
-	public:
-		static Ref<MaterialInstance> Create(const Ref<Material>& material, const std::string& name = "");
-	public:
-		MaterialInstance(const Ref<Material>& material, const std::string& name = "");
-		virtual ~MaterialInstance();
-
-		const std::string& GetName() const { return m_Name; }
-
-		// Multi-Pass API
-		uint32_t GetPassCount() const { return m_Material->GetPassCount(); }
-		void BindPass(uint32_t passIndex);
-
-		// Keyword API
-		void SetKeyword(const std::string& name, bool enabled);
-		bool IsKeywordEnabled(const std::string& name) const;
-		KeywordMask GetKeywordMask() const { return m_KeywordMask; }
-
-	#pragma region Set函数
-		template <typename T>
-		void Set(const std::string& name, const T& value)
-		{
-			auto decl = m_Material->FindPropertyDeclaration(name);
-			if (!decl)
-			{
-				PR_CORE_WARN("MaterialInstance::Set - Could not find uniform with name '{0}'", name);
-				return;
-			}
-			auto& buffer = m_PropertyBuffer;
-			buffer.Write((byte*)&value, sizeof(T), decl->GetOffset());
-			m_OverriddenValues.insert(name);
-		}
-		void Set(const std::string& name, const Ref<Texture>& texture)
-		{
-			auto decl = m_Material->FindPropertyDeclaration(name);
-			if (!decl)
-			{
-				PR_CORE_WARN("MaterialInstance::Set - Could not find uniform with name '{0}'", name);
-				return;
-			}
-			auto& buffer = m_PropertyBuffer;
-			uint32_t slot = (*(PropertyType::Texture2D*)&buffer[decl->GetOffset()]).slot;
-			if (m_Textures.size() <= slot)
-				m_Textures.resize((size_t)slot + 1);
-			m_Textures[slot] = texture;
-		}
-		void Set(const std::string& name, const Ref<Texture2D>& texture)
-		{
-			Set(name, (const Ref<Texture>&)texture);
-		}
-		void Set(const std::string& name, const Ref<TextureCube>& texture)
-		{
-			Set(name, (const Ref<Texture>&)texture);
-		}
-		void Set(const std::string& name, const glm::mat4& value)
-		{
-			m_Transform = value;
-		}
-	#pragma endregion
-
-		template<typename T>
-		T& Get(const std::string& name)
-		{
-			auto decl = m_Material->FindPropertyDeclaration(name);
-			if (!decl)
-			{
-				PR_CORE_WARN("MaterialInstance::Get - Could not find uniform with name '{0}'", name);
-				static T s_Default{};
-				return s_Default;
-			}
-			auto& buffer = m_PropertyBuffer;
-			return buffer.Read<T>(decl->GetOffset());
-		}
-
-		template<typename T>
-		Ref<T> GetResource(const std::string& name)
-		{
-			auto decl = m_Material->FindPropertyDeclaration(name);
-			if (!decl)
-			{
-				PR_CORE_WARN("MaterialInstance::GetResource - Could not find uniform with name '{0}'", name);
-				return nullptr;
-			}
-			auto& buffer = m_PropertyBuffer;
-			auto& tex = *(PropertyType::Texture2D*)&buffer[decl->GetOffset()];
-			uint32_t slot = tex.slot;
-			if (slot >= m_Textures.size())
-			{
-				PR_CORE_WARN("MaterialInstance::GetResource - Texture slot {0} is invalid for uniform '{1}'", slot, name);
-				return nullptr;
-			}
-			return m_Textures[slot];
-		}
-
-		template<typename T>
-		Ref<T> TryGetResource(const std::string& name)
-		{
-			auto decl = m_Material->FindPropertyDeclaration(name);
-			if (!decl)
-				return nullptr;
-			auto& buffer = m_PropertyBuffer;
-			auto& tex = *(PropertyType::Texture2D*)&buffer[decl->GetOffset()];
-			uint32_t slot = tex.slot;
-			if (slot >= m_Textures.size())
-				return nullptr;
-			return m_Textures[slot];
-		}
-
-	public:
-		void Bind();
-		Ref<PrismShader> GetShader() const { return m_Material->m_Shader; }
-		void SetShader(const Ref<PrismShader>& shader);
-
-	private:
-		void AllocateStorage();
-		void OnShaderReloaded();
-		void OnMaterialValueUpdated(const PropertyDeclaration* decl);
-
-	private:
-		Ref<Material> m_Material;
-
-		Buffer m_PropertyBuffer;
-		std::vector<Ref<Texture>> m_Textures;
-		std::string m_Name;
-
-		std::unordered_set<std::string> m_OverriddenValues;
-		KeywordMask m_KeywordMask = 0;
-	private:
-		glm::mat4 m_Transform{ 1.0f };
-	};
+        Ref<PrismShader> m_Shader;
+        std::string m_Name;
+        Buffer m_PropertyBuffer;
+        mutable Ref<UniformBuffer> m_UniformBuffer;
+        std::vector<Ref<Texture>> m_Textures;
+        std::vector<PrismShaderCompiler::AST::ShaderUniform> m_Uniforms;
+        KeywordMask m_KeywordMask = 0;
+        ShaderReloadedToken m_ReloadToken = 0;
+        mutable bool m_Dirty = true;
+    };
 }

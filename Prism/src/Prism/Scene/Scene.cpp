@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "Scene.h"
 
 #include "Prism/Events/Event.h"
@@ -6,22 +6,23 @@
 #include "Components.h"
 
 #include "Prism/Renderer/Renderer2D.h"
-#include "Prism/Renderer/SceneRenderer.h"
 #include "Prism/Renderer/Renderer.h"
 
 #include "Prism/Editor/EditorCamera.h"
 
 #define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/quaternion.hpp>
-#include <glm/gtx/matrix_decompose.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "Systems/InterpolationSystem.h"
 #include "Systems/Physics2DSystem.h"
 #include "Systems/Physics3DSystem.h"
 #include "Systems/ScriptSystem.h"
+#include "Systems/TransformSystem.h"
+#include "Systems/RenderSystem.h"
 
 #include "Scripting/CSharp/CSharpScriptEngine.h"
 #include "Scripting/Python/PythonScriptEngine.h"
+#include "Prism/Renderer/Material.h"
 
 namespace Prism
 {
@@ -35,170 +36,63 @@ namespace Prism
         UUID SceneID;
     };
 
-    Scene::Scene(const std::string& debugName)
+    Scene::Scene(const std::string& debugName, bool isEditorScene)
         : m_DebugName(debugName)
     {
         m_SceneEntity = m_Registry.create();
         m_Registry.emplace<SceneComponent>(m_SceneEntity, m_SceneID);
 
         s_ActiveScenes[m_SceneID] = this;
-        Init();
 
         AddSystem<ScriptSystem>(this);
+        AddSystem<InterpolationSystem>(this);
+        AddSystem<TransformSystem>(this);
         AddSystem<Physics3DSystem>(this);
-
-        auto* p2d = AddSystem<Physics2DSystem>(this);
-        p2d->OnCollisionBegin = [this](uint64_t id) {
-            auto it = m_EntityIDMap.find(id);
-            if (it != m_EntityIDMap.end())
-            {
-                auto* ss = GetSystem<ScriptSystem>();
-                if (ss) ss->OnCollisionBegin(it->second);
-            }
-        };
-        p2d->OnCollisionEnd = [this](uint64_t id) {
-            auto it = m_EntityIDMap.find(id);
-            if (it != m_EntityIDMap.end())
-            {
-                auto* ss = GetSystem<ScriptSystem>();
-                if (ss) ss->OnCollisionEnd(it->second);
-            }
-        };
+        AddSystem<Physics2DSystem>(this);
+        AddSystem<RenderSystem>(this);
+        for (auto& s : m_SystemOrder)
+            s->OnCreate();
+        Init();
     }
 
     Scene::~Scene()
     {
-        OnShutdown();
-
         m_Registry.clear();
         s_ActiveScenes.erase(m_SceneID);
+        for (auto& s : m_SystemOrder)
+            s->OnDestroy();
     }
 
     void Scene::Init()
     {
-#if 1
-        auto skyboxShader = Renderer::GetShaderLibrary()->Get("Custom/Skybox");
-        m_SkyboxMaterial = MaterialInstance::Create(Material::Create(skyboxShader));
-#endif
     }
 
     void Scene::OnUpdate()
     {
-        float ts = Time::GetDeltaTime();
+        PR_PROFILE_FUNCTION();
+        float dt = Time::GetDeltaTime();
+        
 
-        for (auto& system : m_Systems)
-            system->OnUpdate(ts);
+        for (auto* sys : m_SystemOrder) sys->OnEarlyUpdate(dt);
+
+        int fixedSteps = Time::ConsumeFixedUpdate();
+        float fixedDt = Time::GetFixedDeltaTime();
+        for (int i = 0; i < fixedSteps; i++)
+        {
+            PR_PROFILE_SCOPE("FixedUpdate");
+            for (auto* sys : m_SystemOrder) sys->OnFixedUpdate(fixedDt);
+        }
+
+        for (auto* sys : m_SystemOrder) sys->OnPreUpdate(dt);
+        for (auto* sys : m_SystemOrder) sys->OnUpdate(dt);
+        for (auto* sys : m_SystemOrder) sys->OnPreLateUpdate(dt);
+        for (auto* sys : m_SystemOrder) sys->OnLateUpdate(dt);
+        for (auto* sys : m_SystemOrder) sys->OnPostLateUpdate(dt);
     }
 
-    void Scene::OnFixedUpdate()
+    void Scene::OnRender(float dt)
     {
-        if (!Time::ShouldFixedUpdate())
-            return;
-
-        float ts = Time::GetFixedDeltaTime();
-
-        for (auto& system : m_Systems)
-            system->OnFixedUpdate(ts);
-    }
-
-    void Scene::OnRenderRuntime()
-    {
-        /////////////////////////////////////////////////////////////////////
-        // RENDER 3D SCENE
-        /////////////////////////////////////////////////////////////////////
-        float ts = Time::GetDeltaTime();
-        Entity cameraEntity = GetMainCameraEntity();
-        if (!cameraEntity)
-            return;
-        glm::mat4 cameraViewMatrix = glm::inverse(cameraEntity.GetComponent<TransformComponent>().GetTransform());
-        PR_CORE_ASSERT(cameraEntity, "Scene does not contain any cameras!");
-        SceneCamera& camera = cameraEntity.GetComponent<CameraComponent>();
-        camera.SetViewportSize(m_ViewportWidth, m_ViewportHeight);
-
-        m_SkyboxMaterial->Set("u_TextureLod", m_SkyboxLod);
-
-        auto group = m_Registry.group<MeshComponent>(entt::get<TransformComponent>);
-        SceneRenderer::BeginScene(this, { camera, cameraViewMatrix });
-        for (auto entity : group)
-        {
-            auto [transformComponent, meshComponent] = group.get<TransformComponent, MeshComponent>(entity);
-            if (meshComponent.Mesh)
-            {
-                meshComponent.Mesh->OnUpdate(ts);
-
-                // TODO: Should we render (logically)
-                Ref<MaterialInstance> overrideMaterial = m_Registry.any_of<MaterialComponent>(entity) ? m_Registry.get<MaterialComponent>(entity).Material : nullptr;
-                SceneRenderer::SubmitMesh(meshComponent, transformComponent.GetTransform(), overrideMaterial);
-            }
-        }
-        SceneRenderer::EndScene();
-        /////////////////////////////////////////////////////////////////////
-
-#if 0
-        // Render all sprites
-        Renderer2D::BeginScene(*camera);
-        {
-            auto group = m_Registry.group<TransformComponent>(entt::get<SpriteRenderer>);
-            for (auto entity : group)
-            {
-                auto [transformComponent, spriteRendererComponent] = group.get<TransformComponent, SpriteRenderer>(entity);
-                if (spriteRendererComponent.Texture)
-                    Renderer2D::DrawQuad(transformComponent.GetTransform(), spriteRendererComponent.Texture, spriteRendererComponent.TilingFactor);
-                else
-                    Renderer2D::DrawQuad(transformComponent.GetTransform(), spriteRendererComponent.Color);
-            }
-        }
-
-        Renderer2D::EndScene();
-#endif
-    }
-
-    void Scene::OnRenderEditor(const EditorCamera& editorCamera)
-    {
-        /////////////////////////////////////////////////////////////////////
-        // RENDER 3D SCENE
-        /////////////////////////////////////////////////////////////////////
-        float ts = Time::GetDeltaTime();
-        m_SkyboxMaterial->Set("u_TextureLod", m_SkyboxLod);
-
-        auto group = m_Registry.group<MeshComponent>(entt::get<TransformComponent>);
-        SceneRenderer::BeginScene(this, { editorCamera, editorCamera.GetViewMatrix() });
-        for (auto entity : group)
-        {
-            auto [transformComponent, meshComponent] = group.get<TransformComponent, MeshComponent>(entity);
-            if (meshComponent.Mesh)
-            {
-                meshComponent.Mesh->OnUpdate(ts);
-
-                // TODO: Should we render (logically)
-
-                Ref<MaterialInstance> overrideMaterial = m_Registry.any_of<MaterialComponent>(entity) ? m_Registry.get<MaterialComponent>(entity).Material : nullptr;
-                if (m_SelectedEntity == entity)
-                    SceneRenderer::SubmitSelectedMesh(meshComponent, transformComponent.GetTransform());
-                else
-                    SceneRenderer::SubmitMesh(meshComponent, transformComponent.GetTransform(), overrideMaterial);
-            }
-        }
-        SceneRenderer::EndScene();
-        /////////////////////////////////////////////////////////////////////
-
-#if 0
-        // Render all sprites
-        Renderer2D::BeginScene(*camera);
-        {
-            auto group = m_Registry.group<TransformComponent>(entt::get<SpriteRenderer>);
-            for (auto entity : group)
-            {
-                auto [transformComponent, spriteRendererComponent] = group.get<TransformComponent, SpriteRenderer>(entity);
-                if (spriteRendererComponent.Texture)
-                    Renderer2D::DrawQuad(transformComponent.GetTransform(), spriteRendererComponent.Texture, spriteRendererComponent.TilingFactor);
-                else
-                    Renderer2D::DrawQuad(transformComponent.GetTransform(), spriteRendererComponent.Color);
-            }
-        }
-
-        Renderer2D::EndScene();
-#endif
+        for (auto* sys : m_SystemOrder) sys->OnRender(dt);
     }
 
     void Scene::OnEvent(Event& e)
@@ -206,40 +100,20 @@ namespace Prism
     }
     void Scene::OnRuntimeStart()
     {
-        for (auto& system : m_Systems)
-            system->OnRuntimeStart();
-
+        for (auto* sys : m_SystemOrder) sys->OnRuntimeStart();
         m_IsPlaying = true;
     }
 
     void Scene::OnRuntimeStop()
     {
-        for (auto& system : m_Systems)
-            system->OnRuntimeStop();
-
+        for (auto* sys : m_SystemOrder) sys->OnRuntimeStop();
         m_IsPlaying = false;
     }
 
-    void Scene::OnShutdown()
-    {
-    }
 
-    void Scene::SetViewportSize(uint32_t width, uint32_t height)
+    void Scene::OnImGuiRender()
     {
-        m_ViewportWidth = width;
-        m_ViewportHeight = height;
-    }
-
-    void Scene::SetEnvironment(const Environment& environment)
-    {
-        m_Environment = environment;
-        SetSkybox(environment.RadianceMap);
-    }
-
-    void Scene::SetSkybox(const Ref<TextureCube>& skybox)
-    {
-        m_SkyboxTexture = skybox;
-        m_SkyboxMaterial->Set("u_Texture", skybox);
+        for (auto* sys : m_SystemOrder) sys->OnImGuiRender();
     }
 
     Entity Scene::GetMainCameraEntity()
@@ -261,6 +135,7 @@ namespace Prism
         idComponent.ID = {};
 
         entity.AddComponent<TransformComponent>();
+        entity.AddComponent<RelationshipComponent>();
         entity.AddComponent<CSharpScriptComponent>();
         entity.AddComponent<PythonScriptComponent>();
         if (!name.empty())
@@ -276,6 +151,7 @@ namespace Prism
         idComponent.ID = uuid;
 
         entity.AddComponent<TransformComponent>();
+        entity.AddComponent<RelationshipComponent>();
         entity.AddComponent<CSharpScriptComponent>();
         entity.AddComponent<PythonScriptComponent>();
         if (!name.empty())
@@ -302,7 +178,8 @@ namespace Prism
             entt::entity destEntity = enttMap.at(srcRegistry.get<IDComponent>(srcEntity).ID);
 
             auto& srcComponent = srcRegistry.get<T>(srcEntity);
-            auto& destComponent = dstRegistry.emplace_or_replace<T>(destEntity, srcComponent);
+            dstRegistry.remove<T>(destEntity);
+            dstRegistry.emplace<T>(destEntity, srcComponent);
         }
     }
 
@@ -312,7 +189,8 @@ namespace Prism
         if (registry.any_of<T>(src))
         {
             auto& srcComponent = registry.get<T>(src);
-            registry.emplace_or_replace<T>(dst, srcComponent);
+            registry.remove<T>(dst);
+            registry.emplace<T>(dst, srcComponent);
         }
     }
 
@@ -325,8 +203,8 @@ namespace Prism
             newEntity = CreateEntity();
 
         CopyComponentIfExists<TransformComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        CopyComponentIfExists<MeshComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        CopyComponentIfExists<MaterialComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<RelationshipComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<MeshRendererComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<CSharpScriptComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<PythonScriptComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<CameraComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
@@ -335,11 +213,12 @@ namespace Prism
         CopyComponentIfExists<BoxCollider2DComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<CircleCollider2DComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<RigidBodyComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
-        CopyComponentIfExists<PhysicsMaterialComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<BoxColliderComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<SphereColliderComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<CapsuleColliderComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
         CopyComponentIfExists<MeshColliderComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<DirectionalLightComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
+        CopyComponentIfExists<SkyLightComponent>(newEntity.m_EntityHandle, entity.m_EntityHandle, m_Registry);
     }
 
     Entity Scene::FindEntityByTag(const std::string& tag)
@@ -356,7 +235,7 @@ namespace Prism
         return Entity{};
     }
 
-    Entity Scene::TryGetEntityByUUID(UUID uuid)
+    Entity Scene::FindEntityByUUID(UUID uuid)
     {
         auto it = m_EntityIDMap.find(uuid);
         if (it != m_EntityIDMap.end())
@@ -364,21 +243,21 @@ namespace Prism
         return {};
     }
 
+    glm::mat4 Scene::GetTransformRelativeToParent(Entity entity)
+    {
+        auto* ts = GetSystem<TransformSystem>();
+        return ts ? ts->GetWorldTransformMatrix(entity) : glm::mat4(1.0F);
+    }
+
     // Copy to runtime
     void Scene::CopyTo(Ref<Scene>& target)
     {
-        // Environment
-        target->m_Light = m_Light;
-        target->m_LightMultiplier = m_LightMultiplier;
-
-        target->m_Environment = m_Environment;
-        target->m_SkyboxTexture = m_SkyboxTexture;
-        target->m_SkyboxMaterial = m_SkyboxMaterial;
-        target->m_SkyboxLod = m_SkyboxLod;
+        if (auto* srcRS = GetSystem<RenderSystem>())
+            if (auto* dstRS = target->GetSystem<RenderSystem>())
+                dstRS->GetConfig() = srcRS->GetConfig();
 
         CSharpScriptEngine::SetSceneContext(target);
         PythonScriptEngine::SetSceneContext(target);
-
         std::unordered_map<UUID, entt::entity> enttMap;
         auto idComponents = m_Registry.view<IDComponent>();
         for (auto entity : idComponents)
@@ -390,8 +269,8 @@ namespace Prism
 
         CopyComponent<TagComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<TransformComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<MeshComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<MaterialComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<RelationshipComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<MeshRendererComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<CSharpScriptComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<PythonScriptComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<CameraComponent>(target->m_Registry, m_Registry, enttMap);
@@ -400,16 +279,16 @@ namespace Prism
         CopyComponent<BoxCollider2DComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<CircleCollider2DComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<RigidBodyComponent>(target->m_Registry, m_Registry, enttMap);
-        CopyComponent<PhysicsMaterialComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<BoxColliderComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<SphereColliderComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<CapsuleColliderComponent>(target->m_Registry, m_Registry, enttMap);
         CopyComponent<MeshColliderComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<DirectionalLightComponent>(target->m_Registry, m_Registry, enttMap);
+        CopyComponent<SkyLightComponent>(target->m_Registry, m_Registry, enttMap);
 
 
         CSharpScriptEngine::SetSceneContext(this);
-        PythonScriptEngine::SetSceneContext(this);
-
+        PythonScriptEngine::SetSceneContext(this);  
         if (auto* p2d = GetSystem<Physics2DSystem>())
             if (auto* targetP2d = target->GetSystem<Physics2DSystem>())
                 targetP2d->SetGravity(p2d->GetGravity());
@@ -422,12 +301,5 @@ namespace Prism
 
         return {};
     }
-
-    Environment Environment::Load(const std::string& filepath)
-    {
-        auto [radiance, irradiance] = SceneRenderer::CreateEnvironmentMap(filepath);
-        return { filepath, radiance, irradiance };
-    }
-
 
 }

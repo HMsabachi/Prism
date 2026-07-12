@@ -6,6 +6,7 @@ Shader "Custom/Skybox"
     {
         u_Texture("立方体贴图", TextureCube) = {}
         u_TextureLod("立方体贴图", Float) = 0.0
+        u_SkyIntensity("天空强度", Float) = 1.0
     }
     SubShader
     {
@@ -24,11 +25,13 @@ Shader "Custom/Skybox"
             Name "ForwardBase"
             GLSL
             {
-                #include "PrismBuiltin.glsl"
+                #include "PrismCommon.glsl"
 
                 attribute vec3 a_Position : POSITION;
 
-                VARYING VertexOutput
+                layout(location = 0) out vec4 FragColor;
+
+                varying VertexOutput
                 {
                     vec3 Position;
                 } vs_Output;
@@ -42,7 +45,8 @@ Shader "Custom/Skybox"
 
                 void frag()
                 {
-                    FragColor = textureLod(u_Texture, vs_Output.Position, u_TextureLod);
+                    vec3 color = textureLod(u_Texture, vs_Output.Position, u_TextureLod).rgb * u_SkyIntensity;
+                    FragColor = vec4(color, 1.0);
                 }
             }
         }

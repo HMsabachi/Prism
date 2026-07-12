@@ -1,18 +1,23 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "Application.h"
 
 #include "Log.h"
 #include "Input.h"
 #include "Time.h"
 
+#include "Prism/Events/ApplicationEvent.h"
+#include "Prism/ImGui/ImGuiLayer.h"
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Renderer2D.h"
 #include "Prism/Renderer/Buffer/Framebuffer.h"
-#include "Prism/Renderer/Shader/Parser/ShaderParser.h"
 
 #include "Scripting/CSharp/CSharpScriptEngine.h"
 #include "Scripting/Python/PythonScriptEngine.h"
-#include "Prism/Physics/Physics3D.h"
+#include "Prism/Physics/Physics.h"
+
+#include "Prism/Asset/AssetManager.h"
+
+#include "Prism/ShaderCompiler/ShaderCompiler.h"
 
 
 #include <imgui.h>
@@ -47,19 +52,22 @@ namespace Prism
         // 初始化窗口 Initialize Window
         m_Window = std::unique_ptr<Window>(Window::Create(WindowProps(m_Props.Name, m_Props.WindowWidth, m_Props.WindowHeight)));
         m_Window->SetEventCallback(BIND_EVENT_FN(OnEvent));
+        m_Window->Maximize();
         m_Window->SetVSync(m_Props.VSync);
         // 初始化渲染器 Initialize Renderer
 
         // 初始化时间管理器 Initialize Time Manager
         Time::Init();
+        ShaderCompiler::Init();
         // 初始化ImGui层 Initialize ImGui Layer
         m_ImGuiLayer = new ImGuiLayer("ImGui");
         PushOverlay(m_ImGuiLayer);
-        // 初始化PrismShader解释器
-        ShaderParser::Init("Assets/Shaders/Include");
         // 初始化 PhysX 物理引擎
-        Physics3D::Init();
+        Physics::Init();
         // 初始化渲染器 Initialize Renderer
+
+        AssetTypes::Init();
+        AssetManager::Init();
         Renderer::Init();
         Renderer::WaitAndRender();
     }
@@ -119,8 +127,12 @@ namespace Prism
     {
         CSharpScriptEngine::Initialize();
         CSharpScriptEngine::LoadEngineAssembly("Assets/scripts/net9.0/Prism.Scripting.dll");
+#ifdef PR_DEBUG
         CSharpScriptEngine::LoadAppAssembly("Assets/scripts/net9.0/ExampleApp.dll");
-
+#else
+        CSharpScriptEngine::BuildAssembly();
+        CSharpScriptEngine::LoadAppAssembly("Assets/scripts/net9.0/Game.dll");
+#endif
         PythonScriptEngine::Initialize();
     }
 
@@ -129,7 +141,7 @@ namespace Prism
         m_LayerStack.Shutdown();
         CSharpScriptEngine::Shutdown();
         PythonScriptEngine::Shutdown();
-        Physics3D::Shutdown();
+        Physics::Shutdown();
     }
 
     void Application::RenderImGui()
@@ -169,14 +181,17 @@ namespace Prism
         }
         ImGui::Text("RenderCommandQueue: %d", Renderer::GetRenderCommandQueue().GetSubmitCount());
         Renderer::GetRenderCommandQueue().ResetSubmitCount();
-        static int fps0 = 0, fps1 = 0;
+        static int fps0 = 0, fps1 = 0, capacity;
         fps0 += (int)(1.0f / Time::GetDeltaTime());
         fps0 >>= 1;
         if (timer >= 1.0f)
         {
             timer = 0.0f;
             fps1 = fps0;
+            capacity = Renderer::GetRenderCommandQueue().GetDataPoolCapacity();
         }
+        ImGui::Text("RenderDataCapacity: %dMB", capacity);
+        ImGui::Text("LiveReferenceCount: %d", RefUtils::GetLiveReferenceCount());
         ImGui::Text("Fps: %d", fps1);
         ImGui::End();
     }
@@ -204,7 +219,8 @@ namespace Prism
         auto& fbs = FramebufferPool::GetGlobal()->GetAll();
         for (auto& fb : fbs)
         {
-            fb->Resize(width, height);
+            if (!fb->GetSpecification().NoResize)
+                fb->Resize(width, height);
         }
 
         m_Minimized = false;

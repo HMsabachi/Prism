@@ -5,23 +5,17 @@ namespace Prism
 {
     public class TransformComponent : Component
     {
-        public Matrix4 Transform
+        public Transform Transform
         {
             get
             {
-                Matrix4 matrix;
-                unsafe
-                {
-                    InternalCalls.Prism_Entity_GetTransform(Entity.ID, &matrix);
-                }
-                return matrix;
+                Transform t;
+                unsafe { InternalCalls.Prism_TransformComponent_GetTransform(Entity.ID, &t); }
+                return t;
             }
             set
             {
-                unsafe
-                {
-                    InternalCalls.Prism_Entity_SetTransform(Entity.ID, &value);
-                }
+                unsafe { InternalCalls.Prism_TransformComponent_SetTransform(Entity.ID, &value); }
             }
         }
 
@@ -30,82 +24,84 @@ namespace Prism
             get
             {
                 Vector3 position;
-                unsafe
-                {
-                    InternalCalls.Prism_TransformComponent_GetPosition(Entity.ID, &position);
-                }
+                unsafe { InternalCalls.Prism_TransformComponent_GetPosition(Entity.ID, &position); }
                 return position;
             }
             set
             {
-                unsafe
-                {
-                    InternalCalls.Prism_TransformComponent_SetPosition(Entity.ID, value);
-                }
+                unsafe { InternalCalls.Prism_TransformComponent_SetPosition(Entity.ID, &value); }
             }
         }
-
-        // Position axis accessors — temporary workaround.
-        // TODO: 后续改为 ref return / 直接内存修改模式，实现 Unity 式 transform.position.X = value 语法
-        public float PositionX { get => Position.X; set => Position = new Vector3(value, Position.Y, Position.Z); }
-        public float PositionY { get => Position.Y; set => Position = new Vector3(Position.X, value, Position.Z); }
-        public float PositionZ { get => Position.Z; set => Position = new Vector3(Position.X, Position.Y, value); }
 
         public Vector3 Rotation
         {
             get
             {
                 Vector3 rotation;
-                unsafe
-                {
-                    InternalCalls.Prism_TransformComponent_GetRotation(Entity.ID, &rotation);
-                }
-                return new Vector3(
-                    rotation.X * (180.0f / MathF.PI),
-                    rotation.Y * (180.0f / MathF.PI),
-                    rotation.Z * (180.0f / MathF.PI)
-                );
+                unsafe { InternalCalls.Prism_TransformComponent_GetRotation(Entity.ID, &rotation); }
+                return rotation;
             }
             set
             {
-                unsafe
-                {
-                    InternalCalls.Prism_TransformComponent_SetRotation(Entity.ID, value);
-                }
+                unsafe { InternalCalls.Prism_TransformComponent_SetRotation(Entity.ID, &value); }
             }
         }
-
-        // Rotation axis accessors — temporary workaround.
-        // TODO: 后续改为 ref return / 直接内存修改模式，实现 Unity 式 transform.rotation.X = value 语法
-        public float RotationX { get => Rotation.X; set => Rotation = new Vector3(value, Rotation.Y, Rotation.Z); }
-        public float RotationY { get => Rotation.Y; set => Rotation = new Vector3(Rotation.X, value, Rotation.Z); }
-        public float RotationZ { get => Rotation.Z; set => Rotation = new Vector3(Rotation.X, Rotation.Y, value); }
 
         public Vector3 Scale
         {
             get
             {
                 Vector3 scale;
-                unsafe
-                {
-                    InternalCalls.Prism_TransformComponent_GetScale(Entity.ID, &scale);
-                }
+                unsafe { InternalCalls.Prism_TransformComponent_GetScale(Entity.ID, &scale); }
                 return scale;
             }
             set
             {
-                unsafe
-                {
-                    InternalCalls.Prism_TransformComponent_SetScale(Entity.ID, value);
-                }
+                unsafe { InternalCalls.Prism_TransformComponent_SetScale(Entity.ID, &value); }
             }
         }
 
-        // Scale axis accessors — temporary workaround.
-        // TODO: 后续改为 ref return / 直接内存修改模式，实现 Unity 式 transform.scale.X = value 语法
-        public float ScaleX { get => Scale.X; set => Scale = new Vector3(value, Scale.Y, Scale.Z); }
-        public float ScaleY { get => Scale.Y; set => Scale = new Vector3(Scale.X, value, Scale.Z); }
-        public float ScaleZ { get => Scale.Z; set => Scale = new Vector3(Scale.X, Scale.Y, value); }
+        public Vector3 LocalPosition
+        {
+            get
+            {
+                Vector3 position;
+                unsafe { InternalCalls.Prism_TransformComponent_GetLocalPosition(Entity.ID, &position); }
+                return position;
+            }
+            set
+            {
+                unsafe { InternalCalls.Prism_TransformComponent_SetLocalPosition(Entity.ID, &value); }
+            }
+        }
+
+        public Vector3 LocalRotation
+        {
+            get
+            {
+                Vector3 rotation;
+                unsafe { InternalCalls.Prism_TransformComponent_GetLocalRotation(Entity.ID, &rotation); }
+                return rotation;
+            }
+            set
+            {
+                unsafe { InternalCalls.Prism_TransformComponent_SetLocalRotation(Entity.ID, &value); }
+            }
+        }
+
+        public Vector3 LocalScale
+        {
+            get
+            {
+                Vector3 scale;
+                unsafe { InternalCalls.Prism_TransformComponent_GetLocalScale(Entity.ID, &scale); }
+                return scale;
+            }
+            set
+            {
+                unsafe { InternalCalls.Prism_TransformComponent_SetLocalScale(Entity.ID, &value); }
+            }
+        }
 
         public void SetPosition(float x, float y, float z)
         {
@@ -124,13 +120,40 @@ namespace Prism
 
         public Transform LocalTransform
         {
-            get => new(Position, Rotation, Scale);
-            set { Position = value.Position; Rotation = value.Rotation; Scale = value.Scale; }
+            get
+            {
+                return new Transform(LocalPosition, LocalRotation, LocalScale,
+                                     Vector3.Zero, Vector3.Zero, Vector3.Zero);
+            }
+            set { LocalPosition = value.Position; LocalRotation = value.Rotation; LocalScale = value.Scale; }
         }
 
-        // Derived direction vectors from current rotation
-        public Vector3 Forward => new Quaternion(Rotation * MathF.PI / 180f) * Vector3.Forward;
-        public Vector3 Right => new Quaternion(Rotation * MathF.PI / 180f) * Vector3.Right;
-        public Vector3 Up => new Quaternion(Rotation * MathF.PI / 180f) * Vector3.Up;
+        public Vector3 Forward
+        {
+            get
+            {
+                Vector3 forward;
+                unsafe { InternalCalls.Prism_TransformComponent_GetForward(Entity.ID, &forward); }
+                return forward;
+            }
+        }
+        public Vector3 Right
+        {
+            get
+            {
+                Vector3 right;
+                unsafe { InternalCalls.Prism_TransformComponent_GetRight(Entity.ID, &right); }
+                return right;
+            }
+        }
+        public Vector3 Up
+        {
+            get
+            {
+                Vector3 up;
+                unsafe { InternalCalls.Prism_TransformComponent_GetUp(Entity.ID, &up); }
+                return up;
+            }
+        }
     }
 }

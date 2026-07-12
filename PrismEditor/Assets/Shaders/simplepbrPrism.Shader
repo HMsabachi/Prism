@@ -1,110 +1,284 @@
+// Assets/Shaders/Collider.Shader
 #version 450 core
+#line 1 "Bindings.glsl"
+#ifndef PRISM_BINDINGS
+#define PRISM_BINDINGS
 
+#define PRISM_BINDING_FRAME    0
+#define PRISM_BINDING_OBJECT   1
+#define PRISM_BINDING_MATERIAL 2
 
+#define PRISM_SHADOW_MAP0   3
+#define PRISM_SHADOW_MAP1   4
+#define PRISM_SHADOW_MAP2   5
+#define PRISM_SHADOW_MAP3   6
 
+#define PRISM_GEOMETRY_PASS_TEXTURE 7
 
-const float PI = 3.141592;
-const float TwoPI = 2.0 * PI;
-const float Epsilon = 0.00001;
-layout(binding = 0) uniform sampler2D u_EquirectangularTex;;
-layout(binding = 1) uniform samplerCube u_InputCubeMap;;
-layout(rgba16f, binding = 2) restrict writeonly uniform imageCube o_OutputCube;
-uniform float u_Roughness; 
-float radicalInverse_VdC(uint bits) {
-    bits = (bits << 16u) | (bits >> 16u);
-    bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
-    bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
-    bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
-    bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
-    return float(bits) * 2.3283064365386963e-10;
-}
-vec2 sampleHammersley(uint i, uint N) {
-    return vec2(float(i) / float(N), radicalInverse_VdC(i));
-}
-vec3 GetCubeMapDirection() {
-    vec2 size = vec2(imageSize(o_OutputCube));
-    vec2 st = vec2(gl_GlobalInvocationID.xy) / size;
-    vec2 uv = 2.0 * vec2(st.x, 1.0 - st.y) - vec2(1.0); 
-    vec3 ret;
-    uint face = gl_GlobalInvocationID.z;
-    if      (face == 0) ret = vec3(  1.0, uv.y, -uv.x); 
-    else if (face == 1) ret = vec3( -1.0, uv.y,  uv.x); 
-    else if (face == 2) ret = vec3( uv.x,  1.0, -uv.y); 
-    else if (face == 3) ret = vec3( uv.x, -1.0,  uv.y); 
-    else if (face == 4) ret = vec3( uv.x, uv.y,   1.0); 
-    else if (face == 5) ret = vec3(-uv.x, uv.y,  -1.0); 
-    return normalize(ret);
-}
-void computeBasisVectors(const vec3 N, out vec3 S, out vec3 T) {
-    T = cross(N, vec3(0.0, 1.0, 0.0));
-    T = mix(cross(N, vec3(1.0, 0.0, 0.0)), T, step(Epsilon, dot(T, T)));
-    T = normalize(T);
-    S = normalize(cross(N, T));
-}
-vec3 tangentToWorld(const vec3 v, const vec3 N, const vec3 S, const vec3 T) {
-    return S * v.x + T * v.y + N * v.z;
-}
-vec3 sampleGGX(float u1, float u2, float roughness) {
-    float alpha = roughness * roughness;
-    float cosTheta = sqrt((1.0 - u2) / (1.0 + (alpha*alpha - 1.0) * u2));
-    float sinTheta = sqrt(1.0 - cosTheta*cosTheta);
-    float phi = TwoPI * u1;
-    return vec3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
+#define PRISM_BINDING_TEXTURE 16
+
+#endif
+#line 1 "PrismFrame.glsl"
+// PerFrame UBO — binding=0
+struct Prism_Light
+{
+    vec3 Direction;
+    vec3 Radiance;
+    float Multiplier;
+};
+
+const int PRISM_MAX_LIGHTS   = 1;
+const int PRISM_MAX_CASCADES = 4;
+
+layout(std140, binding = PRISM_BINDING_FRAME) uniform PrismFrame
+{
+    mat4 Prism_ViewProjection;
+    mat4 Prism_InverseViewProjection;
+    mat4 Prism_View;
+    mat4 Prism_Projection;
+
+    vec4 Prism_Time;
+    vec3 Prism_CameraPosition;
+
+    float Prism_DeltaTime;
+    float Prism_AspectRatio;
+    vec2  Prism_Resolution;
+
+    Prism_Light Prism_Lights[PRISM_MAX_LIGHTS];
+
+    mat4 Prism_ShadowMatrices[PRISM_MAX_CASCADES];
+    vec4 Prism_CascadeSplits;
+    vec4 Prism_ShadowParams;
+};
+#line 1 "PrismObject.glsl"
+// PerObject UBO — binding=1
+
+const int PRISM_MAX_BONES = 128;
+
+layout(std140, binding = PRISM_BINDING_OBJECT) uniform PrismObject
+{
+    mat4 Prism_Model;
+    mat4 Prism_PreviousModel;
+    mat4 Prism_Bones[PRISM_MAX_BONES];
+};
+#line 1 "PrismShadow.glsl"
+// PrismShadow.glsl
+
+layout(binding = PRISM_SHADOW_MAP0) uniform sampler2DShadow Prism_ShadowMap0;
+layout(binding = PRISM_SHADOW_MAP1) uniform sampler2DShadow Prism_ShadowMap1;
+layout(binding = PRISM_SHADOW_MAP2) uniform sampler2DShadow Prism_ShadowMap2;
+layout(binding = PRISM_SHADOW_MAP3) uniform sampler2DShadow Prism_ShadowMap3;
+
+const vec2 PRISM_POISSON_DISK[16] = vec2[](
+    vec2( 0.130818,  0.331688), vec2(-0.261065, -0.005615),
+    vec2(-0.722590, -0.071435), vec2(-0.497219,  0.523423),
+    vec2( 0.295304, -0.488956), vec2(-0.192958, -0.909489),
+    vec2(-0.618316,  0.755979), vec2( 0.425002, -0.259947),
+    vec2( 0.912014,  0.125262), vec2(-0.159244,  0.718788),
+    vec2( 0.474572,  0.676472), vec2( 0.113612, -0.777447),
+    vec2( 0.736447, -0.475556), vec2( 0.071983, -0.211430),
+    vec2(-0.335085, -0.523819), vec2( 0.860069,  0.432796)
+);
+
+float Prism_Hash(vec2 p)
+{
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
 }
 
-layout(local_size_x = 32, local_size_y = 32, local_size_z = 1) in;
-void main() {
-    vec3 cubeTC = GetCubeMapDirection();
-    float phi = atan(cubeTC.z, cubeTC.x); 
-    float theta = acos(cubeTC.y);         
-    vec2 uv = vec2(phi / (TwoPI) + 0.5, theta / PI); 
-    vec4 color = texture(u_EquirectangularTex, uv);
-    imageStore(o_OutputCube, ivec3(gl_GlobalInvocationID), color);
-}
+float Prism_ShadowSample(sampler2DShadow shadowMap, vec3 projCoords, float bias, vec2 texelSize, float filterRadius)
+{
+    float angle = Prism_Hash(projCoords.xy) * 3.14159265;
+    float s = sin(angle), c = cos(angle);
+    mat2 rot = mat2(c, -s, s, c);
 
-void CSIrradiance() {
-    vec3 N = GetCubeMapDirection();
-    vec3 S, T;
-    computeBasisVectors(N, S, T);
-    vec3 irradiance = vec3(0);
-    const uint numSamples = 64 * 1024; 
-    for(uint i = 0; i < numSamples; i++) {
-        vec2 u = sampleHammersley(i, numSamples);
-        float u1p = sqrt(max(0.0, 1.0 - u.x * u.x));
-        vec3 Li = tangentToWorld(vec3(cos(TwoPI*u.y) * u1p, sin(TwoPI*u.y) * u1p, u.x), N, S, T);
-        float cosTheta = max(0.0, dot(Li, N));
-        irradiance += 2.0 * textureLod(u_InputCubeMap, Li, 0).rgb * cosTheta; 
+    float shadow = 0.0;
+    for (int i = 0; i < 16; i++)
+    {
+        vec2 offset = rot * PRISM_POISSON_DISK[i] * texelSize * filterRadius;
+        shadow += texture(shadowMap, vec3(projCoords.xy + offset, projCoords.z - bias));
     }
-    imageStore(o_OutputCube, ivec3(gl_GlobalInvocationID), vec4(irradiance / float(numSamples), 1.0));
+    return shadow * (1.0 / 16.0);
 }
 
-void CSMipFilter() {
-    ivec2 outputSize = imageSize(o_OutputCube);
-    if(gl_GlobalInvocationID.x >= outputSize.x || gl_GlobalInvocationID.y >= outputSize.y) return;
-    vec3 N = GetCubeMapDirection();
-    vec3 Lo = N; 
-    vec3 S, T;
-    computeBasisVectors(N, S, T);
-    vec3 color = vec3(0);
-    float totalWeight = 0;
-    const uint numSamples = 1024; 
-    vec2 inputSize = vec2(textureSize(u_InputCubeMap, 0));
-    float wt = 4.0 * PI / (6.0 * inputSize.x * inputSize.y); 
-    for(uint i = 0; i < numSamples; i++) {
-        vec2 u = sampleHammersley(i, numSamples);
-        vec3 Lh = tangentToWorld(sampleGGX(u.x, u.y, u_Roughness), N, S, T); 
-        vec3 Li = 2.0 * dot(Lo, Lh) * Lh - Lo; 
-        float cosLi = dot(N, Li);
-        if(cosLi > 0.0) {
-            float cosLh = max(dot(N, Lh), 0.0);
-            float alphaSq = pow(u_Roughness, 4.0);
-            float denom = (cosLh * cosLh) * (alphaSq - 1.0) + 1.0;
-            float pdf = (alphaSq / (PI * denom * denom)) * 0.25; 
-            float ws = 1.0 / (float(numSamples) * pdf);
-            float mipLevel = max(0.5 * log2(ws / wt) + 1.0, 0.0);
-            color += textureLod(u_InputCubeMap, Li, mipLevel).rgb * cosLi; 
-            totalWeight += cosLi;
-        }
+float Prism_GetShadow(vec3 worldPos, float viewDepth)
+{
+    int cascade = 0;
+    int cascadeCount = min(int(Prism_ShadowParams.z), PRISM_MAX_CASCADES);
+    for (int i = 0; i < cascadeCount - 1; i++)
+    {
+        if (viewDepth > Prism_CascadeSplits[i])
+            cascade = i + 1;
     }
-    imageStore(o_OutputCube, ivec3(gl_GlobalInvocationID), vec4(color / max(totalWeight, 0.001), 1.0));
+
+    vec4 lightSpacePos = Prism_ShadowMatrices[cascade] * vec4(worldPos, 1.0);
+    vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
+    projCoords = projCoords * 0.5 + 0.5;
+
+    float bias = Prism_ShadowParams.x;
+    vec2 texelSize = 1.0 / vec2(textureSize(Prism_ShadowMap0, 0));
+
+    if (cascade == 0) return Prism_ShadowSample(Prism_ShadowMap0, projCoords, bias, texelSize, 1.5);
+    if (cascade == 1) return Prism_ShadowSample(Prism_ShadowMap1, projCoords, bias, texelSize, 1.5);
+    if (cascade == 2) return Prism_ShadowSample(Prism_ShadowMap2, projCoords, bias, texelSize, 1.5);
+    return Prism_ShadowSample(Prism_ShadowMap3, projCoords, bias, texelSize, 1.5);
 }
+layout(std140, binding = 2) uniform PrismMaterial
+{
+    vec4 u_Color;
+};
+
+#line 25 "Assets/Shaders/Collider.Shader"
+#line 1 "PrismCommon.glsl"
+//
+
+#line 27 "Assets/Shaders/Collider.Shader"
+layout(location = 0) in vec3 a_Position;
+#line 27 "Assets/Shaders/Collider.Shader"
+#line 28 "Assets/Shaders/Collider.Shader"
+void main()
+{
+                    gl_Position = Prism_ViewProjection * Prism_Model * vec4(a_Position, 1.0);
+                }
+
+[23:57:29] PRISM: Source:
+// Assets/Shaders/Collider.Shader
+#version 450 core
+layout(location = 0) out vec4 FragColor;
+#line 1 "Bindings.glsl"
+#ifndef PRISM_BINDINGS
+#define PRISM_BINDINGS
+
+#define PRISM_BINDING_FRAME    0
+#define PRISM_BINDING_OBJECT   1
+#define PRISM_BINDING_MATERIAL 2
+
+#define PRISM_SHADOW_MAP0   3
+#define PRISM_SHADOW_MAP1   4
+#define PRISM_SHADOW_MAP2   5
+#define PRISM_SHADOW_MAP3   6
+
+#define PRISM_GEOMETRY_PASS_TEXTURE 7
+
+#define PRISM_BINDING_TEXTURE 16
+
+#endif
+#line 1 "PrismFrame.glsl"
+// PerFrame UBO — binding=0
+struct Prism_Light
+{
+    vec3 Direction;
+    vec3 Radiance;
+    float Multiplier;
+};
+
+const int PRISM_MAX_LIGHTS   = 1;
+const int PRISM_MAX_CASCADES = 4;
+
+layout(std140, binding = PRISM_BINDING_FRAME) uniform PrismFrame
+{
+    mat4 Prism_ViewProjection;
+    mat4 Prism_InverseViewProjection;
+    mat4 Prism_View;
+    mat4 Prism_Projection;
+
+    vec4 Prism_Time;
+    vec3 Prism_CameraPosition;
+
+    float Prism_DeltaTime;
+    float Prism_AspectRatio;
+    vec2  Prism_Resolution;
+
+    Prism_Light Prism_Lights[PRISM_MAX_LIGHTS];
+
+    mat4 Prism_ShadowMatrices[PRISM_MAX_CASCADES];
+    vec4 Prism_CascadeSplits;
+    vec4 Prism_ShadowParams;
+};
+#line 1 "PrismObject.glsl"
+// PerObject UBO — binding=1
+
+const int PRISM_MAX_BONES = 128;
+
+layout(std140, binding = PRISM_BINDING_OBJECT) uniform PrismObject
+{
+    mat4 Prism_Model;
+    mat4 Prism_PreviousModel;
+    mat4 Prism_Bones[PRISM_MAX_BONES];
+};
+#line 1 "PrismShadow.glsl"
+// PrismShadow.glsl
+
+layout(binding = PRISM_SHADOW_MAP0) uniform sampler2DShadow Prism_ShadowMap0;
+layout(binding = PRISM_SHADOW_MAP1) uniform sampler2DShadow Prism_ShadowMap1;
+layout(binding = PRISM_SHADOW_MAP2) uniform sampler2DShadow Prism_ShadowMap2;
+layout(binding = PRISM_SHADOW_MAP3) uniform sampler2DShadow Prism_ShadowMap3;
+
+const vec2 PRISM_POISSON_DISK[16] = vec2[](
+    vec2( 0.130818,  0.331688), vec2(-0.261065, -0.005615),
+    vec2(-0.722590, -0.071435), vec2(-0.497219,  0.523423),
+    vec2( 0.295304, -0.488956), vec2(-0.192958, -0.909489),
+    vec2(-0.618316,  0.755979), vec2( 0.425002, -0.259947),
+    vec2( 0.912014,  0.125262), vec2(-0.159244,  0.718788),
+    vec2( 0.474572,  0.676472), vec2( 0.113612, -0.777447),
+    vec2( 0.736447, -0.475556), vec2( 0.071983, -0.211430),
+    vec2(-0.335085, -0.523819), vec2( 0.860069,  0.432796)
+);
+
+float Prism_Hash(vec2 p)
+{
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+}
+
+float Prism_ShadowSample(sampler2DShadow shadowMap, vec3 projCoords, float bias, vec2 texelSize, float filterRadius)
+{
+    float angle = Prism_Hash(projCoords.xy) * 3.14159265;
+    float s = sin(angle), c = cos(angle);
+    mat2 rot = mat2(c, -s, s, c);
+
+    float shadow = 0.0;
+    for (int i = 0; i < 16; i++)
+    {
+        vec2 offset = rot * PRISM_POISSON_DISK[i] * texelSize * filterRadius;
+        shadow += texture(shadowMap, vec3(projCoords.xy + offset, projCoords.z - bias));
+    }
+    return shadow * (1.0 / 16.0);
+}
+
+float Prism_GetShadow(vec3 worldPos, float viewDepth)
+{
+    int cascade = 0;
+    int cascadeCount = min(int(Prism_ShadowParams.z), PRISM_MAX_CASCADES);
+    for (int i = 0; i < cascadeCount - 1; i++)
+    {
+        if (viewDepth > Prism_CascadeSplits[i])
+            cascade = i + 1;
+    }
+
+    vec4 lightSpacePos = Prism_ShadowMatrices[cascade] * vec4(worldPos, 1.0);
+    vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
+    projCoords = projCoords * 0.5 + 0.5;
+
+    float bias = Prism_ShadowParams.x;
+    vec2 texelSize = 1.0 / vec2(textureSize(Prism_ShadowMap0, 0));
+
+    if (cascade == 0) return Prism_ShadowSample(Prism_ShadowMap0, projCoords, bias, texelSize, 1.5);
+    if (cascade == 1) return Prism_ShadowSample(Prism_ShadowMap1, projCoords, bias, texelSize, 1.5);
+    if (cascade == 2) return Prism_ShadowSample(Prism_ShadowMap2, projCoords, bias, texelSize, 1.5);
+    return Prism_ShadowSample(Prism_ShadowMap3, projCoords, bias, texelSize, 1.5);
+}
+layout(std140, binding = 2) uniform PrismMaterial
+{
+    vec4 u_Color;
+};
+
+#line 25 "Assets/Shaders/Collider.Shader"
+#line 1 "PrismCommon.glsl"
+//
+
+#line 27 "Assets/Shaders/Collider.Shader"
+#line 27 "Assets/Shaders/Collider.Shader"
+#line 33 "Assets/Shaders/Collider.Shader"
+void main()
+{
+                    FragColor = u_Color;
+                }

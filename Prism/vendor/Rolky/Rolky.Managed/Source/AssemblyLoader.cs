@@ -167,7 +167,11 @@ public static class AssemblyLoader
 
 		var alc = new AssemblyLoadContext(name, true);
 		alc.Resolving += ResolveAssembly;
-		alc.Unloading += ctx => s_AssemblyCache.Remove(ctx.Name!.GetHashCode());
+		alc.Unloading += ctx =>
+		{
+			s_AssemblyCache.Remove(ctx.Name!.GetHashCode());
+			LogMessage($"[Rolky] ALC '{ctx.Name}' unloaded by GC.", MessageLevel.Info);
+		};
 
 		int contextId = name.GetHashCode();
 		s_AssemblyContexts.Add(contextId, alc);

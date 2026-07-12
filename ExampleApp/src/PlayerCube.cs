@@ -14,7 +14,7 @@ namespace Example
 
         public Vector2 Velocity = new Vector2();
         private RigidBody2DComponent m_PhysicsBody;
-        private MaterialInstance m_MeshMaterial;
+        private Material m_MeshMaterial;
 
         private int m_CollisionCounter = 0;
 
@@ -26,9 +26,9 @@ namespace Example
         {
             m_PhysicsBody = GetComponent<RigidBody2DComponent>();
 
-            MeshComponent meshComponent = GetComponent<MeshComponent>();
-            m_MeshMaterial = meshComponent.Mesh.GetMaterial(0);
-            m_MeshMaterial.Set("u_Metalness", 0.0f);
+            MeshRendererComponent meshComponent = GetComponent<MeshRendererComponent>();
+            m_MeshMaterial = meshComponent.GetMaterial(0);
+            m_MeshMaterial.SetFloat("u_Metalness", 0.0f);
         }
 
         public void OnCollisionBegin(float data)
@@ -60,9 +60,9 @@ namespace Example
                 m_PhysicsBody.ApplyLinearImpulse(new Vector2(0, JumpForce), new Vector2(0, 0), true);
 
             if (m_CollisionCounter > 0)
-                m_MeshMaterial.Set("u_AlbedoColor", new Vector3(1.0f, 0.0f, 0.0f));
+                m_MeshMaterial.SetVector3("u_AlbedoColor", new Vector3(1.0f, 0.0f, 0.0f));
             else
-                m_MeshMaterial.Set("u_AlbedoColor", new Vector3(0.8f, 0.8f, 0.8f));
+                m_MeshMaterial.SetVector3("u_AlbedoColor", new Vector3(0.8f, 0.8f, 0.8f));
 
         }
 

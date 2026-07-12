@@ -1,90 +1,47 @@
-﻿#pragma once
+#pragma once
 
 #include "Prism/Renderer/Shader.h"
 #include <Glad/glad.h>
+#include <unordered_map>
 
 namespace Prism {
 
-	class PRISM_API OpenGLShader : public Shader
-	{
-	public:
-		OpenGLShader(const std::string& filepath);
-		OpenGLShader(const std::string& name, const std::string& source);
-		virtual ~OpenGLShader();
+    class PRISM_API OpenGLShader : public Shader
+    {
+    public:
+        OpenGLShader(const std::string& vertexSource, const std::string& fragmentSource);
+        OpenGLShader(const std::string& computeSource);
+        virtual ~OpenGLShader();
 
-		virtual void Reload() override;
+        virtual void Reload() override {}
+        virtual void Bind() override;
+        virtual void ApplyRenderState(const PrismShaderCompiler::PipelineState& state) override;
 
-		virtual void Bind() override;
+        virtual void SetInt(const std::string& name, int value) override;
+        virtual void SetFloat(const std::string& name, float value) override;
+        virtual void SetMat4(const std::string& name, const glm::mat4& value) override;
 
+        RendererID GetRendererID() const override { return m_RendererID; }
+        const std::string& GetName() const override { return m_Name; }
 
-		virtual void SetProperty(const PropertyBufferDeclaration& decl, const Buffer& buffer) override;
+        void DispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ) override;
 
-		void ApplyCommand(const ShaderCommand& command) override;
+    private:
+        void CompileAndUploadShader();
 
-		RendererID GetRendererID() const override;
+        void UploadUniformInt(const std::string& name, int32_t value);
+        void UploadUniformFloat(const std::string& name, float value);
+        void UploadUniformMat4(const std::string& name, const glm::mat4& value);
+        bool UniformLocationCache(const std::string& name);
 
-
-
-
-		void DispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ) override;
-
-	private:
-		void SetPropertyImpt(const PropertyBufferDeclaration& decl, const Buffer& buffer);
-
-		virtual void SetFloat(const std::string& name, float value) override;
-		virtual void SetInt(const std::string& name, int value) override;
-		virtual void SetIntArray(const std::string& name, int* values, uint32_t size) override;
-		virtual void SetVec2(const std::string& name, const glm::vec2& value) override;
-		virtual void SetVec3(const std::string& name, const glm::vec3& value) override;
-		virtual void SetVec4(const std::string& name, const glm::vec4& value) override;
-		virtual void SetMat4(const std::string& name, const glm::mat4& value) override;
-		virtual void SetMat4FromRenderThread(const std::string& name, const glm::mat4& value, bool bind = true) override;
-
-		const std::string& GetName() const override { return m_Name; }
-
-
-
-	private:
-		void ReadShaderFromFile(const std::string& filepath);
-		void CompileAndUploadShader();
-
-	private:
-
-		static GLenum ShaderTypeFromString(const std::string& type);
-
-		#pragma region 上传Uniform
-	private:
-		void UploadUniformInt(uint32_t location, int32_t value);
-		void UploadUniformIntArray(uint32_t location, int32_t* values, uint32_t count);
-		void UploadUniformFloat(uint32_t location, float value);
-		void UploadUniformFloat2(uint32_t location, const glm::vec2& value);
-		void UploadUniformFloat3(uint32_t location, const glm::vec3& value);
-		void UploadUniformFloat4(uint32_t location, const glm::vec4& value);
-		void UploadUniformMat3(uint32_t location, const glm::mat3& values);
-		void UploadUniformMat4(uint32_t location, const glm::mat4& values);
-		void UploadUniformMat4Array(uint32_t location, const glm::mat4& values, uint32_t count);
-
-		void UploadUniformInt(std::string name, int32_t value);
-		void UploadUniformIntArray(std::string name, int32_t* values, uint32_t count);
-		void UploadUniformFloat(std::string name, float value);
-		void UploadUniformFloat2(std::string name, const glm::vec2& value);
-		void UploadUniformFloat3(std::string name, const glm::vec3& value);
-		void UploadUniformFloat4(std::string name, const glm::vec4& value);
-		void UploadUniformMat3(std::string name, const glm::mat3& values);
-		void UploadUniformMat4(std::string name, const glm::mat4& values);
-		void UploadUniformMat4Array(std::string name, const glm::mat4& values, uint32_t count);
-
-		bool UniformLocationCache(std::string& name);
-		#pragma endregion 上传Uniform
-
-	private:
-		RendererID m_RendererID = 0;
-		bool m_IsCompute = false;
-
-		std::string m_Name, m_AssetsPath;
-		std::string m_ShaderSource;
-
-		std::unordered_map<std::string, int> m_UniformLocationCache;
-	};
+    private:
+        RendererID m_RendererID = 0;
+        std::string m_Name;
+        std::string m_VertexSource;
+        std::string m_FragmentSource;
+        std::string m_ComputeSource;
+        bool m_IsCompute = false;
+        std::unordered_map<std::string, int> m_UniformLocationCache;
+    };
 
 }

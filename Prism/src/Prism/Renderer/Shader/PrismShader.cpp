@@ -1,7 +1,14 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "PrismShader.h"
-#include "Prism/Renderer/Shader/Parser/ShaderParser.h"
 #include "Prism/Utilities/Utilities.h"
+#include "Prism/ShaderCompiler/ShaderCompiler.h"
+#include "Prism/Core/Hash.h"
+#include "Prism/Asset/AssetManager.h"
+#include "Prism/Asset/AssetSerializer.h"
+
+#include "Platform/OpenGL/OpenGLShader.h"
+
+#include <iostream>
 
 namespace Prism
 {
@@ -14,22 +21,16 @@ namespace Prism
         return shader;
     }
 
-    Ref<PrismShader> PrismShader::CreateFromString(const std::string& source)
-    {
-        Ref<PrismShader> shader = Ref<PrismShader>::Create();
-        shader->Load(source);
-        s_AllShaders.push_back(shader);
-        return shader;
-    }
-
     PrismShader::PrismShader(const std::string& path)
     {
-        m_FilePath = std::filesystem::absolute(path).string();
+        m_FilePath = path;
+        Type = AssetType::Shader;
         Reload();
     }
 
     PrismShader::PrismShader()
     {
+        Type = AssetType::Shader;
     }
 
     PrismShader::~PrismShader()
@@ -42,478 +43,276 @@ namespace Prism
         Load(source);
     }
 
-    // ======================================================================
-    // 编译单个 Pass 的 Helper
-    // ======================================================================
-    static Ref<Shader> CompilePass(const std::string& debugName,
-        const std::string& vsCode, const std::string& fsCode)
-    {
-        return Ref<Shader>(Shader::Create(debugName, vsCode, fsCode));
-    }
-
     void PrismShader::Load(const std::string& source)
     {
-        ShaderParser parser;
-        ParseResult result = parser.Parse(source);
-        if (!result.Success)
+        auto& compiler = ShaderCompiler::Get();
+        m_Compiled = compiler.Compile(source, m_FilePath);
+
+        if (m_Compiled.ShaderName.empty())
         {
-            PR_CORE_ERROR("Failed to parse shader file '{0}'", m_FilePath);
+            PR_CORE_ERROR("PrismShader::Load - Parse failed for '{}'", m_FilePath);
             return;
         }
 
-        uint32_t passCount = (uint32_t)result.Passes.size();
-        PR_CORE_INFO("Loading shader '{0}' with {1} pass(es)", result.ShaderName, passCount);
+        m_Name = std::move(m_Compiled.ShaderName);
 
-        m_Name = result.ShaderName;
+        PR_CORE_INFO("PSL parsed '{}': {} uniforms, {} passes",
+            m_Name, m_Compiled.Uniforms.size(), m_Compiled.Passes.size());
 
-        // ------------------------------------------------------------------
-        // 1. 编译所有 Pass
-        // ------------------------------------------------------------------
+        m_VariantCache.clear();
+        CompilePasses();
+        CompileVariants();
+
+        m_ReloadedCallbacks.Invoke();
+    }
+
+    void PrismShader::CompilePasses()
+    {
+        auto& compiler = ShaderCompiler::Get();
+
         m_Passes.clear();
-        m_Passes.reserve(passCount);
-        m_VertexShaderSources.clear();
-        m_FragmentShaderSources.clear();
-        m_VertexShaderSources.reserve(passCount);
-        m_FragmentShaderSources.reserve(passCount);
+        m_Passes.reserve(m_Compiled.Passes.size());
 
-        for (uint32_t i = 0; i < passCount; i++)
+        for (uint32_t i = 0; i < m_Compiled.Passes.size(); ++i)
         {
-            const auto& passDesc = result.Passes[i];
-
-            PR_CORE_INFO("  Pass[{0}] '{1}': VS code length={2}, FS code length={3}",
-                i, passDesc.Name, passDesc.VertexShaderCode.size(), passDesc.FragmentShaderCode.size());
+            auto out = compiler.GenerateGLSL(m_Compiled, i);
 
             ShaderPass pass;
-            pass.Name = passDesc.Name;
-            pass.Tags = passDesc.Tags;
+            pass.Name = m_Compiled.Passes[i].Name;
+            for (auto& tag : m_Compiled.Passes[i].Tags)
+                pass.Tags[Hash::GenerateFNVHash64(tag.first)] = Hash::GenerateFNVHash64(tag.second);
+            pass.RenderState = m_Compiled.Passes[i].RenderState;
 
-            pass.Program = CompilePass(
-                m_Name + "_pass" + std::to_string(i),
-                passDesc.VertexShaderCode,
-                passDesc.FragmentShaderCode
-            );
-
-            // RenderCommand: Pass 级别优先，否则用 Shader 级别
-            std::string rcText = passDesc.RenderCommand.empty()
-                ? result.RenderCommand
-                : passDesc.RenderCommand;
-            pass.Command = ParseShaderCommand(rcText);
+            PR_CORE_INFO("  Pass '{}': VS={}B  FS={}B",
+                pass.Name, out.VertexShader.size(), out.FragmentShader.size());
 
             m_Passes.push_back(std::move(pass));
-            m_VertexShaderSources.push_back(passDesc.VertexShaderCode);
-            m_FragmentShaderSources.push_back(passDesc.FragmentShaderCode);
+            m_VariantCache[i][0] = Ref<Shader>(Shader::Create(out.VertexShader, out.FragmentShader));
         }
+    }
 
-        // 单 Pass 快捷引用（向后兼容）
-        m_Shader = m_Passes[0].Program;
+    void PrismShader::CompileVariants()
+    {
+        auto& compiler = ShaderCompiler::Get();
 
-        // ------------------------------------------------------------------
-        // 2. 重置关键字 / 变体状态
-        // ------------------------------------------------------------------
         m_Keywords.clear();
-        m_Variants.clear();
+        m_MultiCompileMask = 0;
 
-        // 填充关键字
-        uint8_t kwIdx = 0;
-        for (const auto& kw : result.Keywords)
+        uint8_t bit = 0;
+        for (auto& kw : m_Compiled.Keywords)
         {
-            m_Keywords.push_back({ kw, kwIdx });
-            kwIdx++;
-        }
-        if (kwIdx > MAX_KEYWORDS_PER_SHADER)
-            PR_CORE_WARN("Shader '{0}' has {1} keywords (max {2})", m_Name, kwIdx, MAX_KEYWORDS_PER_SHADER);
-
-        // 注册基础变体 (mask = 0)
-        {
-            ShaderVariant baseVariant;
-            baseVariant.Mask = 0;
-            baseVariant.DebugName = "(default)";
-            baseVariant.ShaderProgram = m_Shader;
-            for (auto& pass : m_Passes)
-                baseVariant.PassPrograms.push_back(pass.Program);
-            m_Variants[0] = baseVariant;
-        }
-
-        // 编译所有关键字变体组合
-        if (!m_Keywords.empty())
-        {
-            size_t kwCount = m_Keywords.size();
-            if (kwCount > 10)
+            if (m_Keywords.size() >= MAX_KEYWORDS_PER_SHADER) break;
+            if (kw.IsMultiCompile)
             {
-                PR_CORE_WARN("Shader '{0}' has {1} keywords -> too many variants, skipping compilation", m_Name, kwCount);
-            }
-            else
-            {
-                size_t numVariants = size_t(1) << kwCount;
-                for (KeywordMask mask = 1; mask < numVariants; mask++)
-                {
-                    std::string defines;
-                    std::string debugName;
-                    for (const auto& kw : m_Keywords)
-                    {
-                        if (mask & (KeywordMask(1) << kw.Index))
-                        {
-                            defines += "#define " + kw.Name + "\n";
-                            if (!debugName.empty()) debugName += "|";
-                            debugName += kw.Name;
-                        }
-                    }
-
-                    auto makeVariantSource = [](const std::string& base, const std::string& defs) -> std::string {
-                        size_t pos = base.find('\n');
-                        if (pos == std::string::npos) return base;
-                        return base.substr(0, pos + 1) + defs + base.substr(pos + 1);
-                        };
-
-                    ShaderVariant variant;
-                    variant.Mask = mask;
-                    variant.DebugName = debugName;
-
-                    // 为每个 Pass 编译对应的变体
-                    for (uint32_t p = 0; p < passCount; p++)
-                    {
-                        std::string vsCode = makeVariantSource(m_VertexShaderSources[p], defines);
-                        std::string fsCode = makeVariantSource(m_FragmentShaderSources[p], defines);
-
-                        std::string variantPassName = m_Name + "#" + debugName + "_pass" + std::to_string(p);
-                        Ref<Shader> variantProgram = Ref<Shader>(Shader::Create(variantPassName, vsCode, fsCode));
-
-                        variant.PassPrograms.push_back(variantProgram);
-                        if (p == 0)
-                            variant.ShaderProgram = variantProgram;
-                    }
-
-                    m_Variants[mask] = variant;
-                }
+                m_Keywords.push_back({ kw.Name, bit++, true });
+                m_MultiCompileMask |= (KeywordMask(1) << (bit - 1));
             }
         }
-
-        // ------------------------------------------------------------------
-        // 3. 属性声明 & 默认值
-        // ------------------------------------------------------------------
-        m_Declaration = PropertyBufferDeclaration();
-        for (const auto& prop : result.Properties)
+        for (auto& kw : m_Compiled.Keywords)
         {
-            auto& decl = m_Declaration.AddProperty(
-                PropertyDeclaration(prop.Type, prop.Name, prop.DisplayName)
-            );
-            if (prop.Type == PropertyDeclarationType::Enum)
-                decl.SetEnumOptions(prop.EnumOptions);
+            if (m_Keywords.size() >= MAX_KEYWORDS_PER_SHADER) break;
+            if (!kw.IsMultiCompile)
+                m_Keywords.push_back({ kw.Name, bit++, false });
         }
-        PackDefaultValues(result.Properties);
 
-        SetProperty(m_DefaultValueBuffer);
-
-        for (const auto& callback : m_ReloadedCallbacks)
-            callback();
-    }
-
-    void PrismShader::PackDefaultValues(const std::vector<PropertyDescriptor>& properties)
-    {
-        using namespace Prism::StrParse;
-        using namespace Prism::PropertyType;
-
-        m_DefaultValueBuffer.Allocate(m_Declaration.GetSize());
-
-        auto declIt = m_Declaration.begin();
-        for (size_t i = 0; i < properties.size(); ++i, ++declIt)
+        m_PassKeywordMasks.assign(m_Compiled.Passes.size(), 0);
+        for (uint32_t p = 0; p < m_Compiled.Passes.size(); ++p)
         {
-            const auto& prop = properties[i];
-            uint32_t offset = declIt->GetOffset();
+            KeywordMask m = 0;
+            for (auto& pragma : m_Compiled.Passes[p].Glsl.Pragmas)
+                for (auto& name : pragma.Keywords)
+                    for (auto& kw : m_Keywords)
+                        if (kw.Name == name) m |= (KeywordMask(1) << kw.Index);
+            m_PassKeywordMasks[p] = m;
+        }
 
-            switch (prop.Type)
+        uint32_t kwCount = (uint32_t)m_Keywords.size();
+        if (kwCount == 0) return;
+
+#if defined(PR_DEBUG) || defined(PR_RELEASE)
+        for (uint32_t p = 0; p < m_Passes.size(); ++p)
+        {
+            KeywordMask passMulti = m_MultiCompileMask & m_PassKeywordMasks[p];
+            if (passMulti == 0) continue;
+            for (KeywordMask sub = passMulti; sub > 0; sub = (sub - 1) & passMulti)
             {
-            case PropertyDeclarationType::Bool:
-            {
-                Bool val = (prop.DefaultValue == "true" || prop.DefaultValue == "1");
-                m_DefaultValueBuffer.Write((byte*)&val, sizeof(Bool), offset);
-                break;
-            }
-            case PropertyDeclarationType::Color:
-            {
-                Color val = Parse<Color>(prop.DefaultValue);
-                m_DefaultValueBuffer.Write((byte*)&val, sizeof(Color), offset);
-                break;
-            }
-            case PropertyDeclarationType::Color3:
-            {
-                Vector3 val = Parse<Vector3>(prop.DefaultValue);
-                m_DefaultValueBuffer.Write((byte*)&val, sizeof(Vector3), offset);
-                break;
-            }
-            case PropertyDeclarationType::Float:
-            {
-                Float val = Parse<Float>(prop.DefaultValue);
-                m_DefaultValueBuffer.Write((byte*)&val, sizeof(Float), offset);
-                break;
-            }
-            case PropertyDeclarationType::Int:
-            {
-                Int val = Parse<Int>(prop.DefaultValue);
-                m_DefaultValueBuffer.Write((byte*)&val, sizeof(Int), offset);
-                break;
-            }
-            case PropertyDeclarationType::Vector2:
-            {
-                Vector2 val = Parse<Vector2>(prop.DefaultValue);
-                m_DefaultValueBuffer.Write((byte*)&val, sizeof(Vector2), offset);
-                break;
-            }
-            case PropertyDeclarationType::Vector3:
-            {
-                Vector3 val = Parse<Vector3>(prop.DefaultValue);
-                m_DefaultValueBuffer.Write((byte*)&val, sizeof(Vector3), offset);
-                break;
-            }
-            case PropertyDeclarationType::Vector4:
-            {
-                Vector4 val = Parse<Vector4>(prop.DefaultValue);
-                m_DefaultValueBuffer.Write((byte*)&val, sizeof(Vector4), offset);
-                break;
-            }
-            case PropertyDeclarationType::Texture2D:
-            case PropertyDeclarationType::Texture2DMS:
-            {
-                PropertyType::Texture2D tex;
-                tex.slot = m_NextTexSlot++;
-                m_DefaultValueBuffer.Write((byte*)&tex, sizeof(PropertyType::Texture2D), offset);
-                break;
-            }
-            case PropertyDeclarationType::TextureCube:
-            {
-                PropertyType::TextureCube tex;
-                tex.slot = m_NextTexSlot++;
-                m_DefaultValueBuffer.Write((byte*)&tex, sizeof(PropertyType::TextureCube), offset);
-                break;
-            }
-            case PropertyDeclarationType::Range:
-            {
-                Range val;
-                val.min = prop.Min;
-                val.max = prop.Max;
-                val.value = Parse<float>(prop.DefaultValue);
-                m_DefaultValueBuffer.Write((byte*)&val, sizeof(Range), offset);
-                break;
-            }
-            case PropertyDeclarationType::Matrix3:
-            {
-                Matrix3 val = Parse<Matrix3>(prop.DefaultValue);
-                m_DefaultValueBuffer.Write((byte*)&val, sizeof(Matrix3), offset);
-                break;
-            }
-            case PropertyDeclarationType::Matrix4:
-            {
-                Matrix4 val = Parse<Matrix4>(prop.DefaultValue);
-                m_DefaultValueBuffer.Write((byte*)&val, sizeof(Matrix4), offset);
-                break;
-            }
-            case PropertyDeclarationType::Enum:
-            {
-                Int val = Parse<Int>(prop.DefaultValue);
-                m_DefaultValueBuffer.Write((byte*)&val, sizeof(Int), offset);
-                break;
-            }
-            default:
-                break;
+                auto keywords = KeywordsForMask(sub);
+                auto out = compiler.GenerateGLSL(m_Compiled, p, keywords);
+                m_VariantCache[p][sub] = Ref<Shader>(Shader::Create(out.VertexShader, out.FragmentShader));
+                PR_CORE_INFO("  Pass '{}' variant: [{}]", m_Passes[p].Name, Utilities::Join(keywords, ", "));
             }
         }
+#endif
     }
 
-    uint32_t PrismShader::GetTextureSlot(const std::string& name) const
+    KeywordMask PrismShader::MultiCompileMask() const
     {
-        const PropertyDeclaration* decl = m_Declaration.FindProperty(name);
-        switch (decl->GetType())
+        return m_MultiCompileMask;
+    }
+
+    KeywordMask PrismShader::PassKeywordMask(uint32_t passIndex) const
+    {
+        if (passIndex >= m_PassKeywordMasks.size()) return 0;
+        return m_PassKeywordMasks[passIndex];
+    }
+
+    KeywordMask PrismShader::ProjectMaskToPass(KeywordMask mask, uint32_t passIndex) const
+    {
+        return mask & PassKeywordMask(passIndex);
+    }
+
+    std::vector<std::string> PrismShader::KeywordsForMask(KeywordMask mask) const
+    {
+        std::vector<std::string> result;
+        for (auto& kw : m_Keywords)
+            if (mask & (KeywordMask(1) << kw.Index))
+                result.push_back(kw.Name);
+        return result;
+    }
+
+    const PrismShaderCompiler::AST::ShaderUniform* PrismShader::FindUniform(const std::string& name) const
+    {
+        for (auto& u : m_Compiled.Uniforms)
+            if (u.Name == name)
+                return &u;
+        return nullptr;
+    }
+
+    int32_t PrismShader::FindPassByTag(uint64_t keyHash, uint64_t valueHash) const
+    {
+        for (uint32_t i = 0; i < m_Passes.size(); ++i)
         {
-        case PropertyDeclarationType::Texture2D:
-        case PropertyDeclarationType::Texture2DMS:
-        case PropertyDeclarationType::TextureCube:
-            break;
-        default:
-            PR_CORE_ERROR("Property {0} is not a texture type!", name);
-            PR_CORE_ASSERT(false, "");
+            auto& pass = m_Passes[i];
+            auto it = pass.Tags.find(keyHash);
+            if (it != pass.Tags.end() && it->second == valueHash)
+                return i;
         }
-        return decl->GetValue<uint32_t>(m_DefaultValueBuffer);
-    }
-
-    const ShaderCommand& PrismShader::GetShaderCommand() const
-    {
-        // 向后兼容：返回 Pass 0 的命令
-        return m_Passes[0].Command;
-    }
-
-    void PrismShader::Bind()
-    {
-        // 向后兼容：绑定 Pass 0
-        m_Passes[0].Program->Bind();
-        m_Passes[0].Program->ApplyCommand(m_Passes[0].Command);
-    }
-
-    void PrismShader::BindPass(uint32_t passIndex)
-    {
-        PR_CORE_ASSERT(passIndex < m_Passes.size(), "BindPass: passIndex {0} out of range ({1} passes)", passIndex, m_Passes.size());
-        auto& pass = m_Passes[passIndex];
-        pass.Program->Bind();
-        pass.Program->ApplyCommand(pass.Command);
-    }
-
-    void PrismShader::SetProperty(const Buffer& buffer)
-    {
-        m_Shader->SetProperty(m_Declaration, buffer);
-    }
-
-    void PrismShader::AddShaderReloadedCallback(const ShaderReloadedCallback& callback)
-    {
-        m_ReloadedCallbacks.push_back(callback);
-    }
-
-    Ref<Shader> PrismShader::GetOriginalShader() const
-    {
-        return m_Shader;
+        return -1;
     }
 
 #pragma region Keyword / Variant
 
     uint8_t PrismShader::GetKeywordIndex(const std::string& name) const
     {
-        for (const auto& kw : m_Keywords)
-        {
+        for (auto& kw : m_Keywords)
             if (kw.Name == name)
                 return kw.Index;
-        }
-        PR_CORE_ERROR("Keyword '{0}' is not defined in shader '{1}'", name, m_Name);
+        PR_CORE_ERROR("Keyword '{}' not defined in shader '{}'", name, m_Name);
         PR_CORE_ASSERT(false);
         return 0xFF;
     }
 
     bool PrismShader::IsKeywordDefined(const std::string& name) const
     {
-        for (const auto& kw : m_Keywords)
-        {
+        for (auto& kw : m_Keywords)
             if (kw.Name == name)
                 return true;
-        }
         return false;
     }
 
-    Ref<Shader> PrismShader::GetVariant(KeywordMask mask) const
+    Ref<Shader> PrismShader::GetVariant(uint32_t passIndex, KeywordMask mask) const
     {
-        // 向后兼容：返回 Pass 0 的变体程序
-        auto it = m_Variants.find(mask);
-        if (it != m_Variants.end())
-            return it->second.ShaderProgram;
+        KeywordMask localMask = ProjectMaskToPass(mask, passIndex);
+        auto& passCache = m_VariantCache[passIndex];
+        auto it = passCache.find(localMask);
+        if (it != passCache.end()) return it->second;
 
-        if (mask != 0)
-            PR_CORE_WARN("Variant mask {0} not compiled for shader '{1}', falling back to base", mask, m_Name);
-        return m_Shader;
+        auto& compiler = ShaderCompiler::Get();
+        auto keywords = KeywordsForMask(localMask);
+        auto out = compiler.GenerateGLSL(m_Compiled, passIndex, keywords);
+        Ref<Shader> program = Ref<Shader>(Shader::Create(out.VertexShader, out.FragmentShader));
+        passCache[localMask] = program;
+        PR_CORE_TRACE("Shader'{}' Pass'{}' variant:[{}]", m_Name, m_Passes[passIndex].Name, Utilities::Join(keywords, ", "));
+        return program;
     }
 
     Ref<Shader> PrismShader::GetPassProgram(uint32_t passIndex, KeywordMask mask) const
     {
         PR_CORE_ASSERT(passIndex < m_Passes.size(),
-            "GetPassProgram: passIndex {0} out of range ({1} passes)", passIndex, m_Passes.size());
-
-        auto it = m_Variants.find(mask);
-        if (it != m_Variants.end())
-        {
-            if (passIndex < it->second.PassPrograms.size())
-                return it->second.PassPrograms[passIndex];
-            return it->second.ShaderProgram;
-        }
-
-        if (mask != 0)
-            PR_CORE_WARN("Variant mask {0} not compiled for shader '{1}', falling back to base", mask, m_Name);
-        return m_Passes[passIndex].Program;
+            "GetPassProgram: passIndex {} out of range ({} passes)", passIndex, m_Passes.size());
+        return GetVariant(passIndex, mask);
     }
 
-#pragma endregion
+    #pragma endregion
 
-#pragma region Native uniforms
-
-    void PrismShader::SetMat4FromRenderThread(const std::string& name, const glm::mat4& value)
+    ShaderReloadedToken PrismShader::AddShaderReloadedCallback(const ShaderReloadedCallback& callback)
     {
-        m_Shader->SetMat4FromRenderThread(name, value);
-    }
-    void PrismShader::SetInt(const std::string& name, int value)
-    {
-        m_Shader->SetInt(name, value);
-    }
-    void PrismShader::SetIntArray(const std::string& name, int* values, uint32_t size)
-    {
-        m_Shader->SetIntArray(name, values, size);
-    }
-    void PrismShader::SetFloat(const std::string& name, float value)
-    {
-        m_Shader->SetFloat(name, value);
-    }
-    void PrismShader::SetVec3(const std::string& name, const glm::vec3& value)
-    {
-        m_Shader->SetVec3(name, value);
-    }
-    void PrismShader::SetVec4(const std::string& name, const glm::vec4& value)
-    {
-        m_Shader->SetVec4(name, value);
-    }
-    void PrismShader::SetMat4(const std::string& name, const glm::mat4& value)
-    {
-        m_Shader->SetMat4(name, value);
+        return m_ReloadedCallbacks.Add(callback);
     }
 
-#pragma endregion
-
-    // //////////////////////////////////////////////////
-    // --- ShaderLibrary  ---
-    // //////////////////////////////////////////////////
-
-    void ShaderLibrary::Add(const Ref<PrismShader>& shader)
+    void PrismShader::RemoveShaderReloadedCallback(ShaderReloadedToken token)
     {
-        auto& name = shader->GetName();
-        PR_CORE_ASSERT(m_Shaders.find(name) == m_Shaders.end());
-        m_Shaders[name] = shader;
+        m_ReloadedCallbacks.Remove(token);
     }
 
-    void ShaderLibrary::Load(const std::string& path)
+    // ShaderLibrary
+
+    Ref<PrismShader> ShaderLibrary::Load(const std::string& filePath)
     {
+        std::string path = filePath;
+        for (auto& c : path) if (c == '\\') c = '/';
+        if (m_PathFromName.empty()) 
+            m_PathFromName = ShaderCompiler::Get().ScanShaderDirectory("Assets");
         auto shader = Ref<PrismShader>(PrismShader::Create(path));
         auto& name = shader->GetName();
-        PR_CORE_ASSERT(m_Shaders.find(name) == m_Shaders.end());
+        if (name.empty())
+        {
+            PR_CORE_ERROR("ShaderLibrary::Load - Parse failed for '{}'", path);
+            return shader;
+        }
+        if (Exists(name)) return shader;
         m_Shaders[name] = shader;
-    }
-
-    void ShaderLibrary::Load(const std::string& name, const std::string& path)
-    {
-        PR_CORE_ASSERT(m_Shaders.find(name) == m_Shaders.end());
-        m_Shaders[name] = Ref<PrismShader>(PrismShader::Create(path));
+        return shader;
     }
 
     void ShaderLibrary::LoadAll(const std::string& directory)
     {
-        PR_CORE_INFO("正在扫描 '{0}' 中的 .Shader 文件...", directory);
+        PR_CORE_INFO("Scanning .Shader files in '{}'...", directory);
+        m_PathFromName = ShaderCompiler::Get().ScanShaderDirectory(directory);
         uint32_t success = 0, failed = 0;
-        for (const auto& entry : std::filesystem::recursive_directory_iterator(directory))
+        for (auto& [name, path] : m_PathFromName)
         {
-            if (entry.path().extension() != ".Shader")
-                continue;
-
-            std::string path = entry.path().string();
-            auto shader = Ref<PrismShader>(PrismShader::Create(path));
-
+            AssetHandle handle = AssetManager::GetAssetHandleFromFilePath(path);
+            Ref<PrismShader> shader = AssetManager::GetAsset<PrismShader>(handle);
+            if (Exists(name)) { success++; continue; }
             if (shader->GetName().empty())
             {
-                PR_CORE_ERROR("解析失败，跳过: {0}", path);
                 failed++;
-                continue;
-            }
-
-            auto& name = shader->GetName();
-            if (m_Shaders.find(name) != m_Shaders.end())
-            {
-                PR_CORE_WARN("重复的Shader名称 '{0}'，来自: {1}", name, path);
                 continue;
             }
             m_Shaders[name] = shader;
             success++;
         }
-        PR_CORE_INFO("Shader加载完成: {0} 个成功, {1} 个失败", success, failed);
+        PR_CORE_INFO("Shader loading done: {} success, {} failed", success, failed);
+    }
+
+
+    PrismShaderCompiler::CompiledShader ShaderLibrary::OnResolveUsePass(const std::string& name)
+    {
+        if (Exists(name))
+        {
+            return Get(name)->GetCompiledShader();
+        }
+        else
+        {
+            auto it = m_PathFromName.find(name);
+            if (it != m_PathFromName.end())
+            {
+                auto shader = Ref<PrismShader>(PrismShader::Create(it->second));
+                if (shader->GetName().empty())
+                {
+                    PR_CORE_ERROR("ShaderLibrary::OnResolveUsePass - Parse failed for '{}'", it->second);
+                    return {};
+                }
+                m_Shaders[name] = shader;
+                return shader->GetCompiledShader();
+            }
+            else
+            {
+                PR_CORE_ERROR("ShaderLibrary::OnResolveUsePass - Shader '{}' not found", name);
+                return {};
+            }
+        }
     }
 
     const Ref<PrismShader>& ShaderLibrary::Get(const std::string& name) const
@@ -522,7 +321,7 @@ namespace Prism
         return m_Shaders.at(name);
     }
 
-    const std::unordered_map<std::string, Prism::Ref<Prism::PrismShader>>& ShaderLibrary::GetAll() const
+    const std::unordered_map<std::string, Ref<Prism::PrismShader>>& ShaderLibrary::GetAll() const
     {
         return m_Shaders;
     }

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Prism/Core/Core.h"
 
 namespace Prism {
@@ -7,13 +7,13 @@ namespace Prism {
 	{
 		mutable bool ReadOnly;
 		byte* Data;
-		uint32_t Size;
+        uint64_t Size;
 
 		Buffer()
 			: Data(nullptr), Size(0), ReadOnly(false)
 		{
 		}
-		Buffer(byte* data, uint32_t size)
+		Buffer(byte* data, uint64_t size)
 			: Data(data), Size(size), ReadOnly(false)
 		{
 		}
@@ -77,14 +77,14 @@ namespace Prism {
 			memcpy(copy.Data, Data, Size);
 			return copy;
 		}
-		static Buffer Copy(void* data, uint32_t size)
+		static Buffer Copy(const void* data, uint64_t size)
 		{
 			Buffer buffer;
 			buffer.Allocate(size);
 			memcpy(buffer.Data, data, size);
 			return buffer;
 		}
-		void Allocate(uint32_t size)
+		void Allocate(uint64_t size)
 		{
 			PR_CORE_ASSERT(!ReadOnly, "Cannot allocate a read-only buffer! 无法分配只读缓冲区");
 			delete[] Data;
@@ -95,6 +95,7 @@ namespace Prism {
 
 			Data = new byte[size];
 			Size = size;
+            memset(Data, 0, Size);
 		}
 
 		void ZeroInitialize()
@@ -105,12 +106,12 @@ namespace Prism {
 		}
 
 		template<typename T>
-		T& Read(uint32_t offset = 0) const
+		T& Read(uint64_t offset = 0) const
 		{
 			return *(T*)(Data + offset);
 		}
 
-		void Write(const void* data, uint32_t size, uint32_t offset = 0)
+		void Write(const void* data, uint64_t size, uint64_t offset = 0)
 		{
 			PR_CORE_ASSERT(!ReadOnly, "Cannot write to a read-only buffer! 无法写入只读缓冲区");
 			PR_CORE_ASSERT(offset + size <= Size, "Buffer overflow! 缓冲区溢出");
@@ -138,7 +139,23 @@ namespace Prism {
 			return (T*)Data;
 		}
 
-		inline uint32_t GetSize() const { return Size; }
+		inline uint64_t GetSize() const { return Size; }
+	};
+
+	struct PRISM_API BufferSafe : public Buffer
+	{
+		~BufferSafe()
+		{
+			Free();
+		}
+
+		static BufferSafe Copy(const void* data, uint64_t size)
+		{
+			BufferSafe buffer;
+			buffer.Allocate(size);
+			memcpy(buffer.Data, data, size);
+			return buffer;
+		}
 	};
 
 }

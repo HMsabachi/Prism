@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Prism/Core/Core.h"
 #include "Prism/Core/UUID.h"
 #include "Prism/Core/Buffer.h"
@@ -22,19 +22,20 @@ namespace Prism
 
         static void BuildCache();
 
-        static ScriptClassMetadata* GetClassMetadata(UUID scriptID);
+        static ScriptClassMetadata* GetClassMetadata(UUID classID);
         static ScriptClassMetadata* GetClassMetadata(const std::string& fullName);
         static std::vector<ScriptClassMetadata*> GetAllBehaviourClasses();
 
         static ScriptFieldMetadata* GetFieldMetadata(UUID classID, const std::string& fieldName);
 
+        static UUID GenerateClassID(const std::string& str);
     private:
         static void BuildCacheForAssembly(Rolky::ManagedAssembly& assembly);
-        static UUID GenerateScriptID(const std::string& str);
         static ScriptFieldType GetFieldTypeFromManagedType(Rolky::Type* type);
 
+        static std::unordered_map<int32_t, Rolky::Type> s_TypeCache;
         static std::unordered_map<UUID, ScriptClassMetadata> s_Classes;
-        static std::unordered_map<std::string, UUID> s_FullNameToID;
+        static std::unordered_map<UUID, std::string> s_ClassIDToFullName;
         static Rolky::Type* s_BehaviourType;
         static bool s_Initialized;
     };

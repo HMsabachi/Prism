@@ -6,7 +6,6 @@ namespace Example
         public static void Init()
         {
             Prism.Core.Init();
-            Prism.Log.Trace("Hello World!");
         }
     }
 }

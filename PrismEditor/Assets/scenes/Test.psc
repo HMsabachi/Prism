@@ -1,80 +1,483 @@
 Scene: Scene Name
 Environment:
-  AssetPath: E:\PrismEngine\Prism\PrismEditor\Assets\env\birchwood_4k.hdr
+  AssetPath: Assets\env\pink_sunrise_4k.hdr
   Light:
-    Direction: [-0.5, -1, -0.5]
+    Direction: [-0.477, -1, -0.015]
     Radiance: [1, 1, 1]
-    Multiplier: 1
+    Multiplier: 0.515
+  Shadow:
+    Enabled: true
+    Bias: 0
+    NormalBias: 0.128
+    CascadeCount: 4
+    MaxDistance: 167.934
+PhysicsLayers:
+  - Name: Default
+    CollidesWith:
+      []
+  - Name: Player
+    CollidesWith:
+      - Name: Default
+      - Name: Ground
+  - Name: Ground
+    CollidesWith:
+      - Name: Default
+      - Name: Player
+      - Name: Cubes
+  - Name: Cubes
+    CollidesWith:
+      - Name: Default
+      - Name: Ground
 Entities:
-  - Entity: 4272325128816557942
+  - Entity: 9421913743984938135
     TagComponent:
-      Tag: Noise
+      Tag: Sky Light
     TransformComponent:
-      Position: [0, 6.5, 0]
-      Rotation: [1, 0, 0, 0]
-      Scale: [9.25, 1, 10.25]
-    ScriptComponent:
-      ModuleName: Example.MapGenerator
-      StoredFields:
-        - Name: MapWidth
-          Type: 2
-          Data: 128
-        - Name: MapHeight
-          Type: 2
-          Data: 128
-        - Name: Offset
-          Type: 5
-          Data: [13.4, 6.26]
-        - Name: Octaves
-          Type: 2
-          Data: 4
-        - Name: Seed
-          Type: 2
-          Data: 21
-        - Name: Persistance
-          Type: 1
-          Data: 0.74
-        - Name: NoiseScale
-          Type: 1
-          Data: 0.5
-        - Name: Lacunarity
-          Type: 1
-          Data: 3
-  - Entity: 13982802161734492964
+      Position: [0, 0, 0]
+      Rotation: [-21.190977, 0, 0]
+      Scale: [1, 1, 1]
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+    SkyLightComponent:
+      Intensity: 1
+      Angle: 0
+      AssetPath: Assets\env\pink_sunrise_4k.hdr
+  - Entity: 15961048996214737009
+    TagComponent:
+      Tag: Sphere
+    TransformComponent:
+      Position: [7.676742, 11.546804, 6.605533]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      AssetPath: assets\meshes\Sphere1m.fbx
+    RigidBodyComponent:
+      BodyType: 1
+      Mass: 5
+      IsKinematic: false
+      Layer: 0
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: false
+        LockRotationY: false
+        LockRotationZ: false
+    SphereColliderComponent:
+      Radius: 0.5
+      IsTrigger: false
+      Material: 0
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 6002286925489110848
+    TagComponent:
+      Tag: Sphere
+    TransformComponent:
+      Position: [2.067, 21.957813, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      AssetPath: assets\meshes\Sphere1m.fbx
+    RigidBodyComponent:
+      BodyType: 1
+      Mass: 2.9
+      IsKinematic: false
+      Layer: 0
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: false
+        LockRotationY: false
+        LockRotationZ: false
+    SphereColliderComponent:
+      Radius: 0.5
+      IsTrigger: false
+      Material: 0
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 6685438149830436746
+    TagComponent:
+      Tag: Box
+    TransformComponent:
+      Position: [-4.422, 14.876, -1]
+      Rotation: [0, 0, 0]
+      Scale: [2, 2, 2]
+    MeshRendererComponent:
+      AssetPath: assets\meshes\Cube1m.fbx
+    RigidBodyComponent:
+      BodyType: 1
+      Mass: 0.5
+      IsKinematic: false
+      Layer: 3
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: false
+        LockRotationY: false
+        LockRotationZ: false
+    BoxColliderComponent:
+      Size: [1, 1, 1]
+      Offset: [0, 0, 0]
+      IsTrigger: false
+      Material: 0
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 180212446636677419
+    TagComponent:
+      Tag: Sphere
+    TransformComponent:
+      Position: [0.105, 10.336651, 3.277]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      AssetPath: assets\meshes\Sphere1m.fbx
+    RigidBodyComponent:
+      BodyType: 1
+      Mass: 0.9
+      IsKinematic: false
+      Layer: 0
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: false
+        LockRotationY: false
+        LockRotationZ: false
+    SphereColliderComponent:
+      Radius: 0.5
+      IsTrigger: false
+      Material: 0
+    CSharpScriptComponent:
+      Behaviours:
+        - ClassID: 17473292295039821981
+          Enabled: true
+          Fields:
+            - ID: 2824397154
+              Name: Timer
+              Type: 1
+              Value: 0
+            - ID: 3048789568
+              Name: ID
+              Type: 11
+              Value: 0
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 12245502073753085886
+    TagComponent:
+      Tag: Sphere
+    TransformComponent:
+      Position: [2.727, 19.70917, 2.272]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      AssetPath: assets\meshes\Sphere1m.fbx
+    RigidBodyComponent:
+      BodyType: 1
+      Mass: 0.2
+      IsKinematic: false
+      Layer: 0
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: false
+        LockRotationY: false
+        LockRotationZ: false
+    SphereColliderComponent:
+      Radius: 0.5
+      IsTrigger: false
+      Material: 0
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 8774112719293746857
+    TagComponent:
+      Tag: Sphere
+    TransformComponent:
+      Position: [2.322, 17.726751, -1.051]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      AssetPath: assets\meshes\Sphere1m.fbx
+    RigidBodyComponent:
+      BodyType: 1
+      Mass: 0.2
+      IsKinematic: false
+      Layer: 0
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: false
+        LockRotationY: false
+        LockRotationZ: false
+    SphereColliderComponent:
+      Radius: 0.5
+      IsTrigger: false
+      Material: 0
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 16719024364629068537
+    TagComponent:
+      Tag: Sphere
+    TransformComponent:
+      Position: [2.452, 24.187178, -3.581]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      AssetPath: assets\meshes\Sphere1m.fbx
+    RigidBodyComponent:
+      BodyType: 1
+      Mass: 5
+      IsKinematic: false
+      Layer: 0
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: false
+        LockRotationY: false
+        LockRotationZ: false
+    SphereColliderComponent:
+      Radius: 0.5
+      IsTrigger: false
+      Material: 0
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 16798323008179040571
+    TagComponent:
+      Tag: Sphere
+    TransformComponent:
+      Position: [2.067, 16.320494, 6.495]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      AssetPath: assets\meshes\Sphere1m.fbx
+    RigidBodyComponent:
+      BodyType: 1
+      Mass: 5
+      IsKinematic: false
+      Layer: 0
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: false
+        LockRotationY: false
+        LockRotationZ: false
+    SphereColliderComponent:
+      Radius: 0.5
+      IsTrigger: false
+      Material: 0
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 3588066077231442219
+    TagComponent:
+      Tag: Sphere
+    TransformComponent:
+      Position: [-0.868, 21.017824, 1.6099999]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      AssetPath: assets\meshes\Sphere1m.fbx
+    RigidBodyComponent:
+      BodyType: 1
+      Mass: 0.7
+      IsKinematic: false
+      Layer: 0
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: false
+        LockRotationY: false
+        LockRotationZ: false
+    SphereColliderComponent:
+      Radius: 0.5
+      IsTrigger: false
+      Material: 0
+    CSharpScriptComponent:
+      Behaviours:
+        - ClassID: 17473292295039821981
+          Enabled: true
+          Fields:
+            - ID: 2824397154
+              Name: Timer
+              Type: 1
+              Value: 0
+            - ID: 3048789568
+              Name: ID
+              Type: 11
+              Value: 0
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 8444794147831695495
+    TagComponent:
+      Tag: Directional Light
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [-40.770187, 7.7143826, 64.53822]
+      Scale: [1, 1, 1]
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+    DirectionalLightComponent:
+      Radiance: [1, 1, 1]
+      Intensity: 1.4
+      CastShadows: true
+      SoftShadows: true
+      LightSize: 0.5
+  - Entity: 3247025703490125974
+    TagComponent:
+      Tag: Player
+    TransformComponent:
+      Position: [0.016, 1.5, 13.07]
+      Rotation: [0, 0, 0]
+      Scale: [2, 2, 2]
+    MeshRendererComponent:
+      AssetPath: Assets\meshes\Capsule.fbx
+    RigidBodyComponent:
+      BodyType: 1
+      Mass: 1
+      IsKinematic: false
+      Layer: 2
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: true
+        LockRotationY: false
+        LockRotationZ: true
+    MeshColliderComponent:
+      AssetPath: Assets\meshes\Capsule.fbx
+      IsTrigger: false
+      Material: 0
+    CSharpScriptComponent:
+      Behaviours:
+        - ClassID: 4621281492369714213
+          Enabled: true
+          Fields:
+            - ID: 316217235
+              Name: WalkingSpeed
+              Type: 1
+              Value: 15
+            - ID: 2138685965
+              Name: RunSpeed
+              Type: 1
+              Value: 20
+            - ID: 868800460
+              Name: JumpForce
+              Type: 1
+              Value: 100
+            - ID: 1438023815
+              Name: MouseSensitivity
+              Type: 1
+              Value: 8
+            - ID: 3048789568
+              Name: ID
+              Type: 11
+              Value: 0
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 7611555736437233215
+    TagComponent:
+      Tag: Ground
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [100, 1, 100]
+    MeshRendererComponent:
+      AssetPath: assets\meshes\Cube1m.fbx
+    RigidBodyComponent:
+      BodyType: 0
+      Mass: 1
+      IsKinematic: false
+      Layer: 3
+      Constraints:
+        LockPositionX: false
+        LockPositionY: false
+        LockPositionZ: false
+        LockRotationX: false
+        LockRotationY: false
+        LockRotationZ: false
+    BoxColliderComponent:
+      Size: [1, 1, 1]
+      Offset: [0, 0, 0]
+      IsTrigger: false
+      Material: 0
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 5178862374589434728
     TagComponent:
       Tag: Camera
     TransformComponent:
-      Position: [26.25, 15.75, 0]
-      Rotation: [0.67942274, -0.19206704, 0.68146056, 0.19263057]
-      Scale: [0.9999982, 0.9999893, 0.9999906]
+      Position: [2.808, 2.25, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
     CameraComponent:
       Camera: some camera data...
       Primary: true
-  - Entity: 10654856600807563614
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+  - Entity: 17969789155833843587
     TagComponent:
-      Tag: Empty Entity
+      Tag: Mesh
     TransformComponent:
       Position: [0, 0, 0]
-      Rotation: [1, 0, 0, 0]
-      Scale: [1, 1, 1]
-    ScriptComponent:
-      ModuleName: Example.Script
-      StoredFields:
-        - Name: Speed
-          Type: 1
-          Data: 5
-    MeshComponent:
-      AssetPath: E:\PrismEngine\Prism\PrismEditor\Assets\meshes\TestScene.fbx
-  - Entity: 10266587003235082940
-    TagComponent:
-      Tag: ScriptNoise
-    TransformComponent:
-      Position: [0, 6.8021007, -8.643346]
-      Rotation: [1, 0, 0, 0]
-      Scale: [10.0599985, 10.0599985, 10.0599985]
-    ScriptComponent:
-      ModuleName: Example.ScriptNoise
-      StoredFields:
+      Rotation: [-1.0177781e-13, 1.819928e-20, 0]
+      Scale: [0.05, 0.05, 0.05]
+    MeshRendererComponent:
+      AssetPath: Assets\meshes\sponza\sponza.obj
+    CSharpScriptComponent:
+      Behaviours:
         []
-    MeshComponent:
-      AssetPath: E:\PrismEngine\Prism\PrismEditor\Assets\models\Plane1m.obj
+    PythonScriptComponent:
+      Behaviours:
+        []

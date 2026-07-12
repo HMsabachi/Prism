@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Prism/Core/Buffer.h"
 #include "Scripting/ScriptTypes.h"
 #include <string>
@@ -15,15 +15,17 @@ class CSharpField
 public:
     CSharpField() = default;
 
-    CSharpField(std::string name, ScriptFieldType type)
+    CSharpField(std::string name, ScriptFieldType type, Rolky::Type* managedType)
         : m_Name(std::move(name))
         , m_Type(type)
+        , m_ManagedType(managedType)
     {
         m_ValueBuffer.Allocate(DataTypeSize(type));
     }
 
     const std::string& GetName() const { return m_Name; }
     ScriptFieldType GetType() const { return m_Type; }
+    Rolky::Type* GetManagedType() const { return m_ManagedType; }
 
     template<typename T>
     T GetValue() const
@@ -46,6 +48,7 @@ public:
 
     void SetInstance(Rolky::ManagedObject* obj) { m_Instance = obj; }
     void ClearInstance() { m_Instance = nullptr; }
+    bool IsRuntime() const { return m_Instance != nullptr; }
 
     Buffer& GetBuffer()
     {

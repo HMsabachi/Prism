@@ -1,4 +1,4 @@
-#include <Prism.h>
+﻿#include <Prism.h>
 #include "EditorLayer.h"
 
 #include "Prism/Core/EntryPoint.h"
@@ -20,5 +20,5 @@ public:
 
 Prism::Application* Prism::CreateApplication()
 {
-    return new PrismEditorApplication({ "PrismEditor", 1920, 1080 , true});
+    return new PrismEditorApplication({ "PrismEditor", 1920, 1080 , false});
 }

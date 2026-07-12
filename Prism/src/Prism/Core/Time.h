@@ -1,45 +1,48 @@
-#pragma once
+﻿#pragma once
 #include <chrono>
 #include "Core.h"
 
 namespace Prism
 {
-	class Application;
+    class Application;
 }
 
 namespace Prism
 {
-	class PRISM_API Time
-	{
-		friend class Application;
-	public:
-		static float GetDeltaTime() noexcept { return s_DeltaTime; }
-		static float GetUnscaledDeltaTime() noexcept { return s_UnscaledDeltaTime; }
-		static float GetTime() noexcept { return s_Time; }
-		static float GetUnscaledTime() noexcept { return s_UnscaledTime; }
-		static float GetFixedDeltaTime() noexcept { return s_ActualFixedDeltaTime; }
-		static long long GetFrameCount() noexcept { return s_FrameCount; }
-		static bool ShouldFixedUpdate();
-	public:
-		static void SetTimeScale(float scale) noexcept;
-		static void SetFixedDeltaTime(float fixedDeltaTime) noexcept;
-		static float GetTimeScale() noexcept { return s_TimeScale; }
-	private:
-		static void Init();
-		static void Update();
-		static void Reset();
-	private:
-		static float s_DeltaTime;
-		static float s_UnscaledDeltaTime;
-		static float s_Time;
-		static float s_UnscaledTime;
-		static float s_FixedDeltaTime;
-		static float s_ActualFixedDeltaTime;
-		static float s_TimeScale;
-		static long long s_FrameCount;
+    class PRISM_API Time
+    {
+        friend class Application;
+    public:
+        static float GetDeltaTime() noexcept { return s_DeltaTime; }
+        static float GetUnscaledDeltaTime() noexcept { return s_UnscaledDeltaTime; }
+        static float GetTime() noexcept { return s_Time; }
+        static float GetUnscaledTime() noexcept { return s_UnscaledTime; }
+        static float GetFixedDeltaTime() noexcept { return s_ActualFixedDeltaTime; }
+        static float GetFixedTimestep() noexcept { return s_FixedDeltaTime; }
+        static long long GetFrameCount() noexcept { return s_FrameCount; }
+        static float GetInterpolationAlpha() noexcept { return s_InterpolationAlpha; }
+        static int ConsumeFixedUpdate();
+    public:
+        static void SetTimeScale(float scale) noexcept;
+        static void SetFixedDeltaTime(float fixedDeltaTime) noexcept;
+        static float GetTimeScale() noexcept { return s_TimeScale; }
+    private:
+        static void Init();
+        static void Update();
+        static void Reset();
+    private:
+        static float s_DeltaTime;
+        static float s_UnscaledDeltaTime;
+        static float s_Time;
+        static float s_UnscaledTime;
+        static float s_FixedDeltaTime;
+        static float s_ActualFixedDeltaTime;
+        static float s_TimeScale;
+        static long long s_FrameCount;
 
-		static std::chrono::steady_clock::time_point s_StartTime;
-		static std::chrono::steady_clock::time_point s_LastFrameTime;
-		static std::chrono::steady_clock::time_point s_LastFixedTime;
-	};
+        static std::chrono::steady_clock::time_point s_StartTime;
+        static std::chrono::steady_clock::time_point s_LastFrameTime;
+        static float s_FixedAccumulator;
+        static float s_InterpolationAlpha;
+    };
 }

@@ -1,7 +1,7 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "CSharpScriptEngine.h"
 #include "CSharpScriptStorage.h"
-#include "ScriptEngineRegistry.h"
+#include "CSharpScriptEngineRegistry.h"
 #include "CSharpScriptMetaRegistry.h"
 #include "Prism/Scene/Scene.h"
 #include "Prism/Scene/Entity.h"
@@ -11,12 +11,20 @@
 #include <imgui.h>
 
 #include <Rolky/HostInstance.hpp>
+#include <Rolky/GC.hpp>
+#include <Rolky/TypeCache.hpp>
+#include <Rolky/ScriptSolution.hpp>
+#include <Rolky/Builder.hpp>
 
 namespace Prism
 {
     static void RolkyMessageCallback(std::string_view message, Rolky::MessageLevel level)
     {
-        if (level & Rolky::MessageLevel::Error) PR_CORE_ERROR("[Rolky] {0}", message);
+        if (level & Rolky::MessageLevel::Error)
+        {
+            PR_CORE_ERROR("[Rolky] {0}", message);
+            PR_CORE_ASSERT(false, "Rolky Error");
+        }
         else if (level & Rolky::MessageLevel::Warning) PR_CORE_WARN("[Rolky] {0}", message);
         else if (level & Rolky::MessageLevel::Info) PR_CORE_INFO("[Rolky] {0}", message);
         else PR_CORE_TRACE("[Rolky] {0}", message);
@@ -24,16 +32,20 @@ namespace Prism
     static void RolkyExceptionCallback(std::string_view message)
     {
         PR_CORE_ERROR("[Rolky] {0}", message);
+        PR_CORE_ASSERT(false, "Rolky exception");
     }
 
     // Static members
     std::unique_ptr<Rolky::HostInstance> CSharpScriptEngine::s_Host;
     std::unique_ptr<Rolky::AssemblyLoadContext> CSharpScriptEngine::s_LoadContext;
     WeakRef<Scene> CSharpScriptEngine::s_SceneContext;
-    Rolky::ManagedAssembly CSharpScriptEngine::s_EngineAssembly;
-    Rolky::ManagedAssembly CSharpScriptEngine::s_AppAssembly;
+    Scope<AssemblyData> CSharpScriptEngine::s_EngineAssemblyData;
+    Scope<AssemblyData> CSharpScriptEngine::s_AppAssemblyData;
     bool CSharpScriptEngine::s_Initialized = false;
     std::unordered_map<UUID, std::unordered_map<UUID, Rolky::ManagedObject>> CSharpScriptEngine::s_ManagedObjects;
+    CSharpScriptEngine::ReloadDelegate CSharpScriptEngine::s_PreUnloadCallbacks;
+    CSharpScriptEngine::ReloadDelegate CSharpScriptEngine::s_PostReloadCallbacks;
+    std::string CSharpScriptEngine::s_EngineAssemblyPath;
 
     void CSharpScriptEngine::Initialize()
     {
@@ -46,21 +58,20 @@ namespace Prism
         s_Host = std::make_unique<Rolky::HostInstance>();
         s_Host->Initialize(setting);
         s_LoadContext = std::make_unique<Rolky::AssemblyLoadContext>(std::move(s_Host->CreateAssemblyLoadContext("PrismLoadContext")));
+
+
         s_Initialized = true;
     }
 
     void CSharpScriptEngine::Shutdown()
     {
-        s_ManagedObjects.clear();
-        if (s_Host && s_LoadContext)
-            s_Host->UnloadAssemblyLoadContext(*s_LoadContext);
+        UnloadCurrentContext();
         if (s_Host)
         {
             s_Host->Shutdown();
             s_Host.reset();
         }
         s_SceneContext = nullptr;
-        s_LoadContext = nullptr;
         s_Initialized = false;
     }
 
@@ -94,7 +105,7 @@ namespace Prism
             storage.Remove(scriptID);
         }
         else
-            PR_CORE_WARN("[C# Script] Attempted to remove managed object with scriptID {0} but no objects found for sceneID {1}", (uint64_t)scriptID, (uint64_t)sceneID);
+            PR_CORE_WARN("[CSharp] Attempted to remove managed object with scriptID {0} but no objects found for sceneID {1}", (uint64_t)scriptID, (uint64_t)sceneID);
         
     }
 
@@ -108,30 +119,50 @@ namespace Prism
         auto* entityObj = GetManagedObject(sceneID, entityID);
         if (!entityObj)
         {
-            PR_CORE_ERROR("[C# Script] Cannot add behaviour: Entity managed object not found for {0}", (uint64_t)entityID);
+            PR_CORE_ERROR("[CSharp] Cannot add behaviour: Entity managed object not found for {0}", (uint64_t)entityID);
             return 0;
         }
 
-        auto type = GetAppAssembly().GetType(binding.ClassName);
+        auto* meta = CSharpScriptMetaRegistry::GetClassMetadata(binding.ClassID);
+        if (!meta)
+        {
+            PR_CORE_ERROR("[CSharp] Cannot add behaviour: class metadata not found for ClassID {0}", (uint64_t)binding.ClassID);
+            return 0;
+        }
+
+        auto type = GetAppAssembly().GetLocalType(meta->FullName);
         if (!type)
         {
-            PR_CORE_ERROR("[C# Script] Class not found in app assembly: {0}", binding.ClassName);
+            PR_CORE_ERROR("[CSharp] Class not found in app assembly: {0}", meta->FullName);
             return 0;
         }
 
         auto instance = type.CreateInstance();
         if (!instance.IsValid())
         {
-            PR_CORE_ERROR("[C# Script] Failed to create instance of {0}", binding.ClassName);
+            PR_CORE_ERROR("[CSharp] Failed to create instance of {0}", meta->FullName);
             return 0;
         }
-
-        // Push field values from C++ buffer to C# instance
+        auto& editorAssignableAttribType = s_EngineAssemblyData->Assembly->GetLocalType("Prism.EditorAssignableAttribute");
         for (auto& [hash, field] : binding.Fields)
         {
-            Buffer buf = field.GetBuffer();
-            if (buf.Data && buf.Size > 0)
-                instance.SetFieldValueRaw(field.GetName(), buf.Data);
+            if (field.GetManagedType()->HasAttribute(editorAssignableAttribType))
+            {
+                if (field.GetBuffer().Data && field.GetBuffer().Size > 0)
+                {
+                    auto fieldType = field.GetManagedType();
+                    Ref<Asset> asset = field.GetValue<Ref<Asset>>();
+                    if (!asset) continue;
+                    Ref<Asset>* assetPtr = new Ref<Asset>(asset);
+                    auto object = fieldType->CreateInstance(assetPtr);
+                    instance.SetFieldValue(field.GetName(), object);
+                }
+            }
+            else
+            {
+                if (field.GetBuffer().Data && field.GetBuffer().Size > 0)
+                    instance.SetFieldValueRaw(field.GetName(), field.GetBuffer().Data);
+            }
         }
 
         instance.SetPropertyValueRaw("Entity", entityObj);
@@ -141,11 +172,10 @@ namespace Prism
         auto [it, inserted] = sceneMap.emplace(behaviourID, std::move(instance));
         PR_CORE_ASSERT(inserted, "BehaviourID collision in s_ManagedObjects!");
 
-        // Bind fields to the now-stable managed object
         for (auto& [hash, field] : binding.Fields)
             field.SetInstance(&it->second);
 
-        PR_CORE_INFO("[C# Script] Added behaviour {0} ({1}) to entity {2}", binding.ClassName, (uint64_t)behaviourID, (uint64_t)entityID);
+        PR_CORE_INFO("[CSharp] Added behaviour {0} ({1}) to entity {2}", meta->ClassName, (uint64_t)behaviourID, (uint64_t)entityID);
         return behaviourID;
     }
 
@@ -157,28 +187,20 @@ namespace Prism
 
         auto* obj = GetManagedObject(sceneID, behaviourID);
 
-        // Clear field instances and remove binding
         auto& comp = entity.GetComponent<CSharpScriptComponent>();
-        for (auto& binding : comp.Behaviours)
+        auto it = comp.Behaviours.find(behaviourID);
+        if (it != comp.Behaviours.end())
         {
-            if (binding.BehaviourID == behaviourID)
-            {
-                for (auto& [hash, field] : binding.Fields)
-                    field.ClearInstance();
-                break;
-            }
+            for (auto& [hash, field] : it->second.Fields)
+                field.ClearInstance();
+            comp.Behaviours.erase(it);
         }
 
         auto sceneIt = s_ManagedObjects.find(sceneID);
         if (sceneIt != s_ManagedObjects.end())
             sceneIt->second.erase(behaviourID);
 
-        comp.Behaviours.erase(
-            std::remove_if(comp.Behaviours.begin(), comp.Behaviours.end(),
-                [behaviourID](const auto& b) { return b.BehaviourID == behaviourID; }),
-            comp.Behaviours.end());
-
-        PR_CORE_INFO("[C# Script] Removed behaviour {0} from entity {1}", (uint64_t)behaviourID, (uint64_t)entity.GetUUID());
+        PR_CORE_INFO("[CSharp] Removed behaviour {0} from entity {1}", (uint64_t)behaviourID, (uint64_t)entity.GetUUID());
     }
 
     void CSharpScriptEngine::ReleaseAll()
@@ -189,10 +211,20 @@ namespace Prism
     void CSharpScriptEngine::LoadEngineAssembly(const std::string& assemblyPath)
     {
         PR_PROFILE_FUNCTION();
-        auto path = std::filesystem::absolute(assemblyPath).string();
-        s_EngineAssembly = s_LoadContext->LoadAssembly(path);
-        ScriptEngineRegistry::RegisterAll();
-        auto initClass = s_EngineAssembly.GetType("Prism.Core");
+        s_EngineAssemblyPath = std::filesystem::absolute(assemblyPath).string();
+        s_EngineAssemblyData = CreateScope<AssemblyData>();
+        s_EngineAssemblyData->Assembly = &s_LoadContext->LoadAssembly(s_EngineAssemblyPath);
+
+        if (s_EngineAssemblyData->Assembly->GetLoadStatus() != Rolky::AssemblyLoadStatus::Success)
+        {
+            PR_CORE_ERROR("[CSharp] Failed to load engine assembly: {0}", s_EngineAssemblyPath);
+            return;
+        }
+
+        CSharpScriptEngineRegistry::RegisterAll();
+        s_EngineAssemblyData->Assembly->UploadInternalCalls();
+
+        auto& initClass = s_EngineAssemblyData->Assembly->GetLocalType("Prism.Core");
         initClass.InvokeStaticMethod("Init");
     }
 
@@ -200,15 +232,35 @@ namespace Prism
     {
         PR_PROFILE_FUNCTION();
         auto path = std::filesystem::absolute(assemblyPath).string();
-        s_AppAssembly = s_LoadContext->LoadAssembly(path);
+        s_AppAssemblyData = CreateScope<AssemblyData>();
+        s_AppAssemblyData->Assembly = &s_LoadContext->LoadAssembly(path);
+
+        if (s_AppAssemblyData->Assembly->GetLoadStatus() != Rolky::AssemblyLoadStatus::Success)
+        {
+            PR_CORE_ERROR("[CSharp] Failed to load app assembly: {0}", path);
+            return;
+        }
+
+        CSharpScriptMetaRegistry::Init();
         CSharpScriptMetaRegistry::BuildCache();
     }
 
-    void CSharpScriptEngine::ReloadAssembly(const std::string& assemblyPath)
+    void CSharpScriptEngine::ReloadAppAssembly(const std::string& appAssemblyPath)
     {
         PR_PROFILE_FUNCTION();
-        auto path = std::filesystem::absolute(assemblyPath).string();
-        s_AppAssembly = s_LoadContext->LoadAssembly(path);
+        PR_CORE_INFO("[CSharp] Reloading assemblies...");
+
+        s_PreUnloadCallbacks();
+
+        UnloadCurrentContext();
+
+        ReloadContextAndEngineAssembly();
+        LoadEngineAssembly(s_EngineAssemblyPath);
+        LoadAppAssembly(appAssemblyPath);
+
+        s_PostReloadCallbacks();
+
+        PR_CORE_INFO("[CSharp] Assembly reload complete.");
     }
 
     void CSharpScriptEngine::SetSceneContext(const WeakRef<Scene>& scene)
@@ -223,17 +275,22 @@ namespace Prism
 
     bool CSharpScriptEngine::ModuleExists(const std::string& moduleName)
     {
-        return s_AppAssembly.GetType(moduleName) ? true : false;
+        return s_AppAssemblyData && s_AppAssemblyData->Assembly
+            && s_AppAssemblyData->Assembly->GetLocalType(moduleName);
     }
 
     Rolky::ManagedAssembly& CSharpScriptEngine::GetEngineAssembly()
     {
-        return s_EngineAssembly;
+        PR_CORE_ASSERT(s_EngineAssemblyData && s_EngineAssemblyData->Assembly,
+                       "Engine assembly not loaded!");
+        return *s_EngineAssemblyData->Assembly;
     }
 
     Rolky::ManagedAssembly& CSharpScriptEngine::GetAppAssembly()
     {
-        return s_AppAssembly;
+        PR_CORE_ASSERT(s_AppAssemblyData && s_AppAssemblyData->Assembly,
+                       "App assembly not loaded!");
+        return *s_AppAssemblyData->Assembly;
     }
 
     void CSharpScriptEngine::OnImGuiRender()
@@ -241,6 +298,86 @@ namespace Prism
         ImGui::Begin("Script Engine Debug");
         ImGui::Text("C# Engine Initialized: %s", s_Initialized ? "Yes" : "No");
         ImGui::End();
+    }
+
+    CSharpScriptEngine::ReloadCallbackToken CSharpScriptEngine::RegisterPreUnloadCallback(ReloadDelegate::FuncType cb)
+    {
+        return s_PreUnloadCallbacks.Add(std::move(cb));
+    }
+
+    void CSharpScriptEngine::UnregisterPreUnloadCallback(ReloadCallbackToken token)
+    {
+        s_PreUnloadCallbacks.Remove(token);
+    }
+
+    CSharpScriptEngine::ReloadCallbackToken CSharpScriptEngine::RegisterPostReloadCallback(ReloadDelegate::FuncType cb)
+    {
+        return s_PostReloadCallbacks.Add(std::move(cb));
+    }
+
+    void CSharpScriptEngine::UnregisterPostReloadCallback(ReloadCallbackToken token)
+    {
+        s_PostReloadCallbacks.Remove(token);
+    }
+
+    // ── ALC 生命周期 ──
+    void CSharpScriptEngine::UnloadCurrentContext()
+    {
+        s_ManagedObjects.clear();
+        CSharpScriptMetaRegistry::Shutdown();
+        s_EngineAssemblyData.reset();
+        s_AppAssemblyData.reset();
+
+        if (s_Host && s_LoadContext)
+        {
+            s_Host->UnloadAssemblyLoadContext(*s_LoadContext);
+            s_LoadContext.reset();
+        }
+
+        //Rolky::TypeCache::Get().Clear();
+
+        Rolky::GC::Collect();
+        Rolky::GC::WaitForPendingFinalizers();
+        Rolky::GC::Collect();
+        Rolky::GC::WaitForPendingFinalizers();
+        Rolky::GC::Collect();
+    }
+
+    void CSharpScriptEngine::ReloadContextAndEngineAssembly()
+    {
+        PR_CORE_ASSERT(s_Host, "Host must remain alive during reload!");
+        s_LoadContext = std::make_unique<Rolky::AssemblyLoadContext>(
+            std::move(s_Host->CreateAssemblyLoadContext("PrismLoadContext")));
+    }
+
+    void CSharpScriptEngine::BuildAssembly()
+    {
+#ifdef PR_DEBUG
+        PR_CORE_ASSERT(false, "BuildAssembly should not be called in debug mode!");
+#else
+        Rolky::ScriptSolution sln;
+        sln.Name = "Game";
+        sln.Directory = "Assets/Scripts/CSharp";
+        sln.OutputDirectory = "Assets/Scripts/net9.0";
+        auto& game = sln.AddProject("Game");
+        game.SourceFiles = { "Assets/Scripts/CSharp/src" };
+        game.Defines = { "PR_DEBUG" };
+        game.References = {
+            "Assets/Scripts/net9.0/Prism.Scripting.dll",
+            "Assets/Scripts/net9.0/Rolky.Managed.dll"
+        };
+        sln.Generate();
+        Rolky::BuildManager builder;
+        builder.SetLogsDirectory("Assets/Scripts/CSharp/Logs");
+        if (builder.Build(sln, "Debug"))
+        {
+            PR_CORE_INFO("[CSharp] Test build succeeded.");
+        }
+        else
+        {
+            PR_CORE_WARN("[CSharp] Test build failed. Check Assets/Scripts/CSharp/Logs/msbuild_log.txt");
+        }
+#endif
     }
 
 }

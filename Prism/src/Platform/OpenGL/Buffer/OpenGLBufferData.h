@@ -6,5 +6,5 @@ typedef unsigned int GLenum;
 
 namespace Prism
 {
-	GLenum OpenGLUsage(BufferUsage usage);
+    GLenum OpenGLUsage(BufferUsage usage);
 }

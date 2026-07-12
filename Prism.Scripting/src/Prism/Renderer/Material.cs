@@ -1,26 +1,9 @@
-﻿
-using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+﻿using System;
 
 namespace Prism
 {
     public class Material
     {
-        public void Set(string uniform, float value)
-        {
-            unsafe { InternalCalls.Prism_Material_SetFloat(m_UnmanagedInstance, uniform, value);}
-        }
-
-        public void Set(string uniform, Texture2D texture)
-        {
-            unsafe { InternalCalls.Prism_Material_SetTexture(m_UnmanagedInstance, uniform, texture.m_UnmanagedInstance);}
-        }
-
-        public void SetTexture(string uniform, Texture2D texture)
-        {
-            unsafe { InternalCalls.Prism_Material_SetTexture(m_UnmanagedInstance, uniform, texture.m_UnmanagedInstance); }
-        }
 
         public Material(string shaderName)
         {
@@ -34,10 +17,60 @@ namespace Prism
 
         ~Material()
         {
-            unsafe { InternalCalls.Prism_Material_Destructor(m_UnmanagedInstance);}
+            unsafe { InternalCalls.Prism_Material_Destructor(m_UnmanagedInstance); }
         }
 
         internal IntPtr m_UnmanagedInstance;
+
+        public void SetFloat(string uniform, float value)
+        {
+            unsafe { InternalCalls.Prism_Material_SetFloat(m_UnmanagedInstance, uniform, value); }
+        }
+
+        public void SetInt(string uniform, int value)
+        {
+            unsafe { InternalCalls.Prism_Material_SetInt(m_UnmanagedInstance, uniform, value); }
+        }
+
+        public void SetBool(string uniform, bool value)
+        {
+            unsafe { InternalCalls.Prism_Material_SetBool(m_UnmanagedInstance, uniform, value); }
+        }
+
+        public void SetVec2(string uniform, Vector2 value)
+        {
+            unsafe { InternalCalls.Prism_Material_SetVector2(m_UnmanagedInstance, uniform, &value); }
+        }
+
+        public void SetColor(string uniform, Vector3 value)
+        {
+            unsafe { InternalCalls.Prism_Material_SetColor3(m_UnmanagedInstance, uniform, &value); }
+        }
+
+        public void SetColor(string uniform, Vector4 value)
+        {
+            unsafe { InternalCalls.Prism_Material_SetColor(m_UnmanagedInstance, uniform, &value); }
+        }
+
+        public void SetMatrix4(string uniform, Matrix4 value)
+        {
+            unsafe { InternalCalls.Prism_Material_SetMatrix4(m_UnmanagedInstance, uniform, &value); }
+        }
+
+        public void SetVector3(string uniform, Vector3 value)
+        {
+            unsafe { InternalCalls.Prism_Material_SetVector3(m_UnmanagedInstance, uniform, &value); }
+        }
+
+        public void SetVector4(string uniform, Vector4 value)
+        {
+            unsafe { InternalCalls.Prism_Material_SetVector4(m_UnmanagedInstance, uniform, &value); }
+        }
+
+        public void SetTexture(string uniform, Texture2D texture)
+        {
+            unsafe { InternalCalls.Prism_Material_SetTexture(m_UnmanagedInstance, uniform, texture.m_UnmanagedInstance); }
+        }
 
         public void SetKeyword(string name, bool enabled)
         {
@@ -48,89 +81,5 @@ namespace Prism
         {
             unsafe { return InternalCalls.Prism_Material_IsKeywordEnabled(m_UnmanagedInstance, name); }
         }
-
-
-    }
-
-    public class MaterialInstance
-    {
-        public void Set(string uniform, float value)
-        {
-            unsafe {  InternalCalls.Prism_MaterialInstance_SetFloat(m_UnmanagedInstance, uniform, value);}
-        }
-
-        public void Set(string uniform, Texture2D texture)
-        {
-            unsafe { InternalCalls.Prism_MaterialInstance_SetTexture(m_UnmanagedInstance, uniform, texture.m_UnmanagedInstance);}
-        }
-
-        public void Set(string uniform, Vector3 value)
-        {
-            unsafe
-            {
-                IntPtr valuePtr = Marshal.AllocHGlobal(Marshal.SizeOf<Vector3>());
-                try
-                {
-                    Marshal.StructureToPtr(value, valuePtr, false);
-                    InternalCalls.Prism_MaterialInstance_SetVector3(m_UnmanagedInstance, uniform, valuePtr);
-                }
-                finally
-                {
-                   Marshal.FreeHGlobal(valuePtr);
-                }
-            }
-        }
-
-
-        public void Set(string uniform, Vector4 value)
-        {
-            unsafe
-            {
-                IntPtr valuePtr = Marshal.AllocHGlobal(Marshal.SizeOf<Vector4>());
-                try
-                {
-                    Marshal.StructureToPtr(value, valuePtr, false);
-                    InternalCalls.Prism_MaterialInstance_SetVector4(m_UnmanagedInstance, uniform, valuePtr);
-                }
-                finally
-                {
-                    Marshal.FreeHGlobal(valuePtr);
-                }
-            }
-        }
-
-        public void SetTexture(string uniform, Texture2D texture)
-        {
-            unsafe { InternalCalls.Prism_MaterialInstance_SetTexture(m_UnmanagedInstance, uniform, texture.m_UnmanagedInstance);}
-        }
-
-        public MaterialInstance(Material parent)
-        {
-            unsafe { m_UnmanagedInstance = InternalCalls.Prism_MaterialInstance_Constructor(parent.m_UnmanagedInstance); }
-        }
-
-        internal MaterialInstance(IntPtr unmanagedInstance)
-        {
-            m_UnmanagedInstance = unmanagedInstance;
-        }
-
-        ~MaterialInstance()
-        {
-            unsafe { InternalCalls.Prism_MaterialInstance_Destructor(m_UnmanagedInstance);}
-        }
-
-        internal IntPtr m_UnmanagedInstance;
-
-        public void SetKeyword(string name, bool enabled)
-        {
-            unsafe { InternalCalls.Prism_MaterialInstance_SetKeyword(m_UnmanagedInstance, name, enabled); }
-        }
-
-        public bool IsKeywordEnabled(string name)
-        {
-            unsafe { return InternalCalls.Prism_MaterialInstance_IsKeywordEnabled(m_UnmanagedInstance, name); }
-        }
-
-
     }
 }

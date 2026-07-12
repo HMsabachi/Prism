@@ -20,6 +20,8 @@ Rolky 是一个轻量级的 C++/C# 互操作引擎，设计理念受 Mono 的 P/
 | [GC-and-Memory](GC-and-Memory) | 垃圾回收和内存管理 |
 | [Interop-Types](Interop-Types) | 字符串、数组等跨边界类型 |
 | [Marshalling](Marshalling) | 类型映射与参数编组 |
+| [InternalCall-Patterns](InternalCall-Patterns) | 传参模式：对象/数组/字符串/结构体 |
+| [Builder](Builder) | C# 项目编译与诊断 |
 
 ## 架构示意
 

@@ -4,66 +4,88 @@
 #define PR_RENDER_TRACE(...) PR_CORE_TRACE(__VA_ARGS__)
 namespace Prism
 {
+    constexpr static size_t AlignUp(size_t size, size_t alignment) {
+        return (size + alignment - 1) & ~(alignment - 1);
+    }
 
-	const size_t RenderCommandQueue::COMMAND_BUFFER_SIZE = 10 * 1024 * 1024;
+    const size_t RenderCommandQueue::COMMAND_BUFFER_SIZE = 10 * 1024 * 1024; // 10MB buffer
+    const size_t RenderCommandQueue::DATA_POOL_MAX_SIZE = 256 * 1024 * 1024; // 256MB buffer
 
-	RenderCommandQueue::RenderCommandQueue()
-		:m_CommandCount(0)
-	{
-		m_CommandBuffer = new uint8_t[COMMAND_BUFFER_SIZE]; // 10MB buffer
-		m_CommandBufferPtr = m_CommandBuffer;
-		memset(m_CommandBuffer, 0, COMMAND_BUFFER_SIZE);
-	}
+    RenderCommandQueue::RenderCommandQueue()
+        :m_CommandCount(0)
+    {
+        m_CommandBuffer = new uint8_t[COMMAND_BUFFER_SIZE]; 
+        m_CommandBufferPtr = m_CommandBuffer;
+        memset(m_CommandBuffer, 0, COMMAND_BUFFER_SIZE);
 
-	RenderCommandQueue::~RenderCommandQueue()
-	{
-		// TODO: 渲染队列释放内存顺序有问题
-		//delete[] m_CommandBuffer;
-	}
+        m_DataPool = new uint8_t[DATA_POOL_MAX_SIZE];
+        m_DataPoolPtr = m_DataPool;
+        memset(m_DataPool, 0, DATA_POOL_MAX_SIZE);
+    }
 
-	void* RenderCommandQueue::Allocate(RenderCommandFn fn, uint32_t size)
-	{
-		m_SubmitCount++;
-		if (m_IsExecuting);
-			//PR_CORE_WARN("RenderCommandQueue: 在执行命令队列时分配新了的命令!");
-		// TODO: 对齐 alignment
-		*(RenderCommandFn*)m_CommandBufferPtr = fn;
-		m_CommandBufferPtr += sizeof(RenderCommandFn);
+    RenderCommandQueue::~RenderCommandQueue()
+    {
+        // TODO: 渲染队列释放内存顺序有问题
+        //delete[] m_CommandBuffer;
+    }
 
-		*(uint32_t*)m_CommandBufferPtr = size;
-		m_CommandBufferPtr += sizeof(uint32_t);
+    void* RenderCommandQueue::Allocate(RenderCommandFn fn, uint32_t size)
+    {
+        m_SubmitCount++;
+        //if (m_IsExecuting);
+            //PR_CORE_WARN("RenderCommandQueue: 在执行命令队列时分配新了的命令!");
+        // TODO: 对齐 alignment
+        *(RenderCommandFn*)m_CommandBufferPtr = fn;
+        m_CommandBufferPtr += sizeof(RenderCommandFn);
 
-		void* memory = m_CommandBufferPtr;
-		m_CommandBufferPtr += size;
+        *(uint32_t*)m_CommandBufferPtr = size;
+        m_CommandBufferPtr += sizeof(uint32_t);
 
-		m_CommandCount++;
-		return memory;
-	}
+        void* memory = m_CommandBufferPtr;
+        m_CommandBufferPtr += size;
 
-	void RenderCommandQueue::Execute()
-	{
-		PR_PROFILE_FUNCTION();
-		m_IsExecuting = true;
+        m_CommandCount++;
+        return memory;
+    }
 
-		//PR_RENDER_TRACE("RenderCommandQueue::Execute -- {0} commands, {1} bytes", m_CommandCount, (m_CommandBufferPtr - m_CommandBuffer));
+    void* RenderCommandQueue::DataAllocate(const void* data, size_t size)
+    {
+        if (size > DATA_POOL_MAX_SIZE) return nullptr;
+        size_t alignedSize = AlignUp(size, 16);
+        if (m_DataPoolPtr + alignedSize > m_DataPool + DATA_POOL_MAX_SIZE)
+            m_DataPoolPtr = m_DataPool;
+        byte* ptr = m_DataPoolPtr;
+        m_DataPoolPtr += alignedSize;
+        if (data)
+            std::memcpy(ptr, data, size);
+        m_DataPoolCapacity = (uint32_t)((m_DataPoolPtr - m_DataPool) / (1024 * 1024));
+        return ptr;
+    }
 
-		byte* buffer = m_CommandBuffer;
+    void RenderCommandQueue::Execute()
+    {
+        PR_PROFILE_FUNCTION();
+        m_IsExecuting = true;
 
-		for (uint32_t i = 0; i < m_CommandCount; i++)
-		{
-			RenderCommandFn function = *(RenderCommandFn*)buffer;
-			buffer += sizeof(RenderCommandFn);
+        //PR_RENDER_TRACE("RenderCommandQueue::Execute -- {0} commands, {1} bytes", m_CommandCount, (m_CommandBufferPtr - m_CommandBuffer));
 
-			uint32_t size = *(uint32_t*)buffer;
-			buffer += sizeof(uint32_t);
-			function(buffer);
-			buffer += size;
-		}
+        byte* buffer = m_CommandBuffer;
 
-		m_CommandBufferPtr = m_CommandBuffer;
-		m_CommandCount = 0;
-		m_IsExecuting = false;
-	}
-	
+        for (uint32_t i = 0; i < m_CommandCount; i++)
+        {
+            RenderCommandFn function = *(RenderCommandFn*)buffer;
+            buffer += sizeof(RenderCommandFn);
+
+            uint32_t size = *(uint32_t*)buffer;
+            buffer += sizeof(uint32_t);
+            function(buffer);
+            buffer += size;
+        }
+
+        m_CommandBufferPtr = m_CommandBuffer;
+        m_CommandCount = 0;
+        m_IsExecuting = false;
+    }
+    
 
 }

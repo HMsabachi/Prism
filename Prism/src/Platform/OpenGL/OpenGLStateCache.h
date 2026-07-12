@@ -1,9 +1,6 @@
-﻿#pragma once
+#pragma once
 
-namespace Prism
-{
-    struct ShaderCommand;
-}
+namespace PrismShaderCompiler { struct PipelineState; }
 
 namespace Prism
 {
@@ -13,14 +10,15 @@ namespace Prism
     public:
         static void Init();
 
-        static void Apply(const ShaderCommand& newCommand);
+        static void Apply(const PrismShaderCompiler::PipelineState& newCommand);
 
         static void Reset();
 
     private:
-        static void ApplyBlendIfChanged(const ShaderCommand& cmd);
-        static void ApplyCullIfChanged(const ShaderCommand& cmd);
-        static void ApplyDepthIfChanged(const ShaderCommand& cmd);
-        static void ApplyZWriteIfChanged(const ShaderCommand& cmd);
+        static void ApplyBlendIfChanged(const PrismShaderCompiler::PipelineState& cmd);
+        static void ApplyCullIfChanged(const PrismShaderCompiler::PipelineState& cmd);
+        static void ApplyDepthIfChanged(const PrismShaderCompiler::PipelineState& cmd);
+        static void ApplyColorMaskIfChanged(const PrismShaderCompiler::PipelineState& cmd);
+        static void ApplyDepthBiasIfChanged(const PrismShaderCompiler::PipelineState& cmd);
     };
 }
