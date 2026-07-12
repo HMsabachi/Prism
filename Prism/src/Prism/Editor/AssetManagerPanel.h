@@ -80,7 +80,7 @@ namespace Prism {
         void UpdateCurrentDirectory(AssetHandle directoryHandle);
 
     private:
-        Ref<Texture2D> m_FolderTex;
+        Ref<Texture2D> m_FileTex;
 
         Ref<Texture2D> m_BackbtnTex;
         Ref<Texture2D> m_FwrdbtnTex;
@@ -111,7 +111,7 @@ namespace Prism {
         SelectionStack<AssetHandle> m_SelectedAssets;
         bool m_RenamingSelected = false;
 
-        std::map<size_t, Ref<Texture2D>> m_AssetIconMap;
+        std::map<std::string, Ref<Texture2D>> m_AssetIconMap;
     };
 
 }

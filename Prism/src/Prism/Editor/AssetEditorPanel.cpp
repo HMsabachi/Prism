@@ -41,7 +41,7 @@ namespace Prism {
 
     void AssetEditorPanel::RegisterDefaultEditors()
     {
-        RegisterEditor<TextureEditor>(AssetType::Texture);
+        RegisterEditor<TextureViewer>(AssetType::Texture);
         RegisterEditor<PhysicsMaterialEditor>(AssetType::PhysicsMat);
     }
 

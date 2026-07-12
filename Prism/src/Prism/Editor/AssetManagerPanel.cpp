@@ -19,21 +19,17 @@ namespace Prism {
             UpdateCurrentDirectory(m_CurrentDirHandle);
         });
 
-        m_FolderTex = Texture2D::Create("assets/editor/folder.png");
-
-        m_AssetIconMap[-1] = Texture2D::Create("assets/editor/file.png");
-        m_AssetIconMap[0] = m_FolderTex;
-        m_AssetIconMap[AssetTypes::GetAssetTypeID("hdr")] = Texture2D::Create("assets/editor/file.png");
-        m_AssetIconMap[AssetTypes::GetAssetTypeID("fbx")] = Texture2D::Create("assets/editor/fbx.png");
-        m_AssetIconMap[AssetTypes::GetAssetTypeID("obj")] = Texture2D::Create("assets/editor/obj.png");
-        m_AssetIconMap[AssetTypes::GetAssetTypeID("wav")] = Texture2D::Create("assets/editor/wav.png");
-        m_AssetIconMap[AssetTypes::GetAssetTypeID("cs")] = Texture2D::Create("assets/editor/csc.png");
-        m_AssetIconMap[AssetTypes::GetAssetTypeID("py")] = Texture2D::Create("assets/editor/pyc.png");
-        m_AssetIconMap[AssetTypes::GetAssetTypeID("png")] = Texture2D::Create("assets/editor/png.png");
-        m_AssetIconMap[AssetTypes::GetAssetTypeID("blend")] = Texture2D::Create("assets/editor/blend.png");
-        m_AssetIconMap[AssetTypes::GetAssetTypeID("psc")] = Texture2D::Create("assets/editor/prism.png");
-        m_AssetIconMap[AssetTypes::GetAssetTypeID("Shader")] = Texture2D::Create("assets/editor/shader.png");
-        //m_AssetIconMap[AssetTypes::GetAssetTypeID("glsl")] = m_AssetIconMap[AssetTypes::GetAssetTypeID("Shader")];
+        m_FileTex = Texture2D::Create("assets/editor/file.png");
+        m_AssetIconMap[""] = Texture2D::Create("assets/editor/folder.png");
+        m_AssetIconMap["fbx"] = Texture2D::Create("assets/editor/fbx.png");
+        m_AssetIconMap["obj"] = Texture2D::Create("assets/editor/obj.png");
+        m_AssetIconMap["wav"] = Texture2D::Create("assets/editor/wav.png");
+        m_AssetIconMap["cs"] = Texture2D::Create("assets/editor/csc.png");
+        m_AssetIconMap["py"] = Texture2D::Create("assets/editor/pyc.png");
+        m_AssetIconMap["png"] = Texture2D::Create("assets/editor/png.png");
+        m_AssetIconMap["blend"] = Texture2D::Create("assets/editor/blend.png");
+        m_AssetIconMap["psc"] = Texture2D::Create("assets/editor/prism.png");
+        m_AssetIconMap["Shader"] = Texture2D::Create("assets/editor/shader.png");
 
         m_BackbtnTex = Texture2D::Create("assets/editor/btn_back.png");
         m_FwrdbtnTex = Texture2D::Create("assets/editor/btn_fwrd.png");
@@ -206,9 +202,7 @@ namespace Prism {
         ImGui::PushID(&asset->Handle);
         ImGui::BeginGroup();
 
-        size_t fileID = AssetTypes::GetAssetTypeID(asset->Extension);
-        fileID = m_AssetIconMap.find(fileID) != m_AssetIconMap.end() ? fileID : -1;
-        RendererID iconRef = m_AssetIconMap[fileID]->GetRendererID();
+        RendererID iconRef = m_AssetIconMap.find(asset->Extension) != m_AssetIconMap.end() ? m_AssetIconMap[asset->Extension]->GetRendererID() : m_FileTex->GetRendererID();
 
         if (m_SelectedAssets.IsSelected(assetHandle))
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25F, 0.25F, 0.25F, 0.75F));

@@ -58,14 +58,14 @@ namespace Prism
 
 namespace Prism::PythonScript
 {
+    struct PythonTransform
+    { glm::vec3 Position; glm::vec3 Rotation; glm::vec3 Scale; glm::vec3 Up; glm::vec3 Right; glm::vec3 Forward; };
+
     class PythonNoise
     {
     public:
         static float PerlinNoise(float x, float y) { return Noise::PerlinNoise(x, y); }
     };
-
-    struct PythonTransform
-    { glm::vec3 Position; glm::vec3 Rotation; glm::vec3 Scale; glm::vec3 Up; glm::vec3 Right; glm::vec3 Forward; };
 
     class PythonInput
     {

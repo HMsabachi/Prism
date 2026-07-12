@@ -12,6 +12,7 @@
 #include "Prism/Physics/PhysicsActor.h"
 #include "Prism/Physics/PXPhysicsWrappers.h"
 #include "Prism/Physics/PhysicsLayer.h"
+#include "Prism/Math/Math.h"
 #include "Prism/Utilities/FileSystem.h"
 #include "Prism/Core/LanguageManager.h"
 #include "Scripting/CSharp/CSharpScriptMetaRegistry.h"
@@ -89,10 +90,15 @@ namespace Prism {
                         {
                             auto& children = previousParent.Children();
                             children.erase(std::remove(children.begin(), children.end(), droppedHandle), children.end());
+
+                            glm::mat4 parentTransform = m_Context->GetTransformRelativeToParent(previousParent);
+                            glm::vec3 parentTranslation, parentRotation, parentScale;
+                            Math::DecomposeTransform(parentTransform, parentTranslation, parentRotation, parentScale);
+
+                            e.Transformation().SetPosition(e.Transformation().GetPosition() + parentTranslation);
                         }
 
                         e.SetParentUUID(0);
-                        PR_CORE_INFO("Unparented Entity!");
                     }
                 }
 
@@ -219,10 +225,13 @@ namespace Prism {
                             parentChildren.erase(std::remove(parentChildren.begin(), parentChildren.end(), droppedHandle), parentChildren.end());
                         }
 
+                        glm::mat4 parentTransform = m_Context->GetTransformRelativeToParent(entity);
+                        glm::vec3 parentTranslation, parentRotation, parentScale;
+                        Math::DecomposeTransform(parentTransform, parentTranslation, parentRotation, parentScale);
+
+                        e.Transformation().SetPosition(e.Transformation().GetPosition() - parentTranslation);
                         e.SetParentUUID(entity.GetUUID());
                         entity.Children().push_back(droppedHandle);
-
-                        PR_CORE_INFO("Dropping Entity {0} on {1}", droppedHandle, entity.GetUUID());
                     }
                 }
             }

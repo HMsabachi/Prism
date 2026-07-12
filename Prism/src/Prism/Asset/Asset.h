@@ -6,7 +6,7 @@ namespace Prism {
 
     enum class AssetType
     {
-        Scene, Mesh, Texture, EnvMap, Audio, Script, PhysicsMat, Shader, Directory, Other, Any
+        Scene, Mesh, Texture, EnvMap, Audio, Script, PhysicsMat, Shader, Directory, Other, None
     };
 
     using AssetHandle = UUID;
@@ -15,7 +15,7 @@ namespace Prism {
     {
     public:
         AssetHandle Handle;
-        AssetType Type{};
+        AssetType Type = AssetType::None;
 
         std::string FilePath;
         std::string FileName;

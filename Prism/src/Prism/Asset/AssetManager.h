@@ -25,7 +25,6 @@ namespace Prism
     {
     public:
         static void Init();
-        static size_t GetAssetTypeID(const std::string& extension);
         static AssetType GetAssetTypeFromExtension(const std::string& extension);
 
     private:
@@ -92,6 +91,12 @@ namespace Prism
             }
 
             return asset.As<T>();
+        }
+
+        template<typename T>
+        static Ref<T> GetAsset(const std::string& filepath, bool loadData = true)
+        {
+            return GetAsset<T>(GetAssetHandleFromFilePath(filepath), loadData);
         }
 
         static bool IsAssetType(AssetHandle assetHandle, AssetType type)

@@ -19,10 +19,10 @@ namespace Prism {
         Ref<PhysicsMaterial> m_Asset;
     };
 
-    class PRISM_API TextureEditor : public AssetEditor
+    class PRISM_API TextureViewer : public AssetEditor
     {
     public:
-        TextureEditor();
+        TextureViewer();
 
         virtual void SetAsset(const Ref<Asset>& asset) override { m_Asset = (Ref<Texture2D>)asset; }
 

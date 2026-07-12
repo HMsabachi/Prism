@@ -47,7 +47,7 @@ premake5 xcode4        # macOS Xcode
 - **反射元数据** — 编译时提取属性布局、Uniform 绑定、管线状态，运行时无需手动绑定
 - **Shader 变体系统** — `#pragma shader_feature` 关键字 + 位掩码，自动编译 2^N 变体组合
 - **23 种属性类型** — Color3/4、Range、Texture2D/Cube、Vector2/3/4、Matrix4、Float/Int 等
-- 集成在引擎运行时 — `.Shader` 文件由 `PrismShader` 类加载并编译
+- 集成在引擎运行时 — `PrismShader` 通过 `PrismShaderCompiler` 库加载并编译 `.Shader` 文件
 
 ### 现代渲染管线（RenderPipeline）
 - PBR 金属/粗糙度工作流 + HDR 渲染 + MSAA 8x 多重采样
@@ -73,10 +73,10 @@ premake5 xcode4        # macOS Xcode
 - Python 3.13 嵌入式 CPython 运行时
 - **多 Behaviour 支持**：C# 和 Python Behaviour 可混合共存于同一 Entity
 - 统一生命周期 + 2D/3D 碰撞回调（`OnCollisionBegin` / `OnCollisionEnd` / `OnCollision2DBegin` / `OnCollision2DEnd`）
-- `__annotations__` 类型注解自动暴露为编辑器公共字段
+- 类型注解字段自动暴露为编辑器公共字段（`float`、`Vector3`、`Mesh`、`Material`、`Texture2D` 等）
 - **API 与 C# 端对称**：Core、Math、Renderer、Physics、Behaviour
-- **pybind11 原生桥接**：`PrismEngine` 模块提供完整 ECS + 资产 + 物理 API
-- **PGLM 数学类型桥接**：Python Buffer Protocol 双向转换 glm ↔ pyglm
+- **pybind11 原生桥接**：`PrismEngine` C++ 模块提供完整 ECS + 资产 + 物理 API
+- **glm ↔ pyglm 类型转换**：pybind11 类型 caster 自动双向转换向量/矩阵/四元数
 
 ### 物理系统
 - **3D 物理（NVIDIA PhysX）**：
@@ -167,8 +167,14 @@ Prism/
 │   │   └── Windows/               # Windows 平台层（GLFW 窗口、输入）
 │   ├── src/Scripting/             # 多语言脚本引擎
 │   │   ├── CSharp/                # C++/C# 互操作（Rolky、InternalCall）
-│   │   └── Python/                # Python 脚本引擎（CPython 嵌入、pybind11 桥接）
-│   │       └── Interop/           # Python C API RAII + glm ↔ pyglm 转换
+│   │   └── Python/                # Python 脚本引擎（pybind11 嵌入、PrismEngine 模块）
+│   │       ├── PythonScriptEngine.h/.cpp           # 解释器生命周期 + 实例管理
+│   │       ├── PythonScriptWrappers.h/.cpp         # PrismEngine 原生模块定义
+│   │       ├── PythonScriptEngineRegistry.h/.cpp   # Component 类型注册
+│   │       ├── PythonScriptMetaRegistry.h/.cpp     # 类元数据缓存
+│   │       ├── PythonScriptStorage.h/.cpp          # 脚本实例存储
+│   │       ├── PythonField.h/.inl                  # 公共字段序列化
+│   │       └── PythonScriptTypeCasters.h           # glm ↔ pyglm 类型转换
 │   └── vendor/
 │       ├── PrismShaderCompiler/   # 自定义着色器编译器（PSL 解析、多后端代码生成）
 │       ├── PhysX/                 # NVIDIA PhysX 5.x SDK
@@ -209,7 +215,7 @@ Prism/
 | 3D 物理 | NVIDIA PhysX 5.x |
 | 2D 物理 | Box2D |
 | 着色器编译器 | PrismShaderCompiler（PSL → GLSL/HLSL/MSL/SPIR-V） |
-| 脚本互操作 | Rolky（C#）、CPython 嵌入式 C API（Python） |
+| 脚本互操作 | Rolky（C#）、pybind11（Python） |
 | 日志 | spdlog |
 | 模型导入 | Assimp |
 | 序列化 | yaml-cpp |
@@ -219,13 +225,14 @@ Prism/
 
 ## 技术文档
 
-- [Prism Shader 文档](docs/PrismShader.md)
-- [Prism Shader 扩展指南](docs/PrismShaderExtension.md)
-- [Renderer 文档](docs/Renderer.md)
+- [PSL 语法参考](Prism/vendor/PrismShaderCompiler/docs/PSL-Syntax.md) — 权威 PSL 语言规范
+- [PrismShader 集成指南](docs/PrismShader.md) — 引擎侧 Shader 加载、变体管理、Pass 系统
+- [PrismShader 扩展指南](docs/PrismShaderExtension.md) — 如何扩展着色器系统
+- [Renderer 文档](docs/Renderer.md) — 渲染管线架构（RenderPipeline、CSM、PBR）
+- [Python 脚本引擎文档](docs/PythonScriptCore.md) — pybind11 架构、PrismEngine 模块 API、扩展指南
 - [Time 文档](docs/Time.md)
 - [Time Documentation (English)](docs/TimeEN.md)
-- [Python Script Core 文档](docs/PythonScriptCore.md)
-- [PSL 语法参考](Prism/vendor/PrismShaderCompiler/docs/PSL-Syntax.md)
+- [PrismShaderCompiler CLI 用法](Prism/vendor/PrismShaderCompiler/README.md)
 
 ## 开发路线图
 

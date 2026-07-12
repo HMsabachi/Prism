@@ -912,6 +912,15 @@ namespace Prism
                 case KeyCode::R:
                     m_GizmoType = ImGuizmo::OPERATION::SCALE;
                     break;
+                case KeyCode::F:
+                {
+                    if (m_SelectionContext.size() == 0)
+                        break;
+
+                    Entity selectedEntity = m_SelectionContext[0].Entity;
+                    m_EditorCamera.Focus(selectedEntity.Transformation().GetPosition());
+                    break;
+                }
                 case KeyCode::Delete:
                     if (m_SelectionContext.size())
                     {
