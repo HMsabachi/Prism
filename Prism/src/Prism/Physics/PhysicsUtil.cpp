@@ -4,6 +4,7 @@
 #include <filesystem>
 
 #include "Prism/Scene/Entity.h"
+#include "Prism/Utilities/FileSystem.h"
 
 namespace Prism {
 
@@ -89,75 +90,57 @@ namespace Prism {
         return physx::PxFilterFlag::eSUPPRESS;
     }
 
-    static std::filesystem::path GetSerializedDir(const std::string& filepath)
+    static std::string GetCachePath(const std::string& filepath)
     {
-        std::filesystem::path p = filepath;
-        std::string stem = p.stem().string();
-        return p.parent_path() / stem;
+        std::filesystem::path path = filepath;
+        return "DataCache/Colliders/" + path.filename().string() + ".pxm";
     }
 
     void ConvexMeshSerializer::DeleteIfSerializedAndInvalidated(const std::string& filepath)
     {
-        auto dir = GetSerializedDir(filepath);
-        if (std::filesystem::is_directory(dir))
-            std::filesystem::remove_all(dir);
+        std::string cachePath = GetCachePath(filepath);
+        if (FileSystem::Exists(cachePath))
+            FileSystem::DeleteFile(cachePath);
     }
 
-    void ConvexMeshSerializer::SerializeMesh(const std::string& filepath, const physx::PxDefaultMemoryOutputStream& data, const std::string& submeshName)
+    void ConvexMeshSerializer::SerializeMesh(const std::string& filepath, const Buffer& data)
     {
-        auto dir = GetSerializedDir(filepath);
-        std::filesystem::create_directories(dir);
+        std::string cachePath = GetCachePath(filepath);
 
-        std::filesystem::path path;
-        if (!submeshName.empty())
-            path = dir / (submeshName + ".pxm");
-        else
-            path = dir / "default.pxm";
-
-        std::string cachedFilepath = path.string();
-
-        FILE* f = fopen(cachedFilepath.c_str(), "wb");
+        FILE* f = fopen(cachePath.c_str(), "wb");
         if (f)
         {
-            fwrite(data.getData(), sizeof(physx::PxU8), data.getSize() / sizeof(physx::PxU8), f);
+            fwrite(data.Data, sizeof(byte), data.Size / sizeof(byte), f);
             fclose(f);
         }
     }
 
     bool ConvexMeshSerializer::IsSerialized(const std::string& filepath)
     {
-        auto dir = GetSerializedDir(filepath);
-        return std::filesystem::is_directory(dir);
+        std::string cachePath = GetCachePath(filepath);
+        return FileSystem::Exists(cachePath);
     }
 
-    static physx::PxU8* s_MeshDataBuffer;
-
-    physx::PxDefaultMemoryInputData ConvexMeshSerializer::DeserializeMesh(const std::string& filepath, const std::string& submeshName)
+    Buffer ConvexMeshSerializer::DeserializeMesh(const std::string& filepath)
     {
-        std::filesystem::path p = filepath;
-        std::string stem = p.stem().string();
-        auto dir = p.parent_path() / stem;
-        auto path = dir / (submeshName + ".pxm");
-
+        std::string cachePath = GetCachePath(filepath);
+        FILE* f = fopen(cachePath.c_str(), "rb");
         uint32_t size = 0;
 
-        FILE* f = fopen(path.string().c_str(), "rb");
+        Buffer buffer;
+
         if (f)
         {
             fseek(f, 0, SEEK_END);
             size = (uint32_t)ftell(f);
             fseek(f, 0, SEEK_SET);
 
-            if (s_MeshDataBuffer)
-                delete[] s_MeshDataBuffer;
-
-            s_MeshDataBuffer = new physx::PxU8[size / sizeof(physx::PxU8)];
-            fread(s_MeshDataBuffer, sizeof(physx::PxU8), size / sizeof(physx::PxU8), f);
+            buffer.Allocate(size);
+            fread(buffer.Data, sizeof(byte), size / sizeof(byte), f);
             fclose(f);
         }
-        PR_CORE_ASSERT(size > 0, "Failed to deserialize mesh: {0}", path.string());
 
-        return physx::PxDefaultMemoryInputData(s_MeshDataBuffer, size);
+        return buffer;
     }
 
 }

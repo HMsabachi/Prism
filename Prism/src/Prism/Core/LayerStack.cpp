@@ -17,8 +17,6 @@ namespace Prism
 
     void LayerStack::Shutdown()
     {
-        for (Layer* layer : m_Layers)
-            delete layer;
         m_Layers.clear();
     }
 

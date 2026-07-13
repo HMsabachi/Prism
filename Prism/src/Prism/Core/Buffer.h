@@ -111,6 +111,14 @@ namespace Prism {
 			return *(T*)(Data + offset);
 		}
 
+		byte* ReadBytes(uint64_t size, uint64_t offset = 0) const
+		{
+			PR_CORE_ASSERT(offset + size <= Size, "Buffer overflow! 缓冲区溢出");
+			byte* buffer = new byte[size];
+			memcpy(buffer, Data + offset, size);
+			return buffer;
+		}
+
 		void Write(const void* data, uint64_t size, uint64_t offset = 0)
 		{
 			PR_CORE_ASSERT(!ReadOnly, "Cannot write to a read-only buffer! 无法写入只读缓冲区");

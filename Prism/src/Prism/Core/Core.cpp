@@ -15,6 +15,7 @@ namespace Prism
 	void ShutdownCore()
 	{
 		PR_CORE_TRACE("Shutingdown  ... 正在关闭 ...");
+		Log::Shutdown();
 	}
 }
 BOOL APIENTRY DllMain(HMODULE hModule,

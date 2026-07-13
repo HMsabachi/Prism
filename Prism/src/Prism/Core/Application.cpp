@@ -36,6 +36,8 @@ namespace Prism
 
     Application* Application::s_Instance = nullptr;
 
+    PRISM_API bool g_ApplicationRunning = true;
+
     Application::Application(const ApplicationProps& props)
         : m_Props(props)
     {
@@ -75,6 +77,16 @@ namespace Prism
     Application::~Application()
     {
         PR_PROFILE_FUNCTION();
+        for (Layer* layer : m_LayerStack)
+        {
+            layer->OnDetach();
+            delete layer;
+        }
+
+        CSharpScriptEngine::Shutdown();
+        PythonScriptEngine::Shutdown();
+        Physics::Shutdown();
+        AssetManager::Shutdown();
     }
     
 
@@ -101,6 +113,11 @@ namespace Prism
         while (m_Running)
             OnUpdate();
         OnShutdown();
+    }
+
+    void Application::Close()
+    {
+        m_Running = false;
     }
 
     void Application::OnUpdate()
@@ -138,10 +155,6 @@ namespace Prism
 
     void Application::OnShutdown()
     {
-        m_LayerStack.Shutdown();
-        CSharpScriptEngine::Shutdown();
-        PythonScriptEngine::Shutdown();
-        Physics::Shutdown();
     }
 
     void Application::RenderImGui()
@@ -201,6 +214,7 @@ namespace Prism
     {
         PR_PROFILE_FUNCTION();
         m_Running = false;
+        g_ApplicationRunning = false;
         return true;
     }
     bool Application::OnWindowResize(WindowResizeEvent& e)

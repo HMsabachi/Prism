@@ -28,6 +28,8 @@ namespace Prism
         // The main loop of the application 启动应用主循环
         void Run();
 
+        void Close();
+
         // Event handling function 事件处理函数
         void OnEvent(Event& e);
 

@@ -28,6 +28,7 @@ namespace Prism {
         static std::vector<PhysicsLayer> GetLayerCollisions(uint32_t layerId);
 
         static const std::vector<PhysicsLayer>& GetLayers() { return s_Layers; }
+        static const std::vector<std::string>& GetLayerNames() { return s_LayerNames; }
 
         static PhysicsLayer& GetLayer(uint32_t layerId);
         static PhysicsLayer& GetLayer(const std::string& layerName);
@@ -41,6 +42,7 @@ namespace Prism {
 
     private:
         static std::vector<PhysicsLayer> s_Layers;
+        static std::vector<std::string> s_LayerNames;
         static PhysicsLayer s_NullLayer;
     };
 

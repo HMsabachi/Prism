@@ -51,6 +51,9 @@ namespace Prism
     {
         PR_PROFILE_FUNCTION();
 
+        if (s_Initialized)
+            return;
+
         Rolky::HostSettings setting;
         setting.RolkyDirectory = "Assets/scripts/net9.0";
         setting.MessageCallback = RolkyMessageCallback;
