@@ -1,8 +1,8 @@
 #include "prpch.h"
 #include "../Shader.h"
 #include "ComputeShader.h"
-#include "ComputeShaderParserData.h"
-#include "ComputeShaderParser.h"
+
+#include "Prism/ShaderCompiler/ShaderCompiler.h"
 
 #include "../Texture.h"
 #include "../Renderer.h"
@@ -35,27 +35,53 @@ namespace Prism
 
 	void ComputeShader::Load()
 	{
-		auto source = File::ReadFile(m_FilePath);
-		auto result = ComputeShaderParser::Parse(source);
+		auto& compiler = ShaderCompiler::Get();
+		m_Compiled = compiler.CompileComputeFile(m_FilePath);
+
+		if (m_Compiled.ShaderName.empty())
+		{
+			PR_CORE_ERROR("ComputeShader::Load - Parse failed for '{}'", m_FilePath);
+			return;
+		}
+		m_Name = std::move(m_Compiled.ShaderName);
+
+		PR_CORE_INFO("CSL parsed '{}': {} kernels, {} resources",
+			m_Name, m_Compiled.Kernels.size(), m_Compiled.Resources.size());
+
 		uint32_t index = 0;
-		for (auto& resource : result.resources)
+		for (auto& resource : m_Compiled.Resources)
 		{
 			Resource r;
-			r.name = resource.name;
-			r.type = resource.type;
-			r.binding = resource.binding;
+			r.kind = resource.Kind;
+			r.readOnly = resource.ReadOnly;
+			r.writeOnly = resource.WriteOnly;
+			r.name = resource.Name;
+			r.binding = resource.Binding;
 			m_ResourcesMap[r.name] = index++;
-			m_Resources.push_back(r);
+			m_Resources.push_back(std::move(r));
 		}
-		for (auto& kernel : result.kernels)
+
+		for (uint32_t i = 0; i < m_Compiled.Kernels.size(); ++i)
 		{
+			auto out = compiler.GenerateComputeGLSL(m_Compiled, i);
+
+			for (auto& w : out.Warnings)
+				PR_CORE_WARN("CSL kernel '{}' GLSL: {}", m_Compiled.Kernels[i].Name, w);
+			for (auto& e : out.Errors)
+				PR_CORE_ERROR("CSL kernel '{}' GLSL: {}", m_Compiled.Kernels[i].Name, e);
+
 			Kernel k;
-			k.name = kernel.name;
-			k.groupSizeX = kernel.numThreads[0];
-			k.groupSizeY = kernel.numThreads[1];
-			k.groupSizeZ = kernel.numThreads[2];
-			k.shader.Reset(Shader::Create(kernel.source));
-			m_Kernels.push_back(k);
+			k.name = m_Compiled.Kernels[i].Name;
+			k.groupSizeX = m_Compiled.Kernels[i].GroupSizeX;
+			k.groupSizeY = m_Compiled.Kernels[i].GroupSizeY;
+			k.groupSizeZ = m_Compiled.Kernels[i].GroupSizeZ;
+
+			if (out.Errors.empty() && !out.Source.empty())
+				k.shader.Reset(Shader::Create(out.Source));
+			else
+				PR_CORE_ERROR("ComputeShader::Load - kernel '{}' produced no GLSL, skipped", k.name);
+
+			m_Kernels.push_back(std::move(k));
 		}
 	}
 
@@ -131,40 +157,17 @@ namespace Prism
 		k.shader->SetFloat(name, value);
 	}
 
-	static TextureAccess GetTextureAccess(ComputeShaderResourceType type)
+	static TextureAccess GetTextureAccess(bool readOnly, bool writeOnly)
 	{
-		switch (type)
-		{
-		case ComputeShaderResourceType::None: return TextureAccess::ReadOnly;
-		case ComputeShaderResourceType::RBuffer: return TextureAccess::ReadOnly;
-		case ComputeShaderResourceType::WBuffer: return TextureAccess::WriteOnly;
-		case ComputeShaderResourceType::RWBuffer: return TextureAccess::ReadWrite;
-		case ComputeShaderResourceType::RImage2D: return TextureAccess::ReadOnly;
-		case ComputeShaderResourceType::WImage2D: return TextureAccess::WriteOnly;
-		case ComputeShaderResourceType::RWImage2D: return TextureAccess::ReadWrite;
-		case ComputeShaderResourceType::RImageCube: return TextureAccess::ReadOnly;
-		case ComputeShaderResourceType::WImageCube: return TextureAccess::WriteOnly;
-		case ComputeShaderResourceType::RWImageCube: return TextureAccess::ReadWrite;
-		case ComputeShaderResourceType::Texture2D: return TextureAccess::ReadOnly;
-		case ComputeShaderResourceType::TextureCube: return TextureAccess::ReadOnly;
-		default: return TextureAccess::ReadOnly;
-		}
+		if (readOnly && !writeOnly)  return TextureAccess::ReadOnly;
+		if (writeOnly && !readOnly)  return TextureAccess::WriteOnly;
+		return TextureAccess::ReadWrite;
 	}
 
-	static bool IsImage(ComputeShaderResourceType type)
+	static bool IsImage(PrismShaderCompiler::CSL::ResourceKind kind)
 	{
-		switch (type)
-		{
-		case ComputeShaderResourceType::RImage2D:
-		case ComputeShaderResourceType::WImage2D:
-		case ComputeShaderResourceType::RWImage2D:
-		case ComputeShaderResourceType::RImageCube:
-		case ComputeShaderResourceType::WImageCube:
-		case ComputeShaderResourceType::RWImageCube:
-			return true;
-		default:
-			return false;
-		}
+		using K = PrismShaderCompiler::CSL::ResourceKind;
+		return kind == K::Image2D || kind == K::Image3D || kind == K::ImageCube;
 	}
 
 	void ComputeShader::Dispatch(int32_t kernel, uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ)
@@ -184,16 +187,16 @@ namespace Prism
 			if (auto texture = res.texture2D)
 			{
 				usedTextures.insert(texture);
-				if (IsImage(res.type))
-					texture->BindImage(res.binding, GetTextureAccess(res.type), res.layered, res.level);
+				if (IsImage(res.kind))
+					texture->BindImage(res.binding, GetTextureAccess(res.readOnly, res.writeOnly), res.layered, res.level);
 				else
 					texture->Bind(res.binding);
 			}
 			if (auto textureCube = res.textureCube)
 			{
 				usedTextures.insert(textureCube);
-				if (IsImage(res.type))
-					textureCube->BindImage(res.binding, GetTextureAccess(res.type), res.layered, res.level);
+				if (IsImage(res.kind))
+					textureCube->BindImage(res.binding, GetTextureAccess(res.readOnly, res.writeOnly), res.layered, res.level);
 				else
 					textureCube->Bind(res.binding);
 			}

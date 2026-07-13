@@ -664,7 +664,7 @@ namespace Prism
 
         Ref<TextureCube> envUnfiltered = TextureCube::Create(TextureFormat::Float16, cubemapSize, cubemapSize);
         if (!s_EnvironmentShader)
-            s_EnvironmentShader = ComputeShader::Create("Assets/Shaders/Environment.compute");
+            s_EnvironmentShader = ComputeShader::Create("Assets/Shaders/Environment.ComputeShader");
         Ref<Texture2D> envEquirect = Texture2D::Create(filepath);
         PR_CORE_ASSERT(envEquirect->GetFormat() == TextureFormat::Float16, "Texture is not HDR!");
 

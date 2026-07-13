@@ -1,11 +1,12 @@
 ﻿#pragma once
+#include <PrismShaderCore/CompilerCompute.h>
+
 namespace Prism
 {
 	class Shader;
 	class Texture2D;
 	class TextureCube;
 	class ShaderStorageBuffer;
-	enum class ComputeShaderResourceType;
 }
 
 namespace Prism
@@ -23,7 +24,9 @@ namespace Prism
 		};
 		struct Resource
 		{
-			ComputeShaderResourceType type;
+			PrismShaderCompiler::CSL::ResourceKind kind;
+			bool readOnly = false;
+			bool writeOnly = false;
 			std::string name;
 			uint32_t binding;
 			bool layered = true;
@@ -61,6 +64,8 @@ namespace Prism
 		std::vector<Kernel> m_Kernels;
 		std::vector<Resource> m_Resources;
 		std::unordered_map<std::string, int32_t> m_ResourcesMap;
+
+		PrismShaderCompiler::CompiledComputeShader m_Compiled;
 
 		std::string m_Name;
 		std::string m_FilePath;
