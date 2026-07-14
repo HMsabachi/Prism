@@ -1,7 +1,7 @@
 ﻿#include "prpch.h"
 #include "WindowsWindow.h"
 
-#include "Platform/OpenGL/OpenGLContect.h"
+#include "Platform/OpenGL/OpenGLContext.h"
 
 #include "Prism/Events/ApplicationEvent.h"
 #include "Prism/Events/MouseEvent.h"
@@ -58,7 +58,7 @@ namespace Prism {
         m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, m_Data.Title.c_str(), nullptr, nullptr);
         
         // 创建图形API上下文 Creat graphics API Context
-        CreatGraphicsApiContext();
+        CreateGraphicsApiContext();
 
         glfwSetWindowUserPointer(m_Window, &m_Data);
 
@@ -87,7 +87,7 @@ namespace Prism {
         PR_PROFILE_FUNCTION();
 
         glfwPollEvents();
-        m_Context->SwapBuffers();
+        m_RendererContext->SwapBuffers();
     }
 
     void WindowsWindow::SetVSync(bool enabled)
@@ -116,10 +116,10 @@ namespace Prism {
         glfwSetWindowTitle(m_Window, title.c_str());
     }
 
-    void WindowsWindow::CreatGraphicsApiContext()
+    void WindowsWindow::CreateGraphicsApiContext()
     {
-        m_Context = new OpenGLContext(m_Window);
-        m_Context->Init();
+        m_RendererContext = RendererContext::Create(m_Window);
+        m_RendererContext->Create();
     }
 
     void WindowsWindow::SetGlfwEventCallback()

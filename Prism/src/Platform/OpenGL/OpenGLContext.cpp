@@ -1,9 +1,10 @@
-﻿#include "prpch.h"
-#include "OpenGLContect.h"
+#include "prpch.h"
+#include "OpenGLContext.h"
 
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
-#include <GL/GL.h>
+
+#include "Prism/Core/Log.h"
 
 namespace Prism {
 
@@ -13,7 +14,11 @@ namespace Prism {
         PR_CORE_ASSERT(windowHandle, "Window handle is null!")
     }
 
-    void OpenGLContext::Init()
+    OpenGLContext::~OpenGLContext()
+    {
+    }
+
+    void OpenGLContext::Create()
     {
         PR_PROFILE_FUNCTION();
 
@@ -25,6 +30,15 @@ namespace Prism {
         PR_CORE_INFO("  设备商 Vendor: {0}", reinterpret_cast<const char*>(glGetString(GL_VENDOR)));
         PR_CORE_INFO("  显卡 Renderer: {0}", reinterpret_cast<const char*>(glGetString(GL_RENDERER)));
         PR_CORE_INFO("  版本 Version: {0}", reinterpret_cast<const char*>(glGetString(GL_VERSION)));
+
+#ifdef PR_ENABLE_ASSERTS
+        int versionMajor;
+        int versionMinor;
+        glGetIntegerv(GL_MAJOR_VERSION, &versionMajor);
+        glGetIntegerv(GL_MINOR_VERSION, &versionMinor);
+
+        PR_CORE_ASSERT(versionMajor > 4 || (versionMajor == 4 && versionMinor >= 5), "Prism requires at least OpenGL version 4.5!");
+#endif
     }
 
     void OpenGLContext::SwapBuffers()

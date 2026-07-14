@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "Prism/Core/Window.h"
-#include "Prism/Renderer/GraphicsContext.h"
+#include "Prism/Renderer/RendererContext.h"
 
 #include <GLFW/glfw3.h>
 
@@ -40,10 +40,10 @@ namespace Prism {
         virtual void Shutdown();
     private:
         void SetGlfwEventCallback();
-        void CreatGraphicsApiContext();
+        void CreateGraphicsApiContext();
     private:
         GLFWwindow* m_Window;
-        GraphicsContext* m_Context;
+        Ref<RendererContext> m_RendererContext;
 
         struct WindowData
         {

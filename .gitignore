@@ -6,6 +6,7 @@ bin/
 bin-int/
 build/
 obj/
+cache/
 Logs/
 Future/
 __pycache__/
@@ -28,6 +29,7 @@ CLAUDE.md
 **.vcxproj.user
 **.vcxproj
 **.vcxproj.filters
+**.nsight-gfxproj
 *.ini
 *.targets
 *.csproj
