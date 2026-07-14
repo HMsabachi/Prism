@@ -53,7 +53,7 @@ namespace Prism {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap);
             // 设置最大各向异性过滤
-            glTextureParameterf(instance->m_RendererID, GL_TEXTURE_MAX_ANISOTROPY, RendererAPI::GetCapabilities().MaxAnisotropy);
+            glTextureParameterf(instance->m_RendererID, GL_TEXTURE_MAX_ANISOTROPY, Renderer::GetCapabilities().MaxAnisotropy);
 
             glTexImage2D(GL_TEXTURE_2D, 0, PrismToOpenGLTextureFormat(instance->m_Format), instance->m_Width, instance->m_Height, 0, PrismToOpenGLTextureFormat(instance->m_Format), GL_UNSIGNED_BYTE, nullptr);
             glGenerateMipmap(GL_TEXTURE_2D);
@@ -290,7 +290,7 @@ namespace Prism {
             glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-            glTextureParameterf(instance->m_RendererID, GL_TEXTURE_MAX_ANISOTROPY, RendererAPI::GetCapabilities().MaxAnisotropy);
+            glTextureParameterf(instance->m_RendererID, GL_TEXTURE_MAX_ANISOTROPY, Renderer::GetCapabilities().MaxAnisotropy);
 
             auto format = PrismToOpenGLTextureFormat(instance->m_Format);
             glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, format, faceWidth, faceHeight, 0, format, GL_UNSIGNED_BYTE, faces[2]);

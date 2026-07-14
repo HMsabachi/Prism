@@ -7,6 +7,7 @@
 #include "Prism/Scene/Entity.h"
 #include "Prism/Scene/Components.h"
 #include "Prism/Asset/AssetManager.h"
+#include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/RenderPass.h"
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Buffer/Framebuffer.h"
@@ -203,7 +204,7 @@ namespace Prism
     std::pair<Ref<TextureCube>, Ref<TextureCube>>
     RenderSystem::CreateEnvironmentMap(const std::string& filepath)
     {
-        return RenderPipeline::CreateEnvironmentMap(filepath);
+        return Renderer::CreateEnvironmentMap(filepath);
     }
 
 

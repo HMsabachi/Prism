@@ -154,6 +154,7 @@ namespace Prism
                     rs->SetEditorCamera(m_EditorCamera);
                 m_ActiveScene->OnRender(ts);
 
+#if 0
                 if (m_DrawOnTopBoundingBoxes)
                 {
                     Renderer::BeginRenderPass(rs->GetFinalRenderPass(), false);
@@ -162,7 +163,9 @@ namespace Prism
                     Renderer2D::EndScene();
                     Renderer::EndRenderPass();
                 }
+#endif
 
+#if 0
                 if (m_SelectionContext.size() && false)
                 {
                     auto& selection = m_SelectionContext[0];
@@ -179,6 +182,7 @@ namespace Prism
                         Renderer::EndRenderPass();
                     }
                 }
+#endif
                 break;
             }
             case SceneState::Play:
@@ -189,6 +193,7 @@ namespace Prism
                 m_ActiveScene->OnUpdate();
                 m_ActiveScene->OnRender(ts);
 
+#if 0
                 // Box2D collider debug drawing
                 {
                     Renderer::BeginRenderPass(m_ActiveScene->GetSystem<RenderSystem>()->GetFinalRenderPass(), false);
@@ -230,6 +235,7 @@ namespace Prism
                     Renderer2D::EndScene();
                     Renderer::EndRenderPass();
                 }
+#endif
                 break;
             }
             case SceneState::Pause:

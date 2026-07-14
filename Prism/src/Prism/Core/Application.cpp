@@ -172,7 +172,7 @@ namespace Prism
         static float timer = 0.0f;
         timer += Time::GetDeltaTime();
         ImGui::Begin("Renderer");
-        auto& caps = RendererAPI::GetCapabilities();
+        auto& caps = Renderer::GetCapabilities();
         if (ImGui::TreeNode("Base Info"))
         {
             ImGui::Text("Vendor: %s", caps.Vendor.c_str());
@@ -183,6 +183,7 @@ namespace Prism
             ImGui::Text("MaxAnisotropy: %.0f", caps.MaxAnisotropy);
             ImGui::TreePop();
         }
+#if 0
         if (ImGui::TreeNode("2D Renderer Info"))
         {
             auto stats = Renderer2D::GetStats();
@@ -191,6 +192,7 @@ namespace Prism
             Renderer2D::ResetStats();
             ImGui::TreePop();
         }
+#endif
         ImGui::Text("RenderCommandQueue: %d", Renderer::GetRenderCommandQueue().GetSubmitCount());
         Renderer::GetRenderCommandQueue().ResetSubmitCount();
         static int fps0 = 0, fps1 = 0, capacity;

@@ -1,4 +1,6 @@
 ﻿#include "prpch.h"
+// Renderer2D 暂时禁用（基本未用，回头跟进 Hazel 设计：DrawCircle/DrawLine/Stats）
+#if 0
 #include "Renderer2D.h"
 #include "Texture.h"
 
@@ -691,3 +693,4 @@ namespace Prism
     }
 
 }
+#endif

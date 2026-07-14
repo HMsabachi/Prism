@@ -22,8 +22,6 @@
 
 namespace Prism
 {
-    static Ref<ComputeShader> s_EnvironmentShader;
-
     constexpr uint64_t SHADER_TAG_KEY_LIGHT_MODE = Hash::GenerateFNVHash64("LightMode");
     constexpr uint64_t SHADER_TAG_VALUE_FORWARD_BASE = Hash::GenerateFNVHash64("ForwardBase");
     constexpr uint64_t SHADER_TAG_VALUE_SHADOW_CASTER = Hash::GenerateFNVHash64("ShadowCaster");
@@ -655,48 +653,5 @@ namespace Prism
         m_FrameUBO.SetCascadeSplits(m_CascadeSplits);
     }
 
-    std::pair<Ref<TextureCube>, Ref<TextureCube>>
-    RenderPipeline::CreateEnvironmentMap(const std::string& filepath)
-    {
-        PR_PROFILE_FUNCTION();
-        const uint32_t cubemapSize = 2048;
-        const uint32_t irradianceMapSize = 32;
-
-        Ref<TextureCube> envUnfiltered = TextureCube::Create(TextureFormat::Float16, cubemapSize, cubemapSize);
-        if (!s_EnvironmentShader)
-            s_EnvironmentShader = ComputeShader::Create("Assets/Shaders/Environment.ComputeShader");
-        Ref<Texture2D> envEquirect = Texture2D::Create(filepath);
-        PR_CORE_ASSERT(envEquirect->GetFormat() == TextureFormat::Float16, "Texture is not HDR!");
-
-        envEquirect->Bind();
-        int toCubeKernel = s_EnvironmentShader->FindKernel("CSEquirectToCube");
-        s_EnvironmentShader->SetTexture2D(toCubeKernel, "u_EquirectangularTex", envEquirect);
-        s_EnvironmentShader->SetImageCube(toCubeKernel, "o_OutputCube", envUnfiltered);
-        s_EnvironmentShader->Dispatch(toCubeKernel, cubemapSize / 32, cubemapSize / 32, 6);
-        envUnfiltered->GenerateMipMap();
-
-        Ref<TextureCube> envFiltered = TextureCube::Create(TextureFormat::Float16, cubemapSize, cubemapSize);
-        envUnfiltered->CopyTo(envFiltered);
-
-        int mipFilter = s_EnvironmentShader->FindKernel("CSMipFilter");
-        s_EnvironmentShader->SetTextureCube(mipFilter, "u_InputCubeMap", envUnfiltered);
-        const float deltaRoughness = 1.0f / glm::max((float)(envFiltered->GetMipLevelCount() - 1.0f), 1.0f);
-        for (uint32_t level = 1, size = cubemapSize / 2; level < envFiltered->GetMipLevelCount(); level++, size /= 2)
-        {
-            const uint32_t numGroups = glm::max((uint32_t)1, size / 32);
-            s_EnvironmentShader->SetImageCube(mipFilter, "o_OutputCube", envFiltered, level, true);
-            s_EnvironmentShader->SetFloat(mipFilter, "u_Roughness", level * deltaRoughness);
-            s_EnvironmentShader->Dispatch(mipFilter, numGroups, numGroups, 6);
-        }
-
-        Ref<TextureCube> irradianceMap = TextureCube::Create(TextureFormat::Float16, irradianceMapSize, irradianceMapSize);
-        int irradiance = s_EnvironmentShader->FindKernel("CSIrradiance");
-        s_EnvironmentShader->SetTextureCube(irradiance, "u_InputCubeMap", envFiltered);
-        s_EnvironmentShader->SetImageCube(irradiance, "o_OutputCube", irradianceMap);
-        s_EnvironmentShader->Dispatch(irradiance, irradianceMapSize / 32, irradianceMapSize / 32, 6);
-        irradianceMap->GenerateMipMap();
-
-        return { envFiltered, irradianceMap };
-    }
 #pragma endregion
 }

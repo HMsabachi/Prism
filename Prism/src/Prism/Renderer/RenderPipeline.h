@@ -64,9 +64,6 @@ namespace Prism
         const Ref<RenderPass>& GetShadowPass(uint32_t index) const { return m_ShadowPasses[index]; }
         RenderPipelineOptions& GetOptions() { return m_Options; }
 
-        static std::pair<Ref<TextureCube>, Ref<TextureCube>>
-            CreateEnvironmentMap(const std::string& filepath);
-
     private:
         void BeginFrame(const FrameSnapshot& snapshot);
         void UpdateShadowData(const FrameSnapshot& snapshot);

@@ -214,6 +214,7 @@ namespace Prism {
 
         friend class Renderer;
         friend class RenderPipeline;
+        friend class OpenGLRenderer;
         friend class SceneHierarchyPanel;
     };
 }

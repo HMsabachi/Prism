@@ -1,5 +1,7 @@
 #pragma once
 
+// Renderer2D 暂时禁用（基本未用，回头跟进 Hazel 设计：DrawCircle/DrawLine/Stats）
+#if 0
 #include <glm/glm.hpp>
 
 namespace Prism
@@ -59,3 +61,4 @@ namespace Prism
     };
 
 }
+#endif

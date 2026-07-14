@@ -1,12 +1,11 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "Prism/Renderer/RendererAPI.h"
-
-#include "OpenGLStateCache.h"
 
 #include <Glad/glad.h>
 
 namespace Prism
 {
+    // 低层静态方法实现（Phase 6 收敛进 OpenGLRenderer Utils static 对齐 Hazel 后删除此文件）
     static GLbitfield PrismToOpenGLMemoryBarrier(RendererAPI::BarrierFlags flags)
     {
         GLbitfield result = 0;
@@ -21,98 +20,17 @@ namespace Prism
         if (flags & RendererAPI::Barrier::All) result |= GL_ALL_BARRIER_BITS;
         return result;
     }
+
     static GLenum PrismToOpenGLPrimitiveType(PrimitiveType type)
     {
         switch (type)
         {
-        case PrimitiveType::None:			PR_CORE_ASSERT(false, "Invalid PrimitiveType");
-        case PrimitiveType::Triangles:		return GL_TRIANGLES;
-        case PrimitiveType::Lines:			return GL_LINES;
+        case PrimitiveType::None:           PR_CORE_ASSERT(false, "Invalid PrimitiveType");
+        case PrimitiveType::Triangles:      return GL_TRIANGLES;
+        case PrimitiveType::Lines:          return GL_LINES;
         }
         PR_CORE_ASSERT(false, "Invalid PrimitiveType");
         return 0;
-    }
-
-    static void HandleCapabilities()
-    {
-        auto& caps = RendererAPI::GetCapabilities();
-
-        caps.Vendor = reinterpret_cast<const char*>(glGetString(GL_VENDOR)); // 获取 vendor
-        caps.Renderer = reinterpret_cast<const char*>(glGetString(GL_RENDERER)); // 获取 renderer
-        caps.Version = reinterpret_cast<const char*>(glGetString(GL_VERSION)); // 获取版本
-
-        glGetIntegerv(GL_MAX_SAMPLES, &caps.MaxSamples); // 获取最大采样数
-        glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &caps.MaxAnisotropy); // 获取最大各向异性
-        glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &caps.MaxTextureUnits);// 获取最大纹理单元数
-
-        glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &caps.MaxGroupCount[0]); // 获取最大工作组数量
-        glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &caps.MaxGroupSize[0]); // 获取最大工作组大小
-        glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &caps.MaxInvocations); // 获取最大工作组调用次数
-
-    }
-
-    static void OpenGLLogMessage(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
-    {
-        switch (severity)
-        {
-        case GL_DEBUG_SEVERITY_HIGH:
-            PR_CORE_ERROR("[OpenGL Debug HIGH] {0}", message);
-            PR_CORE_ASSERT(false, "GL_DEBUG_SEVERITY_HIGH");
-            break;
-        case GL_DEBUG_SEVERITY_MEDIUM:
-            PR_CORE_WARN("[OpenGL Debug MEDIUM] {0}", message);
-            break;
-        case GL_DEBUG_SEVERITY_LOW:
-            PR_CORE_INFO("[OpenGL Debug LOW] {0}", message);
-            break;
-        case GL_DEBUG_SEVERITY_NOTIFICATION:
-            // PR_CORE_TRACE("[OpenGL Debug NOTIFICATION] {0}", message);
-            break;
-        }
-    }
-
-    void RendererAPI::Init()
-    {
-        glDebugMessageCallback(OpenGLLogMessage, nullptr); // 启用Debug输出
-        glEnable(GL_DEBUG_OUTPUT);
-        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-
-        // TODO: 临时创建VAO
-        unsigned int vao;
-        glGenVertexArrays(1, &vao);
-        glBindVertexArray(vao);
-
-        glEnable(GL_DEPTH_TEST); // 启用深度测试
-        //glEnable(GL_CULL_FACE);
-        glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS); // 启用 seamless cubemap
-        glFrontFace(GL_CCW); // 设置默认的正面朝向
-
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glEnable(GL_MULTISAMPLE); // 启用多采样抗锯齿
-        glEnable(GL_STENCIL_TEST); // 启用模板测试
-
-        HandleCapabilities();
-
-        GLenum error = glGetError();
-        while (error != GL_NO_ERROR)
-        {
-            PR_CORE_ERROR("OpenGL Error {0}", error);
-            error = glGetError();
-        }
-
-        OpenGLStateCache::Init();
-
-        LoadRequiredAssets();
-    }
-
-    void RendererAPI::LoadRequiredAssets()
-    {
-    }
-
-    
-    void RendererAPI::Shutdown()
-    {
     }
 
     void RendererAPI::SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
@@ -133,7 +51,7 @@ namespace Prism
 
     void RendererAPI::DrawIndexed(uint32_t count, PrimitiveType type, bool depthTest)
     {
-        if(!depthTest)
+        if (!depthTest)
             glDisable(GL_DEPTH_TEST);
         glDrawElements(PrismToOpenGLPrimitiveType(type), count, GL_UNSIGNED_INT, nullptr);
         if (!depthTest)
@@ -155,5 +73,4 @@ namespace Prism
     {
         glMemoryBarrier(PrismToOpenGLMemoryBarrier(flags));
     }
-
 }

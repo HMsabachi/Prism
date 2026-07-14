@@ -3,7 +3,8 @@
 #include "Prism/Asset/AssetManager.h"
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/Texture.h"
-#include "Prism/Renderer/RenderPipeline.h"
+#include "Prism/Renderer/Renderer.h"
+#include "Prism/Renderer/SceneEnvironment.h"
 #include "Prism/Renderer/Shader/PrismShader.h"
 #include "ModelImporter.h"
 
@@ -45,7 +46,7 @@ namespace Prism {
 
     bool EnvironmentSerializer::TryLoadData(Ref<Asset>& asset) const
     {
-        auto [radiance, irradiance] = RenderPipeline::CreateEnvironmentMap(asset->FilePath);
+        auto [radiance, irradiance] = Renderer::CreateEnvironmentMap(asset->FilePath);
         if (!radiance || !irradiance)
             return false;
 

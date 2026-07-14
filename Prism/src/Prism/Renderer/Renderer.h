@@ -39,7 +39,23 @@ namespace Prism
             //renderCmd(&func);
         }
         static void Init();
+        static void Shutdown();
 
+        // 高层转发（多态分发到 s_RendererAPI）
+        static void BeginFrame();
+        static void EndFrame();
+
+        static void BeginRenderPass(Ref<RenderPass> renderPass, bool clear = true);
+        static void EndRenderPass();
+        static void SubmitFullscreenQuad(Ref<Pipeline> pipeline, Ref<Material> material);
+        static void SetSceneEnvironment(const Ref<SceneEnvironment>& environment, const Ref<Image2D>& shadow);
+        static std::pair<Ref<TextureCube>, Ref<TextureCube>> CreateEnvironmentMap(const std::string& filepath);
+        static void RenderMesh(Ref<Pipeline> pipeline, Ref<Mesh> mesh, Ref<Material> material, uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass);
+        static void RenderQuad(Ref<Pipeline> pipeline, Ref<Material> material, const glm::mat4& transform);
+
+        static RenderAPICapabilities& GetCapabilities();
+
+        // 低层静态（Phase 6 收敛进 OpenGLRenderer Utils static）
         static void Clear();
         static void Clear(float r, float g, float b, float a = 1.0f);
         static void SetClearColor(float r, float g, float b, float a);
@@ -52,14 +68,13 @@ namespace Prism
         static void SetLineThickness(float thickness);
         static void MemoryBarriers(RendererAPI::BarrierFlags flags);
 
-
-        static void BeginRenderPass(Ref<RenderPass> renderPass, bool clear = true);
-        static void EndRenderPass();
-
         static void WaitAndRender();
 
+#if 0
+        // 依赖 Renderer2D::DrawLine，待跟进 Hazel SceneRenderer 线框方案后恢复
         static void DrawAABB(const AABB& aabb, const glm::mat4& transform, const glm::vec4& color = glm::vec4(1.0f,0.0f,0.0f,1.0f));
         static void DrawAABB(Ref<Mesh> mesh, const glm::mat4& transform, const glm::vec4& color = glm::vec4(1.0f));
+#endif
     public:
         static RenderCommandQueue& GetRenderCommandQueue();
     };
