@@ -12,7 +12,9 @@ class RandomColor(Behaviour):
         self._timer = 0.0
 
     def OnUpdate(self):
-        self._timer += Time.DeltaTime
+        #self._timer += Time.DeltaTime
+        delta = Time.DeltaTime
+        self._timer += delta
         if self._timer >= 1.0:
             self._timer = 0.0
             self.GenerateColor()

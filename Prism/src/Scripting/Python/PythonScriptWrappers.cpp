@@ -80,15 +80,15 @@ namespace Prism::PythonScript
     class PythonTime
     {
     public:
-        static float GetDeltaTime() { return Time::GetDeltaTime(); }
-        static float GetUnscaledDeltaTime() { return Time::GetUnscaledDeltaTime(); }
-        static float GetTime() { return Time::GetTime(); }
-        static float GetUnscaledTime() { return Time::GetUnscaledTime(); }
-        static int64_t GetFrameCount() { return (int64_t)Time::GetFrameCount(); }
-        static float GetFixedDeltaTime() { return Time::GetFixedDeltaTime(); }
-        static void SetFixedDeltaTime(float fixedDeltaTime) { Time::SetFixedDeltaTime(fixedDeltaTime); }
-        static float GetTimeScale() { return Time::GetTimeScale(); }
-        static void SetTimeScale(float scale) { Time::SetTimeScale(scale); }
+        static float GetDeltaTime(py::object) { return Time::GetDeltaTime(); }
+        static float GetUnscaledDeltaTime(py::object) { return Time::GetUnscaledDeltaTime(); }
+        static float GetTime(py::object) { return Time::GetTime(); }
+        static float GetUnscaledTime(py::object) { return Time::GetUnscaledTime(); }
+        static int64_t GetFrameCount(py::object) { return (int64_t)Time::GetFrameCount(); }
+        static float GetFixedDeltaTime(py::object) { return Time::GetFixedDeltaTime(); }
+        static void SetFixedDeltaTime(py::object, float fixedDeltaTime) { Time::SetFixedDeltaTime(fixedDeltaTime); }
+        static float GetTimeScale(py::object) { return Time::GetTimeScale(); }
+        static void SetTimeScale(py::object, float scale) { Time::SetTimeScale(scale); }
     };
 
     class PythonLog
