@@ -68,7 +68,6 @@ namespace Prism
         Physics::Init();
         // 初始化渲染器 Initialize Renderer
 
-        AssetTypes::Init();
         AssetManager::Init();
         Renderer::Init();
         Renderer::WaitAndRender();

@@ -13,7 +13,7 @@ namespace Prism {
         virtual ~AssetEditor() {}
 
         void OnImGuiRender();
-        void SetOpen(bool isOpen) { m_IsOpen = isOpen; }
+        void SetOpen(bool isOpen);
         virtual void SetAsset(const Ref<Asset>& asset) = 0;
 
     protected:
@@ -21,6 +21,7 @@ namespace Prism {
         void SetMaxSize(uint32_t width, uint32_t height);
 
     private:
+        virtual void OnClose() = 0;
         virtual void Render() = 0;
 
     private:
@@ -35,6 +36,7 @@ namespace Prism {
     {
     public:
         static void RegisterDefaultEditors();
+        static void UnregisterAllEditors();
         static void OnImGuiRender();
         static void OpenEditor(const Ref<Asset>& asset);
 

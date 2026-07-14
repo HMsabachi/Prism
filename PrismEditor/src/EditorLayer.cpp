@@ -89,6 +89,7 @@ namespace Prism
             FileSystem::StopWatching();
             if (m_SceneState == SceneState::Play)
                 OnSceneStop();
+            AssetEditorPanel::UnregisterAllEditors();
              m_SceneHierarchyPanel = nullptr;
              m_EditorScene = nullptr;
         }

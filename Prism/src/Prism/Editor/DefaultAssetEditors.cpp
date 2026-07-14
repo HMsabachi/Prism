@@ -1,6 +1,7 @@
 ﻿#include "prpch.h"
 #include "DefaultAssetEditors.h"
 #include "Prism/Renderer/Texture.h"
+#include "Prism/Asset/AssetImporter.h"
 
 #include "Prism/Core/Warning.h"
 PR_WARNING_DISABLE(4312)
@@ -9,6 +10,12 @@ namespace Prism {
 
     PhysicsMaterialEditor::PhysicsMaterialEditor()
         : AssetEditor("Edit Physics Material") {}
+
+    void PhysicsMaterialEditor::OnClose()
+    {
+        AssetImporter::Serialize(m_Asset);
+        m_Asset = nullptr;
+    }
 
     void PhysicsMaterialEditor::Render()
     {
@@ -27,6 +34,11 @@ namespace Prism {
     {
         SetMinSize(200, 600);
         SetMaxSize(500, 1000);
+    }
+
+    void TextureViewer::OnClose()
+    {
+        m_Asset = nullptr;
     }
 
     void TextureViewer::Render()

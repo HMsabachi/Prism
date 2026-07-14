@@ -19,6 +19,7 @@ Prism.Scripting/Prism.Scripting.csproj
 # Files
 *.meta
 *.pxm
+*.par
 **.pyc
 CLAUDE.md
 *.json

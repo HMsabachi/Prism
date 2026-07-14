@@ -134,7 +134,7 @@ namespace Prism {
 
                         if (ImGui::MenuItem("Physics Material"))
                         {
-                            AssetManager::CreateAsset<PhysicsMaterial>("New Physics Material.ppm", AssetType::PhysicsMat, m_CurrentDirHandle, 0.6F, 0.6F, 0.0F);
+                            AssetManager::CreateNewAsset<PhysicsMaterial>("New Physics Material.ppm", AssetType::PhysicsMat, m_CurrentDirHandle, 0.6F, 0.6F, 0.0F);
                             UpdateCurrentDirectory(m_CurrentDirHandle);
                         }
 
@@ -399,7 +399,7 @@ namespace Prism {
                 }
                 else
                 {
-                    m_CurrentDirAssets = AssetManager::SearchFiles(m_InputBuffer, m_CurrentDirectory->FilePath);
+                    m_CurrentDirAssets = AssetManager::SearchAssets(m_InputBuffer, m_CurrentDirectory->FilePath);
                 }
             }
 
@@ -466,7 +466,7 @@ namespace Prism {
             if (ImGui::InputText("##rename_dummy", m_InputBuffer, MAX_INPUT_BUFFER_LENGTH, ImGuiInputTextFlags_EnterReturnsTrue))
             {
                 PR_CORE_INFO("Renaming to {0}", m_InputBuffer);
-                AssetManager::Rename(asset, m_InputBuffer);
+                AssetManager::Rename(asset->Handle, m_InputBuffer);
                 m_RenamingSelected = false;
                 m_SelectedAssets.Clear();
                 m_UpdateDirectoryNextFrame = true;

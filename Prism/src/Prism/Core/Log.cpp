@@ -32,7 +32,7 @@ namespace Prism
 			std::filesystem::create_directories(logsDirectory);
 
 		// 输出示例 [2021-08-15 15:30:45.123] Prism: This is a log message
-		spdlog::set_pattern("%^[%T] %n: %v%$");
+        spdlog::set_pattern("%^[%T] %n: %v%$");
 
 		std::vector<spdlog::sink_ptr> coreSinks =
 		{
