@@ -7,34 +7,34 @@
 
 
 namespace Prism {
-	void InitConsoleUTF8();
+    void InitConsoleUTF8();
 
-	class PRISM_API Log
-	{
-	public:
-		static void Init();
-		static void Shutdown();
+    class PRISM_API Log
+    {
+    public:
+        static void Init();
+        static void Shutdown();
 
-		inline static std::shared_ptr<spdlog::logger>& GetCoreLogger() { return s_CoreLogger; }
-		inline static std::shared_ptr<spdlog::logger>& GetClientLogger() { return s_ClientLogger; }
-	private:
-		static std::shared_ptr<spdlog::logger> s_CoreLogger;
-		static std::shared_ptr<spdlog::logger> s_ClientLogger;
-	};
+        inline static std::shared_ptr<spdlog::logger>& GetCoreLogger() { return s_CoreLogger; }
+        inline static std::shared_ptr<spdlog::logger>& GetClientLogger() { return s_ClientLogger; }
+    private:
+        static std::shared_ptr<spdlog::logger> s_CoreLogger;
+        static std::shared_ptr<spdlog::logger> s_ClientLogger;
+    };
 }
 
 namespace glm {
-	inline std::string format_as(const vec2& vec) {
-		return fmt::format("vec2({}, {})", vec.x, vec.y);
-	}
+    inline std::string format_as(const vec2& vec) {
+        return fmt::format("vec2({}, {})", vec.x, vec.y);
+    }
 
-	inline std::string format_as(const vec3& vec) {
-		return fmt::format("vec3({}, {}, {})", vec.x, vec.y, vec.z);
-	}
+    inline std::string format_as(const vec3& vec) {
+        return fmt::format("vec3({}, {}, {})", vec.x, vec.y, vec.z);
+    }
 
-	inline std::string format_as(const vec4& vec) {
-		return fmt::format("vec4({}, {}, {}, {})", vec.x, vec.y, vec.z, vec.w);
-	}
+    inline std::string format_as(const vec4& vec) {
+        return fmt::format("vec4({}, {}, {}, {})", vec.x, vec.y, vec.z, vec.w);
+    }
 }
 
 
