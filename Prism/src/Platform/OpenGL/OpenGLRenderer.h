@@ -20,14 +20,14 @@ namespace Prism
         virtual void EndRenderPass() override;
 
         // 占位（Phase 5 接入 RenderPipeline 时实现）
-        virtual void SubmitFullscreenQuad(Ref<Pipeline> pipeline, Ref<Material> material) override;
+        virtual void SubmitFullscreenQuad(Ref<VertexInput> vertexInput, Ref<Material> material) override;
 
         virtual void SetSceneEnvironment(const Ref<SceneEnvironment>& environment, const Ref<Image2D>& shadow) override;
         virtual std::pair<Ref<TextureCube>, Ref<TextureCube>> CreateEnvironmentMap(const std::string& filepath) override;
 
-        virtual void RenderMesh(Ref<Pipeline> pipeline, Ref<Mesh> mesh, Ref<Material> material,
+        virtual void RenderMesh(Ref<VertexInput> vertexInput, Ref<Mesh> mesh, Ref<Material> material,
             uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass) override;
-        virtual void RenderQuad(Ref<Pipeline> pipeline, Ref<Material> material, const glm::mat4& transform) override;
+        virtual void RenderQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const glm::mat4& transform) override;
 
         virtual RenderAPICapabilities& GetCapabilities() override;
     };

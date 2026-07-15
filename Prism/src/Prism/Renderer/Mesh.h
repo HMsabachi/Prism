@@ -24,7 +24,7 @@ namespace Assimp {
 
 namespace Prism
 {
-    class Pipeline;
+    class VertexInput;
     class VertexBuffer;
     class IndexBuffer;
 
@@ -191,7 +191,7 @@ namespace Prism {
         uint32_t m_BoneCount = 0;
         std::vector<BoneInfo> m_BoneInfo;
 
-        Ref<Pipeline> m_Pipeline;
+        Ref<VertexInput> m_VertexInput;
         Ref<VertexBuffer> m_VertexBuffer;
         Ref<IndexBuffer> m_IndexBuffer;
 

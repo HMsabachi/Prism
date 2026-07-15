@@ -3,7 +3,7 @@
 
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/RenderPass.h"
-#include "Prism/Renderer/Pipeline.h"
+#include "Prism/Renderer/VertexInput.h"
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/Material.h"
 #include "Prism/Renderer/Texture.h"
@@ -132,7 +132,7 @@ namespace Prism
         s_Data->ActiveRenderPass = nullptr;
     }
 
-    void OpenGLRenderer::SubmitFullscreenQuad(Ref<Pipeline> pipeline, Ref<Material> material)
+    void OpenGLRenderer::SubmitFullscreenQuad(Ref<VertexInput> vertexInput, Ref<Material> material)
     {
         // Phase 5 接入时实现（fullscreen quad VBO/IBO 当前在 RenderPipeline 持有）
     }
@@ -187,13 +187,13 @@ namespace Prism
         return { envFiltered, irradianceMap };
     }
 
-    void OpenGLRenderer::RenderMesh(Ref<Pipeline> pipeline, Ref<Mesh> mesh, Ref<Material> material,
+    void OpenGLRenderer::RenderMesh(Ref<VertexInput> vertexInput, Ref<Mesh> mesh, Ref<Material> material,
         uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass)
     {
         // Phase 4 只实现+编译通过，RenderPipeline 本阶段不调用（Phase 5 接入）。
         // ObjectUBO 由 RenderPipeline 在调 RenderMesh 前 Bind（全局共享，Phase 5 确认归属），RenderMesh 不管。
         mesh->m_VertexBuffer->Bind();
-        pipeline->Bind();
+        vertexInput->Bind();
         mesh->m_IndexBuffer->Bind();
 
         material->BindProgram(pass);
@@ -207,7 +207,7 @@ namespace Prism
         });
     }
 
-    void OpenGLRenderer::RenderQuad(Ref<Pipeline> pipeline, Ref<Material> material, const glm::mat4& transform)
+    void OpenGLRenderer::RenderQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const glm::mat4& transform)
     {
         // Phase 5 接入时实现（fullscreen quad VBO 当前在 RenderPipeline）
     }

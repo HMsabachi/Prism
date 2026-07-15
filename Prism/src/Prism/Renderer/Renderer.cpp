@@ -5,7 +5,7 @@
 #include "Material.h"
 #include "RenderPass.h"
 #include "Mesh.h"
-#include "Pipeline.h"
+#include "VertexInput.h"
 #include "SceneEnvironment.h"
 #include "Image.h"
 #include "Texture.h"
@@ -100,11 +100,11 @@ namespace Prism
 
     void Renderer::BeginRenderPass(Ref<RenderPass> renderPass, bool clear) { s_RendererAPI->BeginRenderPass(renderPass, clear); }
     void Renderer::EndRenderPass() { s_RendererAPI->EndRenderPass(); }
-    void Renderer::SubmitFullscreenQuad(Ref<Pipeline> pipeline, Ref<Material> material) { s_RendererAPI->SubmitFullscreenQuad(pipeline, material); }
+    void Renderer::SubmitFullscreenQuad(Ref<VertexInput> vertexInput, Ref<Material> material) { s_RendererAPI->SubmitFullscreenQuad(vertexInput, material); }
     void Renderer::SetSceneEnvironment(const Ref<SceneEnvironment>& environment, const Ref<Image2D>& shadow) { s_RendererAPI->SetSceneEnvironment(environment, shadow); }
     std::pair<Ref<TextureCube>, Ref<TextureCube>> Renderer::CreateEnvironmentMap(const std::string& filepath) { return s_RendererAPI->CreateEnvironmentMap(filepath); }
-    void Renderer::RenderMesh(Ref<Pipeline> pipeline, Ref<Mesh> mesh, Ref<Material> material, uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass) { s_RendererAPI->RenderMesh(pipeline, mesh, material, submeshIndex, transform, pass); }
-    void Renderer::RenderQuad(Ref<Pipeline> pipeline, Ref<Material> material, const glm::mat4& transform) { s_RendererAPI->RenderQuad(pipeline, material, transform); }
+    void Renderer::RenderMesh(Ref<VertexInput> vertexInput, Ref<Mesh> mesh, Ref<Material> material, uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass) { s_RendererAPI->RenderMesh(vertexInput, mesh, material, submeshIndex, transform, pass); }
+    void Renderer::RenderQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const glm::mat4& transform) { s_RendererAPI->RenderQuad(vertexInput, material, transform); }
 
     RenderAPICapabilities& Renderer::GetCapabilities() { return s_RendererAPI->GetCapabilities(); }
 

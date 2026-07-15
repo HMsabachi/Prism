@@ -1,5 +1,5 @@
-﻿#include "prpch.h"
-#include "OpenGLPipeline.h"
+#include "prpch.h"
+#include "OpenGLVertexInput.h"
 
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Buffer/VertexBuffer.h"
@@ -29,13 +29,13 @@ namespace Prism {
         return 0;
     }
 
-    OpenGLPipeline::OpenGLPipeline(const PipelineSpecification& spec)
+    OpenGLVertexInput::OpenGLVertexInput(const VertexInputSpecification& spec)
         : m_Specification(spec)
     {
         Invalidate();
     }
 
-    OpenGLPipeline::~OpenGLPipeline()
+    OpenGLVertexInput::~OpenGLVertexInput()
     {
         GLuint rendererID = m_VertexArrayRendererID;
         Renderer::Submit([rendererID]()
@@ -44,11 +44,11 @@ namespace Prism {
         });
     }
 
-    void OpenGLPipeline::Invalidate()
+    void OpenGLVertexInput::Invalidate()
     {
         PR_CORE_ASSERT(m_Specification.Layout.GetElements().size(), "Layout is empty!");
 
-        Ref<OpenGLPipeline> instance = this;
+        Ref<OpenGLVertexInput> instance = this;
         Renderer::Submit([instance]() mutable
         {
             auto& vertexArrayRendererID = instance->m_VertexArrayRendererID;
@@ -61,9 +61,9 @@ namespace Prism {
         });
     }
 
-    void OpenGLPipeline::Bind() const
+    void OpenGLVertexInput::Bind() const
     {
-        Ref<const OpenGLPipeline> instance = this;
+        Ref<const OpenGLVertexInput> instance = this;
         Renderer::Submit([instance]()
         {
             glBindVertexArray(instance->m_VertexArrayRendererID);

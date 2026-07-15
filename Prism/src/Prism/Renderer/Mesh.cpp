@@ -1,7 +1,7 @@
 ﻿#include "prpch.h"
 #include "Mesh.h"
 #include "Prism/Renderer/Renderer.h"
-#include "Prism/Renderer/Pipeline.h"
+#include "Prism/Renderer/VertexInput.h"
 #include "Prism/Renderer/Buffer/VertexBuffer.h"
 #include "Prism/Renderer/Buffer/IndexBuffer.h"
 
@@ -133,9 +133,9 @@ namespace Prism {
         m_VertexBuffer->SetLayout(vertexLayout);
         m_IndexBuffer = IndexBuffer::Create(m_Indices.data(), m_Indices.size() * sizeof(Index));
 
-        PipelineSpecification pipelineSpec;
+        VertexInputSpecification pipelineSpec;
         pipelineSpec.Layout = vertexLayout;
-        m_Pipeline = Pipeline::Create(pipelineSpec);
+        m_VertexInput = VertexInput::Create(pipelineSpec);
     }
 
 
@@ -161,9 +161,9 @@ namespace Prism {
         };
         m_VertexBuffer->SetLayout(vertexLayout);
 
-        PipelineSpecification pipelineSpec;
+        VertexInputSpecification pipelineSpec;
         pipelineSpec.Layout = vertexLayout;
-        m_Pipeline = Pipeline::Create(pipelineSpec);
+        m_VertexInput = VertexInput::Create(pipelineSpec);
     }
 
     Mesh::~Mesh()

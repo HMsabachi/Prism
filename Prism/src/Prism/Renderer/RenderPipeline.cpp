@@ -7,7 +7,7 @@
 #include "Prism/Renderer/Material.h"
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Asset/AssetManager.h"
-#include "Prism/Renderer/Pipeline.h"
+#include "Prism/Renderer/VertexInput.h"
 #include "Prism/Renderer/Buffer/VertexBuffer.h"
 #include "Prism/Renderer/Buffer/IndexBuffer.h"
 #include "Prism/Renderer/Buffer/Framebuffer.h"
@@ -198,7 +198,7 @@ namespace Prism
                 if (dc.Mesh != boundMesh)
                 {
                     dc.Mesh->m_VertexBuffer->Bind();
-                    dc.Mesh->m_Pipeline->Bind();
+                    dc.Mesh->m_VertexInput->Bind();
                     dc.Mesh->m_IndexBuffer->Bind();
                     boundMesh = dc.Mesh;
                 }
@@ -264,7 +264,7 @@ namespace Prism
                 if (dc.Mesh != boundMesh)
                 {
                     dc.Mesh->m_VertexBuffer->Bind();
-                    dc.Mesh->m_Pipeline->Bind();
+                    dc.Mesh->m_VertexInput->Bind();
                     dc.Mesh->m_IndexBuffer->Bind();
                     boundMesh = dc.Mesh;
                 }
@@ -307,7 +307,7 @@ namespace Prism
                     if (dc.Mesh != boundMesh)
                     {
                         dc.Mesh->m_VertexBuffer->Bind();
-                        dc.Mesh->m_Pipeline->Bind();
+                        dc.Mesh->m_VertexInput->Bind();
                         dc.Mesh->m_IndexBuffer->Bind();
                         boundMesh = dc.Mesh;
                     }
@@ -349,7 +349,7 @@ namespace Prism
                     if (dc.Mesh != boundMesh)
                     {
                         dc.Mesh->m_VertexBuffer->Bind();
-                        dc.Mesh->m_Pipeline->Bind();
+                        dc.Mesh->m_VertexInput->Bind();
                         dc.Mesh->m_IndexBuffer->Bind();
                         boundMesh = dc.Mesh;
                     }
@@ -395,7 +395,7 @@ namespace Prism
                     if (dc.Mesh != boundMesh)
                     {
                         dc.Mesh->m_VertexBuffer->Bind();
-                        dc.Mesh->m_Pipeline->Bind();
+                        dc.Mesh->m_VertexInput->Bind();
                         dc.Mesh->m_IndexBuffer->Bind();
                         boundMesh = dc.Mesh;
                     }
@@ -504,12 +504,12 @@ namespace Prism
             { { x,         y + height, 0.1f }, { 0.0f, 1.0f } },
         };
 
-        PipelineSpecification pipelineSpec;
+        VertexInputSpecification pipelineSpec;
         pipelineSpec.Layout = {
             { ShaderDataType::Float3, "a_Position",  VertexSemantic::Position },
             { ShaderDataType::Float2, "a_TexCoord",  VertexSemantic::TexCoord0 }
         };
-        m_FullscreenQuadPipeline = Pipeline::Create(pipelineSpec);
+        m_FullscreenQuadPipeline = VertexInput::Create(pipelineSpec);
         m_FullscreenQuadVB = VertexBuffer::Create(data, 4 * sizeof(QuadVertex));
 
         uint32_t indices[6] = { 0, 1, 2, 2, 3, 0 };

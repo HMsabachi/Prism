@@ -10,7 +10,7 @@
 namespace Prism
 {
     class RenderPass;
-    class Pipeline;
+    class VertexInput;
     class Mesh;
     class Material;
     class TextureCube;
@@ -70,15 +70,15 @@ namespace Prism
 
         virtual void BeginRenderPass(Ref<RenderPass> renderPass, bool clear = true) = 0;
         virtual void EndRenderPass() = 0;
-        virtual void SubmitFullscreenQuad(Ref<Pipeline> pipeline, Ref<Material> material) = 0;
+        virtual void SubmitFullscreenQuad(Ref<VertexInput> vertexInput, Ref<Material> material) = 0;
 
         virtual void SetSceneEnvironment(const Ref<SceneEnvironment>& environment, const Ref<Image2D>& shadow) = 0;
         virtual std::pair<Ref<TextureCube>, Ref<TextureCube>> CreateEnvironmentMap(const std::string& filepath) = 0;
 
         // RenderMesh 适配 Prism：从 DrawCommand 取 material + 单 submeshIndex + PSL pass（决策6，不引入 RenderMeshWithoutMaterial）
-        virtual void RenderMesh(Ref<Pipeline> pipeline, Ref<Mesh> mesh, Ref<Material> material,
+        virtual void RenderMesh(Ref<VertexInput> vertexInput, Ref<Mesh> mesh, Ref<Material> material,
             uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass) = 0;
-        virtual void RenderQuad(Ref<Pipeline> pipeline, Ref<Material> material, const glm::mat4& transform) = 0;
+        virtual void RenderQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const glm::mat4& transform) = 0;
 
         virtual RenderAPICapabilities& GetCapabilities() = 0;
 

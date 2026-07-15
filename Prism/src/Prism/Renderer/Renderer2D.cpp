@@ -5,7 +5,7 @@
 #include "Texture.h"
 
 
-#include "Prism/Renderer/Pipeline.h"
+#include "Prism/Renderer/VertexInput.h"
 #include "Prism/Renderer/Buffer/IndexBuffer.h"
 #include "Prism/Renderer/Shader.h"
 #include "Prism/Renderer/Shader/PrismShader.h"
@@ -53,7 +53,7 @@ namespace Prism
         static const uint32_t MaxLineVertices = MaxLines * 2;
         static const uint32_t MaxLineIndices = MaxLines * 6;
 
-        Ref<Pipeline> QuadPipeline;
+        Ref<VertexInput> QuadPipeline;
         Ref<VertexBuffer> QuadVertexBuffer;
         Ref<IndexBuffer> QuadIndexBuffer;
         Ref<PrismShader> TextureShader;
@@ -69,7 +69,7 @@ namespace Prism
         glm::vec4 QuadVertexPositions[4];
 
         // Lines
-        Ref<Pipeline> LinePipeline;
+        Ref<VertexInput> LinePipeline;
         Ref<VertexBuffer> LineVertexBuffer;
         Ref<IndexBuffer> LineIndexBuffer;
         Ref<PrismShader> LineShader;
@@ -79,7 +79,7 @@ namespace Prism
         LineVertex* LineVertexBufferPtr = nullptr;
 
         // Circles
-        Ref<Pipeline> CirclePipeline;
+        Ref<VertexInput> CirclePipeline;
         Ref<VertexBuffer> CircleVertexBuffer;
         Ref<PrismShader> CircleShader;
         uint32_t CircleIndexCount = 0;
@@ -100,7 +100,7 @@ namespace Prism
     {
         s_Data.ObjectUBO.Init();
         {
-            PipelineSpecification pipelineSpec;
+            VertexInputSpecification pipelineSpec;
             pipelineSpec.Layout = {
                 { ShaderDataType::Float3, "a_Position" , VertexSemantic::Position},
                 { ShaderDataType::Float4, "a_Color" , VertexSemantic::Color},
@@ -108,7 +108,7 @@ namespace Prism
                 { ShaderDataType::Float, "a_TexIndex" , VertexSemantic::Index0},
                 { ShaderDataType::Float, "a_TilingFactor", VertexSemantic::Other0 }
             };
-            s_Data.QuadPipeline = Pipeline::Create(pipelineSpec);
+            s_Data.QuadPipeline = VertexInput::Create(pipelineSpec);
 
             s_Data.QuadVertexBuffer = VertexBuffer::Create(s_Data.MaxVertices * sizeof(QuadVertex));
 
@@ -154,12 +154,12 @@ namespace Prism
         {
             s_Data.LineShader = AssetManager::GetShaderLibrary()->Get("Prism/Renderer2D_Line");
 
-            PipelineSpecification pipelineSpec;
+            VertexInputSpecification pipelineSpec;
             pipelineSpec.Layout = {
                 { ShaderDataType::Float3, "a_Position" , VertexSemantic::Position},
                 { ShaderDataType::Float4, "a_Color" , VertexSemantic::Color}
             };
-            s_Data.LinePipeline = Pipeline::Create(pipelineSpec);
+            s_Data.LinePipeline = VertexInput::Create(pipelineSpec);
 
             s_Data.LineVertexBuffer = VertexBuffer::Create(s_Data.MaxLineVertices * sizeof(LineVertex));
             s_Data.LineVertexBufferBase = new LineVertex[s_Data.MaxLineVertices];
@@ -176,14 +176,14 @@ namespace Prism
         {
             s_Data.CircleShader = AssetManager::GetShaderLibrary()->Get("Prism/Renderer2D_Circle");
 
-            PipelineSpecification pipelineSpec;
+            VertexInputSpecification pipelineSpec;
             pipelineSpec.Layout = {
                 { ShaderDataType::Float3, "a_WorldPosition", VertexSemantic::Position },
                 { ShaderDataType::Float,  "a_Thickness",     VertexSemantic::Index0 },
                 { ShaderDataType::Float2, "a_LocalPosition", VertexSemantic::TexCoord0 },
                 { ShaderDataType::Float4, "a_Color",         VertexSemantic::Color }
             };
-            s_Data.CirclePipeline = Pipeline::Create(pipelineSpec);
+            s_Data.CirclePipeline = VertexInput::Create(pipelineSpec);
 
             s_Data.CircleVertexBuffer = VertexBuffer::Create(s_Data.MaxVertices * sizeof(CircleVertex));
             s_Data.CircleVertexBufferBase = new CircleVertex[s_Data.MaxVertices];

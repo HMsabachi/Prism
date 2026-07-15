@@ -17,7 +17,7 @@ namespace Prism
     class Texture2D;
     class VertexBuffer;
     class IndexBuffer;
-    class Pipeline;
+    class VertexInput;
 
     struct RendererCamera
     {
@@ -87,7 +87,7 @@ namespace Prism
 
         Ref<VertexBuffer> m_FullscreenQuadVB;
         Ref<IndexBuffer> m_FullscreenQuadIB;
-        Ref<Pipeline> m_FullscreenQuadPipeline;
+        Ref<VertexInput> m_FullscreenQuadPipeline;
 
         Ref<RenderPass> m_GeoPass;
         Ref<RenderPass> m_CompositePass;
