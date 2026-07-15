@@ -23,9 +23,6 @@ namespace Prism
     {
         RenderAPICapabilities RenderCaps;
         Ref<RenderPass> ActiveRenderPass;
-        // 后端批次缓存验证（决策 25）：跨 RenderMesh 跳过重复绑定，BeginRenderPass 重置。
-        // 三级独立判断，对齐原调用层 boundProgram/boundMaterial/boundMesh：
-        // LastProgram 控 BindProgram（同 variant program 跨不同 Material 实例也跳过）。
         Ref<Shader> LastProgram;
         Ref<Material> LastMaterial;
         Ref<Mesh> LastMesh;
@@ -121,7 +118,6 @@ namespace Prism
     {
         PR_CORE_ASSERT(renderPass, "渲染通道不能为空！");
         s_Data->ActiveRenderPass = renderPass;
-        // 进入新 RenderPass 后重置批次缓存（决策 25）：覆盖 RenderMesh 外的 GL 状态变更（如 DrawFullscreen 绑 skybox program）。
         s_Data->LastProgram = nullptr;
         s_Data->LastMaterial = nullptr;
         s_Data->LastMesh = nullptr;
@@ -144,12 +140,12 @@ namespace Prism
 
     void OpenGLRenderer::SubmitFullscreenQuad(Ref<VertexInput> vertexInput, Ref<Material> material)
     {
-        // Phase 5 接入时实现（fullscreen quad VBO/IBO 当前在 RenderPipeline 持有）
+        // TODO: Phase 6 接入（fullscreen quad 当前在 RenderPipeline 持有）
     }
 
     void OpenGLRenderer::SetSceneEnvironment(const Ref<SceneEnvironment>& environment, const Ref<Image2D>& shadow)
     {
-        // Phase 5 接入时实现（当前 RenderPipeline::GeometryPass 直接 Bind env map）
+        // TODO: Phase 6 接入
     }
 
     std::pair<Ref<TextureCube>, Ref<TextureCube>>
@@ -200,8 +196,6 @@ namespace Prism
     void OpenGLRenderer::RenderMesh(Ref<VertexInput> vertexInput, Ref<Mesh> mesh, Ref<Material> material,
         uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass)
     {
-        // ObjectUBO 由 RenderPipeline 在调 RenderMesh 前 Bind（全局共享），RenderMesh 不管。
-        // 后端批次缓存验证（决策 25）：三级独立判断跳过重复绑定，等价原调用层 boundProgram/boundMaterial/boundMesh。
         Ref<Shader> program = material->GetProgram(pass);
         if (program != s_Data->LastProgram)
         {
@@ -231,6 +225,78 @@ namespace Prism
 
     void OpenGLRenderer::RenderQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const glm::mat4& transform)
     {
-        // Phase 5 接入时实现（fullscreen quad VBO 当前在 RenderPipeline）
+        // TODO: Phase 6 接入（fullscreen quad 当前在 RenderPipeline 持有）
+    }
+
+    void OpenGLRenderer::SetDefaultStencilState()
+    {
+        Renderer::Submit([]() {
+            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+            glStencilFunc(GL_ALWAYS, 1, 0xff);
+            glStencilMask(0);
+        });
+    }
+
+    void OpenGLRenderer::BeginOutlineWrite()
+    {
+        s_Data->LastProgram = nullptr;
+        s_Data->LastMaterial = nullptr;
+        s_Data->LastMesh = nullptr;
+
+        Renderer::Submit([]() {
+            glEnable(GL_STENCIL_TEST);
+            glStencilFunc(GL_ALWAYS, 1, 0xff);
+            glStencilMask(0xff);
+        });
+    }
+
+    void OpenGLRenderer::BeginOutlineDraw()
+    {
+        s_Data->LastProgram = nullptr;
+        s_Data->LastMaterial = nullptr;
+        s_Data->LastMesh = nullptr;
+
+        Renderer::Submit([]() {
+            glStencilFunc(GL_NOTEQUAL, 1, 0xff);
+            glStencilMask(0);
+            glLineWidth(10);
+            glEnable(GL_LINE_SMOOTH);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        });
+    }
+
+    void OpenGLRenderer::EndOutline()
+    {
+        Renderer::Submit([]() {
+            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+            glStencilFunc(GL_ALWAYS, 1, 0xff);
+            glStencilMask(0);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        });
+    }
+
+    void OpenGLRenderer::BeginColliderDebug()
+    {
+        s_Data->LastProgram = nullptr;
+        s_Data->LastMaterial = nullptr;
+        s_Data->LastMesh = nullptr;
+
+        Renderer::Submit([]() {
+            glLineWidth(3);
+            glEnable(GL_LINE_SMOOTH);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            glDisable(GL_DEPTH_TEST);
+        });
+    }
+
+    void OpenGLRenderer::EndColliderDebug()
+    {
+        Renderer::Submit([]() {
+            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+            glStencilFunc(GL_ALWAYS, 1, 0xff);
+            glStencilMask(0);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+            glEnable(GL_DEPTH_TEST);
+        });
     }
 }

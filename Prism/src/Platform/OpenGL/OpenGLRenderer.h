@@ -29,6 +29,13 @@ namespace Prism
             uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass) override;
         virtual void RenderQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const glm::mat4& transform) override;
 
+        virtual void SetDefaultStencilState() override;
+        virtual void BeginOutlineWrite() override;
+        virtual void BeginOutlineDraw() override;
+        virtual void EndOutline() override;
+        virtual void BeginColliderDebug() override;
+        virtual void EndColliderDebug() override;
+
         virtual RenderAPICapabilities& GetCapabilities() override;
     };
 }

@@ -54,6 +54,13 @@ namespace Prism
         static void RenderMesh(Ref<VertexInput> vertexInput, Ref<Mesh> mesh, Ref<Material> material, uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass);
         static void RenderQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const glm::mat4& transform);
 
+        static void SetDefaultStencilState();
+        static void BeginOutlineWrite();
+        static void BeginOutlineDraw();
+        static void EndOutline();
+        static void BeginColliderDebug();
+        static void EndColliderDebug();
+
         static RenderAPICapabilities& GetCapabilities();
 
         // 低层静态（Phase 6 收敛进 OpenGLRenderer Utils static）

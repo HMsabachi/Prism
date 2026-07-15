@@ -18,8 +18,6 @@
 
 #include "Prism/Core/Hash.h"
 
-#include <glad/glad.h>
-
 namespace Prism
 {
     constexpr uint64_t SHADER_TAG_KEY_LIGHT_MODE = Hash::GenerateFNVHash64("LightMode");
@@ -201,10 +199,7 @@ namespace Prism
         PR_PROFILE_FUNCTION();
         Renderer::BeginRenderPass(m_GeoPass);
 
-        Renderer::Submit([]() {
-            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-            glStencilMask(0);
-        });
+        Renderer::SetDefaultStencilState();
 
         DrawFullscreen(config.SkyboxMaterial);
 
@@ -233,32 +228,29 @@ namespace Prism
         // Selected outline
         if (!selectedList.empty())
         {
-            Renderer::Submit([]() {
-                glEnable(GL_STENCIL_TEST);
-                glStencilFunc(GL_ALWAYS, 1, 0xff);
-                glStencilMask(0xff);
-            });
+            Renderer::BeginOutlineWrite();
 
             {
-                Ref<Material> boundMaterial;
-                Ref<Mesh> boundMesh;
-
                 for (auto& dc : selectedList)
                 {
-                    auto material = dc.Material;
+                    m_ObjectUBO.SetModel(dc.Transform);
+                    if (dc.Mesh->IsAnimated())
+                        m_ObjectUBO.SetBones(dc.Mesh->m_BoneTransforms.data(),
+                            (uint32_t)dc.Mesh->m_BoneTransforms.size());
+                    m_ObjectUBO.Upload();
+                    m_ObjectUBO.Bind();
 
-                    if (material != boundMaterial)
-                    {
-                        material->Bind();
-                        boundMaterial = material;
-                    }
-                    if (dc.Mesh != boundMesh)
-                    {
-                        dc.Mesh->m_VertexBuffer->Bind();
-                        dc.Mesh->m_VertexInput->Bind();
-                        dc.Mesh->m_IndexBuffer->Bind();
-                        boundMesh = dc.Mesh;
-                    }
+                    Renderer::RenderMesh(dc.Mesh->GetVertexInput(), dc.Mesh, dc.Material,
+                        dc.SubmeshIndex, dc.Transform, 0);
+                }
+            }
+
+            Renderer::BeginOutlineDraw();
+
+            {
+                for (auto& dc : selectedList)
+                {
+                    Ref<Material> material = dc.Mesh->IsAnimated() ? m_OutlineAnimMaterial : m_OutlineMaterial;
 
                     m_ObjectUBO.SetModel(dc.Transform);
                     if (dc.Mesh->IsAnimated())
@@ -267,101 +259,34 @@ namespace Prism
                     m_ObjectUBO.Upload();
                     m_ObjectUBO.Bind();
 
-                    auto& submesh = dc.Mesh->m_Submeshes[dc.SubmeshIndex];
-                    Renderer::DrawIndexedBaseVertex(
-                        submesh.IndexCount, submesh.BaseIndex, submesh.BaseVertex);
+                    Renderer::RenderMesh(dc.Mesh->GetVertexInput(), dc.Mesh, material,
+                        dc.SubmeshIndex, dc.Transform, 0);
                 }
             }
 
-            Renderer::Submit([]() {
-                glStencilFunc(GL_NOTEQUAL, 1, 0xff);
-                glStencilMask(0);
-                glLineWidth(10);
-                glEnable(GL_LINE_SMOOTH);
-                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            });
-
-            {
-                Ref<Mesh> boundMesh = nullptr;
-                Ref<Material> boundMaterial;
-
-                for (auto& dc : selectedList)
-                {
-                    auto material = dc.Mesh->IsAnimated() ? m_OutlineAnimMaterial : m_OutlineMaterial;
-                    if (material != boundMaterial)
-                    {
-                        material->Bind();
-                        boundMaterial = material;
-                    }
-
-                    if (dc.Mesh != boundMesh)
-                    {
-                        dc.Mesh->m_VertexBuffer->Bind();
-                        dc.Mesh->m_VertexInput->Bind();
-                        dc.Mesh->m_IndexBuffer->Bind();
-                        boundMesh = dc.Mesh;
-                    }
-
-                    m_ObjectUBO.SetModel(dc.Transform);
-                    if (dc.Mesh->IsAnimated())
-                        m_ObjectUBO.SetBones(dc.Mesh->m_BoneTransforms.data(),
-                            (uint32_t)dc.Mesh->m_BoneTransforms.size());
-                    m_ObjectUBO.Upload();
-                    m_ObjectUBO.Bind();
-
-                    auto& submesh = dc.Mesh->m_Submeshes[dc.SubmeshIndex];
-                    Renderer::DrawIndexedBaseVertex(
-                        submesh.IndexCount, submesh.BaseIndex, submesh.BaseVertex);
-                }
-            }
-
-            Renderer::Submit([]() {
-                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-                glStencilMask(0xff);
-                glStencilFunc(GL_ALWAYS, 1, 0xff);
-            });
+            Renderer::EndOutline();
         }
 
         // Collider debug
         if (!debugList.empty())
         {
-            Renderer::Submit([]() {
-                glLineWidth(3);
-                glEnable(GL_LINE_SMOOTH);
-                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-                glDisable(GL_DEPTH_TEST);
-            });
+            Renderer::BeginColliderDebug();
 
             {
-                Ref<Mesh> boundMesh = nullptr;
-                m_ColliderMaterial->Bind();
-
                 for (auto& dc : debugList)
                 {
                     if (!dc.Mesh) continue;
-
-                    if (dc.Mesh != boundMesh)
-                    {
-                        dc.Mesh->m_VertexBuffer->Bind();
-                        dc.Mesh->m_VertexInput->Bind();
-                        dc.Mesh->m_IndexBuffer->Bind();
-                        boundMesh = dc.Mesh;
-                    }
 
                     m_ObjectUBO.SetModel(dc.Transform);
                     m_ObjectUBO.Upload();
                     m_ObjectUBO.Bind();
 
-                    auto& submesh = dc.Mesh->m_Submeshes[dc.SubmeshIndex];
-                    Renderer::DrawIndexedBaseVertex(
-                        submesh.IndexCount, submesh.BaseIndex, submesh.BaseVertex);
+                    Renderer::RenderMesh(dc.Mesh->GetVertexInput(), dc.Mesh, m_ColliderMaterial,
+                        dc.SubmeshIndex, dc.Transform, 0);
                 }
             }
 
-            Renderer::Submit([]() {
-                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-                glEnable(GL_DEPTH_TEST);
-            });
+            Renderer::EndColliderDebug();
         }
 
         // Grid

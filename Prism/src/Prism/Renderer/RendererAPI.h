@@ -80,6 +80,13 @@ namespace Prism
             uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass) = 0;
         virtual void RenderQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const glm::mat4& transform) = 0;
 
+        virtual void SetDefaultStencilState() = 0;
+        virtual void BeginOutlineWrite() = 0;
+        virtual void BeginOutlineDraw() = 0;
+        virtual void EndOutline() = 0;
+        virtual void BeginColliderDebug() = 0;
+        virtual void EndColliderDebug() = 0;
+
         virtual RenderAPICapabilities& GetCapabilities() = 0;
 
         // 低层静态（本阶段保留，Phase 6 收敛进 OpenGLRenderer Utils static 对齐 Hazel）

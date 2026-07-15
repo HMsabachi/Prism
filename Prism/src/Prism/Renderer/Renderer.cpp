@@ -106,6 +106,13 @@ namespace Prism
     void Renderer::RenderMesh(Ref<VertexInput> vertexInput, Ref<Mesh> mesh, Ref<Material> material, uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass) { s_RendererAPI->RenderMesh(vertexInput, mesh, material, submeshIndex, transform, pass); }
     void Renderer::RenderQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const glm::mat4& transform) { s_RendererAPI->RenderQuad(vertexInput, material, transform); }
 
+    void Renderer::SetDefaultStencilState() { s_RendererAPI->SetDefaultStencilState(); }
+    void Renderer::BeginOutlineWrite() { s_RendererAPI->BeginOutlineWrite(); }
+    void Renderer::BeginOutlineDraw() { s_RendererAPI->BeginOutlineDraw(); }
+    void Renderer::EndOutline() { s_RendererAPI->EndOutline(); }
+    void Renderer::BeginColliderDebug() { s_RendererAPI->BeginColliderDebug(); }
+    void Renderer::EndColliderDebug() { s_RendererAPI->EndColliderDebug(); }
+
     RenderAPICapabilities& Renderer::GetCapabilities() { return s_RendererAPI->GetCapabilities(); }
 
     void Renderer::WaitAndRender() { s_Data.m_CommandQueue.Execute(); }
