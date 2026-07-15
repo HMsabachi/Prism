@@ -63,19 +63,6 @@ namespace Prism
 
         static RenderAPICapabilities& GetCapabilities();
 
-        // 低层静态（Phase 6 收敛进 OpenGLRenderer Utils static）
-        static void Clear();
-        static void Clear(float r, float g, float b, float a = 1.0f);
-        static void SetClearColor(float r, float g, float b, float a);
-        static void ClearMagenta();
-
-        static void DrawIndexed(uint32_t count, PrimitiveType type, bool depthTest = true);
-        static void DrawIndexedBaseVertex(uint32_t count, uint32_t baseIndex, uint32_t baseVertex, PrimitiveType type = PrimitiveType::Triangles);
-
-        // For OpenGL
-        static void SetLineThickness(float thickness);
-        static void MemoryBarriers(RendererAPI::BarrierFlags flags);
-
         static void WaitAndRender();
 
 #if 0

@@ -229,8 +229,6 @@ namespace Prism
         }
         int width = e.GetWidth(), height = e.GetHeight();
 
-        Renderer::Submit([=]() { RendererAPI::SetViewport(0, 0, width, height); });
-
         auto& fbs = FramebufferPool::GetGlobal()->GetAll();
         for (auto& fb : fbs)
         {

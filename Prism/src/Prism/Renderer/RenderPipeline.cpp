@@ -123,8 +123,6 @@ namespace Prism
         m_BloomBlurMaterial.Reset();
         m_BloomBlendMaterial.Reset();
 
-        m_FullscreenQuadVB.Reset();
-        m_FullscreenQuadIB.Reset();
         m_FullscreenQuadPipeline.Reset();
     }
 
@@ -363,40 +361,17 @@ namespace Prism
 
     void RenderPipeline::CreateFullscreenQuad()
     {
-        struct QuadVertex
-        {
-            glm::vec3 Position;
-            glm::vec2 TexCoord;
-        };
-
-        float x = -1.0f, y = -1.0f, width = 2.0f, height = 2.0f;
-        QuadVertex data[4] = {
-            { { x,         y,          0.1f }, { 0.0f, 0.0f } },
-            { { x + width, y,          0.1f }, { 1.0f, 0.0f } },
-            { { x + width, y + height, 0.1f }, { 1.0f, 1.0f } },
-            { { x,         y + height, 0.1f }, { 0.0f, 1.0f } },
-        };
-
         VertexInputSpecification pipelineSpec;
         pipelineSpec.Layout = {
             { ShaderDataType::Float3, "a_Position",  VertexSemantic::Position },
             { ShaderDataType::Float2, "a_TexCoord",  VertexSemantic::TexCoord0 }
         };
         m_FullscreenQuadPipeline = VertexInput::Create(pipelineSpec);
-        m_FullscreenQuadVB = VertexBuffer::Create(data, 4 * sizeof(QuadVertex));
-
-        uint32_t indices[6] = { 0, 1, 2, 2, 3, 0 };
-        m_FullscreenQuadIB = IndexBuffer::Create(indices, 6 * sizeof(uint32_t));
     }
 
     void RenderPipeline::DrawFullscreen(const Ref<Material>& material)
     {
-        if (material)
-            material->Bind();
-        m_FullscreenQuadVB->Bind();
-        m_FullscreenQuadPipeline->Bind();
-        m_FullscreenQuadIB->Bind();
-        Renderer::DrawIndexed(6, PrimitiveType::Triangles, true);
+        Renderer::SubmitFullscreenQuad(m_FullscreenQuadPipeline, material);
     }
 
     void RenderPipeline::DrawQuad(const Ref<Material>& material, const glm::mat4& transform)
@@ -408,10 +383,7 @@ namespace Prism
             m_ObjectUBO.Upload();
             m_ObjectUBO.Bind();
         }
-        m_FullscreenQuadVB->Bind();
-        m_FullscreenQuadPipeline->Bind();
-        m_FullscreenQuadIB->Bind();
-        Renderer::DrawIndexed(6, PrimitiveType::Triangles, true);
+        Renderer::RenderQuad(m_FullscreenQuadPipeline, nullptr, transform);
     }
 
     void RenderPipeline::BeginFrame(const FrameSnapshot& snapshot)

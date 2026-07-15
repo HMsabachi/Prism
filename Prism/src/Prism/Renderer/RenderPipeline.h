@@ -85,8 +85,6 @@ namespace Prism
         FrameUniformBuffer m_FrameUBO;
         ObjectUniformBuffer m_ObjectUBO;
 
-        Ref<VertexBuffer> m_FullscreenQuadVB;
-        Ref<IndexBuffer> m_FullscreenQuadIB;
         Ref<VertexInput> m_FullscreenQuadPipeline;
 
         Ref<RenderPass> m_GeoPass;

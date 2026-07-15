@@ -89,15 +89,6 @@ namespace Prism
 
         virtual RenderAPICapabilities& GetCapabilities() = 0;
 
-        // 低层静态（本阶段保留，Phase 6 收敛进 OpenGLRenderer Utils static 对齐 Hazel）
-        static void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height);
-        static void Clear(float r, float g, float b, float a);
-        static void SetClearColor(float r, float g, float b, float a);
-        static void DrawIndexed(uint32_t count, PrimitiveType type = PrimitiveType::Triangles, bool depthTest = true);
-        static void DrawIndexedBaseVertex(uint32_t count, uint32_t baseIndex, uint32_t baseVertex, PrimitiveType type = PrimitiveType::Triangles);
-        static void SetLineThickness(float thickness);
-        static void MemoryBarriers(BarrierFlags flags);
-
         static RendererAPIType Current() { return s_CurrentRendererAPI; }
     private:
         static RendererAPIType s_CurrentRendererAPI;
