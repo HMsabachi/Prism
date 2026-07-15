@@ -171,37 +171,10 @@ namespace Prism
         {
             Renderer::BeginRenderPass(m_ShadowPasses[cascade]);
 
-            Ref<Material> boundMaterial;
-            Ref<Shader> boundProgram;
-            Ref<Mesh> boundMesh = nullptr;
-
             for (auto& dc : drawList)
             {
-                auto& shader = dc.Material->GetShader();
-                int32_t shadowPass = shader->FindPassByTag(SHADER_TAG_KEY_LIGHT_MODE, SHADER_TAG_VALUE_SHADOW_CASTER);
+                int32_t shadowPass = dc.Material->GetShader()->FindPassByTag(SHADER_TAG_KEY_LIGHT_MODE, SHADER_TAG_VALUE_SHADOW_CASTER);
                 if (shadowPass < 0) continue;
-
-                auto& material = dc.Material;
-
-                if (boundProgram != material->GetProgram(shadowPass))
-                {
-                    material->BindProgram(shadowPass);
-                    boundProgram = material->GetProgram(shadowPass);
-                }
-                if (material != boundMaterial)
-                {
-                    material->BindUniform();
-                    material->BindTexture();
-                    boundMaterial = material;
-                }
-
-                if (dc.Mesh != boundMesh)
-                {
-                    dc.Mesh->m_VertexBuffer->Bind();
-                    dc.Mesh->m_VertexInput->Bind();
-                    dc.Mesh->m_IndexBuffer->Bind();
-                    boundMesh = dc.Mesh;
-                }
 
                 m_ObjectUBO.SetModel(dc.Transform);
                 m_ObjectUBO.SetShadowPassIndex((int)cascade);
@@ -211,9 +184,8 @@ namespace Prism
                 m_ObjectUBO.Upload();
                 m_ObjectUBO.Bind();
 
-                auto& submesh = dc.Mesh->m_Submeshes[dc.SubmeshIndex];
-                Renderer::DrawIndexedBaseVertex(
-                    submesh.IndexCount, submesh.BaseIndex, submesh.BaseVertex);
+                Renderer::RenderMesh(dc.Mesh->GetVertexInput(), dc.Mesh, dc.Material,
+                    dc.SubmeshIndex, dc.Transform, (uint32_t)shadowPass);
             }
 
             Renderer::EndRenderPass();
@@ -241,33 +213,10 @@ namespace Prism
 
         if (!drawList.empty())
         {
-            Ref<Shader> boundProgram;
-            Ref<Material> boundMaterial;
-            Ref<Mesh> boundMesh;
-
             for (auto& dc : drawList)
             {
                 auto& material = dc.Material;
                 int32_t forwardBasePass = material->GetShader()->FindPassByTag(SHADER_TAG_KEY_LIGHT_MODE, SHADER_TAG_VALUE_FORWARD_BASE);
-                if (boundProgram != material->GetProgram(forwardBasePass))
-                {
-                    material->BindProgram(forwardBasePass);
-                    boundProgram = material->GetProgram(forwardBasePass);
-                }
-                if (material != boundMaterial)
-                {
-                    material->BindUniform();
-                    material->BindTexture();
-                    boundMaterial = material;
-                }
-
-                if (dc.Mesh != boundMesh)
-                {
-                    dc.Mesh->m_VertexBuffer->Bind();
-                    dc.Mesh->m_VertexInput->Bind();
-                    dc.Mesh->m_IndexBuffer->Bind();
-                    boundMesh = dc.Mesh;
-                }
 
                 m_ObjectUBO.SetModel(dc.Transform);
                 if (dc.Mesh->IsAnimated())
@@ -276,9 +225,8 @@ namespace Prism
                 m_ObjectUBO.Upload();
                 m_ObjectUBO.Bind();
 
-                auto& submesh = dc.Mesh->m_Submeshes[dc.SubmeshIndex];
-                Renderer::DrawIndexedBaseVertex(
-                    submesh.IndexCount, submesh.BaseIndex, submesh.BaseVertex);
+                Renderer::RenderMesh(dc.Mesh->GetVertexInput(), dc.Mesh, material,
+                    dc.SubmeshIndex, dc.Transform, (uint32_t)forwardBasePass);
             }
         }
 

@@ -23,6 +23,12 @@ namespace Prism
     {
         RenderAPICapabilities RenderCaps;
         Ref<RenderPass> ActiveRenderPass;
+        // 后端批次缓存验证（决策 25）：跨 RenderMesh 跳过重复绑定，BeginRenderPass 重置。
+        // 三级独立判断，对齐原调用层 boundProgram/boundMaterial/boundMesh：
+        // LastProgram 控 BindProgram（同 variant program 跨不同 Material 实例也跳过）。
+        Ref<Shader> LastProgram;
+        Ref<Material> LastMaterial;
+        Ref<Mesh> LastMesh;
     };
 
     static OpenGLRendererData* s_Data = nullptr;
@@ -115,6 +121,10 @@ namespace Prism
     {
         PR_CORE_ASSERT(renderPass, "渲染通道不能为空！");
         s_Data->ActiveRenderPass = renderPass;
+        // 进入新 RenderPass 后重置批次缓存（决策 25）：覆盖 RenderMesh 外的 GL 状态变更（如 DrawFullscreen 绑 skybox program）。
+        s_Data->LastProgram = nullptr;
+        s_Data->LastMaterial = nullptr;
+        s_Data->LastMesh = nullptr;
         renderPass->GetSpecification().TargetFramebuffer->Bind();
         if (clear)
         {
@@ -190,15 +200,27 @@ namespace Prism
     void OpenGLRenderer::RenderMesh(Ref<VertexInput> vertexInput, Ref<Mesh> mesh, Ref<Material> material,
         uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass)
     {
-        // Phase 4 只实现+编译通过，RenderPipeline 本阶段不调用（Phase 5 接入）。
-        // ObjectUBO 由 RenderPipeline 在调 RenderMesh 前 Bind（全局共享，Phase 5 确认归属），RenderMesh 不管。
-        mesh->m_VertexBuffer->Bind();
-        vertexInput->Bind();
-        mesh->m_IndexBuffer->Bind();
-
-        material->BindProgram(pass);
-        material->BindUniform();
-        material->BindTexture();
+        // ObjectUBO 由 RenderPipeline 在调 RenderMesh 前 Bind（全局共享），RenderMesh 不管。
+        // 后端批次缓存验证（决策 25）：三级独立判断跳过重复绑定，等价原调用层 boundProgram/boundMaterial/boundMesh。
+        Ref<Shader> program = material->GetProgram(pass);
+        if (program != s_Data->LastProgram)
+        {
+            material->BindProgram(pass);
+            s_Data->LastProgram = program;
+        }
+        if (material != s_Data->LastMaterial)
+        {
+            material->BindUniform();
+            material->BindTexture();
+            s_Data->LastMaterial = material;
+        }
+        if (mesh != s_Data->LastMesh)
+        {
+            mesh->m_VertexBuffer->Bind();
+            vertexInput->Bind();
+            mesh->m_IndexBuffer->Bind();
+            s_Data->LastMesh = mesh;
+        }
 
         auto& submesh = mesh->m_Submeshes[submeshIndex];
         Renderer::Submit([submesh]() {

@@ -165,6 +165,8 @@ namespace Prism {
 
         bool IsAnimated() const { return m_IsAnimated; }
 
+        const Ref<VertexInput>& GetVertexInput() const { return m_VertexInput; }
+
         const std::vector<Triangle> GetTriangleCache(uint32_t index) const { return m_TriangleCache.at(index); }
 
         const std::vector<Vertex>& GetStaticVertices() const { return m_StaticVertices; }
