@@ -324,9 +324,8 @@ namespace Prism
         m_CompositeMaterial->SetFloat("u_Exposure", exposure);
         m_CompositeMaterial->SetInt("Prism_GeometryPassTextureSamples",
             (int)m_GeoPass->GetSpecification().TargetFramebuffer->GetSpecification().Samples);
-        m_CompositeMaterial->Bind();
 
-        DrawFullscreen(nullptr);
+        DrawFullscreen(m_CompositeMaterial);
         Renderer::EndRenderPass();
     }
 
@@ -341,7 +340,6 @@ namespace Prism
             index = i % 2;
             Renderer::BeginRenderPass(m_BloomBlurPass[index]);
             m_BloomBlurMaterial->SetBool("u_Horizontal", index == 0);
-            m_BloomBlurMaterial->Bind();
             if (i > 0)
             {
                 auto fb = m_BloomBlurPass[1 - index]->GetSpecification().TargetFramebuffer;
@@ -352,7 +350,7 @@ namespace Prism
                 auto fb = m_GeoPass->GetSpecification().TargetFramebuffer;
                 fb->BindTexture(1, Config::PRISM_GEOMETRY_PASS_TEXTURE);
             }
-            DrawFullscreen(nullptr);
+            DrawFullscreen(m_BloomBlurMaterial);
             Renderer::EndRenderPass();
         }
     }
@@ -363,12 +361,11 @@ namespace Prism
         Renderer::BeginRenderPass(m_BloomBlendPass);
         m_BloomBlendMaterial->SetFloat("u_Exposure", 0.8f);
         m_BloomBlendMaterial->SetBool("u_EnableBloom", true);
-        m_BloomBlendMaterial->Bind();
 
         m_GeoPass->GetSpecification().TargetFramebuffer->BindTexture(0, Config::PRISM_GEOMETRY_PASS_TEXTURE);
         m_BloomBlurPass[1]->GetSpecification().TargetFramebuffer->BindTexture(0, Config::PRISM_BLOOM_TEXTURE);
 
-        DrawFullscreen(nullptr);
+        DrawFullscreen(m_BloomBlendMaterial);
         Renderer::EndRenderPass();
     }
 #pragma endregion
@@ -394,12 +391,11 @@ namespace Prism
     {
         if (material)
         {
-            material->Bind();
             m_ObjectUBO.SetModel(transform);
             m_ObjectUBO.Upload();
             m_ObjectUBO.Bind();
         }
-        Renderer::RenderQuad(m_FullscreenQuadPipeline, nullptr, transform);
+        Renderer::RenderQuad(m_FullscreenQuadPipeline, material, transform);
     }
 
     void SceneRenderer::BeginFrame(const FrameSnapshot& snapshot)

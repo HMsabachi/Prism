@@ -1,7 +1,6 @@
 ﻿#include "prpch.h"
 #include "Material.h"
 #include "Prism/Asset/AssetManager.h"
-#include "Prism/Renderer/Buffer/UniformBuffer.h"
 #include "Prism/Renderer/Texture.h"
 #include "Prism/ShaderCompiler/PrismBindings.h"
 
@@ -94,10 +93,8 @@ namespace Prism
                 m_PropertyBuffer.Write((const byte*)&uni.DefaultValue[0], copySize, offset);
             }
         }
-        m_UniformBuffer = UniformBuffer::Create(Prism::Config::PRISM_BINDING_MATERIAL, totalSize);
-        m_UniformBuffer->SetData(m_PropertyBuffer);
         m_Uniforms = m_Shader->GetUniforms();
-        m_Dirty = false;
+        m_Dirty = true;
     }
 
     void Material::OnShaderReloaded()
@@ -287,41 +284,6 @@ namespace Prism
     Ref<Shader> Material::GetProgram(uint32_t passIndex) const
     {
         return m_Shader->GetPassProgram(passIndex, m_KeywordMask);
-    }
-
-    void Material::BindProgram(uint32_t passIndex) const
-    {
-        Ref<Shader> program = m_Shader->GetPassProgram(passIndex, m_KeywordMask);
-        program->Bind();
-        const auto& pass = m_Shader->GetPass(passIndex);
-        if (pass.RenderState)
-            program->ApplyRenderState(*pass.RenderState);
-    }
-
-    void Material::BindUniform() const
-    {
-        if (m_Dirty)
-        {
-            m_UniformBuffer->SetData(m_PropertyBuffer);
-            m_Dirty = false;
-        }
-        m_UniformBuffer->Bind();
-    }
-
-    void Material::BindTexture() const
-    {
-        for (size_t i = 0; i < m_Textures.size(); i++)
-        {
-            if (m_Textures[i])
-                m_Textures[i]->Bind((uint32_t)i + Prism::Config::PRISM_BINDING_TEXTURE);
-        }
-    }
-
-    void Material::Bind(uint32_t passIndex) const
-    {
-        BindProgram(passIndex);
-        BindUniform();
-        BindTexture();
     }
 
     void Material::SetKeyword(const std::string& name, bool enabled)

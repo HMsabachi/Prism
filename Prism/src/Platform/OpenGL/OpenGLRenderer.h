@@ -37,5 +37,8 @@ namespace Prism
         virtual void EndColliderDebug() override;
 
         virtual RenderAPICapabilities& GetCapabilities() override;
+
+    private:
+        void BindMaterial(Ref<Material> material, uint32_t pass);
     };
 }

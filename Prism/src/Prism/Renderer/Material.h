@@ -8,7 +8,6 @@
 
 namespace Prism
 {
-    class UniformBuffer;
     class Texture;
     class Texture2D;
     class TextureCube;
@@ -65,11 +64,12 @@ namespace Prism
         KeywordMask GetKeywordMask() const { return m_KeywordMask; }
 
         Ref<Shader> GetProgram(uint32_t passIndex = 0) const;
-        void BindProgram(uint32_t passIndex = 0) const;
-        void BindUniform() const;
-        void BindTexture() const;
-        void Bind(uint32_t passIndex = 0) const;
         uint32_t GetPassCount() const { return m_Shader->GetPassCount(); }
+
+        const Buffer& GetPropertyBuffer() const { return m_PropertyBuffer; }
+        const std::vector<Ref<Texture>>& GetTextures() const { return m_Textures; }
+        bool IsDirty() const { return m_Dirty; }
+        void SetDirty(bool dirty) { m_Dirty = dirty; }
 
     private:
         void AllocateStorage();
@@ -79,11 +79,10 @@ namespace Prism
         Ref<PrismShader> m_Shader;
         std::string m_Name;
         Buffer m_PropertyBuffer;
-        mutable Ref<UniformBuffer> m_UniformBuffer;
         std::vector<Ref<Texture>> m_Textures;
         std::vector<PrismShaderCompiler::AST::ShaderUniform> m_Uniforms;
         KeywordMask m_KeywordMask = 0;
         ShaderReloadedToken m_ReloadToken = 0;
-        mutable bool m_Dirty = true;
+        bool m_Dirty = true;
     };
 }

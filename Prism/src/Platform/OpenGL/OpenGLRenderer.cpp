@@ -13,6 +13,8 @@
 #include "Prism/Renderer/Buffer/Framebuffer.h"
 #include "Prism/Renderer/Buffer/VertexBuffer.h"
 #include "Prism/Renderer/Buffer/IndexBuffer.h"
+#include "Prism/Renderer/Buffer/UniformBuffer.h"
+#include "Prism/ShaderCompiler/PrismBindings.h"
 #include "OpenGLStateCache.h"
 
 #include <glad/glad.h>
@@ -20,6 +22,12 @@
 
 namespace Prism
 {
+    struct MaterialUBOEntry
+    {
+        Ref<UniformBuffer> UBO;
+        uint32_t Size = 0;
+    };
+
     struct OpenGLRendererData
     {
         RenderAPICapabilities RenderCaps;
@@ -29,6 +37,7 @@ namespace Prism
         Ref<Mesh> LastMesh;
         Ref<VertexBuffer> FullscreenQuadVB;
         Ref<IndexBuffer> FullscreenQuadIB;
+        std::unordered_map<Material*, MaterialUBOEntry> MaterialUBOs;
     };
 
     static OpenGLRendererData* s_Data = nullptr;
@@ -221,8 +230,7 @@ namespace Prism
 
     void OpenGLRenderer::SubmitFullscreenQuad(Ref<VertexInput> vertexInput, Ref<Material> material)
     {
-        if (material)
-            material->Bind();
+        BindMaterial(material, 0);
         s_Data->FullscreenQuadVB->Bind();
         vertexInput->Bind();
         s_Data->FullscreenQuadIB->Bind();
@@ -285,18 +293,7 @@ namespace Prism
     void OpenGLRenderer::RenderMesh(Ref<VertexInput> vertexInput, Ref<Mesh> mesh, Ref<Material> material,
         uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass)
     {
-        Ref<Shader> program = material->GetProgram(pass);
-        if (program != s_Data->LastProgram)
-        {
-            material->BindProgram(pass);
-            s_Data->LastProgram = program;
-        }
-        if (material != s_Data->LastMaterial)
-        {
-            material->BindUniform();
-            material->BindTexture();
-            s_Data->LastMaterial = material;
-        }
+        BindMaterial(material, pass);
         if (mesh != s_Data->LastMesh)
         {
             mesh->m_VertexBuffer->Bind();
@@ -315,6 +312,48 @@ namespace Prism
     {
         (void)transform;
         SubmitFullscreenQuad(vertexInput, material);
+    }
+
+    void OpenGLRenderer::BindMaterial(Ref<Material> material, uint32_t pass)
+    {
+        if (!material)
+            return;
+
+        Ref<Shader> program = material->GetProgram(pass);
+        if (program != s_Data->LastProgram)
+        {
+            program->Bind();
+            const auto& shPass = material->GetShader()->GetPass(pass);
+            if (shPass.RenderState)
+                program->ApplyRenderState(*shPass.RenderState);
+            s_Data->LastProgram = program;
+        }
+
+        if (material != s_Data->LastMaterial)
+        {
+            uint32_t size = (uint32_t)material->GetPropertyBuffer().GetSize();
+            auto& entry = s_Data->MaterialUBOs[material.Raw()];
+            if (!entry.UBO || entry.Size != size)
+            {
+                entry.UBO = UniformBuffer::Create(Config::PRISM_BINDING_MATERIAL, size);
+                entry.Size = size;
+                material->SetDirty(true);
+            }
+            if (material->IsDirty())
+            {
+                entry.UBO->SetData(material->GetPropertyBuffer());
+                material->SetDirty(false);
+            }
+            entry.UBO->Bind();
+
+            const auto& textures = material->GetTextures();
+            for (size_t i = 0; i < textures.size(); i++)
+            {
+                if (textures[i])
+                    textures[i]->Bind((uint32_t)i + Config::PRISM_BINDING_TEXTURE);
+            }
+            s_Data->LastMaterial = material;
+        }
     }
 
     void OpenGLRenderer::SetDefaultStencilState()
