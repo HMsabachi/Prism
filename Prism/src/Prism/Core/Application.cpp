@@ -9,6 +9,7 @@
 #include "Prism/ImGui/ImGuiLayer.h"
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Renderer2D.h"
+#include "Prism/Renderer/RendererContext.h"
 #include "Prism/Renderer/SceneRenderer.h"
 #include "Prism/Renderer/Buffer/Framebuffer.h"
 
@@ -63,7 +64,7 @@ namespace Prism
         Time::Init();
         ShaderCompiler::Init();
         // 初始化ImGui层 Initialize ImGui Layer
-        m_ImGuiLayer = new ImGuiLayer("ImGui");
+        m_ImGuiLayer = ImGuiLayer::Create();
         PushOverlay(m_ImGuiLayer);
         // 初始化 PhysX 物理引擎
         Physics::Init();
@@ -129,9 +130,12 @@ namespace Prism
     {
         PR_PROFILE_FUNCTION();
         Time::Update();
-        
+        m_Window->ProcessEvents();
+
         if (!m_Minimized)
         {
+            Renderer::BeginFrame();
+
             PR_PROFILE_SCOPE("Update LayerStack")
             for (Layer* layer : m_LayerStack)
                 layer->OnUpdate();
@@ -139,9 +143,12 @@ namespace Prism
             Application* app = this;
             Renderer::Submit([app]() { app->RenderImGui(); });
 
+            Renderer::EndFrame();
+
+            m_Window->GetRenderContext()->BeginFrame();
             Renderer::WaitAndRender();
+            m_Window->SwapBuffers();
         }
-        m_Window->OnUpdate();
     }
 #pragma region Private Methods 私有方法
 
@@ -234,6 +241,8 @@ namespace Prism
             return false;
         }
         int width = e.GetWidth(), height = e.GetHeight();
+
+        m_Window->GetRenderContext()->OnResize(width, height);
 
         auto& fbs = FramebufferPool::GetGlobal()->GetAll();
         for (auto& fb : fbs)

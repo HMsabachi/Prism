@@ -13,7 +13,8 @@ namespace Prism {
         WindowsWindow(const WindowProps& props);
         virtual ~WindowsWindow();
 
-        void OnUpdate() override;
+        void ProcessEvents() override;
+        void SwapBuffers() override;
 
         inline unsigned int GetWidth() const override { return m_Data.Width; }
         inline unsigned int GetHeight() const override { return m_Data.Height; }
@@ -35,6 +36,8 @@ namespace Prism {
         virtual void SetTitle(const std::string& title) override;
 
         inline virtual void* GetNativeWindow() const { return m_Window; }
+
+        virtual Ref<RendererContext> GetRenderContext() override { return m_RendererContext; }
     private:
         virtual void Init(const WindowProps& props);
         virtual void Shutdown();

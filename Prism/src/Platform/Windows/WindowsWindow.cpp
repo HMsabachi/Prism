@@ -82,11 +82,17 @@ namespace Prism {
 
 
 
-    void WindowsWindow::OnUpdate()
+    void WindowsWindow::ProcessEvents()
     {
         PR_PROFILE_FUNCTION();
 
         glfwPollEvents();
+    }
+
+    void WindowsWindow::SwapBuffers()
+    {
+        PR_PROFILE_FUNCTION();
+
         m_RendererContext->SwapBuffers();
     }
 
