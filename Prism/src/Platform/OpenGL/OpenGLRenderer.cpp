@@ -247,11 +247,11 @@ namespace Prism
         const uint32_t cubemapSize = 2048;
         const uint32_t irradianceMapSize = 32;
 
-        Ref<TextureCube> envUnfiltered = TextureCube::Create(TextureFormat::Float16, cubemapSize, cubemapSize);
+        Ref<TextureCube> envUnfiltered = TextureCube::Create(ImageFormat::RGBA16F, cubemapSize, cubemapSize);
         if (!s_EnvironmentShader)
             s_EnvironmentShader = ComputeShader::Create("Assets/Shaders/Environment.ComputeShader");
         Ref<Texture2D> envEquirect = Texture2D::Create(filepath);
-        PR_CORE_ASSERT(envEquirect->GetFormat() == TextureFormat::Float16, "Texture is not HDR!");
+        PR_CORE_ASSERT(envEquirect->GetFormat() == ImageFormat::RGBA16F, "Texture is not HDR!");
 
         envEquirect->Bind();
         int toCubeKernel = s_EnvironmentShader->FindKernel("CSEquirectToCube");
@@ -260,7 +260,7 @@ namespace Prism
         s_EnvironmentShader->Dispatch(toCubeKernel, cubemapSize / 32, cubemapSize / 32, 6);
         envUnfiltered->GenerateMipMap();
 
-        Ref<TextureCube> envFiltered = TextureCube::Create(TextureFormat::Float16, cubemapSize, cubemapSize);
+        Ref<TextureCube> envFiltered = TextureCube::Create(ImageFormat::RGBA16F, cubemapSize, cubemapSize);
         envUnfiltered->CopyTo(envFiltered);
 
         int mipFilter = s_EnvironmentShader->FindKernel("CSMipFilter");
@@ -274,7 +274,7 @@ namespace Prism
             s_EnvironmentShader->Dispatch(mipFilter, numGroups, numGroups, 6);
         }
 
-        Ref<TextureCube> irradianceMap = TextureCube::Create(TextureFormat::Float16, irradianceMapSize, irradianceMapSize);
+        Ref<TextureCube> irradianceMap = TextureCube::Create(ImageFormat::RGBA16F, irradianceMapSize, irradianceMapSize);
         int irradiance = s_EnvironmentShader->FindKernel("CSIrradiance");
         s_EnvironmentShader->SetTextureCube(irradiance, "u_InputCubeMap", envFiltered);
         s_EnvironmentShader->SetImageCube(irradiance, "o_OutputCube", irradianceMap);

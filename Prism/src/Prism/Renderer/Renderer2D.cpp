@@ -134,7 +134,7 @@ namespace Prism
             delete[] quadIndices;
         }
 
-        s_Data.WhiteTexture = Texture2D::Create(TextureFormat::RGBA, 1, 1);
+        s_Data.WhiteTexture = Texture2D::Create(ImageFormat::RGBA, 1, 1);
         uint32_t whiteTextureData = 0xffffffff;
         s_Data.WhiteTexture->Lock();
         s_Data.WhiteTexture->GetWriteableBuffer().Write(&whiteTextureData, sizeof(uint32_t));

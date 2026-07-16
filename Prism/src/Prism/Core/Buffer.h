@@ -34,6 +34,7 @@ namespace Prism {
             other.Size = 0;
             other.ReadOnly = false;
         }
+        ~Buffer() { Free(); }
         void operator=(const Buffer& other)
         {
             if (this != &other)

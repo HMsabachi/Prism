@@ -423,7 +423,7 @@ namespace Prism {
 #pragma region Texture2D
         void* Prism_Texture2D_Constructor(uint32_t width, uint32_t height)
         {
-            auto result = Texture2D::Create(TextureFormat::RGBA, width, height);
+            auto result = Texture2D::Create(ImageFormat::RGBA, width, height);
             return new Ref<Texture2D>(result);
         }
 
