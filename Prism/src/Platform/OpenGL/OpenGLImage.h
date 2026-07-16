@@ -3,8 +3,6 @@
 #include "Prism/Renderer/Image.h"
 #include "Prism/Renderer/RendererTypes.h"
 
-#include <glad/glad.h>
-
 namespace Prism {
 
     class PRISM_API OpenGLImage2D : public Image2D
@@ -43,16 +41,28 @@ namespace Prism {
     };
 
     namespace Utils {
+        typedef unsigned int GLenum;
+        constexpr GLenum P_GL_RGB = 0x1907;
+        constexpr GLenum P_GL_RGBA = 0x1908;
+        constexpr GLenum P_GL_RGB8 = 0x8051;
+        constexpr GLenum P_GL_RGBA8 = 0x8058;
+        constexpr GLenum P_GL_SRGB8 = 0x8C41;
+        constexpr GLenum P_GL_RGBA16F = 0x881A;
+        constexpr GLenum P_GL_RGBA32F = 0x8814;
+        constexpr GLenum P_GL_DEPTH24_STENCIL8 = 0x88F0;
+        constexpr GLenum P_GL_DEPTH_COMPONENT32F = 0x8CAC;
+        constexpr GLenum P_GL_UNSIGNED_BYTE = 0x1401;
+        constexpr GLenum P_GL_FLOAT = 0x1406;
 
         inline GLenum OpenGLImageFormat(ImageFormat format)
         {
             switch (format)
             {
-                case ImageFormat::RGB:     return GL_RGB;
-                case ImageFormat::SRGB:    return GL_RGB;
+                case ImageFormat::RGB:     return P_GL_RGB;
+                case ImageFormat::SRGB:    return P_GL_RGB;
                 case ImageFormat::RGBA:
                 case ImageFormat::RGBA16F:
-                case ImageFormat::RGBA32F: return GL_RGBA;
+                case ImageFormat::RGBA32F: return P_GL_RGBA;
             }
             PR_CORE_ASSERT(false, "Unknown image format");
             return 0;
@@ -62,13 +72,13 @@ namespace Prism {
         {
             switch (format)
             {
-                case ImageFormat::RGB:             return GL_RGB8;
-                case ImageFormat::SRGB:            return GL_SRGB8;
-                case ImageFormat::RGBA:            return GL_RGBA8;
-                case ImageFormat::RGBA16F:         return GL_RGBA16F;
-                case ImageFormat::RGBA32F:         return GL_RGBA32F;
-                case ImageFormat::DEPTH24STENCIL8: return GL_DEPTH24_STENCIL8;
-                case ImageFormat::DEPTH32F:        return GL_DEPTH_COMPONENT32F;
+                case ImageFormat::RGB:             return P_GL_RGB8;
+                case ImageFormat::SRGB:            return P_GL_SRGB8;
+                case ImageFormat::RGBA:            return P_GL_RGBA8;
+                case ImageFormat::RGBA16F:         return P_GL_RGBA16F;
+                case ImageFormat::RGBA32F:         return P_GL_RGBA32F;
+                case ImageFormat::DEPTH24STENCIL8: return P_GL_DEPTH24_STENCIL8;
+                case ImageFormat::DEPTH32F:        return P_GL_DEPTH_COMPONENT32F;
             }
             PR_CORE_ASSERT(false, "Unknown image format");
             return 0;
@@ -80,9 +90,9 @@ namespace Prism {
             {
                 case ImageFormat::RGB:
                 case ImageFormat::SRGB:
-                case ImageFormat::RGBA:    return GL_UNSIGNED_BYTE;
+                case ImageFormat::RGBA:    return P_GL_UNSIGNED_BYTE;
                 case ImageFormat::RGBA16F:
-                case ImageFormat::RGBA32F: return GL_FLOAT;
+                case ImageFormat::RGBA32F: return P_GL_FLOAT;
             }
             PR_CORE_ASSERT(false, "Unknown image format");
             return 0;

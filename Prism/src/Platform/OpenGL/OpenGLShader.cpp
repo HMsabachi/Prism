@@ -3,7 +3,7 @@
 
 #include <glm/gtc/type_ptr.hpp>
 #include <PrismShaderCore/Pipeline/PipelineState.h>
-
+#include <glad/glad.h>
 #include "Prism/Renderer/Renderer.h"
 #include "OpenGLStateCache.h"
 

@@ -1,6 +1,6 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "OpenGLImage.h"
-
+#include <glad/glad.h>
 #include "Prism/Renderer/Renderer.h"
 
 namespace Prism {

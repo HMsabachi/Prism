@@ -1,7 +1,6 @@
-#pragma once
+﻿#pragma once
 
 #include "Prism/Renderer/Shader.h"
-#include <Glad/glad.h>
 #include <unordered_map>
 
 namespace Prism {
