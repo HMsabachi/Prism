@@ -251,8 +251,7 @@ namespace Prism
 
         void EditorLayer::ShowBoundingBoxes(bool show, bool onTop /*= false*/)
         {
-            if (auto* rs = m_ActiveScene->GetSystem<RenderSystem>())
-                rs->GetOptions().ShowBoundingBoxes = show && !onTop;
+            SceneRenderer::Get().GetOptions().ShowBoundingBoxes = show && !onTop;
             m_DrawOnTopBoundingBoxes = show && onTop;
         }
 
@@ -619,8 +618,7 @@ namespace Prism
             //viewportSize.x *= 0.5;
             //viewportSize.y *= 0.5;
 
-            if (auto* rs = m_ActiveScene->GetSystem<RenderSystem>())
-                UI::Image(rs->GetFinalPassImage(), viewportSize, { 0, 1 }, { 1, 0 });
+            UI::Image(SceneRenderer::Get().GetFinalImage(), viewportSize, { 0, 1 }, { 1, 0 });
 
             if (ImGui::BeginDragDropTarget())
             {
@@ -947,8 +945,7 @@ namespace Prism
                 {
                 case KeyCode::G:
                     // Toggle grid
-                    if (auto* rs = m_ActiveScene->GetSystem<RenderSystem>())
-                        rs->GetOptions().ShowGrid = !rs->GetOptions().ShowGrid;
+                    SceneRenderer::Get().GetOptions().ShowGrid = !SceneRenderer::Get().GetOptions().ShowGrid;
                     break;
                 case KeyCode::B:
                     // Toggle bounding boxes

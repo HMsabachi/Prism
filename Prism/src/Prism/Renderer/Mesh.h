@@ -215,7 +215,7 @@ namespace Prism {
         bool m_AnimationPlaying = true;
 
         friend class Renderer;
-        friend class RenderPipeline;
+        friend class SceneRenderer;
         friend class OpenGLRenderer;
         friend class SceneHierarchyPanel;
     };

@@ -9,6 +9,7 @@
 #include "Prism/Asset/AssetManager.h"
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/RenderPass.h"
+#include "Prism/Renderer/SceneRenderer.h"
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Buffer/Framebuffer.h"
 #include "Prism/Editor/EditorCamera.h"
@@ -27,18 +28,12 @@ namespace Prism
 #pragma region 生命周期
     void RenderSystem::OnCreate()
     {
-        m_Pipeline = std::make_unique<RenderPipeline>();
-        m_Pipeline->Initialize(1280, 720);
-
         auto skyboxShader = AssetManager::GetShaderLibrary()->Get("Custom/Skybox");
         m_Config.SkyboxMaterial = Material::Create(skyboxShader->Handle);
     }
 
     void RenderSystem::OnDestroy()
     {
-        if (m_Pipeline)
-            m_Pipeline->Shutdown();
-        m_Pipeline.reset();
     }
     void RenderSystem::OnRender(float dt)
     {
@@ -66,7 +61,7 @@ namespace Prism
             UI::BeginPropertyGrid();
             UI::PropertySlider("Cascade Index", cascadeIndex, 0, 3);
             UI::EndPropertyGrid();
-            Ref<Image2D> depthImage = m_Pipeline->GetShadowPass(cascadeIndex)->GetSpecification().TargetFramebuffer->GetDepthImage();
+            Ref<Image2D> depthImage = SceneRenderer::Get().GetShadowPass(cascadeIndex)->GetSpecification().TargetFramebuffer->GetDepthImage();
             float size = ImGui::GetContentRegionAvail().x;
             UI::Image(depthImage, { size, size }, { 0, 1 }, { 1, 0 });
             UI::EndTreeNode();
@@ -153,8 +148,7 @@ namespace Prism
         m_PendingSnapshot.Config = m_Config;
 
         // TODO(多线程):SubmitSnapshot 入队,渲染线程异步消费
-        if (m_Pipeline)
-            m_Pipeline->Execute(m_PendingSnapshot);
+        SceneRenderer::Get().Execute(m_PendingSnapshot);
 
         // TODO(多线程): clear 需随双缓冲所有权调整,单线程下 Ref 保活安全
         m_PendingSnapshot.DebugDrawList.clear();
@@ -174,8 +168,7 @@ namespace Prism
             return;
         m_ViewportWidth = width;
         m_ViewportHeight = height;
-        if (m_Pipeline)
-            m_Pipeline->Resize(width, height);
+        SceneRenderer::Get().Resize(width, height);
     }
 
     void RenderSystem::SubmitDebugMesh(Ref<Mesh> mesh, const glm::mat4& transform,
@@ -184,24 +177,6 @@ namespace Prism
         for (uint32_t i = 0; i < mesh->GetSubmeshes().size(); i++)
             m_PendingSnapshot.DebugDrawList.push_back({ mesh, i, material, transform });
     }
-
-    Ref<Image2D> RenderSystem::GetFinalPassImage()
-    {
-        return m_Pipeline ? m_Pipeline->GetFinalRenderPass()
-            ->GetSpecification().TargetFramebuffer->GetImage() : nullptr;
-    }
-
-    RenderPipelineOptions& RenderSystem::GetOptions()
-    {
-        return m_Pipeline->GetOptions();
-    }
-
-    std::pair<Ref<TextureCube>, Ref<TextureCube>>
-    RenderSystem::CreateEnvironmentMap(const std::string& filepath)
-    {
-        return Renderer::CreateEnvironmentMap(filepath);
-    }
-
 
     void RenderSystem::CollectMeshRenderers(FrameSnapshot& snapshot)
     {

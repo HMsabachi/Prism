@@ -49,7 +49,7 @@ premake5 xcode4        # macOS Xcode
 - **23 种属性类型** — Color3/4、Range、Texture2D/Cube、Vector2/3/4、Matrix4、Float/Int 等
 - 集成在引擎运行时 — `PrismShader` 通过 `PrismShaderCompiler` 库加载并编译 `.Shader` 文件
 
-### 现代渲染管线（RenderPipeline）
+### 现代渲染管线（SceneRenderer）
 - PBR 金属/粗糙度工作流 + HDR 渲染 + MSAA 8x 多重采样
 - **级联阴影映射（CSM）** — 4 级联、Practical Split Scheme 视锥分割、纹素对齐、可配置最大阴影距离
 - **PCF 软阴影** — 16 采样 Poisson Disk、旋转核去条纹、硬件 PCF 深度比较
@@ -114,7 +114,7 @@ premake5 xcode4        # macOS Xcode
 - 物理资源（PhysicsMaterial、MeshCollider）资产化支持
 
 ### 场景系统
-- `RenderSystem` — 拥有 RenderPipeline，驱动每帧渲染、收集 MeshRenderer、提交调试绘制
+- `RenderSystem` — 拥有 SceneRenderer（全局单例），收集 FrameSnapshot 提交渲染，驱动每帧渲染、收集 MeshRenderer、提交调试绘制
 - `ScriptSystem` — 桥接场景生命周期到 C#/Python 脚本引擎
 - `PhysicsSystem` / `Physics2DSystem` — 3D/2D 物理场景管理
 - `SceneCamera` — 透视/正交投影、可配置远近平面
@@ -150,7 +150,7 @@ Prism/
 │   ├── src/Prism/
 │   │   ├── Core/                  # 应用框架、窗口、图层、日志、输入、Time、Ref、UUID
 │   │   ├── Events/                # 事件系统
-│   │   ├── Renderer/              # 渲染抽象层（RenderPipeline、RenderPass、Material、Mesh、Shader）
+│   │   ├── Renderer/              # 渲染抽象层（SceneRenderer、RenderPass、Material、Mesh、Shader）
 │   │   │   ├── Buffer/            # Frame/Object UBO、SSBO、Framebuffer
 │   │   │   ├── Camera/            # 相机系统
 │   │   │   ├── Shader/            # PrismShader（PSL 编译）、ShaderVariant
@@ -228,7 +228,7 @@ Prism/
 - [PSL 语法参考](Prism/vendor/PrismShaderCompiler/docs/PSL-Syntax.md) — 权威 PSL 语言规范
 - [PrismShader 集成指南](docs/PrismShader.md) — 引擎侧 Shader 加载、变体管理、Pass 系统
 - [PrismShader 扩展指南](docs/PrismShaderExtension.md) — 如何扩展着色器系统
-- [Renderer 文档](docs/Renderer.md) — 渲染管线架构（RenderPipeline、CSM、PBR）
+- [Renderer 文档](docs/Renderer.md) — 渲染管线架构（SceneRenderer、CSM、PBR）
 - [Python 脚本引擎文档](docs/PythonScriptCore.md) — pybind11 架构、PrismEngine 模块 API、扩展指南
 - [Time 文档](docs/Time.md)
 - [Time Documentation (English)](docs/TimeEN.md)

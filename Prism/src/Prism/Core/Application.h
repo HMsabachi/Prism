@@ -9,6 +9,7 @@
 namespace Prism
 {
     class ImGuiLayer;
+    class SceneRenderer;
     class WindowCloseEvent;
     class WindowResizeEvent;
 
@@ -62,6 +63,7 @@ namespace Prism
         ApplicationProps m_Props;
     private:
         std::unique_ptr<Window> m_Window;
+        std::unique_ptr<SceneRenderer> m_SceneRenderer;
         bool m_Running = true;
         bool m_Minimized = false;
         ImGuiLayer* m_ImGuiLayer;

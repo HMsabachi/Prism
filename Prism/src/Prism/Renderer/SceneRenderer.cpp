@@ -1,5 +1,5 @@
 ﻿#include "prpch.h"
-#include "RenderPipeline.h"
+#include "SceneRenderer.h"
 
 #include "Prism/Renderer/RenderPass.h"
 #include "Prism/Renderer/Mesh.h"
@@ -24,7 +24,23 @@ namespace Prism
     constexpr uint64_t SHADER_TAG_VALUE_FORWARD_BASE = Hash::GenerateFNVHash64("ForwardBase");
     constexpr uint64_t SHADER_TAG_VALUE_SHADOW_CASTER = Hash::GenerateFNVHash64("ShadowCaster");
 
-    void RenderPipeline::Initialize(uint32_t viewportWidth, uint32_t viewportHeight)
+    SceneRenderer* SceneRenderer::s_Instance = nullptr;
+
+    SceneRenderer::SceneRenderer() { s_Instance = this; }
+    SceneRenderer::~SceneRenderer() { if (s_Instance == this) s_Instance = nullptr; }
+
+    SceneRenderer& SceneRenderer::Get()
+    {
+        PR_CORE_ASSERT(s_Instance, "SceneRenderer not initialized!");
+        return *s_Instance;
+    }
+
+    Ref<Image2D> SceneRenderer::GetFinalImage() const
+    {
+        return m_CompositePass ? m_CompositePass->GetSpecification().TargetFramebuffer->GetImage() : nullptr;
+    }
+
+    void SceneRenderer::Initialize(uint32_t viewportWidth, uint32_t viewportHeight)
     {
         m_FrameUBO.Init();
         m_ObjectUBO.Init();
@@ -111,7 +127,7 @@ namespace Prism
         CreateFullscreenQuad();
     }
 
-    void RenderPipeline::Shutdown()
+    void SceneRenderer::Shutdown()
     {
         m_GeoPass.Reset();
         m_CompositePass.Reset();
@@ -126,13 +142,13 @@ namespace Prism
         m_FullscreenQuadPipeline.Reset();
     }
 
-    void RenderPipeline::Resize(uint32_t width, uint32_t height)
+    void SceneRenderer::Resize(uint32_t width, uint32_t height)
     {
         m_GeoPass->GetSpecification().TargetFramebuffer->Resize(width, height);
         m_CompositePass->GetSpecification().TargetFramebuffer->Resize(width, height);
     }
 
-    void RenderPipeline::Execute(const FrameSnapshot& snapshot)
+    void SceneRenderer::Execute(const FrameSnapshot& snapshot)
     {
         std::vector<DrawCommand> sortedDrawList = snapshot.DrawList;
         std::sort(sortedDrawList.begin(), sortedDrawList.end(),
@@ -158,7 +174,7 @@ namespace Prism
 
 #pragma region Passes
 
-    void RenderPipeline::ShadowPass(const std::vector<DrawCommand>& drawList)
+    void SceneRenderer::ShadowPass(const std::vector<DrawCommand>& drawList)
     {
         PR_PROFILE_FUNCTION();
         if (drawList.empty()) return;
@@ -188,7 +204,7 @@ namespace Prism
         }
     }
 
-    void RenderPipeline::GeometryPass(
+    void SceneRenderer::GeometryPass(
         const RenderConfig& config,
         const std::vector<DrawCommand>& drawList,
         const std::vector<DrawCommand>& selectedList,
@@ -298,7 +314,7 @@ namespace Prism
         Renderer::EndRenderPass();
     }
 
-    void RenderPipeline::CompositePass()
+    void SceneRenderer::CompositePass()
     {
         PR_PROFILE_FUNCTION();
         Renderer::BeginRenderPass(m_CompositePass);
@@ -314,7 +330,7 @@ namespace Prism
         Renderer::EndRenderPass();
     }
 
-    void RenderPipeline::BloomBlurPass()
+    void SceneRenderer::BloomBlurPass()
     {
         PR_PROFILE_FUNCTION();
         int amount = 10;
@@ -341,7 +357,7 @@ namespace Prism
         }
     }
 
-    void RenderPipeline::BloomBlendPass()
+    void SceneRenderer::BloomBlendPass()
     {
         PR_PROFILE_FUNCTION();
         Renderer::BeginRenderPass(m_BloomBlendPass);
@@ -359,7 +375,7 @@ namespace Prism
 
 #pragma region Tool
 
-    void RenderPipeline::CreateFullscreenQuad()
+    void SceneRenderer::CreateFullscreenQuad()
     {
         VertexInputSpecification pipelineSpec;
         pipelineSpec.Layout = {
@@ -369,12 +385,12 @@ namespace Prism
         m_FullscreenQuadPipeline = VertexInput::Create(pipelineSpec);
     }
 
-    void RenderPipeline::DrawFullscreen(const Ref<Material>& material)
+    void SceneRenderer::DrawFullscreen(const Ref<Material>& material)
     {
         Renderer::SubmitFullscreenQuad(m_FullscreenQuadPipeline, material);
     }
 
-    void RenderPipeline::DrawQuad(const Ref<Material>& material, const glm::mat4& transform)
+    void SceneRenderer::DrawQuad(const Ref<Material>& material, const glm::mat4& transform)
     {
         if (material)
         {
@@ -386,7 +402,7 @@ namespace Prism
         Renderer::RenderQuad(m_FullscreenQuadPipeline, nullptr, transform);
     }
 
-    void RenderPipeline::BeginFrame(const FrameSnapshot& snapshot)
+    void SceneRenderer::BeginFrame(const FrameSnapshot& snapshot)
     {
         auto& cam = snapshot.Camera;
         const auto& config = snapshot.Config;
@@ -408,7 +424,7 @@ namespace Prism
         m_BRDFLUT->Bind(Config::PRISM_ENV_BRDF_LUT);
     }
 
-    void RenderPipeline::UpdateShadowData(const FrameSnapshot& snapshot)
+    void SceneRenderer::UpdateShadowData(const FrameSnapshot& snapshot)
     {
         auto& camera = snapshot.Camera;
         const auto& config = snapshot.Config;

@@ -242,7 +242,7 @@ namespace Prism
     std::pair<Ref<TextureCube>, Ref<TextureCube>>
     OpenGLRenderer::CreateEnvironmentMap(const std::string& filepath)
     {
-        // 从 RenderPipeline.cpp 搬来，使用 Prism ComputeShader 高层 API（不照搬 Hazel 原始 GL）
+        // 从 SceneRenderer.cpp 搬来，使用 Prism ComputeShader 高层 API（不照搬 Hazel 原始 GL）
         PR_PROFILE_FUNCTION();
         const uint32_t cubemapSize = 2048;
         const uint32_t irradianceMapSize = 32;

@@ -18,6 +18,7 @@ namespace Prism
     class VertexBuffer;
     class IndexBuffer;
     class VertexInput;
+    class Image2D;
 
     struct RendererCamera
     {
@@ -45,15 +46,20 @@ namespace Prism
         uint64_t FrameIndex = 0;
     };
 
-    struct RenderPipelineOptions
+    struct SceneRendererOptions
     {
         bool ShowGrid = true;
         bool ShowBoundingBoxes = false;
     };
 
-    class PRISM_API RenderPipeline
+    class PRISM_API SceneRenderer
     {
     public:
+        static SceneRenderer& Get();
+
+        SceneRenderer();
+        ~SceneRenderer();
+
         void Initialize(uint32_t viewportWidth, uint32_t viewportHeight);
         void Shutdown();
         void Resize(uint32_t width, uint32_t height);
@@ -62,7 +68,8 @@ namespace Prism
 
         Ref<RenderPass> GetFinalRenderPass() const { return m_CompositePass; }
         const Ref<RenderPass>& GetShadowPass(uint32_t index) const { return m_ShadowPasses[index]; }
-        RenderPipelineOptions& GetOptions() { return m_Options; }
+        SceneRendererOptions& GetOptions() { return m_Options; }
+        Ref<Image2D> GetFinalImage() const;
 
     private:
         void BeginFrame(const FrameSnapshot& snapshot);
@@ -107,6 +114,8 @@ namespace Prism
         glm::mat4 m_ShadowMatrices[4]{};
         glm::vec4 m_CascadeSplits{};
 
-        RenderPipelineOptions m_Options;
+        SceneRendererOptions m_Options;
+
+        static SceneRenderer* s_Instance;
     };
 }

@@ -9,6 +9,7 @@
 #include "Prism/ImGui/ImGuiLayer.h"
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Renderer2D.h"
+#include "Prism/Renderer/SceneRenderer.h"
 #include "Prism/Renderer/Buffer/Framebuffer.h"
 
 #include "Scripting/CSharp/CSharpScriptEngine.h"
@@ -71,6 +72,9 @@ namespace Prism
         AssetManager::Init();
         Renderer::Init();
         Renderer::WaitAndRender();
+
+        m_SceneRenderer = std::make_unique<SceneRenderer>();
+        m_SceneRenderer->Initialize(1280, 720);
     }
 
     Application::~Application()
@@ -81,6 +85,8 @@ namespace Prism
             layer->OnDetach();
             delete layer;
         }
+
+        m_SceneRenderer.reset();
 
         CSharpScriptEngine::Shutdown();
         PythonScriptEngine::Shutdown();

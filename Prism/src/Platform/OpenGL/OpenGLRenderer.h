@@ -15,11 +15,11 @@ namespace Prism
         virtual void BeginFrame() override;
         virtual void EndFrame() override;
 
-        // 完整实现（RenderPipeline/EditorLayer 现有调用点依赖，Phase 4 不能断渲染）
+        // 完整实现（SceneRenderer/EditorLayer 现有调用点依赖，Phase 4 不能断渲染）
         virtual void BeginRenderPass(Ref<RenderPass> renderPass, bool clear = true) override;
         virtual void EndRenderPass() override;
 
-        // 占位（Phase 5 接入 RenderPipeline 时实现）
+        // 占位（Phase 5 接入 SceneRenderer 时实现）
         virtual void SubmitFullscreenQuad(Ref<VertexInput> vertexInput, Ref<Material> material) override;
 
         virtual void SetSceneEnvironment(const Ref<SceneEnvironment>& environment, const Ref<Image2D>& shadow) override;
