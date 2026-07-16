@@ -66,9 +66,9 @@ namespace Prism
             UI::BeginPropertyGrid();
             UI::PropertySlider("Cascade Index", cascadeIndex, 0, 3);
             UI::EndPropertyGrid();
-            const auto& rendererID = m_Pipeline->GetShadowPass(cascadeIndex)->GetSpecification().TargetFramebuffer->GetDepthAttachmentRendererID();
+            Ref<Image2D> depthImage = m_Pipeline->GetShadowPass(cascadeIndex)->GetSpecification().TargetFramebuffer->GetDepthImage();
             float size = ImGui::GetContentRegionAvail().x;
-            ImGui::Image((void*)(uint64_t)rendererID, { size, size }, { 0, 1 }, { 1, 0 });
+            UI::Image(depthImage, { size, size }, { 0, 1 }, { 1, 0 });
             UI::EndTreeNode();
         }
         ImGui::End();
@@ -185,15 +185,10 @@ namespace Prism
             m_PendingSnapshot.DebugDrawList.push_back({ mesh, i, material, transform });
     }
 
-    Ref<RenderPass> RenderSystem::GetFinalRenderPass()
-    {
-        return m_Pipeline ? m_Pipeline->GetFinalRenderPass() : nullptr;
-    }
-
-    uint32_t RenderSystem::GetFinalColorBufferID()
+    Ref<Image2D> RenderSystem::GetFinalPassImage()
     {
         return m_Pipeline ? m_Pipeline->GetFinalRenderPass()
-            ->GetSpecification().TargetFramebuffer->GetColorAttachmentRendererID() : 0;
+            ->GetSpecification().TargetFramebuffer->GetImage() : nullptr;
     }
 
     RenderPipelineOptions& RenderSystem::GetOptions()

@@ -1,6 +1,7 @@
 ﻿#include "prpch.h"
 #include "ImGui.h"
 #include "Prism/Renderer/Texture.h"
+#include "Platform/OpenGL/OpenGLImage.h"
 #include "Prism/Core/Warning.h"
 PR_WARNING_DISABLE(4312)
 
@@ -268,6 +269,12 @@ namespace UI {
     }
 
     // ── Texture types ──
+
+    void Image(const Ref<Image2D>& image, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1)
+    {
+        uint32_t texID = image ? image.As<OpenGLImage2D>()->GetRendererID() : 0;
+        ImGui::Image((void*)(intptr_t)texID, size, uv0, uv1);
+    }
 
     bool Property(const std::string& label, const Ref<Texture2D>& texture, uint32_t fallbackRendererID)
     {

@@ -12,6 +12,7 @@
 namespace Prism {
     class Texture2D;
     class TextureCube;
+    class Image2D;
 
     namespace UI {
 
@@ -56,6 +57,8 @@ namespace Prism {
         PRISM_API void BeginCheckboxGroup(const char* label);
         PRISM_API bool PropertyCheckboxGroup(const char* label, bool& value);
         PRISM_API void EndCheckboxGroup();
+
+        PRISM_API void Image(const Ref<Image2D>& image, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1));
 
         template<typename T>
         inline bool PropertyAssetReference(const std::string& label, Ref<T>& object, AssetType type)

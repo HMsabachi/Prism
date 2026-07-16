@@ -37,6 +37,7 @@ namespace Prism {
 
         virtual uint32_t GetWidth() const = 0;
         virtual uint32_t GetHeight() const = 0;
+        virtual uint32_t GetSamples() const = 0;
 
         virtual ImageFormat GetFormat() const = 0;
 
@@ -51,8 +52,8 @@ namespace Prism {
     class PRISM_API Image2D : public Image
     {
     public:
-        static Ref<Image2D> Create(ImageFormat format, uint32_t width, uint32_t height, Buffer buffer);
-        static Ref<Image2D> Create(ImageFormat format, uint32_t width, uint32_t height, const void* data = nullptr);
+        static Ref<Image2D> Create(ImageFormat format, uint32_t width, uint32_t height, Buffer buffer, uint32_t samples = 1);
+        static Ref<Image2D> Create(ImageFormat format, uint32_t width, uint32_t height, const void* data = nullptr, uint32_t samples = 1);
     };
 
     namespace Utils {

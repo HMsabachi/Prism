@@ -32,7 +32,7 @@ namespace Prism
         FramebufferSpecification geoFBSpec;
         geoFBSpec.Width = viewportWidth;
         geoFBSpec.Height = viewportHeight;
-        geoFBSpec.Attachments = { FramebufferTextureFormat::RGBA16F, FramebufferTextureFormat::RGBA16F, FramebufferTextureFormat::Depth };
+        geoFBSpec.Attachments = { ImageFormat::RGBA16F, ImageFormat::RGBA16F, ImageFormat::Depth };
         geoFBSpec.Samples = 8;
         geoFBSpec.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
 
@@ -43,7 +43,7 @@ namespace Prism
         FramebufferSpecification compFBSpec;
         compFBSpec.Width = viewportWidth;
         compFBSpec.Height = viewportHeight;
-        compFBSpec.Attachments = { FramebufferTextureFormat::RGBA8 };
+        compFBSpec.Attachments = { ImageFormat::RGBA };
         compFBSpec.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
 
         RenderPassSpecification compRPSpec;
@@ -70,7 +70,7 @@ namespace Prism
         FramebufferSpecification shadowFBSpec;
         shadowFBSpec.Width = SHADOW_MAP_SIZE;
         shadowFBSpec.Height = SHADOW_MAP_SIZE;
-        shadowFBSpec.Attachments = { FramebufferTextureFormat::DEPTH32F };
+        shadowFBSpec.Attachments = { ImageFormat::DEPTH32F };
         shadowFBSpec.NoResize = true;
         shadowFBSpec.ClearColor = { 0.0f, 0.0f, 0.0f, 0.0f };
         for (int i = 0; i < 4; i++)
@@ -82,7 +82,7 @@ namespace Prism
 
         // Bloom Blur
         FramebufferSpecification bloomBlurFBSpec;
-        bloomBlurFBSpec.Attachments = { FramebufferTextureFormat::RGBA16F };
+        bloomBlurFBSpec.Attachments = { ImageFormat::RGBA16F };
         bloomBlurFBSpec.ClearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
 
         RenderPassSpecification bloomBlurRPSpec;
@@ -97,7 +97,7 @@ namespace Prism
 
         // Bloom Blend
         FramebufferSpecification bloomBlendFBSpec;
-        bloomBlendFBSpec.Attachments = { FramebufferTextureFormat::RGBA8 };
+        bloomBlendFBSpec.Attachments = { ImageFormat::RGBA };
         bloomBlendFBSpec.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
 
         RenderPassSpecification bloomBlendRPSpec;

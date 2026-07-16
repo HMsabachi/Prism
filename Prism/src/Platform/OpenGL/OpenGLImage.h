@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Prism/Renderer/Image.h"
 #include "Prism/Renderer/RendererTypes.h"
@@ -10,8 +10,8 @@ namespace Prism {
     class PRISM_API OpenGLImage2D : public Image2D
     {
     public:
-        OpenGLImage2D(ImageFormat format, uint32_t width, uint32_t height, Buffer buffer);
-        OpenGLImage2D(ImageFormat format, uint32_t width, uint32_t height, const void* data = nullptr);
+        OpenGLImage2D(ImageFormat format, uint32_t width, uint32_t height, Buffer buffer, uint32_t samples = 1);
+        OpenGLImage2D(ImageFormat format, uint32_t width, uint32_t height, const void* data = nullptr, uint32_t samples = 1);
         virtual ~OpenGLImage2D();
 
         virtual void Invalidate() override;
@@ -20,6 +20,7 @@ namespace Prism {
         virtual ImageFormat GetFormat() const override { return m_Format; }
         virtual uint32_t GetWidth() const override { return m_Width; }
         virtual uint32_t GetHeight() const override { return m_Height; }
+        virtual uint32_t GetSamples() const override { return m_Samples; }
 
         virtual Buffer GetBuffer() const override { return m_ImageData; }
         virtual Buffer& GetBuffer() override { return m_ImageData; }
@@ -35,6 +36,7 @@ namespace Prism {
         RendererID m_RendererID = 0;
         RendererID m_SamplerRendererID = 0;
         uint32_t m_Width, m_Height;
+        uint32_t m_Samples = 1;
         ImageFormat m_Format;
 
         Buffer m_ImageData;

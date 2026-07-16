@@ -12,6 +12,7 @@ namespace Prism
         void PRISM_API AddToLiveReferences(void* instance)
         {
             std::scoped_lock<std::mutex> lock(s_LiveReferenceMutex);
+            if (Application::Get().IsRunning() != 1) [[unlikely]] return; // Avoid assertions during shutdown
             PR_CORE_ASSERT(instance);
             s_LiveReferences.insert(instance);
         }

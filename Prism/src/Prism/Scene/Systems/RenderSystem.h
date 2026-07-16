@@ -6,6 +6,7 @@
 namespace Prism
 {
     class EditorCamera;
+    class Image2D;
 
     class PRISM_API RenderSystem : public ISystem
     {
@@ -24,8 +25,7 @@ namespace Prism
         void SubmitDebugMesh(Ref<Mesh> mesh, const glm::mat4& transform,
                              Ref<Material> material = nullptr);
 
-        Ref<RenderPass> GetFinalRenderPass();
-        uint32_t GetFinalColorBufferID();
+        Ref<Image2D> GetFinalPassImage();
         RenderPipelineOptions& GetOptions();
         RenderConfig& GetConfig() { return m_Config; }
         const RenderConfig& GetConfig() const { return m_Config; }

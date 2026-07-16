@@ -620,7 +620,7 @@ namespace Prism
             //viewportSize.y *= 0.5;
 
             if (auto* rs = m_ActiveScene->GetSystem<RenderSystem>())
-                ImGui::Image((void*)rs->GetFinalColorBufferID(), viewportSize, { 0, 1 }, { 1, 0 });
+                UI::Image(rs->GetFinalPassImage(), viewportSize, { 0, 1 }, { 1, 0 });
 
             if (ImGui::BeginDragDropTarget())
             {
