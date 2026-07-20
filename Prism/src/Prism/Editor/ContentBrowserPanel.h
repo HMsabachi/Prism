@@ -62,17 +62,17 @@ namespace Prism {
         std::vector<T> m_Selections;
     };
 
-    class PRISM_API AssetManagerPanel
+    class PRISM_API ContentBrowserPanel
     {
     public:
-        AssetManagerPanel();
+        ContentBrowserPanel();
         void OnImGuiRender();
 
     private:
         void DrawDirectoryInfo(AssetHandle directory);
 
         void RenderAsset(Ref<Asset>& asset);
-        void HandleDragDrop(RendererID icon, Ref<Asset>& asset);
+        void HandleDragDrop(Ref<Image2D> icon, Ref<Asset>& asset);
         void RenderBreadCrumbs();
 
         void HandleRenaming(Ref<Asset>& asset);
@@ -99,11 +99,13 @@ namespace Prism {
         bool m_IsAnyItemHovered = false;
         bool m_UpdateDirectoryNextFrame = false;
 
-        char m_InputBuffer[MAX_INPUT_BUFFER_LENGTH];
+        char m_RenameBuffer[MAX_INPUT_BUFFER_LENGTH];
+        char m_SearchBuffer[MAX_INPUT_BUFFER_LENGTH];
 
         Ref<Directory> m_CurrentDirectory;
         Ref<Directory> m_BaseDirectory;
-        std::vector<Ref<Asset>> m_CurrentDirAssets;
+        std::vector<Ref<Asset>> m_CurrentDirFiles;
+        std::vector<Ref<Asset>> m_CurrentDirFolders;
 
         std::vector<Ref<Directory>> m_BreadCrumbData;
 

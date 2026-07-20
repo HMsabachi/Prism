@@ -3,9 +3,6 @@
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Asset/AssetImporter.h"
 
-#include "Prism/Core/Warning.h"
-PR_WARNING_DISABLE(4312)
-
 namespace Prism {
 
     PhysicsMaterialEditor::PhysicsMaterialEditor()
@@ -53,7 +50,7 @@ namespace Prism {
         imageSize = glm::min(imageSize, 500.0F);
 
         ImGui::SetCursorPosX(20);
-        ImGui::Image((ImTextureID)m_Asset->GetRendererID(), { imageSize, imageSize });
+        UI::Image(m_Asset->GetImage(), { imageSize, imageSize });
 
         UI::BeginPropertyGrid();
         UI::Property("Width", textureWidth, 0.1F, 0.0F, 0.0F, UI::PropertyFlag::None, true);

@@ -1,5 +1,5 @@
 ﻿#include "prpch.h"
-#include "AssetManagerPanel.h"
+#include "ContentBrowserPanel.h"
 #include "AssetEditorPanel.h"
 #include "Prism/Core/Application.h"
 #include "Prism/Core/Input.h"
@@ -12,7 +12,7 @@ PR_WARNING_DISABLE(4244)
 
 namespace Prism {
 
-    AssetManagerPanel::AssetManagerPanel()
+    ContentBrowserPanel::ContentBrowserPanel()
     {
         AssetManager::SetAssetChangeCallback([&]()
         {
@@ -40,10 +40,11 @@ namespace Prism {
         m_BaseDirectory = AssetManager::GetAsset<Directory>(m_BaseDirectoryHandle);
         UpdateCurrentDirectory(m_BaseDirectoryHandle);
 
-        memset(m_InputBuffer, 0, MAX_INPUT_BUFFER_LENGTH);
+        memset(m_RenameBuffer, 0, MAX_INPUT_BUFFER_LENGTH);
+        memset(m_SearchBuffer, 0, MAX_INPUT_BUFFER_LENGTH);
     }
 
-    void AssetManagerPanel::DrawDirectoryInfo(AssetHandle directory)
+    void ContentBrowserPanel::DrawDirectoryInfo(AssetHandle directory)
     {
         const Ref<Directory>& dir = AssetManager::GetAsset<Directory>(directory);
 
@@ -62,7 +63,7 @@ namespace Prism {
     }
 
     static int s_ColumnCount = 10;
-    void AssetManagerPanel::OnImGuiRender()
+    void ContentBrowserPanel::OnImGuiRender()
     {
         ImGui::Begin("Project", NULL, ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar);
         {
@@ -99,7 +100,8 @@ namespace Prism {
                 {
                     m_SelectedAssets.Clear();
                     m_RenamingSelected = false;
-                    memset(m_InputBuffer, 0, MAX_INPUT_BUFFER_LENGTH);
+                    memset(m_RenameBuffer, 0, MAX_INPUT_BUFFER_LENGTH);
+                    memset(m_SearchBuffer, 0, MAX_INPUT_BUFFER_LENGTH);
                 }
 
                 m_IsAnyItemHovered = false;
@@ -117,8 +119,8 @@ namespace Prism {
                                 UpdateCurrentDirectory(m_CurrentDirHandle);
                                 auto createdDirectory = AssetManager::GetAsset<Directory>(AssetManager::GetAssetHandleFromFilePath(m_CurrentDirectory->FilePath + "/New Folder"));
                                 m_SelectedAssets.Select(createdDirectory->Handle);
-                                memset(m_InputBuffer, 0, MAX_INPUT_BUFFER_LENGTH);
-                                memcpy(m_InputBuffer, createdDirectory->FileName.c_str(), createdDirectory->FileName.size());
+                                memset(m_RenameBuffer, 0, MAX_INPUT_BUFFER_LENGTH);
+                                memcpy(m_RenameBuffer, createdDirectory->FileName.c_str(), createdDirectory->FileName.size());
                                 m_RenamingSelected = true;
                             }
                         }
@@ -155,7 +157,14 @@ namespace Prism {
 
                 ImGui::Columns(s_ColumnCount, nullptr, false);
 
-                for (Ref<Asset>& asset : m_CurrentDirAssets)
+                for (Ref<Asset>& asset : m_CurrentDirFolders)
+                {
+                    RenderAsset(asset);
+
+                    ImGui::NextColumn();
+                }
+
+                for (Ref<Asset>& asset : m_CurrentDirFiles)
                 {
                     RenderAsset(asset);
 
@@ -194,7 +203,7 @@ namespace Prism {
         ImGui::End();
     }
 
-    void AssetManagerPanel::RenderAsset(Ref<Asset>& asset)
+    void ContentBrowserPanel::RenderAsset(Ref<Asset>& asset)
     {
         AssetHandle assetHandle = asset->Handle;
         std::string filename = asset->FileName;
@@ -202,18 +211,18 @@ namespace Prism {
         ImGui::PushID(&asset->Handle);
         ImGui::BeginGroup();
 
-        RendererID iconRef = m_AssetIconMap.find(asset->Extension) != m_AssetIconMap.end() ? m_AssetIconMap[asset->Extension]->GetRendererID() : m_FileTex->GetRendererID();
+        Ref<Image2D> iconImage = m_AssetIconMap.find(asset->Extension) != m_AssetIconMap.end() ? m_AssetIconMap[asset->Extension]->GetImage() : m_FileTex->GetImage();
 
         if (m_SelectedAssets.IsSelected(assetHandle))
             ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.25F, 0.25F, 0.25F, 0.75F));
 
         float buttonWidth = ImGui::GetColumnWidth() - 15.0F;
-        ImGui::ImageButton((ImTextureID)iconRef, { buttonWidth, buttonWidth });
+        UI::ImageButton(iconImage, { buttonWidth, buttonWidth });
 
         if (m_SelectedAssets.IsSelected(assetHandle))
             ImGui::PopStyleColor();
 
-        HandleDragDrop(iconRef, asset);
+        HandleDragDrop(iconImage, asset);
 
         if (ImGui::IsItemHovered())
         {
@@ -252,8 +261,8 @@ namespace Prism {
             if (ImGui::MenuItem("Rename"))
             {
                 m_SelectedAssets.Select(assetHandle);
-                memset(m_InputBuffer, 0, MAX_INPUT_BUFFER_LENGTH);
-                memcpy(m_InputBuffer, filename.c_str(), filename.size());
+                memset(m_RenameBuffer, 0, MAX_INPUT_BUFFER_LENGTH);
+                memcpy(m_RenameBuffer, filename.c_str(), filename.size());
                 m_RenamingSelected = true;
             }
 
@@ -323,7 +332,7 @@ namespace Prism {
         ImGui::PopID();
     }
 
-    void AssetManagerPanel::HandleDragDrop(RendererID icon, Ref<Asset>& asset)
+    void ContentBrowserPanel::HandleDragDrop(Ref<Image2D> icon, Ref<Asset>& asset)
     {
         if (asset->Type == AssetType::Directory && m_IsDragging)
         {
@@ -357,7 +366,7 @@ namespace Prism {
 
         if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
         {
-            ImGui::Image((ImTextureID)icon, ImVec2(20, 20));
+            UI::Image(icon, ImVec2(20, 20));
             ImGui::SameLine();
             ImGui::Text(asset->FileName.c_str());
             ImGui::SetDragDropPayload("asset_payload", m_SelectedAssets.GetSelectionData(), m_SelectedAssets.SelectionCount() * sizeof(AssetHandle));
@@ -366,9 +375,9 @@ namespace Prism {
         }
     }
 
-    void AssetManagerPanel::RenderBreadCrumbs()
+    void ContentBrowserPanel::RenderBreadCrumbs()
     {
-        if (ImGui::ImageButton((ImTextureID)m_BackbtnTex->GetRendererID(), ImVec2(20, 18)))
+        if (UI::ImageButton(m_BackbtnTex->GetImage(), ImVec2(20, 18)))
         {
             if (m_CurrentDirHandle == m_BaseDirectoryHandle) return;
             m_NextDirHandle = m_CurrentDirHandle;
@@ -378,7 +387,7 @@ namespace Prism {
 
         ImGui::SameLine();
 
-        if (ImGui::ImageButton((ImTextureID)m_FwrdbtnTex->GetRendererID(), ImVec2(20, 18)))
+        if (UI::ImageButton(m_FwrdbtnTex->GetImage(), ImVec2(20, 18)))
         {
             UpdateCurrentDirectory(m_NextDirHandle);
         }
@@ -387,19 +396,17 @@ namespace Prism {
 
         {
             ImGui::PushItemWidth(200);
-            char* buf = m_InputBuffer;
-            if (m_RenamingSelected)
-                buf = const_cast<char*>("\0");
 
-            if (ImGui::InputTextWithHint("##Search", "Search...", buf, MAX_INPUT_BUFFER_LENGTH))
+            if (ImGui::InputTextWithHint("##Search", "Search...", m_SearchBuffer, MAX_INPUT_BUFFER_LENGTH))
             {
-                if (strlen(m_InputBuffer) == 0)
+                if (strlen(m_SearchBuffer) == 0)
                 {
                     UpdateCurrentDirectory(m_CurrentDirHandle);
                 }
                 else
                 {
-                    m_CurrentDirAssets = AssetManager::SearchAssets(m_InputBuffer, m_CurrentDirectory->FilePath);
+                    m_CurrentDirFolders = AssetManager::SearchAssets(m_SearchBuffer, m_CurrentDirectory->FilePath, AssetType::Directory);
+                    m_CurrentDirFiles = AssetManager::SearchAssets(m_SearchBuffer, m_CurrentDirectory->FilePath);
                 }
             }
 
@@ -448,25 +455,25 @@ namespace Prism {
         ImGui::SameLine();
     }
 
-    void AssetManagerPanel::HandleRenaming(Ref<Asset>& asset)
+    void ContentBrowserPanel::HandleRenaming(Ref<Asset>& asset)
     {
         if (m_SelectedAssets.SelectionCount() > 1)
             return;
 
         if (!m_RenamingSelected && Input::IsKeyPressed(KeyCode::F2))
         {
-            memset(m_InputBuffer, 0, MAX_INPUT_BUFFER_LENGTH);
-            memcpy(m_InputBuffer, asset->FileName.c_str(), asset->FileName.size());
+            memset(m_RenameBuffer, 0, MAX_INPUT_BUFFER_LENGTH);
+            memcpy(m_RenameBuffer, asset->FileName.c_str(), asset->FileName.size());
             m_RenamingSelected = true;
         }
 
         if (m_RenamingSelected)
         {
             ImGui::SetKeyboardFocusHere();
-            if (ImGui::InputText("##rename_dummy", m_InputBuffer, MAX_INPUT_BUFFER_LENGTH, ImGuiInputTextFlags_EnterReturnsTrue))
+            if (ImGui::InputText("##rename_dummy", m_RenameBuffer, MAX_INPUT_BUFFER_LENGTH, ImGuiInputTextFlags_EnterReturnsTrue))
             {
-                PR_CORE_INFO("Renaming to {0}", m_InputBuffer);
-                AssetManager::Rename(asset->Handle, m_InputBuffer);
+                PR_CORE_INFO("Renaming to {0}", m_RenameBuffer);
+                AssetManager::Rename(asset->Handle, m_RenameBuffer);
                 m_RenamingSelected = false;
                 m_SelectedAssets.Clear();
                 m_UpdateDirectoryNextFrame = true;
@@ -474,14 +481,23 @@ namespace Prism {
         }
     }
 
-    void AssetManagerPanel::UpdateCurrentDirectory(AssetHandle directoryHandle)
+    void ContentBrowserPanel::UpdateCurrentDirectory(AssetHandle directoryHandle)
     {
         m_UpdateBreadCrumbs = true;
-        m_CurrentDirAssets.clear();
+        m_CurrentDirFiles.clear();
+        m_CurrentDirFolders.clear();
 
         m_CurrentDirHandle = directoryHandle;
         m_CurrentDirectory = AssetManager::GetAsset<Directory>(m_CurrentDirHandle);
-        m_CurrentDirAssets = AssetManager::GetAssetsInDirectory(m_CurrentDirHandle);
+
+        std::vector<Ref<Asset>> assets = AssetManager::GetAssetsInDirectory(m_CurrentDirHandle);
+        for (auto& asset : assets)
+        {
+            if (asset->Type == AssetType::Directory)
+                m_CurrentDirFolders.push_back(asset);
+            else
+                m_CurrentDirFiles.push_back(asset);
+        }
     }
 
 }

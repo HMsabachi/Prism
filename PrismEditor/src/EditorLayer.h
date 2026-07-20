@@ -12,7 +12,7 @@
 
 #include <string>
 
-#include "Prism/Editor/AssetManagerPanel.h"
+#include "Prism/Editor/ContentBrowserPanel.h"
 #include "Prism/Editor/ObjectsPanel.h"
 
 namespace Prism
@@ -71,7 +71,7 @@ namespace Prism
         std::vector<Ref<Material>> m_DielectricSphereMaterialInstances;
     private:
         Scope<SceneHierarchyPanel> m_SceneHierarchyPanel;
-        Scope<AssetManagerPanel> m_AssetManagerPanel;
+        Scope<ContentBrowserPanel> m_ContentBrowserPanel;
         Scope<ObjectsPanel> m_ObjectsPanel;
 
         Ref<Scene> m_ActiveScene;

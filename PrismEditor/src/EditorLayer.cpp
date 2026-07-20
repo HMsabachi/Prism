@@ -71,7 +71,7 @@ namespace Prism
             m_SceneHierarchyPanel->SetSelectionChangedCallback(std::bind(&EditorLayer::SelectEntity, this, std::placeholders::_1));
             m_SceneHierarchyPanel->SetEntityDeletedCallback(std::bind(&EditorLayer::OnEntityDeleted, this, std::placeholders::_1));
 
-            m_AssetManagerPanel = CreateScope<AssetManagerPanel>();
+            m_ContentBrowserPanel = CreateScope<ContentBrowserPanel>();
             m_ObjectsPanel = CreateScope<ObjectsPanel>();
 
             SceneSerializer serializer(m_EditorScene);
@@ -874,7 +874,7 @@ namespace Prism
             //PythonScriptEngine::OnImGuiRender();
             PhysicsSettingsWindow::OnImGuiRender(m_ShowPhysicsSettings);
             m_ActiveScene->OnImGuiRender();
-            m_AssetManagerPanel->OnImGuiRender();
+            m_ContentBrowserPanel->OnImGuiRender();
             m_ObjectsPanel->OnImGuiRender();
             AssetEditorPanel::OnImGuiRender();
             ImGui::End();

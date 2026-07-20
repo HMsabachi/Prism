@@ -48,6 +48,7 @@ namespace Prism {
         PRISM_API bool Property(const std::string& label, const char** options, int32_t optionCount, int32_t* selected);
 
         PRISM_API bool PropertySlider(const std::string& label, int& value, int min, int max);
+        PRISM_API bool PropertySlider(const std::string& label, float& value, float min, float max);
 
         PRISM_API bool PropertyColor(const std::string& label, glm::vec3& values);
         PRISM_API bool PropertyColor(const std::string& label, glm::vec4& values);
@@ -59,6 +60,7 @@ namespace Prism {
         PRISM_API void EndCheckboxGroup();
 
         PRISM_API void Image(const Ref<Image2D>& image, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1));
+        PRISM_API bool ImageButton(const Ref<Image2D>& image, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1));
 
         template<typename T>
         inline bool PropertyAssetReference(const std::string& label, Ref<T>& object, AssetType type)
@@ -71,12 +73,19 @@ namespace Prism {
 
             if (object)
             {
-                char* assetName = ((Ref<Asset>&)object)->FileName.data();
-                ImGui::InputText("##assetRef", assetName, 256, ImGuiInputTextFlags_ReadOnly);
+                if (object->Type != AssetType::Missing)
+                {
+                    char* assetName = ((Ref<Asset>&)object)->FileName.data();
+                    ImGui::InputText("##assetRef", assetName, 256, ImGuiInputTextFlags_ReadOnly);
+                }
+                else
+                {
+                    ImGui::InputText("##assetRef", reinterpret_cast<char*>("Missing"), 256, ImGuiInputTextFlags_ReadOnly);
+                }
             }
             else
             {
-                ImGui::InputText("##assetRef", (char*)"Null", 256, ImGuiInputTextFlags_ReadOnly);
+                ImGui::InputText("##assetRef", reinterpret_cast<char*>("Null"), 256, ImGuiInputTextFlags_ReadOnly);
             }
 
             if (ImGui::BeginDragDropTarget())

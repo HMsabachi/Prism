@@ -276,6 +276,12 @@ namespace UI {
         ImGui::Image((void*)(intptr_t)texID, size, uv0, uv1);
     }
 
+    bool ImageButton(const Ref<Image2D>& image, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1)
+    {
+        uint32_t texID = image ? image.As<OpenGLImage2D>()->GetRendererID() : 0;
+        return ImGui::ImageButton((void*)(intptr_t)texID, size, uv0, uv1);
+    }
+
     bool Property(const std::string& label, const Ref<Texture2D>& texture, uint32_t fallbackRendererID)
     {
         ImGui::Text("%s", label.c_str());
@@ -384,6 +390,24 @@ namespace UI {
         return modified;
 
 	}
+
+    PRISM_API bool PropertySlider(const std::string& label, float& value, float min, float max)
+    {
+        bool modified = false;
+
+        ImGui::Text(label.c_str());
+        ImGui::NextColumn();
+        ImGui::PushItemWidth(-1);
+
+        s_IDBuffer[0] = '#';
+        s_IDBuffer[1] = '#';
+        memset(s_IDBuffer + 2, 0, 14);
+        _itoa(s_Counter++, s_IDBuffer + 2, 16);
+        modified = ImGui::SliderFloat(s_IDBuffer, &value, min, max);
+        ImGui::PopItemWidth();
+        ImGui::NextColumn();
+        return modified;
+    }
 
 	// ── Color ──
 
