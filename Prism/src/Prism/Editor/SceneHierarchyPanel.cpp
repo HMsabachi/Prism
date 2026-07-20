@@ -182,6 +182,10 @@ namespace Prism {
         if (entity.Children().empty())
             node_flags |= ImGuiTreeNodeFlags_Leaf;
 
+        bool missingMesh = entity.HasComponent<MeshRendererComponent>() && !entity.GetComponent<MeshRendererComponent>().Mesh;
+        if (missingMesh)
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.4f, 0.3f, 1.0f));
+
         bool opened = ImGui::TreeNodeEx((void*)(uint32_t)entity, node_flags, name);
         if (ImGui::IsItemClicked())
         {
@@ -189,6 +193,9 @@ namespace Prism {
             if (m_SelectionChangedCallback)
                 m_SelectionChangedCallback(m_SelectionContext);
         }
+
+        if (missingMesh)
+            ImGui::PopStyleColor();
 
         bool entityDeleted = false;
         if (ImGui::BeginPopupContextItem())
@@ -316,7 +323,7 @@ namespace Prism {
     }
 
     template<typename T, typename UIFunction>
-    static void DrawComponent(const std::string& name, Entity entity, UIFunction uiFunction)
+    static void DrawComponent(const std::string& name, Entity entity, UIFunction uiFunction, bool canBeRemoved = true)
     {
         if (entity.HasComponent<T>())
         {
@@ -329,16 +336,24 @@ namespace Prism {
             float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
             ImGui::Separator();
             bool open = ImGui::TreeNodeEx((void*)typeid(T).hash_code(), treeNodeFlags, "%s", name.c_str());
+            bool right_clicked = ImGui::IsItemClicked(ImGuiMouseButton_Right);
             ImGui::PopStyleVar();
             ImGui::SameLine(contentRegionAvailable.x - lineHeight * 0.5f);
-            if (ImGui::Button("+", ImVec2{ lineHeight, lineHeight }))
+            if (ImGui::Button("+", ImVec2{ lineHeight, lineHeight }) || right_clicked)
                 ImGui::OpenPopup("ComponentSettings");
 
+            bool resetValues = false;
             bool removeComponent = false;
             if (ImGui::BeginPopup("ComponentSettings"))
             {
-                if (ImGui::MenuItem(TR("Remove component")))
-                    removeComponent = true;
+                if (ImGui::MenuItem(TR("Reset")))
+                    resetValues = true;
+
+                if (canBeRemoved)
+                {
+                    if (ImGui::MenuItem(TR("Remove component")))
+                        removeComponent = true;
+                }
 
                 ImGui::EndPopup();
             }
@@ -349,8 +364,11 @@ namespace Prism {
                 ImGui::TreePop();
             }
 
-            if (removeComponent)
+            if (removeComponent || resetValues)
                 entity.RemoveComponent<T>();
+
+            if (resetValues)
+                entity.AddComponent<T>();
         }
     }
 
@@ -647,29 +665,15 @@ namespace Prism {
 
         DrawComponent<RigidBody2DComponent>(TR("Rigidbody 2D"), entity, [](auto& component)
             {
+                UI::BeginPropertyGrid();
                 const char* bodyTypeStrings[] = { TR("Static"), TR("Dynamic"), TR("Kinematic") };
-                const char* currentType = bodyTypeStrings[(int)component.BodyType];
-                if (ImGui::BeginCombo(TR("Type"), currentType))
-                {
-                    for (int i = 0; i < 3; i++)
-                    {
-                        bool is_selected = (currentType == bodyTypeStrings[i]);
-                        if (ImGui::Selectable(bodyTypeStrings[i], is_selected))
-                        {
-                            component.BodyType = (RigidBody2DComponent::Type)i;
-                        }
-                        if (is_selected)
-                            ImGui::SetItemDefaultFocus();
-                    }
-                    ImGui::EndCombo();
-                }
+                int32_t currentType = (int32_t)component.BodyType;
+                if (UI::Property(TR("Type"), bodyTypeStrings, 3, &currentType))
+                    component.BodyType = (RigidBody2DComponent::Type)currentType;
 
                 if (component.BodyType == RigidBody2DComponent::Type::Dynamic)
-                {
-                    UI::BeginPropertyGrid();
                     UI::Property(TR("Fixed Rotation"), component.FixedRotation);
-                    UI::EndPropertyGrid();
-                }
+                UI::EndPropertyGrid();
             });
 
         DrawComponent<BoxCollider2DComponent>(TR("Box Collider 2D"), entity, [](auto& component)
@@ -690,22 +694,12 @@ namespace Prism {
 
         DrawComponent<RigidBodyComponent>(TR("Rigidbody"), entity, [](auto& component)
             {
+                UI::BeginPropertyGrid();
                 const char* bodyTypeStrings[] = { TR("Static"), TR("Dynamic") };
-                const char* currentType = bodyTypeStrings[(int)component.BodyType];
-                if (ImGui::BeginCombo(TR("Type"), currentType))
-                {
-                    for (int i = 0; i < 2; i++)
-                    {
-                        bool is_selected = (currentType == bodyTypeStrings[i]);
-                        if (ImGui::Selectable(bodyTypeStrings[i], is_selected))
-                        {
-                            component.BodyType = (RigidBodyComponent::Type)i;
-                        }
-                        if (is_selected)
-                            ImGui::SetItemDefaultFocus();
-                    }
-                    ImGui::EndCombo();
-                }
+                int32_t currentType = (int32_t)component.BodyType;
+                if (UI::Property(TR("Type"), bodyTypeStrings, 2, &currentType))
+                    component.BodyType = (RigidBodyComponent::Type)currentType;
+                UI::EndPropertyGrid();
 
                 // Layer has been removed, set to Default layer
                 if (!PhysicsLayerManager::IsLayerValid(component.Layer))

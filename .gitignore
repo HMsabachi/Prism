@@ -41,3 +41,4 @@ CLAUDE.md
 /Prism/vendor/Rolky/Rolky.Native/x64/Debug
 /Prism/vendor/Rolky/Tests/Testing.Native/x64/Debug
 
+/Prism.Scripting/obj

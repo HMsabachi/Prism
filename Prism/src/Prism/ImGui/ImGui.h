@@ -80,12 +80,12 @@ namespace Prism {
                 }
                 else
                 {
-                    ImGui::InputText("##assetRef", reinterpret_cast<char*>("Missing"), 256, ImGuiInputTextFlags_ReadOnly);
+                    ImGui::InputText("##assetRef", const_cast<char*>("Missing"), 256, ImGuiInputTextFlags_ReadOnly);
                 }
             }
             else
             {
-                ImGui::InputText("##assetRef", reinterpret_cast<char*>("Null"), 256, ImGuiInputTextFlags_ReadOnly);
+                ImGui::InputText("##assetRef", const_cast<char*>("Null"), 256, ImGuiInputTextFlags_ReadOnly);
             }
 
             if (ImGui::BeginDragDropTarget())

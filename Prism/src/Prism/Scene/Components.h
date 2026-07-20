@@ -10,6 +10,7 @@
 
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/Material.h"
+#include "Prism/Renderer/Texture.h"
 #include "Prism/Scene/SceneCamera.h"
 #include "Prism/Renderer/SceneEnvironment.h"
 #include "Prism/Asset/Asset.h"

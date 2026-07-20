@@ -45,6 +45,20 @@ namespace Prism {
         }
 
         {
+            auto& reg = m_Scene->GetRegistry();
+            auto colliderView = reg.view<TransformComponent>(entt::exclude<RigidBodyComponent>);
+            for (auto entity : colliderView)
+            {
+                if (reg.any_of<BoxColliderComponent, SphereColliderComponent, CapsuleColliderComponent, MeshColliderComponent>(entity))
+                {
+                    Entity e = { entity, m_Scene };
+                    if (!e.HasComponent<RigidBodyComponent>())
+                        e.AddComponent<RigidBodyComponent>();
+                }
+            }
+        }
+
+        {
             auto view = m_Scene->GetAllEntitiesWith<RigidBodyComponent>();
             for (auto entity : view)
             {
