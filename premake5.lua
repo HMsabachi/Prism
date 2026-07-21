@@ -12,6 +12,9 @@
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
+-- Vulkan SDK: read from env into a Lua global so %{VULKAN_SDK} token expansion works in IncludeDir/LibraryDir below.
+VULKAN_SDK = os.getenv("VULKAN_SDK")
+
 -- Include directories relative to root folder (solution directory)
 IncludeDir = {}
 IncludeDir["AllVendor"] = "Prism/vendor"
@@ -28,12 +31,14 @@ IncludeDir["yaml"] = "Prism/vendor/yaml-cpp/include"
 IncludeDir["Box2D"] = "Prism/vendor/box2d/include"
 IncludeDir["PhysX"] = "Prism/vendor/PhysX/include"
 IncludeDir["PrismShaderCore"] = "Prism/vendor/PrismShaderCompiler/PrismShaderCore/include/"
+IncludeDir["Vulkan"] = "%{VULKAN_SDK}/Include"
 IncludeDir["Python"] = "vendor/Python/include/Python"
 IncludeDir["pybind11"] = "Prism/vendor/pybind11/include"
 
 LibraryDir = {}
 LibraryDir["nethost"] = "Prism/vendor/nethost"
 LibraryDir["PhysX"] = "Prism/vendor/PhysX/lib"
+LibraryDir["Vulkan"] = "%{VULKAN_SDK}/Lib"
 group "Dependencies"
     include "Prism/vendor/GLFW"
     include "Prism/vendor/Glad"
@@ -70,7 +75,9 @@ project "Prism"
         "%{prj.name}/vendor/glm/glm/**.inl",
         "%{prj.name}/vendor/yaml-cpp/src/**.cpp",
         "%{prj.name}/vendor/yaml-cpp/src/**.h",
-        "%{prj.name}/vendor/yaml-cpp/include/**.h"
+        "%{prj.name}/vendor/yaml-cpp/include/**.h",
+        "%{prj.name}/vendor/VulkanMemoryAllocator/**.cpp",
+        "%{prj.name}/vendor/VulkanMemoryAllocator/**.h"
     }
 
     includedirs
@@ -93,7 +100,8 @@ project "Prism"
         "%{IncludeDir.PhysX}",
         "%{IncludeDir.Python}",
         "%{IncludeDir.pybind11}",
-        "%{IncludeDir.PrismShaderCore}"
+        "%{IncludeDir.PrismShaderCore}",
+        "%{IncludeDir.Vulkan}"
     }
 
     libdirs
@@ -111,13 +119,15 @@ project "Prism"
         "Box2D",
         "PrismShaderCore",
         "opengl32.lib",
-        "dwmapi.lib"
+        "dwmapi.lib",
+        "vulkan-1.lib"
     }
     linkoptions { "/WHOLEARCHIVE:ImGui" }
     libdirs
     {
         "%{IncludeDir.nethost}",
         "%{LibraryDir.PhysX}/%{cfg.buildcfg}",
+        "%{LibraryDir.Vulkan}",
         "vendor/Python/libs"
     }
     includedirs { "%{prj.name}/src/Scripting" }
