@@ -13,6 +13,7 @@ namespace Prism {
         {
         case RendererAPIType::None:    PR_CORE_ASSERT(false, "RendererAPI::None is currently not supported!"); return nullptr;
         case RendererAPIType::OpenGL:  return Ref<OpenGLRenderPass>::Create(spec);
+        // case RendererAPIType::Vulkan: return Ref<VulkanRenderPass>::Create(spec); // TODO
         }
 
         PR_CORE_ASSERT(false, "Unknown RendererAPI!");

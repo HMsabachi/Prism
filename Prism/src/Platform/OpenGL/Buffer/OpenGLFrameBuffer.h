@@ -23,7 +23,7 @@ namespace Prism {
         virtual uint32_t GetWidth() const override { return m_Width; }
         virtual uint32_t GetHeight() const override { return m_Height; }
 
-        virtual RendererID GetRendererID() const override { return m_RendererID; }
+        RendererID GetRendererID() const { return m_RendererID; }
 
         virtual Ref<Image2D> GetImage(uint32_t attachmentIndex = 0) const override
         { return attachmentIndex < m_ColorAttachments.size() ? m_ColorAttachments[attachmentIndex] : nullptr; }

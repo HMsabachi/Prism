@@ -341,7 +341,7 @@ namespace Prism {
         Ref<const OpenGLTextureCube> instance = this;
         Renderer::Submit([instance, destination]() mutable
         {
-            glCopyImageSubData(instance->m_RendererID, GL_TEXTURE_CUBE_MAP, 0, 0, 0, 0, destination->GetRendererID(), GL_TEXTURE_CUBE_MAP, 0, 0, 0, 0, instance->m_Width, instance->m_Height, 6);
+            glCopyImageSubData(instance->m_RendererID, GL_TEXTURE_CUBE_MAP, 0, 0, 0, 0, destination.As<OpenGLTextureCube>()->GetRendererID(), GL_TEXTURE_CUBE_MAP, 0, 0, 0, 0, instance->m_Width, instance->m_Height, 6);
         });
     }
 

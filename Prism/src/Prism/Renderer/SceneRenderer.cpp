@@ -238,8 +238,7 @@ namespace Prism
             }
         }
 
-        // Selected outline：write pass 用 stencil-write override 施加在 dc.Material 上（替代旧 BeginOutlineWrite 裸 GL）；
-        // draw pass 状态来自 Outline.Shader（8.0.3 声明 NotEqual+Line+LineWidth10），无 override。
+        // TODO: 描边用 stencil-write + Line 膨胀实现，物体旋转后描边消失。后续换 Unity URP 风格后处理边缘检测（depth Sobel，screen-space 轮廓）。
         if (!selectedList.empty())
         {
             PrismShaderCompiler::PipelineState writeOverride;
@@ -285,7 +284,6 @@ namespace Prism
             }
         }
 
-        // Collider debug：状态来自 Collider.Shader（8.0.3 声明 Line+LineWidth3+ZTest Off ZWrite Off），无 override。
         if (!debugList.empty())
         {
             for (auto& dc : debugList)

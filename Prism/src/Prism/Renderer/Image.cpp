@@ -13,6 +13,7 @@ namespace Prism {
         {
             case RendererAPIType::None:    return nullptr;
             case RendererAPIType::OpenGL:  return Ref<OpenGLImage2D>::Create(format, width, height, buffer, samples);
+            // case RendererAPIType::Vulkan: return Ref<VulkanImage2D>::Create(format, width, height, buffer, samples); // TODO
         }
         PR_CORE_ASSERT(false, "Unknown RendererAPI");
         return nullptr;
@@ -24,6 +25,7 @@ namespace Prism {
         {
             case RendererAPIType::None:    return nullptr;
             case RendererAPIType::OpenGL:  return Ref<OpenGLImage2D>::Create(format, width, height, data, samples);
+            // case RendererAPIType::Vulkan: return Ref<VulkanImage2D>::Create(format, width, height, data, samples); // TODO
         }
         PR_CORE_ASSERT(false, "Unknown RendererAPI");
         return nullptr;

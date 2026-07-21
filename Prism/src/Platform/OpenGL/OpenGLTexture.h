@@ -34,7 +34,7 @@ namespace Prism {
 
         virtual Buffer GetWriteableBuffer() override;
 
-        virtual RendererID GetRendererID() const override { return m_Image.As<OpenGLImage2D>()->GetRendererID(); }
+        RendererID GetRendererID() const { return m_Image.As<OpenGLImage2D>()->GetRendererID(); }
 
         virtual Ref<Image2D> GetImage() const override { return m_Image; }
         virtual uint64_t GetHash() const override { return m_Image->GetHash(); }
@@ -76,7 +76,7 @@ namespace Prism {
 
         virtual const std::string& GetPath() const override { return FilePath; }
 
-        virtual RendererID GetRendererID() const override { return m_RendererID; }
+        RendererID GetRendererID() const { return m_RendererID; }
 
         virtual uint64_t GetHash() const override { return (uint64_t)m_RendererID; }
 

@@ -11,6 +11,7 @@ namespace Prism {
 		{
 		case RendererAPIType::None:   return nullptr;
 		case RendererAPIType::OpenGL:  return Ref<OpenGLVertexBuffer>::Create(data, size, usage);
+		// case RendererAPIType::Vulkan: return Ref<VulkanVertexBuffer>::Create(data, size, usage); // TODO
 		}
         return nullptr;
 	}
@@ -21,6 +22,7 @@ namespace Prism {
 		{
 		case RendererAPIType::None:    return nullptr;
 		case RendererAPIType::OpenGL:  return Ref<OpenGLVertexBuffer>::Create(size, usage);
+		// case RendererAPIType::Vulkan: return Ref<VulkanVertexBuffer>::Create(size, usage); // TODO
 		}
 		return nullptr;
 	}

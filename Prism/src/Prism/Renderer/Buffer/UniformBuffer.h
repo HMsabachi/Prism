@@ -16,7 +16,6 @@ namespace Prism {
 
 		virtual uint32_t GetBinding() const = 0;
 		virtual uint32_t GetSize() const = 0;
-		virtual RendererID GetRendererID() const = 0;
 
 		static Ref<UniformBuffer> Create(uint32_t binding, uint32_t size);
 	};

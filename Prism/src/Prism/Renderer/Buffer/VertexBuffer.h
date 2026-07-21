@@ -86,7 +86,6 @@ namespace Prism {
 		virtual void SetLayout(const VertexBufferLayout& layout) = 0;
 
 		virtual uint32_t GetSize() const = 0;
-		virtual RendererID GetRendererID() const = 0;
 
 		static Ref<VertexBuffer> Create(void* data, uint32_t size = 0, BufferUsage usage = BufferUsage::Dynamic);
 		static Ref<VertexBuffer> Create(uint32_t size = 0, BufferUsage usage = BufferUsage::Dynamic);

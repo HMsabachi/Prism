@@ -16,8 +16,6 @@ namespace Prism
 
         virtual void Bind() = 0;
 
-        virtual RendererID GetRendererID() const = 0;
-
         virtual const std::string& GetName() const = 0;
 
         virtual void SetInt(const std::string& name, int value) = 0;

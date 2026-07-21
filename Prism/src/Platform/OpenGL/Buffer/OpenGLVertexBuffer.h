@@ -19,7 +19,7 @@ namespace Prism
         virtual void SetLayout(const VertexBufferLayout& layout) override { m_Layout = layout; }
 
         virtual uint32_t GetSize() const { return m_Size; }
-        virtual RendererID GetRendererID() const { return m_RendererID; }
+        RendererID GetRendererID() const { return m_RendererID; }
     private:
         RendererID m_RendererID = 0;
         uint32_t m_Size;

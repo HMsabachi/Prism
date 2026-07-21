@@ -20,7 +20,7 @@ namespace Prism
         virtual void GetData(void* data, size_t size, size_t offset = 0, bool sync = false) const override;
 
 
-        virtual RendererID GetRendererID() const override;
+        RendererID GetRendererID() const;
         virtual size_t GetSize() const override;
 
 

@@ -78,8 +78,6 @@ namespace Prism
         virtual void SetSceneEnvironment(const Ref<SceneEnvironment>& environment, const Ref<Image2D>& shadow) = 0;
         virtual std::pair<Ref<TextureCube>, Ref<TextureCube>> CreateEnvironmentMap(const std::string& filepath) = 0;
 
-        // RenderMesh 适配 Prism：从 DrawCommand 取 material + 单 submeshIndex + PSL pass（决策6，不引入 RenderMeshWithoutMaterial）
-        // stateOverride：可选 RenderState 覆盖（Unity RenderStateBlock 模式），非空时其标记字段 Merge 进 PSO effectiveState（描边 write pass 用）。
         virtual void RenderMesh(Ref<VertexInput> vertexInput, Ref<Mesh> mesh, Ref<Material> material,
             uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass,
             const PrismShaderCompiler::PipelineState* stateOverride = nullptr) = 0;

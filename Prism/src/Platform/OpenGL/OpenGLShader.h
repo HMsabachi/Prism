@@ -19,7 +19,7 @@ namespace Prism {
         virtual void SetFloat(const std::string& name, float value) override;
         virtual void SetMat4(const std::string& name, const glm::mat4& value) override;
 
-        RendererID GetRendererID() const override { return m_RendererID; }
+        RendererID GetRendererID() const { return m_RendererID; }
         const std::string& GetName() const override { return m_Name; }
 
         void DispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ) override;

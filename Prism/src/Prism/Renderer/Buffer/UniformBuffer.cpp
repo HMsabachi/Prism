@@ -12,6 +12,7 @@ namespace Prism {
 		{
 		case RendererAPIType::None:    return nullptr;
 		case RendererAPIType::OpenGL:  return Ref<OpenGLUniformBuffer>::Create(binding, size);
+		// case RendererAPIType::Vulkan: return Ref<VulkanUniformBuffer>::Create(binding, size); // TODO
 		}
 		return nullptr;
 	}

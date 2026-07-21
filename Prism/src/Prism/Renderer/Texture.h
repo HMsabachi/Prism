@@ -45,8 +45,6 @@ namespace Prism {
         virtual uint32_t GetHeight() const = 0;
         virtual uint32_t GetMipLevelCount() const = 0;
 
-        virtual RendererID GetRendererID() const = 0;
-
         virtual uint64_t GetHash() const = 0;
 
         virtual TextureType GetType() const = 0;

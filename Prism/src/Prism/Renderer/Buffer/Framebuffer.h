@@ -62,8 +62,6 @@ namespace Prism {
         virtual uint32_t GetWidth() const = 0;
         virtual uint32_t GetHeight() const = 0;
 
-        virtual RendererID GetRendererID() const = 0;
-
         virtual Ref<Image2D> GetImage(uint32_t attachmentIndex = 0) const = 0;
         virtual Ref<Image2D> GetDepthImage() const = 0;
 

@@ -2,6 +2,7 @@
 #include "ImGui.h"
 #include "Prism/Renderer/Texture.h"
 #include "Platform/OpenGL/OpenGLImage.h"
+#include "Platform/OpenGL/OpenGLTexture.h"
 #include "Prism/Core/Warning.h"
 PR_WARNING_DISABLE(4312)
 
@@ -289,7 +290,7 @@ namespace UI {
         ImGui::PushItemWidth(-1);
 
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
-        uint32_t texID = texture ? texture->GetRendererID() : fallbackRendererID;
+        uint32_t texID = texture ? texture.As<OpenGLTexture2D>()->GetRendererID() : fallbackRendererID;
         ImGui::Image((void*)(intptr_t)texID, ImVec2(64, 64));
         ImGui::PopStyleVar();
 
@@ -302,7 +303,7 @@ namespace UI {
                 ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
                 ImGui::TextUnformatted(texture->GetPath().c_str());
                 ImGui::PopTextWrapPos();
-                ImGui::Image((void*)(intptr_t)texture->GetRendererID(), ImVec2(384, 384));
+                ImGui::Image((void*)(intptr_t)texture.As<OpenGLTexture2D>()->GetRendererID(), ImVec2(384, 384));
                 ImGui::EndTooltip();
             }
             if (ImGui::IsItemClicked())

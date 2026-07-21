@@ -21,8 +21,6 @@ namespace Prism
         void Upload();
         void Bind() const;
 
-        RendererID GetID() const { return m_Buffer->GetRendererID(); }
-
     private:
         Ref<UniformBuffer> m_Buffer;
         bool m_BonesDirty = false;

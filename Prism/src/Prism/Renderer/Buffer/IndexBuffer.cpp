@@ -13,6 +13,7 @@ namespace Prism {
 		{
 		case RendererAPIType::None:    return nullptr;
 		case RendererAPIType::OpenGL:  return Ref<OpenGLIndexBuffer>::Create(data, size);
+		// case RendererAPIType::Vulkan: return Ref<VulkanIndexBuffer>::Create(data, size); // TODO
 		}
 		return nullptr;
 
@@ -23,6 +24,7 @@ namespace Prism {
 		{
 		case RendererAPIType::None:    return nullptr;
 		case RendererAPIType::OpenGL:  return Ref<OpenGLIndexBuffer>::Create(size);
+		// case RendererAPIType::Vulkan: return Ref<VulkanIndexBuffer>::Create(size); // TODO
 		}
 		PR_CORE_ASSERT(false, "Unknown RendererAPI");
 		return nullptr;

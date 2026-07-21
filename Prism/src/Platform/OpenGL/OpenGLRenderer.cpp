@@ -15,6 +15,7 @@
 #include "Prism/Renderer/Buffer/IndexBuffer.h"
 #include "Prism/Renderer/Buffer/UniformBuffer.h"
 #include "Prism/ShaderCompiler/PrismBindings.h"
+#include "OpenGLShader.h"
 #include "OpenGLPipelineStateCache.h"
 
 #include <glad/glad.h>
@@ -329,10 +330,10 @@ namespace Prism
             effectiveState = *shPass.RenderState;
         if (stateOverride)
             effectiveState.Merge(*stateOverride);
-        PSOKey key{ program->GetRendererID(), effectiveState };
+        PSOKey key{ program.As<OpenGLShader>()->GetRendererID(), effectiveState };
         if (!(key == s_Data->LastPSOKey))
         {
-            OpenGLPipelineStateCache::Get(program->GetRendererID(), effectiveState)->Bind();
+            OpenGLPipelineStateCache::Get(program.As<OpenGLShader>()->GetRendererID(), effectiveState)->Bind();
             s_Data->LastPSOKey = key;
         }
 

@@ -101,8 +101,6 @@ namespace Prism
 
     void OpenGLPipelineState::Bind() const
     {
-        // 经 Renderer::Submit 延迟到渲染命令队列执行（对齐 OpenGLShader::Bind / 旧 ApplyRenderState
-        // 既有约定：BindMaterial 在录制期直调，GL 调用必须延迟，否则会早于同帧先录制的命令执行）。
         RendererID program = m_Program;
         PipelineState state = m_State;
         Renderer::Submit([program, state]() {
