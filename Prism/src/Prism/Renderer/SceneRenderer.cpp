@@ -13,6 +13,7 @@
 #include "Prism/Renderer/Buffer/Framebuffer.h"
 #include "Prism/Renderer/Shader/PrismShader.h"
 #include "Prism/Renderer/ComputeShader/ComputeShader.h"
+#include <PrismShaderCore/Pipeline/PipelineState.h>
 #include "Prism/ShaderCompiler/PrismBindings.h"
 #include "Prism/Renderer/Camera/Camera.h"
 
@@ -213,8 +214,6 @@ namespace Prism
         PR_PROFILE_FUNCTION();
         Renderer::BeginRenderPass(m_GeoPass);
 
-        Renderer::SetDefaultStencilState();
-
         DrawFullscreen(config.SkyboxMaterial);
 
         for (int i = 0; i < 4; i++)
@@ -239,68 +238,67 @@ namespace Prism
             }
         }
 
-        // Selected outline
+        // Selected outline：write pass 用 stencil-write override 施加在 dc.Material 上（替代旧 BeginOutlineWrite 裸 GL）；
+        // draw pass 状态来自 Outline.Shader（8.0.3 声明 NotEqual+Line+LineWidth10），无 override。
         if (!selectedList.empty())
         {
-            Renderer::BeginOutlineWrite();
+            PrismShaderCompiler::PipelineState writeOverride;
+            writeOverride.StencilTest = true;
+            writeOverride.StencilCompare = PrismShaderCompiler::StencilFunc::Always;
+            writeOverride.StencilRef = 1;
+            writeOverride.StencilReadMask = 0xff;
+            writeOverride.StencilWriteMask = 0xff;
+            writeOverride.StencilPassOp = PrismShaderCompiler::StencilOp::Replace;
+            writeOverride.Mark(PrismShaderCompiler::PipelineState::Field::StencilTest);
+            writeOverride.Mark(PrismShaderCompiler::PipelineState::Field::StencilCompare);
+            writeOverride.Mark(PrismShaderCompiler::PipelineState::Field::StencilRef);
+            writeOverride.Mark(PrismShaderCompiler::PipelineState::Field::StencilReadMask);
+            writeOverride.Mark(PrismShaderCompiler::PipelineState::Field::StencilWriteMask);
+            writeOverride.Mark(PrismShaderCompiler::PipelineState::Field::StencilPassOp);
 
+            for (auto& dc : selectedList)
             {
-                for (auto& dc : selectedList)
-                {
-                    m_ObjectUBO.SetModel(dc.Transform);
-                    if (dc.Mesh->IsAnimated())
-                        m_ObjectUBO.SetBones(dc.Mesh->m_BoneTransforms.data(),
-                            (uint32_t)dc.Mesh->m_BoneTransforms.size());
-                    m_ObjectUBO.Upload();
-                    m_ObjectUBO.Bind();
+                m_ObjectUBO.SetModel(dc.Transform);
+                if (dc.Mesh->IsAnimated())
+                    m_ObjectUBO.SetBones(dc.Mesh->m_BoneTransforms.data(),
+                        (uint32_t)dc.Mesh->m_BoneTransforms.size());
+                m_ObjectUBO.Upload();
+                m_ObjectUBO.Bind();
 
-                    Renderer::RenderMesh(dc.Mesh->GetVertexInput(), dc.Mesh, dc.Material,
-                        dc.SubmeshIndex, dc.Transform, 0);
-                }
+                Renderer::RenderMesh(dc.Mesh->GetVertexInput(), dc.Mesh, dc.Material,
+                    dc.SubmeshIndex, dc.Transform, 0, &writeOverride);
             }
 
-            Renderer::BeginOutlineDraw();
-
+            for (auto& dc : selectedList)
             {
-                for (auto& dc : selectedList)
-                {
-                    Ref<Material> material = dc.Mesh->IsAnimated() ? m_OutlineAnimMaterial : m_OutlineMaterial;
+                Ref<Material> material = dc.Mesh->IsAnimated() ? m_OutlineAnimMaterial : m_OutlineMaterial;
 
-                    m_ObjectUBO.SetModel(dc.Transform);
-                    if (dc.Mesh->IsAnimated())
-                        m_ObjectUBO.SetBones(dc.Mesh->m_BoneTransforms.data(),
-                            (uint32_t)dc.Mesh->m_BoneTransforms.size());
-                    m_ObjectUBO.Upload();
-                    m_ObjectUBO.Bind();
+                m_ObjectUBO.SetModel(dc.Transform);
+                if (dc.Mesh->IsAnimated())
+                    m_ObjectUBO.SetBones(dc.Mesh->m_BoneTransforms.data(),
+                        (uint32_t)dc.Mesh->m_BoneTransforms.size());
+                m_ObjectUBO.Upload();
+                m_ObjectUBO.Bind();
 
-                    Renderer::RenderMesh(dc.Mesh->GetVertexInput(), dc.Mesh, material,
-                        dc.SubmeshIndex, dc.Transform, 0);
-                }
+                Renderer::RenderMesh(dc.Mesh->GetVertexInput(), dc.Mesh, material,
+                    dc.SubmeshIndex, dc.Transform, 0);
             }
-
-            Renderer::EndOutline();
         }
 
-        // Collider debug
+        // Collider debug：状态来自 Collider.Shader（8.0.3 声明 Line+LineWidth3+ZTest Off ZWrite Off），无 override。
         if (!debugList.empty())
         {
-            Renderer::BeginColliderDebug();
-
+            for (auto& dc : debugList)
             {
-                for (auto& dc : debugList)
-                {
-                    if (!dc.Mesh) continue;
+                if (!dc.Mesh) continue;
 
-                    m_ObjectUBO.SetModel(dc.Transform);
-                    m_ObjectUBO.Upload();
-                    m_ObjectUBO.Bind();
+                m_ObjectUBO.SetModel(dc.Transform);
+                m_ObjectUBO.Upload();
+                m_ObjectUBO.Bind();
 
-                    Renderer::RenderMesh(dc.Mesh->GetVertexInput(), dc.Mesh, m_ColliderMaterial,
-                        dc.SubmeshIndex, dc.Transform, 0);
-                }
+                Renderer::RenderMesh(dc.Mesh->GetVertexInput(), dc.Mesh, m_ColliderMaterial,
+                    dc.SubmeshIndex, dc.Transform, 0);
             }
-
-            Renderer::EndColliderDebug();
         }
 
         // Grid

@@ -12,6 +12,8 @@ Shader "Debug/Collider"
         ZTest Off
         ZWrite Off
         Blend SrcAlpha OneMinusSrcAlpha
+        PolygonMode Line
+        LineWidth 3
     }
 
     SubShader

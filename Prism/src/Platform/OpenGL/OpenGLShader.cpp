@@ -2,10 +2,8 @@
 #include "OpenGLShader.h"
 
 #include <glm/gtc/type_ptr.hpp>
-#include <PrismShaderCore/Pipeline/PipelineState.h>
 #include <glad/glad.h>
 #include "Prism/Renderer/Renderer.h"
-#include "OpenGLStateCache.h"
 
 namespace Prism
 {
@@ -109,11 +107,6 @@ namespace Prism
             if (!m_IsCompute) { PR_CORE_WARN("Not a compute shader"); return; }
             glDispatchCompute(x, y, z);
         });
-    }
-
-    void OpenGLShader::ApplyRenderState(const PrismShaderCompiler::PipelineState& state)
-    {
-        Renderer::Submit([=]() { OpenGLStateCache::Apply(state); });
     }
 
     void OpenGLShader::SetInt(const std::string& name, int value)

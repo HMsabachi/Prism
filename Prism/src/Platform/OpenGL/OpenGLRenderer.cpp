@@ -15,7 +15,7 @@
 #include "Prism/Renderer/Buffer/IndexBuffer.h"
 #include "Prism/Renderer/Buffer/UniformBuffer.h"
 #include "Prism/ShaderCompiler/PrismBindings.h"
-#include "OpenGLStateCache.h"
+#include "OpenGLPipelineStateCache.h"
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -32,7 +32,7 @@ namespace Prism
     {
         RenderAPICapabilities RenderCaps;
         Ref<RenderPass> ActiveRenderPass;
-        Ref<Shader> LastProgram;
+        PSOKey LastPSOKey;
         Ref<Material> LastMaterial;
         Ref<Mesh> LastMesh;
         Ref<VertexBuffer> FullscreenQuadVB;
@@ -159,6 +159,7 @@ namespace Prism
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
             glEnable(GL_MULTISAMPLE);
+            glEnable(GL_LINE_SMOOTH);
             glEnable(GL_STENCIL_TEST);
 
             HandleCapabilities(s_Data->RenderCaps);
@@ -169,9 +170,7 @@ namespace Prism
                 PR_CORE_ERROR("OpenGL Error {0}", error);
                 error = glGetError();
             }
-
-            OpenGLStateCache::Init();
-        });
+            });
 
         struct QuadVertex
         {
@@ -208,7 +207,7 @@ namespace Prism
     {
         PR_CORE_ASSERT(renderPass, "渲染通道不能为空！");
         s_Data->ActiveRenderPass = renderPass;
-        s_Data->LastProgram = nullptr;
+        s_Data->LastPSOKey = PSOKey{};
         s_Data->LastMaterial = nullptr;
         s_Data->LastMesh = nullptr;
         renderPass->GetSpecification().TargetFramebuffer->Bind();
@@ -217,7 +216,7 @@ namespace Prism
             const glm::vec4& clearColor = renderPass->GetSpecification().TargetFramebuffer->GetSpecification().ClearColor;
             Renderer::Submit([=]() {
                 Utils::Clear(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
-            });
+                });
         }
     }
 
@@ -228,18 +227,19 @@ namespace Prism
         s_Data->ActiveRenderPass = nullptr;
     }
 
-    void OpenGLRenderer::SubmitFullscreenQuad(Ref<VertexInput> vertexInput, Ref<Material> material)
+    void OpenGLRenderer::SubmitFullscreenQuad(Ref<VertexInput> vertexInput, Ref<Material> material,
+        const PrismShaderCompiler::PipelineState* stateOverride)
     {
-        BindMaterial(material, 0);
+        BindMaterial(material, 0, stateOverride);
         s_Data->FullscreenQuadVB->Bind();
         vertexInput->Bind();
         s_Data->FullscreenQuadIB->Bind();
-        s_Data->LastProgram = nullptr;
+        s_Data->LastPSOKey = PSOKey{};
         s_Data->LastMaterial = nullptr;
         s_Data->LastMesh = nullptr;
         Renderer::Submit([]() {
             Utils::DrawIndexed(6, PrimitiveType::Triangles);
-        });
+            });
     }
 
     void OpenGLRenderer::SetSceneEnvironment(const Ref<SceneEnvironment>& environment, const Ref<Image2D>& shadow)
@@ -291,9 +291,10 @@ namespace Prism
     }
 
     void OpenGLRenderer::RenderMesh(Ref<VertexInput> vertexInput, Ref<Mesh> mesh, Ref<Material> material,
-        uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass)
+        uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass,
+        const PrismShaderCompiler::PipelineState* stateOverride)
     {
-        BindMaterial(material, pass);
+        BindMaterial(material, pass, stateOverride);
         if (mesh != s_Data->LastMesh)
         {
             mesh->m_VertexBuffer->Bind();
@@ -305,28 +306,34 @@ namespace Prism
         auto& submesh = mesh->m_Submeshes[submeshIndex];
         Renderer::Submit([submesh]() {
             Utils::DrawIndexedBaseVertex(submesh.IndexCount, submesh.BaseIndex, submesh.BaseVertex, PrimitiveType::Triangles);
-        });
+            });
     }
 
-    void OpenGLRenderer::RenderQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const glm::mat4& transform)
+    void OpenGLRenderer::RenderQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const glm::mat4& transform,
+        const PrismShaderCompiler::PipelineState* stateOverride)
     {
         (void)transform;
-        SubmitFullscreenQuad(vertexInput, material);
+        SubmitFullscreenQuad(vertexInput, material, stateOverride);
     }
 
-    void OpenGLRenderer::BindMaterial(Ref<Material> material, uint32_t pass)
+    void OpenGLRenderer::BindMaterial(Ref<Material> material, uint32_t pass,
+        const PrismShaderCompiler::PipelineState* stateOverride)
     {
         if (!material)
             return;
 
         Ref<Shader> program = material->GetProgram(pass);
-        if (program != s_Data->LastProgram)
+        PrismShaderCompiler::PipelineState effectiveState = PrismShaderCompiler::PipelineState::Default();
+        const auto& shPass = material->GetShader()->GetPass(pass);
+        if (shPass.RenderState)
+            effectiveState = *shPass.RenderState;
+        if (stateOverride)
+            effectiveState.Merge(*stateOverride);
+        PSOKey key{ program->GetRendererID(), effectiveState };
+        if (!(key == s_Data->LastPSOKey))
         {
-            program->Bind();
-            const auto& shPass = material->GetShader()->GetPass(pass);
-            if (shPass.RenderState)
-                program->ApplyRenderState(*shPass.RenderState);
-            s_Data->LastProgram = program;
+            OpenGLPipelineStateCache::Get(program->GetRendererID(), effectiveState)->Bind();
+            s_Data->LastPSOKey = key;
         }
 
         if (material != s_Data->LastMaterial)
@@ -354,77 +361,5 @@ namespace Prism
             }
             s_Data->LastMaterial = material;
         }
-    }
-
-    void OpenGLRenderer::SetDefaultStencilState()
-    {
-        Renderer::Submit([]() {
-            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-            glStencilFunc(GL_ALWAYS, 1, 0xff);
-            glStencilMask(0);
-        });
-    }
-
-    void OpenGLRenderer::BeginOutlineWrite()
-    {
-        s_Data->LastProgram = nullptr;
-        s_Data->LastMaterial = nullptr;
-        s_Data->LastMesh = nullptr;
-
-        Renderer::Submit([]() {
-            glEnable(GL_STENCIL_TEST);
-            glStencilFunc(GL_ALWAYS, 1, 0xff);
-            glStencilMask(0xff);
-        });
-    }
-
-    void OpenGLRenderer::BeginOutlineDraw()
-    {
-        s_Data->LastProgram = nullptr;
-        s_Data->LastMaterial = nullptr;
-        s_Data->LastMesh = nullptr;
-
-        Renderer::Submit([]() {
-            glStencilFunc(GL_NOTEQUAL, 1, 0xff);
-            glStencilMask(0);
-            glLineWidth(10);
-            glEnable(GL_LINE_SMOOTH);
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        });
-    }
-
-    void OpenGLRenderer::EndOutline()
-    {
-        Renderer::Submit([]() {
-            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-            glStencilFunc(GL_ALWAYS, 1, 0xff);
-            glStencilMask(0);
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-        });
-    }
-
-    void OpenGLRenderer::BeginColliderDebug()
-    {
-        s_Data->LastProgram = nullptr;
-        s_Data->LastMaterial = nullptr;
-        s_Data->LastMesh = nullptr;
-
-        Renderer::Submit([]() {
-            glLineWidth(3);
-            glEnable(GL_LINE_SMOOTH);
-            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            glDisable(GL_DEPTH_TEST);
-        });
-    }
-
-    void OpenGLRenderer::EndColliderDebug()
-    {
-        Renderer::Submit([]() {
-            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-            glStencilFunc(GL_ALWAYS, 1, 0xff);
-            glStencilMask(0);
-            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            glEnable(GL_DEPTH_TEST);
-        });
     }
 }

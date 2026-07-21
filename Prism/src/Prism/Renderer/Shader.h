@@ -6,8 +6,6 @@
 #include <string>
 #include <glm/glm.hpp>
 
-namespace PrismShaderCompiler { struct PipelineState; }
-
 namespace Prism
 {
     class PRISM_API Shader : public RefCounted
@@ -21,8 +19,6 @@ namespace Prism
         virtual RendererID GetRendererID() const = 0;
 
         virtual const std::string& GetName() const = 0;
-
-        virtual void ApplyRenderState(const PrismShaderCompiler::PipelineState& state) = 0;
 
         virtual void SetInt(const std::string& name, int value) = 0;
         virtual void SetFloat(const std::string& name, float value) = 0;

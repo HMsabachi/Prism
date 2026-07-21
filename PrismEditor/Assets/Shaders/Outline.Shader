@@ -12,6 +12,15 @@ Shader "Standard/Outline"
         ZTest Off
         ZWrite Off
         Blend SrcAlpha OneMinusSrcAlpha
+        Stencil
+        {
+            Ref 1
+            Comp NotEqual
+            ReadMask 0xff
+            WriteMask 0
+        }
+        PolygonMode Line
+        LineWidth 10
     }
 
     SubShader
