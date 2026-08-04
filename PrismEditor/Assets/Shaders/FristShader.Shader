@@ -17,7 +17,7 @@ Shader "Custom/MyFirstShader"
             Name "ForwardBase"
             GLSL
             {
-                #include "PrismCommon.glsl"
+                #include "PrismEngine.glsl"
                 attribute vec3 aPos : POSITION;
                 attribute vec2 aUV : TEXCOORD0;
                 attribute vec3 aNormal : NORMAL;

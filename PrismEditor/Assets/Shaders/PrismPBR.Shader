@@ -34,7 +34,7 @@ Shader "Standard/PrismPBR"
             {
                 #pragma shader_feature SKINNED SHOW_CASCADES
                 #pragma shader_feature ALBEDO_MAP NORMAL_MAP METALNESS_MAP ROUGHNESS_MAP
-                #include "PrismCommon.glsl"
+                #include "PrismEngine.glsl"
                 attribute vec3 a_Position : POSITION;
                 attribute vec3 a_Normal : NORMAL;
                 attribute vec3 a_Tangent : TANGENT;
@@ -285,7 +285,7 @@ Shader "Standard/PrismPBR"
             GLSL
             {
                 #pragma shader_feature SKINNED
-                #include "PrismCommon.glsl"
+                #include "PrismEngine.glsl"
 
                 attribute vec3 a_Position : POSITION;
             #ifdef SKINNED

@@ -6,7 +6,7 @@
 #if PRISM_BACKEND_OPENGL
 #define PRISM_TEX(q) layout(binding = q)
 #elif PRISM_BACKEND_VULKAN
-#define PRISM_TEX(q) layout(set = 0, binding = q)
+#define PRISM_TEX(q) layout(set = PRISM_SET_FRAME, binding = q)
 #endif
 
 PRISM_TEX(PRISM_GEOMETRY_PASS_TEXTURE) uniform sampler2DMS Prism_GeometryPassTexture;

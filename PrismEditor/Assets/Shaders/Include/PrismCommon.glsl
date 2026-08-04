@@ -1,7 +1,5 @@
 // PrismCommon.glsl
 
-#include "PrismEngine.glsl"
-
 vec4 PrismObjectToClipPos(vec3 pos)
 {
     return Prism_ViewProjection * Prism_Model * vec4(pos, 1.0);

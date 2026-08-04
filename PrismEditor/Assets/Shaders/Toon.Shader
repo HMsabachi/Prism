@@ -53,7 +53,7 @@ Shader "Custom/Toon"
             {
                 #pragma shader_feature SKINNED
                 #pragma shader_feature ALBEDO_MAP NORMAL_MAP EMISSION_MAP
-                #include "PrismCommon.glsl"
+                #include "PrismEngine.glsl"
 
                 attribute vec3 a_Position : POSITION;
                 attribute vec3 a_Normal : NORMAL;
@@ -202,7 +202,7 @@ Shader "Custom/Toon"
             GLSL
             {
                 #pragma shader_feature SKINNED
-                #include "PrismCommon.glsl"
+                #include "PrismEngine.glsl"
 
                 attribute vec3 a_Position : POSITION;
                 attribute vec3 a_Normal : NORMAL;

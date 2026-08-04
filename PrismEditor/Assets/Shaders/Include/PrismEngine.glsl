@@ -6,5 +6,6 @@
 #include "PrismObject.glsl"
 #include "PrismShadow.glsl"
 #include "PrismEngineTextures.glsl"
+#include "PrismCommon.glsl"
 
 #endif

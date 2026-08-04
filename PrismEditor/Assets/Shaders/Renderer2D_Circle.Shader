@@ -21,7 +21,7 @@ Shader "Prism/Renderer2D_Circle"
 
             GLSL
             {
-                #include "PrismCommon.glsl"
+                #include "PrismEngine.glsl"
 
                 attribute vec3 a_WorldPosition : POSITION;
                 attribute float a_Thickness : INDEX0;

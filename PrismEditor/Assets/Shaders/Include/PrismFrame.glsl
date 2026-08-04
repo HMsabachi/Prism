@@ -15,7 +15,7 @@ const int PRISM_MAX_CASCADES = 4;
 #if PRISM_BACKEND_OPENGL
 #define PRISM_FRAME_LAYOUT layout(std140, binding = PRISM_BINDING_FRAME)
 #elif PRISM_BACKEND_VULKAN
-#define PRISM_FRAME_LAYOUT layout(std140, set = 0, binding = PRISM_BINDING_FRAME)
+#define PRISM_FRAME_LAYOUT layout(std140, set = PRISM_SET_FRAME, binding = PRISM_BINDING_FRAME)
 #endif
 
 PRISM_FRAME_LAYOUT uniform PrismFrame
