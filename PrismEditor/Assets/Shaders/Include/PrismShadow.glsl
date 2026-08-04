@@ -1,9 +1,18 @@
+#ifndef PRISM_SHADOW
+#define PRISM_SHADOW
+
 // PrismShadow.glsl
 
-layout(binding = PRISM_SHADOW_MAP0) uniform sampler2D Prism_ShadowMap0;
-layout(binding = PRISM_SHADOW_MAP1) uniform sampler2D Prism_ShadowMap1;
-layout(binding = PRISM_SHADOW_MAP2) uniform sampler2D Prism_ShadowMap2;
-layout(binding = PRISM_SHADOW_MAP3) uniform sampler2D Prism_ShadowMap3;
+#if PRISM_BACKEND_OPENGL
+#define PRISM_SHADOW_TEX(q) layout(binding = q)
+#elif PRISM_BACKEND_VULKAN
+#define PRISM_SHADOW_TEX(q) layout(set = 0, binding = q)
+#endif
+
+PRISM_SHADOW_TEX(PRISM_SHADOW_MAP0) uniform sampler2D Prism_ShadowMap0;
+PRISM_SHADOW_TEX(PRISM_SHADOW_MAP1) uniform sampler2D Prism_ShadowMap1;
+PRISM_SHADOW_TEX(PRISM_SHADOW_MAP2) uniform sampler2D Prism_ShadowMap2;
+PRISM_SHADOW_TEX(PRISM_SHADOW_MAP3) uniform sampler2D Prism_ShadowMap3;
 
 const vec2 PoissonDistribution[64] = vec2[](
     vec2(-0.884081,  0.124488), vec2(-0.714377,  0.027940),
@@ -176,3 +185,5 @@ float Prism_GetShadow(vec3 worldPos, float viewDepth, vec3 normal)
     if (cascadeIndex == 2) return CascadeShadow(Prism_ShadowMap2, worldPos, normal, 2, shadowFade);
     return CascadeShadow(Prism_ShadowMap3, worldPos, normal, 3, shadowFade);
 }
+
+#endif

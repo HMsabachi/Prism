@@ -1,3 +1,6 @@
+#ifndef PRISM_FRAME
+#define PRISM_FRAME
+
 struct Prism_Light
 {
     vec3 Direction;
@@ -9,7 +12,13 @@ struct Prism_Light
 const int PRISM_MAX_LIGHTS   = 1;
 const int PRISM_MAX_CASCADES = 4;
 
-layout(std140, binding = PRISM_BINDING_FRAME) uniform PrismFrame
+#if PRISM_BACKEND_OPENGL
+#define PRISM_FRAME_LAYOUT layout(std140, binding = PRISM_BINDING_FRAME)
+#elif PRISM_BACKEND_VULKAN
+#define PRISM_FRAME_LAYOUT layout(std140, set = 0, binding = PRISM_BINDING_FRAME)
+#endif
+
+PRISM_FRAME_LAYOUT uniform PrismFrame
 {
     mat4 Prism_ViewProjection;
     mat4 Prism_InverseViewProjection;
@@ -31,3 +40,5 @@ layout(std140, binding = PRISM_BINDING_FRAME) uniform PrismFrame
     vec4 Prism_ShadowParams;
     vec4 Prism_ShadowData;
 };
+
+#endif

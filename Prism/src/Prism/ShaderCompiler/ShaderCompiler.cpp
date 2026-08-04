@@ -31,7 +31,6 @@ namespace Prism
 
         CompilerConfig config;
         config.IncludeRoot = "Assets/Shaders/Include";
-        config.EngineRoot = "Assets/Shaders/Engine";
         config.ReadFile = &Prism::File::ReadFile;
         config.OnLog = &ShaderCompiler_LogCallback;
         config.ResolveUsePass = [](const std::string& shaderName) -> CompiledShader {

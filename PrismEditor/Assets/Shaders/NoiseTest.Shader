@@ -36,6 +36,7 @@ Shader "Custom/GlassLens"
             Name "ForwardBase"
             GLSL
             {
+                #include "PrismEngine.glsl"
                 #include "FastNoise/FastNoiseLite.glsl"
 
                 attribute vec3 a_Position : POSITION;
