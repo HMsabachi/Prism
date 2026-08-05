@@ -32,6 +32,10 @@ namespace Prism
         virtual void RenderQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const glm::mat4& transform,
             const PrismShaderCompiler::PipelineState* stateOverride = nullptr) override;
 
+        virtual void DispatchCompute(Ref<Shader> kernelShader,
+            const std::vector<ComputeResourceBinding>& bindings,
+            uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ) override;
+
         virtual RenderAPICapabilities& GetCapabilities() override;
 
     private:

@@ -8,7 +8,10 @@ layout(binding = 0) uniform sampler2D u_EquirectangularTex;
 layout(binding = 1) uniform samplerCube u_InputCubeMap;
 layout(rgba16f, binding = 2) uniform imageCube o_OutputCube;
 
-layout(location = 0) uniform float u_Roughness;
+layout(std140, binding = 4) uniform MipFilterParams
+{
+    float u_Roughness;
+};
 
 const float PI = 3.141592;
 const float TwoPI = 2.0 * PI;

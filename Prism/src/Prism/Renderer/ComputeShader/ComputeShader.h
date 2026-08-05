@@ -1,68 +1,48 @@
-﻿#pragma once
+#pragma once
 #include <PrismShaderCore/CompilerCompute.h>
+#include "Prism/Renderer/RendererAPI.h"
+
+#include <unordered_map>
 
 namespace Prism
 {
-	class Shader;
 	class Texture2D;
 	class TextureCube;
-	class ShaderStorageBuffer;
-}
 
-namespace Prism
-{
-	class PRISM_API ComputeShader : public RefCounted
+	class ComputeShader : public RefCounted
 	{
-#pragma region 数据结构
-		struct Kernel
-		{
-			Ref<Shader> shader;
-			std::string name;
-			uint32_t groupSizeX;
-			uint32_t groupSizeY;
-			uint32_t groupSizeZ;
-		};
-		struct Resource
-		{
-			PrismShaderCompiler::CSL::ResourceKind kind;
-			bool readOnly = false;
-			bool writeOnly = false;
-			std::string name;
-			uint32_t binding;
-			bool layered = true;
-			uint32_t level = 0;
-			Ref<Texture2D> texture2D;
-			Ref<TextureCube> textureCube;
-			Ref<ShaderStorageBuffer> ssbo;
-		};
-#pragma endregion
 	public:
 		static Ref<ComputeShader> Create(const std::string& filePath);
-	public:
+
 		ComputeShader(const std::string& filePath);
 		~ComputeShader();
 
 		void Load();
-	public:
+
 		int32_t FindKernel(const std::string& name);
-		void SetBuffer(int32_t kernel, const std::string& name, Ref<ShaderStorageBuffer>& ssbo);
-		void SetImage2D(int32_t kernel, const std::string& name, Ref<Texture2D>& tex, uint32_t level = 0, bool layered = true);
-		void SetImageCube(int32_t kernel, const std::string& name, Ref<TextureCube>& tex, uint32_t level = 0, bool layered = true);
-		void SetTexture2D(int32_t kernel, const std::string& name, Ref<Texture2D>& tex);
-		void SetTextureCube(int32_t kernel, const std::string& name, Ref<TextureCube>& tex);
 
-		void SetInt(int32_t kernel, const std::string& name, int32_t value);
-
-		void SetFloat(int32_t kernel, const std::string& name, float value);
+		void SetUniformBuffer(int32_t kernel, const std::string& name, Ref<UniformBuffer> ubo);
+		void SetBuffer(int32_t kernel, const std::string& name, Ref<ShaderStorageBuffer> ssbo);
+		void SetTexture(int32_t kernel, const std::string& name, Ref<Texture> tex);
+		void SetImage(int32_t kernel, const std::string& name, Ref<Texture> tex, uint32_t level = 0);
 
 		void Dispatch(int32_t kernel, uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ);
-	
+
 	private:
 		int32_t FindRes(const std::string& name);
 		bool IsLegalID(int32_t kernel);
-	private:
+
+		struct Kernel
+		{
+			Ref<Shader> shader;
+			std::string name;
+			uint32_t groupSizeX = 1;
+			uint32_t groupSizeY = 1;
+			uint32_t groupSizeZ = 1;
+		};
+
 		std::vector<Kernel> m_Kernels;
-		std::vector<Resource> m_Resources;
+		std::vector<ComputeResourceBinding> m_Resources;
 		std::unordered_map<std::string, int32_t> m_ResourcesMap;
 
 		PrismShaderCompiler::CompiledComputeShader m_Compiled;

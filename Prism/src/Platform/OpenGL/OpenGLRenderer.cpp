@@ -16,7 +16,11 @@
 #include "Prism/Renderer/Buffer/UniformBuffer.h"
 #include "Prism/ShaderCompiler/PrismBindings.h"
 #include "OpenGLShader.h"
+#include "OpenGLTexture.h"
+#include "OpenGLImage.h"
 #include "OpenGLPipelineStateCache.h"
+#include "Buffer/OpenGLUniformBuffer.h"
+#include "Buffer/OpenGLShaderStorageBuffer.h"
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -39,6 +43,7 @@ namespace Prism
         Ref<VertexBuffer> FullscreenQuadVB;
         Ref<IndexBuffer> FullscreenQuadIB;
         std::unordered_map<Material*, MaterialUBOEntry> MaterialUBOs;
+        RendererID LastComputeProgram = 0;
     };
 
     static OpenGLRendererData* s_Data = nullptr;
@@ -103,6 +108,39 @@ namespace Prism
         static void MemoryBarriers(RendererAPI::BarrierFlags flags)
         {
             glMemoryBarrier(PrismToOpenGLMemoryBarrier(flags));
+        }
+
+        static GLenum TextureFormatToGL(ImageFormat format)
+        {
+            switch (format)
+            {
+            case ImageFormat::RGB:     return GL_RGB;
+            case ImageFormat::SRGB:    return GL_SRGB8;
+            case ImageFormat::RGBA:    return GL_RGBA;
+            case ImageFormat::RGBA16F: return GL_RGBA16F;
+            case ImageFormat::RGBA32F: return GL_RGBA32F;
+            }
+            PR_CORE_ASSERT(false, "Unknown texture format!");
+            return 0;
+        }
+
+        static GLenum TextureAccessToGL(TextureAccess access)
+        {
+            switch (access)
+            {
+            case TextureAccess::ReadOnly:  return GL_READ_ONLY;
+            case TextureAccess::WriteOnly: return GL_WRITE_ONLY;
+            case TextureAccess::ReadWrite: return GL_READ_WRITE;
+            }
+            PR_CORE_ASSERT(false, "Unknown texture access!");
+            return 0;
+        }
+
+        static GLenum ComputeAccessToGL(bool readOnly, bool writeOnly)
+        {
+            if (readOnly && !writeOnly)  return GL_READ_ONLY;
+            if (writeOnly && !readOnly)  return GL_WRITE_ONLY;
+            return GL_READ_WRITE;
         }
     }
 
@@ -260,31 +298,33 @@ namespace Prism
         Ref<Texture2D> envEquirect = Texture2D::Create(filepath);
         PR_CORE_ASSERT(envEquirect->GetFormat() == ImageFormat::RGBA16F, "Texture is not HDR!");
 
-        envEquirect->Bind();
         int toCubeKernel = s_EnvironmentShader->FindKernel("CSEquirectToCube");
-        s_EnvironmentShader->SetTexture2D(toCubeKernel, "u_EquirectangularTex", envEquirect);
-        s_EnvironmentShader->SetImageCube(toCubeKernel, "o_OutputCube", envUnfiltered);
+        s_EnvironmentShader->SetTexture(toCubeKernel, "u_EquirectangularTex", envEquirect);
+        s_EnvironmentShader->SetImage(toCubeKernel, "o_OutputCube", envUnfiltered);
         s_EnvironmentShader->Dispatch(toCubeKernel, cubemapSize / 32, cubemapSize / 32, 6);
         envUnfiltered->GenerateMipMap();
 
         Ref<TextureCube> envFiltered = TextureCube::Create(ImageFormat::RGBA16F, cubemapSize, cubemapSize);
         envUnfiltered->CopyTo(envFiltered);
 
+        Ref<UniformBuffer> mipFilterUBO = UniformBuffer::Create(4, sizeof(float));
         int mipFilter = s_EnvironmentShader->FindKernel("CSMipFilter");
-        s_EnvironmentShader->SetTextureCube(mipFilter, "u_InputCubeMap", envUnfiltered);
+        s_EnvironmentShader->SetTexture(mipFilter, "u_InputCubeMap", envUnfiltered);
         const float deltaRoughness = 1.0f / glm::max((float)(envFiltered->GetMipLevelCount() - 1.0f), 1.0f);
         for (uint32_t level = 1, size = cubemapSize / 2; level < envFiltered->GetMipLevelCount(); level++, size /= 2)
         {
             const uint32_t numGroups = glm::max((uint32_t)1, size / 32);
-            s_EnvironmentShader->SetImageCube(mipFilter, "o_OutputCube", envFiltered, level, true);
-            s_EnvironmentShader->SetFloat(mipFilter, "u_Roughness", level * deltaRoughness);
+            s_EnvironmentShader->SetImage(mipFilter, "o_OutputCube", envFiltered, level);
+            float roughness = level * deltaRoughness;
+            mipFilterUBO->SetData(&roughness, sizeof(float));
+            s_EnvironmentShader->SetUniformBuffer(mipFilter, "MipFilterParams", mipFilterUBO);
             s_EnvironmentShader->Dispatch(mipFilter, numGroups, numGroups, 6);
         }
 
         Ref<TextureCube> irradianceMap = TextureCube::Create(ImageFormat::RGBA16F, irradianceMapSize, irradianceMapSize);
         int irradiance = s_EnvironmentShader->FindKernel("CSIrradiance");
-        s_EnvironmentShader->SetTextureCube(irradiance, "u_InputCubeMap", envFiltered);
-        s_EnvironmentShader->SetImageCube(irradiance, "o_OutputCube", irradianceMap);
+        s_EnvironmentShader->SetTexture(irradiance, "u_InputCubeMap", envFiltered);
+        s_EnvironmentShader->SetImage(irradiance, "o_OutputCube", irradianceMap);
         s_EnvironmentShader->Dispatch(irradiance, irradianceMapSize / 32, irradianceMapSize / 32, 6);
         irradianceMap->GenerateMipMap();
 
@@ -362,5 +402,61 @@ namespace Prism
             }
             s_Data->LastMaterial = material;
         }
+    }
+
+    void OpenGLRenderer::DispatchCompute(Ref<Shader> kernelShader,
+        const std::vector<ComputeResourceBinding>& bindings,
+        uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ)
+    {
+        if (!kernelShader)
+            return;
+
+        Ref<Shader> capturedShader = kernelShader;
+        std::vector<ComputeResourceBinding> captured = bindings;
+
+        Renderer::Submit([=]() {
+            RendererID program = capturedShader.As<OpenGLShader>()->GetRendererID();
+            if (s_Data->LastComputeProgram != program)
+            {
+                glUseProgram(program);
+                s_Data->LastComputeProgram = program;
+            }
+
+            for (const auto& res : captured)
+            {
+                if (res.UBO)
+                {
+                    GLuint id = res.UBO.As<OpenGLUniformBuffer>()->GetRendererID();
+                    glBindBufferBase(GL_UNIFORM_BUFFER, res.Binding, id);
+                }
+                else if (res.SSBO)
+                {
+                    GLuint id = res.SSBO.As<OpenGLShaderStorageBuffer>()->GetRendererID();
+                    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, res.Binding, id);
+                }
+                else if (res.Texture)
+                {
+                    RendererID texId = 0;
+                    GLenum fmt = Utils::TextureFormatToGL(res.Texture->GetFormat());
+                    if (res.Texture->GetType() == TextureType::Texture2D)
+                        texId = res.Texture.As<OpenGLTexture2D>()->GetRendererID();
+                    else
+                        texId = res.Texture.As<OpenGLTextureCube>()->GetRendererID();
+
+                    if (res.Kind == ComputeBindingKind::Image)
+                    {
+                        GLenum access = Utils::ComputeAccessToGL(res.ReadOnly, res.WriteOnly);
+                        glBindImageTexture(res.Binding, texId, res.Level, res.Layered, 0, access, fmt);
+                    }
+                    else
+                    {
+                        glBindTextureUnit(res.Binding, texId);
+                    }
+                }
+            }
+
+            glDispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
+            glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        });
     }
 }

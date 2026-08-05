@@ -6,6 +6,7 @@
 
 #include "../Texture.h"
 #include "../Renderer.h"
+#include "../Buffer/UniformBuffer.h"
 #include "../Buffer/ShaderStorageBuffer.h"
 
 
@@ -13,6 +14,21 @@ namespace Prism
 {
 
 	std::vector<Ref<ComputeShader>> ComputeShader::s_AllComputeShader;
+
+	static ComputeBindingKind ToComputeBindingKind(PrismShaderCompiler::CSL::ResourceKind kind)
+	{
+		using K = PrismShaderCompiler::CSL::ResourceKind;
+		using B = ComputeBindingKind;
+		switch (kind)
+		{
+		case K::UniformBuffer:   return B::UniformBuffer;
+		case K::StorageBuffer:   return B::StorageBuffer;
+		case K::Image2D:
+		case K::Image3D:
+		case K::ImageCube:       return B::Image;
+		default:                 return B::Sampler;
+		}
+	}
 
 	Ref<ComputeShader> ComputeShader::Create(const std::string& filePath)
 	{
@@ -51,13 +67,19 @@ namespace Prism
 		uint32_t index = 0;
 		for (auto& resource : m_Compiled.Resources)
 		{
-			Resource r;
-			r.kind = resource.Kind;
-			r.readOnly = resource.ReadOnly;
-			r.writeOnly = resource.WriteOnly;
-			r.name = resource.Name;
-			r.binding = resource.Binding;
-			m_ResourcesMap[r.name] = index++;
+			ComputeResourceBinding r;
+			r.Kind = ToComputeBindingKind(resource.Kind);
+			r.Binding = resource.Binding;
+			r.ReadOnly = resource.ReadOnly;
+			r.WriteOnly = resource.WriteOnly;
+
+			using K = PrismShaderCompiler::CSL::ResourceKind;
+			r.Layered = (resource.Kind == K::ImageCube);
+
+			std::string key = !resource.InstanceName.empty() ? resource.InstanceName
+				: !resource.BlockName.empty() ? resource.BlockName
+				: resource.Name;
+			m_ResourcesMap[key] = index++;
 			m_Resources.push_back(std::move(r));
 		}
 
@@ -106,102 +128,37 @@ namespace Prism
 		return true;
 	}
 
-	void ComputeShader::SetBuffer(int32_t kernel,const std::string& name, Ref<ShaderStorageBuffer>& ssbo)
+	void ComputeShader::SetUniformBuffer(int32_t kernel, const std::string& name, Ref<UniformBuffer> ubo)
 	{
 		auto id = FindRes(name);
 		if (id == -1) return;
-		m_Resources[id].ssbo = ssbo;
+		m_Resources[id].UBO = ubo;
 	}
-	void ComputeShader::SetImage2D(int32_t kernel,const std::string& name, Ref<Texture2D>& tex, uint32_t level, bool layered)
+	void ComputeShader::SetBuffer(int32_t kernel, const std::string& name, Ref<ShaderStorageBuffer> ssbo)
 	{
 		auto id = FindRes(name);
 		if (id == -1) return;
-		m_Resources[id].texture2D = tex;
-		m_Resources[id].level = level;
-		m_Resources[id].layered = layered;
+		m_Resources[id].SSBO = ssbo;
 	}
-	void ComputeShader::SetImageCube(int32_t kernel, const std::string& name, Ref<TextureCube>& tex, uint32_t level, bool layered)
+	void ComputeShader::SetTexture(int32_t kernel, const std::string& name, Ref<Texture> tex)
 	{
 		auto id = FindRes(name);
 		if (id == -1) return;
-		m_Resources[id].textureCube = tex;
-		m_Resources[id].level = level;
-		m_Resources[id].layered = layered;
+		m_Resources[id].Texture = tex;
 	}
-	void ComputeShader::SetTexture2D(int32_t kernel, const std::string& name, Ref<Texture2D>& tex)
+	void ComputeShader::SetImage(int32_t kernel, const std::string& name, Ref<Texture> tex, uint32_t level)
 	{
 		auto id = FindRes(name);
 		if (id == -1) return;
-		m_Resources[id].texture2D = tex;
-	}
-	void ComputeShader::SetTextureCube(int32_t kernel, const std::string& name, Ref<TextureCube>& tex)
-	{
-		auto id = FindRes(name);
-		if (id == -1) return;
-		m_Resources[id].textureCube = tex;
-	}
-
-	void ComputeShader::SetInt(int32_t kernel, const std::string& name, int32_t value)
-	{
-		if(!IsLegalID(kernel)) return;
-		auto& k = m_Kernels[kernel];
-		k.shader->Bind();
-		k.shader->SetInt(name, value);
-	}
-
-	void ComputeShader::SetFloat(int32_t kernel, const std::string& name, float value)
-	{
-		if (!IsLegalID(kernel)) return;
-		auto& k = m_Kernels[kernel];
-		k.shader->Bind();
-		k.shader->SetFloat(name, value);
-	}
-
-	static TextureAccess GetTextureAccess(bool readOnly, bool writeOnly)
-	{
-		if (readOnly && !writeOnly)  return TextureAccess::ReadOnly;
-		if (writeOnly && !readOnly)  return TextureAccess::WriteOnly;
-		return TextureAccess::ReadWrite;
-	}
-
-	static bool IsImage(PrismShaderCompiler::CSL::ResourceKind kind)
-	{
-		using K = PrismShaderCompiler::CSL::ResourceKind;
-		return kind == K::Image2D || kind == K::Image3D || kind == K::ImageCube;
+		m_Resources[id].Texture = tex;
+		m_Resources[id].Level = level;
 	}
 
 	void ComputeShader::Dispatch(int32_t kernel, uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ)
 	{
 		if (!IsLegalID(kernel)) return;
-		std::unordered_set<Ref<Texture>> usedTextures;
-		std::unordered_set<Ref<ShaderStorageBuffer>> usedBuffer;
-		auto& k = m_Kernels[kernel];
-		k.shader->Bind();
-		for (auto& res : m_Resources)
-		{
-			if (auto ssbo = res.ssbo)
-			{
-				usedBuffer.insert(ssbo);
-				ssbo->Bind(res.binding);
-			}
-			if (auto texture = res.texture2D)
-			{
-				usedTextures.insert(texture);
-				if (IsImage(res.kind))
-					texture->BindImage(res.binding, GetTextureAccess(res.readOnly, res.writeOnly), res.layered, res.level);
-				else
-					texture->Bind(res.binding);
-			}
-			if (auto textureCube = res.textureCube)
-			{
-				usedTextures.insert(textureCube);
-				if (IsImage(res.kind))
-					textureCube->BindImage(res.binding, GetTextureAccess(res.readOnly, res.writeOnly), res.layered, res.level);
-				else
-					textureCube->Bind(res.binding);
-			}
-		}
-		k.shader->DispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
+		Renderer::DispatchCompute(m_Kernels[kernel].shader, m_Resources,
+			numGroupsX, numGroupsY, numGroupsZ);
 	}
 
 }

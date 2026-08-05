@@ -5,6 +5,7 @@
 
 #include <string>
 #include <utility>
+#include <vector>
 #include <glm/glm.hpp>
 
 namespace PrismShaderCompiler { struct PipelineState; }
@@ -18,6 +19,10 @@ namespace Prism
     class TextureCube;
     class Image2D;
     class SceneEnvironment;
+    class Shader;
+    class UniformBuffer;
+    class ShaderStorageBuffer;
+    class Texture;
 
     using RendererID = uint32_t;
 
@@ -25,6 +30,28 @@ namespace Prism
     {
         None = 0,
         OpenGL = 1
+    };
+
+    enum class ComputeBindingKind
+    {
+        None = 0,
+        UniformBuffer,
+        StorageBuffer,
+        Sampler,
+        Image
+    };
+
+    struct ComputeResourceBinding
+    {
+        ComputeBindingKind Kind = ComputeBindingKind::None;
+        uint32_t Binding = 0;
+        bool ReadOnly = false;
+        bool WriteOnly = false;
+        bool Layered = true;
+        uint32_t Level = 0;
+        Ref<UniformBuffer> UBO;
+        Ref<ShaderStorageBuffer> SSBO;
+        Ref<Texture> Texture;
     };
 
     struct RenderAPICapabilities
@@ -83,6 +110,10 @@ namespace Prism
             const PrismShaderCompiler::PipelineState* stateOverride = nullptr) = 0;
         virtual void RenderQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const glm::mat4& transform,
             const PrismShaderCompiler::PipelineState* stateOverride = nullptr) = 0;
+
+        virtual void DispatchCompute(Ref<Shader> kernelShader,
+            const std::vector<ComputeResourceBinding>& bindings,
+            uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ) = 0;
 
         virtual RenderAPICapabilities& GetCapabilities() = 0;
 
