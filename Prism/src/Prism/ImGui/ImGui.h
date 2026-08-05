@@ -44,7 +44,9 @@ namespace Prism {
         PRISM_API bool Property(const std::string& label, std::string& value, bool error = false);
         PRISM_API bool Property(const std::string& label, const char* value);
         PRISM_API bool Property(const std::string& label, const Ref<Texture2D>& texture, uint32_t fallbackRendererID);
+        PRISM_API bool Property(const std::string& label, const Ref<Texture2D>& texture, const Ref<::Prism::Image2D> fallback);
         PRISM_API bool Property(const std::string& label, const Ref<TextureCube>& texture, uint32_t fallbackRendererID);
+        PRISM_API bool Property(const std::string& label, const Ref<TextureCube>& texture, const Ref<::Prism::Image2D> fallback);
         PRISM_API bool Property(const std::string& label, const char** options, int32_t optionCount, int32_t* selected);
 
         PRISM_API bool PropertySlider(const std::string& label, int& value, int min, int max);
@@ -59,8 +61,8 @@ namespace Prism {
         PRISM_API bool PropertyCheckboxGroup(const char* label, bool& value);
         PRISM_API void EndCheckboxGroup();
 
-        PRISM_API void Image(const Ref<Image2D>& image, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1));
-        PRISM_API bool ImageButton(const Ref<Image2D>& image, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1));
+        PRISM_API void Image(const Ref<::Prism::Image2D>& image, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), const ImVec4& b_color = ImVec4(0.0, 0.0, 0.0, 0.0));
+        PRISM_API bool ImageButton(const Ref<::Prism::Image2D>& image, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), int frame_padding = -1, const ImVec4& bg_col = ImVec4(0, 0, 0, 0), const ImVec4& tint_col = ImVec4(1, 1, 1, 1));
 
         template<typename T>
         inline bool PropertyAssetReference(const std::string& label, Ref<T>& object, AssetType type)

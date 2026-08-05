@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Prism/Core/Core.h"
 #include "Prism/Asset/Asset.h"
@@ -37,7 +37,6 @@ namespace Prism {
 
         virtual void Bind(uint32_t slot = 0) const = 0;
         virtual void BindImage(uint32_t slot, TextureAccess access, bool layered = true, uint32_t mipLevel = 0) const = 0;
-        virtual uint32_t GetBinding() const = 0;
 
         virtual ImageFormat GetFormat() const = 0;
 
@@ -77,13 +76,14 @@ namespace Prism {
     {
     public:
         static Ref<TextureCube> Create(ImageFormat format, uint32_t width, uint32_t height, const void* data = nullptr);
-        static Ref<TextureCube> Create(const std::string& path);
 
         virtual const std::string& GetPath() const = 0;
 
         virtual void GenerateMipMap() const = 0;
 
         virtual void CopyTo(Ref<TextureCube> destination) const = 0;
+
+        virtual Ref<ImageCube> GetImage() const = 0;
 
         virtual TextureType GetType() const override { return TextureType::TextureCube; }
     };

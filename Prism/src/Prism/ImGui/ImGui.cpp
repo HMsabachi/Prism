@@ -271,16 +271,16 @@ namespace UI {
 
     // ── Texture types ──
 
-    void Image(const Ref<Image2D>& image, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1)
+    void Image(const Ref<::Prism::Image2D>& image, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& b_color)
     {
         uint32_t texID = image ? image.As<OpenGLImage2D>()->GetRendererID() : 0;
         ImGui::Image((void*)(intptr_t)texID, size, uv0, uv1);
     }
 
-    bool ImageButton(const Ref<Image2D>& image, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1)
+    bool ImageButton(const Ref<::Prism::Image2D>& image, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, int frame_padding, const ImVec4& bg_col, const ImVec4& tint_col)
     {
         uint32_t texID = image ? image.As<OpenGLImage2D>()->GetRendererID() : 0;
-        return ImGui::ImageButton((void*)(intptr_t)texID, size, uv0, uv1);
+        return ImGui::ImageButton((void*)(intptr_t)texID, size, uv0, uv1, frame_padding, bg_col, tint_col);
     }
 
     bool Property(const std::string& label, const Ref<Texture2D>& texture, uint32_t fallbackRendererID)
@@ -290,7 +290,69 @@ namespace UI {
         ImGui::PushItemWidth(-1);
 
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
-        uint32_t texID = texture ? texture.As<OpenGLTexture2D>()->GetRendererID() : fallbackRendererID;
+        uint32_t texID = texture ? texture->GetImage().As<OpenGLImage2D>()->GetRendererID() : fallbackRendererID;
+        ImGui::Image((void*)(intptr_t)texID, ImVec2(64, 64));
+        ImGui::PopStyleVar();
+
+        bool clicked = false;
+        if (ImGui::IsItemHovered())
+        {
+            if (texture)
+            {
+                ImGui::BeginTooltip();
+                ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+                ImGui::TextUnformatted(texture->GetPath().c_str());
+                ImGui::PopTextWrapPos();
+                ImGui::Image((void*)(intptr_t)texture->GetImage().As<OpenGLImage2D>()->GetRendererID(), ImVec2(384, 384));
+                ImGui::EndTooltip();
+            }
+            if (ImGui::IsItemClicked())
+                clicked = true;
+        }
+
+        ImGui::PopItemWidth();
+        ImGui::NextColumn();
+        return clicked;
+    }
+    PRISM_API bool Property(const std::string& label, const Ref<Texture2D>& texture, const Ref<::Prism::Image2D> fallback)
+    {
+        ImGui::Text("%s", label.c_str());
+        ImGui::NextColumn();
+        ImGui::PushItemWidth(-1);
+
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
+        uint32_t texID = texture ? texture->GetImage().As<OpenGLImage2D>()->GetRendererID() : fallback.As<OpenGLImage2D>()->GetRendererID();
+        ImGui::Image((void*)(intptr_t)texID, ImVec2(64, 64));
+        ImGui::PopStyleVar();
+
+        bool clicked = false;
+        if (ImGui::IsItemHovered())
+        {
+            if (texture)
+            {
+                ImGui::BeginTooltip();
+                ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+                ImGui::TextUnformatted(texture->GetPath().c_str());
+                ImGui::PopTextWrapPos();
+                ImGui::Image((void*)(intptr_t)texture->GetImage().As<OpenGLImage2D>()->GetRendererID(), ImVec2(384, 384));
+                ImGui::EndTooltip();
+            }
+            if (ImGui::IsItemClicked())
+                clicked = true;
+        }
+
+        ImGui::PopItemWidth();
+        ImGui::NextColumn();
+        return clicked;
+    }
+    PRISM_API bool Property(const std::string& label, const Ref<TextureCube>& texture, const Ref<::Prism::Image2D> fallback)
+    {
+        ImGui::Text("%s", label.c_str());
+        ImGui::NextColumn();
+        ImGui::PushItemWidth(-1);
+
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
+        uint32_t texID = texture ? texture.As<OpenGLTextureCube>()->GetRendererID() : fallback.As<OpenGLImage2D>()->GetRendererID();
         ImGui::Image((void*)(intptr_t)texID, ImVec2(64, 64));
         ImGui::PopStyleVar();
 
@@ -373,8 +435,8 @@ namespace UI {
     }
 
 
-	PRISM_API bool PropertySlider(const std::string& label, int& value, int min, int max)
-	{
+    PRISM_API bool PropertySlider(const std::string& label, int& value, int min, int max)
+    {
         bool modified = false;
 
         ImGui::Text(label.c_str());
@@ -390,7 +452,7 @@ namespace UI {
         ImGui::NextColumn();
         return modified;
 
-	}
+    }
 
     PRISM_API bool PropertySlider(const std::string& label, float& value, float min, float max)
     {
@@ -410,7 +472,7 @@ namespace UI {
         return modified;
     }
 
-	// ── Color ──
+    // ── Color ──
 
     bool PropertyColor(const std::string& label, glm::vec3& values)
     {

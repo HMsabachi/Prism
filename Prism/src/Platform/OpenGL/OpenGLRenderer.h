@@ -23,7 +23,7 @@ namespace Prism
         virtual void SubmitFullscreenQuad(Ref<VertexInput> vertexInput, Ref<Material> material,
             const PrismShaderCompiler::PipelineState* stateOverride = nullptr) override;
 
-        virtual void SetSceneEnvironment(const Ref<SceneEnvironment>& environment, const Ref<Image2D>& shadow) override;
+        virtual void SetSceneEnvironment(const Ref<SceneEnvironment>& environment) override;
         virtual std::pair<Ref<TextureCube>, Ref<TextureCube>> CreateEnvironmentMap(const std::string& filepath) override;
 
         virtual void RenderMesh(Ref<VertexInput> vertexInput, Ref<Mesh> mesh, Ref<Material> material,

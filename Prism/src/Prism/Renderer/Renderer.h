@@ -49,7 +49,7 @@ namespace Prism
         static void BeginRenderPass(Ref<RenderPass> renderPass, bool clear = true);
         static void EndRenderPass();
         static void SubmitFullscreenQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const PrismShaderCompiler::PipelineState* stateOverride = nullptr);
-        static void SetSceneEnvironment(const Ref<SceneEnvironment>& environment, const Ref<Image2D>& shadow);
+        static void SetSceneEnvironment(const Ref<SceneEnvironment>& environment);
         static std::pair<Ref<TextureCube>, Ref<TextureCube>> CreateEnvironmentMap(const std::string& filepath);
         static void RenderMesh(Ref<VertexInput> vertexInput, Ref<Mesh> mesh, Ref<Material> material, uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass, const PrismShaderCompiler::PipelineState* stateOverride = nullptr);
         static void RenderQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const glm::mat4& transform, const PrismShaderCompiler::PipelineState* stateOverride = nullptr);

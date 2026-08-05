@@ -281,7 +281,7 @@ namespace Prism
             });
     }
 
-    void OpenGLRenderer::SetSceneEnvironment(const Ref<SceneEnvironment>& environment, const Ref<Image2D>& shadow)
+    void OpenGLRenderer::SetSceneEnvironment(const Ref<SceneEnvironment>& environment)
     {
         // TODO: Phase 6 接入
     }
@@ -397,8 +397,12 @@ namespace Prism
             const auto& textures = material->GetTextures();
             for (size_t i = 0; i < textures.size(); i++)
             {
-                if (textures[i])
-                    textures[i]->Bind((uint32_t)i + Config::PRISM_BINDING_TEXTURE);
+                // TODO: 这里需要考虑 TextureCube 的情况
+                if (!textures[i]) continue;
+                if (textures[i]->GetType() == TextureType::Texture2D)
+                    textures[i].As<OpenGLTexture2D>()->Bind((uint32_t)i + Config::PRISM_BINDING_TEXTURE);
+                else
+                    textures[i].As<OpenGLTextureCube>()->Bind((uint32_t)i + Config::PRISM_BINDING_TEXTURE);
             }
             s_Data->LastMaterial = material;
         }

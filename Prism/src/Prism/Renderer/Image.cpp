@@ -31,4 +31,16 @@ namespace Prism {
         return nullptr;
     }
 
+    Ref<ImageCube> ImageCube::Create(ImageFormat format, uint32_t width, uint32_t height, const void* data)
+    {
+        switch (RendererAPI::Current())
+        {
+            case RendererAPIType::None:    return nullptr;
+            case RendererAPIType::OpenGL:  return Ref<OpenGLImageCube>::Create(format, width, height, data);
+            // case RendererAPIType::Vulkan: return Ref<VulkanImageCube>::Create(format, width, height, data); // TODO
+        }
+        PR_CORE_ASSERT(false, "Unknown RendererAPI");
+        return nullptr;
+    }
+
 }

@@ -408,6 +408,7 @@ namespace Prism
             directionalLight.Radiance, directionalLight.Multiplier);
         m_FrameUBO.Upload();
         m_FrameUBO.Bind();
+        Renderer::SetSceneEnvironment(config.SceneEnvironment);
         if (config.SceneEnvironment && config.SceneEnvironment->RadianceMap && config.SceneEnvironment->IrradianceMap)
         {
             config.SceneEnvironment->RadianceMap->Bind(Config::PRISM_ENV_RADIANCE);

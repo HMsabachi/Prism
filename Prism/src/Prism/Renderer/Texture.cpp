@@ -53,15 +53,4 @@ namespace Prism {
         }
         return nullptr;
     }
-
-    Ref<TextureCube> TextureCube::Create(const std::string& path)
-    {
-        switch (RendererAPI::Current())
-        {
-        case RendererAPIType::None: return nullptr;
-        case RendererAPIType::OpenGL: return Ref<OpenGLTextureCube>::Create(path);
-        // case RendererAPIType::Vulkan: return Ref<VulkanTextureCube>::Create(path); // TODO
-        }
-        return nullptr;
-    }
 }

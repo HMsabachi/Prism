@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "RendererTypes.h"
 #include "Prism/Utilities/BitFlags.h"
 #include "Prism/Core/Ref.h"
@@ -90,7 +90,6 @@ namespace Prism
     public:
         virtual ~RendererAPI() = default;
 
-        // 高层纯虚接口（对齐 Hazel，后端多态分发）
         virtual void Init() = 0;
         virtual void Shutdown() = 0;
 
@@ -99,10 +98,9 @@ namespace Prism
 
         virtual void BeginRenderPass(Ref<RenderPass> renderPass, bool clear = true) = 0;
         virtual void EndRenderPass() = 0;
-        virtual void SubmitFullscreenQuad(Ref<VertexInput> vertexInput, Ref<Material> material,
-            const PrismShaderCompiler::PipelineState* stateOverride = nullptr) = 0;
+        virtual void SubmitFullscreenQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const PrismShaderCompiler::PipelineState* stateOverride = nullptr) = 0;
 
-        virtual void SetSceneEnvironment(const Ref<SceneEnvironment>& environment, const Ref<Image2D>& shadow) = 0;
+        virtual void SetSceneEnvironment(const Ref<SceneEnvironment>& environment) = 0;
         virtual std::pair<Ref<TextureCube>, Ref<TextureCube>> CreateEnvironmentMap(const std::string& filepath) = 0;
 
         virtual void RenderMesh(Ref<VertexInput> vertexInput, Ref<Mesh> mesh, Ref<Material> material,

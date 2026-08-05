@@ -359,7 +359,7 @@ namespace Prism
             case PrismShaderCompiler::PropertyType::Texture2D:
             {
                 auto texture2D = material.GetTexture2D(name);
-                if (Property(displayName, texture2D, m_CheckerboardTex.As<OpenGLTexture2D>()->GetRendererID()))
+                if (Property(displayName, texture2D, m_CheckerboardTex->GetImage()))
                 {
                     std::string filename = Application::Get().OpenFile("");
                     if (!filename.empty())
@@ -370,7 +370,7 @@ namespace Prism
             case PrismShaderCompiler::PropertyType::TextureCube:
             {
                 auto textureCube = material.GetTextureCube(name);
-                Property(displayName, textureCube, m_CheckerboardTex.As<OpenGLTexture2D>()->GetRendererID());
+                Property(displayName, textureCube, m_CheckerboardTex->GetImage());
                 break;
             }
             default:
@@ -578,20 +578,20 @@ namespace Prism
             ImGui::Begin("Toolbar");
             if (m_SceneState == SceneState::Edit)
             {
-                if (ImGui::ImageButton((ImTextureID)(m_PlayButtonTex.As<OpenGLTexture2D>()->GetRendererID()), ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), -1, ImVec4(0, 0, 0, 0), ImVec4(0.9f, 0.9f, 0.9f, 1.0f)))
+                if (UI::ImageButton(m_PlayButtonTex->GetImage(), ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), -1, ImVec4(0, 0, 0, 0), ImVec4(0.9f, 0.9f, 0.9f, 1.0f)))
                 {
                     OnScenePlay();
                 }
             }
             else if (m_SceneState == SceneState::Play)
             {
-                if (ImGui::ImageButton((ImTextureID)(m_PlayButtonTex.As<OpenGLTexture2D>()->GetRendererID()), ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), -1, ImVec4(1.0f, 1.0f, 1.0f, 0.2f)))
+                if (UI::ImageButton(m_PlayButtonTex->GetImage(), ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), -1, ImVec4(1.0f, 1.0f, 1.0f, 0.2f)))
                 {
                     OnSceneStop();
                 }
             }
             ImGui::SameLine();
-            if (ImGui::ImageButton((ImTextureID)(m_PlayButtonTex.As<OpenGLTexture2D>()->GetRendererID()), ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), -1, ImVec4(0, 0, 0, 0), ImVec4(1.0f, 1.0f, 1.0f, 0.6f)))
+            if (UI::ImageButton(m_PlayButtonTex->GetImage(), ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), -1, ImVec4(0, 0, 0, 0), ImVec4(1.0f, 1.0f, 1.0f, 0.6f)))
             {
                 PR_CORE_INFO("PLAY!");
             }

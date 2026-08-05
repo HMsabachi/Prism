@@ -56,6 +56,12 @@ namespace Prism {
         static Ref<Image2D> Create(ImageFormat format, uint32_t width, uint32_t height, const void* data = nullptr, uint32_t samples = 1);
     };
 
+    class PRISM_API ImageCube : public Image
+    {
+    public:
+        static Ref<ImageCube> Create(ImageFormat format, uint32_t width, uint32_t height, const void* data = nullptr);
+    };
+
     namespace Utils {
 
         inline uint32_t GetImageFormatBPP(ImageFormat format)

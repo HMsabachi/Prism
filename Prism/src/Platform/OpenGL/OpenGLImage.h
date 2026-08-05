@@ -40,6 +40,35 @@ namespace Prism {
         Buffer m_ImageData;
     };
 
+    class PRISM_API OpenGLImageCube : public ImageCube
+    {
+    public:
+        OpenGLImageCube(ImageFormat format, uint32_t width, uint32_t height, const void* data = nullptr);
+        virtual ~OpenGLImageCube();
+
+        virtual void Invalidate() override;
+        virtual void Release() override;
+
+        virtual ImageFormat GetFormat() const override { return m_Format; }
+        virtual uint32_t GetWidth() const override { return m_Width; }
+        virtual uint32_t GetHeight() const override { return m_Height; }
+        virtual uint32_t GetSamples() const override { return 1; }
+
+        virtual Buffer GetBuffer() const override { return m_ImageData; }
+        virtual Buffer& GetBuffer() override { return m_ImageData; }
+
+        RendererID& GetRendererID() { return m_RendererID; }
+        RendererID GetRendererID() const { return m_RendererID; }
+
+        virtual uint64_t GetHash() const override { return (uint64_t)m_RendererID; }
+    private:
+        RendererID m_RendererID = 0;
+        uint32_t m_Width, m_Height;
+        ImageFormat m_Format;
+
+        Buffer m_ImageData;
+    };
+
     namespace Utils {
         typedef unsigned int GLenum;
         constexpr GLenum P_GL_RGB = 0x1907;

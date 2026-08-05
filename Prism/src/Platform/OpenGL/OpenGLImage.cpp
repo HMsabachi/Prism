@@ -87,4 +87,63 @@ namespace Prism {
         m_ImageData.Release();
     }
 
+    //////////////////////////////////////////////////////////////////////////////////
+    // ImageCube
+    //////////////////////////////////////////////////////////////////////////////////
+
+    OpenGLImageCube::OpenGLImageCube(ImageFormat format, uint32_t width, uint32_t height, const void* data)
+        : m_Width(width), m_Height(height), m_Format(format)
+    {
+        if (data)
+            m_ImageData = Buffer::Copy(data, (uint64_t)Utils::GetImageFormatBPP(format) * width * height * 6);
+    }
+
+    OpenGLImageCube::~OpenGLImageCube()
+    {
+        m_ImageData.Release();
+        if (m_RendererID)
+        {
+            RendererID rendererID = m_RendererID;
+            Renderer::Submit([rendererID]()
+            {
+                glDeleteTextures(1, &rendererID);
+            });
+        }
+    }
+
+    void OpenGLImageCube::Invalidate()
+    {
+        if (m_RendererID)
+            Release();
+
+        uint32_t levels = Utils::CalculateMipCount(m_Width, m_Height);
+        GLenum internalFormat = Utils::OpenGLImageInternalFormat(m_Format);
+
+        glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &m_RendererID);
+        glTextureStorage2D(m_RendererID, levels, internalFormat, m_Width, m_Height);
+
+        if (m_ImageData)
+        {
+            GLenum format = Utils::OpenGLImageFormat(m_Format);
+            GLenum dataType = Utils::OpenGLFormatDataType(m_Format);
+            glTextureSubImage3D(m_RendererID, 0, 0, 0, 0, m_Width, m_Height, 6, format, dataType, m_ImageData.Data);
+        }
+
+        glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, levels > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+        glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    }
+
+    void OpenGLImageCube::Release()
+    {
+        if (m_RendererID)
+        {
+            glDeleteTextures(1, &m_RendererID);
+            m_RendererID = 0;
+        }
+        m_ImageData.Release();
+    }
+
 }
