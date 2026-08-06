@@ -50,25 +50,6 @@ namespace Prism
     static OpenGLRendererData* s_Data = nullptr;
     static Ref<ComputeShader> s_EnvironmentShader;
 
-    static uint32_t OpenGLTextureSlot(Config::TextureBinding binding)
-    {
-        using namespace Config;
-        switch (binding)
-        {
-        case TextureBinding::ShadowMap0:           return PRISM_OPENGL_SHADOW_MAP0;
-        case TextureBinding::ShadowMap1:           return PRISM_OPENGL_SHADOW_MAP1;
-        case TextureBinding::ShadowMap2:           return PRISM_OPENGL_SHADOW_MAP2;
-        case TextureBinding::ShadowMap3:           return PRISM_OPENGL_SHADOW_MAP3;
-        case TextureBinding::GeometryPassTexture:  return PRISM_OPENGL_GEOMETRY_PASS_TEXTURE;
-        case TextureBinding::EnvRadiance:          return PRISM_OPENGL_ENV_RADIANCE;
-        case TextureBinding::EnvIrradiance:        return PRISM_OPENGL_ENV_IRRADIANCE;
-        case TextureBinding::EnvBRDFLUT:           return PRISM_OPENGL_ENV_BRDF_LUT;
-        case TextureBinding::BloomTexture:         return PRISM_OPENGL_BLOOM_TEXTURE;
-        }
-        PR_CORE_ASSERT(false, "Unknown TextureBinding");
-        return 0;
-    }
-
     namespace Utils
     {
         static GLenum PrismToOpenGLPrimitiveType(PrimitiveType type)
@@ -306,20 +287,15 @@ namespace Prism
         // TODO: Phase 6 接入
     }
 
-    void OpenGLRenderer::SetGlobalTexture(Config::TextureBinding binding, Ref<Image> image)
+    void OpenGLRenderer::SetGlobalTexture(uint32_t slot, Ref<Image> image)
     {
-        s_Data->GlobalTextures[(int)binding] = image;
+        s_Data->GlobalTextures[slot] = image;
 
-        Ref<Image> captured = image;
-        Config::TextureBinding b = binding;
-        Renderer::Submit([captured, b]() {
-            if (!captured) return;
-            uint32_t slot = OpenGLTextureSlot(b);
-            if (b == Config::TextureBinding::EnvRadiance || b == Config::TextureBinding::EnvIrradiance)
-                captured.As<OpenGLImageCube>()->Bind(slot);
-            else
-                captured.As<OpenGLImage2D>()->Bind(slot);
-        });
+        uint32_t binding = slot + Config::PRISM_OPENGL_GLOBAL_TEXTURE_BEGIN;
+        if (auto* img2d = dynamic_cast<OpenGLImage2D*>(image.Raw()))
+            img2d->Bind(binding);
+        else if (auto* cube = dynamic_cast<OpenGLImageCube*>(image.Raw()))
+            cube->Bind(binding);
     }
 
     std::pair<Ref<TextureCube>, Ref<TextureCube>> OpenGLRenderer::CreateEnvironmentMap(const std::string& filepath)

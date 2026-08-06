@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "FrameUniformBuffer.h"
 #include "Prism/ShaderCompiler/PrismBindings.h"
 
