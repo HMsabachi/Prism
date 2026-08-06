@@ -24,6 +24,7 @@ namespace Prism
             const PrismShaderCompiler::PipelineState* stateOverride = nullptr) override;
 
         virtual void SetSceneEnvironment(const Ref<SceneEnvironment>& environment) override;
+        virtual void SetGlobalTexture(Config::TextureBinding binding, Ref<Image> image) override;
         virtual std::pair<Ref<TextureCube>, Ref<TextureCube>> CreateEnvironmentMap(const std::string& filepath) override;
 
         virtual void RenderMesh(Ref<VertexInput> vertexInput, Ref<Mesh> mesh, Ref<Material> material,

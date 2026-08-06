@@ -44,10 +44,30 @@ namespace Prism
         Ref<IndexBuffer> FullscreenQuadIB;
         std::unordered_map<Material*, MaterialUBOEntry> MaterialUBOs;
         RendererID LastComputeProgram = 0;
+        std::array<Ref<Image>, 9> GlobalTextures;
     };
 
     static OpenGLRendererData* s_Data = nullptr;
     static Ref<ComputeShader> s_EnvironmentShader;
+
+    static uint32_t OpenGLTextureSlot(Config::TextureBinding binding)
+    {
+        using namespace Config;
+        switch (binding)
+        {
+        case TextureBinding::ShadowMap0:           return PRISM_OPENGL_SHADOW_MAP0;
+        case TextureBinding::ShadowMap1:           return PRISM_OPENGL_SHADOW_MAP1;
+        case TextureBinding::ShadowMap2:           return PRISM_OPENGL_SHADOW_MAP2;
+        case TextureBinding::ShadowMap3:           return PRISM_OPENGL_SHADOW_MAP3;
+        case TextureBinding::GeometryPassTexture:  return PRISM_OPENGL_GEOMETRY_PASS_TEXTURE;
+        case TextureBinding::EnvRadiance:          return PRISM_OPENGL_ENV_RADIANCE;
+        case TextureBinding::EnvIrradiance:        return PRISM_OPENGL_ENV_IRRADIANCE;
+        case TextureBinding::EnvBRDFLUT:           return PRISM_OPENGL_ENV_BRDF_LUT;
+        case TextureBinding::BloomTexture:         return PRISM_OPENGL_BLOOM_TEXTURE;
+        }
+        PR_CORE_ASSERT(false, "Unknown TextureBinding");
+        return 0;
+    }
 
     namespace Utils
     {
@@ -286,6 +306,22 @@ namespace Prism
         // TODO: Phase 6 接入
     }
 
+    void OpenGLRenderer::SetGlobalTexture(Config::TextureBinding binding, Ref<Image> image)
+    {
+        s_Data->GlobalTextures[(int)binding] = image;
+
+        Ref<Image> captured = image;
+        Config::TextureBinding b = binding;
+        Renderer::Submit([captured, b]() {
+            if (!captured) return;
+            uint32_t slot = OpenGLTextureSlot(b);
+            if (b == Config::TextureBinding::EnvRadiance || b == Config::TextureBinding::EnvIrradiance)
+                captured.As<OpenGLImageCube>()->Bind(slot);
+            else
+                captured.As<OpenGLImage2D>()->Bind(slot);
+        });
+    }
+
     std::pair<Ref<TextureCube>, Ref<TextureCube>> OpenGLRenderer::CreateEnvironmentMap(const std::string& filepath)
     {
         PR_PROFILE_FUNCTION();
@@ -302,10 +338,10 @@ namespace Prism
         s_EnvironmentShader->SetTexture(toCubeKernel, "u_EquirectangularTex", envEquirect);
         s_EnvironmentShader->SetImage(toCubeKernel, "o_OutputCube", envUnfiltered);
         s_EnvironmentShader->Dispatch(toCubeKernel, cubemapSize / 32, cubemapSize / 32, 6);
-        envUnfiltered->GenerateMipMap();
+        envUnfiltered.As<OpenGLTextureCube>()->GenerateMipMap();
 
         Ref<TextureCube> envFiltered = TextureCube::Create(ImageFormat::RGBA16F, cubemapSize, cubemapSize);
-        envUnfiltered->CopyTo(envFiltered);
+        envUnfiltered.As<OpenGLTextureCube>()->CopyTo(envFiltered);
 
         Ref<UniformBuffer> mipFilterUBO = UniformBuffer::Create(4, sizeof(float));
         int mipFilter = s_EnvironmentShader->FindKernel("CSMipFilter");
@@ -326,7 +362,7 @@ namespace Prism
         s_EnvironmentShader->SetTexture(irradiance, "u_InputCubeMap", envFiltered);
         s_EnvironmentShader->SetImage(irradiance, "o_OutputCube", irradianceMap);
         s_EnvironmentShader->Dispatch(irradiance, irradianceMapSize / 32, irradianceMapSize / 32, 6);
-        irradianceMap->GenerateMipMap();
+        irradianceMap.As<OpenGLTextureCube>()->GenerateMipMap();
 
         return { envFiltered, irradianceMap };
     }
@@ -383,7 +419,7 @@ namespace Prism
             auto& entry = s_Data->MaterialUBOs[material.Raw()];
             if (!entry.UBO || entry.Size != size)
             {
-                entry.UBO = UniformBuffer::Create(Config::PRISM_BINDING_MATERIAL, size);
+                entry.UBO = UniformBuffer::Create(Config::PRISM_OPENGL_BINDING_MATERIAL, size);
                 entry.Size = size;
                 material->SetDirty(true);
             }
@@ -395,14 +431,14 @@ namespace Prism
             entry.UBO->Bind();
 
             const auto& textures = material->GetTextures();
-            for (size_t i = 0; i < textures.size(); i++)
+            for (const auto& [index, tex] : textures)
             {
-                // TODO: 这里需要考虑 TextureCube 的情况
-                if (!textures[i]) continue;
-                if (textures[i]->GetType() == TextureType::Texture2D)
-                    textures[i].As<OpenGLTexture2D>()->Bind((uint32_t)i + Config::PRISM_BINDING_TEXTURE);
+                if (!tex) continue;
+                uint32_t slot = index + Config::PRISM_OPENGL_TEXTURE_BEGIN_BINDING;
+                if (tex->GetType() == TextureType::Texture2D)
+                    tex.As<OpenGLTexture2D>()->GetImage().As<OpenGLImage2D>()->Bind(slot);
                 else
-                    textures[i].As<OpenGLTextureCube>()->Bind((uint32_t)i + Config::PRISM_BINDING_TEXTURE);
+                    tex.As<OpenGLTextureCube>()->GetImage().As<OpenGLImageCube>()->Bind(slot);
             }
             s_Data->LastMaterial = material;
         }

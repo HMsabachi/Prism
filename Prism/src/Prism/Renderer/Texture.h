@@ -35,9 +35,6 @@ namespace Prism {
     public:
         virtual ~Texture() {}
 
-        virtual void Bind(uint32_t slot = 0) const = 0;
-        virtual void BindImage(uint32_t slot, TextureAccess access, bool layered = true, uint32_t mipLevel = 0) const = 0;
-
         virtual ImageFormat GetFormat() const = 0;
 
         virtual uint32_t GetWidth() const = 0;
@@ -78,10 +75,6 @@ namespace Prism {
         static Ref<TextureCube> Create(ImageFormat format, uint32_t width, uint32_t height, const void* data = nullptr);
 
         virtual const std::string& GetPath() const = 0;
-
-        virtual void GenerateMipMap() const = 0;
-
-        virtual void CopyTo(Ref<TextureCube> destination) const = 0;
 
         virtual Ref<ImageCube> GetImage() const = 0;
 

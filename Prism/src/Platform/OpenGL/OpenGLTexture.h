@@ -14,8 +14,7 @@ namespace Prism {
         OpenGLTexture2D(const std::string& path, bool srgb);
         virtual ~OpenGLTexture2D();
 
-        virtual void Bind(uint32_t slot = 0) const override;
-        virtual void BindImage(uint32_t slot, TextureAccess access, bool layered = true, uint32_t mipLevel = 0) const override;
+        virtual void Bind(uint32_t slot = 0) const;
 
         virtual ImageFormat GetFormat() const override { return m_Image->GetFormat(); }
         virtual uint32_t GetWidth() const override { return m_Width; }
@@ -60,7 +59,6 @@ namespace Prism {
         virtual ~OpenGLTextureCube();
 
         virtual void Bind(uint32_t slot = 0) const;
-        virtual void BindImage(uint32_t slot, TextureAccess access, bool layered = true, uint32_t mipLevel = 0) const override;
 
         virtual ImageFormat GetFormat() const override { return m_Image->GetFormat(); }
         virtual uint32_t GetWidth() const override { return m_Image->GetWidth(); }
@@ -69,8 +67,8 @@ namespace Prism {
         // not present mips in data
         virtual uint32_t GetMipLevelCount() const override;
 
-        virtual void GenerateMipMap() const override;
-        virtual void CopyTo(Ref<TextureCube> destination) const override;
+        void GenerateMipMap() const;
+        void CopyTo(Ref<TextureCube> destination) const;
 
         virtual const std::string& GetPath() const override { return FilePath; }
         virtual uint64_t GetHash() const override { return m_Image->GetHash(); }

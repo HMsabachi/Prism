@@ -29,7 +29,8 @@ namespace Prism
     {
         using namespace PrismShaderCompiler;
 
-        CompilerConfig config;
+        CompilerConfig config = {
+        };
         config.IncludeRoot = "Assets/Shaders/Include";
         config.ReadFile = &Prism::File::ReadFile;
         config.OnLog = &ShaderCompiler_LogCallback;

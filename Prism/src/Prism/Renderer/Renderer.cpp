@@ -74,6 +74,7 @@ namespace Prism
     void Renderer::EndRenderPass() { s_RendererAPI->EndRenderPass(); }
     void Renderer::SubmitFullscreenQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const PrismShaderCompiler::PipelineState* stateOverride) { s_RendererAPI->SubmitFullscreenQuad(vertexInput, material, stateOverride); }
     void Renderer::SetSceneEnvironment(const Ref<SceneEnvironment>& environment) { s_RendererAPI->SetSceneEnvironment(environment); }
+    void Renderer::SetGlobalTexture(Config::TextureBinding binding, Ref<Image> image) { s_RendererAPI->SetGlobalTexture(binding, image); }
     std::pair<Ref<TextureCube>, Ref<TextureCube>> Renderer::CreateEnvironmentMap(const std::string& filepath) { return s_RendererAPI->CreateEnvironmentMap(filepath); }
     void Renderer::RenderMesh(Ref<VertexInput> vertexInput, Ref<Mesh> mesh, Ref<Material> material, uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass, const PrismShaderCompiler::PipelineState* stateOverride) { s_RendererAPI->RenderMesh(vertexInput, mesh, material, submeshIndex, transform, pass, stateOverride); }
     void Renderer::RenderQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const glm::mat4& transform, const PrismShaderCompiler::PipelineState* stateOverride) { s_RendererAPI->RenderQuad(vertexInput, material, transform, stateOverride); }

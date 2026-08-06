@@ -4,6 +4,7 @@
 #include "Prism/Core/Buffer.h"
 #include <glm/glm.hpp>
 #include <string>
+#include <map>
 #include <vector>
 
 namespace Prism
@@ -67,7 +68,7 @@ namespace Prism
         uint32_t GetPassCount() const { return m_Shader->GetPassCount(); }
 
         const Buffer& GetPropertyBuffer() const { return m_PropertyBuffer; }
-        const std::vector<Ref<Texture>>& GetTextures() const { return m_Textures; }
+        const std::map<uint32_t, Ref<Texture>>& GetTextures() const { return m_Textures; }
         bool IsDirty() const { return m_Dirty; }
         void SetDirty(bool dirty) { m_Dirty = dirty; }
 
@@ -79,7 +80,7 @@ namespace Prism
         Ref<PrismShader> m_Shader;
         std::string m_Name;
         Buffer m_PropertyBuffer;
-        std::vector<Ref<Texture>> m_Textures;
+        std::map<uint32_t, Ref<Texture>> m_Textures;
         std::vector<PrismShaderCompiler::AST::ShaderUniform> m_Uniforms;
         KeywordMask m_KeywordMask = 0;
         ShaderReloadedToken m_ReloadToken = 0;

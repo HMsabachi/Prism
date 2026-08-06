@@ -22,17 +22,6 @@ namespace Prism {
         PR_CORE_ASSERT(false, "Unknown texture format!");
         return 0;
     }
-    static GLenum PrismToOpenGLTextureAccess(TextureAccess access)
-    {
-        switch (access)
-        {
-        case Prism::TextureAccess::ReadOnly:  return GL_READ_ONLY;
-        case Prism::TextureAccess::WriteOnly: return GL_WRITE_ONLY;
-        case Prism::TextureAccess::ReadWrite: return GL_READ_WRITE;
-        }
-        PR_CORE_ASSERT(false, "Unknown texture format!");
-        return 0;
-    }
 
     //////////////////////////////////////////////////////////////////////////////////
     // Texture2D
@@ -130,16 +119,6 @@ namespace Prism {
         });
     }
 
-    void OpenGLTexture2D::BindImage(uint32_t slot, TextureAccess access, bool layered, uint32_t mipLevel) const
-    {
-        Ref<const OpenGLTexture2D> instance = this;
-        Renderer::Submit([=]()
-        {
-            instance->m_BindSlot = slot;
-            glBindImageTexture(slot, instance->m_Image.As<OpenGLImage2D>()->GetRendererID(), mipLevel, layered, 0, PrismToOpenGLTextureAccess(access), PrismToOpenGLTextureFormat(instance->m_Image->GetFormat()));
-        });
-    }
-
     void OpenGLTexture2D::Lock()
     {
         m_Locked = true;
@@ -194,16 +173,6 @@ namespace Prism {
             instance->m_BindSlot = slot;
             glBindTextureUnit(slot, instance->GetRendererID());
             });
-    }
-
-    void OpenGLTextureCube::BindImage(uint32_t slot, TextureAccess access, bool layered /*= true*/, uint32_t mipLevel) const
-    {
-        Ref<const OpenGLTextureCube> instance = this;
-        Renderer::Submit([=]() mutable
-        {
-            instance->m_BindSlot = slot;
-            glBindImageTexture(slot, instance->GetRendererID(), mipLevel, layered, 0, PrismToOpenGLTextureAccess(access), PrismToOpenGLTextureFormat(instance->GetFormat()));
-        });
     }
 
     uint32_t OpenGLTextureCube::GetMipLevelCount() const

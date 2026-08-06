@@ -56,9 +56,6 @@ namespace Prism {
         virtual void Resize(uint32_t width, uint32_t height, bool forceRecreate = false) = 0;
         virtual void AddResizeCallback(const std::function<void(Ref<Framebuffer>)>& func) = 0;
 
-        virtual void BindTexture(uint32_t attachmentIndex = 0, uint32_t slot = 0) const = 0;
-        virtual void BindDepthTexture(uint32_t slot = 0) const = 0;
-
         virtual uint32_t GetWidth() const = 0;
         virtual uint32_t GetHeight() const = 0;
 

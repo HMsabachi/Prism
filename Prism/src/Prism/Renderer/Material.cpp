@@ -2,7 +2,6 @@
 #include "Material.h"
 #include "Prism/Asset/AssetManager.h"
 #include "Prism/Renderer/Texture.h"
-#include "Prism/ShaderCompiler/PrismBindings.h"
 
 namespace Prism
 {
@@ -61,11 +60,6 @@ namespace Prism
         auto& layout = m_Shader->GetMaterialLayout();
         uint32_t totalSize = layout.GetTotalSize();
         m_PropertyBuffer.Allocate(totalSize);
-        uint32_t maxTexSlot = 0;
-        for (auto& uni : m_Shader->GetUniforms())
-            if (uni.TextureSlot > (int32_t)maxTexSlot)
-                maxTexSlot = (uint32_t)uni.TextureSlot;
-        m_Textures.resize(maxTexSlot + 1);
         for (auto& uni : m_Shader->GetUniforms())
         {
             auto it = std::find_if(m_Uniforms.begin(), m_Uniforms.end(), [&](const PrismShaderCompiler::AST::ShaderUniform& u) { return u.Name == uni.Name; });
@@ -75,9 +69,9 @@ namespace Prism
                 uint32_t size = (uint32_t)uni.BufferSize;
                 if (PrismShaderCompiler::PropertyTypeUtil::IsTextureType(uni.Type))
                 {
-                    uint32_t tempSlot = (uint32_t)it->TextureSlot - Prism::Config::PRISM_BINDING_TEXTURE;
-                    uint32_t slot = (uint32_t)uni.TextureSlot - Prism::Config::PRISM_BINDING_TEXTURE;
-                    m_Textures[slot] = tempTextures[tempSlot];
+                    auto texIt = tempTextures.find((uint32_t)it->TextureSlot);
+                    if (texIt != tempTextures.end())
+                        m_Textures[(uint32_t)uni.TextureSlot] = texIt->second;
                     continue;
                 }
                 m_PropertyBuffer.Write((const byte*)&tempBuffer.Data[it->BufferOffset], size, offset);
@@ -168,18 +162,14 @@ namespace Prism
     {
         auto* uni = m_Shader->FindUniform(name);
         if (!uni || uni->TextureSlot < 0) { PR_CORE_WARN("Material::SetTexture - '{0}' not found", name); return; }
-        uint32_t slot = (uint32_t)uni->TextureSlot - Prism::Config::PRISM_BINDING_TEXTURE;
-        if (m_Textures.size() <= slot) m_Textures.resize(slot + 1);
-        m_Textures[slot] = texture;
+        m_Textures[(uint32_t)uni->TextureSlot] = texture;
     }
 
     void Material::SetTexture(const std::string& name, const Ref<TextureCube>& texture)
     {
         auto* uni = m_Shader->FindUniform(name);
         if (!uni || uni->TextureSlot < 0) { PR_CORE_WARN("Material::SetTexture - '{0}' not found", name); return; }
-        uint32_t slot = (uint32_t)uni->TextureSlot - Prism::Config::PRISM_BINDING_TEXTURE;
-        if (m_Textures.size() <= slot) m_Textures.resize(slot + 1);
-        m_Textures[slot] = texture;
+        m_Textures[(uint32_t)uni->TextureSlot] = texture;
     }
 
 #pragma endregion
@@ -260,18 +250,18 @@ namespace Prism
     {
         auto* uni = m_Shader->FindUniform(name);
         if (!uni || uni->TextureSlot < 0 || uni->Type != PrismShaderCompiler::PropertyType::Texture2D) return nullptr;
-        uint32_t slot = (uint32_t)uni->TextureSlot - Prism::Config::PRISM_BINDING_TEXTURE;
-        if (slot >= m_Textures.size()) return nullptr;
-        return m_Textures[slot].As<Texture2D>();
+        auto it = m_Textures.find((uint32_t)uni->TextureSlot);
+        if (it == m_Textures.end()) return nullptr;
+        return it->second.As<Texture2D>();
     }
 
     Ref<TextureCube> Material::GetTextureCube(const std::string& name) const
     {
         auto* uni = m_Shader->FindUniform(name);
         if (!uni || uni->TextureSlot < 0 || uni->Type != PrismShaderCompiler::PropertyType::TextureCube) return nullptr;
-        uint32_t slot = (uint32_t)uni->TextureSlot - Prism::Config::PRISM_BINDING_TEXTURE;
-        if (slot >= m_Textures.size()) return nullptr;
-        return m_Textures[slot].As<TextureCube>();
+        auto it = m_Textures.find((uint32_t)uni->TextureSlot);
+        if (it == m_Textures.end()) return nullptr;
+        return it->second.As<TextureCube>();
     }
 
     bool Material::HasProperty(const std::string& name) const

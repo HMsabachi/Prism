@@ -147,21 +147,4 @@ namespace Prism {
         });
     }
 
-    void OpenGLFramebuffer::BindTexture(uint32_t attachmentIndex, uint32_t slot) const
-    {
-        Ref<const OpenGLFramebuffer> instance = this;
-        Renderer::Submit([instance, attachmentIndex, slot]() {
-            glBindTextureUnit(slot, instance->m_ColorAttachments[attachmentIndex].As<OpenGLImage2D>()->GetRendererID());
-        });
-    }
-
-    void OpenGLFramebuffer::BindDepthTexture(uint32_t slot) const
-    {
-        Ref<const OpenGLFramebuffer> instance = this;
-        Renderer::Submit([instance, slot]() {
-            RendererID id = instance->m_DepthAttachment ? instance->m_DepthAttachment.As<OpenGLImage2D>()->GetRendererID() : 0;
-            glBindTextureUnit(slot, id);
-        });
-    }
-
 }

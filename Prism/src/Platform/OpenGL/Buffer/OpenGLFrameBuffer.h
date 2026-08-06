@@ -17,9 +17,6 @@ namespace Prism {
         virtual void Bind() const override;
         virtual void Unbind() const override;
 
-        virtual void BindTexture(uint32_t attachmentIndex = 0, uint32_t slot = 0) const override;
-        virtual void BindDepthTexture(uint32_t slot = 0) const override;
-
         virtual uint32_t GetWidth() const override { return m_Width; }
         virtual uint32_t GetHeight() const override { return m_Height; }
 

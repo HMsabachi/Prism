@@ -2,6 +2,7 @@
 #include "RendererTypes.h"
 #include "Prism/Utilities/BitFlags.h"
 #include "Prism/Core/Ref.h"
+#include "Prism/ShaderCompiler/PrismBindings.h"
 
 #include <string>
 #include <utility>
@@ -17,6 +18,7 @@ namespace Prism
     class Mesh;
     class Material;
     class TextureCube;
+    class Image;
     class Image2D;
     class SceneEnvironment;
     class Shader;
@@ -25,6 +27,8 @@ namespace Prism
     class Texture;
 
     using RendererID = uint32_t;
+    
+    namespace Config { enum class TextureBinding : int; }
 
     enum class RendererAPIType
     {
@@ -101,6 +105,7 @@ namespace Prism
         virtual void SubmitFullscreenQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const PrismShaderCompiler::PipelineState* stateOverride = nullptr) = 0;
 
         virtual void SetSceneEnvironment(const Ref<SceneEnvironment>& environment) = 0;
+        virtual void SetGlobalTexture(Config::TextureBinding binding, Ref<Image> image) = 0;
         virtual std::pair<Ref<TextureCube>, Ref<TextureCube>> CreateEnvironmentMap(const std::string& filepath) = 0;
 
         virtual void RenderMesh(Ref<VertexInput> vertexInput, Ref<Mesh> mesh, Ref<Material> material,

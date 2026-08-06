@@ -217,7 +217,8 @@ namespace Prism
         DrawFullscreen(config.SkyboxMaterial);
 
         for (int i = 0; i < 4; i++)
-            m_ShadowPasses[i]->GetSpecification().TargetFramebuffer->BindDepthTexture(Config::PRISM_SHADOW_MAP0 + i);
+            Renderer::SetGlobalTexture((Config::TextureBinding)((int)Config::TextureBinding::ShadowMap0 + i),
+                m_ShadowPasses[i]->GetSpecification().TargetFramebuffer->GetDepthImage());
 
         if (!drawList.empty())
         {
@@ -314,7 +315,8 @@ namespace Prism
     {
         PR_PROFILE_FUNCTION();
         Renderer::BeginRenderPass(m_CompositePass);
-        m_GeoPass->GetSpecification().TargetFramebuffer->BindTexture(0, Config::PRISM_GEOMETRY_PASS_TEXTURE);
+        Renderer::SetGlobalTexture(Config::TextureBinding::GeometryPassTexture,
+            m_GeoPass->GetSpecification().TargetFramebuffer->GetImage(0));
 
         float exposure = 0.8f;
         m_CompositeMaterial->SetFloat("u_Exposure", exposure);
@@ -339,12 +341,12 @@ namespace Prism
             if (i > 0)
             {
                 auto fb = m_BloomBlurPass[1 - index]->GetSpecification().TargetFramebuffer;
-                fb->BindTexture(0, Config::PRISM_GEOMETRY_PASS_TEXTURE);
+                Renderer::SetGlobalTexture(Config::TextureBinding::GeometryPassTexture, fb->GetImage(0));
             }
             else
             {
                 auto fb = m_GeoPass->GetSpecification().TargetFramebuffer;
-                fb->BindTexture(1, Config::PRISM_GEOMETRY_PASS_TEXTURE);
+                Renderer::SetGlobalTexture(Config::TextureBinding::GeometryPassTexture, fb->GetImage(1));
             }
             DrawFullscreen(m_BloomBlurMaterial);
             Renderer::EndRenderPass();
@@ -358,8 +360,10 @@ namespace Prism
         m_BloomBlendMaterial->SetFloat("u_Exposure", 0.8f);
         m_BloomBlendMaterial->SetBool("u_EnableBloom", true);
 
-        m_GeoPass->GetSpecification().TargetFramebuffer->BindTexture(0, Config::PRISM_GEOMETRY_PASS_TEXTURE);
-        m_BloomBlurPass[1]->GetSpecification().TargetFramebuffer->BindTexture(0, Config::PRISM_BLOOM_TEXTURE);
+        Renderer::SetGlobalTexture(Config::TextureBinding::GeometryPassTexture,
+            m_GeoPass->GetSpecification().TargetFramebuffer->GetImage(0));
+        Renderer::SetGlobalTexture(Config::TextureBinding::BloomTexture,
+            m_BloomBlurPass[1]->GetSpecification().TargetFramebuffer->GetImage(0));
 
         DrawFullscreen(m_BloomBlendMaterial);
         Renderer::EndRenderPass();
@@ -411,10 +415,10 @@ namespace Prism
         Renderer::SetSceneEnvironment(config.SceneEnvironment);
         if (config.SceneEnvironment && config.SceneEnvironment->RadianceMap && config.SceneEnvironment->IrradianceMap)
         {
-            config.SceneEnvironment->RadianceMap->Bind(Config::PRISM_ENV_RADIANCE);
-            config.SceneEnvironment->IrradianceMap->Bind(Config::PRISM_ENV_IRRADIANCE);
+            Renderer::SetGlobalTexture(Config::TextureBinding::EnvRadiance, config.SceneEnvironment->RadianceMap->GetImage());
+            Renderer::SetGlobalTexture(Config::TextureBinding::EnvIrradiance, config.SceneEnvironment->IrradianceMap->GetImage());
         }
-        m_BRDFLUT->Bind(Config::PRISM_ENV_BRDF_LUT);
+        Renderer::SetGlobalTexture(Config::TextureBinding::EnvBRDFLUT, m_BRDFLUT->GetImage());
     }
 
     void SceneRenderer::UpdateShadowData(const FrameSnapshot& snapshot)
