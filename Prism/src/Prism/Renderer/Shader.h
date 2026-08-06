@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Prism/Core/Core.h"
 #include "Prism/Renderer/RendererAPI.h"
@@ -24,10 +24,8 @@ namespace Prism
 
         virtual void DispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ) = 0;
 
-        static Shader* Create(const std::string& vertexSource, const std::string& fragmentSource);
-        static Shader* Create(const std::string& computeSource);
-
-        static std::vector<Shader*> s_AllShaders;
+        static Ref<Shader> Create(const void* vertexSource, const void* fragmentSource);
+        static Ref<Shader> Create(const void* computeSource);
     };
 
 }

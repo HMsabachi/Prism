@@ -8,8 +8,8 @@ namespace Prism {
     class PRISM_API OpenGLShader : public Shader
     {
     public:
-        OpenGLShader(const std::string& vertexSource, const std::string& fragmentSource);
-        OpenGLShader(const std::string& computeSource);
+        OpenGLShader(const char* vertexSource, const char* fragmentSource);
+        OpenGLShader(const char* computeSource);
         virtual ~OpenGLShader();
 
         virtual void Reload() override {}

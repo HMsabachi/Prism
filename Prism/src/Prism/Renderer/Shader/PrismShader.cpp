@@ -87,7 +87,7 @@ namespace Prism
                 pass.Name, out.VertexShader.size(), out.FragmentShader.size());
 
             m_Passes.push_back(std::move(pass));
-            m_VariantCache[i][0] = Ref<Shader>(Shader::Create(out.VertexShader, out.FragmentShader));
+            m_VariantCache[i][0] = Shader::Create(out.VertexShader.c_str(), out.FragmentShader.c_str());
         }
     }
 
@@ -138,7 +138,7 @@ namespace Prism
             {
                 auto keywords = KeywordsForMask(sub);
                 auto out = compiler.GenerateGLSL(m_Compiled, p, keywords);
-                m_VariantCache[p][sub] = Ref<Shader>(Shader::Create(out.VertexShader, out.FragmentShader));
+                m_VariantCache[p][sub] = Shader::Create(out.VertexShader.c_str(), out.FragmentShader.c_str());
                 PR_CORE_INFO("  Pass '{}' variant: [{}]", m_Passes[p].Name, Utilities::Join(keywords, ", "));
             }
         }
@@ -220,7 +220,7 @@ namespace Prism
         auto& compiler = ShaderCompiler::Get();
         auto keywords = KeywordsForMask(localMask);
         auto out = compiler.GenerateGLSL(m_Compiled, passIndex, keywords);
-        Ref<Shader> program = Ref<Shader>(Shader::Create(out.VertexShader, out.FragmentShader));
+        Ref<Shader> program = Shader::Create(out.VertexShader.c_str(), out.FragmentShader.c_str());
         passCache[localMask] = program;
         PR_CORE_TRACE("Shader'{}' Pass'{}' variant:[{}]", m_Name, m_Passes[passIndex].Name, Utilities::Join(keywords, ", "));
         return program;

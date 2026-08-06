@@ -41,4 +41,6 @@ PRISM_FRAME_LAYOUT uniform PrismFrame
     vec4 Prism_ShadowData;
 };
 
+#undef PRISM_FRAME_LAYOUT
+
 #endif

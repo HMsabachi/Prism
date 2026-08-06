@@ -19,4 +19,6 @@ PRISM_OBJECT_LAYOUT uniform PrismObject
     mat4 Prism_Bones[PRISM_MAX_BONES];
 };
 
+#undef PRISM_OBJECT_LAYOUT
+
 #endif

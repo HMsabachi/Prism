@@ -7,14 +7,14 @@
 
 namespace Prism
 {
-    OpenGLShader::OpenGLShader(const std::string& vertexSource, const std::string& fragmentSource)
+    OpenGLShader::OpenGLShader(const char* vertexSource, const char* fragmentSource)
         : m_Name(""), m_VertexSource(vertexSource), m_FragmentSource(fragmentSource)
     {
         Ref<OpenGLShader> instance = this;
         Renderer::Submit([instance]() mutable { instance->CompileAndUploadShader(); });
     }
 
-    OpenGLShader::OpenGLShader(const std::string& computeSource)
+    OpenGLShader::OpenGLShader(const char* computeSource)
         : m_Name(""), m_ComputeSource(computeSource), m_IsCompute(true)
     {
         Ref<OpenGLShader> instance = this;

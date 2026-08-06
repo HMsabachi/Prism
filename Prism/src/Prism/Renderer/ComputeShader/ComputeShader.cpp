@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "../Shader.h"
 #include "ComputeShader.h"
 
@@ -99,7 +99,7 @@ namespace Prism
 			k.groupSizeZ = m_Compiled.Kernels[i].GroupSizeZ;
 
 			if (out.Errors.empty() && !out.Source.empty())
-				k.shader.Reset(Shader::Create(out.Source));
+				k.shader = Shader::Create(out.Source.c_str());
 			else
 				PR_CORE_ERROR("ComputeShader::Load - kernel '{}' produced no GLSL, skipped", k.name);
 

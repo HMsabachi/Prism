@@ -16,4 +16,6 @@ PRISM_TEX(PRISM_ENV_IRRADIANCE_BINDING)        uniform samplerCube Prism_EnvIrra
 PRISM_TEX(PRISM_ENV_BRDF_LUT_BINDING)          uniform sampler2D   Prism_BRDFLUT;
 PRISM_TEX(PRISM_BLOOM_TEXTURE_BINDING)         uniform sampler2D   Prism_BloomTexture;
 
+#undef PRISM_TEX
+
 #endif

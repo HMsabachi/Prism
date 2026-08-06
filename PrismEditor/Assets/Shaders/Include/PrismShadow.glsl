@@ -14,6 +14,8 @@ PRISM_SHADOW_TEX(PRISM_SHADOW_MAP1_BINDING) uniform sampler2D Prism_ShadowMap1;
 PRISM_SHADOW_TEX(PRISM_SHADOW_MAP2_BINDING) uniform sampler2D Prism_ShadowMap2;
 PRISM_SHADOW_TEX(PRISM_SHADOW_MAP3_BINDING) uniform sampler2D Prism_ShadowMap3;
 
+#undef PRISM_SHADOW_TEX
+
 const vec2 PoissonDistribution[64] = vec2[](
     vec2(-0.884081,  0.124488), vec2(-0.714377,  0.027940),
     vec2(-0.747945,  0.227922), vec2(-0.939609,  0.243634),
