@@ -217,7 +217,7 @@ namespace Prism
         DrawFullscreen(config.SkyboxMaterial);
 
         for (int i = 0; i < 4; i++)
-            Renderer::SetGlobalTexture(Config::PRISM_SHADOW_MAP0_SLOT + i,
+            Renderer::SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_SHADOW_MAP0_SLOT + i,
                 m_ShadowPasses[i]->GetSpecification().TargetFramebuffer->GetDepthImage());
 
         if (!drawList.empty())
@@ -315,7 +315,7 @@ namespace Prism
     {
         PR_PROFILE_FUNCTION();
         Renderer::BeginRenderPass(m_CompositePass);
-        Renderer::SetGlobalTexture(Config::PRISM_GEOMETRY_PASS_TEXTURE_SLOT,
+        Renderer::SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_GEOMETRY_PASS_TEXTURE_SLOT,
             m_GeoPass->GetSpecification().TargetFramebuffer->GetImage(0));
 
         float exposure = 0.8f;
@@ -341,12 +341,12 @@ namespace Prism
             if (i > 0)
             {
                 auto fb = m_BloomBlurPass[1 - index]->GetSpecification().TargetFramebuffer;
-                Renderer::SetGlobalTexture(Config::PRISM_GEOMETRY_PASS_TEXTURE_SLOT, fb->GetImage(0));
+                Renderer::SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_GEOMETRY_PASS_TEXTURE_SLOT, fb->GetImage(0));
             }
             else
             {
                 auto fb = m_GeoPass->GetSpecification().TargetFramebuffer;
-                Renderer::SetGlobalTexture(Config::PRISM_GEOMETRY_PASS_TEXTURE_SLOT, fb->GetImage(1));
+                Renderer::SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_GEOMETRY_PASS_TEXTURE_SLOT, fb->GetImage(1));
             }
             DrawFullscreen(m_BloomBlurMaterial);
             Renderer::EndRenderPass();
@@ -360,9 +360,9 @@ namespace Prism
         m_BloomBlendMaterial->SetFloat("u_Exposure", 0.8f);
         m_BloomBlendMaterial->SetBool("u_EnableBloom", true);
 
-        Renderer::SetGlobalTexture(Config::PRISM_GEOMETRY_PASS_TEXTURE_SLOT,
+        Renderer::SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_GEOMETRY_PASS_TEXTURE_SLOT,
             m_GeoPass->GetSpecification().TargetFramebuffer->GetImage(0));
-        Renderer::SetGlobalTexture(Config::PRISM_BLOOM_TEXTURE_SLOT,
+        Renderer::SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_BLOOM_TEXTURE_SLOT,
             m_BloomBlurPass[1]->GetSpecification().TargetFramebuffer->GetImage(0));
 
         DrawFullscreen(m_BloomBlendMaterial);
@@ -415,10 +415,10 @@ namespace Prism
         Renderer::SetSceneEnvironment(config.SceneEnvironment);
         if (config.SceneEnvironment && config.SceneEnvironment->RadianceMap && config.SceneEnvironment->IrradianceMap)
         {
-            Renderer::SetGlobalTexture(Config::PRISM_ENV_RADIANCE_SLOT, config.SceneEnvironment->RadianceMap->GetImage());
-            Renderer::SetGlobalTexture(Config::PRISM_ENV_IRRADIANCE_SLOT, config.SceneEnvironment->IrradianceMap->GetImage());
+            Renderer::SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_ENV_RADIANCE_SLOT, config.SceneEnvironment->RadianceMap->GetImage());
+            Renderer::SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_ENV_IRRADIANCE_SLOT, config.SceneEnvironment->IrradianceMap->GetImage());
         }
-        Renderer::SetGlobalTexture(Config::PRISM_ENV_BRDF_LUT_SLOT, m_BRDFLUT->GetImage());
+        Renderer::SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_ENV_BRDF_LUT_SLOT, m_BRDFLUT->GetImage());
     }
 
     void SceneRenderer::UpdateShadowData(const FrameSnapshot& snapshot)

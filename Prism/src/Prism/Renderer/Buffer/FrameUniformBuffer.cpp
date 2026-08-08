@@ -1,12 +1,13 @@
 ﻿#include "prpch.h"
 #include "FrameUniformBuffer.h"
+#include "Prism/Renderer/Renderer.h"
 #include "Prism/ShaderCompiler/PrismBindings.h"
 
 namespace Prism
 {
     void FrameUniformBuffer::Init()
     {
-        m_Buffer = UniformBuffer::Create(Prism::Config::PRISM_OPENGL_BINDING_FRAME, sizeof(Data));
+        m_Buffer = UniformBuffer::Create(sizeof(Data));
     }
 
     void FrameUniformBuffer::SetViewProjection(const glm::mat4& vp)
@@ -83,6 +84,6 @@ namespace Prism
 
     void FrameUniformBuffer::Bind() const
     {
-        m_Buffer->Bind();
+        Renderer::SetUniformBuffer(Config::PRISM_SET_FRAME, 0, m_Buffer);
     }
 }

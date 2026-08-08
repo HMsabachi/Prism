@@ -1,4 +1,4 @@
-﻿#include "prpch.h"
+#include "prpch.h"
 #include "OpenGLUniformBuffer.h"
 
 #include "Prism/Renderer/Renderer.h"
@@ -6,14 +6,13 @@
 namespace Prism
 {
 
-    OpenGLUniformBuffer::OpenGLUniformBuffer(uint32_t binding, uint32_t size)
-        : m_Binding(binding), m_Size(size)
+    OpenGLUniformBuffer::OpenGLUniformBuffer(uint32_t size)
+        : m_Size(size)
     {
         Ref<OpenGLUniformBuffer> instance = this;
         Renderer::Submit([instance]() mutable {
             glCreateBuffers(1, &instance->m_RendererID);
             glNamedBufferData(instance->m_RendererID, instance->m_Size, nullptr, GL_DYNAMIC_DRAW);
-            glBindBufferBase(GL_UNIFORM_BUFFER, instance->m_Binding, instance->m_RendererID);
         });
     }
 
@@ -42,14 +41,6 @@ namespace Prism
         Ref<OpenGLUniformBuffer> instance = this;
         Renderer::Submit([instance, copy, offset, size]() {
             glNamedBufferSubData(instance->m_RendererID, offset, size, copy);
-        });
-    }
-
-    void OpenGLUniformBuffer::Bind() const
-    {
-        Ref<const OpenGLUniformBuffer> instance = this;
-        Renderer::Submit([instance]() {
-            glBindBufferBase(GL_UNIFORM_BUFFER, instance->m_Binding, instance->m_RendererID);
         });
     }
 

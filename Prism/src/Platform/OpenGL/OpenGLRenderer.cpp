@@ -44,7 +44,7 @@ namespace Prism
         Ref<IndexBuffer> FullscreenQuadIB;
         std::unordered_map<Material*, MaterialUBOEntry> MaterialUBOs;
         RendererID LastComputeProgram = 0;
-        std::array<Ref<Image>, 9> GlobalTextures;
+        uint32_t TextureUnitTier = 32;
     };
 
     static OpenGLRendererData* s_Data = nullptr;
@@ -177,6 +177,10 @@ namespace Prism
         glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &caps.MaxGroupCount[0]);
         glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &caps.MaxGroupSize[0]);
         glGetIntegerv(GL_MAX_COMPUTE_WORK_GROUP_INVOCATIONS, &caps.MaxInvocations);
+
+        GLint maxFragmentTextureUnits = 0;
+        glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxFragmentTextureUnits);
+        s_Data->TextureUnitTier = (maxFragmentTextureUnits >= 32) ? 32 : 16;
     }
 
     void OpenGLRenderer::Init()
@@ -287,15 +291,77 @@ namespace Prism
         // TODO: Phase 6 接入
     }
 
-    void OpenGLRenderer::SetGlobalTexture(uint32_t slot, Ref<Image> image)
+    uint32_t OpenGLRenderer::FlatUBO(uint32_t set, uint32_t binding)
     {
-        s_Data->GlobalTextures[slot] = image;
+        switch (set)
+        {
+        case Config::PRISM_SET_FRAME:       return Config::GL_UBO_BASE_FRAME + binding;
+        case Config::PRISM_SET_RENDER_PASS: return Config::GL_UBO_BASE_RENDER_PASS + binding;
+        case Config::PRISM_SET_TRANSFORMS:  return Config::GL_UBO_BASE_TRANSFORMS + binding;
+        case Config::PRISM_SET_MATERIAL:    return Config::GL_UBO_BASE_MATERIAL + binding;
+        }
+        PR_CORE_ASSERT(false, "FlatUBO: invalid set");
+        return 0;
+    }
 
-        uint32_t binding = slot + Config::PRISM_OPENGL_GLOBAL_TEXTURE_BEGIN;
-        if (auto* img2d = dynamic_cast<OpenGLImage2D*>(image.Raw()))
-            img2d->Bind(binding);
-        else if (auto* cube = dynamic_cast<OpenGLImageCube*>(image.Raw()))
-            cube->Bind(binding);
+    uint32_t OpenGLRenderer::FlatSSBO(uint32_t set, uint32_t binding)
+    {
+        switch (set)
+        {
+        case Config::PRISM_SET_FRAME:       return Config::GL_SSBO_BASE_FRAME + binding;
+        case Config::PRISM_SET_RENDER_PASS: return Config::GL_SSBO_BASE_RENDER_PASS + binding;
+        case Config::PRISM_SET_TRANSFORMS:  return Config::GL_SSBO_BASE_TRANSFORMS + binding;
+        case Config::PRISM_SET_MATERIAL:    return Config::GL_SSBO_BASE_MATERIAL + binding;
+        }
+        PR_CORE_ASSERT(false, "FlatSSBO: invalid set");
+        return 0;
+    }
+
+    uint32_t OpenGLRenderer::FlatTexture(uint32_t set, uint32_t binding) const
+    {
+        if (s_Data->TextureUnitTier >= 32)
+        {
+            if (set == Config::PRISM_SET_FRAME)       return Config::GL_TEX_BASE_FRAME + binding;
+            if (set == Config::PRISM_SET_RENDER_PASS) return Config::GL_TEX_BASE_RENDER_PASS + binding;
+            if (set == Config::PRISM_SET_MATERIAL)    return Config::GL_TEX_BASE_MATERIAL + binding;
+        }
+        else
+        {
+            if (set == Config::PRISM_SET_FRAME)       return Config::GL_TEX16_BASE_FRAME + binding;
+            if (set == Config::PRISM_SET_RENDER_PASS) return Config::GL_TEX16_BASE_RENDER_PASS + binding;
+            if (set == Config::PRISM_SET_MATERIAL)    return Config::GL_TEX16_BASE_MATERIAL + binding;
+        }
+        PR_CORE_ASSERT(false, "FlatTexture: invalid set");
+        return 0;
+    }
+
+    void OpenGLRenderer::SetUniformBuffer(uint32_t set, uint32_t binding, Ref<UniformBuffer> ubo)
+    {
+        uint32_t point = FlatUBO(set, binding);
+        Renderer::Submit([point, ubo]() {
+            GLuint id = ubo.As<OpenGLUniformBuffer>()->GetRendererID();
+            glBindBufferBase(GL_UNIFORM_BUFFER, point, id);
+        });
+    }
+
+    void OpenGLRenderer::SetShaderStorageBuffer(uint32_t set, uint32_t binding, Ref<ShaderStorageBuffer> ssbo)
+    {
+        uint32_t point = FlatSSBO(set, binding);
+        Renderer::Submit([point, ssbo]() {
+            GLuint id = ssbo.As<OpenGLShaderStorageBuffer>()->GetRendererID();
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, point, id);
+        });
+    }
+
+    void OpenGLRenderer::SetTexture(uint32_t set, uint32_t binding, Ref<Image> image)
+    {
+        uint32_t unit = FlatTexture(set, binding);
+        Renderer::Submit([unit, image]() {
+            if (auto* img2d = dynamic_cast<OpenGLImage2D*>(const_cast<Image*>(image.Raw())))
+                glBindTextureUnit(unit, img2d->GetRendererID());
+            else if (auto* cube = dynamic_cast<OpenGLImageCube*>(const_cast<Image*>(image.Raw())))
+                glBindTextureUnit(unit, cube->GetRendererID());
+            });
     }
 
     std::pair<Ref<TextureCube>, Ref<TextureCube>> OpenGLRenderer::CreateEnvironmentMap(const std::string& filepath)
@@ -319,7 +385,7 @@ namespace Prism
         Ref<TextureCube> envFiltered = TextureCube::Create(ImageFormat::RGBA16F, cubemapSize, cubemapSize);
         envUnfiltered.As<OpenGLTextureCube>()->CopyTo(envFiltered);
 
-        Ref<UniformBuffer> mipFilterUBO = UniformBuffer::Create(4, sizeof(float));
+        Ref<UniformBuffer> mipFilterUBO = UniformBuffer::Create(sizeof(float));
         int mipFilter = s_EnvironmentShader->FindKernel("CSMipFilter");
         s_EnvironmentShader->SetTexture(mipFilter, "u_InputCubeMap", envUnfiltered);
         const float deltaRoughness = 1.0f / glm::max((float)(envFiltered->GetMipLevelCount() - 1.0f), 1.0f);
@@ -395,7 +461,7 @@ namespace Prism
             auto& entry = s_Data->MaterialUBOs[material.Raw()];
             if (!entry.UBO || entry.Size != size)
             {
-                entry.UBO = UniformBuffer::Create(Config::PRISM_OPENGL_BINDING_MATERIAL, size);
+                entry.UBO = UniformBuffer::Create(size);
                 entry.Size = size;
                 material->SetDirty(true);
             }
@@ -404,17 +470,17 @@ namespace Prism
                 entry.UBO->SetData(material->GetPropertyBuffer());
                 material->SetDirty(false);
             }
-            entry.UBO->Bind();
+            Renderer::SetUniformBuffer(Config::PRISM_SET_MATERIAL, 0, entry.UBO);
 
             const auto& textures = material->GetTextures();
             for (const auto& [index, tex] : textures)
             {
                 if (!tex) continue;
-                uint32_t slot = index + Config::PRISM_OPENGL_TEXTURE_BEGIN_BINDING;
+                uint32_t unit = FlatTexture(Config::PRISM_SET_MATERIAL, index);
                 if (tex->GetType() == TextureType::Texture2D)
-                    tex.As<OpenGLTexture2D>()->GetImage().As<OpenGLImage2D>()->Bind(slot);
+                    tex.As<OpenGLTexture2D>()->GetImage().As<OpenGLImage2D>()->Bind(unit);
                 else
-                    tex.As<OpenGLTextureCube>()->GetImage().As<OpenGLImageCube>()->Bind(slot);
+                    tex.As<OpenGLTextureCube>()->GetImage().As<OpenGLImageCube>()->Bind(unit);
             }
             s_Data->LastMaterial = material;
         }

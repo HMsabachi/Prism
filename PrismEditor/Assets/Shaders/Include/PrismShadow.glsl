@@ -6,7 +6,7 @@
 #if PRISM_BACKEND_OPENGL
 #define PRISM_SHADOW_TEX(q) layout(binding = q)
 #elif PRISM_BACKEND_VULKAN
-#define PRISM_SHADOW_TEX(q) layout(set = PRISM_SET_FRAME, binding = q)
+#define PRISM_SHADOW_TEX(q) layout(set = PRISM_SET_RENDER_PASS, binding = q)
 #endif
 
 PRISM_SHADOW_TEX(PRISM_SHADOW_MAP0_BINDING) uniform sampler2D Prism_ShadowMap0;

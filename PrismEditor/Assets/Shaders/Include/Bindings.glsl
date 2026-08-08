@@ -3,39 +3,18 @@
 
 #if PRISM_BACKEND_OPENGL
 
-#   define PRISM_SET_FRAME     0
-#   define PRISM_SET_OBJECT    1
-#   define PRISM_SET_MATERIAL  2
+// OpenGL: 4 个独立编号空间(UBO/SSBO/Texture/Image),layout(binding=物理号)
+// UBO 空间(GL_UNIFORM_BUFFER)
+#   define PRISM_SET_FRAME        0
+#   define PRISM_SET_RENDER_PASS  1
+#   define PRISM_SET_OBJECT       2
+#   define PRISM_SET_MATERIAL     3
 
 #   define PRISM_BINDING_FRAME    0
-#   define PRISM_BINDING_OBJECT   1
-#   define PRISM_BINDING_MATERIAL 2
+#   define PRISM_BINDING_OBJECT   16
+#   define PRISM_BINDING_MATERIAL 20
 
-#   define PRISM_SHADOW_MAP0_BINDING   3
-#   define PRISM_SHADOW_MAP1_BINDING   4
-#   define PRISM_SHADOW_MAP2_BINDING   5
-#   define PRISM_SHADOW_MAP3_BINDING   6
-
-#   define PRISM_GEOMETRY_PASS_TEXTURE_BINDING 7
-
-#   define PRISM_ENV_RADIANCE_BINDING    8
-#   define PRISM_ENV_IRRADIANCE_BINDING  9
-#   define PRISM_ENV_BRDF_LUT_BINDING    10
-
-#   define PRISM_BLOOM_TEXTURE_BINDING 11
-
-#   define PRISM_BINDING_TEXTURE 16
-
-#elif PRISM_BACKEND_VULKAN
-
-#   define PRISM_SET_FRAME     0
-#   define PRISM_SET_OBJECT    1
-#   define PRISM_SET_MATERIAL  2
-
-#   define PRISM_BINDING_FRAME    0
-#   define PRISM_BINDING_OBJECT   0
-#   define PRISM_BINDING_MATERIAL 0
-
+// Texture 空间(set1 RENDER_PASS)
 #   define PRISM_SHADOW_MAP0_BINDING   1
 #   define PRISM_SHADOW_MAP1_BINDING   2
 #   define PRISM_SHADOW_MAP2_BINDING   3
@@ -48,6 +27,38 @@
 #   define PRISM_ENV_BRDF_LUT_BINDING    8
 
 #   define PRISM_BLOOM_TEXTURE_BINDING 9
+
+// Texture 空间(set3 MATERIAL)
+#   define PRISM_BINDING_TEXTURE 12
+
+#elif PRISM_BACKEND_VULKAN
+
+// Vulkan: set/binding 直通
+#   define PRISM_SET_FRAME        0
+#   define PRISM_SET_RENDER_PASS  1
+#   define PRISM_SET_OBJECT       2
+#   define PRISM_SET_MATERIAL     3
+
+#   define PRISM_BINDING_FRAME    0
+#   define PRISM_BINDING_OBJECT   0
+#   define PRISM_BINDING_MATERIAL 0
+
+// Texture(set1 RENDER_PASS)
+#   define PRISM_SHADOW_MAP0_BINDING   0
+#   define PRISM_SHADOW_MAP1_BINDING   1
+#   define PRISM_SHADOW_MAP2_BINDING   2
+#   define PRISM_SHADOW_MAP3_BINDING   3
+
+#   define PRISM_GEOMETRY_PASS_TEXTURE_BINDING 4
+
+#   define PRISM_ENV_RADIANCE_BINDING    5
+#   define PRISM_ENV_IRRADIANCE_BINDING  6
+#   define PRISM_ENV_BRDF_LUT_BINDING    7
+
+#   define PRISM_BLOOM_TEXTURE_BINDING 8
+
+// Texture(set3 MATERIAL)
+#   define PRISM_BINDING_TEXTURE 0
 
 #endif
 

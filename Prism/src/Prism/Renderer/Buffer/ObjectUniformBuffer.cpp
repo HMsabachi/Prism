@@ -1,5 +1,6 @@
 ﻿#include "prpch.h"
 #include "ObjectUniformBuffer.h"
+#include "Prism/Renderer/Renderer.h"
 #include "Prism/ShaderCompiler/PrismBindings.h"
 
 namespace Prism
@@ -7,7 +8,7 @@ namespace Prism
 
     void ObjectUniformBuffer::Init()
     {
-        m_Buffer = UniformBuffer::Create(Prism::Config::PRISM_OPENGL_BINDING_OBJECT, sizeof(Data));
+        m_Buffer = UniformBuffer::Create(sizeof(Data));
     }
 
     void ObjectUniformBuffer::SetModel(const glm::mat4& model)
@@ -34,6 +35,6 @@ namespace Prism
 
     void ObjectUniformBuffer::Bind() const
     {
-        m_Buffer->Bind();
+        Renderer::SetUniformBuffer(Config::PRISM_SET_TRANSFORMS, 0, m_Buffer);
     }
 }

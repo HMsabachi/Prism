@@ -27,24 +27,6 @@ namespace Prism
         });
     }
 
-    void OpenGLShaderStorageBuffer::Bind(uint32_t bindingPoint) const
-    {
-        Ref<const OpenGLShaderStorageBuffer> instance = this;
-        Renderer::Submit([instance, bindingPoint]() {
-            instance->m_BindingPoint = bindingPoint;
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, bindingPoint, instance->m_RendererID);
-        });
-    }
-
-    void OpenGLShaderStorageBuffer::Unbind() const
-    {
-        Ref<const OpenGLShaderStorageBuffer> instance = this;
-        Renderer::Submit([instance]() {
-            instance->m_BindingPoint = 0;
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
-        });
-    }
-
     void OpenGLShaderStorageBuffer::SetData(const void* data, size_t size, size_t offset /*= 0*/)
     {
         Ref<const OpenGLShaderStorageBuffer> instance = this;
@@ -74,10 +56,6 @@ namespace Prism
     size_t OpenGLShaderStorageBuffer::GetSize() const
     {
         return m_Size;
-    }
-    uint32_t OpenGLShaderStorageBuffer::GetBindingPoint() const
-    {
-        return m_BindingPoint;
     }
 
 }

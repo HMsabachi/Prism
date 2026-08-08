@@ -24,8 +24,11 @@ namespace Prism
             const PrismShaderCompiler::PipelineState* stateOverride = nullptr) override;
 
         virtual void SetSceneEnvironment(const Ref<SceneEnvironment>& environment) override;
-        virtual void SetGlobalTexture(uint32_t slot, Ref<Image> image) override;
         virtual std::pair<Ref<TextureCube>, Ref<TextureCube>> CreateEnvironmentMap(const std::string& filepath) override;
+
+        virtual void SetUniformBuffer(uint32_t set, uint32_t binding, Ref<UniformBuffer> ubo) override;
+        virtual void SetShaderStorageBuffer(uint32_t set, uint32_t binding, Ref<ShaderStorageBuffer> ssbo) override;
+        virtual void SetTexture(uint32_t set, uint32_t binding, Ref<Image> image) override;
 
         virtual void RenderMesh(Ref<VertexInput> vertexInput, Ref<Mesh> mesh, Ref<Material> material,
             uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass,
@@ -41,5 +44,9 @@ namespace Prism
 
     private:
         void BindMaterial(Ref<Material> material, uint32_t pass, const PrismShaderCompiler::PipelineState* stateOverride = nullptr);
+
+        static uint32_t FlatUBO(uint32_t set, uint32_t binding);
+        static uint32_t FlatSSBO(uint32_t set, uint32_t binding);
+        uint32_t FlatTexture(uint32_t set, uint32_t binding) const;
     };
 }

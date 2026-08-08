@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Prism/Renderer/Buffer/ShaderStorageBuffer.h"
 
 namespace Prism
@@ -11,24 +11,15 @@ namespace Prism
 
         virtual ~OpenGLShaderStorageBuffer() override;
 
-        virtual void Bind(uint32_t bindingPoint) const override;
-        virtual uint32_t GetBindingPoint() const override;
-
-        virtual void Unbind() const override;
-
         virtual void SetData(const void* data, size_t size, size_t offset = 0) override;
         virtual void GetData(void* data, size_t size, size_t offset = 0, bool sync = false) const override;
 
-
         RendererID GetRendererID() const;
         virtual size_t GetSize() const override;
-
-
 
     private:
         RendererID m_RendererID;
         size_t m_Size;
         BufferUsage m_Usage;
-        mutable uint32_t m_BindingPoint;
     };
 }
