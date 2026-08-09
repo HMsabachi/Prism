@@ -35,6 +35,8 @@ Shader "Standard/PrismPBR"
                 #pragma shader_feature SKINNED SHOW_CASCADES
                 #pragma shader_feature ALBEDO_MAP NORMAL_MAP METALNESS_MAP ROUGHNESS_MAP
                 #include "PrismEngine.glsl"
+                #include "Pass/GeometryPass.glsl"
+                #include "PrismShadow.glsl"
                 attribute vec3 a_Position : POSITION;
                 attribute vec3 a_Normal : NORMAL;
                 attribute vec3 a_Tangent : TANGENT;
@@ -44,9 +46,6 @@ Shader "Standard/PrismPBR"
                 attribute ivec4 a_BoneIndices : BONEINDICES;
                 attribute vec4 a_BoneWeights : BONEWEIGHTS;
             #endif
-
-                layout(location = 0) out vec4 FragColor;
-                layout(location = 1) out vec4 BloomColor;
 
                 varying VertexOutput
                 {
@@ -286,6 +285,7 @@ Shader "Standard/PrismPBR"
             {
                 #pragma shader_feature SKINNED
                 #include "PrismEngine.glsl"
+                #include "Pass/ShadowPass.glsl"
 
                 attribute vec3 a_Position : POSITION;
             #ifdef SKINNED

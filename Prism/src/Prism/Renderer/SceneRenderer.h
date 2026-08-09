@@ -5,8 +5,6 @@
 
 #include "Prism/Renderer/Camera/Camera.h"
 #include "Prism/Renderer/RenderConfig.h"
-#include "Prism/Renderer/Buffer/FrameUniformBuffer.h"
-#include "Prism/Renderer/Buffer/ObjectUniformBuffer.h"
 
 namespace Prism
 {
@@ -19,6 +17,7 @@ namespace Prism
     class IndexBuffer;
     class VertexInput;
     class Image2D;
+    class UniformBuffer;
 
     struct RendererCamera
     {
@@ -89,8 +88,56 @@ namespace Prism
 
         static constexpr uint32_t SHADOW_MAP_SIZE = 2048;
 
-        FrameUniformBuffer m_FrameUBO;
-        ObjectUniformBuffer m_ObjectUBO;
+        static constexpr uint32_t PRISM_MAX_LIGHTS = 1;
+        static constexpr uint32_t PRISM_MAX_CASCADES = 4;
+        static constexpr uint32_t PRISM_MAX_BONES = 128;
+
+        struct alignas(16) FrameData
+        {
+            glm::mat4 ViewProjection{ 1.0f };
+            glm::mat4 InverseViewProjection{ 1.0f };
+            glm::mat4 View{ 1.0f };
+            glm::mat4 Projection{ 1.0f };
+
+            glm::vec4 Time{ 0.0f };
+
+            glm::vec3 CameraPosition{ 0.0f };
+            float DeltaTime{ 0.0f };
+
+            glm::vec2 Resolution{ 1280.0f, 720.0f };
+            float AspectRatio{ 1.0f };
+            float pad0{ 0.0f };
+
+            struct Light
+            {
+                glm::vec3 Direction{};
+                float pad1{};
+                glm::vec3 Radiance{};
+                float Multiplier{};
+            } Lights[PRISM_MAX_LIGHTS];
+
+            glm::mat4 ShadowMatrices[PRISM_MAX_CASCADES]{};
+            glm::vec4 CascadeSplits{};
+            glm::vec4 ShadowParams{};
+            glm::vec4 ShadowData{};
+        };
+
+        struct alignas(16) ObjectData
+        {
+            glm::mat4 Model{ 1.0f };
+            glm::mat4 PrevModel{ 1.0f };
+            glm::vec4 Reserved{ 0.0f };
+            glm::mat4 Bones[PRISM_MAX_BONES]{};
+        };
+
+        FrameData m_FrameData;
+        Ref<UniformBuffer> m_FrameUBO;
+        ObjectData m_ObjectData;
+        Ref<UniformBuffer> m_ObjectUBO;
+        bool m_ObjectBonesDirty = false;
+
+        void SetObjectBones(const glm::mat4* bones, uint32_t count);
+        void UploadObjectUBO();
 
         Ref<VertexInput> m_FullscreenQuadPipeline;
 

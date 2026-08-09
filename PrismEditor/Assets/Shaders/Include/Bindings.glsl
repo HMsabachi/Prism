@@ -14,21 +14,8 @@
 #   define PRISM_BINDING_OBJECT   16
 #   define PRISM_BINDING_MATERIAL 20
 
-// Texture 空间(set1 RENDER_PASS)
-#   define PRISM_SHADOW_MAP0_BINDING   1
-#   define PRISM_SHADOW_MAP1_BINDING   2
-#   define PRISM_SHADOW_MAP2_BINDING   3
-#   define PRISM_SHADOW_MAP3_BINDING   4
+#   define PRISM_PASS_TEX(slot) layout(binding = (1 + (slot)))
 
-#   define PRISM_GEOMETRY_PASS_TEXTURE_BINDING 5
-
-#   define PRISM_ENV_RADIANCE_BINDING    6
-#   define PRISM_ENV_IRRADIANCE_BINDING  7
-#   define PRISM_ENV_BRDF_LUT_BINDING    8
-
-#   define PRISM_BLOOM_TEXTURE_BINDING 9
-
-// Texture 空间(set3 MATERIAL)
 #   define PRISM_BINDING_TEXTURE 12
 
 #elif PRISM_BACKEND_VULKAN
@@ -43,19 +30,8 @@
 #   define PRISM_BINDING_OBJECT   0
 #   define PRISM_BINDING_MATERIAL 0
 
-// Texture(set1 RENDER_PASS)
-#   define PRISM_SHADOW_MAP0_BINDING   0
-#   define PRISM_SHADOW_MAP1_BINDING   1
-#   define PRISM_SHADOW_MAP2_BINDING   2
-#   define PRISM_SHADOW_MAP3_BINDING   3
-
-#   define PRISM_GEOMETRY_PASS_TEXTURE_BINDING 4
-
-#   define PRISM_ENV_RADIANCE_BINDING    5
-#   define PRISM_ENV_IRRADIANCE_BINDING  6
-#   define PRISM_ENV_BRDF_LUT_BINDING    7
-
-#   define PRISM_BLOOM_TEXTURE_BINDING 8
+// Texture(set1 RENDER_PASS, per-pass 复用)
+#   define PRISM_PASS_TEX(slot) layout(set = PRISM_SET_RENDER_PASS, binding = (slot))
 
 // Texture(set3 MATERIAL)
 #   define PRISM_BINDING_TEXTURE 0

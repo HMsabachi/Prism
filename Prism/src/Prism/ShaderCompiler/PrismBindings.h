@@ -60,15 +60,25 @@ namespace Prism::Config
     constexpr uint32_t PRISM_OPENGL_TEXTURE_BEGIN_BINDING = GL_TEX_BASE_MATERIAL;  // 12
 
     // 全局 texture 逻辑槽位(set1 RENDER_PASS 内 binding)
-    constexpr uint32_t PRISM_SHADOW_MAP0_SLOT           = 0;
-    constexpr uint32_t PRISM_SHADOW_MAP1_SLOT           = 1;
-    constexpr uint32_t PRISM_SHADOW_MAP2_SLOT           = 2;
-    constexpr uint32_t PRISM_SHADOW_MAP3_SLOT           = 3;
-    constexpr uint32_t PRISM_GEOMETRY_PASS_TEXTURE_SLOT = 4;
-    constexpr uint32_t PRISM_ENV_RADIANCE_SLOT          = 5;
-    constexpr uint32_t PRISM_ENV_IRRADIANCE_SLOT        = 6;
-    constexpr uint32_t PRISM_ENV_BRDF_LUT_SLOT          = 7;
-    constexpr uint32_t PRISM_BLOOM_TEXTURE_SLOT         = 8;
+    // per-pass 复用:每个 pass 的槽位都从 0 数,不跨 pass 独占。
+    // GeometryPass:shadow 0-3 + env 4-6 (共 7 个)
+    constexpr uint32_t PRISM_GEOMETRY_SHADOW_MAP0_SLOT = 0;
+    constexpr uint32_t PRISM_GEOMETRY_SHADOW_MAP1_SLOT = 1;
+    constexpr uint32_t PRISM_GEOMETRY_SHADOW_MAP2_SLOT = 2;
+    constexpr uint32_t PRISM_GEOMETRY_SHADOW_MAP3_SLOT = 3;
+    constexpr uint32_t PRISM_GEOMETRY_ENV_RADIANCE_SLOT  = 4;
+    constexpr uint32_t PRISM_GEOMETRY_ENV_IRRADIANCE_SLOT = 5;
+    constexpr uint32_t PRISM_GEOMETRY_ENV_BRDF_LUT_SLOT  = 6;
+
+    // CompositePass:geo color (1 个)
+    constexpr uint32_t PRISM_COMPOSITE_GEOMETRY_COLOR_SLOT = 0;
+
+    // BloomBlurPass:blur input (1 个)
+    constexpr uint32_t PRISM_BLOOM_BLUR_INPUT_SLOT = 0;
+
+    // BloomBlendPass:geo color + bloom (2 个)
+    constexpr uint32_t PRISM_BLOOM_BLEND_GEOMETRY_COLOR_SLOT = 0;
+    constexpr uint32_t PRISM_BLOOM_BLEND_BLOOM_SLOT = 1;
 
     //==================================================
     // Vulkan(直通, set/binding)

@@ -1,20 +1,7 @@
 #ifndef PRISM_SHADOW
 #define PRISM_SHADOW
 
-// PrismShadow.glsl
-
-#if PRISM_BACKEND_OPENGL
-#define PRISM_SHADOW_TEX(q) layout(binding = q)
-#elif PRISM_BACKEND_VULKAN
-#define PRISM_SHADOW_TEX(q) layout(set = PRISM_SET_RENDER_PASS, binding = q)
-#endif
-
-PRISM_SHADOW_TEX(PRISM_SHADOW_MAP0_BINDING) uniform sampler2D Prism_ShadowMap0;
-PRISM_SHADOW_TEX(PRISM_SHADOW_MAP1_BINDING) uniform sampler2D Prism_ShadowMap1;
-PRISM_SHADOW_TEX(PRISM_SHADOW_MAP2_BINDING) uniform sampler2D Prism_ShadowMap2;
-PRISM_SHADOW_TEX(PRISM_SHADOW_MAP3_BINDING) uniform sampler2D Prism_ShadowMap3;
-
-#undef PRISM_SHADOW_TEX
+#include "Pass/GeometryPass.glsl"
 
 const vec2 PoissonDistribution[64] = vec2[](
     vec2(-0.884081,  0.124488), vec2(-0.714377,  0.027940),

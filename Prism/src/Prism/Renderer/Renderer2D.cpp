@@ -11,7 +11,6 @@
 #include "Prism/Renderer/Shader/PrismShader.h"
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Asset/AssetManager.h"
-#include "Buffer/ObjectUniformBuffer.h"
 
 #include "Prism/ShaderCompiler/PrismBindings.h"
 
@@ -90,15 +89,12 @@ namespace Prism
         bool DepthTest = true;
 
         Renderer2D::Statistics Stats;
-
-        ObjectUniformBuffer ObjectUBO;
     };
 
     static Renderer2DData s_Data;
 
     void Renderer2D::Init()
     {
-        s_Data.ObjectUBO.Init();
         {
             VertexInputSpecification pipelineSpec;
             pipelineSpec.Layout = {
@@ -219,8 +215,6 @@ namespace Prism
             s_Data.QuadVertexBuffer->SetData(s_Data.QuadVertexBufferBase, dataSize);
 
             s_Data.TextureShader->GetPassProgram(0, 0)->Bind();
-            s_Data.ObjectUBO.Upload();
-            s_Data.ObjectUBO.Bind();
 
             for (uint32_t i = 0; i < s_Data.TextureSlotIndex; i++)
                 s_Data.TextureSlots[i]->Bind(Prism::Config::PRISM_BINDING_TEXTURE + i);
@@ -237,8 +231,6 @@ namespace Prism
             s_Data.LineVertexBuffer->SetData(s_Data.LineVertexBufferBase, dataSize);
 
             s_Data.LineShader->GetPassProgram(0, 0)->Bind();
-            s_Data.ObjectUBO.Upload();
-            s_Data.ObjectUBO.Bind();
 
             s_Data.LinePipeline->Bind();
             s_Data.LineIndexBuffer->Bind();
@@ -253,8 +245,6 @@ namespace Prism
             s_Data.CircleVertexBuffer->SetData(s_Data.CircleVertexBufferBase, dataSize);
 
             s_Data.CircleShader->GetPassProgram(0, 0)->Bind();
-            s_Data.ObjectUBO.Upload();
-            s_Data.ObjectUBO.Bind();
 
             s_Data.CircleVertexBuffer->Bind();
             s_Data.CirclePipeline->Bind();

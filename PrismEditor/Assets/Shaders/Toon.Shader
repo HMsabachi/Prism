@@ -54,6 +54,8 @@ Shader "Custom/Toon"
                 #pragma shader_feature SKINNED
                 #pragma shader_feature ALBEDO_MAP NORMAL_MAP EMISSION_MAP
                 #include "PrismEngine.glsl"
+                #include "Pass/GeometryPass.glsl"
+                #include "PrismShadow.glsl"
 
                 attribute vec3 a_Position : POSITION;
                 attribute vec3 a_Normal : NORMAL;
@@ -64,9 +66,6 @@ Shader "Custom/Toon"
                 attribute ivec4 a_BoneIndices : BONEINDICES;
                 attribute vec4 a_BoneWeights : BONEWEIGHTS;
             #endif
-
-                layout(location = 0) out vec4 FragColor;
-                layout(location = 1) out vec4 BloomColor;
 
                 varying VertexOutput
                 {
@@ -203,6 +202,7 @@ Shader "Custom/Toon"
             {
                 #pragma shader_feature SKINNED
                 #include "PrismEngine.glsl"
+                #include "Pass/GeometryPass.glsl"
 
                 attribute vec3 a_Position : POSITION;
                 attribute vec3 a_Normal : NORMAL;
@@ -210,8 +210,6 @@ Shader "Custom/Toon"
                 attribute ivec4 a_BoneIndices : BONEINDICES;
                 attribute vec4 a_BoneWeights : BONEWEIGHTS;
             #endif
-
-                layout(location = 0) out vec4 FragColor;
 
                 void vert()
                 {

@@ -14,11 +14,10 @@ Shader "PostProcess/BloomBlur"
             GLSL
             {
                 #include "PrismEngine.glsl"
+                #include "Pass/BloomBlurPass.glsl"
 
                 attribute vec3 a_Position : POSITION;
                 attribute vec2 a_TexCoord : TEXCOORD0;
-
-                layout(location = 0) out vec4 FragColor;
 
                 varying VertexOutput
                 {
@@ -37,27 +36,27 @@ Shader "PostProcess/BloomBlur"
 #if 0
                     float weight[5] = float[] (0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
 
-                    vec2 tex_offset = 1.0 / vec2(textureSize(Prism_GeometryPassTexture));
-                    vec3 result = texelFetch(Prism_GeometryPassTexture, ivec2(vs_Output.TexCoord * vec2(textureSize(Prism_GeometryPassTexture))), 0).rgb * weight[0];
+                    vec2 tex_offset = 1.0 / vec2(textureSize(Prism_BloomInputTexture));
+                    vec3 result = texelFetch(Prism_BloomInputTexture, ivec2(vs_Output.TexCoord * vec2(textureSize(Prism_BloomInputTexture))), 0).rgb * weight[0];
                     if (u_Horizontal)
                     {
                         for (int i = 1; i < 5; ++i)
                         {
-                            result += texelFetch(Prism_GeometryPassTexture, ivec2((vs_Output.TexCoord + vec2(tex_offset.x * float(i), 0.0)) * vec2(textureSize(Prism_GeometryPassTexture))), 0).rgb * weight[i];
-                            result += texelFetch(Prism_GeometryPassTexture, ivec2((vs_Output.TexCoord - vec2(tex_offset.x * float(i), 0.0)) * vec2(textureSize(Prism_GeometryPassTexture))), 0).rgb * weight[i];
+                            result += texelFetch(Prism_BloomInputTexture, ivec2((vs_Output.TexCoord + vec2(tex_offset.x * float(i), 0.0)) * vec2(textureSize(Prism_BloomInputTexture))), 0).rgb * weight[i];
+                            result += texelFetch(Prism_BloomInputTexture, ivec2((vs_Output.TexCoord - vec2(tex_offset.x * float(i), 0.0)) * vec2(textureSize(Prism_BloomInputTexture))), 0).rgb * weight[i];
                         }
                     }
                     else
                     {
                         for (int i = 1; i < 5; ++i)
                         {
-                            result += texelFetch(Prism_GeometryPassTexture, ivec2((vs_Output.TexCoord + vec2(0.0, tex_offset.y * float(i))) * vec2(textureSize(Prism_GeometryPassTexture))), 0).rgb * weight[i];
-                            result += texelFetch(Prism_GeometryPassTexture, ivec2((vs_Output.TexCoord - vec2(0.0, tex_offset.y * float(i))) * vec2(textureSize(Prism_GeometryPassTexture))), 0).rgb * weight[i];
+                            result += texelFetch(Prism_BloomInputTexture, ivec2((vs_Output.TexCoord + vec2(0.0, tex_offset.y * float(i))) * vec2(textureSize(Prism_BloomInputTexture))), 0).rgb * weight[i];
+                            result += texelFetch(Prism_BloomInputTexture, ivec2((vs_Output.TexCoord - vec2(0.0, tex_offset.y * float(i))) * vec2(textureSize(Prism_BloomInputTexture))), 0).rgb * weight[i];
                         }
                     }
                     FragColor = vec4(result, 1.0);
 #else
-                    FragColor = texelFetch(Prism_GeometryPassTexture, ivec2(vs_Output.TexCoord * vec2(textureSize(Prism_GeometryPassTexture))), 0);
+                    FragColor = texelFetch(Prism_BloomInputTexture, ivec2(vs_Output.TexCoord * vec2(textureSize(Prism_BloomInputTexture))), 0);
 #endif
                 }
             }
