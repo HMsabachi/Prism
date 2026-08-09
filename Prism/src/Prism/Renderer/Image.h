@@ -73,6 +73,7 @@ namespace Prism {
                 case ImageFormat::RGBA:    return 4;
                 case ImageFormat::RGBA16F: return 2 * 4;
                 case ImageFormat::RGBA32F: return 4 * 4;
+                case ImageFormat::RG32F:   return 2 * 4;
             }
             PR_CORE_ASSERT(false, "Unknown image format");
             return 0;

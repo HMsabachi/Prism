@@ -32,7 +32,7 @@ namespace Prism {
         }
     }
 
-    void OpenGLImage2D::Invalidate()
+    void OpenGLImage2D::Invalidate() 
     {
         if (m_RendererID)
             Release();

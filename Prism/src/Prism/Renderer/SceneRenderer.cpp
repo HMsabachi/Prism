@@ -18,6 +18,9 @@
 #include "Prism/ShaderCompiler/PrismBindings.h"
 #include "Prism/Renderer/Camera/Camera.h"
 
+#include "Prism/ImGui/ImGui.h"
+#include "Prism/Core/LanguageManager.h"
+
 #include "Prism/Core/Hash.h"
 
 namespace Prism
@@ -51,7 +54,6 @@ namespace Prism
         geoFBSpec.Width = viewportWidth;
         geoFBSpec.Height = viewportHeight;
         geoFBSpec.Attachments = { ImageFormat::RGBA16F, ImageFormat::RGBA16F, ImageFormat::Depth };
-        geoFBSpec.Samples = 8;
         geoFBSpec.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
 
         RenderPassSpecification geoRPSpec;
@@ -68,9 +70,10 @@ namespace Prism
         compRPSpec.TargetFramebuffer = Framebuffer::Create(compFBSpec);
         m_CompositePass = RenderPass::Create(compRPSpec);
 
-        m_CompositeShader = AssetManager::GetShaderLibrary()->Get("Custom/SceneComposite");
-        m_CompositeMaterial = Material::Create(m_CompositeShader->Handle);
         m_BRDFLUT = Texture2D::Create("Assets/Textures/BRDF_LUT.tga");
+
+        auto compositeShader = AssetManager::GetShaderLibrary()->Get("Custom/SceneComposite");
+        m_CompositeMaterial = Material::Create(compositeShader->Handle);
 
         auto gridShader = AssetManager::GetShaderLibrary()->Get("Custom/Grid");
         m_GridMaterial = Material::Create(gridShader->Handle);
@@ -142,6 +145,40 @@ namespace Prism
         m_BloomBlendMaterial.Reset();
 
         m_FullscreenQuadPipeline.Reset();
+    }
+
+
+    void SceneRenderer::OnImGuiRender()
+    {
+        ImGui::Begin("SceneRenderer");
+        if (UI::BeginTreeNode(TR("Shadow Pass"), false))
+        {
+            static int cascadeIndex = 0;
+            UI::BeginPropertyGrid();
+            UI::PropertySlider("Cascade Index", cascadeIndex, 0, 3);
+            UI::EndPropertyGrid();
+            Ref<Image2D> depthImage = m_ShadowPasses[cascadeIndex]->GetSpecification().TargetFramebuffer->GetDepthImage();
+            float size = ImGui::GetContentRegionAvail().x;
+            UI::Image(depthImage, { size, size }, { 0, 1 }, { 1, 0 });
+            UI::EndTreeNode();
+        }
+        if (UI::BeginTreeNode(TR("Geometry Pass"), false))
+        {
+            Ref<Image2D> colorImage = m_GeoPass->GetSpecification().TargetFramebuffer->GetImage(0);
+            Ref<Image2D> depthImage = m_GeoPass->GetSpecification().TargetFramebuffer->GetDepthImage();
+            float size = ImGui::GetContentRegionAvail().x;
+            UI::Image(colorImage, { size, size }, { 0, 1 }, { 1, 0 });
+            UI::Image(depthImage, { size, size }, { 0, 1 }, { 1, 0 });
+            UI::EndTreeNode();
+        }
+        if (UI::BeginTreeNode(TR("Final Image"), false))
+        {
+            Ref<Image2D> finalImage = m_CompositePass->GetSpecification().TargetFramebuffer->GetImage();
+            float size = ImGui::GetContentRegionAvail().x;
+            UI::Image(finalImage, { size, size }, { 0, 1 }, { 1, 0 });
+            UI::EndTreeNode();
+        }
+        ImGui::End();
     }
 
     void SceneRenderer::Resize(uint32_t width, uint32_t height)
@@ -321,8 +358,6 @@ namespace Prism
 
         float exposure = 0.8f;
         m_CompositeMaterial->SetFloat("u_Exposure", exposure);
-        m_CompositeMaterial->SetInt("Prism_GeometryPassTextureSamples",
-            (int)m_GeoPass->GetSpecification().TargetFramebuffer->GetSpecification().Samples);
 
         DrawFullscreen(m_CompositeMaterial);
         Renderer::EndRenderPass();

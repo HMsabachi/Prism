@@ -874,6 +874,7 @@ namespace Prism
             //CSharpScriptEngine::OnImGuiRender();
             //PythonScriptEngine::OnImGuiRender();
             PhysicsSettingsWindow::OnImGuiRender(m_ShowPhysicsSettings);
+            SceneRenderer::Get().OnImGuiRender();
             m_ActiveScene->OnImGuiRender();
             m_ContentBrowserPanel->OnImGuiRender();
             m_ObjectsPanel->OnImGuiRender();

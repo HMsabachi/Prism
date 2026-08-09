@@ -55,17 +55,6 @@ namespace Prism
             UI::EndPropertyGrid();
             UI::EndTreeNode();
         }
-        if (UI::BeginTreeNode(TR("Shadow Map"), false))
-        {
-            static int cascadeIndex = 0;
-            UI::BeginPropertyGrid();
-            UI::PropertySlider("Cascade Index", cascadeIndex, 0, 3);
-            UI::EndPropertyGrid();
-            Ref<Image2D> depthImage = SceneRenderer::Get().GetShadowPass(cascadeIndex)->GetSpecification().TargetFramebuffer->GetDepthImage();
-            float size = ImGui::GetContentRegionAvail().x;
-            UI::Image(depthImage, { size, size }, { 0, 1 }, { 1, 0 });
-            UI::EndTreeNode();
-        }
         ImGui::End();
     }
 

@@ -5,7 +5,6 @@ Shader "Custom/SceneComposite"
     Properties
     {
         u_Exposure("曝光度", Float) = 1.0
-        Prism_GeometryPassTextureSamples("纹理采样数", Int) = 8
     }
     SubShader
     {
@@ -34,25 +33,12 @@ Shader "Custom/SceneComposite"
                     vs_Output.TexCoord = a_TexCoord;
                 }
 
-                vec4 MultiSampleTexture(sampler2DMS tex, ivec2 texCoord, int samples)
-                {
-                    vec4 result = vec4(0.0);
-                    for (int i = 0; i < samples; i++)
-                        result += texelFetch(tex, texCoord, i);
-                    result /= float(samples);
-                    return result;
-                }
-
                 void frag()
                 {
                     const float gamma     = 2.2;
                     const float pureWhite = 1.0;
 
-                    ivec2 texSize = textureSize(Prism_GeometryPassTexture);
-                    ivec2 texCoord = ivec2(vs_Output.TexCoord * texSize);
-                    vec4 msColor = MultiSampleTexture(Prism_GeometryPassTexture, texCoord, Prism_GeometryPassTextureSamples);
-
-                    vec3 color = msColor.rgb * u_Exposure;//texture(Prism_GeometryPassTexture, vs_Output.TexCoord).rgb * u_Exposure;
+                    vec3 color = texture(Prism_GeometryPassTexture, vs_Output.TexCoord).rgb * u_Exposure;
                     // Reinhard tonemapping operator.
                     float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
                     float mappedLuminance = (luminance * (1.0 + luminance / (pureWhite * pureWhite))) / (1.0 + luminance);

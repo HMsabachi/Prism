@@ -82,6 +82,8 @@ namespace Prism {
         constexpr GLenum P_GL_SRGB8 = 0x8C41;
         constexpr GLenum P_GL_RGBA16F = 0x881A;
         constexpr GLenum P_GL_RGBA32F = 0x8814;
+        constexpr GLenum P_GL_RG = 0x8227;
+        constexpr GLenum P_GL_RG32F = 0x8230;
         constexpr GLenum P_GL_DEPTH24_STENCIL8 = 0x88F0;
         constexpr GLenum P_GL_DEPTH_COMPONENT32F = 0x8CAC;
         constexpr GLenum P_GL_UNSIGNED_BYTE = 0x1401;
@@ -96,6 +98,7 @@ namespace Prism {
                 case ImageFormat::RGBA:
                 case ImageFormat::RGBA16F:
                 case ImageFormat::RGBA32F: return P_GL_RGBA;
+                case ImageFormat::RG32F:    return P_GL_RG;
             }
             PR_CORE_ASSERT(false, "Unknown image format");
             return 0;
@@ -110,6 +113,7 @@ namespace Prism {
                 case ImageFormat::RGBA:            return P_GL_RGBA8;
                 case ImageFormat::RGBA16F:         return P_GL_RGBA16F;
                 case ImageFormat::RGBA32F:         return P_GL_RGBA32F;
+                case ImageFormat::RG32F:           return P_GL_RG32F;
                 case ImageFormat::DEPTH24STENCIL8: return P_GL_DEPTH24_STENCIL8;
                 case ImageFormat::DEPTH32F:        return P_GL_DEPTH_COMPONENT32F;
             }

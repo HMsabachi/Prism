@@ -61,12 +61,11 @@ namespace Prism
 
         void Initialize(uint32_t viewportWidth, uint32_t viewportHeight);
         void Shutdown();
+        void OnImGuiRender();
         void Resize(uint32_t width, uint32_t height);
 
         void Execute(const FrameSnapshot& snapshot);
 
-        Ref<RenderPass> GetFinalRenderPass() const { return m_CompositePass; }
-        const Ref<RenderPass>& GetShadowPass(uint32_t index) const { return m_ShadowPasses[index]; }
         SceneRendererOptions& GetOptions() { return m_Options; }
         Ref<Image2D> GetFinalImage() const;
 
@@ -155,7 +154,6 @@ namespace Prism
         Ref<Material> m_ColliderMaterial;
 
         Ref<Texture2D> m_BRDFLUT;
-        Ref<PrismShader> m_CompositeShader;
 
         Ref<RenderPass> m_ShadowPasses[4];
         glm::mat4 m_ShadowMatrices[4]{};
