@@ -3,8 +3,7 @@
 #include "Prism/Core/Core.h"
 #include "Prism/Renderer/RendererAPI.h"
 
-#include <string>
-#include <glm/glm.hpp>
+namespace PrismShaderCompiler { struct PassReflection; }
 
 namespace Prism
 {
@@ -12,19 +11,9 @@ namespace Prism
     {
     public:
         virtual ~Shader() = default;
-        virtual void Reload() = 0;
 
-        virtual void Bind() = 0;
-
-        virtual const std::string& GetName() const = 0;
-
-        virtual void SetInt(const std::string& name, int value) = 0;
-        virtual void SetFloat(const std::string& name, float value) = 0;
-        virtual void SetMat4(const std::string& name, const glm::mat4& value) = 0;
-
-        virtual void DispatchCompute(uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ) = 0;
-
-        static Ref<Shader> Create(const void* vertexSource, const void* fragmentSource);
+        static Ref<Shader> Create(const void* vertexSource, const void* fragmentSource,
+            const PrismShaderCompiler::PassReflection& reflection);
         static Ref<Shader> Create(const void* computeSource);
     };
 

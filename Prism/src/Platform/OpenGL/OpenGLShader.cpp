@@ -1,21 +1,21 @@
 ﻿#include "prpch.h"
 #include "OpenGLShader.h"
 
-#include <glm/gtc/type_ptr.hpp>
 #include <glad/glad.h>
 #include "Prism/Renderer/Renderer.h"
 
 namespace Prism
 {
-    OpenGLShader::OpenGLShader(const char* vertexSource, const char* fragmentSource)
-        : m_Name(""), m_VertexSource(vertexSource), m_FragmentSource(fragmentSource)
+    OpenGLShader::OpenGLShader(const char* vertexSource, const char* fragmentSource,
+        const PrismShaderCompiler::PassReflection&)
+        : m_VertexSource(vertexSource), m_FragmentSource(fragmentSource)
     {
         Ref<OpenGLShader> instance = this;
         Renderer::Submit([instance]() mutable { instance->CompileAndUploadShader(); });
     }
 
     OpenGLShader::OpenGLShader(const char* computeSource)
-        : m_Name(""), m_ComputeSource(computeSource), m_IsCompute(true)
+        : m_ComputeSource(computeSource), m_IsCompute(true)
     {
         Ref<OpenGLShader> instance = this;
         Renderer::Submit([instance]() mutable { instance->CompileAndUploadShader(); });
@@ -26,14 +26,6 @@ namespace Prism
         uint32_t id = m_RendererID;
         Renderer::Submit([id]() {
             if (id) glDeleteProgram(id);
-        });
-    }
-
-    void OpenGLShader::Bind()
-    {
-        Ref<OpenGLShader> instance = this;
-        Renderer::Submit([instance]() {
-            glUseProgram(instance->m_RendererID);
         });
     }
 
@@ -99,64 +91,6 @@ namespace Prism
 
         for (auto sid : shaderIDs) glDeleteShader(sid);
         m_RendererID = program;
-    }
-
-    void OpenGLShader::DispatchCompute(uint32_t x, uint32_t y, uint32_t z)
-    {
-        Renderer::Submit([=](){
-            if (!m_IsCompute) { PR_CORE_WARN("Not a compute shader"); return; }
-            glDispatchCompute(x, y, z);
-        });
-    }
-
-    void OpenGLShader::SetInt(const std::string& name, int value)
-    {
-        Renderer::Submit([=]() { UploadUniformInt(name, value); });
-    }
-
-    void OpenGLShader::SetFloat(const std::string& name, float value)
-    {
-        Renderer::Submit([=]() { UploadUniformFloat(name, value); });
-    }
-
-    void OpenGLShader::SetMat4(const std::string& name, const glm::mat4& value)
-    {
-        Renderer::Submit([=]() { UploadUniformMat4(name, value); });
-    }
-
-    void OpenGLShader::UploadUniformInt(const std::string& name, int32_t value)
-    {
-        if (!UniformLocationCache(name)) return;
-        glUniform1i(m_UniformLocationCache[name], value);
-    }
-
-    void OpenGLShader::UploadUniformFloat(const std::string& name, float value)
-    {
-        if (!UniformLocationCache(name)) return;
-        glUniform1f(m_UniformLocationCache[name], value);
-    }
-
-    void OpenGLShader::UploadUniformMat4(const std::string& name, const glm::mat4& value)
-    {
-        if (!UniformLocationCache(name)) return;
-        glUniformMatrix4fv(m_UniformLocationCache[name], 1, GL_FALSE, glm::value_ptr(value));
-    }
-
-    bool OpenGLShader::UniformLocationCache(const std::string& name)
-    {
-        if (!m_RendererID)
-        {
-            PR_CORE_WARN("Shader not compiled");
-            return false;
-        }
-        auto it = m_UniformLocationCache.find(name);
-        if (it == m_UniformLocationCache.end())
-        {
-            int location = glGetUniformLocation(m_RendererID, name.c_str());
-            if (location == -1) return false;
-            m_UniformLocationCache[name] = location;
-        }
-        return true;
     }
 
 }
