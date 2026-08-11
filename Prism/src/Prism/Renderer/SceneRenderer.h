@@ -77,6 +77,7 @@ namespace Prism
             const std::vector<DrawCommand>& drawList,
             const std::vector<DrawCommand>& selectedList,
             const std::vector<DrawCommand>& debugList);
+        void IDPass(const std::vector<DrawCommand>& selectedList);
         void CompositePass();
         void BloomBlurPass();
         void BloomBlendPass();
@@ -141,6 +142,7 @@ namespace Prism
         Ref<VertexInput> m_FullscreenQuadPipeline;
 
         Ref<RenderPass> m_GeoPass;
+        Ref<RenderPass> m_IDPass;
         Ref<RenderPass> m_CompositePass;
         Ref<RenderPass> m_BloomBlurPass[2];
         Ref<RenderPass> m_BloomBlendPass;
@@ -149,8 +151,8 @@ namespace Prism
         Ref<Material> m_BloomBlurMaterial;
         Ref<Material> m_BloomBlendMaterial;
         Ref<Material> m_GridMaterial;
-        Ref<Material> m_OutlineMaterial;
-        Ref<Material> m_OutlineAnimMaterial;
+        Ref<Material> m_IDMaterial;
+        Ref<Material> m_IDAnimMaterial;
         Ref<Material> m_ColliderMaterial;
 
         Ref<Texture2D> m_BRDFLUT;

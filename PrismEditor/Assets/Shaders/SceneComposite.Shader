@@ -5,6 +5,7 @@ Shader "Custom/SceneComposite"
     Properties
     {
         u_Exposure("曝光度", Float) = 1.0
+        u_OutlineColor("描边颜色", Color) = (1.0, 0.5, 0.0, 1.0)
     }
     SubShader
     {
@@ -45,8 +46,21 @@ Shader "Custom/SceneComposite"
 
                     vec3 mappedColor = (mappedLuminance / luminance) * color;
 
+                    vec2 texel = 1.0 / vec2(textureSize(Prism_ObjectIDTexture, 0));
+                    float idC = texture(Prism_ObjectIDTexture, vs_Output.TexCoord).r;
+                    float idL = texture(Prism_ObjectIDTexture, vs_Output.TexCoord + vec2(-texel.x, 0.0)).r;
+                    float idR = texture(Prism_ObjectIDTexture, vs_Output.TexCoord + vec2( texel.x, 0.0)).r;
+                    float idD = texture(Prism_ObjectIDTexture, vs_Output.TexCoord + vec2(0.0, -texel.y)).r;
+                    float idU = texture(Prism_ObjectIDTexture, vs_Output.TexCoord + vec2(0.0,  texel.y)).r;
+
+                    bool sel = idC > 0.5;
+                    bool edge = sel != (idL > 0.5) || sel != (idR > 0.5)
+                             || sel != (idD > 0.5) || sel != (idU > 0.5);
+
+                    vec3 finalColor = edge ? u_OutlineColor.rgb : mappedColor;
+
                     // Gamma correction.
-                    FragColor = vec4(pow(mappedColor, vec3(1.0/gamma)), 1.0);
+                    FragColor = vec4(pow(finalColor, vec3(1.0/gamma)), 1.0);
                 }
             }
         }

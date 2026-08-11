@@ -70,8 +70,9 @@ namespace Prism::Config
     constexpr uint32_t PRISM_GEOMETRY_ENV_IRRADIANCE_SLOT = 5;
     constexpr uint32_t PRISM_GEOMETRY_ENV_BRDF_LUT_SLOT  = 6;
 
-    // CompositePass:geo color (1 个)
+    // CompositePass:geo color + object ID (2 个)
     constexpr uint32_t PRISM_COMPOSITE_GEOMETRY_COLOR_SLOT = 0;
+    constexpr uint32_t PRISM_COMPOSITE_OBJECT_ID_SLOT      = 1;
 
     // BloomBlurPass:blur input (1 个)
     constexpr uint32_t PRISM_BLOOM_BLUR_INPUT_SLOT = 0;

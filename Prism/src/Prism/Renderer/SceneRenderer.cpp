@@ -14,7 +14,6 @@
 #include "Prism/Renderer/Buffer/Framebuffer.h"
 #include "Prism/Renderer/Shader/PrismShader.h"
 #include "Prism/Renderer/ComputeShader/ComputeShader.h"
-#include <PrismShaderCore/Pipeline/PipelineState.h>
 #include "Prism/ShaderCompiler/PrismBindings.h"
 #include "Prism/Renderer/Camera/Camera.h"
 
@@ -60,6 +59,16 @@ namespace Prism
         geoRPSpec.TargetFramebuffer = Framebuffer::Create(geoFBSpec);
         m_GeoPass = RenderPass::Create(geoRPSpec);
 
+        FramebufferSpecification idFBSpec;
+        idFBSpec.Width = viewportWidth;
+        idFBSpec.Height = viewportHeight;
+        idFBSpec.Attachments = { ImageFormat::RGBA16F };
+        idFBSpec.ClearColor = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+        RenderPassSpecification idRPSpec;
+        idRPSpec.TargetFramebuffer = Framebuffer::Create(idFBSpec);
+        m_IDPass = RenderPass::Create(idRPSpec);
+
         FramebufferSpecification compFBSpec;
         compFBSpec.Width = viewportWidth;
         compFBSpec.Height = viewportHeight;
@@ -80,10 +89,10 @@ namespace Prism
         m_GridMaterial->SetFloat("u_Scale", 16.025f);
         m_GridMaterial->SetFloat("u_Res", 0.025f);
 
-        auto outlineShader = AssetManager::GetShaderLibrary()->Get("Standard/Outline");
-        m_OutlineMaterial = Material::Create(outlineShader->Handle);
-        m_OutlineAnimMaterial = Material::Create(outlineShader->Handle);
-        m_OutlineAnimMaterial->SetKeyword("SKINNED", true);
+        auto idShader = AssetManager::GetShaderLibrary()->Get("Standard/ObjectID");
+        m_IDMaterial = Material::Create(idShader->Handle);
+        m_IDAnimMaterial = Material::Create(idShader->Handle);
+        m_IDAnimMaterial->SetKeyword("SKINNED", true);
 
         auto colliderShader = AssetManager::GetShaderLibrary()->Get("Debug/Collider");
         m_ColliderMaterial = Material::Create(colliderShader->Handle);
@@ -135,6 +144,7 @@ namespace Prism
     void SceneRenderer::Shutdown()
     {
         m_GeoPass.Reset();
+        m_IDPass.Reset();
         m_CompositePass.Reset();
         for (int i = 0; i < 4; i++)
             m_ShadowPasses[i].Reset();
@@ -165,10 +175,18 @@ namespace Prism
         if (UI::BeginTreeNode(TR("Geometry Pass"), false))
         {
             Ref<Image2D> colorImage = m_GeoPass->GetSpecification().TargetFramebuffer->GetImage(0);
+            Ref<Image2D> bloomImage = m_GeoPass->GetSpecification().TargetFramebuffer->GetImage(1);
             Ref<Image2D> depthImage = m_GeoPass->GetSpecification().TargetFramebuffer->GetDepthImage();
             float size = ImGui::GetContentRegionAvail().x;
-            UI::Image(colorImage, { size, size }, { 0, 1 }, { 1, 0 });
+            UI::Image(bloomImage, { size, size }, { 0, 1 }, { 1, 0 });
             UI::Image(depthImage, { size, size }, { 0, 1 }, { 1, 0 });
+            UI::EndTreeNode();
+        }
+        if (UI::BeginTreeNode(TR("ID Pass"), false))
+        {
+            Ref<Image2D> idImage = m_IDPass->GetSpecification().TargetFramebuffer->GetImage();
+            float size = ImGui::GetContentRegionAvail().x;
+            UI::Image(idImage, { size, size }, { 0, 1 }, { 1, 0 });
             UI::EndTreeNode();
         }
         if (UI::BeginTreeNode(TR("Final Image"), false))
@@ -184,6 +202,7 @@ namespace Prism
     void SceneRenderer::Resize(uint32_t width, uint32_t height)
     {
         m_GeoPass->GetSpecification().TargetFramebuffer->Resize(width, height);
+        m_IDPass->GetSpecification().TargetFramebuffer->Resize(width, height);
         m_CompositePass->GetSpecification().TargetFramebuffer->Resize(width, height);
     }
 
@@ -206,6 +225,7 @@ namespace Prism
         if (castShadows)
             ShadowPass(snapshot.ShadowDrawList);
         GeometryPass(config, sortedDrawList, snapshot.SelectedDrawList, snapshot.DebugDrawList);
+        IDPass(snapshot.SelectedDrawList);
         // TODO: BloomBlurPass() — need MSAA resolve on Attachment1 before reading as sampler2D
         // if (config.EnableBloom) BloomBlurPass();
         CompositePass();
@@ -277,23 +297,8 @@ namespace Prism
             }
         }
 
-        // TODO: 描边用 stencil-write + Line 膨胀实现，物体旋转后描边消失。后续换 Unity URP 风格后处理边缘检测（depth Sobel，screen-space 轮廓）。
         if (!selectedList.empty())
         {
-            PrismShaderCompiler::PipelineState writeOverride;
-            writeOverride.StencilTest = true;
-            writeOverride.StencilCompare = PrismShaderCompiler::StencilFunc::Always;
-            writeOverride.StencilRef = 1;
-            writeOverride.StencilReadMask = 0xff;
-            writeOverride.StencilWriteMask = 0xff;
-            writeOverride.StencilPassOp = PrismShaderCompiler::StencilOp::Replace;
-            writeOverride.Mark(PrismShaderCompiler::PipelineState::Field::StencilTest);
-            writeOverride.Mark(PrismShaderCompiler::PipelineState::Field::StencilCompare);
-            writeOverride.Mark(PrismShaderCompiler::PipelineState::Field::StencilRef);
-            writeOverride.Mark(PrismShaderCompiler::PipelineState::Field::StencilReadMask);
-            writeOverride.Mark(PrismShaderCompiler::PipelineState::Field::StencilWriteMask);
-            writeOverride.Mark(PrismShaderCompiler::PipelineState::Field::StencilPassOp);
-
             for (auto& dc : selectedList)
             {
                 m_ObjectData.Model = dc.Transform;
@@ -304,21 +309,6 @@ namespace Prism
                 Renderer::SetUniformBuffer(Config::PRISM_SET_TRANSFORMS, 0, m_ObjectUBO);
 
                 Renderer::RenderMesh(dc.Mesh->GetVertexInput(), dc.Mesh, dc.Material,
-                    dc.SubmeshIndex, dc.Transform, 0, &writeOverride);
-            }
-
-            for (auto& dc : selectedList)
-            {
-                Ref<Material> material = dc.Mesh->IsAnimated() ? m_OutlineAnimMaterial : m_OutlineMaterial;
-
-                m_ObjectData.Model = dc.Transform;
-                if (dc.Mesh->IsAnimated())
-                    SetObjectBones(dc.Mesh->m_BoneTransforms.data(),
-                        (uint32_t)dc.Mesh->m_BoneTransforms.size());
-                UploadObjectUBO();
-                Renderer::SetUniformBuffer(Config::PRISM_SET_TRANSFORMS, 0, m_ObjectUBO);
-
-                Renderer::RenderMesh(dc.Mesh->GetVertexInput(), dc.Mesh, material,
                     dc.SubmeshIndex, dc.Transform, 0);
             }
         }
@@ -349,12 +339,38 @@ namespace Prism
         Renderer::EndRenderPass();
     }
 
+    void SceneRenderer::IDPass(const std::vector<DrawCommand>& selectedList)
+    {
+        PR_PROFILE_FUNCTION();
+        Renderer::BeginRenderPass(m_IDPass);
+
+        uint32_t objectID = 1;
+        for (auto& dc : selectedList)
+        {
+            m_ObjectData.Model = dc.Transform;
+            m_ObjectData.Reserved.y = static_cast<float>(objectID++);
+            if (dc.Mesh->IsAnimated())
+                SetObjectBones(dc.Mesh->m_BoneTransforms.data(),
+                    (uint32_t)dc.Mesh->m_BoneTransforms.size());
+            UploadObjectUBO();
+            Renderer::SetUniformBuffer(Config::PRISM_SET_TRANSFORMS, 0, m_ObjectUBO);
+
+            Ref<Material> material = dc.Mesh->IsAnimated() ? m_IDAnimMaterial : m_IDMaterial;
+            Renderer::RenderMesh(dc.Mesh->GetVertexInput(), dc.Mesh, material,
+                dc.SubmeshIndex, dc.Transform, 0);
+        }
+
+        Renderer::EndRenderPass();
+    }
+
     void SceneRenderer::CompositePass()
     {
         PR_PROFILE_FUNCTION();
         Renderer::BeginRenderPass(m_CompositePass);
         Renderer::SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_COMPOSITE_GEOMETRY_COLOR_SLOT,
             m_GeoPass->GetSpecification().TargetFramebuffer->GetImage(0));
+        Renderer::SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_COMPOSITE_OBJECT_ID_SLOT,
+            m_IDPass->GetSpecification().TargetFramebuffer->GetImage(0));
 
         float exposure = 0.8f;
         m_CompositeMaterial->SetFloat("u_Exposure", exposure);
