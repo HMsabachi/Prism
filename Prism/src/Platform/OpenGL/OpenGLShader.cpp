@@ -28,6 +28,12 @@ namespace Prism
         });
     }
 
+
+    void OpenGLShader::RT_Bind() const
+    {
+        glUseProgram(m_RendererID);
+    }
+
     void OpenGLShader::CompileAndUploadShader()
     {
         std::vector<GLuint> shaderIDs;

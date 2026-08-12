@@ -17,6 +17,8 @@ namespace Prism
 
         virtual uint32_t GetSize() const { return m_Size; }
         virtual uint32_t GetCount() const { return m_Size / sizeof(uint32_t); }
+
+        void RT_Bind() const;
         RendererID GetRendererID() const { return m_RendererID; }
     private:
         RendererID m_RendererID = 0;

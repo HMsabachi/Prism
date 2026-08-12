@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Prism/Renderer/Shader.h"
 #include <string>
@@ -14,6 +14,8 @@ namespace Prism
 		virtual ~OpenGLShader();
 
 		RendererID GetRendererID() const { return m_RendererID; }
+
+        void RT_Bind() const;
 
 	private:
 		void CompileAndUploadShader();

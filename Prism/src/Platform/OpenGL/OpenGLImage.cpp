@@ -95,7 +95,13 @@ namespace Prism {
         });
     }
 
-    //////////////////////////////////////////////////////////////////////////////////
+
+	void OpenGLImage2D::RT_Bind(uint32_t slot) const
+	{
+        glBindTextureUnit(slot, m_RendererID);
+	}
+
+	//////////////////////////////////////////////////////////////////////////////////
     // ImageCube
     //////////////////////////////////////////////////////////////////////////////////
 
@@ -160,6 +166,12 @@ namespace Prism {
         Renderer::Submit([rid, slot]() {
             glBindTextureUnit(slot, rid);
         });
+    }
+
+
+    void OpenGLImageCube::RT_Bind(uint32_t slot) const
+    {
+        glBindTextureUnit(slot, m_RendererID);
     }
 
 }

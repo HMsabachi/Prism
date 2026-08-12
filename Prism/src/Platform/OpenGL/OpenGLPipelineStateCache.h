@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <functional>
 #include <unordered_map>
@@ -44,6 +44,8 @@ namespace Prism
 
     class OpenGLPipelineState : public RefCounted
     {
+    public:
+        static void RT_SetupPipelineState(const PrismShaderCompiler::PipelineState& state);
     public:
         OpenGLPipelineState(RendererID program, const PrismShaderCompiler::PipelineState& state);
 

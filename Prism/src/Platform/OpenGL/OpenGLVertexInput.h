@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Prism/Renderer/VertexInput.h"
 
@@ -15,7 +15,7 @@ namespace Prism {
 
         virtual void Invalidate() override;
 
-        virtual void Bind() const override;
+        void RT_Bind() const;
     private:
         VertexInputSpecification m_Specification;
         uint32_t m_VertexArrayRendererID = 0;

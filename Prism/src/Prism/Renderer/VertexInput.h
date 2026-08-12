@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Prism/Renderer/Buffer/VertexBuffer.h"
 
@@ -21,9 +21,6 @@ namespace Prism {
         virtual const VertexInputSpecification& GetSpecification() const = 0;
 
         virtual void Invalidate() = 0;
-
-        // TEMP: remove this when render command buffers are a thing
-        virtual void Bind() const = 0;
 
         static Ref<VertexInput> Create(const VertexInputSpecification& spec);
     };

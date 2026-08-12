@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "OpenGLVertexInput.h"
 
 #include "Prism/Renderer/Renderer.h"
@@ -61,44 +61,37 @@ namespace Prism {
         });
     }
 
-    void OpenGLVertexInput::Bind() const
+    void OpenGLVertexInput::RT_Bind() const
     {
-        Ref<const OpenGLVertexInput> instance = this;
-        Renderer::Submit([instance]()
+        glBindVertexArray(m_VertexArrayRendererID);
+        // Set up vertex attrib pointers using VertexSemantic-based indexing
+        const auto& layout = m_Specification.Layout;
+        uint32_t attribIndex = 0;
+        for (const auto& element : layout)
         {
-            glBindVertexArray(instance->m_VertexArrayRendererID);
-
-            // Set up vertex attrib pointers using VertexSemantic-based indexing
-            const auto& layout = instance->m_Specification.Layout;
-            uint32_t attribIndex = 0;
-            for (const auto& element : layout)
+            int index = element.GetIndex() != VertexBufferElement::DEFAULT_VERTEX_SEMANTICS
+                ? element.GetIndex()
+                : attribIndex++;
+            auto glBaseType = ShaderDataTypeToOpenGLBaseType(element.Type);
+            glEnableVertexAttribArray(index);
+            if (glBaseType == GL_INT)
             {
-                int index = element.GetIndex() != VertexBufferElement::DEFAULT_VERTEX_SEMANTICS
-                    ? element.GetIndex()
-                    : attribIndex++;
-
-                auto glBaseType = ShaderDataTypeToOpenGLBaseType(element.Type);
-                glEnableVertexAttribArray(index);
-
-                if (glBaseType == GL_INT)
-                {
-                    glVertexAttribIPointer(index,
-                        element.GetComponentCount(),
-                        glBaseType,
-                        layout.GetStride(),
-                        (const void*)(intptr_t)element.Offset);
-                }
-                else
-                {
-                    glVertexAttribPointer(index,
-                        element.GetComponentCount(),
-                        glBaseType,
-                        element.Normalized ? GL_TRUE : GL_FALSE,
-                        layout.GetStride(),
-                        (const void*)(intptr_t)element.Offset);
-                }
+                glVertexAttribIPointer(index,
+                    element.GetComponentCount(),
+                    glBaseType,
+                    layout.GetStride(),
+                    (const void*)(intptr_t)element.Offset);
             }
-        });
+            else
+            {
+                glVertexAttribPointer(index,
+                    element.GetComponentCount(),
+                    glBaseType,
+                    element.Normalized ? GL_TRUE : GL_FALSE,
+                    layout.GetStride(),
+                    (const void*)(intptr_t)element.Offset);
+            }
+        }
     }
 
 }

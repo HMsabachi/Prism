@@ -77,7 +77,7 @@ namespace Prism
     void Renderer::SetShaderStorageBuffer(uint32_t set, uint32_t binding, Ref<ShaderStorageBuffer> ssbo) { s_RendererAPI->SetShaderStorageBuffer(set, binding, ssbo); }
     void Renderer::SetTexture(uint32_t set, uint32_t binding, Ref<Image> image) { s_RendererAPI->SetTexture(set, binding, image); }
     std::pair<Ref<TextureCube>, Ref<TextureCube>> Renderer::CreateEnvironmentMap(const std::string& filepath) { return s_RendererAPI->CreateEnvironmentMap(filepath); }
-    void Renderer::RenderMesh(Ref<VertexInput> vertexInput, Ref<Mesh> mesh, Ref<Material> material, uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass, const PrismShaderCompiler::PipelineState* stateOverride) { s_RendererAPI->RenderMesh(vertexInput, mesh, material, submeshIndex, transform, pass, stateOverride); }
+    void Renderer::RenderMesh(Ref<Mesh> mesh, Ref<Material> material, uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass, const PrismShaderCompiler::PipelineState* stateOverride) { s_RendererAPI->RenderMesh(mesh, material, submeshIndex, transform, pass, stateOverride); }
     void Renderer::RenderQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const glm::mat4& transform, const PrismShaderCompiler::PipelineState* stateOverride) { s_RendererAPI->RenderQuad(vertexInput, material, transform, stateOverride); }
 
     void Renderer::DispatchCompute(Ref<Shader> kernelShader, const std::vector<ComputeResourceBinding>& bindings, uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ) { s_RendererAPI->DispatchCompute(kernelShader, bindings, numGroupsX, numGroupsY, numGroupsZ); }

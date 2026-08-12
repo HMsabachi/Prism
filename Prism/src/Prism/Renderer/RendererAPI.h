@@ -109,7 +109,7 @@ namespace Prism
         virtual void SetShaderStorageBuffer(uint32_t set, uint32_t binding, Ref<ShaderStorageBuffer> ssbo) = 0;
         virtual void SetTexture(uint32_t set, uint32_t binding, Ref<Image> image) = 0;
 
-        virtual void RenderMesh(Ref<VertexInput> vertexInput, Ref<Mesh> mesh, Ref<Material> material,
+        virtual void RenderMesh(Ref<Mesh> mesh, Ref<Material> material,
             uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass,
             const PrismShaderCompiler::PipelineState* stateOverride = nullptr) = 0;
         virtual void RenderQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const glm::mat4& transform,

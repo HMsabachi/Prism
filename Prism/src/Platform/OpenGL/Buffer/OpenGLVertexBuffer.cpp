@@ -57,4 +57,10 @@ namespace Prism
         });
     }
 
+
+	void OpenGLVertexBuffer::RT_Bind() const
+	{
+        glBindBuffer(GL_ARRAY_BUFFER, m_RendererID);
+	}
+
 }

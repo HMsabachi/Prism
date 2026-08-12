@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "OpenGLPipelineStateCache.h"
 
 #include "Prism/Renderer/Renderer.h"
@@ -94,6 +94,79 @@ namespace Prism
     }
 #pragma endregion
 
+
+    void OpenGLPipelineState::RT_SetupPipelineState(const PrismShaderCompiler::PipelineState& state)
+    {
+        if (state.BlendEnabled)
+        {
+            glEnable(GL_BLEND);
+            glBlendFuncSeparate(
+                ToOpenGL(state.SrcFactor), ToOpenGL(state.DstFactor),
+                ToOpenGL(state.SrcAlpha), ToOpenGL(state.DstAlpha));
+        }
+        else
+        {
+            glDisable(GL_BLEND);
+        }
+        if (state.Cull == CullMode::Off)
+            glDisable(GL_CULL_FACE);
+        else
+        {
+            glEnable(GL_CULL_FACE);
+            glCullFace(ToOpenGL(state.Cull));
+        }
+
+        if (state.DepthTest)
+        {
+            glEnable(GL_DEPTH_TEST);
+            glDepthFunc(ToOpenGL(state.DepthCompare));
+        }
+        else
+            glDisable(GL_DEPTH_TEST);
+
+        glDepthMask(state.DepthWrite ? GL_TRUE : GL_FALSE);
+
+        {
+            GLboolean r = GL_FALSE, g = GL_FALSE, b = GL_FALSE, a = GL_FALSE;
+            switch (state.WriteMask)
+            {
+            case ColorMask::RGBA: r = g = b = a = GL_TRUE; break;
+            case ColorMask::RGB:  r = g = b = GL_TRUE;     break;
+            case ColorMask::R:    r = GL_TRUE;             break;
+            case ColorMask::G:    g = GL_TRUE;             break;
+            case ColorMask::B:    b = GL_TRUE;             break;
+            case ColorMask::A:    a = GL_TRUE;             break;
+            case ColorMask::None: break;
+            }
+            glColorMask(r, g, b, a);
+        }
+
+        {
+            bool needBias = state.DepthBiasFactor != 0.0f || state.DepthBiasUnits != 0.0f;
+            if (needBias)
+            {
+                glEnable(GL_POLYGON_OFFSET_FILL);
+                glPolygonOffset(state.DepthBiasFactor, state.DepthBiasUnits);
+            }
+            else
+                glDisable(GL_POLYGON_OFFSET_FILL);
+        }
+
+        if (state.StencilTest)
+        {
+            glEnable(GL_STENCIL_TEST);
+            glStencilFunc(ToOpenGL(state.StencilCompare), state.StencilRef, state.StencilReadMask);
+            glStencilOp(ToOpenGL(state.StencilFailOp), ToOpenGL(state.StencilDepthFailOp), ToOpenGL(state.StencilPassOp));
+            glStencilMask(state.StencilWriteMask);
+        }
+        else
+            glDisable(GL_STENCIL_TEST);
+
+        glPolygonMode(GL_FRONT_AND_BACK, ToOpenGL(state.FillMode));
+
+        glLineWidth(state.LineWidth);
+    }
+
     OpenGLPipelineState::OpenGLPipelineState(RendererID program, const PipelineState& state)
         : m_Program(program), m_State(state)
     {
@@ -106,75 +179,7 @@ namespace Prism
         Renderer::Submit([program, state]() {
             glUseProgram(program);
 
-            if (state.BlendEnabled)
-            {
-                glEnable(GL_BLEND);
-                glBlendFuncSeparate(
-                    ToOpenGL(state.SrcFactor), ToOpenGL(state.DstFactor),
-                    ToOpenGL(state.SrcAlpha), ToOpenGL(state.DstAlpha));
-            }
-            else
-            {
-                glDisable(GL_BLEND);
-            }
-
-            if (state.Cull == CullMode::Off)
-                glDisable(GL_CULL_FACE);
-            else
-            {
-                glEnable(GL_CULL_FACE);
-                glCullFace(ToOpenGL(state.Cull));
-            }
-
-            if (state.DepthTest)
-            {
-                glEnable(GL_DEPTH_TEST);
-                glDepthFunc(ToOpenGL(state.DepthCompare));
-            }
-            else
-                glDisable(GL_DEPTH_TEST);
-
-            glDepthMask(state.DepthWrite ? GL_TRUE : GL_FALSE);
-
-            {
-                GLboolean r = GL_FALSE, g = GL_FALSE, b = GL_FALSE, a = GL_FALSE;
-                switch (state.WriteMask)
-                {
-                case ColorMask::RGBA: r = g = b = a = GL_TRUE; break;
-                case ColorMask::RGB:  r = g = b = GL_TRUE;     break;
-                case ColorMask::R:    r = GL_TRUE;             break;
-                case ColorMask::G:    g = GL_TRUE;             break;
-                case ColorMask::B:    b = GL_TRUE;             break;
-                case ColorMask::A:    a = GL_TRUE;             break;
-                case ColorMask::None: break;
-                }
-                glColorMask(r, g, b, a);
-            }
-
-            {
-                bool needBias = state.DepthBiasFactor != 0.0f || state.DepthBiasUnits != 0.0f;
-                if (needBias)
-                {
-                    glEnable(GL_POLYGON_OFFSET_FILL);
-                    glPolygonOffset(state.DepthBiasFactor, state.DepthBiasUnits);
-                }
-                else
-                    glDisable(GL_POLYGON_OFFSET_FILL);
-            }
-
-            if (state.StencilTest)
-            {
-                glEnable(GL_STENCIL_TEST);
-                glStencilFunc(ToOpenGL(state.StencilCompare), state.StencilRef, state.StencilReadMask);
-                glStencilOp(ToOpenGL(state.StencilFailOp), ToOpenGL(state.StencilDepthFailOp), ToOpenGL(state.StencilPassOp));
-                glStencilMask(state.StencilWriteMask);
-            }
-            else
-                glDisable(GL_STENCIL_TEST);
-
-            glPolygonMode(GL_FRONT_AND_BACK, ToOpenGL(state.FillMode));
-
-            glLineWidth(state.LineWidth);
+            RT_SetupPipelineState(state);
         });
     }
 

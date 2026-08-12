@@ -21,6 +21,10 @@
 #include "OpenGLPipelineStateCache.h"
 #include "Buffer/OpenGLUniformBuffer.h"
 #include "Buffer/OpenGLShaderStorageBuffer.h"
+#include "Buffer/OpenGLFramebuffer.h"
+#include "Buffer/OpenGLVertexBuffer.h"
+#include "Buffer/OpenGLIndexBuffer.h"
+#include "OpenGLVertexInput.h"
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -37,7 +41,7 @@ namespace Prism
     {
         RenderAPICapabilities RenderCaps;
         Ref<RenderPass> ActiveRenderPass;
-        PSOKey LastPSOKey;
+        Ref<Shader> LastProgram;
         Ref<Material> LastMaterial;
         Ref<Mesh> LastMesh;
         Ref<VertexBuffer> FullscreenQuadVB;
@@ -79,34 +83,29 @@ namespace Prism
             return result;
         }
 
-        static void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
+        static void RT_SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
         {
             glViewport(x, y, width, height);
         }
 
-        static void Clear(float r, float g, float b, float a)
+        static void RT_Clear(float r, float g, float b, float a)
         {
             glClearColor(r, g, b, a);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
         }
 
-        static void DrawIndexed(uint32_t count, PrimitiveType type)
+        static void RT_DrawIndexed(uint32_t count, PrimitiveType type)
         {
             glDrawElements(PrismToOpenGLPrimitiveType(type), count, GL_UNSIGNED_INT, nullptr);
         }
 
-        static void DrawIndexedBaseVertex(uint32_t count, uint32_t baseIndex, uint32_t baseVertex, PrimitiveType type)
+        static void RT_DrawIndexedBaseVertex(uint32_t count, uint32_t baseIndex, uint32_t baseVertex, PrimitiveType type)
         {
             glDrawElementsBaseVertex(PrismToOpenGLPrimitiveType(type), count, GL_UNSIGNED_INT,
                 (void*)(sizeof(uint32_t) * baseIndex), baseVertex);
         }
 
-        static void SetLineThickness(float thickness)
-        {
-            glLineWidth(thickness);
-        }
-
-        static void MemoryBarriers(RendererAPI::BarrierFlags flags)
+        static void RT_MemoryBarriers(RendererAPI::BarrierFlags flags)
         {
             glMemoryBarrier(PrismToOpenGLMemoryBarrier(flags));
         }
@@ -164,7 +163,7 @@ namespace Prism
         }
     }
 
-    static void HandleCapabilities(RenderAPICapabilities& caps)
+    static void RT_HandleCapabilities(RenderAPICapabilities& caps)
     {
         caps.Vendor = reinterpret_cast<const char*>(glGetString(GL_VENDOR));
         caps.Renderer = reinterpret_cast<const char*>(glGetString(GL_RENDERER));
@@ -206,7 +205,7 @@ namespace Prism
             glEnable(GL_LINE_SMOOTH);
             glEnable(GL_STENCIL_TEST);
 
-            HandleCapabilities(s_Data->RenderCaps);
+            RT_HandleCapabilities(s_Data->RenderCaps);
 
             GLenum error = glGetError();
             while (error != GL_NO_ERROR)
@@ -251,15 +250,15 @@ namespace Prism
     {
         PR_CORE_ASSERT(renderPass, "渲染通道不能为空！");
         s_Data->ActiveRenderPass = renderPass;
-        s_Data->LastPSOKey = PSOKey{};
         s_Data->LastMaterial = nullptr;
         s_Data->LastMesh = nullptr;
+        s_Data->LastProgram = nullptr;
         renderPass->GetSpecification().TargetFramebuffer->Bind();
         if (clear)
         {
             const glm::vec4& clearColor = renderPass->GetSpecification().TargetFramebuffer->GetSpecification().ClearColor;
             Renderer::Submit([=]() {
-                Utils::Clear(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
+                Utils::RT_Clear(clearColor.r, clearColor.g, clearColor.b, clearColor.a);
                 });
         }
     }
@@ -274,16 +273,16 @@ namespace Prism
     void OpenGLRenderer::SubmitFullscreenQuad(Ref<VertexInput> vertexInput, Ref<Material> material,
         const PrismShaderCompiler::PipelineState* stateOverride)
     {
-        BindMaterial(material, 0, stateOverride);
-        s_Data->FullscreenQuadVB->Bind();
-        vertexInput->Bind();
-        s_Data->FullscreenQuadIB->Bind();
-        s_Data->LastPSOKey = PSOKey{};
-        s_Data->LastMaterial = nullptr;
-        s_Data->LastMesh = nullptr;
-        Renderer::Submit([]() {
-            Utils::DrawIndexed(6, PrimitiveType::Triangles);
-            });
+        Renderer::Submit([=]() {
+            RT_BindMaterial(material, 0, stateOverride);
+            s_Data->FullscreenQuadVB.As<OpenGLVertexBuffer>()->RT_Bind();
+            vertexInput.As<OpenGLVertexInput>()->RT_Bind();
+            s_Data->FullscreenQuadIB.As<OpenGLIndexBuffer>()->RT_Bind();
+            s_Data->LastMaterial = nullptr;
+            s_Data->LastMesh = nullptr;
+            s_Data->LastProgram = nullptr;
+            Utils::RT_DrawIndexed(6, PrimitiveType::Triangles);
+        });
     }
 
     void OpenGLRenderer::SetSceneEnvironment(const Ref<SceneEnvironment>& environment)
@@ -409,23 +408,23 @@ namespace Prism
         return { envFiltered, irradianceMap };
     }
 
-    void OpenGLRenderer::RenderMesh(Ref<VertexInput> vertexInput, Ref<Mesh> mesh, Ref<Material> material,
+    void OpenGLRenderer::RenderMesh(Ref<Mesh> mesh, Ref<Material> material,
         uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass,
         const PrismShaderCompiler::PipelineState* stateOverride)
     {
-        BindMaterial(material, pass, stateOverride);
-        if (mesh != s_Data->LastMesh)
-        {
-            mesh->m_VertexBuffer->Bind();
-            vertexInput->Bind();
-            mesh->m_IndexBuffer->Bind();
-            s_Data->LastMesh = mesh;
-        }
-
-        auto& submesh = mesh->m_Submeshes[submeshIndex];
-        Renderer::Submit([submesh]() {
-            Utils::DrawIndexedBaseVertex(submesh.IndexCount, submesh.BaseIndex, submesh.BaseVertex, PrimitiveType::Triangles);
-            });
+        // 新方案
+        Renderer::Submit([=]() mutable {
+            RT_BindMaterial(material, pass, stateOverride);
+            if (mesh != s_Data->LastMesh)
+            {
+                mesh->m_VertexBuffer.As<OpenGLVertexBuffer>()->RT_Bind();
+                mesh->GetVertexInput().As<OpenGLVertexInput>()->RT_Bind();
+                mesh->m_IndexBuffer.As<OpenGLIndexBuffer>()->RT_Bind();
+                s_Data->LastMesh = mesh;
+            }
+            auto& submesh = mesh->m_Submeshes[submeshIndex];
+            Utils::RT_DrawIndexedBaseVertex(submesh.IndexCount, submesh.BaseIndex, submesh.BaseVertex, PrimitiveType::Triangles);
+        });
     }
 
     void OpenGLRenderer::RenderQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const glm::mat4& transform,
@@ -435,28 +434,35 @@ namespace Prism
         SubmitFullscreenQuad(vertexInput, material, stateOverride);
     }
 
-    void OpenGLRenderer::BindMaterial(Ref<Material> material, uint32_t pass,
-        const PrismShaderCompiler::PipelineState* stateOverride)
+
+    void OpenGLRenderer::RT_BindMaterial(Ref<Material> material, uint32_t pass, const PrismShaderCompiler::PipelineState* stateOverride /*= nullptr*/)
     {
-        if (!material)
-            return;
-
-        Ref<Shader> program = material->GetProgram(pass);
-        PrismShaderCompiler::PipelineState effectiveState = PrismShaderCompiler::PipelineState::Default();
-        const auto& shPass = material->GetShader()->GetPass(pass);
-        if (shPass.RenderState)
-            effectiveState = *shPass.RenderState;
-        if (stateOverride)
-            effectiveState.Merge(*stateOverride);
-        PSOKey key{ program.As<OpenGLShader>()->GetRendererID(), effectiveState };
-        if (!(key == s_Data->LastPSOKey))
-        {
-            OpenGLPipelineStateCache::Get(program.As<OpenGLShader>()->GetRendererID(), effectiveState)->Bind();
-            s_Data->LastPSOKey = key;
-        }
-
+        if (!material) return;
         if (material != s_Data->LastMaterial)
         {
+            Ref<Shader> program = material->GetProgram(pass);
+            PrismShaderCompiler::PipelineState effectiveState = PrismShaderCompiler::PipelineState::Default();
+            const auto& shPass = material->GetShader()->GetPass(pass);
+            if (shPass.RenderState)
+                effectiveState = *shPass.RenderState;
+            if (stateOverride)
+                effectiveState.Merge(*stateOverride);
+            OpenGLPipelineState::RT_SetupPipelineState(effectiveState);
+            s_Data->LastMaterial = material;
+            if (!(program == s_Data->LastProgram))
+            {
+                program.As<OpenGLShader>()->RT_Bind();
+                s_Data->LastProgram = program;
+            }
+            for (const auto& [index, tex] : material->GetTextures())
+            {
+                if (!tex) continue;
+                uint32_t unit = FlatTexture(Config::PRISM_SET_MATERIAL, index);
+                if (tex->GetType() == TextureType::Texture2D)
+                    tex.As<OpenGLTexture2D>()->GetImage().As<OpenGLImage2D>()->RT_Bind(unit);
+                else
+                    tex.As<OpenGLTextureCube>()->GetImage().As<OpenGLImageCube>()->RT_Bind(unit);
+            }
             uint32_t size = (uint32_t)material->GetPropertyBuffer().GetSize();
             auto& entry = s_Data->MaterialUBOs[material.Raw()];
             if (!entry.UBO || entry.Size != size)
@@ -470,19 +476,8 @@ namespace Prism
                 entry.UBO->SetData(material->GetPropertyBuffer());
                 material->SetDirty(false);
             }
-            Renderer::SetUniformBuffer(Config::PRISM_SET_MATERIAL, 0, entry.UBO);
-
-            const auto& textures = material->GetTextures();
-            for (const auto& [index, tex] : textures)
-            {
-                if (!tex) continue;
-                uint32_t unit = FlatTexture(Config::PRISM_SET_MATERIAL, index);
-                if (tex->GetType() == TextureType::Texture2D)
-                    tex.As<OpenGLTexture2D>()->GetImage().As<OpenGLImage2D>()->Bind(unit);
-                else
-                    tex.As<OpenGLTextureCube>()->GetImage().As<OpenGLImageCube>()->Bind(unit);
-            }
-            s_Data->LastMaterial = material;
+            uint32_t point = FlatUBO(Config::PRISM_SET_MATERIAL, 0);
+            glBindBufferBase(GL_UNIFORM_BUFFER, point, entry.UBO.As<OpenGLUniformBuffer>()->GetRendererID());
         }
     }
 

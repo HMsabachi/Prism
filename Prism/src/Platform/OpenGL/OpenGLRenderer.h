@@ -30,7 +30,7 @@ namespace Prism
         virtual void SetShaderStorageBuffer(uint32_t set, uint32_t binding, Ref<ShaderStorageBuffer> ssbo) override;
         virtual void SetTexture(uint32_t set, uint32_t binding, Ref<Image> image) override;
 
-        virtual void RenderMesh(Ref<VertexInput> vertexInput, Ref<Mesh> mesh, Ref<Material> material,
+        virtual void RenderMesh(Ref<Mesh> mesh, Ref<Material> material,
             uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass,
             const PrismShaderCompiler::PipelineState* stateOverride = nullptr) override;
         virtual void RenderQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const glm::mat4& transform,
@@ -43,7 +43,7 @@ namespace Prism
         virtual RenderAPICapabilities& GetCapabilities() override;
 
     private:
-        void BindMaterial(Ref<Material> material, uint32_t pass, const PrismShaderCompiler::PipelineState* stateOverride = nullptr);
+        void RT_BindMaterial(Ref<Material> material, uint32_t pass, const PrismShaderCompiler::PipelineState* stateOverride = nullptr);
 
         static uint32_t FlatUBO(uint32_t set, uint32_t binding);
         static uint32_t FlatSSBO(uint32_t set, uint32_t binding);
