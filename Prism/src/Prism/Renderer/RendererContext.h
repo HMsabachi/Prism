@@ -18,6 +18,8 @@ namespace Prism {
 
         virtual void OnResize(uint32_t width, uint32_t height) = 0;
 
+        virtual void MakeRenderThreadCurrent() {}
+
         static Ref<RendererContext> Create(GLFWwindow* windowHandle);
     };
 

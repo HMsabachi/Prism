@@ -38,7 +38,7 @@ namespace Prism {
     OpenGLVertexInput::~OpenGLVertexInput()
     {
         GLuint rendererID = m_VertexArrayRendererID;
-        Renderer::Submit([rendererID]()
+        Renderer::SubmitResourceFree([rendererID]()
         {
             glDeleteVertexArrays(1, &rendererID);
         });

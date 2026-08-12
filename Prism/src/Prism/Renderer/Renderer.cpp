@@ -10,6 +10,9 @@
 #include "Image.h"
 #include "Texture.h"
 #include "Buffer/Framebuffer.h"
+#include "Prism/Core/RenderThread.h"
+#include "Prism/Core/Application.h"
+#include "Prism/Renderer/RendererContext.h"
 #include "Platform/OpenGL/OpenGLRenderer.h"
 
 #include "Camera/Camera.h"
@@ -19,6 +22,8 @@ namespace Prism
     RendererAPIType RendererAPI::s_CurrentRendererAPI = RendererAPIType::OpenGL;
 
     static RendererAPI* s_RendererAPI = nullptr;
+    static RendererConfig s_Config;
+    bool Renderer::s_Initialized = false;
 
     static void InitRendererAPI()
     {
@@ -26,37 +31,61 @@ namespace Prism
         {
         case RendererAPIType::OpenGL:
             s_RendererAPI = new OpenGLRenderer();
+            s_Config.FramesInFlight = 1;
             break;
         // case RendererAPIType::Vulkan:
         //     s_RendererAPI = new VulkanRenderer(); // TODO: Vulkan 后端
+        //     s_Config.FramesInFlight = 3;
         //     break;
         default:
             PR_CORE_ASSERT(false, "未支持的 RendererAPI");
         }
     }
 
-    struct RendererData
-    {
-        RenderCommandQueue m_CommandQueue;
-    };
+    // 双命令队列：主线程写 submissionIndex 槽，渲染线程读 (submissionIndex+1)%2 槽。
+    // 两个线程碰不同队列，无需锁。唯一同步点是 atomic 索引翻转（SwapQueues）。
+    constexpr static uint32_t s_RenderCommandQueueCount = 2;
+    static RenderCommandQueue s_CommandQueue[s_RenderCommandQueueCount];
+    static std::atomic<uint32_t> s_RenderCommandQueueSubmissionIndex = 0;
 
-    static RendererData s_Data;
+    // 资源释放队列：按帧槽位分隔，延迟若干帧后执行（GL=1，Vulkan=FramesInFlight）。
+    // 实际使用数量由 s_Config.FramesInFlight 决定，数组大小取最大可能值。
+    constexpr static uint32_t s_ResourceFreeQueueMax = 4;
+    static RenderCommandQueue s_ResourceFreeQueue[s_ResourceFreeQueueMax];
 
     void Renderer::Init()
     {
         InitRendererAPI();
         s_RendererAPI->Init();
+        s_Initialized = true;
     }
 
     void Renderer::Shutdown()
     {
+        s_Initialized = false;
+
         if (s_RendererAPI)
         {
+            uint32_t delayFrames = s_Config.FramesInFlight;
+            delayFrames = (delayFrames == 0) ? 1 : delayFrames;
+            for (uint32_t i = 0; i < delayFrames && i < s_ResourceFreeQueueMax; i++)
+            {
+                auto& queue = Renderer::GetRenderResourceReleaseQueue(i);
+                queue.Execute();
+            }
+
             s_RendererAPI->Shutdown();
             delete s_RendererAPI;
             s_RendererAPI = nullptr;
         }
+
+        /*delete s_CommandQueue[0];
+        delete s_CommandQueue[1];
+        s_CommandQueue[0] = s_CommandQueue[1] = nullptr;*/
     }
+
+
+    const RendererConfig& Renderer::GetConfig() { return s_Config; }
 
     Renderer::Renderer() {}
     Renderer::~Renderer() {}
@@ -66,7 +95,13 @@ namespace Prism
         return GetRenderCommandQueue().DataAllocate(data, size);
     }
 
-    void Renderer::BeginFrame() { s_RendererAPI->BeginFrame(); }
+    void Renderer::BeginFrame()
+    {
+        const uint32_t releaseIndex = GetCurrentFrameIndex() % s_Config.FramesInFlight;
+        GetRenderResourceReleaseQueue(releaseIndex).Execute();
+
+        s_RendererAPI->BeginFrame();
+    }
     void Renderer::EndFrame() { s_RendererAPI->EndFrame(); }
 
     void Renderer::BeginRenderPass(Ref<RenderPass> renderPass, bool clear) { s_RendererAPI->BeginRenderPass(renderPass, clear); }
@@ -84,7 +119,66 @@ namespace Prism
 
     RenderAPICapabilities& Renderer::GetCapabilities() { return s_RendererAPI->GetCapabilities(); }
 
-    void Renderer::WaitAndRender() { s_Data.m_CommandQueue.Execute(); }
+    // 无参版本：执行当前 submissionIndex 槽（单线程同步路径，兼容旧主循环与 GetData sync）。
+    // 保留是因为 Application/OpenGLContext/SSBO 的既有调用点还没切到 Pump/Kick 流程（Phase 3 再改）。
+    void Renderer::WaitAndRender() { s_CommandQueue[GetRenderQueueSubmissionIndex()].Execute(); }
+
+    void Renderer::WaitAndRender(RenderThread* renderThread)
+    {
+        PR_PROFILE_FUNCTION();
+        // MultiThreaded：等待主线程 Kick，醒来置 Busy，执行队列后置 Idle。
+        // SingleThreaded：renderThread 非空但 WaitAndSet/Set 是 no-op，直接执行渲染槽。
+        if (renderThread)
+        {
+            renderThread->WaitAndSet(RenderThread::State::Kick, RenderThread::State::Busy);
+        }
+
+        s_CommandQueue[GetRenderQueueIndex()].Execute();
+
+        if (renderThread)
+        {
+            renderThread->Set(RenderThread::State::Idle);
+        }
+    }
+
+    void Renderer::RenderThreadFunc(RenderThread* renderThread)
+    {
+        PR_PROFILE_THREAD("Render Thread");
+
+        Application::Get().GetWindow().GetRenderContext()->MakeRenderThreadCurrent();
+
+        while (renderThread->IsRunning())
+        {
+            WaitAndRender(renderThread);
+        }
+    }
+
+    void Renderer::SwapQueues()
+    {
+        s_RenderCommandQueueSubmissionIndex = (s_RenderCommandQueueSubmissionIndex + 1) % s_RenderCommandQueueCount;
+    }
+
+    uint32_t Renderer::GetRenderQueueIndex()
+    {
+        // 渲染线程读取的槽 = 主线程写入槽的另一侧
+        return (s_RenderCommandQueueSubmissionIndex + 1) % s_RenderCommandQueueCount;
+    }
+
+    uint32_t Renderer::GetRenderQueueSubmissionIndex()
+    {
+        return s_RenderCommandQueueSubmissionIndex;
+    }
+
+    uint32_t Renderer::GetCurrentFrameIndex()
+    {
+        return Application::Get().GetCurrentFrameIndex();
+    }
+
+    uint32_t Renderer::RT_GetCurrentFrameIndex()
+    {
+        return GetCurrentFrameIndex();
+    }
+
 
 #if 0
     void Renderer::DrawAABB(Ref<Mesh> mesh, const glm::mat4& transform, const glm::vec4& color)
@@ -125,5 +219,11 @@ namespace Prism
     }
 #endif
 
-    RenderCommandQueue& Renderer::GetRenderCommandQueue() { return s_Data.m_CommandQueue; }
+    RenderCommandQueue& Renderer::GetRenderCommandQueue() { return s_CommandQueue[s_RenderCommandQueueSubmissionIndex]; }
+
+    RenderCommandQueue& Renderer::GetRenderResourceReleaseQueue(uint32_t index)
+    {
+        PR_CORE_ASSERT(index < s_ResourceFreeQueueMax, "资源释放队列索引越界");
+        return s_ResourceFreeQueue[index];
+    }
 }

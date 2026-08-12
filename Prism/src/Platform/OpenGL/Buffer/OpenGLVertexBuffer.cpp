@@ -33,7 +33,7 @@ namespace Prism
     OpenGLVertexBuffer::~OpenGLVertexBuffer()
     {
         GLuint id = m_RendererID;
-        Renderer::Submit([id]() {
+        Renderer::SubmitResourceFree([id]() {
             glDeleteBuffers(1, &id);
         });
     }

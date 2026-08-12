@@ -23,7 +23,7 @@ namespace Prism
     OpenGLShader::~OpenGLShader()
     {
         uint32_t id = m_RendererID;
-        Renderer::Submit([id]() {
+        Renderer::SubmitResourceFree([id]() {
             if (id) glDeleteProgram(id);
         });
     }

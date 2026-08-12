@@ -32,7 +32,7 @@ namespace Prism
     OpenGLIndexBuffer::~OpenGLIndexBuffer()
     {
         GLuint id = m_RendererID;
-        Renderer::Submit([id]() {
+        Renderer::SubmitResourceFree([id]() {
             glDeleteBuffers(1, &id);
         });
     }

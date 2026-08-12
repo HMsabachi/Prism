@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Prism/Core/Core.h"
 
 #include <string>
@@ -64,9 +64,11 @@ namespace Prism {
 #define PR_PROFILE_END_SESSION() ::Prism::Instrumentor::Get().EndSession()
 #define PR_PROFILE_SCOPE(name) ::Prism::InstrumentationTimer timer##__LINE__(name);
 #define PR_PROFILE_FUNCTION() PR_PROFILE_SCOPE(__FUNCSIG__)
+#define PR_PROFILE_THREAD(...)
 #else
 #define PR_PROFILE_BEGIN_SESSION(name, filepath)
 #define PR_PROFILE_END_SESSION()
 #define PR_PROFILE_SCOPE(name)
 #define PR_PROFILE_FUNCTION()
+#define PR_PROFILE_THREAD(...)
 #endif

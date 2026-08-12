@@ -41,15 +41,13 @@ namespace Prism
     PRISM_API bool g_ApplicationRunning = true;
 
     Application::Application(const ApplicationProps& props)
-        : m_Props(props)
+        : m_Props(props), m_RenderThread(props.CoreThreadingPolicy)
     {
         PR_PROFILE_FUNCTION();
         PR_CORE_ASSERT(!s_Instance, "Application already exists! 应用已经存在");
         s_Instance = this;
 
         Initialize();
-
-        
     }
     void Application::Initialize()
     {
@@ -72,7 +70,9 @@ namespace Prism
 
         AssetManager::Init();
         Renderer::Init();
-        Renderer::WaitAndRender();
+
+        m_RenderThread.Run();
+        m_RenderThread.Pump();
 
         m_SceneRenderer = std::make_unique<SceneRenderer>();
         m_SceneRenderer->Initialize(1280, 720);
@@ -81,18 +81,24 @@ namespace Prism
     Application::~Application()
     {
         PR_PROFILE_FUNCTION();
+
+        // 场景渲染器析构
+        m_SceneRenderer.reset();
+
+        // 脚本/物理/资产子系统停机
+        CSharpScriptEngine::Shutdown();
+        PythonScriptEngine::Shutdown();
+        Physics::Shutdown();
+        AssetManager::Shutdown();
+
+        m_RenderThread.Terminate();
+
         for (Layer* layer : m_LayerStack)
         {
             layer->OnDetach();
             delete layer;
         }
-
-        m_SceneRenderer.reset();
-
-        CSharpScriptEngine::Shutdown();
-        PythonScriptEngine::Shutdown();
-        Physics::Shutdown();
-        AssetManager::Shutdown();
+        Renderer::Shutdown();
     }
     
 
@@ -148,6 +154,8 @@ namespace Prism
             m_Window->GetRenderContext()->BeginFrame();
             Renderer::WaitAndRender();
             m_Window->SwapBuffers();
+
+            m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Renderer::GetConfig().FramesInFlight;
         }
     }
 #pragma region Private Methods 私有方法

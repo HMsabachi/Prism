@@ -3,6 +3,7 @@
 #include "RendererTypes.h"
 #include "RendererAPI.h"
 #include "RenderCommandQueue.h"
+#include "Prism/Core/RenderThread.h"
 
 #include <glm/glm.hpp>
 #include "Prism/Core/Math/AABB.h"
@@ -13,10 +14,19 @@ namespace Prism
     class Mesh;
     class Material;
     class RenderPass;
+    class RenderThread;
     class VertexInput;
     class Image;
     class UniformBuffer;
     class ShaderStorageBuffer;
+}
+
+namespace Prism
+{
+    struct RendererConfig
+    {
+        uint32_t FramesInFlight = 1;
+    };
 }
 
 namespace Prism
@@ -30,6 +40,7 @@ namespace Prism
         Renderer();
         ~Renderer();
         static void* DataAllocate(const void* data, size_t size);
+
         template<typename FuncT>
         static void Submit(FuncT&& func)
         {
@@ -40,10 +51,43 @@ namespace Prism
                 };
             auto storageBuffer = GetRenderCommandQueue().Allocate(renderCmd, sizeof(func));
             new (storageBuffer) FuncT(std::forward<FuncT>(func));
-            //renderCmd(&func);
         }
+
+
+        static bool s_Initialized;
+
+        template<typename FuncT>
+        static void SubmitResourceFree(FuncT&& func)
+        {
+            if (!s_Initialized)
+                return;
+
+            auto renderCmd = [](void* ptr) {
+                auto pFunc = (FuncT*)ptr;
+                (*pFunc)();
+                pFunc->~FuncT();
+                };
+
+            if (RenderThread::IsCurrentThreadRT())
+            {
+                const uint32_t index = RT_GetCurrentFrameIndex();
+                auto storageBuffer = GetRenderResourceReleaseQueue(index).Allocate(renderCmd, sizeof(func));
+                new (storageBuffer) FuncT(std::forward<FuncT>((FuncT&&)func));
+            }
+            else
+            {
+                const uint32_t index = GetCurrentFrameIndex();
+                Submit([renderCmd, func, index]()
+                {
+                    auto storageBuffer = GetRenderResourceReleaseQueue(index).Allocate(renderCmd, sizeof(func));
+                    new (storageBuffer) FuncT(std::forward<FuncT>((FuncT&&)func));
+                });
+            }
+        }
+
         static void Init();
         static void Shutdown();
+        static const RendererConfig& GetConfig();
 
         // 高层转发（多态分发到 s_RendererAPI）
         static void BeginFrame();
@@ -64,7 +108,15 @@ namespace Prism
 
         static RenderAPICapabilities& GetCapabilities();
 
+        // 渲染线程相关（Phase 1 骨架）
         static void WaitAndRender();
+        static void WaitAndRender(RenderThread* renderThread);
+        static void RenderThreadFunc(RenderThread* renderThread);
+        static void SwapQueues();
+        static uint32_t GetRenderQueueIndex();
+        static uint32_t GetRenderQueueSubmissionIndex();
+        static uint32_t GetCurrentFrameIndex();
+        static uint32_t RT_GetCurrentFrameIndex();
 
 #if 0
         // 依赖 Renderer2D::DrawLine，待跟进 Hazel SceneRenderer 线框方案后恢复
@@ -73,5 +125,6 @@ namespace Prism
 #endif
     public:
         static RenderCommandQueue& GetRenderCommandQueue();
+        static RenderCommandQueue& GetRenderResourceReleaseQueue(uint32_t index);
     };
 }

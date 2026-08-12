@@ -75,7 +75,7 @@ namespace Prism {
     OpenGLFramebuffer::~OpenGLFramebuffer()
     {
         Ref<OpenGLFramebuffer> instance = this;
-        Renderer::Submit([instance]() {
+        Renderer::SubmitResourceFree([instance]() {
             glDeleteFramebuffers(1, &instance->m_RendererID);
         });
     }

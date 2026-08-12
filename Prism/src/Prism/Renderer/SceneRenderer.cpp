@@ -251,8 +251,7 @@ namespace Prism
                 m_ObjectData.Model = dc.Transform;
                 m_ObjectData.Reserved.x = static_cast<float>(cascade);
                 if (dc.Mesh->IsAnimated())
-                    SetObjectBones(dc.Mesh->m_BoneTransforms.data(),
-                        (uint32_t)dc.Mesh->m_BoneTransforms.size());
+                    SetObjectBones(dc.Mesh->m_BoneTransforms.data(), (uint32_t)dc.Mesh->m_BoneTransforms.size());
                 UploadObjectUBO();
                 Renderer::SetUniformBuffer(Config::PRISM_SET_TRANSFORMS, 0, m_ObjectUBO);
 

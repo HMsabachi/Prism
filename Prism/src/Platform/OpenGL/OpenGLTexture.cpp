@@ -104,7 +104,7 @@ namespace Prism {
     OpenGLTexture2D::~OpenGLTexture2D()
     {
         Ref<Image2D> image = m_Image;
-        Renderer::Submit([image]() mutable {
+        Renderer::SubmitResourceFree([image]() mutable {
             image->Release();
         });
     }

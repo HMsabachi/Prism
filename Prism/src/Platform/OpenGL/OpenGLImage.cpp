@@ -25,7 +25,7 @@ namespace Prism {
         if (m_RendererID)
         {
             RendererID rendererID = m_RendererID;
-            Renderer::Submit([rendererID]()
+            Renderer::SubmitResourceFree([rendererID]()
             {
                 glDeleteTextures(1, &rendererID);
             });
@@ -110,7 +110,7 @@ namespace Prism {
         if (m_RendererID)
         {
             RendererID rendererID = m_RendererID;
-            Renderer::Submit([rendererID]()
+            Renderer::SubmitResourceFree([rendererID]()
             {
                 glDeleteTextures(1, &rendererID);
             });

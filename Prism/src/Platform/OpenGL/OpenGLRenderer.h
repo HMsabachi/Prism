@@ -4,8 +4,7 @@
 
 namespace Prism
 {
-    // OpenGL 后端高层渲染器（实现 RendererAPI 高层纯虚接口）。
-    // 不 include glad：GL 调用全部下沉 .cpp，保持后端 .h 与 Vulkan 后端对称（Vulkan 框架预留）。
+
     class OpenGLRenderer : public RendererAPI
     {
     public:
@@ -15,11 +14,9 @@ namespace Prism
         virtual void BeginFrame() override;
         virtual void EndFrame() override;
 
-        // 完整实现（SceneRenderer/EditorLayer 现有调用点依赖，Phase 4 不能断渲染）
         virtual void BeginRenderPass(Ref<RenderPass> renderPass, bool clear = true) override;
         virtual void EndRenderPass() override;
 
-        // 占位（Phase 5 接入 SceneRenderer 时实现）
         virtual void SubmitFullscreenQuad(Ref<VertexInput> vertexInput, Ref<Material> material,
             const PrismShaderCompiler::PipelineState* stateOverride = nullptr) override;
 

@@ -22,7 +22,7 @@ namespace Prism
     OpenGLShaderStorageBuffer::~OpenGLShaderStorageBuffer()
     {
         GLuint id = m_RendererID;
-        Renderer::Submit([id]() {
+        Renderer::SubmitResourceFree([id]() {
             if (id) glDeleteBuffers(1, &id);
         });
     }
