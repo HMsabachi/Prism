@@ -23,7 +23,6 @@ namespace Prism {
         virtual Buffer GetBuffer() const override { return m_ImageData; }
         virtual Buffer& GetBuffer() override { return m_ImageData; }
 
-        void Bind(uint32_t slot) const;
         void RT_Bind(uint32_t slot) const;
 
         RendererID& GetRendererID() { return m_RendererID; }
@@ -60,7 +59,6 @@ namespace Prism {
         virtual Buffer GetBuffer() const override { return m_ImageData; }
         virtual Buffer& GetBuffer() override { return m_ImageData; }
 
-        void Bind(uint32_t slot) const;
         void RT_Bind(uint32_t slot) const;
 
         RendererID& GetRendererID() { return m_RendererID; }

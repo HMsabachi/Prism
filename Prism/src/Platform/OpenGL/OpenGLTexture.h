@@ -14,8 +14,6 @@ namespace Prism {
         OpenGLTexture2D(const std::string& path, bool srgb);
         virtual ~OpenGLTexture2D();
 
-        virtual void Bind(uint32_t slot = 0) const;
-
         virtual ImageFormat GetFormat() const override { return m_Image->GetFormat(); }
         virtual uint32_t GetWidth() const override { return m_Width; }
         virtual uint32_t GetHeight() const override { return m_Height; }
@@ -33,6 +31,8 @@ namespace Prism {
         virtual Buffer GetWriteableBuffer() override;
         virtual Ref<Image2D> GetImage() const override { return m_Image; }
         virtual uint64_t GetHash() const override { return m_Image->GetHash(); }
+
+        void RT_Bind(uint32_t slot) const;
 
         RendererID GetRendererID() const { return m_Image.As<OpenGLImage2D>()->GetRendererID(); }
         uint32_t GetBinding() const { return m_BindSlot; }
@@ -58,13 +58,9 @@ namespace Prism {
         OpenGLTextureCube(ImageFormat format, uint32_t width, uint32_t height, const void* data = nullptr);
         virtual ~OpenGLTextureCube();
 
-        virtual void Bind(uint32_t slot = 0) const;
-
         virtual ImageFormat GetFormat() const override { return m_Image->GetFormat(); }
         virtual uint32_t GetWidth() const override { return m_Image->GetWidth(); }
         virtual uint32_t GetHeight() const override { return m_Image->GetHeight(); }
-        // This function currently returns the expected number of mips based on image size,
-        // not present mips in data
         virtual uint32_t GetMipLevelCount() const override;
 
         void GenerateMipMap() const;
@@ -73,6 +69,8 @@ namespace Prism {
         virtual const std::string& GetPath() const override { return FilePath; }
         virtual uint64_t GetHash() const override { return m_Image->GetHash(); }
         virtual Ref<ImageCube> GetImage() const override { return m_Image; }
+
+        void RT_Bind(uint32_t slot) const;
 
         RendererID GetRendererID() const { return m_Image.As<OpenGLImageCube>()->GetRendererID(); }
         uint32_t GetBinding() const { return m_BindSlot; }

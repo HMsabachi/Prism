@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Prism/Renderer/RendererAPI.h"
 #include "Prism/Renderer/Image.h"
 #include <vector>
@@ -50,8 +50,6 @@ namespace Prism {
         static Ref<Framebuffer> Create(const FramebufferSpecification& spec);
 
         virtual ~Framebuffer() {}
-        virtual void Bind() const = 0;
-        virtual void Unbind() const = 0;
 
         virtual void Resize(uint32_t width, uint32_t height, bool forceRecreate = false) = 0;
         virtual void AddResizeCallback(const std::function<void(Ref<Framebuffer>)>& func) = 0;

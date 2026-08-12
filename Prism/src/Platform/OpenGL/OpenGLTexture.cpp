@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "OpenGLTexture.h"
 
 #include "Prism/Renderer/RendererAPI.h"
@@ -109,16 +109,6 @@ namespace Prism {
         });
     }
 
-    void OpenGLTexture2D::Bind(unsigned int slot) const
-    {
-        Ref<const OpenGLTexture2D> instance = this;
-        Renderer::Submit([instance, slot]()
-        {
-                instance->m_BindSlot = slot;
-            glBindTextureUnit(slot, instance->m_Image.As<OpenGLImage2D>()->GetRendererID());
-        });
-    }
-
     void OpenGLTexture2D::Lock()
     {
         m_Locked = true;
@@ -141,6 +131,12 @@ namespace Prism {
         return m_Image->GetBuffer();
     }
 
+
+    void OpenGLTexture2D::RT_Bind(uint32_t slot) const
+    {
+        m_BindSlot = slot;
+        glBindTextureUnit(slot, m_Image.As<OpenGLImage2D>()->GetRendererID());
+    }
 
     uint32_t OpenGLTexture2D::GetMipLevelCount() const
     {
@@ -166,15 +162,6 @@ namespace Prism {
     {
     }
 
-    void OpenGLTextureCube::Bind(unsigned int slot) const
-    {
-        Ref<const OpenGLTextureCube> instance = this;
-        Renderer::Submit([instance, slot]() mutable {
-            instance->m_BindSlot = slot;
-            glBindTextureUnit(slot, instance->GetRendererID());
-            });
-    }
-
     uint32_t OpenGLTextureCube::GetMipLevelCount() const
     {
         return Texture::CalculateMipMapCount(m_Image->GetWidth(), m_Image->GetHeight());
@@ -197,6 +184,13 @@ namespace Prism {
         {
             glCopyImageSubData(instance->GetRendererID(), GL_TEXTURE_CUBE_MAP, 0, 0, 0, 0, destination.As<OpenGLTextureCube>()->GetRendererID(), GL_TEXTURE_CUBE_MAP, 0, 0, 0, 0, instance->GetWidth(), instance->GetHeight(), 6);
         });
+    }
+
+
+    void OpenGLTextureCube::RT_Bind(uint32_t slot) const
+    {
+        m_BindSlot = slot;
+        glBindTextureUnit(slot, m_Image.As<OpenGLImageCube>()->GetRendererID());
     }
 
 }

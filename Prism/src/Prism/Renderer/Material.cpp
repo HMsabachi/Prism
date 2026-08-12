@@ -1,6 +1,7 @@
 ﻿#include "prpch.h"
 #include "Material.h"
 #include "Prism/Asset/AssetManager.h"
+#include "Buffer/UniformBuffer.h"
 #include "Prism/Renderer/Texture.h"
 
 namespace Prism
@@ -89,6 +90,7 @@ namespace Prism
         }
         m_Uniforms = m_Shader->GetUniforms();
         m_Dirty = true;
+        m_UniformBuffer = UniformBuffer::Create((uint32_t)m_PropertyBuffer.Size);
     }
 
     void Material::OnShaderReloaded()
@@ -274,6 +276,15 @@ namespace Prism
     Ref<Shader> Material::GetProgram(uint32_t passIndex) const
     {
         return m_Shader->GetPassProgram(passIndex, m_KeywordMask);
+    }
+
+
+    const Ref<Prism::UniformBuffer>& Material::GetUniformBuffer() const
+    {
+        if (!m_Dirty) return m_UniformBuffer;
+        m_UniformBuffer->SetData(m_PropertyBuffer);
+        m_Dirty = false;
+        return m_UniformBuffer;
     }
 
     void Material::SetKeyword(const std::string& name, bool enabled)

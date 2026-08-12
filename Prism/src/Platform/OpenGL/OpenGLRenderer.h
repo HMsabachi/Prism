@@ -47,6 +47,6 @@ namespace Prism
 
         static uint32_t FlatUBO(uint32_t set, uint32_t binding);
         static uint32_t FlatSSBO(uint32_t set, uint32_t binding);
-        uint32_t FlatTexture(uint32_t set, uint32_t binding) const;
+        static uint32_t FlatTexture(uint32_t set, uint32_t binding);
     };
 }

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Prism/Renderer/Buffer/Framebuffer.h"
 #include "Platform/OpenGL/OpenGLImage.h"
 #include <vector>
@@ -14,11 +14,13 @@ namespace Prism {
         virtual void Resize(uint32_t width, uint32_t height, bool forceRecreate = false) override;
         virtual void AddResizeCallback(const std::function<void(Ref<Framebuffer>)>& func) override {}
 
-        virtual void Bind() const override;
-        virtual void Unbind() const override;
-
         virtual uint32_t GetWidth() const override { return m_Width; }
         virtual uint32_t GetHeight() const override { return m_Height; }
+
+        void Bind() const;
+        void Unbind() const;
+        void RT_Bind() const;
+        void RT_Unbind() const;
 
         RendererID GetRendererID() const { return m_RendererID; }
 

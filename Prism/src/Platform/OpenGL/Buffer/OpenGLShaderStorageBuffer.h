@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Prism/Renderer/Buffer/ShaderStorageBuffer.h"
 
 namespace Prism

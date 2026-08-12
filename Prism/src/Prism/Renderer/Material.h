@@ -12,6 +12,7 @@ namespace Prism
     class Texture;
     class Texture2D;
     class TextureCube;
+    class UniformBuffer;
 
     class PRISM_API Material : public RefCounted
     {
@@ -24,7 +25,6 @@ namespace Prism
         Material(const Ref<Material>& material);
         virtual ~Material();
 
-        AssetHandle GetShaderHandle() const { return m_Shader->Handle; }
         const Ref<PrismShader>& GetShader() const { return m_Shader; }
         void SetShader(AssetHandle shaderHandle);
 
@@ -67,10 +67,8 @@ namespace Prism
         Ref<Shader> GetProgram(uint32_t passIndex = 0) const;
         uint32_t GetPassCount() const { return m_Shader->GetPassCount(); }
 
-        const Buffer& GetPropertyBuffer() const { return m_PropertyBuffer; }
+        const Ref<UniformBuffer>& GetUniformBuffer() const;
         const std::map<uint32_t, Ref<Texture>>& GetTextures() const { return m_Textures; }
-        bool IsDirty() const { return m_Dirty; }
-        void SetDirty(bool dirty) { m_Dirty = dirty; }
 
     private:
         void AllocateStorage();
@@ -80,10 +78,11 @@ namespace Prism
         Ref<PrismShader> m_Shader;
         std::string m_Name;
         Buffer m_PropertyBuffer;
+        mutable bool m_Dirty = true;
+        mutable Ref<UniformBuffer> m_UniformBuffer;
         std::map<uint32_t, Ref<Texture>> m_Textures;
         std::vector<PrismShaderCompiler::AST::ShaderUniform> m_Uniforms;
         KeywordMask m_KeywordMask = 0;
         ShaderReloadedToken m_ReloadToken = 0;
-        bool m_Dirty = true;
     };
 }

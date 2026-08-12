@@ -87,14 +87,6 @@ namespace Prism {
         m_ImageData.Release();
     }
 
-    void OpenGLImage2D::Bind(uint32_t slot) const
-    {
-        RendererID rid = m_RendererID;
-        Renderer::Submit([rid, slot]() {
-            glBindTextureUnit(slot, rid);
-        });
-    }
-
 
 	void OpenGLImage2D::RT_Bind(uint32_t slot) const
 	{
@@ -158,14 +150,6 @@ namespace Prism {
             m_RendererID = 0;
         }
         m_ImageData.Release();
-    }
-
-    void OpenGLImageCube::Bind(uint32_t slot) const
-    {
-        RendererID rid = m_RendererID;
-        Renderer::Submit([rid, slot]() {
-            glBindTextureUnit(slot, rid);
-        });
     }
 
 

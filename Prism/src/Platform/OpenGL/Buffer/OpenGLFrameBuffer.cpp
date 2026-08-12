@@ -135,16 +135,29 @@ namespace Prism {
     {
         Ref<const OpenGLFramebuffer> instance = this;
         Renderer::Submit([instance]() {
-            glBindFramebuffer(GL_FRAMEBUFFER, instance->m_RendererID);
-            glViewport(0, 0, instance->m_Width, instance->m_Height);
+            instance->RT_Bind();
         });
     }
 
     void OpenGLFramebuffer::Unbind() const
     {
-        Renderer::Submit([]() {
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        Ref<const OpenGLFramebuffer> instance = this;
+        Renderer::Submit([instance]() {
+            instance->RT_Unbind();
         });
+    }
+
+
+    void OpenGLFramebuffer::RT_Bind() const
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID);
+        glViewport(0, 0, m_Width, m_Height);
+    }
+
+
+    void OpenGLFramebuffer::RT_Unbind() const
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
 }

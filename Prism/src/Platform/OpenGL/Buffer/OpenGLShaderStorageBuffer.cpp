@@ -30,10 +30,11 @@ namespace Prism
     void OpenGLShaderStorageBuffer::SetData(const void* data, size_t size, size_t offset /*= 0*/)
     {
         Ref<const OpenGLShaderStorageBuffer> instance = this;
-        Renderer::Submit([=]() {
-            if (data == nullptr || size == 0)
+        const void* copy = Renderer::DataAllocate(data, size);
+        Renderer::Submit([copy, size, offset, instance]() {
+            if (copy == nullptr || size == 0)
                 return;
-            glNamedBufferSubData(instance->m_RendererID, static_cast<GLintptr>(offset), size, data);
+            glNamedBufferSubData(instance->m_RendererID, static_cast<GLintptr>(offset), size, copy);
         });
     }
     void OpenGLShaderStorageBuffer::GetData(void* data, size_t size, size_t offset, bool sync) const
