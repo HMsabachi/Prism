@@ -6,8 +6,7 @@
 
 namespace Prism
 {
-    OpenGLShader::OpenGLShader(const char* vertexSource, const char* fragmentSource,
-        const PrismShaderCompiler::PassReflection&)
+    OpenGLShader::OpenGLShader(const std::string& vertexSource, const std::string& fragmentSource)
         : m_VertexSource(vertexSource), m_FragmentSource(fragmentSource)
     {
         Ref<OpenGLShader> instance = this;

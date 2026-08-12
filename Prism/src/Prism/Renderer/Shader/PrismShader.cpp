@@ -68,33 +68,26 @@ namespace Prism
 
     void PrismShader::CompilePasses()
     {
-        auto& compiler = ShaderCompiler::Get();
-
         m_Passes.clear();
         m_Passes.reserve(m_Compiled.Passes.size());
 
         for (uint32_t i = 0; i < m_Compiled.Passes.size(); ++i)
         {
-            auto out = compiler.GenerateGLSL(m_Compiled, i);
-
             ShaderPass pass;
             pass.Name = m_Compiled.Passes[i].Name;
             for (auto& tag : m_Compiled.Passes[i].Tags)
                 pass.Tags[Hash::GenerateFNVHash64(tag.first)] = Hash::GenerateFNVHash64(tag.second);
             pass.RenderState = m_Compiled.Passes[i].RenderState;
 
-            PR_CORE_INFO("  Pass '{}': VS={}B  FS={}B",
-                pass.Name, out.VertexShader.size(), out.FragmentShader.size());
+            PR_CORE_INFO("  Pass '{}'", pass.Name);
 
             m_Passes.push_back(std::move(pass));
-            m_VariantCache[i][0] = Shader::Create(out.VertexShader.c_str(), out.FragmentShader.c_str(), out.Reflection);
+            m_VariantCache[i][0] = Shader::Create(m_Compiled, i);
         }
     }
 
     void PrismShader::CompileVariants()
     {
-        auto& compiler = ShaderCompiler::Get();
-
         m_Keywords.clear();
         m_MultiCompileMask = 0;
 
@@ -137,8 +130,7 @@ namespace Prism
             for (KeywordMask sub = passMulti; sub > 0; sub = (sub - 1) & passMulti)
             {
                 auto keywords = KeywordsForMask(sub);
-                auto out = compiler.GenerateGLSL(m_Compiled, p, keywords);
-                m_VariantCache[p][sub] = Shader::Create(out.VertexShader.c_str(), out.FragmentShader.c_str(), out.Reflection);
+                m_VariantCache[p][sub] = Shader::Create(m_Compiled, p, keywords);
                 PR_CORE_INFO("  Pass '{}' variant: [{}]", m_Passes[p].Name, Utilities::Join(keywords, ", "));
             }
         }
@@ -217,10 +209,8 @@ namespace Prism
         auto it = passCache.find(localMask);
         if (it != passCache.end()) return it->second;
 
-        auto& compiler = ShaderCompiler::Get();
         auto keywords = KeywordsForMask(localMask);
-        auto out = compiler.GenerateGLSL(m_Compiled, passIndex, keywords);
-        Ref<Shader> program = Shader::Create(out.VertexShader.c_str(), out.FragmentShader.c_str(), out.Reflection);
+        Ref<Shader> program = Shader::Create(m_Compiled, passIndex, keywords);
         passCache[localMask] = program;
         PR_CORE_TRACE("Shader'{}' Pass'{}' variant:[{}]", m_Name, m_Passes[passIndex].Name, Utilities::Join(keywords, ", "));
         return program;

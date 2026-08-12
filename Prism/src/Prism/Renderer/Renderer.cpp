@@ -66,7 +66,6 @@ namespace Prism
         return GetRenderCommandQueue().DataAllocate(data, size);
     }
 
-    // 高层转发（多态分发到 s_RendererAPI）
     void Renderer::BeginFrame() { s_RendererAPI->BeginFrame(); }
     void Renderer::EndFrame() { s_RendererAPI->EndFrame(); }
 

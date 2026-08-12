@@ -1,20 +1,24 @@
-﻿#pragma once
+#pragma once
 
 #include "Prism/Core/Core.h"
 #include "Prism/Renderer/RendererAPI.h"
 
-namespace PrismShaderCompiler { struct PassReflection; }
+#include <vector>
+#include <string>
+
+namespace PrismShaderCompiler { struct CompiledShader; }
 
 namespace Prism
 {
-    class PRISM_API Shader : public RefCounted
-    {
-    public:
-        virtual ~Shader() = default;
+	class PRISM_API Shader : public RefCounted
+	{
+	public:
+		virtual ~Shader() = default;
 
-        static Ref<Shader> Create(const void* vertexSource, const void* fragmentSource,
-            const PrismShaderCompiler::PassReflection& reflection);
-        static Ref<Shader> Create(const void* computeSource);
-    };
+		static Ref<Shader> Create(const PrismShaderCompiler::CompiledShader& shader,
+			uint32_t passIndex,
+			const std::vector<std::string>& keywords = {});
+		static Ref<Shader> Create(const void* computeSource);
+	};
 
 }
