@@ -3,6 +3,7 @@
 #include "Prism/Core/Application.h"
 
 #include "Prism/Core/Log.h"
+#include "Prism/Renderer/Renderer.h"
 
 #include "imgui.h"
 #include "Prism/ImGui/ImGuizmo.h"
@@ -32,12 +33,17 @@ namespace Prism
     void OpenGLImGuiLayer::OnAttach()
     {
         PR_CORE_INFO("ImGuiLayer::OnAttach()");
-        InitializeImGui();
-        SetDarkThemeColors();
+        Renderer::Submit([=]() {
+            InitializeImGui();
+            SetDarkThemeColors();
+        });
+        
     }
     void OpenGLImGuiLayer::OnDetach()
     {
-        DestroyImGui();
+        Renderer::Submit([=]() {
+            DestroyImGui();
+        });
     }
     void OpenGLImGuiLayer::Begin()
     {
@@ -80,7 +86,7 @@ namespace Prism
         io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos; // Enable setting mouse position  启用设置鼠标位置
 
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable docking  启用停靠
-        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // Enable viewports  启用viewports
+        //io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // Enable viewports  启用viewports（RT 验证：imgui_impl_glfw multi-viewport 非主线程安全，暂关）
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable keyboard navigation  启用键盘导航
 
         // 构建多语言字形范围

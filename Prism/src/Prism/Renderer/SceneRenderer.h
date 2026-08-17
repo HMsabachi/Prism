@@ -62,7 +62,7 @@ namespace Prism
         void Initialize(uint32_t viewportWidth, uint32_t viewportHeight);
         void Shutdown();
         void OnImGuiRender();
-        void Resize(uint32_t width, uint32_t height);
+        void RT_Resize(uint32_t width, uint32_t height);
 
         void Execute(const FrameSnapshot& snapshot);
 

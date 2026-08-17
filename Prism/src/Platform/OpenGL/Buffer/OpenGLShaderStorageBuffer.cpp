@@ -45,7 +45,7 @@ namespace Prism
             glGetNamedBufferSubData(instance->m_RendererID, static_cast<GLintptr>(offset), size, data);
         });
 
-        // TODO: 会卡住渲染线程
+        // TODO: MultiThreaded 下无参 WaitAndRender 在主线程执行队列且 context 不在主线程，需改用 fence/glFenceSync 同步读回
         if(sync)
             Renderer::WaitAndRender();
     }

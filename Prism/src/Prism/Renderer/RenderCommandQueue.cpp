@@ -65,10 +65,10 @@ namespace Prism
     void RenderCommandQueue::Execute()
     {
         PR_PROFILE_FUNCTION();
+        //PR_RENDER_TRACE("RendererCommandQueue begin");
         m_IsExecuting = true;
 
         //PR_RENDER_TRACE("RenderCommandQueue::Execute -- {0} commands, {1} bytes", m_CommandCount, (m_CommandBufferPtr - m_CommandBuffer));
-
         byte* buffer = m_CommandBuffer;
 
         for (uint32_t i = 0; i < m_CommandCount; i++)
@@ -85,6 +85,8 @@ namespace Prism
         m_CommandBufferPtr = m_CommandBuffer;
         m_CommandCount = 0;
         m_IsExecuting = false;
+        //PR_RENDER_TRACE("RendererCommandQueue end");
+
     }
     
 

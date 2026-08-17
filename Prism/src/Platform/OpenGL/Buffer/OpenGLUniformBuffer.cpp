@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "OpenGLUniformBuffer.h"
 
 #include "Prism/Renderer/Renderer.h"
@@ -42,6 +42,17 @@ namespace Prism
         Renderer::Submit([instance, copy, offset, size]() {
             glNamedBufferSubData(instance->m_RendererID, offset, size, copy);
         });
+    }
+
+    void OpenGLUniformBuffer::RT_SetData(const Buffer& buffer)
+    {
+        glNamedBufferSubData(m_RendererID, 0, buffer.GetSize(), buffer.Data);
+    }
+
+    void OpenGLUniformBuffer::RT_SetData(const void* data, uint32_t size, uint32_t offset /*= 0*/)
+    {
+        glNamedBufferSubData(m_RendererID, offset, size, data);
+
     }
 
 }

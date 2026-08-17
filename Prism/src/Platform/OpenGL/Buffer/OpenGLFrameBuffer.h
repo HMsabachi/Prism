@@ -12,6 +12,7 @@ namespace Prism {
         virtual ~OpenGLFramebuffer();
 
         virtual void Resize(uint32_t width, uint32_t height, bool forceRecreate = false) override;
+        virtual void RT_Resize(uint32_t width, uint32_t height, bool forceRecreate = false) override;
         virtual void AddResizeCallback(const std::function<void(Ref<Framebuffer>)>& func) override {}
 
         virtual uint32_t GetWidth() const override { return m_Width; }

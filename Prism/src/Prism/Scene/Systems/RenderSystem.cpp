@@ -157,7 +157,6 @@ namespace Prism
             return;
         m_ViewportWidth = width;
         m_ViewportHeight = height;
-        SceneRenderer::Get().Resize(width, height);
     }
 
     void RenderSystem::SubmitDebugMesh(Ref<Mesh> mesh, const glm::mat4& transform,

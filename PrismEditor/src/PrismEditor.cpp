@@ -20,5 +20,5 @@ public:
 
 Prism::Application* Prism::CreateApplication()
 {
-    return new PrismEditorApplication({ "PrismEditor", 1920, 1080 , false});
+    return new PrismEditorApplication({ "PrismEditor", 1920, 1080, false, Prism::ThreadingPolicy::MultiThreaded });
 }

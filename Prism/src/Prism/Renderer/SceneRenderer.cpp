@@ -200,11 +200,11 @@ namespace Prism
         ImGui::End();
     }
 
-    void SceneRenderer::Resize(uint32_t width, uint32_t height)
+    void SceneRenderer::RT_Resize(uint32_t width, uint32_t height)
     {
-        m_GeoPass->GetSpecification().TargetFramebuffer->Resize(width, height);
-        m_IDPass->GetSpecification().TargetFramebuffer->Resize(width, height);
-        m_CompositePass->GetSpecification().TargetFramebuffer->Resize(width, height);
+        m_GeoPass->GetSpecification().TargetFramebuffer->RT_Resize(width, height);
+        m_IDPass->GetSpecification().TargetFramebuffer->RT_Resize(width, height);
+        m_CompositePass->GetSpecification().TargetFramebuffer->RT_Resize(width, height);
     }
 
     void SceneRenderer::Execute(const FrameSnapshot& snapshot)

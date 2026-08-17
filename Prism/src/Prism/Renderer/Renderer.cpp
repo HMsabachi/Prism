@@ -97,9 +97,6 @@ namespace Prism
 
     void Renderer::BeginFrame()
     {
-        const uint32_t releaseIndex = GetCurrentFrameIndex() % s_Config.FramesInFlight;
-        GetRenderResourceReleaseQueue(releaseIndex).Execute();
-
         s_RendererAPI->BeginFrame();
     }
     void Renderer::EndFrame() { s_RendererAPI->EndFrame(); }
@@ -121,7 +118,11 @@ namespace Prism
 
     // 无参版本：执行当前 submissionIndex 槽（单线程同步路径，兼容旧主循环与 GetData sync）。
     // 保留是因为 Application/OpenGLContext/SSBO 的既有调用点还没切到 Pump/Kick 流程（Phase 3 再改）。
-    void Renderer::WaitAndRender() { s_CommandQueue[GetRenderQueueSubmissionIndex()].Execute(); }
+    void Renderer::WaitAndRender()
+    {
+        PR_CORE_ERROR("错误的调用");
+        s_CommandQueue[GetRenderQueueSubmissionIndex()].Execute();
+    }
 
     void Renderer::WaitAndRender(RenderThread* renderThread)
     {
@@ -144,9 +145,7 @@ namespace Prism
     void Renderer::RenderThreadFunc(RenderThread* renderThread)
     {
         PR_PROFILE_THREAD("Render Thread");
-
-        Application::Get().GetWindow().GetRenderContext()->MakeRenderThreadCurrent();
-
+        PR_CORE_TRACE("Render Thread is running");
         while (renderThread->IsRunning())
         {
             WaitAndRender(renderThread);
@@ -176,6 +175,7 @@ namespace Prism
 
     uint32_t Renderer::RT_GetCurrentFrameIndex()
     {
+        // TODO: FF>=2 时与主线程 m_CurrentFrameIndex 推进存在竞态，需改用渲染线程独立帧索引（参考 Hazel SwapChain::m_CurrentFrameIndex）。FF=1 下恒为 0，安全。
         return GetCurrentFrameIndex();
     }
 

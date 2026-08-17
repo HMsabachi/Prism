@@ -612,8 +612,7 @@ namespace Prism
             auto viewportSize = ImGui::GetContentRegionAvail();
             //viewportSize.x *= 2;
             //viewportSize.y *= 2;
-            if (auto* rs = m_ActiveScene->GetSystem<RenderSystem>())
-                rs->SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
+            SceneRenderer::Get().RT_Resize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
             m_EditorCamera.SetProjectionMatrix(glm::perspectiveFov(glm::radians(45.0f), viewportSize.x, viewportSize.y, 0.1f, 10000.0f));
             m_EditorCamera.SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
             //viewportSize.x *= 0.5;

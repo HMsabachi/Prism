@@ -51,8 +51,10 @@ namespace Prism
     }
     void Application::Initialize()
     {
+        m_RenderThread.Run();
         // 初始化窗口 Initialize Window
         m_Window = std::unique_ptr<Window>(Window::Create(WindowProps(m_Props.Name, m_Props.WindowWidth, m_Props.WindowHeight)));
+        m_RenderThread.Pump();
         m_Window->SetEventCallback(BIND_EVENT_FN(OnEvent));
         m_Window->Maximize();
         m_Window->SetVSync(m_Props.VSync);
@@ -71,7 +73,8 @@ namespace Prism
         AssetManager::Init();
         Renderer::Init();
 
-        m_RenderThread.Run();
+
+
         m_RenderThread.Pump();
 
         m_SceneRenderer = std::make_unique<SceneRenderer>();
@@ -91,7 +94,6 @@ namespace Prism
         Physics::Shutdown();
         AssetManager::Shutdown();
 
-        m_RenderThread.Terminate();
 
         for (Layer* layer : m_LayerStack)
         {
@@ -99,6 +101,7 @@ namespace Prism
             delete layer;
         }
         Renderer::Shutdown();
+        m_RenderThread.Terminate();
     }
     
 
@@ -135,11 +138,21 @@ namespace Prism
     void Application::OnUpdate()
     {
         PR_PROFILE_FUNCTION();
+
+        m_RenderThread.BlockUntilRenderComplete();
+
+        ProcessQueuedEvents();
+
         Time::Update();
         m_Window->ProcessEvents();
 
+        m_RenderThread.NextFrame();
+        m_RenderThread.Kick();
+
         if (!m_Minimized)
         {
+            Renderer::Submit([this]() { m_Window->GetRenderContext()->BeginFrame(); });
+
             Renderer::BeginFrame();
 
             PR_PROFILE_SCOPE("Update LayerStack")
@@ -148,17 +161,28 @@ namespace Prism
 
             Application* app = this;
             Renderer::Submit([app]() { app->RenderImGui(); });
+            //app->RenderImGui();
 
             Renderer::EndFrame();
 
-            m_Window->GetRenderContext()->BeginFrame();
-            Renderer::WaitAndRender();
-            m_Window->SwapBuffers();
+            Renderer::Submit([this]() { m_Window->SwapBuffers(); });
+            // m_Window->SwapBuffers();
 
             m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Renderer::GetConfig().FramesInFlight;
         }
     }
 #pragma region Private Methods 私有方法
+
+    void Application::ProcessQueuedEvents()
+    {
+        std::deque<std::function<void()>> events;
+        {
+            std::scoped_lock<std::mutex> lock(m_EventQueueMutex);
+            events.swap(m_EventQueue);
+        }
+        for (auto& event : events)
+            event();
+    }
 
     void Application::OnInit()
     {
@@ -223,7 +247,8 @@ namespace Prism
         {
             timer = 0.0f;
             fps1 = fps0;
-            capacity = Renderer::GetRenderCommandQueue().GetDataPoolCapacity();
+            // capacity = Renderer::GetRenderCommandQueue().GetDataPoolCapacity();
+            capacity = 0;
         }
         ImGui::Text("RenderDataCapacity: %dMB", capacity);
         ImGui::Text("LiveReferenceCount: %d", RefUtils::GetLiveReferenceCount());
@@ -252,12 +277,12 @@ namespace Prism
 
         m_Window->GetRenderContext()->OnResize(width, height);
 
-        auto& fbs = FramebufferPool::GetGlobal()->GetAll();
-        for (auto& fb : fbs)
-        {
-            if (!fb->GetSpecification().NoResize)
-                fb->Resize(width, height);
-        }
+        //auto& fbs = FramebufferPool::GetGlobal()->GetAll();
+        //for (auto& fb : fbs)
+        //{
+        //    if (!fb->GetSpecification().NoResize)
+        //        fb->Resize(width, height);
+        //}
 
         m_Minimized = false;
 

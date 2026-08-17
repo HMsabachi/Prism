@@ -89,46 +89,55 @@ namespace Prism {
         m_Height = height;
 
         Ref<OpenGLFramebuffer> instance = this;
-        Renderer::Submit([instance]() mutable
+        Renderer::Submit([instance, forceRecreate]() mutable
         {
-            if (instance->m_RendererID)
-            {
-                glDeleteFramebuffers(1, &instance->m_RendererID);
-                instance->m_ColorAttachments.clear();
-                instance->m_DepthAttachment.Reset();
-            }
-
-            glGenFramebuffers(1, &instance->m_RendererID);
-            glBindFramebuffer(GL_FRAMEBUFFER, instance->m_RendererID);
-
-            if (instance->m_ColorAttachmentFormats.size())
-            {
-                instance->m_ColorAttachments.resize(instance->m_ColorAttachmentFormats.size());
-                for (size_t i = 0; i < instance->m_ColorAttachments.size(); i++)
-                    instance->m_ColorAttachments[i] = Utils::CreateAndAttachColorAttachment(instance->m_Specification.Samples, instance->m_ColorAttachmentFormats[i], instance->m_Width, instance->m_Height, (int)i);
-            }
-
-            if (instance->m_DepthAttachmentFormat != ImageFormat::None)
-            {
-                instance->m_DepthAttachment = Utils::AttachDepthTexture(instance->m_Specification.Samples, instance->m_DepthAttachmentFormat, instance->m_Width, instance->m_Height);
-            }
-
-            if (instance->m_ColorAttachments.size() > 1)
-            {
-                PR_CORE_ASSERT(instance->m_ColorAttachments.size() <= 4);
-                GLenum buffers[4] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
-                glDrawBuffers((uint32_t)instance->m_ColorAttachments.size(), buffers);
-            }
-            else if (instance->m_ColorAttachments.size() == 0)
-            {
-                // Only depth-pass
-                glDrawBuffer(GL_NONE);
-            }
-
-            PR_CORE_ASSERT(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE, "Framebuffer is incomplete!");
-
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            instance->RT_Resize(instance->m_Width, instance->m_Height, forceRecreate);
         });
+    }
+
+
+    void OpenGLFramebuffer::RT_Resize(uint32_t width, uint32_t height, bool forceRecreate /*= false*/)
+    {
+        if (!forceRecreate && (m_Width == width && m_Height == height)) return;
+        m_Width = width;
+        m_Height = height;
+        if (m_RendererID)
+        {
+            glDeleteFramebuffers(1, &m_RendererID);
+            m_ColorAttachments.clear();
+            m_DepthAttachment.Reset();
+        }
+
+        glGenFramebuffers(1, &m_RendererID);
+        glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID);
+
+        if (m_ColorAttachmentFormats.size())
+        {
+            m_ColorAttachments.resize(m_ColorAttachmentFormats.size());
+            for (size_t i = 0; i < m_ColorAttachments.size(); i++)
+                m_ColorAttachments[i] = Utils::CreateAndAttachColorAttachment(m_Specification.Samples, m_ColorAttachmentFormats[i], m_Width, m_Height, (int)i);
+        }
+
+        if (m_DepthAttachmentFormat != ImageFormat::None)
+        {
+            m_DepthAttachment = Utils::AttachDepthTexture(m_Specification.Samples, m_DepthAttachmentFormat, m_Width, m_Height);
+        }
+
+        if (m_ColorAttachments.size() > 1)
+        {
+            PR_CORE_ASSERT(m_ColorAttachments.size() <= 4);
+            GLenum buffers[4] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
+            glDrawBuffers((uint32_t)m_ColorAttachments.size(), buffers);
+        }
+        else if (m_ColorAttachments.size() == 0)
+        {
+            // Only depth-pass
+            glDrawBuffer(GL_NONE);
+        }
+
+        PR_CORE_ASSERT(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE, "Framebuffer is incomplete!");
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     void OpenGLFramebuffer::Bind() const

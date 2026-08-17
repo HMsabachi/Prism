@@ -67,7 +67,7 @@ namespace Prism
         Ref<Shader> GetProgram(uint32_t passIndex = 0) const;
         uint32_t GetPassCount() const { return m_Shader->GetPassCount(); }
 
-        const Ref<UniformBuffer>& GetUniformBuffer() const;
+        const Ref<UniformBuffer>& RT_GetUniformBuffer() const;
         const std::map<uint32_t, Ref<Texture>>& GetTextures() const { return m_Textures; }
 
     private:

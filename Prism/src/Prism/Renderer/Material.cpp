@@ -279,10 +279,10 @@ namespace Prism
     }
 
 
-    const Ref<Prism::UniformBuffer>& Material::GetUniformBuffer() const
+    const Ref<Prism::UniformBuffer>& Material::RT_GetUniformBuffer() const
     {
         if (!m_Dirty) return m_UniformBuffer;
-        m_UniformBuffer->SetData(m_PropertyBuffer);
+        m_UniformBuffer->RT_SetData(m_PropertyBuffer);
         m_Dirty = false;
         return m_UniformBuffer;
     }

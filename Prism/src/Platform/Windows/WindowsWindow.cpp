@@ -6,6 +6,7 @@
 #include "Prism/Events/ApplicationEvent.h"
 #include "Prism/Events/MouseEvent.h"
 #include "Prism/Events/KeyEvent.h"
+#include "Prism/Renderer/Renderer.h"
 
 namespace Prism {
 
@@ -98,12 +99,12 @@ namespace Prism {
 
     void WindowsWindow::SetVSync(bool enabled)
     {
-        PR_PROFILE_FUNCTION();
-        if (enabled)
-            glfwSwapInterval(1);
-        else
-            glfwSwapInterval(0);
-
+        Renderer::Submit([=]() {
+            if (enabled)
+                glfwSwapInterval(1);
+            else
+                glfwSwapInterval(0);
+        });
         m_Data.VSync = enabled;
     }
 

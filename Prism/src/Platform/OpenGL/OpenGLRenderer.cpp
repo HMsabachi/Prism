@@ -281,7 +281,13 @@ namespace Prism
         return s_Data->RenderCaps;
     }
 
-    void OpenGLRenderer::BeginFrame() {}
+    void OpenGLRenderer::BeginFrame()
+    {
+        Renderer::Submit([]() {
+            const uint32_t releaseIndex = Renderer::GetCurrentFrameIndex() % Renderer::GetConfig().FramesInFlight;
+            Renderer::GetRenderResourceReleaseQueue(releaseIndex).Execute();
+        });
+    }
     void OpenGLRenderer::EndFrame() {}
 
     void OpenGLRenderer::BeginRenderPass(Ref<RenderPass> renderPass, bool clear)
@@ -462,7 +468,7 @@ namespace Prism
                     tex.As<OpenGLTextureCube>()->GetImage().As<OpenGLImageCube>()->RT_Bind(unit);
             }
             uint32_t point = FlatUBO(Config::PRISM_SET_MATERIAL, 0);
-            const Ref<UniformBuffer>& ubo = material->GetUniformBuffer();
+            const Ref<UniformBuffer>& ubo = material->RT_GetUniformBuffer();
             glBindBufferBase(GL_UNIFORM_BUFFER, point, ubo.As<OpenGLUniformBuffer>()->GetRendererID());
         }
     }

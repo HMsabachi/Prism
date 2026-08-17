@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Prism/Renderer/RendererContext.h"
 
@@ -16,7 +16,6 @@ namespace Prism
         virtual void BeginFrame() override {}
         virtual void SwapBuffers() override;
         virtual void OnResize(uint32_t width, uint32_t height) override {}
-        virtual void MakeRenderThreadCurrent() override;
     private:
         GLFWwindow* m_WindowHandle;
     };

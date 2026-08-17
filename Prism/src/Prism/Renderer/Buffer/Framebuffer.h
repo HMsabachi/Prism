@@ -52,6 +52,7 @@ namespace Prism {
         virtual ~Framebuffer() {}
 
         virtual void Resize(uint32_t width, uint32_t height, bool forceRecreate = false) = 0;
+        virtual void RT_Resize(uint32_t width, uint32_t height, bool forceRecreate = false) = 0;
         virtual void AddResizeCallback(const std::function<void(Ref<Framebuffer>)>& func) = 0;
 
         virtual uint32_t GetWidth() const = 0;
