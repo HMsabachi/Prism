@@ -66,7 +66,6 @@ namespace Prism
         EnterCriticalSection(&m_Data->m_CriticalSection);
         while (m_Data->m_State != waitForState)
         {
-            // 释放 CS 并等待，被唤醒时重新持有 CS
             SleepConditionVariableCS(&m_Data->m_ConditionVariable, &m_Data->m_CriticalSection, INFINITE);
         }
         LeaveCriticalSection(&m_Data->m_CriticalSection);

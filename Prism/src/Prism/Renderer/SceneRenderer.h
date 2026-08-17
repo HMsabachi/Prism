@@ -51,7 +51,7 @@ namespace Prism
         bool ShowBoundingBoxes = false;
     };
 
-    class PRISM_API SceneRenderer
+    class PRISM_API SceneRenderer : RefCounted
     {
     public:
         static SceneRenderer& Get();
@@ -70,6 +70,8 @@ namespace Prism
         Ref<Image2D> GetFinalImage() const;
 
     private:
+        void ExecuteImpt(const FrameSnapshot& snapshot);
+
         void BeginFrame(const FrameSnapshot& snapshot);
         void UpdateShadowData(const FrameSnapshot& snapshot);
         void ShadowPass(const std::vector<DrawCommand>& drawList);
@@ -163,6 +165,6 @@ namespace Prism
 
         SceneRendererOptions m_Options;
 
-        static SceneRenderer* s_Instance;
+        static Ref<SceneRenderer> s_Instance;
     };
 }

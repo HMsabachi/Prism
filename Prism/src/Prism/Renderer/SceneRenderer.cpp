@@ -28,7 +28,9 @@ namespace Prism
     constexpr uint64_t SHADER_TAG_VALUE_FORWARD_BASE = Hash::GenerateFNVHash64("ForwardBase");
     constexpr uint64_t SHADER_TAG_VALUE_SHADOW_CASTER = Hash::GenerateFNVHash64("ShadowCaster");
 
-    SceneRenderer* SceneRenderer::s_Instance = nullptr;
+    static std::vector<std::thread> s_ThreadPool;
+
+    Ref<SceneRenderer> SceneRenderer::s_Instance = nullptr;
 
     SceneRenderer::SceneRenderer() { s_Instance = this; }
     SceneRenderer::~SceneRenderer() { if (s_Instance == this) s_Instance = nullptr; }
@@ -208,6 +210,19 @@ namespace Prism
     }
 
     void SceneRenderer::Execute(const FrameSnapshot& snapshot)
+    {
+#ifdef MULTI_THREAD
+        Ref<SceneRenderer> instance = this;
+        s_ThreadPool.emplace_back(([instance, snapshot]() mutable
+        {
+            instance->ExecuteImpt(snapshot);
+        }));
+#else
+        ExecuteImpt(snapshot);
+#endif
+        return;
+    }
+    void SceneRenderer::ExecuteImpt(const FrameSnapshot& snapshot)
     {
         std::vector<DrawCommand> sortedDrawList = snapshot.DrawList;
         std::sort(sortedDrawList.begin(), sortedDrawList.end(),
@@ -578,6 +593,8 @@ namespace Prism
             m_ObjectUBO->SetData(&m_ObjectData, offsetof(ObjectData, Bones));
         m_ObjectBonesDirty = false;
     }
+
+    
 
 #pragma endregion
 }

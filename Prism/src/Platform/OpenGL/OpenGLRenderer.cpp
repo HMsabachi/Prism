@@ -272,8 +272,10 @@ namespace Prism
 
     void OpenGLRenderer::Shutdown()
     {
-        delete s_Data;
-        s_Data = nullptr;
+        Renderer::SubmitResourceFree([=]() {
+            delete s_Data;
+            s_Data = nullptr;
+        });
     }
 
     RenderAPICapabilities& OpenGLRenderer::GetCapabilities()

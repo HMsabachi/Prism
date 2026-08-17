@@ -120,15 +120,12 @@ namespace Prism
     // 保留是因为 Application/OpenGLContext/SSBO 的既有调用点还没切到 Pump/Kick 流程（Phase 3 再改）。
     void Renderer::WaitAndRender()
     {
-        PR_CORE_ERROR("错误的调用");
         s_CommandQueue[GetRenderQueueSubmissionIndex()].Execute();
     }
 
     void Renderer::WaitAndRender(RenderThread* renderThread)
     {
         PR_PROFILE_FUNCTION();
-        // MultiThreaded：等待主线程 Kick，醒来置 Busy，执行队列后置 Idle。
-        // SingleThreaded：renderThread 非空但 WaitAndSet/Set 是 no-op，直接执行渲染槽。
         if (renderThread)
         {
             renderThread->WaitAndSet(RenderThread::State::Kick, RenderThread::State::Busy);

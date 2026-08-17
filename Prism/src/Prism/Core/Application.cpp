@@ -86,22 +86,20 @@ namespace Prism
     {
         PR_PROFILE_FUNCTION();
 
-        // 场景渲染器析构
-        m_SceneRenderer.reset();
-
-        // 脚本/物理/资产子系统停机
-        CSharpScriptEngine::Shutdown();
-        PythonScriptEngine::Shutdown();
-        Physics::Shutdown();
-        AssetManager::Shutdown();
-
-
+        m_RenderThread.Pump();
         for (Layer* layer : m_LayerStack)
         {
             layer->OnDetach();
             delete layer;
         }
+        Physics::Shutdown();
+        AssetManager::Shutdown();
+        PythonScriptEngine::Shutdown();
+        CSharpScriptEngine::Shutdown();
+        m_RenderThread.Pump();
         Renderer::Shutdown();
+        m_RenderThread.Pump();
+        m_SceneRenderer.reset();
         m_RenderThread.Terminate();
     }
     
@@ -250,8 +248,8 @@ namespace Prism
         {
             timer = 0.0f;
             fps1 = fps0;
-            // capacity = Renderer::GetRenderCommandQueue().GetDataPoolCapacity();
-            capacity = 0;
+            capacity = Renderer::GetRenderCommandQueue().GetDataPoolCapacity();
+            // capacity = 0;
         }
         ImGui::Text("RenderDataCapacity: %dMB", capacity);
         ImGui::Text("LiveReferenceCount: %d", RefUtils::GetLiveReferenceCount());

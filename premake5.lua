@@ -34,6 +34,7 @@ IncludeDir["PrismShaderCore"] = "Prism/vendor/PrismShaderCompiler/PrismShaderCor
 IncludeDir["Vulkan"] = "%{VULKAN_SDK}/Include"
 IncludeDir["Python"] = "vendor/Python/include/Python"
 IncludeDir["pybind11"] = "Prism/vendor/pybind11/include"
+IncludeDir["CLI11"] = "Prism/vendor/CLI11/Include"
 
 LibraryDir = {}
 LibraryDir["nethost"] = "Prism/vendor/nethost"
@@ -241,7 +242,8 @@ project "PrismEditor"
         "%{IncludeDir.Rolky}",
         "%{IncludeDir.Python}",
         "%{IncludeDir.PrismShaderCore}",
-        "%{IncludeDir.pybind11}"
+        "%{IncludeDir.pybind11}",
+        "%{IncludeDir.CLI11}"
     }
 
     links

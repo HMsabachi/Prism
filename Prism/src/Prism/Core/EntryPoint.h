@@ -1,8 +1,8 @@
-#pragma once
+﻿#pragma once
 
 #ifdef PR_PLATFORM_WINDOWS
 
-extern Prism::Application* Prism::CreateApplication();
+extern Prism::Application* Prism::CreateApplication(int argc, char** argv);
 
 namespace Prism { extern PRISM_API bool g_ApplicationRunning; }
 
@@ -11,7 +11,7 @@ int main(int argc, char** argv)
     while (Prism::g_ApplicationRunning)
     {
         PR_PROFILE_BEGIN_SESSION("Startup", "PrismProfile-Startup.json");
-        auto app = Prism::CreateApplication();
+        auto app = Prism::CreateApplication(argc, argv);
         PR_CORE_ASSERT(app, "Client Application is null!");
         PR_PROFILE_END_SESSION();
 

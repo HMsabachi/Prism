@@ -43,8 +43,8 @@ namespace Prism
         template<typename FuncT>
         static void Submit(FuncT&& func)
         {
-            if (RenderThread::IsCurrentThreadRT())
-                PR_CORE_ERROR("Renderer::Submit 被非主线程调用!");
+            //if (RenderThread::IsCurrentThreadRT())
+                //PR_CORE_ERROR("Renderer::Submit 被非主线程调用!");
             auto renderCmd = [](void* ptr) {
                 auto pFunc = (FuncT*)ptr;
                 (*pFunc)();

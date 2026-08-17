@@ -21,9 +21,8 @@ namespace Prism
     struct PRISM_API ApplicationProps
     {
         std::string Name;
-        uint32_t WindowWidth, WindowHeight;
+        uint32_t WindowWidth = 1920, WindowHeight = 1080;
         bool VSync = true;
-        // Phase 1 默认 SingleThreaded，保证行为不变；Phase 3 切 MultiThreaded 起渲染线程。
         ThreadingPolicy CoreThreadingPolicy = ThreadingPolicy::SingleThreaded;
     };
 
@@ -95,8 +94,7 @@ namespace Prism
         static Application* s_Instance;
     };
 
-    // To be defined in CLIENT 需要在客户端定义
-    Application* CreateApplication();
+    Application* CreateApplication(int argc, char** argv);
 }
 
 
