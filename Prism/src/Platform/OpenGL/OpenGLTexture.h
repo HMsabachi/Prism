@@ -33,6 +33,7 @@ namespace Prism {
         virtual uint64_t GetHash() const override { return m_Image->GetHash(); }
 
         void RT_Bind(uint32_t slot) const;
+        void RT_Init(bool mipmapSampler);
 
         RendererID GetRendererID() const { return m_Image.As<OpenGLImage2D>()->GetRendererID(); }
         uint32_t GetBinding() const { return m_BindSlot; }

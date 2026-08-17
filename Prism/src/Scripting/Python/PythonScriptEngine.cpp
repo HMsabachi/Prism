@@ -111,6 +111,7 @@ namespace Prism
 
     void PythonScriptEngine::RemoveScriptObject(PythonScriptStorage& storage, UUID scriptID)
     {
+        pybind11::gil_scoped_acquire gilAcquire;
         auto sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
         PR_CORE_ASSERT(sceneID, "没有场景上下文");
 
@@ -126,6 +127,7 @@ namespace Prism
 
     UUID PythonScriptEngine::Instantiate(UUID scriptID, const std::string& className, PythonScriptStorage& storage)
     {
+        pybind11::gil_scoped_acquire gilAcquire;
         try
         {
             std::string moduleName = className;
@@ -160,6 +162,7 @@ namespace Prism
 
     UUID PythonScriptEngine::AddBehaviour(Entity& entity, PythonBehaviourBinding& binding)
     {
+        pybind11::gil_scoped_acquire gilAcquire;
         try
         {
             UUID sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
@@ -218,6 +221,7 @@ namespace Prism
 
     void PythonScriptEngine::RemoveBehaviour(Entity& entity, UUID behaviourID)
     {
+        pybind11::gil_scoped_acquire gilAcquire;
         UUID sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
         PR_CORE_ASSERT(sceneID, "没有场景上下文");
         auto& comp = entity.GetComponent<PythonScriptComponent>();
@@ -238,6 +242,7 @@ namespace Prism
 
     void PythonScriptEngine::ReleaseAll()
     {
+        pybind11::gil_scoped_acquire gilAcquire;
         s_PythonScriptObjects.clear();
     }
 
@@ -260,6 +265,7 @@ namespace Prism
 
     void PythonScriptEngine::ReloadPythonScripts()
     {
+        pybind11::gil_scoped_acquire gilAcquire;
         PR_CORE_INFO("[Python] Reloading scripts...");
 
         s_PreUnloadCallbacks();

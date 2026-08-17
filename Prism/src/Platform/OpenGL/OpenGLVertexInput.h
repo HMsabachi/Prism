@@ -16,6 +16,7 @@ namespace Prism {
         virtual void Invalidate() override;
 
         void RT_Bind() const;
+        void RT_Invalidate();
     private:
         VertexInputSpecification m_Specification;
         uint32_t m_VertexArrayRendererID = 0;

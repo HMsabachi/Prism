@@ -3,6 +3,7 @@
 
 #include "Prism/Renderer/RendererAPI.h"
 #include "Prism/Renderer/Renderer.h"
+#include "Prism/Core/RenderThread.h"
 
 #include <glad/glad.h>
 #include "stb_image.h"
@@ -38,20 +39,28 @@ namespace Prism {
         if (!data)
             m_Image->GetBuffer().Allocate((uint64_t)width * height * Utils::GetImageFormatBPP(format));
 
-        Ref<OpenGLTexture2D> instance = this;
-        Renderer::Submit([instance]() mutable
-            {
-            instance->m_Image->Invalidate();
+        if (RenderThread::IsCurrentThreadRT())
+        {
+            RT_Init(false);
+        }
+        else
+        {
+            Ref<OpenGLTexture2D> instance = this;
+            Renderer::Submit([instance]() mutable { instance->RT_Init(false); });
+        }
+    }
 
-            // Prism 采样配置（保留 TextureWrap/anisotropy，方案B）
-            RendererID rid = instance->m_Image.As<OpenGLImage2D>()->GetRendererID();
-            GLenum wrap = instance->m_Wrap == TextureWrap::Clamp ? GL_CLAMP_TO_EDGE : GL_REPEAT;
-            glTextureParameteri(rid, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTextureParameteri(rid, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTextureParameteri(rid, GL_TEXTURE_WRAP_S, wrap);
-            glTextureParameteri(rid, GL_TEXTURE_WRAP_T, wrap);
-            glTextureParameterf(rid, GL_TEXTURE_MAX_ANISOTROPY, Renderer::GetCapabilities().MaxAnisotropy);
-            });
+    void OpenGLTexture2D::RT_Init(bool mipmapSampler)
+    {
+        m_Image->Invalidate();
+
+        RendererID rid = m_Image.As<OpenGLImage2D>()->GetRendererID();
+        GLenum wrap = m_Wrap == TextureWrap::Clamp ? GL_CLAMP_TO_EDGE : GL_REPEAT;
+        glTextureParameteri(rid, GL_TEXTURE_MIN_FILTER, mipmapSampler ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+        glTextureParameteri(rid, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTextureParameteri(rid, GL_TEXTURE_WRAP_S, wrap);
+        glTextureParameteri(rid, GL_TEXTURE_WRAP_T, wrap);
+        glTextureParameterf(rid, GL_TEXTURE_MAX_ANISOTROPY, Renderer::GetCapabilities().MaxAnisotropy);
     }
 
     OpenGLTexture2D::OpenGLTexture2D(const std::string& path, bool srgb)
@@ -85,20 +94,15 @@ namespace Prism {
         m_Height = height;
         m_Loaded = true;
 
-        Ref<OpenGLTexture2D> instance = this;
-        Renderer::Submit([instance]() mutable
-            {
-            instance->m_Image->Invalidate();
-
-            // Prism 采样配置
-            RendererID rid = instance->m_Image.As<OpenGLImage2D>()->GetRendererID();
-            GLenum wrap = instance->m_Wrap == TextureWrap::Clamp ? GL_CLAMP_TO_EDGE : GL_REPEAT;
-            glTextureParameteri(rid, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-            glTextureParameteri(rid, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTextureParameteri(rid, GL_TEXTURE_WRAP_S, wrap);
-            glTextureParameteri(rid, GL_TEXTURE_WRAP_T, wrap);
-            glTextureParameterf(rid, GL_TEXTURE_MAX_ANISOTROPY, Renderer::GetCapabilities().MaxAnisotropy);
-            });
+        if (RenderThread::IsCurrentThreadRT())
+        {
+            RT_Init(true);
+        }
+        else
+        {
+            Ref<OpenGLTexture2D> instance = this;
+            Renderer::Submit([instance]() mutable { instance->RT_Init(true); });
+        }
     }
 
     OpenGLTexture2D::~OpenGLTexture2D()
@@ -151,11 +155,18 @@ namespace Prism {
     {
         m_Image = ImageCube::Create(format, width, height, data);
 
-        Ref<OpenGLTextureCube> instance = this;
-        Renderer::Submit([instance]() mutable
+        if (RenderThread::IsCurrentThreadRT())
         {
-            instance->m_Image->Invalidate();
-        });
+            m_Image->Invalidate();
+        }
+        else
+        {
+            Ref<OpenGLTextureCube> instance = this;
+            Renderer::Submit([instance]() mutable
+            {
+                instance->m_Image->Invalidate();
+            });
+        }
     }
 
     OpenGLTextureCube::~OpenGLTextureCube()

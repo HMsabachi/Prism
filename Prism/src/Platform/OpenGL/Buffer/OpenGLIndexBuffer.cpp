@@ -4,6 +4,7 @@
 #include <Glad/glad.h>
 
 #include "Prism/Renderer/Renderer.h"
+#include "Prism/Core/RenderThread.h"
 
 namespace Prism
 {
@@ -12,21 +13,36 @@ namespace Prism
         : m_RendererID(0), m_Size(size)
     {
         m_LocalData = Buffer::Copy(data, size);
-        Ref<OpenGLIndexBuffer> instance = this;
-        Renderer::Submit([instance]() mutable {
-            glCreateBuffers(1, &instance->m_RendererID);
-            glNamedBufferData(instance->m_RendererID, instance->m_Size, instance->m_LocalData.Data, GL_STATIC_DRAW);
-        });
+
+        if (RenderThread::IsCurrentThreadRT())
+        {
+            RT_Init();
+        }
+        else
+        {
+            Ref<OpenGLIndexBuffer> instance = this;
+            Renderer::Submit([instance]() mutable { instance->RT_Init(); });
+        }
     }
 
     OpenGLIndexBuffer::OpenGLIndexBuffer(uint32_t size)
         : m_Size(size)
     {
-        Ref<OpenGLIndexBuffer> instance = this;
-        Renderer::Submit([instance]() mutable {
-            glCreateBuffers(1, &instance->m_RendererID);
-            glNamedBufferData(instance->m_RendererID, instance->m_Size, nullptr, GL_DYNAMIC_DRAW);
-        });
+        if (RenderThread::IsCurrentThreadRT())
+        {
+            RT_Init();
+        }
+        else
+        {
+            Ref<OpenGLIndexBuffer> instance = this;
+            Renderer::Submit([instance]() mutable { instance->RT_Init(); });
+        }
+    }
+
+    void OpenGLIndexBuffer::RT_Init()
+    {
+        glCreateBuffers(1, &m_RendererID);
+        glNamedBufferData(m_RendererID, m_Size, m_LocalData.Data, m_LocalData ? GL_STATIC_DRAW : GL_DYNAMIC_DRAW);
     }
 
     OpenGLIndexBuffer::~OpenGLIndexBuffer()

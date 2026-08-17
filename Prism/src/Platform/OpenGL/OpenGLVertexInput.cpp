@@ -3,6 +3,7 @@
 
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Buffer/VertexBuffer.h"
+#include "Prism/Core/RenderThread.h"
 
 #include <glad/glad.h>
 
@@ -48,17 +49,24 @@ namespace Prism {
     {
         PR_CORE_ASSERT(m_Specification.Layout.GetElements().size(), "Layout is empty!");
 
-        Ref<OpenGLVertexInput> instance = this;
-        Renderer::Submit([instance]() mutable
+        if (RenderThread::IsCurrentThreadRT())
         {
-            auto& vertexArrayRendererID = instance->m_VertexArrayRendererID;
+            RT_Invalidate();
+        }
+        else
+        {
+            Ref<OpenGLVertexInput> instance = this;
+            Renderer::Submit([instance]() mutable { instance->RT_Invalidate(); });
+        }
+    }
 
-            if (vertexArrayRendererID)
-                glDeleteVertexArrays(1, &vertexArrayRendererID);
+    void OpenGLVertexInput::RT_Invalidate()
+    {
+        if (m_VertexArrayRendererID)
+            glDeleteVertexArrays(1, &m_VertexArrayRendererID);
 
-            glCreateVertexArrays(1, &vertexArrayRendererID);
-            glBindVertexArray(0);
-        });
+        glCreateVertexArrays(1, &m_VertexArrayRendererID);
+        glBindVertexArray(0);
     }
 
     void OpenGLVertexInput::RT_Bind() const

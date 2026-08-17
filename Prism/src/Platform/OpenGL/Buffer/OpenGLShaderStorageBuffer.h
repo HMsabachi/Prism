@@ -14,6 +14,8 @@ namespace Prism
         virtual void SetData(const void* data, size_t size, size_t offset = 0) override;
         virtual void GetData(void* data, size_t size, size_t offset = 0, bool sync = false) const override;
 
+        void RT_Init();
+
         RendererID GetRendererID() const;
         virtual size_t GetSize() const override;
 

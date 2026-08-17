@@ -15,6 +15,7 @@
 
 #include "Scripting/CSharp/CSharpScriptEngine.h"
 #include "Scripting/Python/PythonScriptEngine.h"
+#include <pybind11/pybind11.h>
 #include "Prism/Physics/Physics.h"
 
 #include "Prism/Asset/AssetManager.h"
@@ -138,6 +139,8 @@ namespace Prism
     void Application::OnUpdate()
     {
         PR_PROFILE_FUNCTION();
+
+        pybind11::gil_scoped_release gilRelease;
 
         m_RenderThread.BlockUntilRenderComplete();
 

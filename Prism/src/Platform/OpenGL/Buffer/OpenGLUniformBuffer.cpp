@@ -2,6 +2,7 @@
 #include "OpenGLUniformBuffer.h"
 
 #include "Prism/Renderer/Renderer.h"
+#include "Prism/Core/RenderThread.h"
 
 namespace Prism
 {
@@ -9,11 +10,21 @@ namespace Prism
     OpenGLUniformBuffer::OpenGLUniformBuffer(uint32_t size)
         : m_Size(size)
     {
-        Ref<OpenGLUniformBuffer> instance = this;
-        Renderer::Submit([instance]() mutable {
-            glCreateBuffers(1, &instance->m_RendererID);
-            glNamedBufferData(instance->m_RendererID, instance->m_Size, nullptr, GL_DYNAMIC_DRAW);
-        });
+        if (RenderThread::IsCurrentThreadRT())
+        {
+            RT_Init();
+        }
+        else
+        {
+            Ref<OpenGLUniformBuffer> instance = this;
+            Renderer::Submit([instance]() mutable { instance->RT_Init(); });
+        }
+    }
+
+    void OpenGLUniformBuffer::RT_Init()
+    {
+        glCreateBuffers(1, &m_RendererID);
+        glNamedBufferData(m_RendererID, m_Size, nullptr, GL_DYNAMIC_DRAW);
     }
 
     OpenGLUniformBuffer::~OpenGLUniformBuffer()

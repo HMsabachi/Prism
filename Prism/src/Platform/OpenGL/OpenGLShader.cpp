@@ -3,21 +3,36 @@
 
 #include <glad/glad.h>
 #include "Prism/Renderer/Renderer.h"
+#include "Prism/Core/RenderThread.h"
 
 namespace Prism
 {
     OpenGLShader::OpenGLShader(const std::string& vertexSource, const std::string& fragmentSource)
         : m_VertexSource(vertexSource), m_FragmentSource(fragmentSource)
     {
-        Ref<OpenGLShader> instance = this;
-        Renderer::Submit([instance]() mutable { instance->CompileAndUploadShader(); });
+        if (RenderThread::IsCurrentThreadRT())
+        {
+            CompileAndUploadShader();
+        }
+        else
+        {
+            Ref<OpenGLShader> instance = this;
+            Renderer::Submit([instance]() mutable { instance->CompileAndUploadShader(); });
+        }
     }
 
     OpenGLShader::OpenGLShader(const char* computeSource)
         : m_ComputeSource(computeSource), m_IsCompute(true)
     {
-        Ref<OpenGLShader> instance = this;
-        Renderer::Submit([instance]() mutable { instance->CompileAndUploadShader(); });
+        if (RenderThread::IsCurrentThreadRT())
+        {
+            CompileAndUploadShader();
+        }
+        else
+        {
+            Ref<OpenGLShader> instance = this;
+            Renderer::Submit([instance]() mutable { instance->CompileAndUploadShader(); });
+        }
     }
 
     OpenGLShader::~OpenGLShader()

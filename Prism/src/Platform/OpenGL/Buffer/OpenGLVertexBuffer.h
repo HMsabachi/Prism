@@ -21,6 +21,7 @@ namespace Prism
         virtual uint32_t GetSize() const { return m_Size; }
 
         void RT_Bind() const;
+        void RT_Init();
 
         RendererID GetRendererID() const { return m_RendererID; }
     private:

@@ -3,6 +3,7 @@
 
 #include "Platform/OpenGL/OpenGLContext.h"
 
+#include "Prism/Core/Application.h"
 #include "Prism/Events/ApplicationEvent.h"
 #include "Prism/Events/MouseEvent.h"
 #include "Prism/Events/KeyEvent.h"
@@ -120,7 +121,13 @@ namespace Prism {
 
     void WindowsWindow::SetTitle(const std::string& title)
     {
-        glfwSetWindowTitle(m_Window, title.c_str());
+        if (RenderThread::IsCurrentThreadRT())
+            Application::Get().QueueEvent([=]() {
+                glfwSetWindowTitle(m_Window, title.c_str());
+                });
+        else
+            glfwSetWindowTitle(m_Window, title.c_str());
+
     }
 
     void WindowsWindow::CreateGraphicsApiContext()

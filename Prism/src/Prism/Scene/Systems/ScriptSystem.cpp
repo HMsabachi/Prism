@@ -48,6 +48,7 @@ namespace Prism {
 
     ScriptSystem::~ScriptSystem()
     {
+        pybind11::gil_scoped_acquire gilAcquire;
         CSharpScriptEngine::UnregisterPreUnloadCallback(m_CSharpPreUnloadToken);
         CSharpScriptEngine::UnregisterPostReloadCallback(m_CSharpPostReloadToken);
         PythonScriptEngine::UnregisterPreUnloadCallback(m_PythonPreUnloadToken);
@@ -83,6 +84,7 @@ namespace Prism {
     void ScriptSystem::OnUpdate(float dt)
     {
         PR_PROFILE_FUNCTION();
+        pybind11::gil_scoped_acquire gilAcquire;
         CSharpScriptEngine::SetSceneContext(m_Scene);
         PythonScriptEngine::SetSceneContext(m_Scene);
 
@@ -124,6 +126,7 @@ namespace Prism {
     void ScriptSystem::OnLateUpdate(float dt)
     {
         PR_PROFILE_FUNCTION();
+        pybind11::gil_scoped_acquire gilAcquire;
         CSharpScriptEngine::SetSceneContext(m_Scene);
         PythonScriptEngine::SetSceneContext(m_Scene);
 
@@ -165,6 +168,7 @@ namespace Prism {
     void ScriptSystem::OnFixedUpdate(float dt)
     {
         PR_PROFILE_FUNCTION();
+        pybind11::gil_scoped_acquire gilAcquire;
         CSharpScriptEngine::SetSceneContext(m_Scene);
         PythonScriptEngine::SetSceneContext(m_Scene);
         // C# Script OnFixedUpdate
@@ -211,6 +215,7 @@ namespace Prism {
     void ScriptSystem::OnRuntimeStart()
     {
         m_IsPlaying = true;
+        pybind11::gil_scoped_acquire gilAcquire;
         CSharpScriptEngine::SetSceneContext(m_Scene);
         PythonScriptEngine::SetSceneContext(m_Scene);
 
@@ -242,6 +247,7 @@ namespace Prism {
     void ScriptSystem::OnRuntimeStop()
     {
         m_IsPlaying = false;
+        pybind11::gil_scoped_acquire gilAcquire;
         CSharpScriptEngine::SetSceneContext(m_Scene);
         PythonScriptEngine::SetSceneContext(m_Scene);
 
@@ -272,6 +278,7 @@ namespace Prism {
 
     void ScriptSystem::OnCollisionBegin(Entity entity)
     {
+        pybind11::gil_scoped_acquire gilAcquire;
         CSharpScriptEngine::SetSceneContext(m_Scene);
         PythonScriptEngine::SetSceneContext(m_Scene);
 
@@ -306,6 +313,7 @@ namespace Prism {
 
     void ScriptSystem::OnCollisionEnd(Entity entity)
     {
+        pybind11::gil_scoped_acquire gilAcquire;
         CSharpScriptEngine::SetSceneContext(m_Scene);
         PythonScriptEngine::SetSceneContext(m_Scene);
 
@@ -340,6 +348,7 @@ namespace Prism {
 
     void ScriptSystem::OnTriggerBegin(Entity entity)
     {
+        pybind11::gil_scoped_acquire gilAcquire;
         CSharpScriptEngine::SetSceneContext(m_Scene);
         PythonScriptEngine::SetSceneContext(m_Scene);
 
@@ -374,6 +383,7 @@ namespace Prism {
 
     void ScriptSystem::OnTriggerEnd(Entity entity)
     {
+        pybind11::gil_scoped_acquire gilAcquire;
         CSharpScriptEngine::SetSceneContext(m_Scene);
         PythonScriptEngine::SetSceneContext(m_Scene);
 
@@ -521,6 +531,7 @@ namespace Prism {
 
     void ScriptSystem::RemovePythonBehaviour(Entity entity, UUID behaviourID)
     {
+        pybind11::gil_scoped_acquire gilAcquire;
         auto& comp = entity.GetComponent<PythonScriptComponent>();
         auto it = comp.Behaviours.find(behaviourID);
         if (it == comp.Behaviours.end())
@@ -563,6 +574,7 @@ namespace Prism {
 
     void ScriptSystem::SetEnabled(UUID behaviourID, bool enabled)
     {
+        pybind11::gil_scoped_acquire gilAcquire;
         auto csIt = m_CSharpBindingMap.find(behaviourID);
         if (csIt != m_CSharpBindingMap.end())
         {
@@ -633,6 +645,7 @@ namespace Prism {
 
     void ScriptSystem::InstantiatePythonBehaviour(Entity entity, PythonBehaviourBinding& binding)
     {
+        pybind11::gil_scoped_acquire gilAcquire;
         PythonScriptEngine::SetSceneContext(m_Scene);
         UUID sceneID = m_Scene->GetUUID();
         auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
@@ -673,6 +686,7 @@ namespace Prism {
 
     void ScriptSystem::DestroyPythonBehaviour(Entity entity, PythonBehaviourBinding& binding)
     {
+        pybind11::gil_scoped_acquire gilAcquire;
         PythonScriptEngine::SetSceneContext(m_Scene);
         UUID sceneID = m_Scene->GetUUID();
         auto* obj = PythonScriptEngine::GetScriptObject(sceneID, binding.BehaviourID);
@@ -756,6 +770,7 @@ namespace Prism {
 
     void ScriptSystem::OnPythonScriptComponentConstruct(entt::registry& registry, entt::entity entity)
     {
+        pybind11::gil_scoped_acquire gilAcquire;
         PythonScriptEngine::SetSceneContext(m_Scene);
         Entity e = { entity, m_Scene };
         if (!e.HasComponent<IDComponent>())
@@ -810,6 +825,7 @@ namespace Prism {
 
     void ScriptSystem::OnPythonScriptComponentDestroy(entt::registry& registry, entt::entity entity)
     {
+        pybind11::gil_scoped_acquire gilAcquire;
         PythonScriptEngine::SetSceneContext(m_Scene);
         auto& comp = registry.get<PythonScriptComponent>(entity);
         UUID sceneID = m_Scene->GetUUID();
@@ -855,6 +871,7 @@ namespace Prism {
 
     void ScriptSystem::OnPythonPreUnload()
     {
+        pybind11::gil_scoped_acquire gilAcquire;
         auto& registry = m_Scene->GetRegistry();
         auto view = registry.view<PythonScriptComponent>();
 
@@ -871,6 +888,7 @@ namespace Prism {
 
     void ScriptSystem::OnPythonPostReload()
     {
+        pybind11::gil_scoped_acquire gilAcquire;
         PythonScriptEngine::SetSceneContext(m_Scene);
 
         auto& registry = m_Scene->GetRegistry();

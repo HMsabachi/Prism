@@ -17,6 +17,8 @@ namespace Prism
         virtual void RT_SetData(const Buffer& buffer) override;
         virtual void RT_SetData(const void* data, uint32_t size, uint32_t offset = 0) override;
 
+        void RT_Init();
+
         virtual uint32_t GetSize() const override { return m_Size; }
         RendererID GetRendererID() const { return m_RendererID; }
 

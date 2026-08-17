@@ -3,6 +3,7 @@
 #include "OpenGLBufferData.h"
 
 #include "Prism/Renderer/Renderer.h"
+#include "Prism/Core/RenderThread.h"
 
 #include <glad/glad.h>
 
@@ -12,11 +13,21 @@ namespace Prism
     OpenGLShaderStorageBuffer::OpenGLShaderStorageBuffer(size_t size, BufferUsage usage)
         :m_Size(size), m_Usage(usage), m_RendererID(0)
     {
-        Ref<OpenGLShaderStorageBuffer> instance = this;
-        Renderer::Submit([instance]() mutable {
-            glCreateBuffers(1, &instance->m_RendererID);
-            glNamedBufferData(instance->m_RendererID, instance->m_Size, nullptr, OpenGLUsage(instance->m_Usage));
-        });
+        if (RenderThread::IsCurrentThreadRT())
+        {
+            RT_Init();
+        }
+        else
+        {
+            Ref<OpenGLShaderStorageBuffer> instance = this;
+            Renderer::Submit([instance]() mutable { instance->RT_Init(); });
+        }
+    }
+
+    void OpenGLShaderStorageBuffer::RT_Init()
+    {
+        glCreateBuffers(1, &m_RendererID);
+        glNamedBufferData(m_RendererID, m_Size, nullptr, OpenGLUsage(m_Usage));
     }
 
     OpenGLShaderStorageBuffer::~OpenGLShaderStorageBuffer()

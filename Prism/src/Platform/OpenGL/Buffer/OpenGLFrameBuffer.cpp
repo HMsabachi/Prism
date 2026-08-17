@@ -3,6 +3,7 @@
 #include "OpenGLFramebuffer.h"
 
 #include "Prism/Renderer/Renderer.h"
+#include "Prism/Core/RenderThread.h"
 #include <glad/glad.h>
 
 namespace Prism {
@@ -88,11 +89,18 @@ namespace Prism {
         m_Width = width;
         m_Height = height;
 
-        Ref<OpenGLFramebuffer> instance = this;
-        Renderer::Submit([instance, forceRecreate]() mutable
+        if (RenderThread::IsCurrentThreadRT())
         {
-            instance->RT_Resize(instance->m_Width, instance->m_Height, forceRecreate);
-        });
+            RT_Resize(m_Width, m_Height, forceRecreate);
+        }
+        else
+        {
+            Ref<OpenGLFramebuffer> instance = this;
+            Renderer::Submit([instance, forceRecreate]() mutable
+            {
+                instance->RT_Resize(instance->m_Width, instance->m_Height, forceRecreate);
+            });
+        }
     }
 
 
