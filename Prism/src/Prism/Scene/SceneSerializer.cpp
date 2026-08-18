@@ -680,6 +680,7 @@ namespace Prism {
 
     bool SceneSerializer::Deserialize(const std::string& filepath)
     {
+        pybind11::gil_scoped_acquire gilAcquire;
         std::ifstream stream(filepath);
         std::stringstream strStream;
         strStream << stream.rdbuf();

@@ -1,29 +1,48 @@
 ﻿#pragma once
+
 #include <stdint.h>
+#include <atomic>
+#include <type_traits>
+#include <utility>
+#include <cstddef>
+
 #include "Core.h"
+
 namespace Prism
 {
-    namespace RefUtils {
+    namespace RefUtils
+    {
         void PRISM_API AddToLiveReferences(void* instance);
         void PRISM_API RemoveFromLiveReferences(void* instance);
         bool PRISM_API IsLive(void* instance);
         size_t PRISM_API GetLiveReferenceCount();
     }
+
     class PRISM_API RefCounted
     {
     public:
-        virtual ~RefCounted() = default;
+        RefCounted()
+        {
+            RefUtils::AddToLiveReferences(this);
+        }
+
+        virtual ~RefCounted()
+        {
+            RefUtils::RemoveFromLiveReferences(this);
+        }
 
         void IncRefCount() const
         {
-            ++m_RefCount;
-        }
-        void DecRefCount() const
-        {
-            --m_RefCount;
+            m_RefCount.fetch_add(1, std::memory_order_relaxed);
         }
 
-        uint32_t GetRefCount() const { return m_RefCount; }
+        void DecRefCount() const
+        {
+            m_RefCount.fetch_sub(1, std::memory_order_acq_rel);
+        }
+
+        uint32_t GetRefCount() const { return m_RefCount.load(std::memory_order_relaxed); }
+
     private:
         mutable std::atomic<uint32_t> m_RefCount{ 0 };
     };
@@ -37,7 +56,7 @@ namespace Prism
         {
         }
 
-        Ref(std::nullptr_t n)
+        Ref(std::nullptr_t)
             : m_Instance(nullptr)
         {
         }
@@ -52,23 +71,22 @@ namespace Prism
 
         template<typename T2>
         Ref(const Ref<T2>& other)
+            : m_Instance((T*)other.m_Instance)
         {
-            m_Instance = (T*)other.m_Instance;
             IncRef();
         }
 
         template<typename T2>
         Ref(Ref<T2>&& other)
+            : m_Instance((T*)other.m_Instance)
         {
-            m_Instance = (T*)other.m_Instance;
             other.m_Instance = nullptr;
         }
 
-        static Ref<T> CopyWithoutIncrement(const Ref<T>& other)
+        Ref(const Ref<T>& other)
+            : m_Instance(other.m_Instance)
         {
-            Ref<T> result = nullptr;
-            result->m_Instance = other.m_Instance;
-            return result;
+            IncRef();
         }
 
         ~Ref()
@@ -76,10 +94,11 @@ namespace Prism
             DecRef();
         }
 
-        Ref(const Ref<T>& other)
-            : m_Instance(other.m_Instance)
+        static Ref<T> CopyWithoutIncrement(const Ref<T>& other)
         {
-            IncRef();
+            Ref<T> result = nullptr;
+            result.m_Instance = other.m_Instance;
+            return result;
         }
 
         Ref& operator=(std::nullptr_t)
@@ -135,6 +154,7 @@ namespace Prism
 
         void Reset(T* instance = nullptr)
         {
+            if (m_Instance == instance) return;
             DecRef();
             m_Instance = instance;
             if (m_Instance)
@@ -174,28 +194,19 @@ namespace Prism
 
             return *m_Instance == *other.m_Instance;
         }
+
     private:
-        void IncRef() const
-        {
-            if (m_Instance)
-            {
-                ((RefCounted*)m_Instance)->IncRefCount();
-                RefUtils::AddToLiveReferences((void*)m_Instance);
-            }
-        }
+        void IncRef() const { if (m_Instance) ((RefCounted*)m_Instance)->IncRefCount(); }
 
         void DecRef() const
         {
-            if (m_Instance)
+            if (!m_Instance) return;
+            RefCounted* instance = (RefCounted*)m_Instance;
+            instance->DecRefCount();
+            if (instance->GetRefCount() == 0)
             {
-                ((RefCounted*)m_Instance)->DecRefCount();
-
-                if (((RefCounted*)m_Instance)->GetRefCount() == 0)
-                {
-                    delete ((RefCounted*)m_Instance);
-                    RefUtils::RemoveFromLiveReferences((void*)m_Instance);
-                    m_Instance = nullptr;
-                }
+                delete instance;
+                m_Instance = nullptr;
             }
         }
 
@@ -211,14 +222,9 @@ namespace Prism
         WeakRef() = default;
 
         WeakRef(Ref<T> ref)
-        {
-            m_Instance = ref.Raw();
-        }
-
+            : m_Instance(ref.Raw()){}
         WeakRef(T* instance)
-        {
-            m_Instance = instance;
-        }
+            : m_Instance(instance){}
 
         T* operator->() { return m_Instance; }
         const T* operator->() const { return m_Instance; }
@@ -239,7 +245,8 @@ namespace Prism
     };
 }
 
-namespace std {
+namespace std
+{
     template<typename T>
     struct hash<Prism::Ref<T>>
     {

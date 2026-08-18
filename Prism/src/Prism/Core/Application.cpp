@@ -52,6 +52,10 @@ namespace Prism
     }
     void Application::Initialize()
     {
+#ifdef PR_PLATFORM_WINDOWS
+        DWORD_PTR mask = 1ull << 0;
+        // SetThreadAffinityMask(GetCurrentThread(), mask);
+#endif
         m_RenderThread.Run();
         // 初始化窗口 Initialize Window
         m_Window = std::unique_ptr<Window>(Window::Create(WindowProps(m_Props.Name, m_Props.WindowWidth, m_Props.WindowHeight)));
@@ -96,9 +100,7 @@ namespace Prism
         AssetManager::Shutdown();
         PythonScriptEngine::Shutdown();
         CSharpScriptEngine::Shutdown();
-        m_RenderThread.Pump();
         Renderer::Shutdown();
-        m_RenderThread.Pump();
         m_SceneRenderer.reset();
         m_RenderThread.Terminate();
     }
@@ -139,36 +141,29 @@ namespace Prism
         PR_PROFILE_FUNCTION();
 
         pybind11::gil_scoped_release gilRelease;
-
-        m_RenderThread.BlockUntilRenderComplete();
-
+        {
+            PR_PROFILE_SCOPE("RenderThread Waiting");
+            m_RenderThread.BlockUntilRenderComplete();
         ProcessQueuedEvents();
+        m_RenderThread.NextFrame();
+        m_RenderThread.Kick();
+        }
 
         Time::Update();
         m_Window->ProcessEvents();
 
-        m_RenderThread.NextFrame();
-        m_RenderThread.Kick();
-
         if (!m_Minimized)
         {
-            Renderer::Submit([this]() { m_Window->GetRenderContext()->BeginFrame(); });
-
-            Renderer::BeginFrame();
-
             PR_PROFILE_SCOPE("Update LayerStack")
+            Renderer::Submit([this]() { m_Window->GetRenderContext()->BeginFrame(); });
+            Renderer::BeginFrame();
             for (Layer* layer : m_LayerStack)
                 layer->OnUpdate();
-
             Application* app = this;
             Renderer::Submit([app]() { app->RenderImGui(); });
-            //app->RenderImGui();
-
             Renderer::EndFrame();
-
             Renderer::Submit([this]() { m_Window->SwapBuffers(); });
             // m_Window->SwapBuffers();
-
             m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Renderer::GetConfig().FramesInFlight;
         }
     }

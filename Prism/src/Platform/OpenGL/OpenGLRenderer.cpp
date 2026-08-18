@@ -418,7 +418,6 @@ namespace Prism
         uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass,
         const PrismShaderCompiler::PipelineState* stateOverride)
     {
-        // 新方案
         Renderer::Submit([=]() mutable {
             RT_BindMaterial(material, pass, stateOverride);
             if (mesh != s_Data->LastMesh)

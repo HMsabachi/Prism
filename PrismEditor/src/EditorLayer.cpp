@@ -580,14 +580,14 @@ namespace Prism
             {
                 if (UI::ImageButton(m_PlayButtonTex->GetImage(), ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), -1, ImVec4(0, 0, 0, 0), ImVec4(0.9f, 0.9f, 0.9f, 1.0f)))
                 {
-                    OnScenePlay();
+                    Application::Get().QueueEvent([this]() { OnScenePlay(); });
                 }
             }
             else if (m_SceneState == SceneState::Play)
             {
                 if (UI::ImageButton(m_PlayButtonTex->GetImage(), ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), -1, ImVec4(1.0f, 1.0f, 1.0f, 0.2f)))
                 {
-                    OnSceneStop();
+                    Application::Get().QueueEvent([this]() { OnSceneStop(); });
                 }
             }
             ImGui::SameLine();

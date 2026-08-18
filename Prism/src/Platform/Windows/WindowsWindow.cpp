@@ -93,8 +93,6 @@ namespace Prism {
 
     void WindowsWindow::SwapBuffers()
     {
-        PR_PROFILE_FUNCTION();
-
         m_RendererContext->SwapBuffers();
     }
 

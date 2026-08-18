@@ -9,7 +9,7 @@ namespace Prism
     }
 
     const size_t RenderCommandQueue::COMMAND_BUFFER_SIZE = 10 * 1024 * 1024; // 10MB buffer
-    const size_t RenderCommandQueue::DATA_POOL_MAX_SIZE = 256 * 1024 * 1024; // 256MB buffer
+    const size_t RenderCommandQueue::DATA_POOL_MAX_SIZE = 10 * 1024 * 1024; // 10MB buffer
 
     RenderCommandQueue::RenderCommandQueue()
         :m_CommandCount(0)

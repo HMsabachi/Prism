@@ -30,7 +30,7 @@ namespace Prism
 
     static std::vector<std::thread> s_ThreadPool;
 
-    Ref<SceneRenderer> SceneRenderer::s_Instance = nullptr;
+    SceneRenderer* SceneRenderer::s_Instance = nullptr;
 
     SceneRenderer::SceneRenderer() { s_Instance = this; }
     SceneRenderer::~SceneRenderer() { if (s_Instance == this) s_Instance = nullptr; }

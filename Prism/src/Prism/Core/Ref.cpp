@@ -7,23 +7,24 @@ namespace Prism
     static std::unordered_set<void*> s_LiveReferences;
     static std::mutex s_LiveReferenceMutex;
 
-    namespace RefUtils {
-
+    namespace RefUtils
+    {
         void PRISM_API AddToLiveReferences(void* instance)
         {
-            std::scoped_lock<std::mutex> lock(s_LiveReferenceMutex);
-            if (Application::Get().IsRunning() != 1) [[unlikely]] return; // Avoid assertions during shutdown
+            if (Application::Get().IsRunning() != 1) return;
             PR_CORE_ASSERT(instance);
+            //std::scoped_lock<std::mutex> lock(s_LiveReferenceMutex);
             s_LiveReferences.insert(instance);
         }
 
         void PRISM_API RemoveFromLiveReferences(void* instance)
         {
-            std::scoped_lock<std::mutex> lock(s_LiveReferenceMutex);
-            if (Application::Get().IsRunning() != 1) [[unlikely]] return; // Avoid assertions during shutdown
+            if (Application::Get().IsRunning() != 1) return;
             PR_CORE_ASSERT(instance);
-            PR_CORE_ASSERT(s_LiveReferences.find(instance) != s_LiveReferences.end());
-            s_LiveReferences.erase(instance);
+            //std::scoped_lock<std::mutex> lock(s_LiveReferenceMutex);
+            auto it = s_LiveReferences.find(instance);
+            PR_CORE_ASSERT(it != s_LiveReferences.end());
+            s_LiveReferences.erase(it);
         }
 
         bool PRISM_API IsLive(void* instance)
@@ -34,10 +35,7 @@ namespace Prism
 
         size_t PRISM_API GetLiveReferenceCount()
         {
-            std::scoped_lock<std::mutex> lock(s_LiveReferenceMutex);
             return s_LiveReferences.size();
         }
-
     }
-
 }

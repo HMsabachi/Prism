@@ -51,7 +51,7 @@ namespace Prism
         bool ShowBoundingBoxes = false;
     };
 
-    class PRISM_API SceneRenderer : RefCounted
+    class PRISM_API SceneRenderer
     {
     public:
         static SceneRenderer& Get();
@@ -165,6 +165,6 @@ namespace Prism
 
         SceneRendererOptions m_Options;
 
-        static Ref<SceneRenderer> s_Instance;
+        static SceneRenderer* s_Instance;
     };
 }
