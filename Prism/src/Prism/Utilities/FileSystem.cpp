@@ -127,6 +127,8 @@ namespace Prism {
 
     unsigned long FileSystem::Watch(void* param)
     {
+        PR_PROFILE_THREAD("Asset Watcher");
+
         LPCWSTR filepath = L"Assets";
         std::vector<BYTE> buffer;
         buffer.resize(10 * 1024);

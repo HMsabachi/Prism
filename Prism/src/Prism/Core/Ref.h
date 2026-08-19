@@ -33,15 +33,15 @@ namespace Prism
 
         void IncRefCount() const
         {
-            m_RefCount.fetch_add(1, std::memory_order_relaxed);
+            ++m_RefCount;
         }
 
         void DecRefCount() const
         {
-            m_RefCount.fetch_sub(1, std::memory_order_acq_rel);
+            --m_RefCount;
         }
 
-        uint32_t GetRefCount() const { return m_RefCount.load(std::memory_order_relaxed); }
+        uint32_t GetRefCount() const { return m_RefCount; }
 
     private:
         mutable std::atomic<uint32_t> m_RefCount{ 0 };

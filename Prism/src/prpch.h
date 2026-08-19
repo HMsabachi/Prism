@@ -25,7 +25,7 @@
 #include "Prism/Core/Log.h"
 #include "Prism/Core/Ref.h"
 #include "Prism/Core/Time.h"
-#include "Prism/Debug/Instrumentor.h"
+#include "Prism/Debug/Profiler.h"
 #include "Prism/Core/Buffer.h"
 
 

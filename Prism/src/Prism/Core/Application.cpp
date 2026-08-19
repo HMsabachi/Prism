@@ -166,6 +166,8 @@ namespace Prism
             // m_Window->SwapBuffers();
             m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Renderer::GetConfig().FramesInFlight;
         }
+
+        PR_PROFILE_MARK_FRAME
     }
 #pragma region Private Methods 私有方法
 
@@ -236,19 +238,18 @@ namespace Prism
 #endif
         ImGui::Text("RenderCommandQueue: %d", Renderer::GetRenderCommandQueue().GetSubmitCount());
         Renderer::GetRenderCommandQueue().ResetSubmitCount();
-        static int fps0 = 0, fps1 = 0, capacity;
-        fps0 += (int)(1.0f / Time::GetDeltaTime());
-        fps0 >>= 1;
-        if (timer >= 1.0f)
+        static uint64_t fream = 0, fps = 0, capacity;
+        ++fream;
+        if (timer >= 3.0f)
         {
-            timer = 0.0f;
-            fps1 = fps0;
+            fps = static_cast<uint64_t>(fream / timer);
             capacity = Renderer::GetRenderCommandQueue().GetDataPoolCapacity();
-            // capacity = 0;
+            timer = 0.0f;
+            fream = 0;
         }
         ImGui::Text("RenderDataCapacity: %dMB", capacity);
         ImGui::Text("LiveReferenceCount: %d", RefUtils::GetLiveReferenceCount());
-        ImGui::Text("Fps: %d", fps1);
+        ImGui::Text("Fps: %d", fps);
         ImGui::End();
     }
 

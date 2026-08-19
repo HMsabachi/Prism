@@ -12,6 +12,8 @@
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
+editandcontinue "Off"
+
 -- Vulkan SDK: read from env into a Lua global so %{VULKAN_SDK} token expansion works in IncludeDir/LibraryDir below.
 VULKAN_SDK = os.getenv("VULKAN_SDK")
 
@@ -35,6 +37,7 @@ IncludeDir["Vulkan"] = "%{VULKAN_SDK}/Include"
 IncludeDir["Python"] = "vendor/Python/include/Python"
 IncludeDir["pybind11"] = "Prism/vendor/pybind11/include"
 IncludeDir["CLI11"] = "Prism/vendor/CLI11/Include"
+IncludeDir["Tracy"] = "Prism/vendor/tracy/tracy/public"
 
 LibraryDir = {}
 LibraryDir["nethost"] = "Prism/vendor/nethost"
@@ -47,6 +50,7 @@ group "Dependencies"
     include "Prism/vendor/Rolky/Rolky.Native"
     include "Prism/vendor/box2d"
     include "Prism/vendor/PrismShaderCompiler/PrismShaderCore"
+    include "Prism/vendor/tracy"
 group ""
 
 group "Core"
@@ -57,7 +61,7 @@ project "Prism"
     language "C++"
     staticruntime "off"
 
-    defines { "PR_DYNAMIC_LINK" , "_CRT_SECURE_NO_WARNINGS", "yaml_cpp_EXPORTS"}
+    defines { "PR_DYNAMIC_LINK" , "_CRT_SECURE_NO_WARNINGS", "yaml_cpp_EXPORTS", "TRACY_ENABLE", "TRACY_ON_DEMAND"}
 
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
@@ -102,7 +106,8 @@ project "Prism"
         "%{IncludeDir.Python}",
         "%{IncludeDir.pybind11}",
         "%{IncludeDir.PrismShaderCore}",
-        "%{IncludeDir.Vulkan}"
+        "%{IncludeDir.Vulkan}",
+        "%{IncludeDir.Tracy}"
     }
 
     libdirs
@@ -119,6 +124,7 @@ project "Prism"
         "Rolky.Native",
         "Box2D",
         "PrismShaderCore",
+        "Tracy",
         "opengl32.lib",
         "dwmapi.lib",
         "vulkan-1.lib"
@@ -215,7 +221,7 @@ project "PrismEditor"
     language "C++"
     staticruntime "off"
 
-    defines "PR_DYNAMIC_LINK"
+    defines { "PR_DYNAMIC_LINK", "TRACY_ENABLE", "TRACY_ON_DEMAND" }
 
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
@@ -243,7 +249,8 @@ project "PrismEditor"
         "%{IncludeDir.Python}",
         "%{IncludeDir.PrismShaderCore}",
         "%{IncludeDir.pybind11}",
-        "%{IncludeDir.CLI11}"
+        "%{IncludeDir.CLI11}",
+        "%{IncludeDir.Tracy}"
     }
 
     links
