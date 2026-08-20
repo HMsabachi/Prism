@@ -45,6 +45,15 @@ namespace Prism
             m_RenderThread.Dispatch(Renderer::RenderThreadFunc, this);
 
         s_RenderThreadID = m_RenderThread.GetID();
+#if defined(PR_PLATFORM_WINDOWS)
+#  if 1
+        DWORD_PTR mask = 1ull << 0;
+        SetThreadAffinityMask(GetCurrentThread(), mask);
+        mask = 1ull << 2;
+        HANDLE handle = reinterpret_cast<HANDLE>(m_RenderThread.GetNativeHandle());
+        SetThreadAffinityMask(handle, mask);
+#  endif
+#endif
     }
 
     void RenderThread::Terminate()

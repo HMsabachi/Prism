@@ -73,7 +73,7 @@ namespace Prism
         void Initialize();
         // Update function for the application(frame update) 应用更新函数(帧更新)
         void OnUpdate();
-        void ProcessQueuedEvents();
+        void ProcessEvents();
         bool OnWindowClose(WindowCloseEvent& e);
         bool OnWindowResize(WindowResizeEvent& e);
     private:

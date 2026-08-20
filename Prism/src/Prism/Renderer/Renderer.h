@@ -19,6 +19,7 @@ namespace Prism
     class Image;
     class UniformBuffer;
     class ShaderStorageBuffer;
+    class RenderCommandQueue;
 }
 
 namespace Prism

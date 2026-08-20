@@ -211,35 +211,22 @@ namespace Prism
 
     void SceneRenderer::Execute(const FrameSnapshot& snapshot)
     {
-#ifdef MULTI_THREAD
-        Ref<SceneRenderer> instance = this;
-        s_ThreadPool.emplace_back(([instance, snapshot]() mutable
-        {
-            instance->ExecuteImpt(snapshot);
-        }));
-#else
         ExecuteImpt(snapshot);
-#endif
         return;
     }
     void SceneRenderer::ExecuteImpt(const FrameSnapshot& snapshot)
     {
         std::vector<DrawCommand> sortedDrawList = snapshot.DrawList;
-        std::sort(sortedDrawList.begin(), sortedDrawList.end(),
-            [](auto& a, auto& b) { return a.SortKey < b.SortKey; });
+        std::sort(sortedDrawList.begin(), sortedDrawList.end(), [](auto& a, auto& b) { return a.SortKey < b.SortKey; });
 
         const auto& config = snapshot.Config;
-        bool castShadows = config.ShadowsEnabled && !snapshot.DrawList.empty()
-            && config.LightEnvironment.DirectionalLights[0].CastShadows;
-        if (castShadows)
-            UpdateShadowData(snapshot);
-        {
-            auto& dl = config.LightEnvironment.DirectionalLights[0];
-            m_FrameData.ShadowData = { dl.LightSize, config.MaxShadowDistance, 25.0f, 0.0f };
-        }
+        bool castShadows = config.ShadowsEnabled && !snapshot.DrawList.empty() && config.LightEnvironment.DirectionalLights[0].CastShadows;
+        if (castShadows) UpdateShadowData(snapshot);
+
+        auto& dl = config.LightEnvironment.DirectionalLights[0];
+        m_FrameData.ShadowData = { dl.LightSize, config.MaxShadowDistance, 25.0f, 0.0f };
         BeginFrame(snapshot);
-        if (castShadows)
-            ShadowPass(snapshot.ShadowDrawList);
+        if (castShadows) ShadowPass(snapshot.ShadowDrawList);
         GeometryPass(config, sortedDrawList, snapshot.SelectedDrawList, snapshot.DebugDrawList);
         IDPass(snapshot.SelectedDrawList);
         // TODO: BloomBlurPass() — need MSAA resolve on Attachment1 before reading as sampler2D

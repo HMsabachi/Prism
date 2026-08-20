@@ -31,8 +31,6 @@ namespace Prism {
     OpenGLTexture2D::OpenGLTexture2D(ImageFormat format, uint32_t width, uint32_t height, const void* data)
         : m_Width(width), m_Height(height)
     {
-        PR_PROFILE_FUNCTION();
-
         m_Image = Image2D::Create(format, width, height, data);
         // Allocate CPU buffer for Lock/Unlock/GetWriteableBuffer when no initial data
         // (callers Lock/Write immediately after construction, e.g. C# Texture2D wrapper)

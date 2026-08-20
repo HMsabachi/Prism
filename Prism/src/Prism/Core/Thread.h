@@ -22,6 +22,7 @@ namespace Prism
         void Join();
 
         std::thread::id GetID() const;
+        std::thread::native_handle_type GetNativeHandle();
     private:
         std::string m_Name;
         std::thread m_Thread;

@@ -86,9 +86,6 @@ namespace Prism {
         if (!forceRecreate && (m_Width == width && m_Height == height))
             return;
 
-        m_Width = width;
-        m_Height = height;
-
         if (RenderThread::IsCurrentThreadRT())
         {
             RT_Resize(m_Width, m_Height, forceRecreate);

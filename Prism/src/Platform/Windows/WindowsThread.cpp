@@ -53,4 +53,10 @@ namespace Prism
     {
         return m_Thread.get_id();
     }
+
+    std::thread::native_handle_type Thread::GetNativeHandle()
+    {
+        return m_Thread.native_handle();
+    }
+
 }

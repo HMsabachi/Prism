@@ -143,10 +143,6 @@ namespace Prism
     {
         PR_PROFILE_THREAD("Render Thread");
         PR_CORE_TRACE("Render Thread is running");
-#ifdef PR_PLATFORM_WINDOWS
-        DWORD_PTR mask = 1ull << 2;
-        SetThreadAffinityMask(GetCurrentThread(), mask);
-#endif
         while (renderThread->IsRunning())
         {
             WaitAndRender(renderThread);

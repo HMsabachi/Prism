@@ -60,6 +60,7 @@ namespace Prism
 
     void RenderSystem::Render()
     {
+        PR_PROFILE_FUNCTION();
         m_PendingSnapshot.DrawList.clear();
         m_PendingSnapshot.SelectedDrawList.clear();
         m_PendingSnapshot.ShadowDrawList.clear();

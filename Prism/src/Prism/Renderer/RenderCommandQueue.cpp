@@ -8,17 +8,13 @@ namespace Prism
         return (size + alignment - 1) & ~(alignment - 1);
     }
 
-    const size_t RenderCommandQueue::COMMAND_BUFFER_SIZE = 10 * 1024 * 1024; // 10MB buffer
-    const size_t RenderCommandQueue::DATA_POOL_MAX_SIZE = 10 * 1024 * 1024; // 10MB buffer
-
     RenderCommandQueue::RenderCommandQueue()
-        :m_CommandCount(0)
     {
-        m_CommandBuffer = new uint8_t[COMMAND_BUFFER_SIZE]; 
+        // m_CommandBuffer = new uint8_t[COMMAND_BUFFER_SIZE]; 
         m_CommandBufferPtr = m_CommandBuffer;
         memset(m_CommandBuffer, 0, COMMAND_BUFFER_SIZE);
 
-        m_DataPool = new uint8_t[DATA_POOL_MAX_SIZE];
+        // m_DataPool = new uint8_t[DATA_POOL_MAX_SIZE];
         m_DataPoolPtr = m_DataPool;
         memset(m_DataPool, 0, DATA_POOL_MAX_SIZE);
     }
