@@ -6,13 +6,14 @@ Shader "Custom/SceneComposite"
     {
         u_Exposure("曝光度", Float) = 1.0
         u_OutlineColor("描边颜色", Color) = (1.0, 0.5, 0.0, 1.0)
+        u_OutlineWidth("描边宽度", Float) = 2.0
     }
     SubShader
     {
         Pass
         {
-            Tags { "Queue" = "Overlay" "RenderType" = "Opaque" }
-            Name "ForwardBase"
+            Tags { "Queue" = "Overlay" "RenderType" = "Opaque" "LightMode" = "PostProcess" }
+            Name "CompositeAndOutline"
             GLSL
             {
                 #include "PrismEngine.glsl"
@@ -34,6 +35,37 @@ Shader "Custom/SceneComposite"
                     vs_Output.TexCoord = a_TexCoord;
                 }
 
+                bool IsVec3Equal(vec3 a, vec3 b)
+                {
+                    return all(equal(a, b));
+                }
+
+                bool ShouldDrawOutline(vec2 texCoord)
+                {
+                    vec2 texel = 1.0 / vec2(textureSize(Prism_ObjectIDTexture, 0));
+                    vec3 idC = texture(Prism_ObjectIDTexture, vs_Output.TexCoord).rgb;
+                    bool edge = false;
+                    int radius = int(ceil(u_OutlineWidth));
+                    for (int y = -radius; y <= radius; y++)
+                    {
+                        for (int x = -radius; x <= radius; x++)
+                        {
+                            if (x == 0 && y == 0)
+                                continue;
+                            vec2 offset = vec2(x, y) * texel;
+                            vec3 id = texture(
+                                Prism_ObjectIDTexture,
+                                texCoord + offset
+                            ).rgb;
+                            if (!IsVec3Equal(idC, id))
+                            {
+                                edge = true;
+                            }
+                        }
+                    }
+                    return edge;
+                }
+
                 void frag()
                 {
                     const float gamma     = 2.2;
@@ -46,16 +78,16 @@ Shader "Custom/SceneComposite"
 
                     vec3 mappedColor = (mappedLuminance / luminance) * color;
 
-                    vec2 texel = 1.0 / vec2(textureSize(Prism_ObjectIDTexture, 0));
-                    float idC = texture(Prism_ObjectIDTexture, vs_Output.TexCoord).r;
-                    float idL = texture(Prism_ObjectIDTexture, vs_Output.TexCoord + vec2(-texel.x, 0.0)).r;
-                    float idR = texture(Prism_ObjectIDTexture, vs_Output.TexCoord + vec2( texel.x, 0.0)).r;
-                    float idD = texture(Prism_ObjectIDTexture, vs_Output.TexCoord + vec2(0.0, -texel.y)).r;
-                    float idU = texture(Prism_ObjectIDTexture, vs_Output.TexCoord + vec2(0.0,  texel.y)).r;
+                    vec2 texel = u_OutlineWidth / vec2(textureSize(Prism_ObjectIDTexture, 0));
+                    vec3 idC = texture(Prism_ObjectIDTexture, vs_Output.TexCoord).rgb;
+                    vec3 idL = texture(Prism_ObjectIDTexture, vs_Output.TexCoord + vec2(-texel.x, 0.0)).rgb;
+                    vec3 idR = texture(Prism_ObjectIDTexture, vs_Output.TexCoord + vec2( texel.x, 0.0)).rgb;
+                    vec3 idD = texture(Prism_ObjectIDTexture, vs_Output.TexCoord + vec2(0.0, -texel.y)).rgb;
+                    vec3 idU = texture(Prism_ObjectIDTexture, vs_Output.TexCoord + vec2(0.0,  texel.y)).rgb;
+                    bool sel = IsVec3Equal(idC, idL) && IsVec3Equal(idC, idR) && IsVec3Equal(idC, idD) && IsVec3Equal(idC, idU);
+                    bool edge = !sel;
 
-                    bool sel = idC > 0.5;
-                    bool edge = sel != (idL > 0.5) || sel != (idR > 0.5)
-                             || sel != (idD > 0.5) || sel != (idU > 0.5);
+                    // bool edge = ShouldDrawOutline(vs_Output.TexCoord);
 
                     vec3 finalColor = edge ? u_OutlineColor.rgb : mappedColor;
 

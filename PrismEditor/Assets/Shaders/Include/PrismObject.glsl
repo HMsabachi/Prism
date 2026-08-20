@@ -17,8 +17,8 @@ struct PrismObjectData
 {
     mat4 ObjectToWorld;
     mat4 PreviousModel;
-    vec4 Reserved;        // .x = ShadowPassIndex, .y = ObjectID
-    int  AnimationOffset; // 骨骼大数组起始索引, -1 = 无动画
+    vec4 Reserved;
+    int  AnimationOffset; // 骨骼大数组起始索引
 };
 
 PRISM_OBJECT_LAYOUT buffer PrismObjects
@@ -26,12 +26,10 @@ PRISM_OBJECT_LAYOUT buffer PrismObjects
     PrismObjectData Prism_Objects[];
 };
 
-#ifdef SKINNED
 PRISM_ANIM_LAYOUT buffer PrismAnimation
 {
     mat4 Prism_AllBones[];
 };
-#endif
 
 // drawIndex 传输通道
 #if PRISM_BACKEND_OPENGL
@@ -40,10 +38,10 @@ layout(location = 0) uniform int Prism_DrawIndex;
 layout(push_constant) uniform PrismDrawIndexPC { int Prism_DrawIndex; };
 #endif
 
-#define Prism_ObjectToWorld  (Prism_Objects[Prism_DrawIndex].ObjectToWorld)
-#define Prism_PreviousModel  (Prism_Objects[Prism_DrawIndex].PreviousModel)
+#define Prism_ObjectToWorld (Prism_Objects[Prism_DrawIndex].ObjectToWorld)
+#define Prism_PreviousModel (Prism_Objects[Prism_DrawIndex].PreviousModel)
 #define Prism_ObjectReserved (Prism_Objects[Prism_DrawIndex].Reserved)
-#define PRISM_BONE(i)        (Prism_AllBones[Prism_Objects[Prism_DrawIndex].AnimationOffset + (i)])
+#define Prism_GetBoneMatrix(i) (Prism_AllBones[Prism_Objects[Prism_DrawIndex].AnimationOffset + (i)])
 
 #undef PRISM_OBJECT_LAYOUT
 #undef PRISM_ANIM_LAYOUT

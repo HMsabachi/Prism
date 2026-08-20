@@ -80,10 +80,10 @@ Shader "Custom/Toon"
                 void vert()
                 {
                 #ifdef SKINNED
-                    mat4 boneTransform = PRISM_BONE(a_BoneIndices[0]) * a_BoneWeights[0];
-                    boneTransform += PRISM_BONE(a_BoneIndices[1]) * a_BoneWeights[1];
-                    boneTransform += PRISM_BONE(a_BoneIndices[2]) * a_BoneWeights[2];
-                    boneTransform += PRISM_BONE(a_BoneIndices[3]) * a_BoneWeights[3];
+                    mat4 boneTransform = Prism_GetBoneMatrix(a_BoneIndices[0]) * a_BoneWeights[0];
+                    boneTransform += Prism_GetBoneMatrix(a_BoneIndices[1]) * a_BoneWeights[1];
+                    boneTransform += Prism_GetBoneMatrix(a_BoneIndices[2]) * a_BoneWeights[2];
+                    boneTransform += Prism_GetBoneMatrix(a_BoneIndices[3]) * a_BoneWeights[3];
 
                     vec4 localPosition = boneTransform * vec4(a_Position, 1.0);
                     vs_Output.WorldPosition = vec3(Prism_ObjectToWorld * localPosition);
@@ -214,10 +214,10 @@ Shader "Custom/Toon"
                 void vert()
                 {
                 #ifdef SKINNED
-                    mat4 boneTransform = PRISM_BONE(a_BoneIndices[0]) * a_BoneWeights[0];
-                    boneTransform += PRISM_BONE(a_BoneIndices[1]) * a_BoneWeights[1];
-                    boneTransform += PRISM_BONE(a_BoneIndices[2]) * a_BoneWeights[2];
-                    boneTransform += PRISM_BONE(a_BoneIndices[3]) * a_BoneWeights[3];
+                    mat4 boneTransform = Prism_GetBoneMatrix(a_BoneIndices[0]) * a_BoneWeights[0];
+                    boneTransform += Prism_GetBoneMatrix(a_BoneIndices[1]) * a_BoneWeights[1];
+                    boneTransform += Prism_GetBoneMatrix(a_BoneIndices[2]) * a_BoneWeights[2];
+                    boneTransform += Prism_GetBoneMatrix(a_BoneIndices[3]) * a_BoneWeights[3];
 
                     vec4 localPosition = boneTransform * vec4(a_Position, 1.0);
                     vec3 worldNormal = mat3(Prism_ObjectToWorld) * mat3(boneTransform) * a_Normal;

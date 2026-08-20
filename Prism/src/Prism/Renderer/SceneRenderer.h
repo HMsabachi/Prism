@@ -43,7 +43,6 @@ namespace Prism
         RenderConfig Config;
         std::vector<DrawCommand> DrawList;
         std::vector<DrawCommand> SelectedDrawList;
-        std::vector<DrawCommand> ShadowDrawList;
         std::vector<DrawCommand> DebugDrawList;
         uint64_t FrameIndex = 0;
     };
@@ -76,6 +75,7 @@ namespace Prism
         void ExecuteImpt(const FrameSnapshot& snapshot);
         void BeginFrame(const FrameSnapshot& snapshot);
         void UpdateShadowData(const FrameSnapshot& snapshot);
+
         void ShadowPass(const std::vector<DrawCommand>& drawList);
         void GeometryPass(const RenderConfig& config,
             const std::vector<DrawCommand>& drawList,

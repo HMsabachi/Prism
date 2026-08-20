@@ -132,7 +132,7 @@ namespace Prism {
                     {
                         for (auto& debugMesh : collider.ProcessedMeshes)
                             rs->SubmitDebugMesh(debugMesh,
-                                m_Scene->GetTransformRelativeToParent(e));
+                                glm::rotate(m_Scene->GetTransformRelativeToParent(e), glm::radians(-90.0f), glm::vec3(1, 0, 0)));
                     }
                     else if (collider.CollisionMesh)
                     {

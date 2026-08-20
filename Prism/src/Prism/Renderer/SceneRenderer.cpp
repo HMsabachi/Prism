@@ -65,7 +65,7 @@ namespace Prism
         FramebufferSpecification idFBSpec;
         idFBSpec.Width = viewportWidth;
         idFBSpec.Height = viewportHeight;
-        idFBSpec.Attachments = { ImageFormat::RGBA16F };
+        idFBSpec.Attachments = { ImageFormat::RGBA16F, ImageFormat::Depth };
         idFBSpec.ClearColor = { 0.0f, 0.0f, 0.0f, 0.0f };
 
         RenderPassSpecification idRPSpec;
@@ -213,9 +213,7 @@ namespace Prism
     }
     void SceneRenderer::ExecuteImpt(const FrameSnapshot& snapshot)
     {
-        std::vector<DrawCommand> sortedDrawList = snapshot.DrawList;
-        std::sort(sortedDrawList.begin(), sortedDrawList.end(), [](auto& a, auto& b) { return a.SortKey < b.SortKey; });
-
+        
         const auto& config = snapshot.Config;
         bool castShadows = config.ShadowsEnabled && !snapshot.DrawList.empty() && config.LightEnvironment.DirectionalLights[0].CastShadows;
         if (castShadows) UpdateShadowData(snapshot);
@@ -223,13 +221,19 @@ namespace Prism
         m_FrameData.ShadowData = { dl.LightSize, config.MaxShadowDistance, 25.0f, 0.0f };
         BeginFrame(snapshot);
 
+        //std::vector<DrawCommand> sortedDrawList = snapshot.DrawList;
+        //{
+        //    PR_PROFILE_SCOPE("DrawList Sort");
+        //    std::sort(sortedDrawList.begin(), sortedDrawList.end(), [](auto& a, auto& b) { return a.SortKey < b.SortKey; });
+        //}
+
         m_ObjectArray.clear(); m_BoneArray.clear();
         std::vector<DrawCommand> shadowDrawList[4], geometryDrawList, selectedDrawList, debugDrawList;
         uint32_t gridDrawIndex = 0;
         {
             PR_PROFILE_SCOPE("DrawList Split");
             // Shadow Draw List
-            for(auto& dc : snapshot.ShadowDrawList)
+            for(auto& dc : snapshot.DrawList)
             {
                 if (!dc.Material) continue;
                 int32_t shadowPass = dc.Material->GetShader()->FindPassByTag(SHADER_TAG_KEY_LIGHT_MODE, SHADER_TAG_VALUE_SHADOW_CASTER);
@@ -245,14 +249,13 @@ namespace Prism
                         glm::vec4(static_cast<float>(cascade)),
                         (uint32_t)m_BoneArray.size()
                     );
-                    if (dc.Mesh->IsAnimated())
-                        m_BoneArray.insert(m_BoneArray.end(),
-                            dc.Mesh->m_BoneTransforms.data(),
-                            dc.Mesh->m_BoneTransforms.data() + dc.Mesh->m_BoneTransforms.size());
                 }
+                if (dc.Mesh->IsAnimated())
+                    m_BoneArray.insert(m_BoneArray.end(), dc.Mesh->m_BoneTransforms.data(),
+                        dc.Mesh->m_BoneTransforms.data() + dc.Mesh->m_BoneTransforms.size());
             }
             // Geometry Draw List
-            for (auto& dc : sortedDrawList)
+            for (auto& dc : snapshot.DrawList)
             {
                 if (!dc.Material) continue;
                 int32_t forwardBasePass = dc.Material->GetShader()->FindPassByTag(SHADER_TAG_KEY_LIGHT_MODE, SHADER_TAG_VALUE_FORWARD_BASE);
@@ -267,21 +270,13 @@ namespace Prism
                     (uint32_t)m_BoneArray.size()
                 );
                 if (dc.Mesh->IsAnimated())
-                    m_BoneArray.insert(m_BoneArray.end(),
-                        dc.Mesh->m_BoneTransforms.data(),
+                    m_BoneArray.insert(m_BoneArray.end(),dc.Mesh->m_BoneTransforms.data(),
                         dc.Mesh->m_BoneTransforms.data() + dc.Mesh->m_BoneTransforms.size());
             }
             // Selected Draw List
             for (auto& dc : snapshot.SelectedDrawList)
             {
                 if (!dc.Material) continue;
-                int32_t forwardBasePass = dc.Material->GetShader()->FindPassByTag(SHADER_TAG_KEY_LIGHT_MODE, SHADER_TAG_VALUE_FORWARD_BASE);
-                if (forwardBasePass >= 0)
-                {
-                    geometryDrawList.push_back(dc);
-                    geometryDrawList.back().DrawIndex = (uint32_t)m_ObjectArray.size();
-                    geometryDrawList.back().PassIndex = (uint32_t)forwardBasePass;
-                }
                 selectedDrawList.push_back(dc);
                 selectedDrawList.back().DrawIndex = (uint32_t)m_ObjectArray.size();
                 m_ObjectArray.emplace_back(
@@ -291,8 +286,7 @@ namespace Prism
                     (uint32_t)m_BoneArray.size()
                 );
                 if (dc.Mesh->IsAnimated())
-                    m_BoneArray.insert(m_BoneArray.end(),
-                        dc.Mesh->m_BoneTransforms.data(),
+                    m_BoneArray.insert(m_BoneArray.end(), dc.Mesh->m_BoneTransforms.data(),
                         dc.Mesh->m_BoneTransforms.data() + dc.Mesh->m_BoneTransforms.size());
             }
             // Debug Draw List
@@ -322,6 +316,7 @@ namespace Prism
             m_ObjectSSBO->SetData(m_ObjectArray.data(), sizeof(ObjectData) * m_ObjectArray.size());
             m_BoneSSBO->SetData(m_BoneArray.data(), sizeof(glm::mat4) * m_BoneArray.size());
         }
+        // Render Passes
         {
             PR_PROFILE_SCOPE("ShadowPass");
             for (uint32_t cascade = 0; cascade < 4; cascade++)
@@ -370,7 +365,20 @@ namespace Prism
             Renderer::EndRenderPass();
         }
         // if (config.EnableBloom) BloomBlurPass();
-        CompositePass();
+        {
+            PR_PROFILE_SCOPE("CompositePass");
+            Renderer::BeginRenderPass(m_CompositePass);
+            Renderer::SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_COMPOSITE_GEOMETRY_COLOR_SLOT,
+                m_GeoPass->GetSpecification().TargetFramebuffer->GetImage(0));
+            Renderer::SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_COMPOSITE_OBJECT_ID_SLOT,
+                m_IDPass->GetSpecification().TargetFramebuffer->GetImage(0));
+
+            float exposure = 0.8f;
+            m_CompositeMaterial->SetFloat("u_Exposure", exposure);
+
+            DrawFullscreen(m_CompositeMaterial);
+            Renderer::EndRenderPass();
+        }
     }
 
 #pragma region Passes
@@ -504,7 +512,7 @@ namespace Prism
 
         Renderer::EndRenderPass();
     }
-#endif
+
 
     void SceneRenderer::CompositePass()
     {
@@ -563,6 +571,8 @@ namespace Prism
         DrawFullscreen(m_BloomBlendMaterial);
         Renderer::EndRenderPass();
     }
+#endif
+
 #pragma endregion
 
 #pragma region Tool
@@ -699,24 +709,6 @@ namespace Prism
             m_FrameData.ShadowMatrices[i] = m_ShadowMatrices[i];
         m_FrameData.CascadeSplits = m_CascadeSplits;
     }
-
-#if 0
-    void SceneRenderer::SetObjectBones(const glm::mat4* bones, uint32_t count)
-    {
-        if (count > PRISM_MAX_BONES) count = PRISM_MAX_BONES;
-        memcpy(m_ObjectData.Bones, bones, count * sizeof(glm::mat4));
-        m_ObjectBonesDirty = true;
-    }
-
-    void SceneRenderer::UploadObjectUBO()
-    {
-        if (m_ObjectBonesDirty)
-            m_ObjectUBO->SetData(&m_ObjectData, sizeof(m_ObjectData));
-        else
-            m_ObjectUBO->SetData(&m_ObjectData, offsetof(ObjectData, Bones));
-        m_ObjectBonesDirty = false;
-    }
-#endif
 
 
 
