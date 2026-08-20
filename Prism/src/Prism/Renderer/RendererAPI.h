@@ -14,7 +14,6 @@ namespace PrismShaderCompiler { struct PipelineState; }
 namespace Prism
 {
     class RenderPass;
-    class VertexInput;
     class Mesh;
     class Material;
     class TextureCube;
@@ -100,7 +99,7 @@ namespace Prism
 
         virtual void BeginRenderPass(Ref<RenderPass> renderPass, bool clear = true) = 0;
         virtual void EndRenderPass() = 0;
-        virtual void SubmitFullscreenQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const PrismShaderCompiler::PipelineState* stateOverride = nullptr) = 0;
+        virtual void SubmitFullscreenQuad(Ref<Material> material, const PrismShaderCompiler::PipelineState* stateOverride = nullptr) = 0;
 
         virtual void SetSceneEnvironment(const Ref<SceneEnvironment>& environment) = 0;
         virtual std::pair<Ref<TextureCube>, Ref<TextureCube>> CreateEnvironmentMap(const std::string& filepath) = 0;
@@ -112,7 +111,7 @@ namespace Prism
         virtual void RenderMesh(Ref<Mesh> mesh, Ref<Material> material,
             uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass,
             const PrismShaderCompiler::PipelineState* stateOverride = nullptr) = 0;
-        virtual void RenderQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const glm::mat4& transform,
+        virtual void RenderQuad(Ref<Material> material, const glm::mat4& transform,
             const PrismShaderCompiler::PipelineState* stateOverride = nullptr) = 0;
 
         virtual void DispatchCompute(Ref<Shader> kernelShader,

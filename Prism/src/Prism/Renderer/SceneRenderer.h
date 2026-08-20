@@ -15,7 +15,6 @@ namespace Prism
     class Texture2D;
     class VertexBuffer;
     class IndexBuffer;
-    class VertexInput;
     class Image2D;
     class UniformBuffer;
 
@@ -86,7 +85,6 @@ namespace Prism
 
         void DrawFullscreen(const Ref<Material>& material);
         void DrawQuad(const Ref<Material>& material, const glm::mat4& transform);
-        void CreateFullscreenQuad();
 
         static constexpr uint32_t SHADOW_MAP_SIZE = 2048;
 
@@ -140,8 +138,6 @@ namespace Prism
 
         void SetObjectBones(const glm::mat4* bones, uint32_t count);
         void UploadObjectUBO();
-
-        Ref<VertexInput> m_FullscreenQuadPipeline;
 
         Ref<RenderPass> m_GeoPass;
         Ref<RenderPass> m_IDPass;

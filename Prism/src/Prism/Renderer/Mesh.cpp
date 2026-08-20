@@ -1,7 +1,6 @@
 ﻿#include "prpch.h"
 #include "Mesh.h"
 #include "Prism/Renderer/Renderer.h"
-#include "Prism/Renderer/VertexInput.h"
 #include "Prism/Renderer/Buffer/VertexBuffer.h"
 #include "Prism/Renderer/Buffer/IndexBuffer.h"
 
@@ -131,11 +130,10 @@ namespace Prism {
             };
         }
         m_VertexBuffer->SetLayout(vertexLayout);
+        PR_CORE_TRACE("Vertex Buffer Layout Hash: {0}", vertexLayout.GetHash());
+
         m_IndexBuffer = IndexBuffer::Create(m_Indices.data(), m_Indices.size() * sizeof(Index));
 
-        VertexInputSpecification pipelineSpec;
-        pipelineSpec.Layout = vertexLayout;
-        m_VertexInput = VertexInput::Create(pipelineSpec);
     }
 
 
@@ -160,10 +158,7 @@ namespace Prism {
             { ShaderDataType::Float2, "a_TexCoord", VertexSemantic::TexCoord0 },
         };
         m_VertexBuffer->SetLayout(vertexLayout);
-
-        VertexInputSpecification pipelineSpec;
-        pipelineSpec.Layout = vertexLayout;
-        m_VertexInput = VertexInput::Create(pipelineSpec);
+        PR_CORE_TRACE("Vertex Buffer Layout Hash: {0}", vertexLayout.GetHash());
     }
 
     Mesh::~Mesh()

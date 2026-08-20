@@ -30,25 +30,10 @@ namespace Prism {
         return 0;
     }
 
-    OpenGLVertexInput::OpenGLVertexInput(const VertexInputSpecification& spec)
-        : m_Specification(spec)
+    OpenGLVertexInput::OpenGLVertexInput(const VertexBufferLayout& layout)
+        : m_Layout(layout)
     {
-        Invalidate();
-    }
-
-    OpenGLVertexInput::~OpenGLVertexInput()
-    {
-        GLuint rendererID = m_VertexArrayRendererID;
-        Renderer::SubmitResourceFree([rendererID]()
-        {
-            glDeleteVertexArrays(1, &rendererID);
-        });
-    }
-
-    void OpenGLVertexInput::Invalidate()
-    {
-        PR_CORE_ASSERT(m_Specification.Layout.GetElements().size(), "Layout is empty!");
-
+        PR_CORE_ASSERT(layout.GetElements().size(), "Layout is empty!");
         if (RenderThread::IsCurrentThreadRT())
         {
             RT_Invalidate();
@@ -60,12 +45,23 @@ namespace Prism {
         }
     }
 
+    OpenGLVertexInput::~OpenGLVertexInput()
+    {
+        GLuint rendererID = m_VertexArrayRendererID;
+        Renderer::SubmitResourceFree([rendererID]()
+        {
+            glDeleteVertexArrays(1, &rendererID);
+        });
+    }
+
+
     void OpenGLVertexInput::RT_Invalidate()
     {
         if (m_VertexArrayRendererID)
             glDeleteVertexArrays(1, &m_VertexArrayRendererID);
 
         glCreateVertexArrays(1, &m_VertexArrayRendererID);
+        
         glBindVertexArray(0);
     }
 
@@ -73,7 +69,7 @@ namespace Prism {
     {
         glBindVertexArray(m_VertexArrayRendererID);
         // Set up vertex attrib pointers using VertexSemantic-based indexing
-        const auto& layout = m_Specification.Layout;
+        const auto& layout = m_Layout;
         uint32_t attribIndex = 0;
         for (const auto& element : layout)
         {
@@ -100,6 +96,18 @@ namespace Prism {
                     (const void*)(intptr_t)element.Offset);
             }
         }
+    }
+
+
+
+    Ref<OpenGLVertexInput>& OpenGLVertexArrayCache::Get(const VertexBufferLayout& layout)
+    {
+        uint64_t hash = layout.GetHash();
+        auto it = m_Cache.find(hash);
+        if (it != m_Cache.end()) return it->second;
+        Ref<OpenGLVertexInput> vertexInput = Ref<OpenGLVertexInput>::Create(layout);
+        m_Cache[hash] = vertexInput;
+        return m_Cache[hash];
     }
 
 }

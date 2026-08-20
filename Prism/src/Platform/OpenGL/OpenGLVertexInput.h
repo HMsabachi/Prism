@@ -1,25 +1,28 @@
 ﻿#pragma once
 
-#include "Prism/Renderer/VertexInput.h"
+#include "Prism/Core/Ref.h"
+#include "Prism/Renderer/Buffer/VertexBuffer.h"
 
 namespace Prism {
 
-    class OpenGLVertexInput : public VertexInput
+    class OpenGLVertexInput : public RefCounted
     {
     public:
-        OpenGLVertexInput(const VertexInputSpecification& spec);
+        OpenGLVertexInput(const VertexBufferLayout& layout);
         virtual ~OpenGLVertexInput();
-
-        virtual VertexInputSpecification& GetSpecification() { return m_Specification; }
-        virtual const VertexInputSpecification& GetSpecification() const { return m_Specification; }
-
-        virtual void Invalidate() override;
 
         void RT_Bind() const;
         void RT_Invalidate();
     private:
-        VertexInputSpecification m_Specification;
+        VertexBufferLayout m_Layout;
         uint32_t m_VertexArrayRendererID = 0;
     };
 
+    class OpenGLVertexArrayCache
+    {
+    public:
+        Ref<OpenGLVertexInput>& Get(const VertexBufferLayout& Layout);
+    private:
+        std::unordered_map<uint64_t, Ref<OpenGLVertexInput>> m_Cache;
+    };
 }

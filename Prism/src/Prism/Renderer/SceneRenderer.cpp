@@ -7,7 +7,6 @@
 #include "Prism/Renderer/Material.h"
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Asset/AssetManager.h"
-#include "Prism/Renderer/VertexInput.h"
 #include "Prism/Renderer/Buffer/UniformBuffer.h"
 #include "Prism/Renderer/Buffer/VertexBuffer.h"
 #include "Prism/Renderer/Buffer/IndexBuffer.h"
@@ -139,8 +138,6 @@ namespace Prism
         auto bloomBlendShader = AssetManager::GetShaderLibrary()->Get("PostProcess/BloomBlend");
         if (bloomBlendShader)
             m_BloomBlendMaterial = Material::Create(bloomBlendShader->Handle);
-
-        CreateFullscreenQuad();
     }
 
     void SceneRenderer::Shutdown()
@@ -155,8 +152,6 @@ namespace Prism
         m_BloomBlendPass.Reset();
         m_BloomBlurMaterial.Reset();
         m_BloomBlendMaterial.Reset();
-
-        m_FullscreenQuadPipeline.Reset();
     }
 
 
@@ -421,19 +416,9 @@ namespace Prism
 
 #pragma region Tool
 
-    void SceneRenderer::CreateFullscreenQuad()
-    {
-        VertexInputSpecification pipelineSpec;
-        pipelineSpec.Layout = {
-            { ShaderDataType::Float3, "a_Position",  VertexSemantic::Position },
-            { ShaderDataType::Float2, "a_TexCoord",  VertexSemantic::TexCoord0 }
-        };
-        m_FullscreenQuadPipeline = VertexInput::Create(pipelineSpec);
-    }
-
     void SceneRenderer::DrawFullscreen(const Ref<Material>& material)
     {
-        Renderer::SubmitFullscreenQuad(m_FullscreenQuadPipeline, material);
+        Renderer::SubmitFullscreenQuad(material);
     }
 
     void SceneRenderer::DrawQuad(const Ref<Material>& material, const glm::mat4& transform)
@@ -444,7 +429,7 @@ namespace Prism
             UploadObjectUBO();
             Renderer::SetUniformBuffer(Config::PRISM_SET_TRANSFORMS, 0, m_ObjectUBO);
         }
-        Renderer::RenderQuad(m_FullscreenQuadPipeline, material, transform);
+        Renderer::RenderQuad(material, transform);
     }
 
     void SceneRenderer::BeginFrame(const FrameSnapshot& snapshot)

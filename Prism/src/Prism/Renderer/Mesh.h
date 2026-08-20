@@ -165,8 +165,6 @@ namespace Prism {
 
         bool IsAnimated() const { return m_IsAnimated; }
 
-        const Ref<VertexInput>& GetVertexInput() const { return m_VertexInput; }
-
         const std::vector<Triangle> GetTriangleCache(uint32_t index) const { return m_TriangleCache.at(index); }
 
         const std::vector<Vertex>& GetStaticVertices() const { return m_StaticVertices; }
@@ -193,7 +191,6 @@ namespace Prism {
         uint32_t m_BoneCount = 0;
         std::vector<BoneInfo> m_BoneInfo;
 
-        Ref<VertexInput> m_VertexInput;
         Ref<VertexBuffer> m_VertexBuffer;
         Ref<IndexBuffer> m_IndexBuffer;
 

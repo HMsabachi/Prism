@@ -5,7 +5,6 @@
 #include "Material.h"
 #include "RenderPass.h"
 #include "Mesh.h"
-#include "VertexInput.h"
 #include "SceneEnvironment.h"
 #include "Image.h"
 #include "Texture.h"
@@ -103,14 +102,14 @@ namespace Prism
 
     void Renderer::BeginRenderPass(Ref<RenderPass> renderPass, bool clear) { s_RendererAPI->BeginRenderPass(renderPass, clear); }
     void Renderer::EndRenderPass() { s_RendererAPI->EndRenderPass(); }
-    void Renderer::SubmitFullscreenQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const PrismShaderCompiler::PipelineState* stateOverride) { s_RendererAPI->SubmitFullscreenQuad(vertexInput, material, stateOverride); }
+    void Renderer::SubmitFullscreenQuad(Ref<Material> material, const PrismShaderCompiler::PipelineState* stateOverride) { s_RendererAPI->SubmitFullscreenQuad(material, stateOverride); }
     void Renderer::SetSceneEnvironment(const Ref<SceneEnvironment>& environment) { s_RendererAPI->SetSceneEnvironment(environment); }
     void Renderer::SetUniformBuffer(uint32_t set, uint32_t binding, Ref<UniformBuffer> ubo) { s_RendererAPI->SetUniformBuffer(set, binding, ubo); }
     void Renderer::SetShaderStorageBuffer(uint32_t set, uint32_t binding, Ref<ShaderStorageBuffer> ssbo) { s_RendererAPI->SetShaderStorageBuffer(set, binding, ssbo); }
     void Renderer::SetTexture(uint32_t set, uint32_t binding, Ref<Image> image) { s_RendererAPI->SetTexture(set, binding, image); }
     std::pair<Ref<TextureCube>, Ref<TextureCube>> Renderer::CreateEnvironmentMap(const std::string& filepath) { return s_RendererAPI->CreateEnvironmentMap(filepath); }
     void Renderer::RenderMesh(Ref<Mesh> mesh, Ref<Material> material, uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass, const PrismShaderCompiler::PipelineState* stateOverride) { s_RendererAPI->RenderMesh(mesh, material, submeshIndex, transform, pass, stateOverride); }
-    void Renderer::RenderQuad(Ref<VertexInput> vertexInput, Ref<Material> material, const glm::mat4& transform, const PrismShaderCompiler::PipelineState* stateOverride) { s_RendererAPI->RenderQuad(vertexInput, material, transform, stateOverride); }
+    void Renderer::RenderQuad(Ref<Material> material, const glm::mat4& transform, const PrismShaderCompiler::PipelineState* stateOverride) { s_RendererAPI->RenderQuad(material, transform, stateOverride); }
 
     void Renderer::DispatchCompute(Ref<Shader> kernelShader, const std::vector<ComputeResourceBinding>& bindings, uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ) { s_RendererAPI->DispatchCompute(kernelShader, bindings, numGroupsX, numGroupsY, numGroupsZ); }
 
