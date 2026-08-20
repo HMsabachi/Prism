@@ -96,7 +96,7 @@ namespace Prism
 
         static void BeginRenderPass(Ref<RenderPass> renderPass, bool clear = true);
         static void EndRenderPass();
-        static void SubmitFullscreenQuad(Ref<Material> material, const PrismShaderCompiler::PipelineState* stateOverride = nullptr);
+        static void SubmitFullscreenQuad(Ref<Material> material, const PrismShaderCompiler::PipelineState* stateOverride = nullptr, uint32_t drawIndex = 0);
         static void SetSceneEnvironment(const Ref<SceneEnvironment>& environment);
         static void SetUniformBuffer(uint32_t set, uint32_t binding, Ref<UniformBuffer> ubo);
         static void SetShaderStorageBuffer(uint32_t set, uint32_t binding, Ref<ShaderStorageBuffer> ssbo);

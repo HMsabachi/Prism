@@ -80,24 +80,24 @@ Shader "Custom/Toon"
                 void vert()
                 {
                 #ifdef SKINNED
-                    mat4 boneTransform = Prism_Bones[a_BoneIndices[0]] * a_BoneWeights[0];
-                    boneTransform += Prism_Bones[a_BoneIndices[1]] * a_BoneWeights[1];
-                    boneTransform += Prism_Bones[a_BoneIndices[2]] * a_BoneWeights[2];
-                    boneTransform += Prism_Bones[a_BoneIndices[3]] * a_BoneWeights[3];
+                    mat4 boneTransform = PRISM_BONE(a_BoneIndices[0]) * a_BoneWeights[0];
+                    boneTransform += PRISM_BONE(a_BoneIndices[1]) * a_BoneWeights[1];
+                    boneTransform += PRISM_BONE(a_BoneIndices[2]) * a_BoneWeights[2];
+                    boneTransform += PRISM_BONE(a_BoneIndices[3]) * a_BoneWeights[3];
 
                     vec4 localPosition = boneTransform * vec4(a_Position, 1.0);
-                    vs_Output.WorldPosition = vec3(Prism_Model * localPosition);
-                    vs_Output.Normal = mat3(Prism_Model) * mat3(boneTransform) * a_Normal;
+                    vs_Output.WorldPosition = vec3(Prism_ObjectToWorld * localPosition);
+                    vs_Output.Normal = mat3(Prism_ObjectToWorld) * mat3(boneTransform) * a_Normal;
                 #else
-                    vs_Output.WorldPosition = vec3(Prism_Model * vec4(a_Position, 1.0));
-                    vs_Output.Normal = mat3(Prism_Model) * a_Normal;
+                    vs_Output.WorldPosition = vec3(Prism_ObjectToWorld * vec4(a_Position, 1.0));
+                    vs_Output.Normal = mat3(Prism_ObjectToWorld) * a_Normal;
                 #endif
 
                     vs_Output.TexCoord = vec2(
                         a_TexCoord.x * u_AlbedoTextureTiling.x + u_AlbedoTextureOffset.x,
                         a_TexCoord.y * u_AlbedoTextureTiling.y + u_AlbedoTextureOffset.y
                     );
-                    vs_Output.WorldNormals = mat3(Prism_Model) * mat3(a_Tangent, a_Binormal, a_Normal);
+                    vs_Output.WorldNormals = mat3(Prism_ObjectToWorld) * mat3(a_Tangent, a_Binormal, a_Normal);
 
                     vs_Output.ShadowMapCoords[0] = Prism_ShadowMatrices[0] * vec4(vs_Output.WorldPosition, 1.0);
                     vs_Output.ShadowMapCoords[1] = Prism_ShadowMatrices[1] * vec4(vs_Output.WorldPosition, 1.0);
@@ -106,9 +106,9 @@ Shader "Custom/Toon"
                     vs_Output.ViewPosition = vec3(Prism_View * vec4(vs_Output.WorldPosition, 1.0));
 
                 #ifdef SKINNED
-                    gl_Position = Prism_ViewProjection * Prism_Model * localPosition;
+                    gl_Position = Prism_ViewProjection * Prism_ObjectToWorld * localPosition;
                 #else
-                    gl_Position = Prism_ViewProjection * Prism_Model * vec4(a_Position, 1.0);
+                    gl_Position = Prism_ViewProjection * Prism_ObjectToWorld * vec4(a_Position, 1.0);
                 #endif
                 }
 
@@ -214,21 +214,21 @@ Shader "Custom/Toon"
                 void vert()
                 {
                 #ifdef SKINNED
-                    mat4 boneTransform = Prism_Bones[a_BoneIndices[0]] * a_BoneWeights[0];
-                    boneTransform += Prism_Bones[a_BoneIndices[1]] * a_BoneWeights[1];
-                    boneTransform += Prism_Bones[a_BoneIndices[2]] * a_BoneWeights[2];
-                    boneTransform += Prism_Bones[a_BoneIndices[3]] * a_BoneWeights[3];
+                    mat4 boneTransform = PRISM_BONE(a_BoneIndices[0]) * a_BoneWeights[0];
+                    boneTransform += PRISM_BONE(a_BoneIndices[1]) * a_BoneWeights[1];
+                    boneTransform += PRISM_BONE(a_BoneIndices[2]) * a_BoneWeights[2];
+                    boneTransform += PRISM_BONE(a_BoneIndices[3]) * a_BoneWeights[3];
 
                     vec4 localPosition = boneTransform * vec4(a_Position, 1.0);
-                    vec3 worldNormal = mat3(Prism_Model) * mat3(boneTransform) * a_Normal;
-                    vec3 worldPos = vec3(Prism_Model * localPosition);
+                    vec3 worldNormal = mat3(Prism_ObjectToWorld) * mat3(boneTransform) * a_Normal;
+                    vec3 worldPos = vec3(Prism_ObjectToWorld * localPosition);
                     vec4 viewPos = Prism_View * vec4(worldPos, 1.0);
                     vec3 viewNormal = mat3(Prism_View) * worldNormal;
                     viewPos.xyz += normalize(viewNormal) * u_OutlineWidth * (-viewPos.z);
                     gl_Position = Prism_Projection * viewPos;
                 #else
-                    vec4 viewPos = Prism_View * Prism_Model * vec4(a_Position, 1.0);
-                    vec3 viewNormal = mat3(Prism_View) * mat3(Prism_Model) * a_Normal;
+                    vec4 viewPos = Prism_View * Prism_ObjectToWorld * vec4(a_Position, 1.0);
+                    vec3 viewNormal = mat3(Prism_View) * mat3(Prism_ObjectToWorld) * a_Normal;
                     viewPos.xyz += normalize(viewNormal) * u_OutlineWidth * (-viewPos.z);
                     gl_Position = Prism_Projection * viewPos;
                 #endif

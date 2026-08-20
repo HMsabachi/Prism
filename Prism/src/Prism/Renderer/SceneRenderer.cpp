@@ -8,6 +8,7 @@
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Asset/AssetManager.h"
 #include "Prism/Renderer/Buffer/UniformBuffer.h"
+#include "Prism/Renderer/Buffer/ShaderStorageBuffer.h"
 #include "Prism/Renderer/Buffer/VertexBuffer.h"
 #include "Prism/Renderer/Buffer/IndexBuffer.h"
 #include "Prism/Renderer/Buffer/Framebuffer.h"
@@ -48,7 +49,8 @@ namespace Prism
     void SceneRenderer::Initialize(uint32_t viewportWidth, uint32_t viewportHeight)
     {
         m_FrameUBO = UniformBuffer::Create(sizeof(FrameData));
-        m_ObjectUBO = UniformBuffer::Create(sizeof(ObjectData));
+        m_ObjectSSBO = ShaderStorageBuffer::Create(sizeof(ObjectData) * PRISM_MAX_OBJECTS);
+        m_BoneSSBO = ShaderStorageBuffer::Create(sizeof(glm::mat4) * PRISM_MAX_TOTAL_BONES);
 
         FramebufferSpecification geoFBSpec;
         geoFBSpec.Width = viewportWidth;
@@ -217,20 +219,163 @@ namespace Prism
         const auto& config = snapshot.Config;
         bool castShadows = config.ShadowsEnabled && !snapshot.DrawList.empty() && config.LightEnvironment.DirectionalLights[0].CastShadows;
         if (castShadows) UpdateShadowData(snapshot);
-
         auto& dl = config.LightEnvironment.DirectionalLights[0];
         m_FrameData.ShadowData = { dl.LightSize, config.MaxShadowDistance, 25.0f, 0.0f };
         BeginFrame(snapshot);
-        if (castShadows) ShadowPass(snapshot.ShadowDrawList);
-        GeometryPass(config, sortedDrawList, snapshot.SelectedDrawList, snapshot.DebugDrawList);
-        IDPass(snapshot.SelectedDrawList);
-        // TODO: BloomBlurPass() — need MSAA resolve on Attachment1 before reading as sampler2D
+
+        m_ObjectArray.clear(); m_BoneArray.clear();
+        std::vector<DrawCommand> shadowDrawList[4], geometryDrawList, selectedDrawList, debugDrawList;
+        uint32_t gridDrawIndex = 0;
+        {
+            PR_PROFILE_SCOPE("DrawList Split");
+            // Shadow Draw List
+            for(auto& dc : snapshot.ShadowDrawList)
+            {
+                if (!dc.Material) continue;
+                int32_t shadowPass = dc.Material->GetShader()->FindPassByTag(SHADER_TAG_KEY_LIGHT_MODE, SHADER_TAG_VALUE_SHADOW_CASTER);
+                if (shadowPass < 0) continue;
+                for (uint32_t cascade = 0; cascade < 4; cascade++)
+                {
+                    shadowDrawList[cascade].push_back(dc);
+                    shadowDrawList[cascade].back().DrawIndex = (uint32_t)m_ObjectArray.size();
+                    shadowDrawList[cascade].back().PassIndex = (uint32_t)shadowPass;
+                    m_ObjectArray.emplace_back(
+                        dc.Transform,
+                        glm::mat4(1.0f),
+                        glm::vec4(static_cast<float>(cascade)),
+                        (uint32_t)m_BoneArray.size()
+                    );
+                    if (dc.Mesh->IsAnimated())
+                        m_BoneArray.insert(m_BoneArray.end(),
+                            dc.Mesh->m_BoneTransforms.data(),
+                            dc.Mesh->m_BoneTransforms.data() + dc.Mesh->m_BoneTransforms.size());
+                }
+            }
+            // Geometry Draw List
+            for (auto& dc : sortedDrawList)
+            {
+                if (!dc.Material) continue;
+                int32_t forwardBasePass = dc.Material->GetShader()->FindPassByTag(SHADER_TAG_KEY_LIGHT_MODE, SHADER_TAG_VALUE_FORWARD_BASE);
+                if (forwardBasePass < 0) continue;
+                geometryDrawList.push_back(dc);
+                geometryDrawList.back().DrawIndex = (uint32_t)m_ObjectArray.size();
+                geometryDrawList.back().PassIndex = (uint32_t)forwardBasePass;
+                m_ObjectArray.emplace_back(
+                    dc.Transform,
+                    glm::mat4(1.0f),
+                    glm::vec4(0.0f),
+                    (uint32_t)m_BoneArray.size()
+                );
+                if (dc.Mesh->IsAnimated())
+                    m_BoneArray.insert(m_BoneArray.end(),
+                        dc.Mesh->m_BoneTransforms.data(),
+                        dc.Mesh->m_BoneTransforms.data() + dc.Mesh->m_BoneTransforms.size());
+            }
+            // Selected Draw List
+            for (auto& dc : snapshot.SelectedDrawList)
+            {
+                if (!dc.Material) continue;
+                int32_t forwardBasePass = dc.Material->GetShader()->FindPassByTag(SHADER_TAG_KEY_LIGHT_MODE, SHADER_TAG_VALUE_FORWARD_BASE);
+                if (forwardBasePass >= 0)
+                {
+                    geometryDrawList.push_back(dc);
+                    geometryDrawList.back().DrawIndex = (uint32_t)m_ObjectArray.size();
+                    geometryDrawList.back().PassIndex = (uint32_t)forwardBasePass;
+                }
+                selectedDrawList.push_back(dc);
+                selectedDrawList.back().DrawIndex = (uint32_t)m_ObjectArray.size();
+                m_ObjectArray.emplace_back(
+                    dc.Transform,
+                    glm::mat4(1.0f),
+                    glm::vec4(0.0f),
+                    (uint32_t)m_BoneArray.size()
+                );
+                if (dc.Mesh->IsAnimated())
+                    m_BoneArray.insert(m_BoneArray.end(),
+                        dc.Mesh->m_BoneTransforms.data(),
+                        dc.Mesh->m_BoneTransforms.data() + dc.Mesh->m_BoneTransforms.size());
+            }
+            // Debug Draw List
+            for (auto& dc : snapshot.DebugDrawList)
+            {
+                if (!dc.Mesh) continue;
+                debugDrawList.push_back(dc);
+                debugDrawList.back().DrawIndex = (uint32_t)m_ObjectArray.size();
+                m_ObjectArray.emplace_back(
+                    dc.Transform,
+                    glm::mat4(1.0f),
+                    glm::vec4(0.0f),
+                    (uint32_t)m_BoneArray.size()
+                );
+            }
+            if (GetOptions().ShowGrid)
+            {
+                gridDrawIndex = (uint32_t)m_ObjectArray.size();
+                m_ObjectArray.emplace_back(
+                    glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) *
+                        glm::scale(glm::mat4(1.0f), glm::vec3(16.0f)),
+                    glm::mat4(1.0f),
+                    glm::vec4(0.0f),
+                    (uint32_t)m_BoneArray.size()
+                );
+            }
+            m_ObjectSSBO->SetData(m_ObjectArray.data(), sizeof(ObjectData) * m_ObjectArray.size());
+            m_BoneSSBO->SetData(m_BoneArray.data(), sizeof(glm::mat4) * m_BoneArray.size());
+        }
+        {
+            PR_PROFILE_SCOPE("ShadowPass");
+            for (uint32_t cascade = 0; cascade < 4; cascade++)
+            {
+                if (shadowDrawList[cascade].empty()) continue;
+                Renderer::BeginRenderPass(m_ShadowPasses[cascade]);
+                for (auto& dc : shadowDrawList[cascade])
+                    Renderer::RenderMesh(dc.Mesh, dc.Material, dc.SubmeshIndex, dc.PassIndex, dc.DrawIndex);
+                Renderer::EndRenderPass();
+            }
+        }
+        {
+            PR_PROFILE_SCOPE("GeometryPass");
+            Renderer::BeginRenderPass(m_GeoPass);
+
+            DrawFullscreen(config.SkyboxMaterial);
+
+            for (int i = 0; i < 4; i++)
+                Renderer::SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_GEOMETRY_SHADOW_MAP0_SLOT + i,
+                    m_ShadowPasses[i]->GetSpecification().TargetFramebuffer->GetDepthImage());
+            if (config.SceneEnvironment && config.SceneEnvironment->RadianceMap && config.SceneEnvironment->IrradianceMap)
+            {
+                Renderer::SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_GEOMETRY_ENV_RADIANCE_SLOT, config.SceneEnvironment->RadianceMap->GetImage());
+                Renderer::SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_GEOMETRY_ENV_IRRADIANCE_SLOT, config.SceneEnvironment->IrradianceMap->GetImage());
+            }
+            Renderer::SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_GEOMETRY_ENV_BRDF_LUT_SLOT, m_BRDFLUT->GetImage());
+
+            for (auto& dc : geometryDrawList)
+                Renderer::RenderMesh(dc.Mesh, dc.Material, dc.SubmeshIndex, dc.PassIndex, dc.DrawIndex);
+            for (auto& dc : debugDrawList)
+                Renderer::RenderMesh(dc.Mesh, m_ColliderMaterial, dc.SubmeshIndex, 0, dc.DrawIndex);
+
+            if (GetOptions().ShowGrid)
+                Renderer::RenderQuad(m_GridMaterial, gridDrawIndex);
+
+            Renderer::EndRenderPass();
+        }
+        {
+            PR_PROFILE_SCOPE("IDPass");
+            Renderer::BeginRenderPass(m_IDPass);
+            for (auto& dc : selectedDrawList)
+            {
+                Ref<Material> material = dc.Mesh->IsAnimated() ? m_IDAnimMaterial : m_IDMaterial;
+                Renderer::RenderMesh(dc.Mesh, material, dc.SubmeshIndex, 0, dc.DrawIndex);
+            }
+            Renderer::EndRenderPass();
+        }
         // if (config.EnableBloom) BloomBlurPass();
         CompositePass();
     }
 
 #pragma region Passes
 
+#if 0
     void SceneRenderer::ShadowPass(const std::vector<DrawCommand>& drawList)
     {
         PR_PROFILE_FUNCTION();
@@ -273,7 +418,12 @@ namespace Prism
         for (int i = 0; i < 4; i++)
             Renderer::SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_GEOMETRY_SHADOW_MAP0_SLOT + i,
                 m_ShadowPasses[i]->GetSpecification().TargetFramebuffer->GetDepthImage());
-
+        if (config.SceneEnvironment && config.SceneEnvironment->RadianceMap && config.SceneEnvironment->IrradianceMap)
+        {
+            Renderer::SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_GEOMETRY_ENV_RADIANCE_SLOT, config.SceneEnvironment->RadianceMap->GetImage());
+            Renderer::SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_GEOMETRY_ENV_IRRADIANCE_SLOT, config.SceneEnvironment->IrradianceMap->GetImage());
+        }
+        Renderer::SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_GEOMETRY_ENV_BRDF_LUT_SLOT, m_BRDFLUT->GetImage());
         if (!drawList.empty())
         {
             for (auto& dc : drawList)
@@ -354,6 +504,7 @@ namespace Prism
 
         Renderer::EndRenderPass();
     }
+#endif
 
     void SceneRenderer::CompositePass()
     {
@@ -421,6 +572,7 @@ namespace Prism
         Renderer::SubmitFullscreenQuad(material);
     }
 
+#if 0
     void SceneRenderer::DrawQuad(const Ref<Material>& material, const glm::mat4& transform)
     {
         if (material)
@@ -431,9 +583,12 @@ namespace Prism
         }
         Renderer::RenderQuad(material);
     }
+#endif
 
     void SceneRenderer::BeginFrame(const FrameSnapshot& snapshot)
     {
+        Renderer::SetShaderStorageBuffer(Config::PRISM_SET_TRANSFORMS, 0, m_ObjectSSBO);
+        Renderer::SetShaderStorageBuffer(Config::PRISM_SET_TRANSFORMS, 1, m_BoneSSBO);
         auto& cam = snapshot.Camera;
         const auto& config = snapshot.Config;
         m_FrameData.ViewProjection = cam.Projection.GetProjectionMatrix() * cam.ViewMatrix;
@@ -451,12 +606,7 @@ namespace Prism
         m_FrameUBO->SetData(&m_FrameData, sizeof(m_FrameData));
         Renderer::SetUniformBuffer(Config::PRISM_SET_FRAME, 0, m_FrameUBO);
         Renderer::SetSceneEnvironment(config.SceneEnvironment);
-        if (config.SceneEnvironment && config.SceneEnvironment->RadianceMap && config.SceneEnvironment->IrradianceMap)
-        {
-            Renderer::SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_GEOMETRY_ENV_RADIANCE_SLOT, config.SceneEnvironment->RadianceMap->GetImage());
-            Renderer::SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_GEOMETRY_ENV_IRRADIANCE_SLOT, config.SceneEnvironment->IrradianceMap->GetImage());
-        }
-        Renderer::SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_GEOMETRY_ENV_BRDF_LUT_SLOT, m_BRDFLUT->GetImage());
+        
     }
 
     void SceneRenderer::UpdateShadowData(const FrameSnapshot& snapshot)
@@ -550,6 +700,7 @@ namespace Prism
         m_FrameData.CascadeSplits = m_CascadeSplits;
     }
 
+#if 0
     void SceneRenderer::SetObjectBones(const glm::mat4* bones, uint32_t count)
     {
         if (count > PRISM_MAX_BONES) count = PRISM_MAX_BONES;
@@ -565,8 +716,9 @@ namespace Prism
             m_ObjectUBO->SetData(&m_ObjectData, offsetof(ObjectData, Bones));
         m_ObjectBonesDirty = false;
     }
+#endif
 
-    
+
 
 #pragma endregion
 }

@@ -17,7 +17,7 @@ namespace Prism
         virtual void BeginRenderPass(Ref<RenderPass> renderPass, bool clear = true) override;
         virtual void EndRenderPass() override;
 
-        virtual void SubmitFullscreenQuad(Ref<Material> material, const PrismShaderCompiler::PipelineState* stateOverride = nullptr) override;
+        virtual void SubmitFullscreenQuad(Ref<Material> material, const PrismShaderCompiler::PipelineState* stateOverride = nullptr, uint32_t drawIndex = 0) override;
 
         virtual void SetSceneEnvironment(const Ref<SceneEnvironment>& environment) override;
         virtual std::pair<Ref<TextureCube>, Ref<TextureCube>> CreateEnvironmentMap(const std::string& filepath) override;

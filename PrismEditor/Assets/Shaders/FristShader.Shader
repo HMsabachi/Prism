@@ -31,9 +31,9 @@ Shader "Custom/MyFirstShader"
                 } vs_Output;
                 void main()
                 {
-                    gl_Position = Prism_ViewProjection * Prism_Model * vec4(aPos, 1.0);
+                    gl_Position = Prism_ViewProjection * Prism_ObjectToWorld * vec4(aPos, 1.0);
                     vs_Output.UV = aUV;
-                    vs_Output.Normal = mat3(Prism_Model) * aNormal;
+                    vs_Output.Normal = mat3(Prism_ObjectToWorld) * aNormal;
                 }
 
                 void frag()

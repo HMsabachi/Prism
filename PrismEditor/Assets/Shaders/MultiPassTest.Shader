@@ -35,8 +35,8 @@ Shader "Test/MultiPass"
 
                 void main()
                 {
-                    vs_Output.Normal = mat3(Prism_Model) * a_Normal;
-                    gl_Position = Prism_ViewProjection * Prism_Model * vec4(a_Position, 1.0);
+                    vs_Output.Normal = mat3(Prism_ObjectToWorld) * a_Normal;
+                    gl_Position = Prism_ViewProjection * Prism_ObjectToWorld * vec4(a_Position, 1.0);
                 }
 
                 void frag()
@@ -68,8 +68,8 @@ Shader "Test/MultiPass"
 
                 void main()
                 {
-                    vs_Output.Normal = mat3(Prism_Model) * a_Normal;
-                    gl_Position = Prism_ViewProjection * Prism_Model * vec4(a_Position, 1.0);
+                    vs_Output.Normal = mat3(Prism_ObjectToWorld) * a_Normal;
+                    gl_Position = Prism_ViewProjection * Prism_ObjectToWorld * vec4(a_Position, 1.0);
                 }
 
                 void frag()

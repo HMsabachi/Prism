@@ -32,7 +32,7 @@ Shader "Debug/Collider"
 
                 void main()
                 {
-                    gl_Position = Prism_ViewProjection * Prism_Model * vec4(a_Position, 1.0);
+                    gl_Position = Prism_ViewProjection * Prism_ObjectToWorld * vec4(a_Position, 1.0);
                 }
 
                 void frag()

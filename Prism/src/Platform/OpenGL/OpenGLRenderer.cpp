@@ -325,17 +325,17 @@ namespace Prism
         
     }
 
-    void OpenGLRenderer::SubmitFullscreenQuad(Ref<Material> material, const PrismShaderCompiler::PipelineState* stateOverride)
+    void OpenGLRenderer::SubmitFullscreenQuad(Ref<Material> material, const PrismShaderCompiler::PipelineState* stateOverride, uint32_t drawIndex)
     {
         Renderer::Submit([=]() {
             RT_BindMaterial(material, 0, stateOverride);
+            glUniform1i(0, drawIndex);
             s_Data->VertexArrayCache.RT_Get(s_Data->FullscreenQuadVB)->RT_Bind();
             s_Data->FullscreenQuadIB.As<OpenGLIndexBuffer>()->RT_Bind();
             s_Data->LastMaterial = nullptr;
             s_Data->LastMesh = nullptr;
             s_Data->LastProgram = nullptr;
             Utils::RT_DrawIndexed(6, PrimitiveType::Triangles);
-            glBindVertexArray(0);
         });
     }
 
@@ -420,9 +420,9 @@ namespace Prism
 
     void OpenGLRenderer::RenderMesh(Ref<Mesh> mesh, Ref<Material> material, uint32_t submeshIndex, uint32_t pass, uint32_t drawIndex)
     {
-        (void)drawIndex;
         Renderer::Submit([=]() mutable {
             RT_BindMaterial(material, pass);
+            glUniform1i(0, drawIndex);
             if (mesh != s_Data->LastMesh)
             {
                 s_Data->VertexArrayCache.RT_Get(mesh->m_VertexBuffer)->RT_Bind();
@@ -436,8 +436,7 @@ namespace Prism
 
     void OpenGLRenderer::RenderQuad(Ref<Material> material, uint32_t drawIndex)
     {
-        (void)drawIndex;
-        SubmitFullscreenQuad(material);
+        SubmitFullscreenQuad(material, nullptr, drawIndex);
     }
 
 

@@ -86,6 +86,7 @@ namespace Prism::Config
     //==================================================
     constexpr uint32_t PRISM_VULKAN_BINDING_FRAME    = 0; // set0 b0
     constexpr uint32_t PRISM_VULKAN_BINDING_OBJECT   = 0; // set2 b0
+    constexpr uint32_t PRISM_VULKAN_BINDING_ANIMATION = 1; // set2 b1
     constexpr uint32_t PRISM_VULKAN_BINDING_MATERIAL = 0; // set3 b0
 
     // shadow/env/bloom 归 set1(RENDER_PASS)

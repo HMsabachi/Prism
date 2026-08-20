@@ -137,10 +137,8 @@ namespace Prism
 
         m_PendingSnapshot.Config = m_Config;
 
-        // TODO(多线程):SubmitSnapshot 入队,渲染线程异步消费
         SceneRenderer::Get().Execute(m_PendingSnapshot);
 
-        // TODO(多线程): clear 需随双缓冲所有权调整,单线程下 Ref 保活安全
         m_PendingSnapshot.DebugDrawList.clear();
     }
 #pragma endregion

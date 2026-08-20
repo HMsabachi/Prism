@@ -2,12 +2,12 @@
 
 vec4 PrismObjectToClipPos(vec3 pos)
 {
-    return Prism_ViewProjection * Prism_Model * vec4(pos, 1.0);
+    return Prism_ViewProjection * Prism_ObjectToWorld * vec4(pos, 1.0);
 }
 
 vec4 PrismObjectToWorldPos(vec3 pos)
 {
-    return Prism_Model * vec4(pos, 1.0);
+    return Prism_ObjectToWorld * vec4(pos, 1.0);
 }
 
 vec4 PrismWorldToClipPos(vec3 pos)
@@ -17,17 +17,17 @@ vec4 PrismWorldToClipPos(vec3 pos)
 
 vec3 PrismObjectToWorldNormal(vec3 normal)
 {
-    return normalize(mat3(Prism_Model) * normal);
+    return normalize(mat3(Prism_ObjectToWorld) * normal);
 }
 
 vec3 PrismObjectToWorldDir(vec3 dir)
 {
-    return normalize(mat3(Prism_Model) * dir);
+    return normalize(mat3(Prism_ObjectToWorld) * dir);
 }
 
 vec3 PrismWorldToObjectDir(vec3 dir)
 {
-    return normalize(mat3(inverse(Prism_Model)) * dir);
+    return normalize(mat3(inverse(Prism_ObjectToWorld)) * dir);
 }
 
 vec3 PrismWorldSpaceViewDir(vec3 worldPos)
@@ -37,7 +37,7 @@ vec3 PrismWorldSpaceViewDir(vec3 worldPos)
 
 vec3 PrismObjectSpaceViewDir(vec3 objectPos)
 {
-    vec3 worldPos = (Prism_Model * vec4(objectPos, 1.0)).xyz;
+    vec3 worldPos = (Prism_ObjectToWorld * vec4(objectPos, 1.0)).xyz;
     return normalize(Prism_CameraPosition - worldPos);
 }
 

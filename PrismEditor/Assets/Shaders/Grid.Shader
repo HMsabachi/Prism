@@ -39,7 +39,7 @@ Shader "Custom/Grid"
 
                 void main()
                 {
-                    mat4 u_MVP = Prism_ViewProjection * Prism_Model;
+                    mat4 u_MVP = Prism_ViewProjection * Prism_ObjectToWorld;
                     vec4 position = u_MVP * vec4(a_Position, 1.0);
                     gl_Position = position;
 

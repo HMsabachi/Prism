@@ -2,6 +2,7 @@
 
 #include <glm/glm.hpp>
 #include <vector>
+#include <unordered_map>
 
 #include "Prism/Renderer/Camera/Camera.h"
 #include "Prism/Renderer/RenderConfig.h"
@@ -17,6 +18,7 @@ namespace Prism
     class IndexBuffer;
     class Image2D;
     class UniformBuffer;
+    class ShaderStorageBuffer;
 
     struct RendererCamera
     {
@@ -31,6 +33,8 @@ namespace Prism
         Ref<Material> Material;
         glm::mat4 Transform = glm::mat4(1.0f);
         uint64_t SortKey = 0;
+        uint32_t DrawIndex = 0;
+        uint32_t PassIndex = 0;
     };
 
     struct FrameSnapshot
@@ -70,7 +74,6 @@ namespace Prism
 
     private:
         void ExecuteImpt(const FrameSnapshot& snapshot);
-
         void BeginFrame(const FrameSnapshot& snapshot);
         void UpdateShadowData(const FrameSnapshot& snapshot);
         void ShadowPass(const std::vector<DrawCommand>& drawList);
@@ -91,6 +94,8 @@ namespace Prism
         static constexpr uint32_t PRISM_MAX_LIGHTS = 1;
         static constexpr uint32_t PRISM_MAX_CASCADES = 4;
         static constexpr uint32_t PRISM_MAX_BONES = 128;
+        static constexpr uint32_t PRISM_MAX_OBJECTS = 4096;
+        static constexpr uint32_t PRISM_MAX_TOTAL_BONES = 16384;
 
         struct alignas(16) FrameData
         {
@@ -124,20 +129,21 @@ namespace Prism
 
         struct alignas(16) ObjectData
         {
-            glm::mat4 Model{ 1.0f };
-            glm::mat4 PrevModel{ 1.0f };
+            glm::mat4 ObjectToWorld{ 1.0f };
+            glm::mat4 PreviousModel{ 1.0f };
             glm::vec4 Reserved{ 0.0f };
-            glm::mat4 Bones[PRISM_MAX_BONES]{};
+            int32_t AnimationOffset{ -1 };
+            int32_t pad[3]{};
         };
+        static_assert(sizeof(ObjectData) == 160, "std430 layout mismatch with PrismObject.glsl");
 
         FrameData m_FrameData;
         Ref<UniformBuffer> m_FrameUBO;
-        ObjectData m_ObjectData;
-        Ref<UniformBuffer> m_ObjectUBO;
-        bool m_ObjectBonesDirty = false;
 
-        void SetObjectBones(const glm::mat4* bones, uint32_t count);
-        void UploadObjectUBO();
+        Ref<ShaderStorageBuffer> m_ObjectSSBO;
+        Ref<ShaderStorageBuffer> m_BoneSSBO;
+        std::vector<ObjectData> m_ObjectArray;
+        std::vector<glm::mat4> m_BoneArray;
 
         Ref<RenderPass> m_GeoPass;
         Ref<RenderPass> m_IDPass;

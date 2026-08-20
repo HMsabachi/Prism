@@ -11,8 +11,11 @@
 #   define PRISM_SET_MATERIAL     3
 
 #   define PRISM_BINDING_FRAME    0
-#   define PRISM_BINDING_OBJECT   16
 #   define PRISM_BINDING_MATERIAL 20
+
+// SSBO 空间(GL_SHADER_STORAGE_BUFFER, set2 TRANSFORMS)
+#   define PRISM_BINDING_OBJECT   16
+#   define PRISM_BINDING_ANIMATION 17
 
 #   define PRISM_PASS_TEX(slot) layout(binding = (1 + (slot)))
 
@@ -28,6 +31,7 @@
 
 #   define PRISM_BINDING_FRAME    0
 #   define PRISM_BINDING_OBJECT   0
+#   define PRISM_BINDING_ANIMATION 1
 #   define PRISM_BINDING_MATERIAL 0
 
 // Texture(set1 RENDER_PASS, per-pass 复用)
