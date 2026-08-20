@@ -252,7 +252,7 @@ namespace Prism
                 UploadObjectUBO();
                 Renderer::SetUniformBuffer(Config::PRISM_SET_TRANSFORMS, 0, m_ObjectUBO);
 
-                Renderer::RenderMesh(dc.Mesh, dc.Material, dc.SubmeshIndex, dc.Transform, (uint32_t)shadowPass);
+                Renderer::RenderMesh(dc.Mesh, dc.Material, dc.SubmeshIndex, (uint32_t)shadowPass);
             }
 
             Renderer::EndRenderPass();
@@ -288,7 +288,7 @@ namespace Prism
                 UploadObjectUBO();
                 Renderer::SetUniformBuffer(Config::PRISM_SET_TRANSFORMS, 0, m_ObjectUBO);
 
-                Renderer::RenderMesh(dc.Mesh, material, dc.SubmeshIndex, dc.Transform, (uint32_t)forwardBasePass);
+                Renderer::RenderMesh(dc.Mesh, material, dc.SubmeshIndex, (uint32_t)forwardBasePass);
             }
         }
 
@@ -303,7 +303,7 @@ namespace Prism
                 UploadObjectUBO();
                 Renderer::SetUniformBuffer(Config::PRISM_SET_TRANSFORMS, 0, m_ObjectUBO);
 
-                Renderer::RenderMesh(dc.Mesh, dc.Material, dc.SubmeshIndex, dc.Transform, 0);
+                Renderer::RenderMesh(dc.Mesh, dc.Material, dc.SubmeshIndex, 0);
             }
         }
 
@@ -317,7 +317,7 @@ namespace Prism
                 UploadObjectUBO();
                 Renderer::SetUniformBuffer(Config::PRISM_SET_TRANSFORMS, 0, m_ObjectUBO);
 
-                Renderer::RenderMesh(dc.Mesh, m_ColliderMaterial, dc.SubmeshIndex, dc.Transform, 0);
+                Renderer::RenderMesh(dc.Mesh, m_ColliderMaterial, dc.SubmeshIndex, 0);
             }
         }
 
@@ -349,7 +349,7 @@ namespace Prism
             Renderer::SetUniformBuffer(Config::PRISM_SET_TRANSFORMS, 0, m_ObjectUBO);
 
             Ref<Material> material = dc.Mesh->IsAnimated() ? m_IDAnimMaterial : m_IDMaterial;
-            Renderer::RenderMesh(dc.Mesh, material, dc.SubmeshIndex, dc.Transform, 0);
+            Renderer::RenderMesh(dc.Mesh, material, dc.SubmeshIndex, 0);
         }
 
         Renderer::EndRenderPass();
@@ -429,7 +429,7 @@ namespace Prism
             UploadObjectUBO();
             Renderer::SetUniformBuffer(Config::PRISM_SET_TRANSFORMS, 0, m_ObjectUBO);
         }
-        Renderer::RenderQuad(material, transform);
+        Renderer::RenderQuad(material);
     }
 
     void SceneRenderer::BeginFrame(const FrameSnapshot& snapshot)

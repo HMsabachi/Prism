@@ -102,8 +102,8 @@ namespace Prism
         static void SetShaderStorageBuffer(uint32_t set, uint32_t binding, Ref<ShaderStorageBuffer> ssbo);
         static void SetTexture(uint32_t set, uint32_t binding, Ref<Image> image);
         static std::pair<Ref<TextureCube>, Ref<TextureCube>> CreateEnvironmentMap(const std::string& filepath);
-        static void RenderMesh(Ref<Mesh> mesh, Ref<Material> material, uint32_t submeshIndex, const glm::mat4& transform, uint32_t pass, const PrismShaderCompiler::PipelineState* stateOverride = nullptr);
-        static void RenderQuad(Ref<Material> material, const glm::mat4& transform, const PrismShaderCompiler::PipelineState* stateOverride = nullptr);
+        static void RenderMesh(Ref<Mesh> mesh, Ref<Material> material, uint32_t submeshIndex, uint32_t pass, uint32_t drawIndex = 0);
+        static void RenderQuad(Ref<Material> material, uint32_t drawIndex = 0);
 
         static void DispatchCompute(Ref<Shader> kernelShader, const std::vector<ComputeResourceBinding>& bindings, uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ);
 
