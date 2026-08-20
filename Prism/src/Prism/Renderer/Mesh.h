@@ -24,7 +24,6 @@ namespace Assimp {
 
 namespace Prism
 {
-    class VertexInput;
     class VertexBuffer;
     class IndexBuffer;
 

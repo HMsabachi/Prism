@@ -91,7 +91,6 @@ namespace Prism {
 		virtual ~VertexBuffer() {}
 
 		virtual void SetData(void* buffer, uint32_t size, uint32_t offset = 0) = 0;
-		virtual void Bind() const = 0;
 
 		virtual const VertexBufferLayout& GetLayout() const = 0;
 		virtual void SetLayout(const VertexBufferLayout& layout) = 0;

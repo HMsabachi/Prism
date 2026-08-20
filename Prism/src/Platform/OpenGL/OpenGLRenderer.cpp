@@ -23,7 +23,7 @@
 #include "Buffer/OpenGLFramebuffer.h"
 #include "Buffer/OpenGLVertexBuffer.h"
 #include "Buffer/OpenGLIndexBuffer.h"
-#include "OpenGLVertexInput.h"
+#include "OpenGLVertexArray.h"
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -329,8 +329,7 @@ namespace Prism
     {
         Renderer::Submit([=]() {
             RT_BindMaterial(material, 0, stateOverride);
-            s_Data->FullscreenQuadVB.As<OpenGLVertexBuffer>()->RT_Bind();
-            s_Data->VertexArrayCache.Get(s_Data->FullscreenQuadVB->GetLayout())->RT_Bind();
+            s_Data->VertexArrayCache.RT_Get(s_Data->FullscreenQuadVB)->RT_Bind();
             s_Data->FullscreenQuadIB.As<OpenGLIndexBuffer>()->RT_Bind();
             s_Data->LastMaterial = nullptr;
             s_Data->LastMesh = nullptr;
@@ -427,8 +426,7 @@ namespace Prism
             RT_BindMaterial(material, pass, stateOverride);
             if (mesh != s_Data->LastMesh)
             {
-                mesh->m_VertexBuffer.As<OpenGLVertexBuffer>()->RT_Bind();
-                s_Data->VertexArrayCache.Get(mesh->m_VertexBuffer->GetLayout())->RT_Bind();
+                s_Data->VertexArrayCache.RT_Get(mesh->m_VertexBuffer)->RT_Bind();
                 mesh->m_IndexBuffer.As<OpenGLIndexBuffer>()->RT_Bind();
                 s_Data->LastMesh = mesh;
             }

@@ -65,18 +65,4 @@ namespace Prism
 
     }
 
-    void OpenGLVertexBuffer::Bind() const
-    {
-        Ref<const OpenGLVertexBuffer> instance = this;
-        Renderer::Submit([instance]() {
-            glBindBuffer(GL_ARRAY_BUFFER, instance->m_RendererID);
-        });
-    }
-
-
-	void OpenGLVertexBuffer::RT_Bind() const
-	{
-        glBindBuffer(GL_ARRAY_BUFFER, m_RendererID);
-	}
-
 }

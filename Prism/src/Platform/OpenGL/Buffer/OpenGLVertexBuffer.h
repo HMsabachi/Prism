@@ -13,14 +13,12 @@ namespace Prism
         virtual ~OpenGLVertexBuffer();
 
         virtual void SetData(void* data, uint32_t size, uint32_t offset = 0);
-        virtual void Bind() const;
 
         virtual const VertexBufferLayout& GetLayout() const override { return m_Layout; }
         virtual void SetLayout(const VertexBufferLayout& layout) override { m_Layout = layout; }
 
         virtual uint32_t GetSize() const { return m_Size; }
 
-        void RT_Bind() const;
         void RT_Init();
 
         RendererID GetRendererID() const { return m_RendererID; }
