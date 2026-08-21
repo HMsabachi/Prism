@@ -27,10 +27,11 @@ namespace Prism
 
     using RendererID = uint32_t;
 
-    enum class RendererAPIType
+    enum class RendererAPIType : uint8_t
     {
         None = 0,
-        OpenGL = 1
+        OpenGL = 1,
+        Vulkan = 2
     };
 
     enum class ComputeBindingKind
@@ -119,6 +120,7 @@ namespace Prism
         virtual RenderAPICapabilities& GetCapabilities() = 0;
 
         static RendererAPIType Current() { return s_CurrentRendererAPI; }
+        static void SetCurrent(RendererAPIType api) { PR_CORE_ASSERT(s_CurrentRendererAPI == RendererAPIType::None); s_CurrentRendererAPI = api; }
     private:
         static RendererAPIType s_CurrentRendererAPI;
     };

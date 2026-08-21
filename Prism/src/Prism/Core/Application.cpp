@@ -53,6 +53,7 @@ namespace Prism
     }
     void Application::Initialize()
     {
+        RendererAPI::SetCurrent(m_Props.RendererAPI);
         m_RenderThread.Run();
         // 初始化窗口 Initialize Window
         m_Window = std::unique_ptr<Window>(Window::Create(WindowProps(m_Props.Name, m_Props.WindowWidth, m_Props.WindowHeight)));
@@ -276,7 +277,10 @@ namespace Prism
         }
         int width = e.GetWidth(), height = e.GetHeight();
 
-        m_Window->GetRenderContext()->OnResize(width, height);
+        auto& window = m_Window;
+        Renderer::Submit([&window,width, height]() {
+            window->GetRenderContext()->OnResize(width, height);
+        });
 
         //auto& fbs = FramebufferPool::GetGlobal()->GetAll();
         //for (auto& fb : fbs)

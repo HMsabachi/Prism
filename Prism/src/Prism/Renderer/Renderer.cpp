@@ -12,7 +12,7 @@
 
 namespace Prism
 {
-    RendererAPIType RendererAPI::s_CurrentRendererAPI = RendererAPIType::OpenGL;
+    RendererAPIType RendererAPI::s_CurrentRendererAPI = RendererAPIType::None;
 
     static RendererAPI* s_RendererAPI = nullptr;
     static RendererConfig s_Config;
@@ -24,11 +24,9 @@ namespace Prism
         {
         case RendererAPIType::OpenGL:
             s_RendererAPI = new OpenGLRenderer();
-            s_Config.FramesInFlight = 1;
             break;
         // case RendererAPIType::Vulkan:
         //     s_RendererAPI = new VulkanRenderer(); // TODO: Vulkan 后端
-        //     s_Config.FramesInFlight = 3;
         //     break;
         default:
             PR_CORE_ASSERT(false, "未支持的 RendererAPI");
@@ -49,6 +47,9 @@ namespace Prism
     void Renderer::Init()
     {
         InitRendererAPI();
+        // Make sure we don't have more frames in flight than swapchain images
+        s_Config.FramesInFlight = glm::min<uint32_t>(s_Config.FramesInFlight, Application::Get().GetWindow().GetRenderContext()->GetImageCount());
+
         s_RendererAPI->Init();
         s_Initialized = true;
     }
@@ -148,8 +149,7 @@ namespace Prism
 
     uint32_t Renderer::RT_GetCurrentFrameIndex()
     {
-        // TODO: FF>=2 时与主线程 m_CurrentFrameIndex 推进存在竞态，需改用渲染线程独立帧索引（参考 Hazel SwapChain::m_CurrentFrameIndex）。FF=1 下恒为 0，安全。
-        return GetCurrentFrameIndex();
+        return Application::Get().GetWindow().GetRenderContext()->GetCurrentFrameIndex();
     }
 
 

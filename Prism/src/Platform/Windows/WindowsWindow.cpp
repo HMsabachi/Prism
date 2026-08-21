@@ -56,7 +56,16 @@ namespace Prism {
             glfwSetErrorCallback(GLFWErrorCallback);
             s_GLFWInitialized = true;
         }
-
+        switch (RendererAPI::Current())
+        {
+            case RendererAPIType::OpenGL:
+                break;
+            case RendererAPIType::Vulkan:
+                glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+                break;
+            default: PR_CORE_ASSERT(false, "Unknown RendererAPI!"); break;
+        }
+            
         m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, m_Data.Title.c_str(), nullptr, nullptr);
         
         // 创建图形API上下文 Creat graphics API Context

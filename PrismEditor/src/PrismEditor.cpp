@@ -38,5 +38,6 @@ Prism::Application* Prism::CreateApplication(int argc, char** argv)
     Props.WindowHeight = 1080;
     Props.VSync = true;
     Props.CoreThreadingPolicy = single ? Prism::ThreadingPolicy::SingleThreaded : Prism::ThreadingPolicy::MultiThreaded;
+    Props.RendererAPI = Prism::RendererAPIType::OpenGL;
     return new PrismEditorApplication(Props);
 }

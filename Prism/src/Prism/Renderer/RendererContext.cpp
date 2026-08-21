@@ -4,6 +4,7 @@
 #include "Prism/Renderer/RendererAPI.h"
 
 #include "Platform/OpenGL/OpenGLContext.h"
+#include "Platform/Vulkan/VulkanContext.h"
 
 namespace Prism {
 
@@ -13,7 +14,7 @@ namespace Prism {
         {
             case RendererAPIType::None:    return nullptr;
             case RendererAPIType::OpenGL:  return Ref<OpenGLContext>::Create(windowHandle);
-            // case RendererAPIType::Vulkan: return Ref<VulkanContext>::Create(windowHandle); // TODO
+            case RendererAPIType::Vulkan:  return Ref<VulkanContext>::Create(windowHandle);
         }
         PR_CORE_ASSERT(false, "Unknown RendererAPI");
         return nullptr;

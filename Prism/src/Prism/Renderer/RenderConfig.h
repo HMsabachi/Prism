@@ -46,7 +46,7 @@ namespace Prism
         float ShadowNormalBias = 0.1f;
         uint32_t CascadeCount = 4;
         float MaxShadowDistance = 200.0f;
-        bool EnableBloom = false;
+        bool EnableBloom = true;
         float BloomThreshold = 1.5f;
     };
 }

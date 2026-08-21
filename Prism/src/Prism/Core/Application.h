@@ -13,6 +13,7 @@
 
 namespace Prism
 {
+    enum class RendererAPIType : uint8_t;
     class ImGuiLayer;
     class SceneRenderer;
     class WindowCloseEvent;
@@ -24,6 +25,7 @@ namespace Prism
         uint32_t WindowWidth = 1920, WindowHeight = 1080;
         bool VSync = true;
         ThreadingPolicy CoreThreadingPolicy = ThreadingPolicy::SingleThreaded;
+        RendererAPIType RendererAPI = (RendererAPIType)(1);
     };
 
     class PRISM_API Application

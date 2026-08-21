@@ -25,7 +25,7 @@ namespace Prism
 {
     struct RendererConfig
     {
-        uint32_t FramesInFlight = 1;
+        uint32_t FramesInFlight = 3;
     };
 }
 

@@ -16,6 +16,9 @@ namespace Prism
         virtual void BeginFrame() override {}
         virtual void SwapBuffers() override;
         virtual void OnResize(uint32_t width, uint32_t height) override {}
+
+        virtual uint32_t GetCurrentFrameIndex() const override { return 0; }
+        virtual uint32_t GetImageCount() const override { return 1; }
     private:
         GLFWwindow* m_WindowHandle;
     };
