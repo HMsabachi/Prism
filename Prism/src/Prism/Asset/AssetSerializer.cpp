@@ -46,7 +46,7 @@ namespace Prism {
 
     bool EnvironmentSerializer::TryLoadData(Ref<Asset>& asset) const
     {
-        auto [radiance, irradiance] = Renderer::CreateEnvironmentMap(asset->FilePath);
+        auto [radiance, irradiance] = Renderer::GetAPI()->CreateEnvironmentMap(asset->FilePath);
         if (!radiance || !irradiance)
             return false;
 

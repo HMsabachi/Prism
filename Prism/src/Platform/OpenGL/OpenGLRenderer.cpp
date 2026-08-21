@@ -325,10 +325,10 @@ namespace Prism
         
     }
 
-    void OpenGLRenderer::SubmitFullscreenQuad(Ref<Material> material, const PrismShaderCompiler::PipelineState* stateOverride, uint32_t drawIndex)
+    void OpenGLRenderer::SubmitFullscreenQuad(Ref<Material> material, uint32_t passIndex, uint32_t drawIndex)
     {
         Renderer::Submit([=]() {
-            RT_BindMaterial(material, 0, stateOverride);
+            RT_BindMaterial(material, passIndex);
             glUniform1i(0, drawIndex);
             s_Data->VertexArrayCache.RT_Get(s_Data->FullscreenQuadVB)->RT_Bind();
             s_Data->FullscreenQuadIB.As<OpenGLIndexBuffer>()->RT_Bind();
@@ -418,10 +418,10 @@ namespace Prism
         return { envFiltered, irradianceMap };
     }
 
-    void OpenGLRenderer::RenderMesh(Ref<Mesh> mesh, Ref<Material> material, uint32_t submeshIndex, uint32_t pass, uint32_t drawIndex)
+    void OpenGLRenderer::RenderMesh(Ref<Mesh> mesh, uint32_t submeshIndex, Ref<Material> material, uint32_t passIndex, uint32_t drawIndex)
     {
         Renderer::Submit([=]() mutable {
-            RT_BindMaterial(material, pass);
+            RT_BindMaterial(material, passIndex);
             glUniform1i(0, drawIndex);
             if (mesh != s_Data->LastMesh)
             {
@@ -434,24 +434,22 @@ namespace Prism
         });
     }
 
-    void OpenGLRenderer::RenderQuad(Ref<Material> material, uint32_t drawIndex)
+    void OpenGLRenderer::RenderQuad(Ref<Material> material, uint32_t passIndex, uint32_t drawIndex)
     {
-        SubmitFullscreenQuad(material, nullptr, drawIndex);
+        SubmitFullscreenQuad(material, passIndex, drawIndex);
     }
 
 
-    void OpenGLRenderer::RT_BindMaterial(Ref<Material> material, uint32_t pass, const PrismShaderCompiler::PipelineState* stateOverride /*= nullptr*/)
+    void OpenGLRenderer::RT_BindMaterial(Ref<Material> material, uint32_t passIndex)
     {
         if (!material) return;
         if (material != s_Data->LastMaterial)
         {
-            Ref<Shader> program = material->GetProgram(pass);
+            Ref<Shader> program = material->GetProgram(passIndex);
             PrismShaderCompiler::PipelineState effectiveState = PrismShaderCompiler::PipelineState::Default();
-            const auto& shPass = material->GetShader()->GetPass(pass);
+            const auto& shPass = material->GetShader()->GetPass(passIndex);
             if (shPass.RenderState)
                 effectiveState = *shPass.RenderState;
-            if (stateOverride)
-                effectiveState.Merge(*stateOverride);
             OpenGLPipelineState::RT_SetupPipelineState(effectiveState);
             s_Data->LastMaterial = material;
             if (!(program == s_Data->LastProgram))

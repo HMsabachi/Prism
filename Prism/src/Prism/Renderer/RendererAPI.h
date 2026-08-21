@@ -99,7 +99,7 @@ namespace Prism
 
         virtual void BeginRenderPass(Ref<RenderPass> renderPass, bool clear = true) = 0;
         virtual void EndRenderPass() = 0;
-        virtual void SubmitFullscreenQuad(Ref<Material> material, const PrismShaderCompiler::PipelineState* stateOverride = nullptr, uint32_t drawIndex = 0) = 0;
+        virtual void SubmitFullscreenQuad(Ref<Material> material, uint32_t passIndex, uint32_t drawIndex = 0) = 0;
 
         virtual void SetSceneEnvironment(const Ref<SceneEnvironment>& environment) = 0;
         virtual std::pair<Ref<TextureCube>, Ref<TextureCube>> CreateEnvironmentMap(const std::string& filepath) = 0;
@@ -108,9 +108,9 @@ namespace Prism
         virtual void SetShaderStorageBuffer(uint32_t set, uint32_t binding, Ref<ShaderStorageBuffer> ssbo) = 0;
         virtual void SetTexture(uint32_t set, uint32_t binding, Ref<Image> image) = 0;
 
-        virtual void RenderMesh(Ref<Mesh> mesh, Ref<Material> material,
-            uint32_t submeshIndex, uint32_t pass, uint32_t drawIndex = 0) = 0;
-        virtual void RenderQuad(Ref<Material> material, uint32_t drawIndex = 0) = 0;
+        virtual void RenderMesh(Ref<Mesh> mesh, uint32_t submeshIndex, Ref<Material> material,
+            uint32_t passIndex, uint32_t drawIndex = 0) = 0;
+        virtual void RenderQuad(Ref<Material> material, uint32_t passIndex, uint32_t drawIndex = 0) = 0;
 
         virtual void DispatchCompute(Ref<Shader> kernelShader,
             const std::vector<ComputeResourceBinding>& bindings,

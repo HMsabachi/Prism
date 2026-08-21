@@ -27,6 +27,7 @@ namespace Prism
     struct ShaderPass
     {
         std::string Name;
+        uint64_t NameHash = 0;
         std::unordered_map<uint64_t, uint64_t> Tags;
         std::optional<PrismShaderCompiler::PipelineState> RenderState;
     };
@@ -47,9 +48,8 @@ namespace Prism
     public:
         ShaderReloadedToken AddShaderReloadedCallback(const ShaderReloadedCallback& callback);
         void RemoveShaderReloadedCallback(ShaderReloadedToken token);
-        const std::string& GetFilePath() const { return m_FilePath; }
         const std::string& GetName() const { return m_Name; }
-        const PrismShaderCompiler::CompiledShader& GetCompiledShader() const { return m_Compiled; }
+        uint64_t GetTagValue(uint64_t keyHash) const { auto it = m_ShaderTags.find(keyHash); if (it != m_ShaderTags.end()) return it->second; return 0; }
 
         const std::vector<PrismShaderCompiler::AST::ShaderUniform>& GetUniforms() const { return m_Compiled.Uniforms; }
         const PrismShaderCompiler::AST::ShaderUniform* FindUniform(const std::string& name) const;
@@ -58,6 +58,7 @@ namespace Prism
         uint32_t GetPassCount() const { return (uint32_t)m_Passes.size(); }
         const ShaderPass& GetPass(uint32_t index) const { return m_Passes[index]; }
         int32_t FindPassByTag(uint64_t keyHash, uint64_t valueHash) const;
+        int32_t FindPassByName(uint64_t nameHash) const;
 
         const std::vector<ShaderKeyword>& GetKeywords() const { return m_Keywords; }
         uint8_t GetKeywordIndex(const std::string& name) const;
@@ -78,6 +79,8 @@ namespace Prism
         std::string m_FilePath;
 
         PrismShaderCompiler::CompiledShader m_Compiled;
+
+        std::unordered_map<uint64_t, uint64_t> m_ShaderTags;
         std::vector<ShaderPass> m_Passes;
 
         Delegate<> m_ReloadedCallbacks;
@@ -89,6 +92,7 @@ namespace Prism
 
     public:
         static std::vector<Ref<PrismShader>> s_AllShaders;
+        friend class ShaderLibrary;
     };
 
     class PRISM_API ShaderLibrary : public RefCounted

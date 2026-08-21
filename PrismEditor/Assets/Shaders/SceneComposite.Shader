@@ -1,5 +1,5 @@
 // Prism Shader Language v1.0
-Shader "Custom/SceneComposite"
+Shader "PostProcess/SceneComposite"
 {
     // ==================== Properties（材质参数） ====================
     Properties
@@ -7,13 +7,17 @@ Shader "Custom/SceneComposite"
         u_Exposure("曝光度", Float) = 1.0
         u_OutlineColor("描边颜色", Color) = (1.0, 0.5, 0.0, 1.0)
         u_OutlineWidth("描边宽度", Float) = 2.0
+        u_Horizontal("水平模糊", Bool) = true
     }
+
     SubShader
     {
+        Tags { "ShaderType" = "PostProcess" "Queue" = "Overlay" }
+
         Pass
         {
-            Tags { "Queue" = "Overlay" "RenderType" = "Opaque" "LightMode" = "PostProcess" }
-            Name "CompositeAndOutline"
+            Name "SceneComposite"
+            Tags { "LightMode" = "Fullscreen" }
             GLSL
             {
                 #include "PrismEngine.glsl"
@@ -93,6 +97,96 @@ Shader "Custom/SceneComposite"
 
                     // Gamma correction.
                     FragColor = vec4(pow(finalColor, vec3(1.0/gamma)), 1.0);
+                }
+            }
+        }
+
+        Pass
+        {
+            Name "BloomBlur"
+            Tags { "LightMode" = "Fullscreen" }
+            GLSL
+            {
+                #include "PrismEngine.glsl"
+                #include "Pass/BloomBlurPass.glsl"
+
+                attribute vec3 a_Position : POSITION;
+                attribute vec2 a_TexCoord : TEXCOORD0;
+
+                varying VertexOutput
+                {
+                    vec2 TexCoord;
+                } vs_Output;
+
+                void main()
+                {
+                    vec4 position = vec4(a_Position.xy, 0.0, 1.0);
+                    gl_Position = position;
+                    vs_Output.TexCoord = a_TexCoord;
+                }
+
+                void frag()
+                {
+                    float weight[5] = float[] (0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
+
+                    ivec2 res = textureSize(Prism_BloomInputTexture, 0);
+                    vec2 tex_offset = 1.0 / vec2(res);
+                    vec3 result = texelFetch(Prism_BloomInputTexture, ivec2(vs_Output.TexCoord * vec2(res)), 0).rgb * weight[0];
+                    if (u_Horizontal)
+                    {
+                        for (int i = 1; i < 5; ++i)
+                        {
+                            result += texelFetch(Prism_BloomInputTexture, ivec2((vs_Output.TexCoord + vec2(tex_offset.x * float(i), 0.0)) * vec2(res)), 0).rgb * weight[i];
+                            result += texelFetch(Prism_BloomInputTexture, ivec2((vs_Output.TexCoord - vec2(tex_offset.x * float(i), 0.0)) * vec2(res)), 0).rgb * weight[i];
+                        }
+                    }
+                    else
+                    {
+                        for (int i = 1; i < 5; ++i)
+                        {
+                            result += texelFetch(Prism_BloomInputTexture, ivec2((vs_Output.TexCoord + vec2(0.0, tex_offset.y * float(i))) * vec2(res)), 0).rgb * weight[i];
+                            result += texelFetch(Prism_BloomInputTexture, ivec2((vs_Output.TexCoord - vec2(0.0, tex_offset.y * float(i))) * vec2(res)), 0).rgb * weight[i];
+                        }
+                    }
+                    FragColor = vec4(result, 1.0);
+                }
+            }
+        }
+
+        Pass
+        {
+            Name "BloomBlend"
+            Tags { "LightMode" = "Fullscreen" }
+            GLSL
+            {
+                #include "PrismEngine.glsl"
+                #include "Pass/BloomBlendPass.glsl"
+
+                attribute vec3 a_Position : POSITION;
+                attribute vec2 a_TexCoord : TEXCOORD0;
+
+                varying VertexOutput
+                {
+                    vec2 TexCoord;
+                } vs_Output;
+
+                void main()
+                {
+                    vec4 position = vec4(a_Position.xy, 1.0, 1.0);
+                    gl_Position = position;
+                    vs_Output.TexCoord = a_TexCoord;
+                }
+
+                void frag()
+                {
+                    ivec2 res = textureSize(Prism_GeometryPassTexture, 0);
+                    vec3 color = texelFetch(Prism_GeometryPassTexture, ivec2(vs_Output.TexCoord * vec2(res)), 0).rgb;
+
+                    ivec2 bloomRes = textureSize(Prism_BloomTexture, 0);
+                    vec3 bloomColor = texelFetch(Prism_BloomTexture, ivec2(vs_Output.TexCoord * vec2(bloomRes)), 0).rgb;
+                    color += bloomColor;
+
+                    FragColor = vec4(color, 1.0);
                 }
             }
         }

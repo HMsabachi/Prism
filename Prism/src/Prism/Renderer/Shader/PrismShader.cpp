@@ -55,9 +55,10 @@ namespace Prism
         }
 
         m_Name = std::move(m_Compiled.ShaderName);
+        for (const auto& tag : m_Compiled.Tags)
+            m_ShaderTags[Hash::GenerateFNVHash64(tag.first)] = Hash::GenerateFNVHash64(tag.second);
 
-        PR_CORE_INFO("PSL parsed '{}': {} uniforms, {} passes",
-            m_Name, m_Compiled.Uniforms.size(), m_Compiled.Passes.size());
+        PR_CORE_INFO("PSL parsed '{}': {} uniforms, {} passes", m_Name, m_Compiled.Uniforms.size(), m_Compiled.Passes.size());
 
         m_VariantCache.clear();
         CompilePasses();
@@ -75,6 +76,7 @@ namespace Prism
         {
             ShaderPass pass;
             pass.Name = m_Compiled.Passes[i].Name;
+            pass.NameHash = Hash::GenerateFNVHash64(pass.Name);
             for (auto& tag : m_Compiled.Passes[i].Tags)
                 pass.Tags[Hash::GenerateFNVHash64(tag.first)] = Hash::GenerateFNVHash64(tag.second);
             pass.RenderState = m_Compiled.Passes[i].RenderState;
@@ -182,6 +184,18 @@ namespace Prism
         return -1;
     }
 
+
+	int32_t PrismShader::FindPassByName(uint64_t nameHash) const
+	{
+        for (uint32_t i = 0; i < m_Passes.size(); ++i)
+        {
+            auto& pass = m_Passes[i];
+            if (pass.NameHash == nameHash)
+                return i;
+        }
+        return -1;
+	}
+
 #pragma region Keyword / Variant
 
     uint8_t PrismShader::GetKeywordIndex(const std::string& name) const
@@ -281,7 +295,7 @@ namespace Prism
     {
         if (Exists(name))
         {
-            return Get(name)->GetCompiledShader();
+            return Get(name)->m_Compiled;
         }
         else
         {
@@ -295,7 +309,7 @@ namespace Prism
                     return {};
                 }
                 m_Shaders[name] = shader;
-                return shader->GetCompiledShader();
+                return shader->m_Compiled;
             }
             else
             {

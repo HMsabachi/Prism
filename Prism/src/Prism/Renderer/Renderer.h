@@ -90,23 +90,7 @@ namespace Prism
         static void Shutdown();
         static const RendererConfig& GetConfig();
 
-        // 高层转发（多态分发到 s_RendererAPI）
-        static void BeginFrame();
-        static void EndFrame();
-
-        static void BeginRenderPass(Ref<RenderPass> renderPass, bool clear = true);
-        static void EndRenderPass();
-        static void SubmitFullscreenQuad(Ref<Material> material, const PrismShaderCompiler::PipelineState* stateOverride = nullptr, uint32_t drawIndex = 0);
-        static void SetSceneEnvironment(const Ref<SceneEnvironment>& environment);
-        static void SetUniformBuffer(uint32_t set, uint32_t binding, Ref<UniformBuffer> ubo);
-        static void SetShaderStorageBuffer(uint32_t set, uint32_t binding, Ref<ShaderStorageBuffer> ssbo);
-        static void SetTexture(uint32_t set, uint32_t binding, Ref<Image> image);
-        static std::pair<Ref<TextureCube>, Ref<TextureCube>> CreateEnvironmentMap(const std::string& filepath);
-        static void RenderMesh(Ref<Mesh> mesh, Ref<Material> material, uint32_t submeshIndex, uint32_t pass, uint32_t drawIndex = 0);
-        static void RenderQuad(Ref<Material> material, uint32_t drawIndex = 0);
-
-        static void DispatchCompute(Ref<Shader> kernelShader, const std::vector<ComputeResourceBinding>& bindings, uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ);
-
+        static RendererAPI* GetAPI();
         static RenderAPICapabilities& GetCapabilities();
 
         // 渲染线程相关（Phase 1 骨架）

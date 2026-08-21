@@ -150,15 +150,16 @@ namespace Prism
         
         if (!m_Minimized)
         {
+            RendererAPI* rendererAPI = Renderer::GetAPI();
             PR_PROFILE_SCOPE("Update LayerStack")
             Time::Update();
             Renderer::Submit([this]() { m_Window->GetRenderContext()->BeginFrame(); });
-            Renderer::BeginFrame();
+            rendererAPI->BeginFrame();
             for (Layer* layer : m_LayerStack)
                 layer->OnUpdate();
             Application* app = this;
             Renderer::Submit([app]() { app->RenderImGui(); });
-            Renderer::EndFrame();
+            rendererAPI->EndFrame();
             Renderer::Submit([this]() { m_Window->SwapBuffers(); });
             m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Renderer::GetConfig().FramesInFlight;
         }

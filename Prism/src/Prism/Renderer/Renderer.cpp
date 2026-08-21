@@ -2,12 +2,6 @@
 #include "Renderer.h"
 
 #include "RendererAPI.h"
-#include "Material.h"
-#include "RenderPass.h"
-#include "Mesh.h"
-#include "SceneEnvironment.h"
-#include "Image.h"
-#include "Texture.h"
 #include "Buffer/Framebuffer.h"
 #include "Prism/Core/RenderThread.h"
 #include "Prism/Core/Application.h"
@@ -94,24 +88,7 @@ namespace Prism
         return GetRenderCommandQueue().DataAllocate(data, size);
     }
 
-    void Renderer::BeginFrame()
-    {
-        s_RendererAPI->BeginFrame();
-    }
-    void Renderer::EndFrame() { s_RendererAPI->EndFrame(); }
-
-    void Renderer::BeginRenderPass(Ref<RenderPass> renderPass, bool clear) { s_RendererAPI->BeginRenderPass(renderPass, clear); }
-    void Renderer::EndRenderPass() { s_RendererAPI->EndRenderPass(); }
-    void Renderer::SubmitFullscreenQuad(Ref<Material> material, const PrismShaderCompiler::PipelineState* stateOverride, uint32_t drawIndex) { s_RendererAPI->SubmitFullscreenQuad(material, stateOverride, drawIndex); }
-    void Renderer::SetSceneEnvironment(const Ref<SceneEnvironment>& environment) { s_RendererAPI->SetSceneEnvironment(environment); }
-    void Renderer::SetUniformBuffer(uint32_t set, uint32_t binding, Ref<UniformBuffer> ubo) { s_RendererAPI->SetUniformBuffer(set, binding, ubo); }
-    void Renderer::SetShaderStorageBuffer(uint32_t set, uint32_t binding, Ref<ShaderStorageBuffer> ssbo) { s_RendererAPI->SetShaderStorageBuffer(set, binding, ssbo); }
-    void Renderer::SetTexture(uint32_t set, uint32_t binding, Ref<Image> image) { s_RendererAPI->SetTexture(set, binding, image); }
-    std::pair<Ref<TextureCube>, Ref<TextureCube>> Renderer::CreateEnvironmentMap(const std::string& filepath) { return s_RendererAPI->CreateEnvironmentMap(filepath); }
-    void Renderer::RenderMesh(Ref<Mesh> mesh, Ref<Material> material, uint32_t submeshIndex, uint32_t pass, uint32_t drawIndex) { s_RendererAPI->RenderMesh(mesh, material, submeshIndex, pass, drawIndex); }
-    void Renderer::RenderQuad(Ref<Material> material, uint32_t drawIndex) { s_RendererAPI->RenderQuad(material, drawIndex); }
-
-    void Renderer::DispatchCompute(Ref<Shader> kernelShader, const std::vector<ComputeResourceBinding>& bindings, uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ) { s_RendererAPI->DispatchCompute(kernelShader, bindings, numGroupsX, numGroupsY, numGroupsZ); }
+    RendererAPI* Renderer::GetAPI() { return s_RendererAPI; }
 
     RenderAPICapabilities& Renderer::GetCapabilities() { return s_RendererAPI->GetCapabilities(); }
 

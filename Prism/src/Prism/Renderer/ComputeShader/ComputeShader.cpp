@@ -157,8 +157,7 @@ namespace Prism
 	void ComputeShader::Dispatch(int32_t kernel, uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ)
 	{
 		if (!IsLegalID(kernel)) return;
-		Renderer::DispatchCompute(m_Kernels[kernel].shader, m_Resources,
-			numGroupsX, numGroupsY, numGroupsZ);
+		Renderer::GetAPI()->DispatchCompute(m_Kernels[kernel].shader, m_Resources, numGroupsX, numGroupsY, numGroupsZ);
 	}
 
 }

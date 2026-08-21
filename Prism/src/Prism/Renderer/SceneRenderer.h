@@ -86,8 +86,7 @@ namespace Prism
         void BloomBlurPass();
         void BloomBlendPass();
 
-        void DrawFullscreen(const Ref<Material>& material);
-        void DrawQuad(const Ref<Material>& material, const glm::mat4& transform);
+        void DrawFullscreen(const Ref<Material>& material, uint32_t passIndex = 0);
 
         static constexpr uint32_t SHADOW_MAP_SIZE = 2048;
 
@@ -151,13 +150,9 @@ namespace Prism
         Ref<RenderPass> m_BloomBlurPass[2];
         Ref<RenderPass> m_BloomBlendPass;
 
-        Ref<Material> m_CompositeMaterial;
-        Ref<Material> m_BloomBlurMaterial;
-        Ref<Material> m_BloomBlendMaterial;
-        Ref<Material> m_GridMaterial;
-        Ref<Material> m_IDMaterial;
-        Ref<Material> m_IDAnimMaterial;
-        Ref<Material> m_ColliderMaterial;
+        Ref<Material> m_PostProcessMaterial;
+        Ref<Material> m_EditorDebugMaterial;
+        Ref<Material> m_EditorDebugAnimMaterial;
 
         Ref<Texture2D> m_BRDFLUT;
 
