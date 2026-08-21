@@ -1,5 +1,5 @@
 // Prism Shader Language v1.0
-Shader "PostProcess/SceneComposite"
+Shader "PostProcess/PrismPostProcess"
 {
     // ==================== Properties（材质参数） ====================
     Properties

@@ -36,7 +36,7 @@ Prism::Application* Prism::CreateApplication(int argc, char** argv)
     Props.Name = "PrismEditor";
     Props.WindowWidth = 1920;
     Props.WindowHeight = 1080;
-    Props.VSync = false;
+    Props.VSync = true;
     Props.CoreThreadingPolicy = single ? Prism::ThreadingPolicy::SingleThreaded : Prism::ThreadingPolicy::MultiThreaded;
     return new PrismEditorApplication(Props);
 }

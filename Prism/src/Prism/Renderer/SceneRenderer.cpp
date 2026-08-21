@@ -71,45 +71,17 @@ namespace Prism
 
     void SceneRenderer::Initialize(uint32_t viewportWidth, uint32_t viewportHeight)
     {
+        // Create UBOs and SSBOs
         m_FrameUBO = UniformBuffer::Create(sizeof(FrameData));
         m_ObjectSSBO = ShaderStorageBuffer::Create(sizeof(ObjectData) * PRISM_MAX_OBJECTS);
         m_BoneSSBO = ShaderStorageBuffer::Create(sizeof(glm::mat4) * PRISM_MAX_TOTAL_BONES);
 
-        FramebufferSpecification geoFBSpec;
-        geoFBSpec.Width = viewportWidth;
-        geoFBSpec.Height = viewportHeight;
-        geoFBSpec.Attachments = { ImageFormat::RGBA16F, ImageFormat::RGBA16F, ImageFormat::Depth };
-        geoFBSpec.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
-
-        RenderPassSpecification geoRPSpec;
-        geoRPSpec.TargetFramebuffer = Framebuffer::Create(geoFBSpec);
-        m_GeoPass = RenderPass::Create(geoRPSpec);
-
-        FramebufferSpecification idFBSpec;
-        idFBSpec.Width = viewportWidth;
-        idFBSpec.Height = viewportHeight;
-        idFBSpec.Attachments = { ImageFormat::RGBA16F, ImageFormat::Depth };
-        idFBSpec.ClearColor = { 0.0f, 0.0f, 0.0f, 0.0f };
-
-        RenderPassSpecification idRPSpec;
-        idRPSpec.TargetFramebuffer = Framebuffer::Create(idFBSpec);
-        m_IDPass = RenderPass::Create(idRPSpec);
-
-        FramebufferSpecification compFBSpec;
-        compFBSpec.Width = viewportWidth;
-        compFBSpec.Height = viewportHeight;
-        compFBSpec.Attachments = { ImageFormat::RGBA };
-        compFBSpec.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
-
-        RenderPassSpecification compRPSpec;
-        compRPSpec.TargetFramebuffer = Framebuffer::Create(compFBSpec);
-        m_CompositePass = RenderPass::Create(compRPSpec);
-
+        // Load BRDF LUT
         m_BRDFLUT = Texture2D::Create("Assets/Textures/BRDF_LUT.tga");
 
-        auto postProcessShader = AssetManager::GetShaderLibrary()->Get("PostProcess/SceneComposite");
+        // Create Scene Renderer Materials
+        auto postProcessShader = AssetManager::GetShaderLibrary()->Get("PostProcess/PrismPostProcess");
         m_PostProcessMaterial = Material::Create(postProcessShader->Handle);
-
         auto editorDebugShader = AssetManager::GetShaderLibrary()->Get("Hidden/EditorDebug");
         m_EditorDebugMaterial = Material::Create(editorDebugShader->Handle);
         m_EditorDebugMaterial->SetFloat("u_Scale", 16.025f);
@@ -117,31 +89,64 @@ namespace Prism
         m_EditorDebugAnimMaterial = Material::Create(editorDebugShader->Handle);
         m_EditorDebugAnimMaterial->SetKeyword("SKINNED", true);
 
+        // Create Shadow Passes
         FramebufferSpecification shadowFBSpec;
         shadowFBSpec.Width = SHADOW_MAP_SIZE;
         shadowFBSpec.Height = SHADOW_MAP_SIZE;
         shadowFBSpec.Attachments = { ImageFormat::DEPTH32F };
         shadowFBSpec.NoResize = true;
         shadowFBSpec.ClearColor = { 0.0f, 0.0f, 0.0f, 0.0f };
-        for (int i = 0; i < 4; i++)
-        {
-            RenderPassSpecification shadowRPSpec;
-            shadowRPSpec.TargetFramebuffer = Framebuffer::Create(shadowFBSpec);
-            m_ShadowPasses[i] = RenderPass::Create(shadowRPSpec);
-        }
+        RenderPassSpecification shadowRPSpec;
+        shadowRPSpec.TargetFramebuffer = Framebuffer::Create(shadowFBSpec);
+        m_ShadowPasses[0] = RenderPass::Create(shadowRPSpec);
+        shadowRPSpec.TargetFramebuffer = Framebuffer::Create(shadowFBSpec);
+        m_ShadowPasses[1] = RenderPass::Create(shadowRPSpec);
+        shadowRPSpec.TargetFramebuffer = Framebuffer::Create(shadowFBSpec);
+        m_ShadowPasses[2] = RenderPass::Create(shadowRPSpec);
+        shadowRPSpec.TargetFramebuffer = Framebuffer::Create(shadowFBSpec);
+        m_ShadowPasses[3] = RenderPass::Create(shadowRPSpec);
 
-        // Bloom Blur
+        // Create Geometry Pass
+        FramebufferSpecification geoFBSpec;
+        geoFBSpec.Width = viewportWidth;
+        geoFBSpec.Height = viewportHeight;
+        geoFBSpec.Attachments = { ImageFormat::RGBA16F, ImageFormat::RGBA16F, ImageFormat::Depth };
+        geoFBSpec.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
+        RenderPassSpecification geoRPSpec;
+        geoRPSpec.TargetFramebuffer = Framebuffer::Create(geoFBSpec);
+        m_GeoPass = RenderPass::Create(geoRPSpec);
+
+        // Create ID Pass
+        FramebufferSpecification idFBSpec;
+        idFBSpec.Width = viewportWidth;
+        idFBSpec.Height = viewportHeight;
+        idFBSpec.Attachments = { ImageFormat::RGBA16F, ImageFormat::Depth };
+        idFBSpec.ClearColor = { 0.0f, 0.0f, 0.0f, 0.0f };
+        RenderPassSpecification idRPSpec;
+        idRPSpec.TargetFramebuffer = Framebuffer::Create(idFBSpec);
+        m_IDPass = RenderPass::Create(idRPSpec);
+
+        // Create Bloom Blur Passes
         FramebufferSpecification bloomBlurFBSpec;
         bloomBlurFBSpec.Width = viewportWidth;
         bloomBlurFBSpec.Height = viewportHeight;
         bloomBlurFBSpec.Attachments = { ImageFormat::RGBA16F };
         bloomBlurFBSpec.ClearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-
         RenderPassSpecification bloomBlurRPSpec;
         bloomBlurRPSpec.TargetFramebuffer = Framebuffer::Create(bloomBlurFBSpec);
         m_BloomBlurPass[0] = RenderPass::Create(bloomBlurRPSpec);
         bloomBlurRPSpec.TargetFramebuffer = Framebuffer::Create(bloomBlurFBSpec);
         m_BloomBlurPass[1] = RenderPass::Create(bloomBlurRPSpec);
+
+        // Create Composite Pass
+        FramebufferSpecification compFBSpec;
+        compFBSpec.Width = viewportWidth;
+        compFBSpec.Height = viewportHeight;
+        compFBSpec.Attachments = { ImageFormat::RGBA };
+        compFBSpec.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
+        RenderPassSpecification compRPSpec;
+        compRPSpec.TargetFramebuffer = Framebuffer::Create(compFBSpec);
+        m_CompositePass = RenderPass::Create(compRPSpec);
     }
 
     void SceneRenderer::Shutdown()
@@ -186,10 +191,8 @@ namespace Prism
         }
         if (UI::BeginTreeNode(TR("Bloom Blur Pass"), true))
         {
-            Ref<Image2D> blurImage0 = m_BloomBlurPass[0]->GetSpecification().TargetFramebuffer->GetImage();
             Ref<Image2D> blurImage1 = m_BloomBlurPass[1]->GetSpecification().TargetFramebuffer->GetImage();
             float size = ImGui::GetContentRegionAvail().x;
-            UI::Image(blurImage0, { size, size }, { 0, 1 }, { 1, 0 });
             UI::Image(blurImage1, { size, size }, { 0, 1 }, { 1, 0 });
             UI::EndTreeNode();
         }
@@ -331,6 +334,7 @@ namespace Prism
         }
         // Render Passes
         RendererAPI* rApi = Renderer::GetAPI();
+        if (castShadows)
         {
             PR_PROFILE_SCOPE("ShadowPass");
             for (uint32_t cascade = 0; cascade < 4; cascade++)
@@ -339,6 +343,14 @@ namespace Prism
                 rApi->BeginRenderPass(m_ShadowPasses[cascade]);
                 for (auto& dc : shadowDrawList[cascade])
                     rApi->RenderMesh(dc.Mesh, dc.SubmeshIndex, dc.Material, dc.PassIndex, dc.DrawIndex);
+                rApi->EndRenderPass();
+            }
+        }
+        else
+        {
+            for (uint32_t cascade = 0; cascade < 4; cascade++)
+            {
+                rApi->BeginRenderPass(m_ShadowPasses[cascade]);
                 rApi->EndRenderPass();
             }
         }
@@ -401,6 +413,11 @@ namespace Prism
                 DrawFullscreen(m_PostProcessMaterial, passIndex);
                 rApi->EndRenderPass();
             }
+        }
+        else
+        {
+            rApi->BeginRenderPass(m_BloomBlurPass[1]);
+            rApi->EndRenderPass();
         }
         {
             PR_PROFILE_SCOPE("CompositePass");
