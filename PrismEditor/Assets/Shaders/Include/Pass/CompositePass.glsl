@@ -6,6 +6,7 @@
 // CompositePass 纹理 IO 契约
 PRISM_PASS_TEX(0) uniform sampler2D Prism_GeometryPassTexture;
 PRISM_PASS_TEX(1) uniform sampler2D Prism_ObjectIDTexture;
+PRISM_PASS_TEX(2) uniform sampler2D Prism_BloomTexture;
 
 #if PRISM_FRAGMENT_SHADER
 layout(location = 0) out vec4 FragColor;

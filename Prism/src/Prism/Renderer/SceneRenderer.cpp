@@ -43,7 +43,6 @@ namespace Prism // SceneRenderer Constants
     // Pass Name
     constexpr uint64_t SHADER_PASS_NAME_SCENE_COMPOSITE = Hash::GenerateFNVHash64("SceneComposite");
     constexpr uint64_t SHADER_PASS_NAME_BLOOM_BLUR = Hash::GenerateFNVHash64("BloomBlur");
-    constexpr uint64_t SHADER_PASS_NAME_BLOOM_BLEND = Hash::GenerateFNVHash64("BloomBlend");
     // Pass Index
     constexpr int32_t SHADER_PASS_INDEX_EDITOR_DEBUG_OBJECT_ID = 0;
     constexpr int32_t SHADER_PASS_INDEX_EDITOR_DEBUG_GRID = 1;
@@ -143,17 +142,6 @@ namespace Prism
         m_BloomBlurPass[0] = RenderPass::Create(bloomBlurRPSpec);
         bloomBlurRPSpec.TargetFramebuffer = Framebuffer::Create(bloomBlurFBSpec);
         m_BloomBlurPass[1] = RenderPass::Create(bloomBlurRPSpec);
-
-        // Bloom Blend
-        FramebufferSpecification bloomBlendFBSpec;
-        bloomBlendFBSpec.Width = viewportWidth;
-        bloomBlendFBSpec.Height = viewportHeight;
-        bloomBlendFBSpec.Attachments = { ImageFormat::RGBA16F };
-        bloomBlendFBSpec.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
-
-        RenderPassSpecification bloomBlendRPSpec;
-        bloomBlendRPSpec.TargetFramebuffer = Framebuffer::Create(bloomBlendFBSpec);
-        m_BloomBlendPass = RenderPass::Create(bloomBlendRPSpec);
     }
 
     void SceneRenderer::Shutdown()
@@ -165,7 +153,6 @@ namespace Prism
             m_ShadowPasses[i].Reset();
         m_BloomBlurPass[0].Reset();
         m_BloomBlurPass[1].Reset();
-        m_BloomBlendPass.Reset();
         m_PostProcessMaterial.Reset();
         m_EditorDebugMaterial.Reset();
         m_EditorDebugAnimMaterial.Reset();
@@ -175,7 +162,7 @@ namespace Prism
     void SceneRenderer::OnImGuiRender()
     {
         ImGui::Begin("SceneRenderer");
-        if (UI::BeginTreeNode(TR("Shadow Pass"), false))
+        if (UI::BeginTreeNode(TR("Shadow Pass"), true))
         {
             static int cascadeIndex = 0;
             UI::BeginPropertyGrid();
@@ -186,7 +173,7 @@ namespace Prism
             UI::Image(depthImage, { size, size }, { 0, 1 }, { 1, 0 });
             UI::EndTreeNode();
         }
-        if (UI::BeginTreeNode(TR("Geometry Pass"), false))
+        if (UI::BeginTreeNode(TR("Geometry Pass"), true))
         {
             Ref<Image2D> colorImage = m_GeoPass->GetSpecification().TargetFramebuffer->GetImage(0);
             Ref<Image2D> bloomImage = m_GeoPass->GetSpecification().TargetFramebuffer->GetImage(1);
@@ -197,14 +184,23 @@ namespace Prism
             UI::Image(depthImage, { size, size }, { 0, 1 }, { 1, 0 });
             UI::EndTreeNode();
         }
-        if (UI::BeginTreeNode(TR("ID Pass"), false))
+        if (UI::BeginTreeNode(TR("Bloom Blur Pass"), true))
         {
-            Ref<Image2D> idImage = m_IDPass->GetSpecification().TargetFramebuffer->GetImage();
+            Ref<Image2D> blurImage0 = m_BloomBlurPass[0]->GetSpecification().TargetFramebuffer->GetImage();
+            Ref<Image2D> blurImage1 = m_BloomBlurPass[1]->GetSpecification().TargetFramebuffer->GetImage();
             float size = ImGui::GetContentRegionAvail().x;
-            UI::Image(idImage, { size, size }, { 0, 1 }, { 1, 0 });
+            UI::Image(blurImage0, { size, size }, { 0, 1 }, { 1, 0 });
+            UI::Image(blurImage1, { size, size }, { 0, 1 }, { 1, 0 });
             UI::EndTreeNode();
         }
-        if (UI::BeginTreeNode(TR("Final Image"), false))
+        if (UI::BeginTreeNode(TR("ID Pass"), true))
+        {
+            Ref<Image2D> idColorImage = m_IDPass->GetSpecification().TargetFramebuffer->GetImage(0);
+            float size = ImGui::GetContentRegionAvail().x;
+            UI::Image(idColorImage, { size, size }, { 0, 1 }, { 1, 0 });
+            UI::EndTreeNode();
+        }
+        if (UI::BeginTreeNode(TR("Final Image"), true))
         {
             Ref<Image2D> finalImage = m_CompositePass->GetSpecification().TargetFramebuffer->GetImage();
             float size = ImGui::GetContentRegionAvail().x;
@@ -221,7 +217,6 @@ namespace Prism
         m_CompositePass->GetSpecification().TargetFramebuffer->RT_Resize(width, height);
         m_BloomBlurPass[0]->GetSpecification().TargetFramebuffer->RT_Resize(width, height);
         m_BloomBlurPass[1]->GetSpecification().TargetFramebuffer->RT_Resize(width, height);
-        m_BloomBlendPass->GetSpecification().TargetFramebuffer->RT_Resize(width, height);
     }
 
     void SceneRenderer::Execute(const FrameSnapshot& snapshot)
@@ -378,25 +373,44 @@ namespace Prism
             for (auto& dc : selectedDrawList)
             {
                 Ref<Material> material = dc.Mesh->IsAnimated() ? m_EditorDebugAnimMaterial : m_EditorDebugMaterial;
-                rApi->RenderMesh(dc.Mesh, dc.SubmeshIndex, material, SHADER_PASS_INDEX_EDITOR_DEBUG_OBJECT_ID, dc.DrawIndex);
+                rApi->RenderMesh(dc.Mesh, dc.SubmeshIndex, m_EditorDebugMaterial, SHADER_PASS_INDEX_EDITOR_DEBUG_OBJECT_ID, dc.DrawIndex);
             }
             rApi->EndRenderPass();
         }
         if (config.EnableBloom)
         {
             PR_PROFILE_SCOPE("BloomPass");
-            BloomBlurPass();
-            BloomBlendPass();
+            auto* rApi = Renderer::GetAPI();
+            int32_t passIndex = m_PostProcessMaterial->GetShader()->FindPassByName(SHADER_PASS_NAME_BLOOM_BLUR);
+            int index = 0;
+            for (int i = 0; i < 10; i++)
+            {
+                index = i % 2;
+                rApi->BeginRenderPass(m_BloomBlurPass[index]);
+                m_PostProcessMaterial->SetBool("u_Horizontal", index == 0);
+                if (i > 0)
+                {
+                    auto fb = m_BloomBlurPass[1 - index]->GetSpecification().TargetFramebuffer;
+                    rApi->SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_BLOOM_BLUR_INPUT_SLOT, fb->GetImage(0));
+                }
+                else
+                {
+                    auto fb = m_GeoPass->GetSpecification().TargetFramebuffer;
+                    rApi->SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_BLOOM_BLUR_INPUT_SLOT, fb->GetImage(1));
+                }
+                DrawFullscreen(m_PostProcessMaterial, passIndex);
+                rApi->EndRenderPass();
+            }
         }
         {
             PR_PROFILE_SCOPE("CompositePass");
             rApi->BeginRenderPass(m_CompositePass);
-            auto colorImage = config.EnableBloom
-                ? m_BloomBlendPass->GetSpecification().TargetFramebuffer->GetImage(0)
-                : m_GeoPass->GetSpecification().TargetFramebuffer->GetImage(0);
-            rApi->SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_COMPOSITE_GEOMETRY_COLOR_SLOT, colorImage);
+            rApi->SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_COMPOSITE_GEOMETRY_COLOR_SLOT,
+                m_GeoPass->GetSpecification().TargetFramebuffer->GetImage(0));
             rApi->SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_COMPOSITE_OBJECT_ID_SLOT,
                 m_IDPass->GetSpecification().TargetFramebuffer->GetImage(0));
+            rApi->SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_COMPOSITE_BLOOM_SLOT,
+                m_BloomBlurPass[1]->GetSpecification().TargetFramebuffer->GetImage(0));
 
             float exposure = 0.8f;
             m_PostProcessMaterial->SetFloat("u_Exposure", exposure);
@@ -554,17 +568,13 @@ namespace Prism
         DrawFullscreen(m_CompositeMaterial);
         Renderer::EndRenderPass();
     }
-#endif
 
     void SceneRenderer::BloomBlurPass()
     {
-        PR_PROFILE_FUNCTION();
         auto* rApi = Renderer::GetAPI();
         int32_t passIndex = m_PostProcessMaterial->GetShader()->FindPassByName(SHADER_PASS_NAME_BLOOM_BLUR);
-
-        int amount = 10;
         int index = 0;
-        for (int i = 0; i < amount; i++)
+        for (int i = 0; i < 10; i++)
         {
             index = i % 2;
             rApi->BeginRenderPass(m_BloomBlurPass[index]);
@@ -583,22 +593,7 @@ namespace Prism
             rApi->EndRenderPass();
         }
     }
-
-    void SceneRenderer::BloomBlendPass()
-    {
-        PR_PROFILE_FUNCTION();
-        auto* rApi = Renderer::GetAPI();
-        int32_t passIndex = m_PostProcessMaterial->GetShader()->FindPassByName(SHADER_PASS_NAME_BLOOM_BLEND);
-
-        rApi->BeginRenderPass(m_BloomBlendPass);
-        rApi->SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_BLOOM_BLEND_GEOMETRY_COLOR_SLOT,
-            m_GeoPass->GetSpecification().TargetFramebuffer->GetImage(0));
-        rApi->SetTexture(Config::PRISM_SET_RENDER_PASS, Config::PRISM_BLOOM_BLEND_BLOOM_SLOT,
-            m_BloomBlurPass[1]->GetSpecification().TargetFramebuffer->GetImage(0));
-
-        DrawFullscreen(m_PostProcessMaterial, passIndex);
-        rApi->EndRenderPass();
-    }
+#endif
 
 #pragma endregion
 
@@ -659,7 +654,7 @@ namespace Prism
             splits[i] = logSplit * splitLambda + uniSplit * (1.0f - splitLambda);
         }
 
-        m_CascadeSplits = glm::vec4(splits[0], splits[1], splits[2], splits[3]);
+        m_FrameData.CascadeSplits = glm::vec4(splits[0], splits[1], splits[2], splits[3]);
         m_FrameData.ShadowParams = { config.ShadowBias, config.ShadowNormalBias,
             (float)cascadeCount, directionalLight.SoftShadows ? 1.0f : 0.0f };
 
@@ -716,13 +711,9 @@ namespace Prism
             maxX = minX + (2.0f * radius);
             maxY = minY + (2.0f * radius);
 
-            m_ShadowMatrices[cascade] = glm::ortho(minX, maxX, minY, maxY, -maxZ, -minZ) * lightView;
+            m_FrameData.ShadowMatrices[cascade] = glm::ortho(minX, maxX, minY, maxY, -maxZ, -minZ) * lightView;
             prevSplit = nextSplit;
         }
-
-        for (uint32_t i = 0; i < cascadeCount; i++)
-            m_FrameData.ShadowMatrices[i] = m_ShadowMatrices[i];
-        m_FrameData.CascadeSplits = m_CascadeSplits;
     }
 
 

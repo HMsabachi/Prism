@@ -84,7 +84,6 @@ namespace Prism
         void IDPass(const std::vector<DrawCommand>& selectedList);
         void CompositePass();
         void BloomBlurPass();
-        void BloomBlendPass();
 
         void DrawFullscreen(const Ref<Material>& material, uint32_t passIndex = 0);
 
@@ -144,21 +143,17 @@ namespace Prism
         std::vector<ObjectData> m_ObjectArray;
         std::vector<glm::mat4> m_BoneArray;
 
+        Ref<RenderPass> m_ShadowPasses[4];
         Ref<RenderPass> m_GeoPass;
         Ref<RenderPass> m_IDPass;
-        Ref<RenderPass> m_CompositePass;
         Ref<RenderPass> m_BloomBlurPass[2];
-        Ref<RenderPass> m_BloomBlendPass;
+        Ref<RenderPass> m_CompositePass;
 
         Ref<Material> m_PostProcessMaterial;
         Ref<Material> m_EditorDebugMaterial;
         Ref<Material> m_EditorDebugAnimMaterial;
 
         Ref<Texture2D> m_BRDFLUT;
-
-        Ref<RenderPass> m_ShadowPasses[4];
-        glm::mat4 m_ShadowMatrices[4]{};
-        glm::vec4 m_CascadeSplits{};
 
         SceneRendererOptions m_Options;
 

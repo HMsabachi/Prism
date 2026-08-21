@@ -70,16 +70,13 @@ namespace Prism::Config
     constexpr uint32_t PRISM_GEOMETRY_ENV_IRRADIANCE_SLOT = 5;
     constexpr uint32_t PRISM_GEOMETRY_ENV_BRDF_LUT_SLOT  = 6;
 
-    // CompositePass:geo color + object ID (2 个)
+    // CompositePass:geo color + object ID + bloom (3 个)
     constexpr uint32_t PRISM_COMPOSITE_GEOMETRY_COLOR_SLOT = 0;
     constexpr uint32_t PRISM_COMPOSITE_OBJECT_ID_SLOT      = 1;
+    constexpr uint32_t PRISM_COMPOSITE_BLOOM_SLOT          = 2;
 
     // BloomBlurPass:blur input (1 个)
     constexpr uint32_t PRISM_BLOOM_BLUR_INPUT_SLOT = 0;
-
-    // BloomBlendPass:geo color + bloom (2 个)
-    constexpr uint32_t PRISM_BLOOM_BLEND_GEOMETRY_COLOR_SLOT = 0;
-    constexpr uint32_t PRISM_BLOOM_BLEND_BLOOM_SLOT = 1;
 
     //==================================================
     // Vulkan(直通, set/binding)

@@ -75,7 +75,9 @@ Shader "PostProcess/SceneComposite"
                     const float gamma     = 2.2;
                     const float pureWhite = 1.0;
 
-                    vec3 color = texture(Prism_GeometryPassTexture, vs_Output.TexCoord).rgb * u_Exposure;
+                    vec3 color = texture(Prism_GeometryPassTexture, vs_Output.TexCoord).rgb;
+                    color += texture(Prism_BloomTexture, vs_Output.TexCoord).rgb;
+                    color *= u_Exposure;
                     // Reinhard tonemapping operator.
                     float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
                     float mappedLuminance = (luminance * (1.0 + luminance / (pureWhite * pureWhite))) / (1.0 + luminance);
@@ -149,44 +151,6 @@ Shader "PostProcess/SceneComposite"
                         }
                     }
                     FragColor = vec4(result, 1.0);
-                }
-            }
-        }
-
-        Pass
-        {
-            Name "BloomBlend"
-            Tags { "LightMode" = "Fullscreen" }
-            GLSL
-            {
-                #include "PrismEngine.glsl"
-                #include "Pass/BloomBlendPass.glsl"
-
-                attribute vec3 a_Position : POSITION;
-                attribute vec2 a_TexCoord : TEXCOORD0;
-
-                varying VertexOutput
-                {
-                    vec2 TexCoord;
-                } vs_Output;
-
-                void main()
-                {
-                    vec4 position = vec4(a_Position.xy, 1.0, 1.0);
-                    gl_Position = position;
-                    vs_Output.TexCoord = a_TexCoord;
-                }
-
-                void frag()
-                {
-                    ivec2 res = textureSize(Prism_GeometryPassTexture, 0);
-                    vec3 color = texelFetch(Prism_GeometryPassTexture, ivec2(vs_Output.TexCoord * vec2(res)), 0).rgb;
-
-                    ivec2 bloomRes = textureSize(Prism_BloomTexture, 0);
-                    vec3 bloomColor = texelFetch(Prism_BloomTexture, ivec2(vs_Output.TexCoord * vec2(bloomRes)), 0).rgb;
-                    color += bloomColor;
-
-                    FragColor = vec4(color, 1.0);
                 }
             }
         }

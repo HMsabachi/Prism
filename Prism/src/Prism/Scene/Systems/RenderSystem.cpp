@@ -55,6 +55,15 @@ namespace Prism
             UI::EndPropertyGrid();
             UI::EndTreeNode();
         }
+        if (UI::BeginTreeNode(TR("Bloom")))
+        {
+            UI::BeginPropertyGrid();
+            UI::Property("Enable Bloom", m_Config.EnableBloom);
+            UI::Property("Bloom Threshold", m_Config.BloomThreshold, 0.1f, 0.0f, 10.0f);
+
+            UI::EndPropertyGrid();
+            UI::EndTreeNode();
+        }
         ImGui::End();
     }
 

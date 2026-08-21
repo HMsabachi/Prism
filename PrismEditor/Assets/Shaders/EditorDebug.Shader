@@ -16,7 +16,7 @@ Shader "Hidden/EditorDebug"
         Pass
         {
             Name "ObjectID"
-            Tags { "LightMode" = "ObjectID" }
+            Tags { "LightMode" = "Always" }
             RenderCommand
             {
                 Cull Back
