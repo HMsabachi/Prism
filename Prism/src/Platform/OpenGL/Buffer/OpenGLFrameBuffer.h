@@ -25,9 +25,9 @@ namespace Prism {
 
         RendererID GetRendererID() const { return m_RendererID; }
 
-        virtual Ref<Image2D> GetImage(uint32_t attachmentIndex = 0) const override
-        { return attachmentIndex < m_ColorAttachments.size() ? m_ColorAttachments[attachmentIndex] : nullptr; }
-        virtual Ref<Image2D> GetDepthImage() const override { return m_DepthAttachment; }
+        virtual const Ref<Image2D>& GetImage(uint32_t attachmentIndex = 0) const override
+        { PR_CORE_ASSERT(attachmentIndex < m_ColorAttachments.size()); return m_ColorAttachments[attachmentIndex]; }
+        virtual const Ref<Image2D>& GetDepthImage() const override { return m_DepthAttachment; }
 
         // OpenGL-specific convenience (non-override)
         RendererID GetColorAttachmentRendererID(int index = 0) const

@@ -36,13 +36,10 @@ namespace Prism
         virtual uint64_t GetHash() const override { return m_Image ? m_Image->GetHash() : 0; }
 
         const VkDescriptorImageInfo& GetVulkanDescriptorInfo() const { return m_Image.As<VulkanImage2D>()->GetDescriptor(); }
-
-        void GenerateMips();
     private:
         std::string m_Path;
         uint32_t m_Width = 0, m_Height = 0;
-
-        Buffer m_ImageData;
+        TextureWrap m_Wrap = TextureWrap::Clamp;
 
         Ref<Image2D> m_Image;
 
@@ -67,7 +64,7 @@ namespace Prism
 
         virtual uint64_t GetHash() const override { return m_Image ? m_Image->GetHash() : 0; }
 
-        const VkDescriptorImageInfo& GetVulkanDescriptorInfo() const { return m_DescriptorImageInfo; }
+        const VkDescriptorImageInfo& GetVulkanDescriptorInfo() const { return m_Image.As<VulkanImageCube>()->GetDescriptor(); }
         VkImageView CreateImageViewSingleMip(uint32_t mip);
 
         void GenerateMips(bool readonly = false);
@@ -78,9 +75,6 @@ namespace Prism
         ImageFormat m_Format = ImageFormat::None;
         uint32_t m_Width = 0, m_Height = 0;
 
-        Buffer m_LocalStorage;
-
         Ref<ImageCube> m_Image;
-        VkDescriptorImageInfo m_DescriptorImageInfo = {};
     };
 }

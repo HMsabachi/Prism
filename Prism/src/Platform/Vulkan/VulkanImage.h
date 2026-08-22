@@ -1,6 +1,7 @@
-#pragma once
+﻿#pragma once
 
 #include "Prism/Renderer/Image.h"
+#include "Prism/Renderer/Texture.h"
 #include "Platform/Vulkan/Vulkan.h"
 
 #include "VulkanMemoryAllocator/vk_mem_alloc.h"
@@ -22,6 +23,7 @@ namespace Prism
         VulkanImage2D(ImageFormat format, uint32_t width, uint32_t height, const void* data = nullptr, uint32_t samples = 1);
         virtual ~VulkanImage2D();
 
+        virtual void Resize(const uint32_t width, const uint32_t height) override;
         virtual void Invalidate() override;
         virtual void Release() override;
 
@@ -40,11 +42,17 @@ namespace Prism
 
         const VkDescriptorImageInfo& GetDescriptor() const { return m_DescriptorImageInfo; }
 
+        void SetSamplerWrap(TextureWrap wrap) { m_Wrap = wrap; }
+
+        void RT_Resize(const uint32_t width, const uint32_t height);
+        void RT_Invalidate();
+        void GenerateMips();
         void UpdateDescriptor();
     private:
         ImageFormat m_Format = ImageFormat::None;
         uint32_t m_Width = 0, m_Height = 0;
         uint32_t m_Samples = 1;
+        TextureWrap m_Wrap = TextureWrap::Repeat;
 
         Buffer m_ImageData;
 
@@ -76,6 +84,7 @@ namespace Prism
 
         const VkDescriptorImageInfo& GetDescriptor() const { return m_DescriptorImageInfo; }
 
+        void GenerateMips(bool readonly = false);
         void UpdateDescriptor();
     private:
         ImageFormat m_Format = ImageFormat::None;

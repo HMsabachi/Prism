@@ -10,7 +10,6 @@
 #include "Prism/Renderer/Buffer/UniformBuffer.h"
 #include "Prism/Renderer/Buffer/ShaderStorageBuffer.h"
 #include "Prism/Renderer/Image.h"
-#include "Prism/ShaderCompiler/PrismBindings.h"
 
 #include <glm/glm.hpp>
 #include <map>
@@ -27,11 +26,11 @@ namespace Prism
         Ref<VertexBuffer> FullscreenQuadVB;
         Ref<IndexBuffer> FullscreenQuadIB;
 
-        // 绑定体系 v1 前端全局绑定池（决策 8）：Set* 在 RT 入池，
-        // S3/S4 的 VulkanShader 描述符 bake 按帧槽从这里取资源写 descriptor set。
-        std::array<std::map<uint32_t, Ref<UniformBuffer>>, Config::PRISM_SET_MATERIAL + 1> UniformBuffers;
-        std::array<std::map<uint32_t, Ref<ShaderStorageBuffer>>, Config::PRISM_SET_MATERIAL + 1> ShaderStorageBuffers;
-        std::array<std::map<uint32_t, Ref<Image>>, Config::PRISM_SET_MATERIAL + 1> Textures;
+        // 绑定体系 v2 全局层（set 0）资源池：SetGlobal* 在 RT 入池，
+        // S3/S4 的 bake 按 PrismBindings 固定布局为每帧槽写 set 0 描述符并随 pass set 绑定。
+        std::map<uint32_t, Ref<UniformBuffer>> GlobalUniformBuffers;
+        std::map<uint32_t, Ref<ShaderStorageBuffer>> GlobalShaderStorageBuffers;
+        std::map<uint32_t, Ref<Image>> GlobalTextures;
     };
 
     static VulkanRendererData* s_Data = nullptr;
@@ -156,30 +155,27 @@ namespace Prism
         });
     }
 
-    void VulkanRenderer::SetUniformBuffer(uint32_t set, uint32_t binding, Ref<UniformBuffer> ubo)
+    void VulkanRenderer::SetGlobalUniformBuffer(uint32_t binding, Ref<UniformBuffer> ubo)
     {
-        PR_CORE_ASSERT(set <= Config::PRISM_SET_MATERIAL, "SetUniformBuffer: 无效 set");
-        Renderer::Submit([set, binding, ubo]() mutable
+        Renderer::Submit([binding, ubo]() mutable
         {
-            s_Data->UniformBuffers[set][binding] = ubo;
+            s_Data->GlobalUniformBuffers[binding] = ubo;
         });
     }
 
-    void VulkanRenderer::SetShaderStorageBuffer(uint32_t set, uint32_t binding, Ref<ShaderStorageBuffer> ssbo)
+    void VulkanRenderer::SetGlobalShaderStorageBuffer(uint32_t binding, Ref<ShaderStorageBuffer> ssbo)
     {
-        PR_CORE_ASSERT(set <= Config::PRISM_SET_MATERIAL, "SetShaderStorageBuffer: 无效 set");
-        Renderer::Submit([set, binding, ssbo]() mutable
+        Renderer::Submit([binding, ssbo]() mutable
         {
-            s_Data->ShaderStorageBuffers[set][binding] = ssbo;
+            s_Data->GlobalShaderStorageBuffers[binding] = ssbo;
         });
     }
 
-    void VulkanRenderer::SetTexture(uint32_t set, uint32_t binding, Ref<Image> image)
+    void VulkanRenderer::SetGlobalTexture(uint32_t binding, Ref<Image> image)
     {
-        PR_CORE_ASSERT(set <= Config::PRISM_SET_MATERIAL, "SetTexture: 无效 set");
-        Renderer::Submit([set, binding, image]() mutable
+        Renderer::Submit([binding, image]() mutable
         {
-            s_Data->Textures[set][binding] = image;
+            s_Data->GlobalTextures[binding] = image;
         });
     }
 

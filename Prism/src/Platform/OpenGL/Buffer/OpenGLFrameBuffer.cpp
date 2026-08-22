@@ -30,7 +30,6 @@ namespace Prism {
         {
             Ref<Image2D> image = Image2D::Create(format, width, height, nullptr, samples);
             image->Invalidate();
-
             Ref<OpenGLImage2D> glImage = image.As<OpenGLImage2D>();
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index, TextureTarget(samples > 1), glImage->GetRendererID(), 0);
             return image;
@@ -65,9 +64,17 @@ namespace Prism {
         for (auto format : m_Specification.Attachments.Attachments)
         {
             if (!Utils::IsDepthFormat(format.Format))
+            {
                 m_ColorAttachmentFormats.emplace_back(format.Format);
+                Ref<Image2D> image = Image2D::Create(format.Format, m_Width, m_Height, nullptr, m_Specification.Samples);
+                m_ColorAttachments.emplace_back(image);
+            }
             else
+            {
                 m_DepthAttachmentFormat = format.Format;
+                Ref<Image2D> image = Image2D::Create(format.Format, m_Width, m_Height, nullptr, m_Specification.Samples);
+                m_DepthAttachment = image;
+            }
         }
 
         Resize(spec.Width, spec.Height, true);
@@ -107,25 +114,22 @@ namespace Prism {
         m_Width = width;
         m_Height = height;
         if (m_RendererID)
-        {
             glDeleteFramebuffers(1, &m_RendererID);
-            m_ColorAttachments.clear();
-            m_DepthAttachment.Reset();
-        }
 
         glGenFramebuffers(1, &m_RendererID);
         glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID);
 
-        if (m_ColorAttachmentFormats.size())
+        for (size_t i = 0; i < m_ColorAttachments.size(); i++)
         {
-            m_ColorAttachments.resize(m_ColorAttachmentFormats.size());
-            for (size_t i = 0; i < m_ColorAttachments.size(); i++)
-                m_ColorAttachments[i] = Utils::CreateAndAttachColorAttachment(m_Specification.Samples, m_ColorAttachmentFormats[i], m_Width, m_Height, (int)i);
+            Ref<OpenGLImage2D> glImage = m_ColorAttachments[i].As<OpenGLImage2D>();
+            glImage->RT_Resize(width, height);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + (GLenum)i, Utils::TextureTarget(m_Specification.Samples > 1), glImage->GetRendererID(), 0);
         }
-
-        if (m_DepthAttachmentFormat != ImageFormat::None)
+        if (m_DepthAttachment)
         {
-            m_DepthAttachment = Utils::AttachDepthTexture(m_Specification.Samples, m_DepthAttachmentFormat, m_Width, m_Height);
+            Ref<OpenGLImage2D> glImage = m_DepthAttachment.As<OpenGLImage2D>();
+            glImage->RT_Resize(width, height);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, Utils::DepthAttachmentType(m_DepthAttachmentFormat), Utils::TextureTarget(m_Specification.Samples > 1), glImage->GetRendererID(), 0);
         }
 
         if (m_ColorAttachments.size() > 1)

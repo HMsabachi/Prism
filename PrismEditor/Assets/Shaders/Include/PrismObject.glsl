@@ -21,12 +21,12 @@ struct PrismObjectData
     int  AnimationOffset; // 骨骼大数组起始索引
 };
 
-PRISM_OBJECT_LAYOUT buffer PrismObjects
+PRISM_GOLBAL_STORAGE_BUFFER(1) buffer PrismObjects
 {
     PrismObjectData Prism_Objects[];
 };
 
-PRISM_ANIM_LAYOUT buffer PrismAnimation
+PRISM_GOLBAL_STORAGE_BUFFER(2) buffer PrismAnimation
 {
     mat4 Prism_AllBones[];
 };

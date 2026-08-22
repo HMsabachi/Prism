@@ -10,16 +10,14 @@
 #   define PRISM_SET_OBJECT       2
 #   define PRISM_SET_MATERIAL     3
 
-#   define PRISM_BINDING_FRAME    0
-#   define PRISM_BINDING_MATERIAL 20
 
-// SSBO 空间(GL_SHADER_STORAGE_BUFFER, set2 TRANSFORMS)
-#   define PRISM_BINDING_OBJECT   16
-#   define PRISM_BINDING_ANIMATION 17
+#   define PRISM_GOLBAL_TEXTURE(slot) layout(binding = (0 + (slot)))
+#   define PRISM_GOLBAL_STORAGE_BUFFER(slot) layout(binding = (0 + (slot)))
+#   define PRISM_GOLBAL_UNIFORM_BUFFER(slot) layout(binding = (0 + (slot)))
 
-#   define PRISM_PASS_TEX(slot) layout(binding = (1 + (slot)))
-#   define PRISM_PASS_STORAGE_BUFFER(slot) layout(binding = (4 + (slot)))
-#   define PRISM_PASS_UNIFORM_BUFFER(slot) layout(binding = (4 + (slot)))
+#   define PRISM_PASS_TEXTURE(slot) layout(binding = (1 + (slot)))
+#   define PRISM_PASS_STORAGE_BUFFER(slot) layout(binding = (24 + (slot)))
+#   define PRISM_PASS_UNIFORM_BUFFER(slot) layout(binding = (24 + (slot)))
 
 #   define PRISM_BINDING_TEXTURE 8
 
@@ -31,15 +29,12 @@
 #   define PRISM_SET_OBJECT       2
 #   define PRISM_SET_MATERIAL     3
 
-#   define PRISM_BINDING_FRAME    0
-#   define PRISM_BINDING_MATERIAL 0
 
-// SSBO(set2 TRANSFORMS)
-#   define PRISM_BINDING_OBJECT   0
-#   define PRISM_BINDING_ANIMATION 1
+#   define PRISM_GOLBAL_TEXTURE(slot) layout(set = PRISM_SET_FRAME, binding = (slot))
+#   define PRISM_GOLBAL_STORAGE_BUFFER(slot) layout(set = PRISM_SET_FRAME, binding = (slot))
+#   define PRISM_GOLBAL_UNIFORM_BUFFER(slot) layout(set = PRISM_SET_FRAME, binding = (slot))
 
-// Texture(set1 RENDER_PASS, per-pass 复用)
-#   define PRISM_PASS_TEX(slot) layout(set = PRISM_SET_RENDER_PASS, binding = (slot))
+#   define PRISM_PASS_TEXTURE(slot) layout(set = PRISM_SET_RENDER_PASS, binding = (slot))
 #   define PRISM_PASS_STORAGE_BUFFER(slot) layout(set = PRISM_SET_RENDER_PASS, binding = (slot))
 #   define PRISM_PASS_UNIFORM_BUFFER(slot) layout(set = PRISM_SET_RENDER_PASS, binding = (slot))
 

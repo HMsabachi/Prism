@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Prism/Core/Core.h"
 #include "Prism/Core/Ref.h"
@@ -51,6 +51,7 @@ namespace Prism {
 
     class PRISM_API Image2D : public Image
     {
+        virtual void Resize(const uint32_t width, const uint32_t height) = 0;
     public:
         static Ref<Image2D> Create(ImageFormat format, uint32_t width, uint32_t height, Buffer buffer, uint32_t samples = 1);
         static Ref<Image2D> Create(ImageFormat format, uint32_t width, uint32_t height, const void* data = nullptr, uint32_t samples = 1);

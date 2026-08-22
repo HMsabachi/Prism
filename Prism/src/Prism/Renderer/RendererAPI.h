@@ -105,9 +105,9 @@ namespace Prism
         virtual void SetSceneEnvironment(const Ref<SceneEnvironment>& environment) = 0;
         virtual std::pair<Ref<TextureCube>, Ref<TextureCube>> CreateEnvironmentMap(const std::string& filepath) = 0;
 
-        virtual void SetUniformBuffer(uint32_t set, uint32_t binding, Ref<UniformBuffer> ubo) = 0;
-        virtual void SetShaderStorageBuffer(uint32_t set, uint32_t binding, Ref<ShaderStorageBuffer> ssbo) = 0;
-        virtual void SetTexture(uint32_t set, uint32_t binding, Ref<Image> image) = 0;
+        virtual void SetGlobalUniformBuffer(uint32_t binding, Ref<UniformBuffer> ubo) = 0;
+        virtual void SetGlobalShaderStorageBuffer(uint32_t binding, Ref<ShaderStorageBuffer> ssbo) = 0;
+        virtual void SetGlobalTexture(uint32_t binding, Ref<Image> image) = 0;
 
         virtual void RenderMesh(Ref<Mesh> mesh, uint32_t submeshIndex, Ref<Material> material,
             uint32_t passIndex, uint32_t drawIndex = 0) = 0;

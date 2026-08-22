@@ -12,6 +12,7 @@ namespace Prism {
         OpenGLImage2D(ImageFormat format, uint32_t width, uint32_t height, const void* data = nullptr, uint32_t samples = 1);
         virtual ~OpenGLImage2D();
 
+        virtual void Resize(const uint32_t width, const uint32_t height) override;
         virtual void Invalidate() override;
         virtual void Release() override;
 
@@ -23,6 +24,9 @@ namespace Prism {
         virtual Buffer GetBuffer() const override { return m_ImageData; }
         virtual Buffer& GetBuffer() override { return m_ImageData; }
 
+        virtual uint64_t GetHash() const override { return (uint64_t)m_RendererID; }
+
+        void RT_Resize(const uint32_t width, const uint32_t height);
         void RT_Bind(uint32_t slot) const;
 
         RendererID& GetRendererID() { return m_RendererID; }
@@ -31,7 +35,6 @@ namespace Prism {
         RendererID& GetSamplerRendererID() { return m_SamplerRendererID; }
         RendererID GetSamplerRendererID() const { return m_SamplerRendererID; }
 
-        virtual uint64_t GetHash() const override { return (uint64_t)m_RendererID; }
     private:
         RendererID m_RendererID = 0;
         RendererID m_SamplerRendererID = 0;

@@ -32,7 +32,24 @@ namespace Prism {
         }
     }
 
-    void OpenGLImage2D::Invalidate() 
+
+    void OpenGLImage2D::Resize(const uint32_t width, const uint32_t height)
+    {
+        Ref<OpenGLImage2D> instance = this;
+        Renderer::Submit([instance, width, height]() mutable
+        {
+            instance->RT_Resize(width, height);
+        });
+    }
+
+    void OpenGLImage2D::RT_Resize(const uint32_t width, const uint32_t height)
+    {
+        m_Width = width;
+        m_Height = height;
+        Invalidate();
+    }
+
+    void OpenGLImage2D::Invalidate()
     {
         if (m_RendererID)
             Release();
@@ -88,12 +105,12 @@ namespace Prism {
     }
 
 
-	void OpenGLImage2D::RT_Bind(uint32_t slot) const
-	{
+    void OpenGLImage2D::RT_Bind(uint32_t slot) const
+    {
         glBindTextureUnit(slot, m_RendererID);
-	}
+    }
 
-	//////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////
     // ImageCube
     //////////////////////////////////////////////////////////////////////////////////
 
