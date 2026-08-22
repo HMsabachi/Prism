@@ -39,8 +39,8 @@ namespace Prism
             return AssetManager::GetShaderLibrary()->OnResolveUsePass(shaderName);
         };
 
-        config.OpenGLMaterialUniformBufferBinding = Config::PRISM_OPENGL_BINDING_MATERIAL;
-        config.OpenGLTextureBeginBinding = Config::PRISM_OPENGL_TEXTURE_BEGIN_BINDING;
+        config.OpenGLMaterialUniformBufferBinding = Config::GL_UBO_BASE_MATERIAL;
+        config.OpenGLTextureBeginBinding = Config::GL_TEX_BASE_MATERIAL;
         config.VulkanMaterialUniformBufferSet = Config::PRISM_SET_MATERIAL;
         config.VulkanTextureBeginSet = Config::PRISM_SET_MATERIAL;
 

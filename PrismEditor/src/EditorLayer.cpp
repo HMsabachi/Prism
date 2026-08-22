@@ -7,6 +7,7 @@ using Prism::UI::PropertyFlag;
 
 #include "Prism/ImGui/ImGuizmo.h"
 #include "Prism/Core/LanguageManager.h"
+#include "Prism/Core/Application.h"
 #include "Scripting/CSharp/CSharpScriptEngine.h"
 #include "Scripting/Python/PythonScriptEngine.h"
 #include "Prism/Scene/Systems/Physics2DSystem.h"
@@ -286,7 +287,7 @@ namespace Prism
             return 0.0f;
         }
 
-        void EditorLayer::DrawMaterialProperty(const PrismShaderCompiler::AST::ShaderUniform& uni, Material& material)
+        void EditorLayer::DrawMaterialProperty(const PrismShaderCompiler::AST::ShaderUniform& uni, Ref<Material>& material)
         {
             const auto& name = uni.Name;
             const auto& displayName = uni.DisplayName.empty() ? uni.Name : uni.DisplayName;
@@ -295,81 +296,83 @@ namespace Prism
             {
             case PrismShaderCompiler::PropertyType::Float:
             {
-                float value = material.GetFloat(name);
+                float value = material->GetFloat(name);
                 if (Property(displayName, value))
-                    material.SetFloat(name, value);
+                    material->SetFloat(name, value);
                 break;
             }
             case PrismShaderCompiler::PropertyType::Range:
             {
-                float value = material.GetFloat(name);
+                float value = material->GetFloat(name);
                 if (Property(displayName, value, uni.RangeMin, uni.RangeMax, PropertyFlag::SliderProperty))
-                    material.SetFloat(name, value);
+                    material->SetFloat(name, value);
                 break;
             }
             case PrismShaderCompiler::PropertyType::Color:
             {
-                glm::vec4 color = material.GetColor(name);
+                glm::vec4 color = material->GetColor(name);
                 if (Property(displayName, color, PropertyFlag::ColorProperty))
-                    material.SetColor(name, color);
+                    material->SetColor(name, color);
                 break;
             }
             case PrismShaderCompiler::PropertyType::Color3:
             {
-                glm::vec3 color = material.GetColor3(name);
+                glm::vec3 color = material->GetColor3(name);
                 if (Property(displayName, color, PropertyFlag::ColorProperty))
-                    material.SetColor3(name, color);
+                    material->SetColor3(name, color);
                 break;
             }
             case PrismShaderCompiler::PropertyType::Vector2:
             {
-                glm::vec2 vec2 = material.GetVec2(name);
+                glm::vec2 vec2 = material->GetVec2(name);
                 if (Property(displayName, vec2))
-                    material.SetVec2(name, vec2);
+                    material->SetVec2(name, vec2);
                 break;
             }
             case PrismShaderCompiler::PropertyType::Vector3:
             {
-                glm::vec3 vec3 = material.GetVec3(name);
+                glm::vec3 vec3 = material->GetVec3(name);
                 if (Property(displayName, vec3))
-                    material.SetVec3(name, vec3);
+                    material->SetVec3(name, vec3);
                 break;
             }
             case PrismShaderCompiler::PropertyType::Vector4:
             {
-                glm::vec4 vec4 = material.GetVec4(name);
+                glm::vec4 vec4 = material->GetVec4(name);
                 if (Property(displayName, vec4))
-                    material.SetVec4(name, vec4);
+                    material->SetVec4(name, vec4);
                 break;
             }
             case PrismShaderCompiler::PropertyType::Int:
             {
-                int value = material.GetInt(name);
+                int value = material->GetInt(name);
                 if (Property(displayName, value))
-                    material.SetInt(name, value);
+                    material->SetInt(name, value);
                 break;
             }
             case PrismShaderCompiler::PropertyType::Bool:
             {
-                bool value = material.GetBool(name);
+                bool value = material->GetBool(name);
                 if (Property(displayName, value))
-                    material.SetBool(name, value);
+                    material->SetBool(name, value);
                 break;
             }
             case PrismShaderCompiler::PropertyType::Texture2D:
             {
-                auto texture2D = material.GetTexture2D(name);
+                auto texture2D = material->GetTexture2D(name);
                 if (Property(displayName, texture2D, m_CheckerboardTex->GetImage()))
                 {
-                    std::string filename = Application::Get().OpenFile("");
-                    if (!filename.empty())
-                        material.SetTexture(name, Texture2D::Create(filename));
+                    Application::Get().QueueEvent([material, name]() mutable {
+                        std::string filename = Application::Get().OpenFile("");
+                        if (!filename.empty())
+                            material->SetTexture(name, Texture2D::Create(filename));
+                    });
                 }
                 break;
             }
             case PrismShaderCompiler::PropertyType::TextureCube:
             {
-                auto textureCube = material.GetTextureCube(name);
+                auto textureCube = material->GetTextureCube(name);
                 Property(displayName, textureCube, m_CheckerboardTex->GetImage());
                 break;
             }
@@ -846,7 +849,7 @@ namespace Prism
                             auto& uniforms = material->GetShader()->GetUniforms();
                             for (const auto& uni : uniforms)
                             {
-                                DrawMaterialProperty(uni, *material);
+                                DrawMaterialProperty(uni, material);
                             }
                             ImGui::Columns(1);
 

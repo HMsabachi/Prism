@@ -13,7 +13,7 @@ namespace Prism
         {
             if (Application::Get().IsRunning() != 1) return;
             PR_CORE_ASSERT(instance);
-            //std::scoped_lock<std::mutex> lock(s_LiveReferenceMutex);
+            std::scoped_lock<std::mutex> lock(s_LiveReferenceMutex);
             s_LiveReferences.insert(instance);
         }
 
@@ -21,7 +21,7 @@ namespace Prism
         {
             if (Application::Get().IsRunning() != 1) return;
             PR_CORE_ASSERT(instance);
-            //std::scoped_lock<std::mutex> lock(s_LiveReferenceMutex);
+            std::scoped_lock<std::mutex> lock(s_LiveReferenceMutex);
             auto it = s_LiveReferences.find(instance);
             PR_CORE_ASSERT(it != s_LiveReferences.end());
             s_LiveReferences.erase(it);

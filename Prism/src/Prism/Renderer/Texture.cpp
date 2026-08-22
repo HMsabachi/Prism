@@ -3,6 +3,7 @@
 
 #include "Prism/Renderer/RendererAPI.h"
 #include "Platform/OpenGL/OpenGLTexture.h"
+#include "Platform/Vulkan/VulkanTexture.h"
 
 namespace Prism {
 
@@ -28,7 +29,7 @@ namespace Prism {
         {
         case RendererAPIType::None: return nullptr;
         case RendererAPIType::OpenGL: return Ref<OpenGLTexture2D>::Create(format, width, height, data);
-        // case RendererAPIType::Vulkan: return Ref<VulkanTexture2D>::Create(format, width, height, data); // TODO
+        case RendererAPIType::Vulkan: return Ref<VulkanTexture2D>::Create(format, width, height, data);
         }
         return nullptr;
     }
@@ -38,7 +39,7 @@ namespace Prism {
         {
         case RendererAPIType::None: return nullptr;
         case RendererAPIType::OpenGL: return Ref<OpenGLTexture2D>::Create(path, srgb);
-        // case RendererAPIType::Vulkan: return Ref<VulkanTexture2D>::Create(path, srgb); // TODO
+        case RendererAPIType::Vulkan: return Ref<VulkanTexture2D>::Create(path, srgb);
         }
         return nullptr;
     }
@@ -49,7 +50,7 @@ namespace Prism {
         {
         case RendererAPIType::None: return nullptr;
         case RendererAPIType::OpenGL: return Ref<OpenGLTextureCube>::Create(format, width, height, data);
-        // case RendererAPIType::Vulkan: return Ref<VulkanTextureCube>::Create(format, width, height, data); // TODO
+        case RendererAPIType::Vulkan: return Ref<VulkanTextureCube>::Create(format, width, height, data);
         }
         return nullptr;
     }

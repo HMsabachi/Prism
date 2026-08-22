@@ -21,7 +21,7 @@
 #   define PRISM_PASS_STORAGE_BUFFER(slot) layout(binding = (4 + (slot)))
 #   define PRISM_PASS_UNIFORM_BUFFER(slot) layout(binding = (4 + (slot)))
 
-#   define PRISM_BINDING_TEXTURE 12
+#   define PRISM_BINDING_TEXTURE 8
 
 #elif PRISM_BACKEND_VULKAN
 

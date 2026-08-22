@@ -2,6 +2,7 @@
 #include "Image.h"
 
 #include "Platform/OpenGL/OpenGLImage.h"
+#include "Platform/Vulkan/VulkanImage.h"
 
 #include "Prism/Renderer/RendererAPI.h"
 
@@ -13,7 +14,7 @@ namespace Prism {
         {
             case RendererAPIType::None:    return nullptr;
             case RendererAPIType::OpenGL:  return Ref<OpenGLImage2D>::Create(format, width, height, buffer, samples);
-            // case RendererAPIType::Vulkan: return Ref<VulkanImage2D>::Create(format, width, height, buffer, samples); // TODO
+            case RendererAPIType::Vulkan:  return Ref<VulkanImage2D>::Create(format, width, height, buffer, samples);
         }
         PR_CORE_ASSERT(false, "Unknown RendererAPI");
         return nullptr;
@@ -25,7 +26,7 @@ namespace Prism {
         {
             case RendererAPIType::None:    return nullptr;
             case RendererAPIType::OpenGL:  return Ref<OpenGLImage2D>::Create(format, width, height, data, samples);
-            // case RendererAPIType::Vulkan: return Ref<VulkanImage2D>::Create(format, width, height, data, samples); // TODO
+            case RendererAPIType::Vulkan:  return Ref<VulkanImage2D>::Create(format, width, height, data, samples);
         }
         PR_CORE_ASSERT(false, "Unknown RendererAPI");
         return nullptr;
@@ -37,7 +38,7 @@ namespace Prism {
         {
             case RendererAPIType::None:    return nullptr;
             case RendererAPIType::OpenGL:  return Ref<OpenGLImageCube>::Create(format, width, height, data);
-            // case RendererAPIType::Vulkan: return Ref<VulkanImageCube>::Create(format, width, height, data); // TODO
+            case RendererAPIType::Vulkan:  return Ref<VulkanImageCube>::Create(format, width, height, data);
         }
         PR_CORE_ASSERT(false, "Unknown RendererAPI");
         return nullptr;

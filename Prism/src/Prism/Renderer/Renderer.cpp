@@ -7,6 +7,8 @@
 #include "Prism/Core/Application.h"
 #include "Prism/Renderer/RendererContext.h"
 #include "Platform/OpenGL/OpenGLRenderer.h"
+#include "Platform/Vulkan/VulkanRenderer.h"
+#include "Platform/Vulkan/Vulkan.h"
 
 #include "Camera/Camera.h"
 
@@ -25,9 +27,12 @@ namespace Prism
         case RendererAPIType::OpenGL:
             s_RendererAPI = new OpenGLRenderer();
             break;
-        // case RendererAPIType::Vulkan:
-        //     s_RendererAPI = new VulkanRenderer(); // TODO: Vulkan 后端
-        //     break;
+        case RendererAPIType::Vulkan:
+            s_RendererAPI = new VulkanRenderer();
+            // 必须显式设为 VulkanFramesInFlight：交换链同步对象/UBO 轮转/释放队列延迟
+            // 都按 2 设计，默认值 3 会与交换链 imageCount 取 min 后产生错位
+            s_Config.FramesInFlight = VulkanFramesInFlight;
+            break;
         default:
             PR_CORE_ASSERT(false, "未支持的 RendererAPI");
         }

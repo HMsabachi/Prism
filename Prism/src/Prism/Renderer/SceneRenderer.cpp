@@ -385,7 +385,7 @@ namespace Prism
             for (auto& dc : selectedDrawList)
             {
                 Ref<Material> material = dc.Mesh->IsAnimated() ? m_EditorDebugAnimMaterial : m_EditorDebugMaterial;
-                rApi->RenderMesh(dc.Mesh, dc.SubmeshIndex, m_EditorDebugMaterial, SHADER_PASS_INDEX_EDITOR_DEBUG_OBJECT_ID, dc.DrawIndex);
+                rApi->RenderMesh(dc.Mesh, dc.SubmeshIndex, material, SHADER_PASS_INDEX_EDITOR_DEBUG_OBJECT_ID, dc.DrawIndex);
             }
             rApi->EndRenderPass();
         }
@@ -626,6 +626,7 @@ namespace Prism
         RendererAPI* rApi = Renderer::GetAPI();
         rApi->SetShaderStorageBuffer(Config::PRISM_SET_TRANSFORMS, 0, m_ObjectSSBO);
         rApi->SetShaderStorageBuffer(Config::PRISM_SET_TRANSFORMS, 1, m_BoneSSBO);
+        rApi->SetUniformBuffer(Config::PRISM_SET_FRAME, 0, m_FrameUBO);
         auto& cam = snapshot.Camera;
         const auto& config = snapshot.Config;
         m_FrameData.ViewProjection = cam.Projection.GetProjectionMatrix() * cam.ViewMatrix;
@@ -641,7 +642,6 @@ namespace Prism
         m_FrameData.Lights[0].Radiance = directionalLight.Radiance;
         m_FrameData.Lights[0].Multiplier = directionalLight.Multiplier;
         m_FrameUBO->SetData(&m_FrameData, sizeof(m_FrameData));
-        rApi->SetUniformBuffer(Config::PRISM_SET_FRAME, 0, m_FrameUBO);
         rApi->SetSceneEnvironment(config.SceneEnvironment);
         
     }

@@ -1,28 +1,29 @@
 ﻿#include "prpch.h"
 
 #include "Platform/OpenGL/Buffer/OpenGLVertexBuffer.h"
+#include "Platform/Vulkan/VulkanVertexBuffer.h"
 #include "../Renderer.h"
 
 namespace Prism {
 
-	Prism::Ref<Prism::VertexBuffer> VertexBuffer::Create(void* data, uint32_t size /*= 0*/, BufferUsage usage /*= VertexBufferUsage::Dynamic*/)
+	Ref<VertexBuffer> VertexBuffer::Create(void* data, uint32_t size /*= 0*/, BufferUsage usage /*= VertexBufferUsage::Dynamic*/)
 	{
 		switch (RendererAPI::Current())
 		{
 		case RendererAPIType::None:   return nullptr;
 		case RendererAPIType::OpenGL:  return Ref<OpenGLVertexBuffer>::Create(data, size, usage);
-		// case RendererAPIType::Vulkan: return Ref<VulkanVertexBuffer>::Create(data, size, usage); // TODO
+		case RendererAPIType::Vulkan:  return Ref<VulkanVertexBuffer>::Create(data, size, usage);
 		}
         return nullptr;
 	}
 
-	Prism::Ref<Prism::VertexBuffer> VertexBuffer::Create(uint32_t size /*= 0*/, BufferUsage usage /*= VertexBufferUsage::Dynamic*/)
+	Ref<VertexBuffer> VertexBuffer::Create(uint32_t size /*= 0*/, BufferUsage usage /*= VertexBufferUsage::Dynamic*/)
 	{
 		switch (RendererAPI::Current())
 		{
 		case RendererAPIType::None:    return nullptr;
 		case RendererAPIType::OpenGL:  return Ref<OpenGLVertexBuffer>::Create(size, usage);
-		// case RendererAPIType::Vulkan: return Ref<VulkanVertexBuffer>::Create(size, usage); // TODO
+		case RendererAPIType::Vulkan:  return Ref<VulkanVertexBuffer>::Create(size, usage);
 		}
 		return nullptr;
 	}

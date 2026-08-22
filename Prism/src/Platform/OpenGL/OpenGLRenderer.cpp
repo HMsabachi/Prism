@@ -169,18 +169,14 @@ namespace Prism
 
     uint32_t OpenGLRenderer::FlatTexture(uint32_t set, uint32_t binding)
     {
-        if (s_Data->TextureUnitTier >= 32)
+
+        switch (set)
         {
-            if (set == Config::PRISM_SET_FRAME)       return Config::GL_TEX_BASE_FRAME + binding;
-            if (set == Config::PRISM_SET_RENDER_PASS) return Config::GL_TEX_BASE_RENDER_PASS + binding;
-            if (set == Config::PRISM_SET_MATERIAL)    return Config::GL_TEX_BASE_MATERIAL + binding;
+        case Config::PRISM_SET_FRAME:       return Config::GL_TEX_BASE_FRAME + binding;
+        case Config::PRISM_SET_RENDER_PASS: return Config::GL_TEX_BASE_RENDER_PASS + binding;
+        case Config::PRISM_SET_MATERIAL:    return Config::GL_TEX_BASE_MATERIAL + binding;
         }
-        else
-        {
-            if (set == Config::PRISM_SET_FRAME)       return Config::GL_TEX16_BASE_FRAME + binding;
-            if (set == Config::PRISM_SET_RENDER_PASS) return Config::GL_TEX16_BASE_RENDER_PASS + binding;
-            if (set == Config::PRISM_SET_MATERIAL)    return Config::GL_TEX16_BASE_MATERIAL + binding;
-        }
+        
         PR_CORE_ASSERT(false, "FlatTexture: invalid set");
         return 0;
     }

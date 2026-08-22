@@ -3,6 +3,7 @@
 #include "../Renderer.h"
 
 #include "Platform/OpenGL/Buffer/OpenGLUniformBuffer.h"
+#include "Platform/Vulkan/VulkanUniformBuffer.h"
 
 namespace Prism {
 
@@ -12,7 +13,7 @@ namespace Prism {
 		{
 		case RendererAPIType::None:    return nullptr;
 		case RendererAPIType::OpenGL:  return Ref<OpenGLUniformBuffer>::Create(size);
-		// case RendererAPIType::Vulkan: return Ref<VulkanUniformBuffer>::Create(size); // TODO
+		case RendererAPIType::Vulkan:  return Ref<VulkanUniformBuffer>::Create(size);
 		}
 		return nullptr;
 	}

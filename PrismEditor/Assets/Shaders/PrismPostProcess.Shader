@@ -31,7 +31,7 @@ Shader "PostProcess/PrismPostProcess"
                     vec2 TexCoord;
                 } vs_Output;
 
-                void main()
+                void vert()
                 {
                     vec4 position = vec4(a_Position.xy, 1.0, 1.0);
                     gl_Position = position;
@@ -120,7 +120,7 @@ Shader "PostProcess/PrismPostProcess"
                     vec2 TexCoord;
                 } vs_Output;
 
-                void main()
+                void vert()
                 {
                     vec4 position = vec4(a_Position.xy, 0.0, 1.0);
                     gl_Position = position;
