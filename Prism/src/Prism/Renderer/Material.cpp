@@ -3,9 +3,25 @@
 #include "Prism/Asset/AssetManager.h"
 #include "Buffer/UniformBuffer.h"
 #include "Prism/Renderer/Texture.h"
+#include "Prism/Renderer/RendererAPI.h"
+
+#include "Platform/OpenGL/OpenGLMaterialBackend.h"
 
 namespace Prism
 {
+
+
+    Ref<MaterialBackend> MaterialBackend::Create(const WeakRef<Material> material)
+    {
+        switch (RendererAPI::Current())
+        {
+        case RendererAPIType::OpenGL: return Ref<OpenGLMaterialBackend>::Create(material);
+        // case RendererAPIType::Vulkan: return Ref<VulkanMaterialBackend>::Create(material);
+        }
+        PR_CORE_ASSERT(false, "Unknown RendererAPI!");
+        return nullptr;
+    }
+
 
     Ref<Material> Material::Create(AssetHandle shaderHandle)
     {
@@ -13,7 +29,7 @@ namespace Prism
     }
 
 
-    Ref<Prism::Material> Material::Create(const Ref<Material>& material)
+    Ref<Material> Material::Create(const Ref<Material>& material)
     {
         return Ref<Material>::Create(material);
     }
@@ -22,6 +38,7 @@ namespace Prism
         : m_Shader(AssetManager::GetAsset<PrismShader>(shaderHandle))
     {
         m_ReloadToken = m_Shader->AddShaderReloadedCallback(std::bind(&Material::OnShaderReloaded, this));
+        m_Backend = MaterialBackend::Create(this);
         AllocateStorage();
     }
 
@@ -30,13 +47,14 @@ namespace Prism
         : m_Shader(material->m_Shader)
     {
         m_ReloadToken = m_Shader->AddShaderReloadedCallback(std::bind(&Material::OnShaderReloaded, this));
+        m_Backend = MaterialBackend::Create(this);
         AllocateStorage();
 
         m_PropertyBuffer = material->m_PropertyBuffer;
         m_Textures = material->m_Textures;
         m_KeywordMask = material->m_KeywordMask;
         m_Name = material->m_Name;
-        m_Dirty = true;
+        m_DataDirty = true;
     }
 
     Material::~Material()
@@ -51,7 +69,7 @@ namespace Prism
         auto* uni = m_Shader->FindUniform(name);
         if (!uni) { PR_CORE_WARN("Material - uniform '{0}' not found", name); return; }
         m_PropertyBuffer.Write((const byte*)data, size, uni->BufferOffset);
-        m_Dirty = true;
+        m_DataDirty = true;
     }
 
     void Material::AllocateStorage()
@@ -89,8 +107,8 @@ namespace Prism
             }
         }
         m_Uniforms = m_Shader->GetUniforms();
-        m_Dirty = true;
-        m_UniformBuffer = UniformBuffer::Create((uint32_t)m_PropertyBuffer.Size);
+        m_DataDirty = true;
+        m_Backend->OnAllocate();
     }
 
     void Material::OnShaderReloaded()
@@ -165,6 +183,7 @@ namespace Prism
         auto* uni = m_Shader->FindUniform(name);
         if (!uni || uni->TextureSlot < 0) { PR_CORE_WARN("Material::SetTexture - '{0}' not found", name); return; }
         m_Textures[(uint32_t)uni->TextureSlot] = texture;
+        m_TexturesDirty = true;
     }
 
     void Material::SetTexture(const std::string& name, const Ref<TextureCube>& texture)
@@ -172,6 +191,7 @@ namespace Prism
         auto* uni = m_Shader->FindUniform(name);
         if (!uni || uni->TextureSlot < 0) { PR_CORE_WARN("Material::SetTexture - '{0}' not found", name); return; }
         m_Textures[(uint32_t)uni->TextureSlot] = texture;
+        m_TexturesDirty = true;
     }
 
 #pragma endregion
@@ -266,11 +286,6 @@ namespace Prism
         return it->second.As<TextureCube>();
     }
 
-    bool Material::HasProperty(const std::string& name) const
-    {
-        return m_Shader->FindUniform(name) != nullptr;
-    }
-
 #pragma endregion
 
     Ref<Shader> Material::GetProgram(uint32_t passIndex) const
@@ -278,14 +293,6 @@ namespace Prism
         return m_Shader->GetPassProgram(passIndex, m_KeywordMask);
     }
 
-
-    const Ref<Prism::UniformBuffer>& Material::RT_GetUniformBuffer() const
-    {
-        if (!m_Dirty) return m_UniformBuffer;
-        m_UniformBuffer->RT_SetData(m_PropertyBuffer);
-        m_Dirty = false;
-        return m_UniformBuffer;
-    }
 
     void Material::SetKeyword(const std::string& name, bool enabled)
     {

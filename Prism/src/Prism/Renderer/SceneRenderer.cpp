@@ -127,7 +127,7 @@ namespace Prism
         FramebufferSpecification geoFBSpec;
         geoFBSpec.Width = viewportWidth;
         geoFBSpec.Height = viewportHeight;
-        geoFBSpec.Attachments = { ImageFormat::RGBA16F, ImageFormat::RGBA16F, ImageFormat::Depth };
+        geoFBSpec.Attachments = { ImageFormat::RGBA16F, ImageFormat::RGBA16F, ImageFormat::RGBA16F, ImageFormat::Depth };
         geoFBSpec.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
         RenderPassSpecification geoRPSpec;
         geoRPSpec.TargetFramebuffer = Framebuffer::Create(geoFBSpec);
@@ -213,11 +213,13 @@ namespace Prism
         {
             Ref<Image2D> colorImage = m_GeoPass->GetOutput(0);
             Ref<Image2D> bloomImage = m_GeoPass->GetOutput(1);
-            Ref<Image2D> depthImage = m_GeoPass->GetDepthOutput();
+            Ref<Image2D> normalImage = m_GeoPass->GetOutput(2);
+            // Ref<Image2D> depthImage = m_GeoPass->GetDepthOutput();
             float size = ImGui::GetContentRegionAvail().x;
             UI::Image(colorImage, { size, size }, { 0, 1 }, { 1, 0 });
             UI::Image(bloomImage, { size, size }, { 0, 1 }, { 1, 0 });
-            UI::Image(depthImage, { size, size }, { 0, 1 }, { 1, 0 });
+            UI::Image(normalImage, { size, size }, { 0, 1 }, { 1, 0 });
+            // UI::Image(depthImage, { size, size }, { 0, 1 }, { 1, 0 });
             UI::EndTreeNode();
         }
         if (UI::BeginTreeNode(TR("Bloom Blur Pass"), true))

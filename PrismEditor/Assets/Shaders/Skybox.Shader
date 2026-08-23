@@ -21,15 +21,14 @@ Shader "Custom/Skybox"
 
         Pass
         {
-            Tags { "Queue" = "Background" "RenderType" = "Opaque" }
+            Tags { "Queue" = "Background" "LightMode" = "ForwardBase" }
             Name "ForwardBase"
             GLSL
             {
                 #include "PrismEngine.glsl"
+                #include "Pass/GeometryPass.glsl"
 
                 attribute vec3 a_Position : POSITION;
-
-                layout(location = 0) out vec4 FragColor;
 
                 varying VertexOutput
                 {
@@ -47,6 +46,8 @@ Shader "Custom/Skybox"
                 {
                     vec3 color = textureLod(u_Texture, vs_Output.Position, u_TextureLod).rgb * u_SkyIntensity;
                     FragColor = vec4(color, 1.0);
+                    BloomColor = vec4(0.0, 0.0, 0.0, 1.0);
+                    NormalColor = vec4(0.0, 0.0, 0.0, 0.0);
                 }
             }
         }

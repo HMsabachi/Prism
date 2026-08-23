@@ -16,6 +16,7 @@
 #include "Prism/ShaderCompiler/PrismBindings.h"
 #include "OpenGLShader.h"
 #include "OpenGLTexture.h"
+#include "OpenGLMaterialBackend.h"
 #include "OpenGLImage.h"
 #include "OpenGLPipelineStateCache.h"
 #include "Buffer/OpenGLUniformBuffer.h"
@@ -427,9 +428,8 @@ namespace Prism
                 else
                     tex.As<OpenGLTextureCube>()->GetImage().As<OpenGLImageCube>()->RT_Bind(unit);
             }
-            uint32_t point = Config::GL_UBO_BASE_MATERIAL;
-            const Ref<UniformBuffer>& ubo = material->RT_GetUniformBuffer();
-            glBindBufferBase(GL_UNIFORM_BUFFER, point, ubo.As<OpenGLUniformBuffer>()->GetRendererID());
+            const Ref<UniformBuffer>& ubo = material->RT_GetBackend().As<OpenGLMaterialBackend>()->RT_GetUniformBuffer();
+            glBindBufferBase(GL_UNIFORM_BUFFER, Config::GL_UBO_BASE_MATERIAL, ubo.As<OpenGLUniformBuffer>()->GetRendererID());
         }
     }
 

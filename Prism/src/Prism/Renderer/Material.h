@@ -14,6 +14,16 @@ namespace Prism
     class TextureCube;
     class UniformBuffer;
 
+    class MaterialBackend : public RefCounted
+    {
+    public:
+        virtual ~MaterialBackend() = default;
+        virtual void OnAllocate() = 0;
+    private:
+        static Ref<MaterialBackend> Create(const WeakRef<Material> material);
+        friend class Material;
+    };
+
     class PRISM_API Material : public RefCounted
     {
     public:
@@ -58,16 +68,14 @@ namespace Prism
         Ref<Texture2D> GetTexture2D(const std::string& name) const;
         Ref<TextureCube> GetTextureCube(const std::string& name) const;
 #pragma endregion
-        bool HasProperty(const std::string& name) const;
         // Keywords
         void SetKeyword(const std::string& name, bool enabled);
         bool IsKeywordEnabled(const std::string& name) const;
-        KeywordMask GetKeywordMask() const { return m_KeywordMask; }
 
+        // 供后端渲染线程使用
         Ref<Shader> GetProgram(uint32_t passIndex = 0) const;
-        uint32_t GetPassCount() const { return m_Shader->GetPassCount(); }
 
-        const Ref<UniformBuffer>& RT_GetUniformBuffer() const;
+        Ref<MaterialBackend>& RT_GetBackend() const { return m_Backend; }
         const std::map<uint32_t, Ref<Texture>>& GetTextures() const { return m_Textures; }
 
     private:
@@ -78,11 +86,15 @@ namespace Prism
         Ref<PrismShader> m_Shader;
         std::string m_Name;
         Buffer m_PropertyBuffer;
-        mutable bool m_Dirty = true;
-        mutable Ref<UniformBuffer> m_UniformBuffer;
+        mutable bool m_DataDirty = true;
+        mutable bool m_TexturesDirty = true;
+        mutable Ref<MaterialBackend> m_Backend;
         std::map<uint32_t, Ref<Texture>> m_Textures;
         std::vector<PrismShaderCompiler::AST::ShaderUniform> m_Uniforms;
         KeywordMask m_KeywordMask = 0;
         ShaderReloadedToken m_ReloadToken = 0;
+
+    friend class OpenGLMaterialBackend;
+    friend class VulkanMaterialBackend;
     };
 }

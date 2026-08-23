@@ -130,7 +130,7 @@ Shader "Hidden/EditorDebug"
         Pass
         {
             Name "Collider"
-            Tags { "LightMode" = "Always" }
+            Tags { "LightMode" = "ForwardBase" }
             RenderCommand
             {
                 Cull Off
@@ -143,10 +143,9 @@ Shader "Hidden/EditorDebug"
             GLSL
             {
                 #include "PrismEngine.glsl"
+                #include "Pass/GeometryPass.glsl"
 
                 attribute vec3 a_Position : POSITION;
-
-                layout(location = 0) out vec4 FragColor;
 
                 void main()
                 {
@@ -156,6 +155,8 @@ Shader "Hidden/EditorDebug"
                 void frag()
                 {
                     FragColor = u_ColliderColor;
+                    BloomColor = vec4(0.0);
+                    NormalColor = vec4(0.0);
                 }
             }
         }

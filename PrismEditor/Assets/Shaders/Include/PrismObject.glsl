@@ -3,22 +3,14 @@
 #ifndef PRISM_OBJECT
 #define PRISM_OBJECT
 
-const int PRISM_MAX_BONES = 128;          // 单 mesh 骨骼上限(局部索引范围)
-
-#if PRISM_BACKEND_OPENGL
-#define PRISM_OBJECT_LAYOUT layout(std430, binding = PRISM_BINDING_OBJECT)
-#define PRISM_ANIM_LAYOUT layout(std430, binding = PRISM_BINDING_ANIMATION)
-#elif PRISM_BACKEND_VULKAN
-#define PRISM_OBJECT_LAYOUT layout(std430, set = PRISM_SET_OBJECT, binding = PRISM_BINDING_OBJECT)
-#define PRISM_ANIM_LAYOUT layout(std430, set = PRISM_SET_OBJECT, binding = PRISM_BINDING_ANIMATION)
-#endif
+const int PRISM_MAX_BONES = 128;
 
 struct PrismObjectData
 {
     mat4 ObjectToWorld;
     mat4 PreviousModel;
     vec4 Reserved;
-    int  AnimationOffset; // 骨骼大数组起始索引
+    int  AnimationOffset;
 };
 
 PRISM_GOLBAL_STORAGE_BUFFER(1) buffer PrismObjects
@@ -31,7 +23,7 @@ PRISM_GOLBAL_STORAGE_BUFFER(2) buffer PrismAnimation
     mat4 Prism_AllBones[];
 };
 
-// drawIndex 传输通道
+// drawIndex
 #if PRISM_BACKEND_OPENGL
 layout(location = 0) uniform int Prism_DrawIndex;
 #elif PRISM_BACKEND_VULKAN
@@ -43,7 +35,5 @@ layout(push_constant) uniform PrismDrawIndexPC { int Prism_DrawIndex; };
 #define Prism_ObjectReserved (Prism_Objects[Prism_DrawIndex].Reserved)
 #define Prism_GetBoneMatrix(i) (Prism_AllBones[Prism_Objects[Prism_DrawIndex].AnimationOffset + (i)])
 
-#undef PRISM_OBJECT_LAYOUT
-#undef PRISM_ANIM_LAYOUT
 
 #endif
