@@ -72,21 +72,25 @@ namespace Prism {
     {
         for (const auto& [binding, image] : m_Image2Ds)
         {
+            if (!image) continue;
             uint32_t unit = Config::GL_TEX_BASE_RENDER_PASS + binding;
             glBindTextureUnit(unit, image->GetRendererID());
         }
         for (const auto& [binding, texture] : m_ImageCubes)
         {
+            if (!texture) continue;
             uint32_t unit = Config::GL_TEX_BASE_RENDER_PASS + binding;
             glBindTextureUnit(unit, texture->GetRendererID());
         }
         for (const auto& [binding, ubo] : m_UniformBuffers)
         {
+            if (!ubo) continue;
             uint32_t point = Config::GL_UBO_BASE_RENDER_PASS_NEW + binding;
             glBindBufferBase(GL_UNIFORM_BUFFER, point, ubo->GetRendererID());
         }
         for (const auto& [binding, ssbo] : m_ShaderStorageBuffers)
         {
+            if (!ssbo) continue;
             uint32_t point = Config::GL_UBO_BASE_RENDER_PASS_NEW + binding;
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, point, ssbo->GetRendererID());
         }

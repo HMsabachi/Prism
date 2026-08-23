@@ -136,6 +136,8 @@ namespace Prism
         m_GeoPass->SetInput(RENDER_PASS_INPUT_BINDING_GEOMETRY_SHADOW_MAP_1, m_ShadowPasses[1]->GetDepthOutput());
         m_GeoPass->SetInput(RENDER_PASS_INPUT_BINDING_GEOMETRY_SHADOW_MAP_2, m_ShadowPasses[2]->GetDepthOutput());
         m_GeoPass->SetInput(RENDER_PASS_INPUT_BINDING_GEOMETRY_SHADOW_MAP_3, m_ShadowPasses[3]->GetDepthOutput());
+        m_GeoPass->SetInput(RENDER_PASS_INPUT_BINDING_GEOMETRY_ENV_RADIANCE, Ref<ImageCube>(nullptr));
+        m_GeoPass->SetInput(RENDER_PASS_INPUT_BINDING_GEOMETRY_ENV_IRRADIANCE, Ref<ImageCube>(nullptr));
         m_GeoPass->SetInput(RENDER_PASS_INPUT_BINDING_GEOMETRY_ENV_BRDF_LUT, m_BRDFLUT->GetImage());
         m_GeoPass->Bake();
 
@@ -162,6 +164,7 @@ namespace Prism
         bloomBlurRPSpec.TargetFramebuffer = Framebuffer::Create(bloomBlurFBSpec);
         m_BloomBlurPass[1] = RenderPass::Create(bloomBlurRPSpec);
         m_BloomBlurPass[0]->SetInput(RENDER_PASS_INPUT_BINDING_BLOOM_BLUR_INPUT, m_GeoPass->GetOutput(1));
+        m_BloomBlurPass[1]->SetInput(RENDER_PASS_INPUT_BINDING_BLOOM_BLUR_INPUT, m_GeoPass->GetOutput(1));
         m_BloomBlurPass[0]->Bake();
         m_BloomBlurPass[1]->Bake();
 

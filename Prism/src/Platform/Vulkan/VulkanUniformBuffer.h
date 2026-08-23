@@ -21,7 +21,7 @@ namespace Prism
 
         void RT_Create();
 
-        VkDescriptorBufferInfo GetDescriptorBufferInfo() const;
+        VkDescriptorBufferInfo GetDescriptorBufferInfo(uint32_t slotIndex) const;
     private:
         void Release();
         uint32_t CurrentSlotIndex() const;

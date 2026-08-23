@@ -1,9 +1,9 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "VulkanMaterialBackend.h"
 
-#include "Buffer/VulkanUniformBuffer.h"
-#include "Platform/Vulkan/VulkanContext.h"
-#include "Platform/Vulkan/VulkanTexture.h"
+#include "VulkanUniformBuffer.h"
+#include "VulkanContext.h"
+#include "VulkanTexture.h"
 #include "Prism/Renderer/Texture.h"
 
 namespace Prism
@@ -24,10 +24,8 @@ namespace Prism
 
     void VulkanMaterialBackend::OnAllocate()
     {
-        auto material = m_Material.lock();
-        PR_CORE_ASSERT(material);
 
-        m_UniformBuffer = Ref<VulkanUniformBuffer>::Create((uint32_t)material->m_PropertyBuffer.GetSize());
+        m_UniformBuffer = Ref<VulkanUniformBuffer>::Create((uint32_t)m_Material->m_PropertyBuffer.GetSize());
 
         auto device = VulkanContext::GetCurrentDevice();
         VkDevice vkDevice = device->GetVulkanDevice();
@@ -51,7 +49,7 @@ namespace Prism
         uboBinding.stageFlags = VK_SHADER_STAGE_ALL;
         bindings.push_back(uboBinding);
 
-        for (auto& texturePair : material->m_Textures)
+        for (auto& texturePair : m_Material->m_Textures)
         {
             VkDescriptorSetLayoutBinding textureBinding{};
             textureBinding.binding = texturePair.first + 1;
@@ -69,7 +67,7 @@ namespace Prism
 
         std::vector<VkDescriptorPoolSize> poolSizes;
         poolSizes.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VulkanFramesInFlight });
-        poolSizes.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, (uint32_t)material->m_Textures.size() * VulkanFramesInFlight });
+        poolSizes.push_back({ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, (uint32_t)m_Material->m_Textures.size() * VulkanFramesInFlight });
 
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -88,21 +86,19 @@ namespace Prism
         allocInfo.pSetLayouts = layouts.data();
         VK_CHECK_RESULT(vkAllocateDescriptorSets(vkDevice, &allocInfo, m_DescriptorSets));
 
-        material->m_DataDirty = true;
-        material->m_TexturesDirty = true;
+        m_Material->m_DataDirty = true;
+        m_Material->m_TexturesDirty = true;
     }
 
     VkDescriptorSet VulkanMaterialBackend::RT_GetDescriptorSet() const
     {
-        auto material = m_Material.lock();
-        PR_CORE_ASSERT(material);
 
         auto device = VulkanContext::GetCurrentDevice();
         VkDevice vkDevice = device->GetVulkanDevice();
 
-        if (material->m_DataDirty)
+        if (m_Material->m_DataDirty)
         {
-            VkDescriptorBufferInfo bufferInfo = m_UniformBuffer->GetDescriptorBufferInfo();
+            VkDescriptorBufferInfo bufferInfo = m_UniformBuffer->GetDescriptorBufferInfo(0);
             std::array<VkWriteDescriptorSet, VulkanFramesInFlight> writes{};
             for (uint32_t i = 0; i < VulkanFramesInFlight; i++)
             {
@@ -115,17 +111,17 @@ namespace Prism
             }
 
             vkUpdateDescriptorSets(vkDevice, VulkanFramesInFlight, writes.data(), 0, nullptr);
-            material->m_DataDirty = false;
+            m_Material->m_DataDirty = false;
         }
 
-        if (material->m_TexturesDirty)
+        if (m_Material->m_TexturesDirty)
         {
             std::vector<VkDescriptorImageInfo> imageInfos;
             std::vector<VkWriteDescriptorSet> writes;
-            imageInfos.reserve(material->m_Textures.size());
-            writes.reserve(material->m_Textures.size() * VulkanFramesInFlight);
+            imageInfos.reserve(m_Material->m_Textures.size());
+            writes.reserve(m_Material->m_Textures.size() * VulkanFramesInFlight);
 
-            for (auto& texturePair : material->m_Textures)
+            for (auto& texturePair : m_Material->m_Textures)
             {
                 VkDescriptorImageInfo imageInfo{};
                 imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -154,7 +150,7 @@ namespace Prism
 
             if (!writes.empty())
                 vkUpdateDescriptorSets(vkDevice, (uint32_t)writes.size(), writes.data(), 0, nullptr);
-            material->m_TexturesDirty = false;
+            m_Material->m_TexturesDirty = false;
         }
 
         return m_DescriptorSets[0];

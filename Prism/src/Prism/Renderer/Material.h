@@ -13,7 +13,6 @@ namespace Prism
     class Texture2D;
     class TextureCube;
     class UniformBuffer;
-    class VulkanDescriptorSetManager;
 
     class MaterialBackend : public RefCounted
     {
@@ -75,7 +74,6 @@ namespace Prism
 
         // 供后端渲染线程使用
         Ref<Shader> GetProgram(uint32_t passIndex = 0) const;
-        VkDescriptorSet RT_GetDescriptorSet() const;
 
         Ref<MaterialBackend>& RT_GetBackend() const { return m_Backend; }
         const std::map<uint32_t, Ref<Texture>>& GetTextures() const { return m_Textures; }
@@ -91,7 +89,6 @@ namespace Prism
         mutable bool m_DataDirty = true;
         mutable bool m_TexturesDirty = true;
         mutable Ref<MaterialBackend> m_Backend;
-        mutable Ref<VulkanDescriptorSetManager> m_DescriptorSetManager;
         std::map<uint32_t, Ref<Texture>> m_Textures;
         std::vector<PrismShaderCompiler::AST::ShaderUniform> m_Uniforms;
         KeywordMask m_KeywordMask = 0;
