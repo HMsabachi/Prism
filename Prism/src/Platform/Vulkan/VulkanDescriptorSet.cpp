@@ -2,6 +2,8 @@
 #include "VulkanDescriptorSet.h"
 #include "VulkanContext.h"
 
+#include <mutex>
+
 #include "VulkanUniformBuffer.h"
 #include "VulkanImage.h"
 #include "VulkanShaderStorageBuffer.h"
@@ -11,21 +13,125 @@
 
 namespace Prism
 {
+    namespace
+    {
+        struct DescriptorPoolBucket
+        {
+            VkDescriptorPool Pool = VK_NULL_HANDLE;
+            uint32_t UsedSets = 0;
+        };
+        constexpr uint32_t s_DescriptorPoolSetCapacity = 256;
+        constexpr uint32_t s_MaxBindingsPerSet = 16;
+        std::mutex s_DescriptorPoolMutex;
+        std::vector<DescriptorPoolBucket> s_DescriptorPools;
+    }
 
+    VkDescriptorPool VulkanGlobalDescriptorPool::Allocate(VkDescriptorSetLayout layout, uint32_t setCount, VkDescriptorSet* outSets)
+    {
+
+        DescriptorPoolBucket* bucket = nullptr;
+        for (auto it = s_DescriptorPools.rbegin(); it != s_DescriptorPools.rend(); ++it)
+        {
+            if (it->UsedSets + setCount <= s_DescriptorPoolSetCapacity)
+            {
+                bucket = &(*it);
+                break;
+            }
+        }
+        if (!bucket)
+        {
+            VkDescriptorPoolSize poolSizes[] =
+            {
+                { VK_DESCRIPTOR_TYPE_SAMPLER, s_DescriptorPoolSetCapacity * s_MaxBindingsPerSet },
+                { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, s_DescriptorPoolSetCapacity * s_MaxBindingsPerSet },
+                { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, s_DescriptorPoolSetCapacity * s_MaxBindingsPerSet },
+                { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, s_DescriptorPoolSetCapacity * s_MaxBindingsPerSet },
+                { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, s_DescriptorPoolSetCapacity * s_MaxBindingsPerSet },
+                { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, s_DescriptorPoolSetCapacity * s_MaxBindingsPerSet },
+                { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, s_DescriptorPoolSetCapacity * s_MaxBindingsPerSet },
+                { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, s_DescriptorPoolSetCapacity * s_MaxBindingsPerSet },
+                { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, s_DescriptorPoolSetCapacity * s_MaxBindingsPerSet },
+                { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, s_DescriptorPoolSetCapacity * s_MaxBindingsPerSet },
+                { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, s_DescriptorPoolSetCapacity * s_MaxBindingsPerSet }
+            };
+            VkDescriptorPoolCreateInfo poolInfo{};
+            poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+            poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+            poolInfo.maxSets = s_DescriptorPoolSetCapacity;
+            poolInfo.poolSizeCount = 11;
+            poolInfo.pPoolSizes = poolSizes;
+            VkDescriptorPool pool = VK_NULL_HANDLE;
+            VK_CHECK_RESULT(vkCreateDescriptorPool(VulkanContext::GetCurrentDevice()->GetVulkanDevice(), &poolInfo, nullptr, &pool));
+            s_DescriptorPools.push_back({ pool, 0 });
+            bucket = &s_DescriptorPools.back();
+        }
+        std::vector<VkDescriptorSetLayout> layouts(setCount, layout);
+        VkDescriptorSetAllocateInfo allocInfo{};
+        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        allocInfo.descriptorPool = bucket->Pool;
+        allocInfo.descriptorSetCount = setCount;
+        allocInfo.pSetLayouts = layouts.data();
+        std::scoped_lock lock(s_DescriptorPoolMutex);
+        VK_CHECK_RESULT(vkAllocateDescriptorSets(VulkanContext::GetCurrentDevice()->GetVulkanDevice(), &allocInfo, outSets));
+        bucket->UsedSets += setCount;
+        return bucket->Pool;
+    }
+
+    void VulkanGlobalDescriptorPool::Free(VkDescriptorPool pool, uint32_t setCount, const VkDescriptorSet* sets)
+    {
+        std::scoped_lock lock(s_DescriptorPoolMutex);
+
+        vkFreeDescriptorSets(VulkanContext::GetCurrentDevice()->GetVulkanDevice(), pool, setCount, sets);
+        for (auto& bucket : s_DescriptorPools)
+        {
+            if (bucket.Pool == pool)
+            {
+                PR_CORE_ASSERT(bucket.UsedSets >= setCount, "VulkanGlobalDescriptorPool::Free: set count underflow");
+                bucket.UsedSets -= setCount;
+                break;
+            }
+        }
+    }
+
+    void VulkanGlobalDescriptorPool::Shutdown()
+    {
+        std::scoped_lock lock(s_DescriptorPoolMutex);
+
+        if (!VulkanContext::GetCurrentDevice())
+            return;
+        VkDevice device = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
+        for (auto& bucket : s_DescriptorPools)
+        {
+            if (bucket.Pool)
+                vkDestroyDescriptorPool(device, bucket.Pool, nullptr);
+        }
+        s_DescriptorPools.clear();
+    }
 
     VulkanDescriptorSet::~VulkanDescriptorSet()
     {
-        auto descriptorPool = m_DescriptorPool;
-        auto descriptorSetLayout = m_DescriptorSetLayout;
-        Renderer::SubmitResourceFree([descriptorPool, descriptorSetLayout] {
-            auto device = VulkanContext::GetCurrentDevice();
-            PR_CORE_ASSERT(device, "VulkanDescriptorSet::~VulkanDescriptorSet: VulkanContext::GetCurrentDevice() returned nullptr");
-            if (descriptorPool)
-                vkDestroyDescriptorPool(device->GetVulkanDevice(), descriptorPool, nullptr);
-            if (descriptorSetLayout)
+        Reset();
+    }
+
+    void VulkanDescriptorSet::Reset()
+    {
+        if (m_SourcePool)
+        {
+            auto sourcePool = m_SourcePool;
+            auto descriptorSetLayout = m_DescriptorSetLayout;
+            auto descriptorSets = m_DescriptorSets;
+            Renderer::SubmitResourceFree([sourcePool, descriptorSetLayout, descriptorSets] {
+                auto device = VulkanContext::GetCurrentDevice();
+                PR_CORE_ASSERT(device, "VulkanDescriptorSet::Reset: VulkanContext::GetCurrentDevice() returned nullptr");
+                VulkanGlobalDescriptorPool::Free(sourcePool, VulkanFramesInFlight, descriptorSets.data());
                 vkDestroyDescriptorSetLayout(device->GetVulkanDevice(), descriptorSetLayout, nullptr);
-        });
-        
+            });
+        }
+        m_SourcePool = VK_NULL_HANDLE;
+        m_DescriptorSetLayout = VK_NULL_HANDLE;
+        m_DescriptorSets.fill(VK_NULL_HANDLE);
+        m_IsBaked = false;
+        m_Bindings.clear();
     }
 
     void VulkanDescriptorSet::SetInput(uint32_t binding, Ref<VulkanUniformBuffer> buffer)
@@ -64,29 +170,7 @@ namespace Prism
     {
         PR_CORE_ASSERT(!m_IsBaked, "VulkanDescriptorSet::Bake: Descriptor set is already baked!");
         m_IsBaked = true;
-        // Create Descriptor Pool
         VkDevice device = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
-        VkDescriptorPoolSize poolSizes[] =
-        {
-            { VK_DESCRIPTOR_TYPE_SAMPLER, 100 },
-            { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 100 },
-            { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 100 },
-            { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 100 },
-            { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 100 },
-            { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 100 },
-            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 100 },
-            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 100 },
-            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 100 },
-            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 100 },
-            { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 100 }
-        };
-        VkDescriptorPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-        poolInfo.maxSets = VulkanFramesInFlight;
-        poolInfo.poolSizeCount = 11;
-        poolInfo.pPoolSizes = poolSizes;
-        VK_CHECK_RESULT(vkCreateDescriptorPool(device, &poolInfo, nullptr, &m_DescriptorPool));
         StaticVector<VkDescriptorSetLayoutBinding, 16> bindings;
         for (auto& [binding, bd] : m_Bindings)
         {
@@ -117,14 +201,7 @@ namespace Prism
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
         layoutInfo.pBindings = bindings.data();
         VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &m_DescriptorSetLayout));
-        StaticVector<VkDescriptorSetLayout, VulkanFramesInFlight> layouts;
-        for (uint32_t i = 0; i < VulkanFramesInFlight; i++) layouts.emplace_back(m_DescriptorSetLayout);
-        VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = m_DescriptorPool;
-        allocInfo.descriptorSetCount = VulkanFramesInFlight;
-        allocInfo.pSetLayouts = layouts.data();
-        VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &allocInfo, m_DescriptorSets.data()));
+        m_SourcePool = VulkanGlobalDescriptorPool::Allocate(m_DescriptorSetLayout, VulkanFramesInFlight, m_DescriptorSets.data());
     }
 
     void VulkanDescriptorSet::RT_Prepare()
@@ -136,6 +213,7 @@ namespace Prism
             VkDescriptorImageInfo imageInfo;
             RenderResourceType type;
         };
+        PR_CORE_ASSERT(m_IsBaked);
         StaticVector<VkWriteDescriptorSet, 16> writes;
         StaticVector<ShouldWriteInfo, 16> shouldWrites;
         for (auto& [binding, bd] : m_Bindings)

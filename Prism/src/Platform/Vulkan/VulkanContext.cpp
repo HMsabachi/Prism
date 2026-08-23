@@ -9,6 +9,7 @@
 
 #include "Platform/Vulkan/Vulkan.h"
 #include "Platform/Vulkan/VulkanAllocator.h"
+#include "Platform/Vulkan/VulkanDescriptorSet.h"
 
 namespace Prism
 {
@@ -76,6 +77,7 @@ namespace Prism
             vkDestroyPipelineCache(m_Device->GetVulkanDevice(), m_PipelineCache, nullptr);
 
         VulkanAllocator::Shutdown();
+        VulkanGlobalDescriptorPool::Shutdown();
 
         m_Device->Destroy();
 
