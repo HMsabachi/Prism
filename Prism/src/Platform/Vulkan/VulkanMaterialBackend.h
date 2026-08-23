@@ -1,8 +1,12 @@
 ﻿#pragma once
 #include "Prism/Renderer/Material.h"
+#include "Platform/Vulkan/Vulkan.h"
 
 namespace Prism
 {
+    class VulkanUniformBuffer;
+    class Texture;
+
     class VulkanMaterialBackend : public MaterialBackend
     {
     public:
@@ -10,8 +14,13 @@ namespace Prism
         virtual ~VulkanMaterialBackend();
         virtual void OnAllocate() override;
 
-        // 这里可以Get Material DescriptorSet 如果Material 是 Dirty 则重新分配 DescriptorSet 并更新 UniformBuffer 和 Texture Bindings
+        const Ref<VulkanUniformBuffer>& RT_GetUniformBuffer() const { return m_UniformBuffer; }
+        VkDescriptorSet RT_GetDescriptorSet() const;
     private:
+        mutable Ref<VulkanUniformBuffer> m_UniformBuffer;
+        mutable VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;
+        mutable VkDescriptorSetLayout m_DescriptorSetLayout = VK_NULL_HANDLE;
+        mutable VkDescriptorSet m_DescriptorSets[VulkanFramesInFlight] = {};
         WeakRef<Material> m_Material;
     };
 }

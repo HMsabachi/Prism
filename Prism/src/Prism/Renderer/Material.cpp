@@ -6,6 +6,8 @@
 #include "Prism/Renderer/RendererAPI.h"
 
 #include "Platform/OpenGL/OpenGLMaterialBackend.h"
+#include "Platform/Vulkan/VulkanMaterialBackend.h"
+#include "Platform/Vulkan/VulkanDescriptorSetManager.h"
 
 namespace Prism
 {
@@ -16,7 +18,7 @@ namespace Prism
         switch (RendererAPI::Current())
         {
         case RendererAPIType::OpenGL: return Ref<OpenGLMaterialBackend>::Create(material);
-        // case RendererAPIType::Vulkan: return Ref<VulkanMaterialBackend>::Create(material);
+        case RendererAPIType::Vulkan: return Ref<VulkanMaterialBackend>::Create(material);
         }
         PR_CORE_ASSERT(false, "Unknown RendererAPI!");
         return nullptr;
@@ -39,6 +41,7 @@ namespace Prism
     {
         m_ReloadToken = m_Shader->AddShaderReloadedCallback(std::bind(&Material::OnShaderReloaded, this));
         m_Backend = MaterialBackend::Create(this);
+        m_DescriptorSetManager = Ref<VulkanDescriptorSetManager>::Create(1, VulkanFramesInFlight);
         AllocateStorage();
     }
 
@@ -48,6 +51,7 @@ namespace Prism
     {
         m_ReloadToken = m_Shader->AddShaderReloadedCallback(std::bind(&Material::OnShaderReloaded, this));
         m_Backend = MaterialBackend::Create(this);
+        m_DescriptorSetManager = Ref<VulkanDescriptorSetManager>::Create(1, VulkanFramesInFlight);
         AllocateStorage();
 
         m_PropertyBuffer = material->m_PropertyBuffer;
@@ -55,6 +59,11 @@ namespace Prism
         m_KeywordMask = material->m_KeywordMask;
         m_Name = material->m_Name;
         m_DataDirty = true;
+    }
+
+    VkDescriptorSet Material::RT_GetDescriptorSet() const
+    {
+        return nullptr;
     }
 
     Material::~Material()
