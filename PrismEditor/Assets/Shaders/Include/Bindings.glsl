@@ -3,8 +3,7 @@
 
 #if PRISM_BACKEND_OPENGL
 
-// OpenGL: 4 个独立编号空间(UBO/SSBO/Texture/Image),layout(binding=物理号)
-// UBO 空间(GL_UNIFORM_BUFFER)
+// UBO 空间
 #   define PRISM_SET_FRAME        0
 #   define PRISM_SET_RENDER_PASS  1
 #   define PRISM_SET_OBJECT       2

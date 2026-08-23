@@ -95,7 +95,7 @@ namespace Prism
         // TODO: GPU 回读路径待定
     }
 
-    VkDescriptorBufferInfo VulkanShaderStorageBuffer::GetDescriptorBufferInfo(uint32_t slotIndex) const
+    VkDescriptorBufferInfo VulkanShaderStorageBuffer::GetDescriptor(uint32_t slotIndex) const
     {
         PR_CORE_ASSERT(slotIndex < VulkanFramesInFlight, "Invalid slot index for shader storage buffer descriptor info!");
         VkDescriptorBufferInfo info{};

@@ -98,7 +98,7 @@ namespace Prism
 
         if (m_Material->m_DataDirty)
         {
-            VkDescriptorBufferInfo bufferInfo = m_UniformBuffer->GetDescriptorBufferInfo(0);
+            VkDescriptorBufferInfo bufferInfo = m_UniformBuffer->GetDescriptor(0);
             std::array<VkWriteDescriptorSet, VulkanFramesInFlight> writes{};
             for (uint32_t i = 0; i < VulkanFramesInFlight; i++)
             {

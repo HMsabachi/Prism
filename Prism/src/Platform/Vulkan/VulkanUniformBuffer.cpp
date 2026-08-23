@@ -99,7 +99,7 @@ namespace Prism
         memcpy(m_Mapped[slot] + offset, data, size);
     }
 
-    VkDescriptorBufferInfo VulkanUniformBuffer::GetDescriptorBufferInfo(uint32_t slotIndex) const
+    VkDescriptorBufferInfo VulkanUniformBuffer::GetDescriptor(uint32_t slotIndex) const
     {
         PR_CORE_ASSERT(slotIndex < VulkanFramesInFlight, "Invalid slot index for uniform buffer descriptor info!");
         VkDescriptorBufferInfo info{};

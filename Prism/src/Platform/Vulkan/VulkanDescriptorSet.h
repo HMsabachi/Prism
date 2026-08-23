@@ -28,7 +28,7 @@ namespace Prism
         {
             RenderResourceType Type = RenderResourceType::None;
             Ref<RefCounted> Resource;
-            void* NativeHandle = nullptr; // Vulkan native handle (VkBuffer, VkImageView, etc.)
+            std::array<void*, VulkanFramesInFlight> NativeHandle{ nullptr };
         };
 
     public:
@@ -43,8 +43,7 @@ namespace Prism
         void Bake();
         void RT_Prepare();
 
-        VkDescriptorSet GetDescriptorSet() const;
-
+        VkDescriptorSet RT_GetDescriptorSet() const { return m_DescriptorSets[CurrentSlotIndex()]; };
     private:
         uint32_t CurrentSlotIndex() const;
     private:
@@ -52,6 +51,6 @@ namespace Prism
         std::array<VkDescriptorSet, VulkanFramesInFlight> m_DescriptorSets{ VK_NULL_HANDLE };
         VkDescriptorPool m_DescriptorPool = VK_NULL_HANDLE;
         VkDescriptorSetLayout m_DescriptorSetLayout = VK_NULL_HANDLE;
-        bool m_Dirty = true;
+        bool m_IsBaked = false;
     };
 }
