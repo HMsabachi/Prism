@@ -1,8 +1,6 @@
 ﻿#pragma once
 #include "Prism/Renderer/RenderPass.h"
 
-#include "Prism/Utilities/StaticVector.h"
-
 namespace Prism {
     class OpenGLImage2D;
     class OpenGLImageCube;

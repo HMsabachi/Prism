@@ -23,12 +23,12 @@ namespace Prism
         constexpr uint32_t s_DescriptorPoolSetCapacity = 256;
         constexpr uint32_t s_MaxBindingsPerSet = 16;
         std::mutex s_DescriptorPoolMutex;
-        std::vector<DescriptorPoolBucket> s_DescriptorPools;
+        StaticVector<DescriptorPoolBucket, 10> s_DescriptorPools;
     }
 
     VkDescriptorPool VulkanGlobalDescriptorPool::Allocate(VkDescriptorSetLayout layout, uint32_t setCount, VkDescriptorSet* outSets)
     {
-
+        std::scoped_lock lock(s_DescriptorPoolMutex);
         DescriptorPoolBucket* bucket = nullptr;
         for (auto it = s_DescriptorPools.rbegin(); it != s_DescriptorPools.rend(); ++it)
         {
@@ -71,7 +71,6 @@ namespace Prism
         allocInfo.descriptorPool = bucket->Pool;
         allocInfo.descriptorSetCount = setCount;
         allocInfo.pSetLayouts = layouts.data();
-        std::scoped_lock lock(s_DescriptorPoolMutex);
         VK_CHECK_RESULT(vkAllocateDescriptorSets(VulkanContext::GetCurrentDevice()->GetVulkanDevice(), &allocInfo, outSets));
         bucket->UsedSets += setCount;
         return bucket->Pool;

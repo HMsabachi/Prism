@@ -1,15 +1,17 @@
-#include "prpch.h"
-#include "Platform/Vulkan/VulkanRenderer.h"
+﻿#include "prpch.h"
+#include "VulkanRenderer.h"
 
-#include "Platform/Vulkan/VulkanContext.h"
-#include "Platform/Vulkan/VulkanSwapChain.h"
+#include "VulkanContext.h"
+#include "VulkanSwapChain.h"
+#include "VulkanDescriptorSet.h"
+#include "VulkanImage.h"
+#include "VulkanMaterialBackend.h"
+#include "VulkanUniformBuffer.h"
+#include "VulkanShaderStorageBuffer.h"
+#include "VulkanVertexBuffer.h"
+#include "VulkanIndexBuffer.h"
 
 #include "Prism/Renderer/Renderer.h"
-#include "Prism/Renderer/Buffer/VertexBuffer.h"
-#include "Prism/Renderer/Buffer/IndexBuffer.h"
-#include "Prism/Renderer/Buffer/UniformBuffer.h"
-#include "Prism/Renderer/Buffer/ShaderStorageBuffer.h"
-#include "Prism/Renderer/Image.h"
 
 #include <glm/glm.hpp>
 #include <map>
@@ -23,14 +25,11 @@ namespace Prism
 
         VkCommandBuffer ActiveCommandBuffer = nullptr;
 
-        Ref<VertexBuffer> FullscreenQuadVB;
-        Ref<IndexBuffer> FullscreenQuadIB;
+        Ref<VulkanVertexBuffer> FullscreenQuadVB;
+        Ref<VulkanIndexBuffer> FullscreenQuadIB;
 
-        // 绑定体系 v2 全局层（set 0）资源池：SetGlobal* 在 RT 入池，
-        // S3/S4 的 bake 按 PrismBindings 固定布局为每帧槽写 set 0 描述符并随 pass set 绑定。
-        std::map<uint32_t, Ref<UniformBuffer>> GlobalUniformBuffers;
-        std::map<uint32_t, Ref<ShaderStorageBuffer>> GlobalShaderStorageBuffers;
-        std::map<uint32_t, Ref<Image>> GlobalTextures;
+
+        VulkanDescriptorSet GlobalDescriptorSet;
     };
 
     static VulkanRendererData* s_Data = nullptr;
@@ -97,14 +96,14 @@ namespace Prism
             { { x + width, y + height, 0.1f }, { 1.0f, 1.0f } },
             { { x,         y + height, 0.1f }, { 0.0f, 1.0f } },
         };
-        s_Data->FullscreenQuadVB = VertexBuffer::Create(data, 4 * sizeof(QuadVertex));
+        s_Data->FullscreenQuadVB = VertexBuffer::Create(data, 4 * sizeof(QuadVertex)).As<VulkanVertexBuffer>();
         VertexBufferLayout layout = {
             { ShaderDataType::Float3, "a_Position",  VertexSemantic::Position },
             { ShaderDataType::Float2, "a_TexCoord",  VertexSemantic::TexCoord0 }
         };
         s_Data->FullscreenQuadVB->SetLayout(layout);
         uint32_t indices[6] = { 0, 1, 2, 2, 3, 0 };
-        s_Data->FullscreenQuadIB = IndexBuffer::Create(indices, 6 * sizeof(uint32_t));
+        s_Data->FullscreenQuadIB = IndexBuffer::Create(indices, 6 * sizeof(uint32_t)).As<VulkanIndexBuffer>();
     }
 
     void VulkanRenderer::Shutdown()
@@ -157,26 +156,20 @@ namespace Prism
 
     void VulkanRenderer::SetGlobalUniformBuffer(uint32_t binding, Ref<UniformBuffer> ubo)
     {
-        Renderer::Submit([binding, ubo]() mutable
-        {
-            s_Data->GlobalUniformBuffers[binding] = ubo;
-        });
+        s_Data->GlobalDescriptorSet.SetInput(binding, ubo.As<VulkanUniformBuffer>());
     }
 
     void VulkanRenderer::SetGlobalShaderStorageBuffer(uint32_t binding, Ref<ShaderStorageBuffer> ssbo)
     {
-        Renderer::Submit([binding, ssbo]() mutable
-        {
-            s_Data->GlobalShaderStorageBuffers[binding] = ssbo;
-        });
+        s_Data->GlobalDescriptorSet.SetInput(binding, ssbo.As<VulkanShaderStorageBuffer>());
     }
 
     void VulkanRenderer::SetGlobalTexture(uint32_t binding, Ref<Image> image)
     {
-        Renderer::Submit([binding, image]() mutable
-        {
-            s_Data->GlobalTextures[binding] = image;
-        });
+        if (auto* img2d = dynamic_cast<VulkanImage2D*>(const_cast<Image*>(image.Raw())))
+            s_Data->GlobalDescriptorSet.SetInput(binding, img2d);
+        else if (auto* cube = dynamic_cast<VulkanImageCube*>(const_cast<Image*>(image.Raw())))
+            s_Data->GlobalDescriptorSet.SetInput(binding, cube);
     }
 
     //////////////////////////////////////////////////////////////////////////////////

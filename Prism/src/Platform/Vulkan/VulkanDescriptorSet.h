@@ -2,8 +2,6 @@
 
 #include "Platform/Vulkan/Vulkan.h"
 
-#include "Prism/Utilities/StaticVector.h"
-
 
 namespace Prism
 {
