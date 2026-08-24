@@ -54,6 +54,7 @@ namespace Prism
         void Bake();
         void RT_Prepare();
 
+        bool IsBaked() const { return m_IsBaked; }
         VkDescriptorSet RT_GetDescriptorSet() const { PR_CORE_ASSERT(m_IsBaked); return m_DescriptorSets[CurrentSlotIndex()]; };
     private:
         uint32_t CurrentSlotIndex() const;

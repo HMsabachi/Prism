@@ -10,7 +10,6 @@ namespace Prism::Config
     // Pass 层 pass 输入(RenderPass 自持)
     // 材质层  材质 UBO + 材质纹理(材质自持)
     //==================================================
-    constexpr uint32_t PRISM_SET_MATERIAL = 3; // 材质层 Vulkan set 号(PSL 编译器 codegen 用)
 
     //==================================================
     // OpenGL 物理号 BASE 表
@@ -41,10 +40,9 @@ namespace Prism::Config
     //==================================================
     // Vulkan(直通, set/binding)
     //==================================================
-    constexpr uint32_t PRISM_VULKAN_BINDING_FRAME    = 0; // set0 b0
-    constexpr uint32_t PRISM_VULKAN_BINDING_OBJECT   = 0; // set2 b0
-    constexpr uint32_t PRISM_VULKAN_BINDING_ANIMATION = 1; // set2 b1
-    constexpr uint32_t PRISM_VULKAN_BINDING_MATERIAL = 0; // set3 b0
+    constexpr uint32_t PRISM_VULKAN_SET_GLOBAL = 0; // 全局层 
+    constexpr uint32_t PRISM_VULKAN_SET_RENDER_PASS = 1; // Pass层
+    constexpr uint32_t PRISM_VULKAN_SET_MATERIAL = 2; // 材质层 
 
 
 }

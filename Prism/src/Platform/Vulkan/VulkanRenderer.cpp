@@ -15,6 +15,8 @@
 #include "VulkanIndexBuffer.h"
 
 #include "Prism/Renderer/Renderer.h"
+#include "Prism/Renderer/Material.h"
+#include "Prism/Renderer/Mesh.h"
 
 #include <glm/glm.hpp>
 #include <map>
@@ -27,6 +29,7 @@ namespace Prism
         RenderAPICapabilities RenderCaps;
 
         VkCommandBuffer ActiveCommandBuffer = nullptr;
+        Ref<VulkanRenderPass> ActiveRenderPass;
 
         Ref<VulkanVertexBuffer> FullscreenQuadVB;
         Ref<VulkanIndexBuffer> FullscreenQuadIB;
@@ -156,6 +159,7 @@ namespace Prism
             s_Data->ActiveCommandBuffer = drawCommandBuffer;
             PR_CORE_ASSERT(s_Data->ActiveCommandBuffer);
             VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffer, &cmdBufInfo));
+            s_Data->GlobalDescriptorSet.RT_Prepare(); // 检查全局资源
         });
     }
 
@@ -195,6 +199,15 @@ namespace Prism
         });
     }
 
+
+    void VulkanRenderer::BakeGlobalInputs()
+    {
+        Renderer::Submit([]()
+        {
+            s_Data->GlobalDescriptorSet.Bake();
+        });
+    }
+
     //////////////////////////////////////////////////////////////////////////////////
     // S4/S5（材质/mesh/compute）落地时补齐
     //////////////////////////////////////////////////////////////////////////////////
@@ -202,9 +215,12 @@ namespace Prism
     void VulkanRenderer::BeginRenderPass(Ref<RenderPass> renderPass, bool clear)
     {
         // TODO: clear 参数当前忽略（loadOp=CLEAR 固化在 framebuffer 的 renderpass 里），clear=false 需求出现时改 vkCmdClearAttachments
-        Renderer::Submit([renderPass]()
+        Ref<VulkanRenderPass> vkRenderPass = renderPass.As<VulkanRenderPass>();
+        Renderer::Submit([vkRenderPass]() mutable
         {
-            Ref<VulkanFramebuffer> framebuffer = renderPass->GetSpecification().TargetFramebuffer.As<VulkanFramebuffer>();
+            s_Data->ActiveRenderPass = vkRenderPass;
+            vkRenderPass->RT_Prepare(); // 检查 renderpass 资源
+            Ref<VulkanFramebuffer> framebuffer = vkRenderPass->GetSpecification().TargetFramebuffer.As<VulkanFramebuffer>();
             PR_CORE_ASSERT(framebuffer);
 
             uint32_t width = framebuffer->GetWidth();
@@ -263,6 +279,40 @@ namespace Prism
     void VulkanRenderer::RenderMesh(Ref<Mesh> mesh, uint32_t submeshIndex, Ref<Material> material,
         uint32_t passIndex, uint32_t drawIndex)
     {
+        Ref<VulkanVertexBuffer> vertexBuffer = mesh->m_VertexBuffer.As<VulkanVertexBuffer>();
+        Ref<VulkanIndexBuffer> indexBuffer = mesh->m_IndexBuffer.As<VulkanIndexBuffer>();
+        Ref<VulkanMaterialBackend> backend = material->RT_GetBackend().As<VulkanMaterialBackend>();
+        Ref<VulkanShader> shader = material->GetProgram(passIndex).As<VulkanShader>();
+        Renderer::Submit([=]()
+        {
+            auto& pCache = s_Data->PipelineCache;
+            VkCommandBuffer cmdBuf = s_Data->ActiveCommandBuffer;
+            auto& submesh = mesh->m_Submeshes[submeshIndex];
+            StaticVector<VertexBufferLayout, 4> vertexLayouts;
+            vertexLayouts.push_back(vertexBuffer->GetLayout());
+            VulkanPipelineSpecification spec{};
+            spec.Framebuffer = s_Data->ActiveRenderPass->GetSpecification().TargetFramebuffer.As<VulkanFramebuffer>();
+            spec.Shader = shader;
+            spec.State = material->GetRenderState(passIndex);
+            spec.Topology = PrimitiveType::Triangles;
+            spec.VertexLayouts = vertexLayouts;
+            // 绑定 Pipeline
+            WeakRef<VulkanPipeline> pipeline = pCache.Get(spec);
+            pipeline->RT_Bind(cmdBuf);
+            pipeline->RT_BindGolbalSet(cmdBuf, s_Data->GlobalDescriptorSet.RT_GetDescriptorSet());
+            pipeline->RT_BindRenderPassSet(cmdBuf, s_Data->ActiveRenderPass->RT_GetDescriptorSet());
+            pipeline->RT_BindMaterialSet(cmdBuf, backend->RT_GetDescriptorSet());
+            // 绑定 Vertex Buffer
+            VkBuffer vertBufs[] = { vertexBuffer->GetVulkanBuffer() };
+            VkDeviceSize vertOffs[] = { 0 };
+            vkCmdBindVertexBuffers(cmdBuf, 0, 1, vertBufs, vertOffs);
+            // 绑定 Index Buffer
+            VkBuffer indBuf = indexBuffer->GetVulkanBuffer();
+            vkCmdBindIndexBuffer(cmdBuf, indBuf, 0, VK_INDEX_TYPE_UINT32);
+            // 绘制
+            uint32_t count = submesh.IndexCount, baseIndex = submesh.BaseIndex, baseVertex = submesh.BaseVertex;
+            vkCmdDrawIndexed(cmdBuf, count, 1, baseIndex, (int32_t)baseVertex, 0);
+        });
     }
 
     void VulkanRenderer::RenderQuad(Ref<Material> material, uint32_t passIndex, uint32_t drawIndex)

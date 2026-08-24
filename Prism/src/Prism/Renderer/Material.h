@@ -73,8 +73,8 @@ namespace Prism
         bool IsKeywordEnabled(const std::string& name) const;
 
         // 供后端渲染线程使用
-        Ref<Shader> GetProgram(uint32_t passIndex = 0) const;
-
+        Ref<Shader> GetProgram(uint32_t passIndex = 0) const { return m_Shader->GetPassProgram(passIndex, m_KeywordMask); };
+        const PrismShaderCompiler::PipelineState& GetRenderState(uint32_t passIndex = 0) const { return m_Shader->GetPass(passIndex).RenderState; }
         Ref<MaterialBackend>& RT_GetBackend() const { return m_Backend; }
         const std::map<uint32_t, Ref<Texture>>& GetTextures() const { return m_Textures; }
 

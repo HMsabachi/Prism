@@ -335,6 +335,9 @@ namespace Prism
         });
     }
 
+
+    void OpenGLRenderer::BakeGlobalInputs() { } // OpenGL 不需要显式的 Bake
+
     std::pair<Ref<TextureCube>, Ref<TextureCube>> OpenGLRenderer::CreateEnvironmentMap(const std::string& filepath)
     {
         PR_PROFILE_FUNCTION();
@@ -407,9 +410,9 @@ namespace Prism
         if (!material) return;
         if (material != s_Data->LastMaterial)
         {
-            Ref<Shader> program = material->GetProgram(passIndex);
-            const auto& shPass = material->GetShader()->GetPass(passIndex);
-            OpenGLPipelineState::RT_SetupPipelineState(shPass.RenderState);
+            const Ref<Shader>& program = material->GetProgram(passIndex);
+            const auto& renderState = material->GetRenderState(passIndex);
+            OpenGLPipelineState::RT_SetupPipelineState(renderState);
             s_Data->LastMaterial = material;
             if (!(program == s_Data->LastProgram))
             {

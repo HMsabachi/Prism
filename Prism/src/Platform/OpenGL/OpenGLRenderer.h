@@ -25,6 +25,7 @@ namespace Prism
         virtual void SetGlobalUniformBuffer(uint32_t binding, Ref<UniformBuffer> ubo) override;
         virtual void SetGlobalShaderStorageBuffer(uint32_t binding, Ref<ShaderStorageBuffer> ssbo) override;
         virtual void SetGlobalTexture(uint32_t binding, Ref<Image> image) override;
+        virtual void BakeGlobalInputs() override;
 
         virtual void RenderMesh(Ref<Mesh> mesh, uint32_t submeshIndex, Ref<Material> material, uint32_t passIndex, uint32_t drawIndex) override;
         virtual void RenderQuad(Ref<Material> material, uint32_t passIndex, uint32_t drawIndex = 0) override;

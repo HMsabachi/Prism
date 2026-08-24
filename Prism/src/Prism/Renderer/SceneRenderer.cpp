@@ -92,6 +92,7 @@ namespace Prism
         rApi->SetGlobalUniformBuffer(0, m_FrameUBO);
         rApi->SetGlobalShaderStorageBuffer(1, m_ObjectSSBO);
         rApi->SetGlobalShaderStorageBuffer(2, m_BoneSSBO);
+        rApi->BakeGlobalInputs();
 
         // Load BRDF LUT
         m_BRDFLUT = Texture2D::Create("Assets/Textures/BRDF_LUT.tga");
@@ -122,6 +123,10 @@ namespace Prism
         m_ShadowPasses[2] = RenderPass::Create(shadowRPSpec);
         shadowRPSpec.TargetFramebuffer = Framebuffer::Create(shadowFBSpec);
         m_ShadowPasses[3] = RenderPass::Create(shadowRPSpec);
+        m_ShadowPasses[0]->Bake();
+        m_ShadowPasses[1]->Bake();
+        m_ShadowPasses[2]->Bake();
+        m_ShadowPasses[3]->Bake();
 
         // Create Geometry Pass
         FramebufferSpecification geoFBSpec;

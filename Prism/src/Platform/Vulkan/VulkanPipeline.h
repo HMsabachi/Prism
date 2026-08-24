@@ -18,10 +18,10 @@ namespace Prism
 
     struct VulkanPipelineSpecification
     {
-        Ref<VulkanShader> Shader;
+        WeakRef<VulkanShader> Shader;
         std::span<const VertexBufferLayout> VertexLayouts;
         PrismShaderCompiler::PipelineState State;
-        Ref<VulkanFramebuffer> Framebuffer;
+        WeakRef<VulkanFramebuffer> Framebuffer;
         PrimitiveType Topology = PrimitiveType::Triangles;
     };
 
@@ -31,11 +31,18 @@ namespace Prism
         VulkanPipeline(const VulkanPipelineSpecification& spec, VkPipelineCache pipelineCache);
         virtual ~VulkanPipeline();
 
-        void RT_Bind() const;
+        void RT_Bind(VkCommandBuffer cmdBuf) const;
+        void RT_BindGolbalSet(VkCommandBuffer cmdBuf, VkDescriptorSet set) const;
+        void RT_BindRenderPassSet(VkCommandBuffer cmdBuf, VkDescriptorSet set) const;
+        void RT_BindMaterialSet(VkCommandBuffer cmdBuf, VkDescriptorSet set) const;
+        VkPipeline GetVulkanPipeline() const { return m_Pipeline; }
     private:
-        friend class VulkanPipelineCache;
         VkPipeline m_Pipeline = VK_NULL_HANDLE;
         VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
+
+        VkDescriptorSet m_GlobalSet = VK_NULL_HANDLE;
+        VkDescriptorSet m_PassSet = VK_NULL_HANDLE;
+        VkDescriptorSet m_MaterialSet = VK_NULL_HANDLE;
     };
 
     class VulkanPipelineCache
@@ -44,7 +51,7 @@ namespace Prism
         void Init();
         void Shutdown();
 
-        Ref<VulkanPipeline> Get(const VulkanPipelineSpecification& spec);
+        WeakRef<VulkanPipeline> Get(const VulkanPipelineSpecification& spec);
         void Erase(VulkanShader* shader);
     private:
         struct Entry

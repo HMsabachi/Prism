@@ -289,11 +289,6 @@ namespace Prism
 
 #pragma endregion
 
-    Ref<Shader> Material::GetProgram(uint32_t passIndex) const
-    {
-        return m_Shader->GetPassProgram(passIndex, m_KeywordMask);
-    }
-
 
     void Material::SetKeyword(const std::string& name, bool enabled)
     {

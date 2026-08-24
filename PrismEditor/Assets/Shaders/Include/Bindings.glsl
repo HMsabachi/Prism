@@ -6,8 +6,7 @@
 // UBO 空间
 #   define PRISM_SET_FRAME        0
 #   define PRISM_SET_RENDER_PASS  1
-#   define PRISM_SET_OBJECT       2
-#   define PRISM_SET_MATERIAL     3
+#   define PRISM_SET_MATERIAL     2
 
 #   define PRISM_GOLBAL_TEXTURE(slot) layout(binding = (0 + (slot)))
 #   define PRISM_GOLBAL_STORAGE_BUFFER(slot) layout(binding = (0 + (slot)))
@@ -24,8 +23,7 @@
 // Vulkan: set/binding 直通
 #   define PRISM_SET_FRAME        0
 #   define PRISM_SET_RENDER_PASS  1
-#   define PRISM_SET_OBJECT       2
-#   define PRISM_SET_MATERIAL     3
+#   define PRISM_SET_MATERIAL     2
 
 #   define PRISM_GOLBAL_TEXTURE(slot) layout(set = PRISM_SET_FRAME, binding = (slot))
 #   define PRISM_GOLBAL_STORAGE_BUFFER(slot) layout(set = PRISM_SET_FRAME, binding = (slot))

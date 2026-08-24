@@ -235,6 +235,9 @@ namespace Prism
         bool IsValid() const { return m_Instance ? RefUtils::IsLive(m_Instance) : false; }
         operator bool() const { return IsValid(); }
 
+        T* Raw() { return  m_Instance; }
+        const T* Raw() const { return  m_Instance; }
+
         template<typename T2>
         WeakRef<T2> As() const
         {

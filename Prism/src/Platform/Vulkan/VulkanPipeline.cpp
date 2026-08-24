@@ -8,6 +8,7 @@
 
 #include "Prism/Renderer/Buffer/VertexBuffer.h"
 #include "Prism/Renderer/Renderer.h"
+#include "Prism/ShaderCompiler/PrismBindings.h"
 #include "Prism/Utilities/StaticVector.h"
 
 namespace Prism
@@ -302,9 +303,28 @@ namespace Prism
         });
     }
 
-    void VulkanPipeline::RT_Bind() const
+
+    void VulkanPipeline::RT_Bind(VkCommandBuffer cmdBuf) const
     {
-        vkCmdBindPipeline(VulkanRenderer::GetCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
+        vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
+    }
+    void VulkanPipeline::RT_BindGolbalSet(VkCommandBuffer cmdBuf, VkDescriptorSet set) const
+    {
+        if (set == m_GlobalSet || set == VK_NULL_HANDLE) return;
+        vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            m_PipelineLayout, Config::PRISM_VULKAN_SET_GLOBAL, 1, &set, 0, nullptr);
+    }
+    void VulkanPipeline::RT_BindRenderPassSet(VkCommandBuffer cmdBuf, VkDescriptorSet set) const
+    {
+        if (set == m_PassSet || set == VK_NULL_HANDLE) return;
+        vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            m_PipelineLayout, Config::PRISM_VULKAN_SET_RENDER_PASS, 1, &set, 0, nullptr);
+    }
+    void VulkanPipeline::RT_BindMaterialSet(VkCommandBuffer cmdBuf, VkDescriptorSet set) const
+    {
+        if (set == m_MaterialSet || set == VK_NULL_HANDLE) return;
+        vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            m_PipelineLayout, Config::PRISM_VULKAN_SET_MATERIAL, 1, &set, 0, nullptr);
     }
 
     void VulkanPipelineCache::Init()
@@ -322,10 +342,8 @@ namespace Prism
 
         std::scoped_lock lock(m_Mutex);
         for (auto& [hash, entry] : m_Pipelines)
-        {
-            vkDestroyPipeline(device, entry.Pipeline->m_Pipeline, nullptr);
-            entry.Pipeline->m_Pipeline = VK_NULL_HANDLE;
-        }
+            vkDestroyPipeline(device, entry.Pipeline->GetVulkanPipeline(), nullptr);
+
         m_Pipelines.clear();
 
         if (m_VkPipelineCache)
@@ -335,7 +353,7 @@ namespace Prism
         }
     }
 
-    Ref<VulkanPipeline> VulkanPipelineCache::Get(const VulkanPipelineSpecification& spec)
+    WeakRef<VulkanPipeline> VulkanPipelineCache::Get(const VulkanPipelineSpecification& spec)
     {
         uint64_t hash = Utils::CalculatePipelineSpecificationHash(spec);
 
@@ -346,7 +364,7 @@ namespace Prism
 
         Ref<VulkanPipeline> pipeline = Create(spec);
         m_Pipelines.emplace(hash, Entry{ pipeline, spec.Shader.Raw() });
-        return pipeline;
+        return m_Pipelines[hash].Pipeline;
     }
 
     Ref<VulkanPipeline> VulkanPipelineCache::Create(const VulkanPipelineSpecification& spec)

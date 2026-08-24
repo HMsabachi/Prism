@@ -213,6 +213,7 @@ namespace Prism {
         friend class Renderer;
         friend class SceneRenderer;
         friend class OpenGLRenderer;
+        friend class VulkanRenderer;
         friend class SceneHierarchyPanel;
     };
 }

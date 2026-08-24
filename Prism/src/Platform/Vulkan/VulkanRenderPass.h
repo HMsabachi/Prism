@@ -26,6 +26,7 @@ namespace Prism
         virtual void Bake() override;
 
         void RT_Prepare() { m_DescriptorSet.RT_Prepare(); }
+        bool IsBaked() const { return m_DescriptorSet.IsBaked(); }
         VkDescriptorSet RT_GetDescriptorSet() const { return m_DescriptorSet.RT_GetDescriptorSet(); }
     private:
         RenderPassSpecification m_Specification;
