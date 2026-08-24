@@ -4,8 +4,11 @@
 #include "VulkanContext.h"
 #include "VulkanSwapChain.h"
 #include "VulkanDescriptorSet.h"
+#include "VulkanFramebuffer.h"
 #include "VulkanImage.h"
 #include "VulkanMaterialBackend.h"
+#include "VulkanPipeline.h"
+#include "VulkanRenderPass.h"
 #include "VulkanUniformBuffer.h"
 #include "VulkanShaderStorageBuffer.h"
 #include "VulkanVertexBuffer.h"
@@ -108,6 +111,7 @@ namespace Prism
 
     void VulkanRenderer::Shutdown()
     {
+        VulkanPipelineCache::Clear();
         delete s_Data;
         s_Data = nullptr;
     }
@@ -156,32 +160,81 @@ namespace Prism
 
     void VulkanRenderer::SetGlobalUniformBuffer(uint32_t binding, Ref<UniformBuffer> ubo)
     {
-        s_Data->GlobalDescriptorSet.SetInput(binding, ubo.As<VulkanUniformBuffer>());
+        Renderer::Submit([binding, ubo]()
+        {
+            s_Data->GlobalDescriptorSet.SetInput(binding, ubo.As<VulkanUniformBuffer>());
+        });
     }
 
     void VulkanRenderer::SetGlobalShaderStorageBuffer(uint32_t binding, Ref<ShaderStorageBuffer> ssbo)
     {
-        s_Data->GlobalDescriptorSet.SetInput(binding, ssbo.As<VulkanShaderStorageBuffer>());
+        Renderer::Submit([binding, ssbo]()
+        {
+            s_Data->GlobalDescriptorSet.SetInput(binding, ssbo.As<VulkanShaderStorageBuffer>());
+        });
     }
 
     void VulkanRenderer::SetGlobalTexture(uint32_t binding, Ref<Image> image)
     {
-        if (auto* img2d = dynamic_cast<VulkanImage2D*>(const_cast<Image*>(image.Raw())))
-            s_Data->GlobalDescriptorSet.SetInput(binding, img2d);
-        else if (auto* cube = dynamic_cast<VulkanImageCube*>(const_cast<Image*>(image.Raw())))
-            s_Data->GlobalDescriptorSet.SetInput(binding, cube);
+        Renderer::Submit([binding, image]()
+        {
+            if (dynamic_cast<VulkanImage2D*>(const_cast<Image*>(image.Raw())))
+                s_Data->GlobalDescriptorSet.SetInput(binding, image.As<VulkanImage2D>());
+            else if (dynamic_cast<VulkanImageCube*>(const_cast<Image*>(image.Raw())))
+                s_Data->GlobalDescriptorSet.SetInput(binding, image.As<VulkanImageCube>());
+        });
     }
 
     //////////////////////////////////////////////////////////////////////////////////
-    // S3（RenderPass/Pipeline/Framebuffer）与 S4/S5（材质/mesh/compute）落地时补齐
+    // S4/S5（材质/mesh/compute）落地时补齐
     //////////////////////////////////////////////////////////////////////////////////
 
     void VulkanRenderer::BeginRenderPass(Ref<RenderPass> renderPass, bool clear)
     {
+        // TODO: clear 参数当前忽略（loadOp=CLEAR 固化在 framebuffer 的 renderpass 里），clear=false 需求出现时改 vkCmdClearAttachments
+        Renderer::Submit([renderPass]()
+        {
+            Ref<VulkanFramebuffer> framebuffer = renderPass->GetSpecification().TargetFramebuffer.As<VulkanFramebuffer>();
+            PR_CORE_ASSERT(framebuffer);
+
+            uint32_t width = framebuffer->GetWidth();
+            uint32_t height = framebuffer->GetHeight();
+
+            VkRenderPassBeginInfo renderPassBeginInfo = {};
+            renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            renderPassBeginInfo.renderPass = framebuffer->GetRenderPass();
+            renderPassBeginInfo.framebuffer = framebuffer->GetVulkanFramebuffer();
+            renderPassBeginInfo.renderArea.offset = { 0, 0 };
+            renderPassBeginInfo.renderArea.extent = { width, height };
+
+            const auto& clearValues = framebuffer->GetVulkanClearValues();
+            renderPassBeginInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+            renderPassBeginInfo.pClearValues = clearValues.data();
+
+            vkCmdBeginRenderPass(s_Data->ActiveCommandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+            VkViewport viewport = {};
+            viewport.x = 0.0f;
+            viewport.y = 0.0f;
+            viewport.width = (float)width;
+            viewport.height = (float)height;
+            viewport.minDepth = 0.0f;
+            viewport.maxDepth = 1.0f;
+            vkCmdSetViewport(s_Data->ActiveCommandBuffer, 0, 1, &viewport);
+
+            VkRect2D scissor = {};
+            scissor.offset = { 0, 0 };
+            scissor.extent = { width, height };
+            vkCmdSetScissor(s_Data->ActiveCommandBuffer, 0, 1, &scissor);
+        });
     }
 
     void VulkanRenderer::EndRenderPass()
     {
+        Renderer::Submit([]()
+        {
+            vkCmdEndRenderPass(s_Data->ActiveCommandBuffer);
+        });
     }
 
     void VulkanRenderer::SubmitFullscreenQuad(Ref<Material> material, uint32_t passIndex, uint32_t drawIndex)

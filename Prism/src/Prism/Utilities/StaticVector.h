@@ -43,36 +43,44 @@ namespace Prism
 
         constexpr StaticVector() noexcept = default;
 
-        constexpr StaticVector(const StaticVector& other)
+        template<std::size_t OtherN>
+        constexpr StaticVector(const StaticVector<T, OtherN>& other)
             requires std::is_copy_constructible_v<T>
         {
+            assert(other.size() <= N);
             for (const T& v : other) emplace_back(v);
         }
 
-        constexpr StaticVector(StaticVector&& other) noexcept(std::is_nothrow_move_constructible_v<T>)
+        template<std::size_t OtherN>
+        constexpr StaticVector(StaticVector<T, OtherN>&& other) noexcept(std::is_nothrow_move_constructible_v<T>)
             requires std::is_move_constructible_v<T>
         {
+            assert(other.size() <= N);
             for (T& v : other) emplace_back(std::move(v));
             other.clear();
         }
 
         constexpr ~StaticVector() { clear(); }
 
-        constexpr StaticVector& operator=(const StaticVector& other)
+        template<std::size_t OtherN>
+        constexpr StaticVector& operator=(const StaticVector<T, OtherN>& other)
             requires std::is_copy_constructible_v<T>
         {
-            if (this != &other) {
+            assert(other.size() <= N);
+            if (this != reinterpret_cast<StaticVector*>(&other)) {
                 clear();
                 for (const T& v : other) emplace_back(v);
             }
             return *this;
         }
 
-        constexpr StaticVector& operator=(StaticVector&& other)
+        template<std::size_t OtherN>
+        constexpr StaticVector& operator=(StaticVector<T, OtherN>&& other)
             noexcept(std::is_nothrow_move_constructible_v<T>)
             requires std::is_move_constructible_v<T>
         {
-            if (this != &other) {
+            assert(other.size() <= N);
+            if (this != reinterpret_cast<StaticVector*>(&other)) {
                 clear();
                 for (T& v : other) emplace_back(std::move(v));
                 other.clear();
@@ -121,6 +129,16 @@ namespace Prism
             return begin() + a;
         }
 
+        template<std::size_t OtherN>
+        [[nodiscard]] constexpr bool operator==(const StaticVector<T, OtherN>& other) const noexcept {
+            if (m_Size != other.m_Size) return false;
+            for (std::size_t i = 0; i < m_Size; ++i)
+                if (!(*ptr(i) == *other.ptr(i))) return false;
+            return true;
+        }
+        template<std::size_t OtherN>
+        [[nodiscard]] constexpr bool operator!=(const StaticVector<T, OtherN>& other) const noexcept { return !(*this == other); }
+
         [[nodiscard]] constexpr reference operator[](std::size_t i) noexcept { assert(i < m_Size); return *ptr(i); }
         [[nodiscard]] constexpr const_reference operator[](std::size_t i) const noexcept { assert(i < m_Size); return *ptr(i); }
 
@@ -152,8 +170,10 @@ namespace Prism
         [[nodiscard]] constexpr bool empty() const noexcept { return m_Size == 0; }
         [[nodiscard]] constexpr bool full() const noexcept { return m_Size == N; }
 
-        constexpr void swap(StaticVector& other) noexcept(std::is_nothrow_swappable_v<T>) {
-            if (this == &other) return;
+        template<std::size_t OtherN>
+        constexpr void swap(StaticVector<T, OtherN>& other) noexcept(std::is_nothrow_swappable_v<T>) {
+            if (this == reinterpret_cast<StaticVector*>(&other)) return;
+            assert(other.size() <= N && m_Size <= OtherN);
             const auto common = std::min(m_Size, other.m_Size);
             for (std::size_t i = 0; i < common; ++i)
                 std::swap((*this)[i], other[i]);
@@ -173,6 +193,6 @@ namespace Prism
 
 
     };
-    template<class T, std::size_t N>
-    void swap(StaticVector<T, N>& a, StaticVector<T, N>& b) noexcept(noexcept(a.swap(b))) { a.swap(b); }
+    template<class T, std::size_t N1, std::size_t N2>
+    void swap(StaticVector<T, N1>& a, StaticVector<T, N2>& b) noexcept(noexcept(a.swap(b))) { a.swap(b); }
 }

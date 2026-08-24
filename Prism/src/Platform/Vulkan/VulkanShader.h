@@ -1,7 +1,9 @@
-#pragma once
+﻿#pragma once
 
 #include "Prism/Renderer/Shader.h"
-#include "Platform/Vulkan/Vulkan.h"
+#include "Vulkan.h"
+
+#include "Prism/Utilities/StaticVector.h"
 
 #include <PrismShaderCore/Generator/ReflectionGenerator.h>
 
@@ -12,11 +14,10 @@ namespace Prism
     class VulkanShader : public Shader
     {
     public:
-        VulkanShader(const std::vector<uint32_t>& spirvVertex, const std::vector<uint32_t>& spirvFragment,
-            const PrismShaderCompiler::PassReflection& reflection);
+        VulkanShader(const std::vector<uint32_t>& spirvVertex, const std::vector<uint32_t>& spirvFragment, const PrismShaderCompiler::PassReflection& reflection);
         virtual ~VulkanShader();
 
-        const std::vector<VkPipelineShaderStageCreateInfo>& GetPipelineShaderStageCreateInfos() const { return m_ShaderStages; }
+        const StaticVector<VkPipelineShaderStageCreateInfo, 2>& GetPipelineShaderStageCreateInfos() const { return m_ShaderStages; }
         VkPipelineLayout GetPipelineLayout() const { return m_PipelineLayout; }
         const PrismShaderCompiler::PassReflection& GetReflection() const { return m_Reflection; }
     private:
@@ -24,8 +25,8 @@ namespace Prism
         void CreateDescriptorSetLayouts();
         void CreatePipelineLayout();
     private:
-        std::vector<VkPipelineShaderStageCreateInfo> m_ShaderStages;
-        std::vector<VkShaderModule> m_ShaderModules;
+        StaticVector<VkPipelineShaderStageCreateInfo, 2> m_ShaderStages;
+        StaticVector<VkShaderModule, 2> m_ShaderModules;
         std::vector<VkDescriptorSetLayout> m_DescriptorSetLayouts;
         VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
         PrismShaderCompiler::PassReflection m_Reflection;

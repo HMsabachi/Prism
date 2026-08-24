@@ -43,6 +43,7 @@ namespace Prism
         const VkDescriptorImageInfo& GetDescriptor() const { return m_DescriptorImageInfo; }
 
         void SetSamplerWrap(TextureWrap wrap) { m_Wrap = wrap; }
+        void SetExtraUsage(VkImageUsageFlags extraUsage) { m_ExtraUsage = extraUsage; }
 
         void RT_Resize(const uint32_t width, const uint32_t height);
         void RT_Invalidate();
@@ -53,6 +54,7 @@ namespace Prism
         uint32_t m_Width = 0, m_Height = 0;
         uint32_t m_Samples = 1;
         TextureWrap m_Wrap = TextureWrap::Repeat;
+        VkImageUsageFlags m_ExtraUsage = 0;
 
         Buffer m_ImageData;
 

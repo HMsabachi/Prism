@@ -1,7 +1,7 @@
 ﻿#include "prpch.h"
 #include "VulkanShader.h"
 #include "VulkanContext.h"
-// #include "VulkanPipeline.h"
+#include "VulkanPipeline.h"
 
 #include "Prism/Renderer/Renderer.h"
 
@@ -22,8 +22,7 @@ namespace Prism
     VulkanShader::~VulkanShader()
     {
         // 先入队销毁引用本 shader 的 pipeline，同队列 FIFO 保证先于 layout/module 执行
-        // TODO: Pipeline还没有
-        // VulkanPipelineCache::Erase(this);
+        VulkanPipelineCache::Erase(this);
 
         auto modules = m_ShaderModules;
         auto layouts = m_DescriptorSetLayouts;
@@ -126,7 +125,7 @@ namespace Prism
 
     void VulkanShader::CreatePipelineLayout()
     {
-        // PrismDrawIndexPC{int}：shader 不声明 push_constant 时多出的 range 无害，统一声明
+        // PrismDrawIndexPC{int}：
         VkPushConstantRange pushConstantRange{};
         pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
         pushConstantRange.offset = 0;
@@ -138,7 +137,6 @@ namespace Prism
         layoutInfo.pSetLayouts = m_DescriptorSetLayouts.data();
         layoutInfo.pushConstantRangeCount = 1;
         layoutInfo.pPushConstantRanges = &pushConstantRange;
-        VK_CHECK_RESULT(vkCreatePipelineLayout(VulkanContext::GetCurrentDevice()->GetVulkanDevice(),
-            &layoutInfo, nullptr, &m_PipelineLayout));
+        VK_CHECK_RESULT(vkCreatePipelineLayout(VulkanContext::GetCurrentDevice()->GetVulkanDevice(), &layoutInfo, nullptr, &m_PipelineLayout));
     }
 }

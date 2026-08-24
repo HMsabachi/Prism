@@ -4,6 +4,7 @@
 #include "Renderer.h"
 
 #include "Platform/OpenGL/OpenGLRenderPass.h"
+#include "Platform/Vulkan/VulkanRenderPass.h"
 
 namespace Prism {
 
@@ -13,7 +14,7 @@ namespace Prism {
         {
         case RendererAPIType::None:    PR_CORE_ASSERT(false, "RendererAPI::None is currently not supported!"); return nullptr;
         case RendererAPIType::OpenGL:  return Ref<OpenGLRenderPass>::Create(spec);
-        // case RendererAPIType::Vulkan: return Ref<VulkanRenderPass>::Create(spec); // TODO
+        case RendererAPIType::Vulkan:  return Ref<VulkanRenderPass>::Create(spec);
         }
 
         PR_CORE_ASSERT(false, "Unknown RendererAPI!");
