@@ -2,6 +2,7 @@
 #include "VulkanShader.h"
 #include "VulkanContext.h"
 #include "VulkanPipeline.h"
+#include "VulkanRenderer.h"
 
 #include "Prism/Renderer/Renderer.h"
 
@@ -22,7 +23,7 @@ namespace Prism
     VulkanShader::~VulkanShader()
     {
         // 先入队销毁引用本 shader 的 pipeline，同队列 FIFO 保证先于 layout/module 执行
-        VulkanPipelineCache::Erase(this);
+        VulkanRenderer::GetPipelineCache().Erase(this);
 
         auto modules = m_ShaderModules;
         auto layouts = m_DescriptorSetLayouts;

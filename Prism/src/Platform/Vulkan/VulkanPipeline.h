@@ -6,28 +6,15 @@
 
 #include "Platform/Vulkan/Vulkan.h"
 
-#include "Prism/Utilities/StaticVector.h"
+#include <mutex>
 #include <span>
-#include <vector>
+#include <unordered_map>
 
 namespace Prism
 {
     class VulkanShader;
     class VulkanFramebuffer;
     class VertexBufferLayout;
-
-    struct VulkanPSOKey
-    {
-        VulkanShader* Shader = nullptr;
-        uint64_t VertexLayoutHash = 0;
-        PrismShaderCompiler::PipelineState State;
-        StaticVector<VkFormat, 10> AttachmentFormats;
-        uint32_t ColorAttachmentCount = 0;
-        uint32_t Samples = 1;
-        PrimitiveType Topology = PrimitiveType::Triangles;
-
-        bool operator==(const VulkanPSOKey& other) const;
-    };
 
     struct VulkanPipelineSpecification
     {
@@ -41,8 +28,7 @@ namespace Prism
     class VulkanPipeline : public RefCounted
     {
     public:
-        VulkanPipeline(const VulkanPSOKey& key, const Ref<VulkanShader>& shader,
-            std::span<const VertexBufferLayout> vertexLayouts, const Ref<VulkanFramebuffer>& framebuffer);
+        VulkanPipeline(const VulkanPipelineSpecification& spec, VkPipelineCache pipelineCache);
         virtual ~VulkanPipeline();
 
         void RT_Bind() const;
@@ -55,24 +41,22 @@ namespace Prism
     class VulkanPipelineCache
     {
     public:
-        static Ref<VulkanPipeline> Get(const Ref<VulkanShader>& shader,
-            std::span<const VertexBufferLayout> vertexLayouts,
-            const PrismShaderCompiler::PipelineState& state,
-            const Ref<VulkanFramebuffer>& framebuffer,
-            PrimitiveType topology = PrimitiveType::Triangles);
-        static void Erase(VulkanShader* shader);
-        static void Clear();
-    private:
-        static Ref<VulkanPipeline> Create(const VulkanPSOKey& key, const Ref<VulkanShader>& shader,
-            std::span<const VertexBufferLayout> vertexLayouts, const Ref<VulkanFramebuffer>& framebuffer);
-    };
-}
+        void Init();
+        void Shutdown();
 
-namespace std
-{
-    template<>
-    struct hash<Prism::VulkanPSOKey>
-    {
-        size_t operator()(const Prism::VulkanPSOKey& key) const noexcept;
+        Ref<VulkanPipeline> Get(const VulkanPipelineSpecification& spec);
+        void Erase(VulkanShader* shader);
+    private:
+        struct Entry
+        {
+            Ref<VulkanPipeline> Pipeline;
+            const VulkanShader* Shader = nullptr;
+        };
+
+        Ref<VulkanPipeline> Create(const VulkanPipelineSpecification& spec);
+
+        std::mutex m_Mutex;
+        std::unordered_map<uint64_t, Entry> m_Pipelines;
+        VkPipelineCache m_VkPipelineCache = VK_NULL_HANDLE;
     };
 }

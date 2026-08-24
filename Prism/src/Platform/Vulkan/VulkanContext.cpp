@@ -73,9 +73,6 @@ namespace Prism
     {
         m_SwapChain.Cleanup();
 
-        if (m_PipelineCache)
-            vkDestroyPipelineCache(m_Device->GetVulkanDevice(), m_PipelineCache, nullptr);
-
         VulkanAllocator::Shutdown();
         VulkanGlobalDescriptorPool::Shutdown();
 
@@ -180,10 +177,6 @@ namespace Prism
 
         uint32_t width = 1280, height = 720;
         m_SwapChain.Create(&width, &height);
-
-        VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {};
-        pipelineCacheCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
-        VK_CHECK_RESULT(vkCreatePipelineCache(m_Device->GetVulkanDevice(), &pipelineCacheCreateInfo, nullptr, &m_PipelineCache));
     }
 
     void VulkanContext::OnResize(uint32_t width, uint32_t height)

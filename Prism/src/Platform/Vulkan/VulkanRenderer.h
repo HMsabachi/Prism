@@ -5,6 +5,7 @@
 
 namespace Prism
 {
+    class VulkanPipelineCache;
 
     class PRISM_API VulkanRenderer : public RendererAPI
     {
@@ -37,6 +38,7 @@ namespace Prism
         virtual RenderAPICapabilities& GetCapabilities() override;
 
         static VkCommandBuffer GetCurrentCommandBuffer();
+        static VulkanPipelineCache& GetPipelineCache();
     };
 
 }

@@ -33,6 +33,8 @@ namespace Prism
 
 
         VulkanDescriptorSet GlobalDescriptorSet;
+
+        VulkanPipelineCache PipelineCache;
     };
 
     static VulkanRendererData* s_Data = nullptr;
@@ -87,6 +89,8 @@ namespace Prism
         }
         caps.MaxInvocations = (int)properties.limits.maxComputeWorkGroupInvocations;
 
+        s_Data->PipelineCache.Init();
+
         struct QuadVertex
         {
             glm::vec3 Position;
@@ -111,9 +115,15 @@ namespace Prism
 
     void VulkanRenderer::Shutdown()
     {
-        VulkanPipelineCache::Clear();
+        s_Data->PipelineCache.Shutdown();
         delete s_Data;
         s_Data = nullptr;
+    }
+
+    VulkanPipelineCache& VulkanRenderer::GetPipelineCache()
+    {
+        PR_CORE_ASSERT(s_Data, "VulkanRenderer::GetPipelineCache: VulkanRenderer 未初始化!");
+        return s_Data->PipelineCache;
     }
 
     RenderAPICapabilities& VulkanRenderer::GetCapabilities()

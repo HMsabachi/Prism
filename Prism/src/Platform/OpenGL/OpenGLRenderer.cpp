@@ -18,7 +18,7 @@
 #include "OpenGLTexture.h"
 #include "OpenGLMaterialBackend.h"
 #include "OpenGLImage.h"
-#include "OpenGLPipelineStateCache.h"
+#include "OpenGLPipelineState.h"
 #include "Buffer/OpenGLUniformBuffer.h"
 #include "Buffer/OpenGLShaderStorageBuffer.h"
 #include "Buffer/OpenGLFramebuffer.h"
@@ -408,11 +408,8 @@ namespace Prism
         if (material != s_Data->LastMaterial)
         {
             Ref<Shader> program = material->GetProgram(passIndex);
-            PrismShaderCompiler::PipelineState effectiveState = PrismShaderCompiler::PipelineState::Default();
             const auto& shPass = material->GetShader()->GetPass(passIndex);
-            if (shPass.RenderState)
-                effectiveState = *shPass.RenderState;
-            OpenGLPipelineState::RT_SetupPipelineState(effectiveState);
+            OpenGLPipelineState::RT_SetupPipelineState(shPass.RenderState);
             s_Data->LastMaterial = material;
             if (!(program == s_Data->LastProgram))
             {

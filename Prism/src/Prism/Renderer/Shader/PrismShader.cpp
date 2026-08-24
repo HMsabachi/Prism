@@ -79,7 +79,9 @@ namespace Prism
             pass.NameHash = Hash::GenerateFNVHash64(pass.Name);
             for (auto& tag : m_Compiled.Passes[i].Tags)
                 pass.Tags[Hash::GenerateFNVHash64(tag.first)] = Hash::GenerateFNVHash64(tag.second);
-            pass.RenderState = m_Compiled.Passes[i].RenderState;
+            pass.RenderState = m_Compiled.Passes[i].RenderState ?
+                *m_Compiled.Passes[i].RenderState : PrismShaderCompiler::PipelineState::Default();
+            pass.RenderState.CalculateHash();
 
             PR_CORE_INFO("  Pass '{}'", pass.Name);
 

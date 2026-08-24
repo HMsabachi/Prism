@@ -25,8 +25,6 @@ namespace Prism
         Ref<VulkanDevice> GetDevice() { return m_Device; }
         VulkanSwapChain& GetSwapChain() { return m_SwapChain; }
 
-        VkPipelineCache GetPipelineCache() const { return m_PipelineCache; }
-
         static VkInstance GetInstance() { return s_VulkanInstance; }
         static VulkanContext* Get() { return s_VulkanContext; }
         static Ref<VulkanDevice> GetCurrentDevice();
@@ -39,7 +37,6 @@ namespace Prism
         inline static VkInstance s_VulkanInstance = VK_NULL_HANDLE;
         inline static VulkanContext* s_VulkanContext = nullptr;
         VkDebugUtilsMessengerEXT m_DebugUtilsMessenger = VK_NULL_HANDLE;
-        VkPipelineCache m_PipelineCache = nullptr;
 
         VulkanSwapChain m_SwapChain;
     };

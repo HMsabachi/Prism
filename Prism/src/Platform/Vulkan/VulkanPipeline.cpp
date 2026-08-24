@@ -8,10 +8,7 @@
 
 #include "Prism/Renderer/Buffer/VertexBuffer.h"
 #include "Prism/Renderer/Renderer.h"
-
-#include <map>
-#include <mutex>
-#include <unordered_map>
+#include "Prism/Utilities/StaticVector.h"
 
 namespace Prism
 {
@@ -35,7 +32,10 @@ namespace Prism
             constexpr uint64_t FNV_PRIME = 1099511628211ULL;
             constexpr uint64_t OFFSET_BASIS = 14695981039346656037ULL;
             uint64_t hash = OFFSET_BASIS;
-            // TODO: Pipeline Hash未完成
+            hash ^= reinterpret_cast<uint64_t>(spec.Shader.Raw()); hash *= FNV_PRIME;
+            hash ^= CombineLayoutHash(spec.VertexLayouts); hash *= FNV_PRIME;
+            hash ^= spec.Framebuffer->GetHash(); hash *= FNV_PRIME;
+            hash ^= spec.State.Hash; hash *= FNV_PRIME;
             return hash;
         }
 
@@ -168,61 +168,21 @@ namespace Prism
         }
     }
 
-    bool VulkanPSOKey::operator==(const VulkanPSOKey& other) const
-    {
-        if (Shader != other.Shader
-            || VertexLayoutHash != other.VertexLayoutHash
-            || ColorAttachmentCount != other.ColorAttachmentCount
-            || Samples != other.Samples
-            || Topology != other.Topology
-            || AttachmentFormats != other.AttachmentFormats)
-            return false;
-
-        const auto& s = State;
-        const auto& o = other.State;
-        return s.BlendEnabled == o.BlendEnabled
-            && s.SrcFactor == o.SrcFactor
-            && s.DstFactor == o.DstFactor
-            && s.SrcAlpha == o.SrcAlpha
-            && s.DstAlpha == o.DstAlpha
-            && s.DepthTest == o.DepthTest
-            && s.DepthWrite == o.DepthWrite
-            && s.DepthCompare == o.DepthCompare
-            && s.WriteMask == o.WriteMask
-            && s.DepthBiasFactor == o.DepthBiasFactor
-            && s.DepthBiasUnits == o.DepthBiasUnits
-            && s.Cull == o.Cull
-            && s.StencilTest == o.StencilTest
-            && s.StencilCompare == o.StencilCompare
-            && s.StencilRef == o.StencilRef
-            && s.StencilReadMask == o.StencilReadMask
-            && s.StencilWriteMask == o.StencilWriteMask
-            && s.StencilFailOp == o.StencilFailOp
-            && s.StencilDepthFailOp == o.StencilDepthFailOp
-            && s.StencilPassOp == o.StencilPassOp
-            && s.FillMode == o.FillMode
-            && s.LineWidth == o.LineWidth;
-    }
-
-
-    VulkanPipeline::VulkanPipeline(const VulkanPSOKey& key, const Ref<VulkanShader>& shader,
-        std::span<const VertexBufferLayout> vertexLayouts, const Ref<VulkanFramebuffer>& framebuffer)
+    VulkanPipeline::VulkanPipeline(const VulkanPipelineSpecification& spec, VkPipelineCache pipelineCache)
     {
         VkDevice device = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
-        const auto& state = key.State;
+        const auto& state = spec.State;
 
         // 顶点输入：每个 vertex buffer 一个 binding，location 与 PSL codegen 的 SemanticToLocation 对齐
-        PR_CORE_ASSERT(!vertexLayouts.empty(), "VulkanPipeline: vertexLayouts must not be empty");
+        PR_CORE_ASSERT(!spec.VertexLayouts.empty(), "VulkanPipeline: VertexLayouts must not be empty");
         StaticVector<VkVertexInputBindingDescription, 8> bindingDescriptions;
         StaticVector<VkVertexInputAttributeDescription, 15> attributeDescriptions;
         size_t attributeCount = 0;
-        for (const auto& layout : vertexLayouts)
+        for (const auto& layout : spec.VertexLayouts)
             attributeCount += layout.GetElements().size();
-        // bindingDescriptions.reserve(vertexLayouts.size());
-        // attributeDescriptions.reserve(attributeCount);
-        for (size_t i = 0; i < vertexLayouts.size(); i++)
+        for (size_t i = 0; i < spec.VertexLayouts.size(); i++)
         {
-            const VertexBufferLayout& layout = vertexLayouts[i];
+            const VertexBufferLayout& layout = spec.VertexLayouts[i];
             bindingDescriptions.emplace_back(VkVertexInputBindingDescription{
                 static_cast<uint32_t>(i), layout.GetStride(), VK_VERTEX_INPUT_RATE_VERTEX });
             for (const auto& element : layout.GetElements())
@@ -242,7 +202,7 @@ namespace Prism
 
         VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{};
         inputAssemblyState.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        inputAssemblyState.topology = Utils::ToVulkan(key.Topology);
+        inputAssemblyState.topology = Utils::ToVulkan(spec.Topology);
 
         bool needDepthBias = state.DepthBiasFactor != 0.0f || state.DepthBiasUnits != 0.0f;
         VkPipelineRasterizationStateCreateInfo rasterizationState{};
@@ -258,7 +218,7 @@ namespace Prism
         rasterizationState.lineWidth = state.LineWidth;
 
         // 每个 color attachment 一份 blend 状态（未启用混合也要 colorWriteMask）
-        std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates(key.ColorAttachmentCount);
+        std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates(spec.Framebuffer->GetColorAttachmentCount());
         for (auto& blendAttachment : blendAttachmentStates)
         {
             blendAttachment.blendEnable = state.BlendEnabled ? VK_TRUE : VK_FALSE;
@@ -305,15 +265,15 @@ namespace Prism
 
         VkPipelineMultisampleStateCreateInfo multisampleState{};
         multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-        multisampleState.rasterizationSamples = (VkSampleCountFlagBits)key.Samples;
+        multisampleState.rasterizationSamples = (VkSampleCountFlagBits)spec.Framebuffer->GetSamples();
         multisampleState.pSampleMask = nullptr;
 
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineInfo.layout = shader->GetPipelineLayout();
-        pipelineInfo.renderPass = framebuffer->GetRenderPass();
-        pipelineInfo.stageCount = static_cast<uint32_t>(shader->GetPipelineShaderStageCreateInfos().size());
-        pipelineInfo.pStages = shader->GetPipelineShaderStageCreateInfos().data();
+        pipelineInfo.layout = spec.Shader->GetPipelineLayout();
+        pipelineInfo.renderPass = spec.Framebuffer->GetRenderPass();
+        pipelineInfo.stageCount = static_cast<uint32_t>(spec.Shader->GetPipelineShaderStageCreateInfos().size());
+        pipelineInfo.pStages = spec.Shader->GetPipelineShaderStageCreateInfos().data();
         pipelineInfo.pVertexInputState = &vertexInputState;
         pipelineInfo.pInputAssemblyState = &inputAssemblyState;
         pipelineInfo.pRasterizationState = &rasterizationState;
@@ -323,13 +283,16 @@ namespace Prism
         pipelineInfo.pDepthStencilState = &depthStencilState;
         pipelineInfo.pDynamicState = &dynamicState;
 
-        VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, VulkanContext::Get()->GetPipelineCache(), 1,
+        VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, pipelineCache, 1,
             &pipelineInfo, nullptr, &m_Pipeline));
-        m_PipelineLayout = shader->GetPipelineLayout();
+        m_PipelineLayout = spec.Shader->GetPipelineLayout();
     }
 
     VulkanPipeline::~VulkanPipeline()
     {
+        if (!m_Pipeline)
+            return;
+
         VkPipeline pipeline = m_Pipeline;
         Renderer::SubmitResourceFree([pipeline]()
         {
@@ -344,98 +307,62 @@ namespace Prism
         vkCmdBindPipeline(VulkanRenderer::GetCurrentCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
     }
 
-    static std::mutex s_PipelineCacheMutex;
-    static std::unordered_map<VulkanPSOKey, Ref<VulkanPipeline>> s_PipelineCache;
-
-    Ref<VulkanPipeline> VulkanPipelineCache::Get(const Ref<VulkanShader>& shader,
-        std::span<const VertexBufferLayout> vertexLayouts, const PrismShaderCompiler::PipelineState& state,
-        const Ref<VulkanFramebuffer>& framebuffer, PrimitiveType topology)
+    void VulkanPipelineCache::Init()
     {
-        VulkanPSOKey key;
-        key.Shader = const_cast<VulkanShader*>(shader.Raw());
-        key.VertexLayoutHash = Utils::CombineLayoutHash(vertexLayouts);
-        key.State = state;
-        key.ColorAttachmentCount = static_cast<uint32_t>(framebuffer->GetColorAttachmentCount());
-        key.Samples = framebuffer->GetSamples();
-        key.AttachmentFormats = framebuffer->GetAttachmentFormats();
-        key.Topology = topology;
+        // TODO: 磁盘持久化
+        VkPipelineCacheCreateInfo createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+        VK_CHECK_RESULT(vkCreatePipelineCache(VulkanContext::GetCurrentDevice()->GetVulkanDevice(),
+            &createInfo, nullptr, &m_VkPipelineCache));
+    }
 
-        std::scoped_lock lock(s_PipelineCacheMutex);
-        auto it = s_PipelineCache.find(key);
-        if (it != s_PipelineCache.end())
-            return it->second;
+    void VulkanPipelineCache::Shutdown()
+    {
+        VkDevice device = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
 
-        Ref<VulkanPipeline> pipeline = Create(key, shader, vertexLayouts, framebuffer);
-        s_PipelineCache.emplace(key, pipeline);
+        std::scoped_lock lock(m_Mutex);
+        for (auto& [hash, entry] : m_Pipelines)
+        {
+            vkDestroyPipeline(device, entry.Pipeline->m_Pipeline, nullptr);
+            entry.Pipeline->m_Pipeline = VK_NULL_HANDLE;
+        }
+        m_Pipelines.clear();
+
+        if (m_VkPipelineCache)
+        {
+            vkDestroyPipelineCache(device, m_VkPipelineCache, nullptr);
+            m_VkPipelineCache = VK_NULL_HANDLE;
+        }
+    }
+
+    Ref<VulkanPipeline> VulkanPipelineCache::Get(const VulkanPipelineSpecification& spec)
+    {
+        uint64_t hash = Utils::CalculatePipelineSpecificationHash(spec);
+
+        std::scoped_lock lock(m_Mutex);
+        auto it = m_Pipelines.find(hash);
+        if (it != m_Pipelines.end())
+            return it->second.Pipeline;
+
+        Ref<VulkanPipeline> pipeline = Create(spec);
+        m_Pipelines.emplace(hash, Entry{ pipeline, spec.Shader.Raw() });
         return pipeline;
     }
 
-    Ref<VulkanPipeline> VulkanPipelineCache::Create(const VulkanPSOKey& key, const Ref<VulkanShader>& shader,
-        std::span<const VertexBufferLayout> vertexLayouts, const Ref<VulkanFramebuffer>& framebuffer)
+    Ref<VulkanPipeline> VulkanPipelineCache::Create(const VulkanPipelineSpecification& spec)
     {
-        return Ref<VulkanPipeline>::Create(key, shader, vertexLayouts, framebuffer);
+        return Ref<VulkanPipeline>::Create(spec, m_VkPipelineCache);
     }
 
     void VulkanPipelineCache::Erase(VulkanShader* shader)
     {
-        std::scoped_lock lock(s_PipelineCacheMutex);
-        for (auto it = s_PipelineCache.begin(); it != s_PipelineCache.end();)
+        std::scoped_lock lock(m_Mutex);
+        for (auto it = m_Pipelines.begin(); it != m_Pipelines.end();)
         {
-            if (it->first.Shader == shader)
-                it = s_PipelineCache.erase(it);
+            if (it->second.Shader == shader)
+                it = m_Pipelines.erase(it);
             else
                 ++it;
         }
-    }
-
-    void VulkanPipelineCache::Clear()
-    {
-        std::scoped_lock lock(s_PipelineCacheMutex);
-        for (auto& [key, pipeline] : s_PipelineCache)
-            vkDestroyPipeline(VulkanContext::GetCurrentDevice()->GetVulkanDevice(),
-                pipeline->m_Pipeline, nullptr);
-        s_PipelineCache.clear();
-    }
-}
-
-namespace std
-{
-    size_t hash<Prism::VulkanPSOKey>::operator()(const Prism::VulkanPSOKey& key) const noexcept
-    {
-        const auto& s = key.State;
-        size_t seed = hash<Prism::VulkanShader*>{}(key.Shader);
-        auto combine = [&seed](auto v)
-        {
-            seed ^= hash<decltype(v)>{}(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        };
-        combine(key.VertexLayoutHash);
-        combine(key.ColorAttachmentCount);
-        combine(key.Samples);
-        combine((uint32_t)key.Topology);
-        for (VkFormat format : key.AttachmentFormats)
-            combine((uint32_t)format);
-        combine(s.BlendEnabled);
-        combine(s.SrcFactor);
-        combine(s.DstFactor);
-        combine(s.SrcAlpha);
-        combine(s.DstAlpha);
-        combine(s.DepthTest);
-        combine(s.DepthWrite);
-        combine(s.DepthCompare);
-        combine(s.WriteMask);
-        combine(s.DepthBiasFactor);
-        combine(s.DepthBiasUnits);
-        combine(s.Cull);
-        combine(s.StencilTest);
-        combine(s.StencilCompare);
-        combine(s.StencilRef);
-        combine(s.StencilReadMask);
-        combine(s.StencilWriteMask);
-        combine(s.StencilFailOp);
-        combine(s.StencilDepthFailOp);
-        combine(s.StencilPassOp);
-        combine(s.FillMode);
-        combine(s.LineWidth);
-        return seed;
     }
 }

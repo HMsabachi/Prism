@@ -29,7 +29,7 @@ namespace Prism
         std::string Name;
         uint64_t NameHash = 0;
         std::unordered_map<uint64_t, uint64_t> Tags;
-        std::optional<PrismShaderCompiler::PipelineState> RenderState;
+        PrismShaderCompiler::PipelineState RenderState;
     };
 
     class PRISM_API PrismShader : public Asset

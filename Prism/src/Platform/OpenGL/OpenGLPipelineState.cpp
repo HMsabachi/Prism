@@ -1,5 +1,5 @@
 ﻿#include "prpch.h"
-#include "OpenGLPipelineStateCache.h"
+#include "OpenGLPipelineState.h"
 
 #include "Prism/Renderer/Renderer.h"
 #include <glad/glad.h>
@@ -97,6 +97,9 @@ namespace Prism
 
     void OpenGLPipelineState::RT_SetupPipelineState(const PrismShaderCompiler::PipelineState& state)
     {
+        if (s_CurrentHash == state.Hash)
+            return;
+        s_CurrentHash = state.Hash;
         if (state.BlendEnabled)
         {
             glEnable(GL_BLEND);
@@ -167,37 +170,4 @@ namespace Prism
         glLineWidth(state.LineWidth);
     }
 
-    OpenGLPipelineState::OpenGLPipelineState(RendererID program, const PipelineState& state)
-        : m_Program(program), m_State(state)
-    {
-    }
-
-    void OpenGLPipelineState::Bind() const
-    {
-        RendererID program = m_Program;
-        PipelineState state = m_State;
-        Renderer::Submit([program, state]() {
-            glUseProgram(program);
-
-            RT_SetupPipelineState(state);
-        });
-    }
-
-    std::unordered_map<PSOKey, Ref<OpenGLPipelineState>> OpenGLPipelineStateCache::s_Cache;
-
-    Ref<OpenGLPipelineState> OpenGLPipelineStateCache::Get(RendererID program, const PipelineState& state)
-    {
-        PSOKey key{ program, state };
-        auto it = s_Cache.find(key);
-        if (it != s_Cache.end())
-            return it->second;
-        auto pso = Ref<OpenGLPipelineState>::Create(program, state);
-        s_Cache.emplace(key, pso);
-        return pso;
-    }
-
-    void OpenGLPipelineStateCache::Clear()
-    {
-        s_Cache.clear();
-    }
 }

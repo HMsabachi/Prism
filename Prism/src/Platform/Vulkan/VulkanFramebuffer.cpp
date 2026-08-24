@@ -47,6 +47,7 @@ namespace Prism
         }
 
         Resize(m_Specification.Width, m_Specification.Height, true);
+        CalculateHash();
     }
 
     VulkanFramebuffer::~VulkanFramebuffer()
@@ -83,6 +84,7 @@ namespace Prism
         if (m_Specification.SwapChainTarget)
         {
             // renderpass/framebuffer 由交换链持有，GetRenderPass/GetVulkanFramebuffer 动态取用
+            CalculateHash();
             return;
         }
         RT_Invalidate();
@@ -115,7 +117,7 @@ namespace Prism
         return m_ColorAttachments[0]->GetSamples();
     }
 
-    StaticVector<VkFormat, VulkanMaxFramebufferAttachments> VulkanFramebuffer::GetAttachmentFormats() const
+    StaticVector<VkFormat, VulkanFramebuffer::VulkanMaxFramebufferAttachments> VulkanFramebuffer::GetAttachmentFormats() const
     {
         StaticVector<VkFormat, VulkanMaxFramebufferAttachments> formats;
         if (m_Specification.SwapChainTarget)
@@ -129,6 +131,22 @@ namespace Prism
         if (m_DepthAttachment)
             formats.push_back(Utils::VulkanImageFormat(m_DepthAttachment->GetFormat()));
         return formats;
+    }
+
+    void VulkanFramebuffer::CalculateHash()
+    {
+        constexpr uint64_t FNV_PRIME = 1099511628211ULL;
+        constexpr uint64_t OFFSET_BASIS = 14695981039346656037ULL;
+        m_Hash = OFFSET_BASIS;
+        auto mix = [this](uint64_t value)
+        {
+            m_Hash ^= value;
+            m_Hash *= FNV_PRIME;
+        };
+        mix(GetColorAttachmentCount());
+        mix(GetSamples());
+        for (VkFormat format : GetAttachmentFormats())
+            mix((uint64_t)format);
     }
 
     void VulkanFramebuffer::RT_Invalidate()

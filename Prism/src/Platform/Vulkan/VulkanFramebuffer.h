@@ -34,9 +34,11 @@ namespace Prism
         VkRenderPass GetRenderPass() const;
         VkFramebuffer GetVulkanFramebuffer() const;
         const StaticVector<VkClearValue, VulkanMaxFramebufferAttachments>& GetVulkanClearValues() const { return m_ClearValues; }
+        uint64_t GetHash() const { return m_Hash; }
     private:
         void RT_Invalidate();
         void RT_Release();
+        void CalculateHash();
     private:
         FramebufferSpecification m_Specification;
         uint32_t m_Width = 0, m_Height = 0;
@@ -48,5 +50,7 @@ namespace Prism
 
         VkRenderPass m_RenderPass = VK_NULL_HANDLE;
         VkFramebuffer m_Framebuffer = VK_NULL_HANDLE;
+
+        uint64_t m_Hash = 0;
     };
 }
