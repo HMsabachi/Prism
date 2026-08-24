@@ -1,6 +1,6 @@
 ﻿#include "prpch.h"
 #include "ShaderStorageBuffer.h"
-#include "Platform/OpenGL/Buffer/OpenGLShaderStorageBuffer.h"
+#include "Platform/OpenGL/OpenGLShaderStorageBuffer.h"
 #include "Platform/Vulkan/VulkanShaderStorageBuffer.h"
 
 namespace Prism

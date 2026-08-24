@@ -2,7 +2,7 @@
 #include "UniformBuffer.h"
 #include "../Renderer.h"
 
-#include "Platform/OpenGL/Buffer/OpenGLUniformBuffer.h"
+#include "Platform/OpenGL/OpenGLUniformBuffer.h"
 #include "Platform/Vulkan/VulkanUniformBuffer.h"
 
 namespace Prism {

@@ -3,7 +3,7 @@
 #include "IndexBuffer.h"
 #include "../Renderer.h"
 
-#include "Platform/OpenGL/Buffer/OpenGLIndexBuffer.h"
+#include "Platform/OpenGL/OpenGLIndexBuffer.h"
 #include "Platform/Vulkan/VulkanIndexBuffer.h"
 
 namespace Prism {

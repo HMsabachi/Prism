@@ -3,7 +3,7 @@
 
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Core/RenderThread.h"
-#include "Buffer/OpenGLVertexBuffer.h"
+#include "OpenGLVertexBuffer.h"
 
 #include <glad/glad.h>
 

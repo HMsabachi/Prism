@@ -1,5 +1,5 @@
 ﻿#include "prpch.h"
-#include "Buffer/OpenGLUniformBuffer.h"
+#include "OpenGLUniformBuffer.h"
 #include "OpenGLMaterialBackend.h"
 
 namespace Prism

@@ -1,9 +1,9 @@
 ﻿#include "prpch.h"
 #include "OpenGLRenderPass.h"
 #include "OpenGLImage.h"
-#include "Buffer/OpenGLUniformBuffer.h"
-#include "Buffer/OpenGLShaderStorageBuffer.h"
-#include "Buffer/OpenGLFrameBuffer.h"
+#include "OpenGLUniformBuffer.h"
+#include "OpenGLShaderStorageBuffer.h"
+#include "OpenGLFrameBuffer.h"
 
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/ShaderCompiler/PrismBindings.h"
