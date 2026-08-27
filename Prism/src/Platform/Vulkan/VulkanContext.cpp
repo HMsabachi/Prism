@@ -72,9 +72,9 @@ namespace Prism
     VulkanContext::~VulkanContext()
     {
         m_SwapChain.Cleanup();
-
-        VulkanAllocator::Shutdown();
         VulkanGlobalDescriptorPool::Shutdown();
+        // TODO: 有一些释放上的问题
+        // VulkanAllocator::Shutdown();
 
         m_Device->Destroy();
 

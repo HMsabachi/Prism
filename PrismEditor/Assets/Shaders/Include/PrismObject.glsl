@@ -27,7 +27,7 @@ PRISM_GOLBAL_STORAGE_BUFFER(2) readonly buffer PrismAnimation
 #if PRISM_BACKEND_OPENGL
 layout(location = 0) uniform int Prism_DrawIndex;
 #elif PRISM_BACKEND_VULKAN
-layout(push_constant) uniform PrismDrawIndexPC { int Prism_DrawIndex; };
+layout(push_constant) uniform PrismDrawIndexPC { uint Prism_DrawIndex; };
 #endif
 
 #define Prism_ObjectToWorld (Prism_Objects[Prism_DrawIndex].ObjectToWorld)

@@ -121,7 +121,7 @@ namespace Prism
         uint32_t indices[6] = { 0, 1, 2, 2, 3, 0 };
         s_Data->FullscreenQuadIB = IndexBuffer::Create(indices, 6 * sizeof(uint32_t)).As<VulkanIndexBuffer>();
 
-        float blackPixel[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+        float blackPixel[16] = { 0.0f };
         s_Data->BlackImage2D = Image2D::Create(ImageFormat::RGBA, 1, 1, blackPixel).As<VulkanImage2D>();
         s_Data->BlackImage2D->Invalidate();
         s_Data->BlackImageCube = ImageCube::Create(ImageFormat::RGBA, 1, 1, blackPixel).As<VulkanImageCube>();
@@ -311,9 +311,9 @@ namespace Prism
             pipeline->RT_BindRenderPassSet(cmdBuf, s_Data->ActiveRenderPass->RT_GetDescriptorSet());
             pipeline->RT_BindMaterialSet(cmdBuf, backend->RT_GetDescriptorSet());
             // Push Constant
-            int32_t drawIndexPC = (int32_t)drawIndex;
+            uint32_t drawIndexPC = drawIndex;
             vkCmdPushConstants(cmdBuf, pipeline->GetPipelineLayout(),
-                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(int32_t), &drawIndexPC);
+                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(uint32_t), &drawIndexPC);
             // 绑定 Vertex Buffer
             VkBuffer vertBufs[] = { s_Data->FullscreenQuadVB->GetVulkanBuffer() };
             VkDeviceSize vertOffs[] = { 0 };

@@ -10,6 +10,14 @@ Shader "PostProcess/PrismPostProcess"
         u_Horizontal("水平模糊", Bool) = true
     }
 
+    RenderCommand
+    {
+        Cull Back
+        ZTest Off
+        ZWrite Off
+        Blend One OneMinusSrcAlpha
+    }
+
     SubShader
     {
         Tags { "ShaderType" = "PostProcess" "Queue" = "Overlay" }

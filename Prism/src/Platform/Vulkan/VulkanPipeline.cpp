@@ -210,7 +210,7 @@ namespace Prism
         rasterizationState.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
         rasterizationState.polygonMode = Utils::ToVulkan(state.FillMode);
         rasterizationState.cullMode = Utils::ToVulkan(state.Cull);
-        rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+        rasterizationState.frontFace = VK_FRONT_FACE_CLOCKWISE;
         rasterizationState.depthClampEnable = VK_FALSE;
         rasterizationState.rasterizerDiscardEnable = VK_FALSE;
         rasterizationState.depthBiasEnable = needDepthBias ? VK_TRUE : VK_FALSE;
