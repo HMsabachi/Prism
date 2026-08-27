@@ -19,6 +19,16 @@ namespace UI {
     static char s_IDBuffer[16];
     static int s_CheckboxCount = 0;
 
+    struct VulkanImGuiTextureEntry
+    {
+        VkDescriptorSet Set = VK_NULL_HANDLE;
+        VkSampler Sampler = VK_NULL_HANDLE;
+        VkImageLayout Layout = VK_IMAGE_LAYOUT_UNDEFINED;
+        int LastUsedFrame = 0;
+    };
+    static std::unordered_map<VkImageView, VulkanImGuiTextureEntry> s_VulkanImGuiTextureCache;
+    static int s_ImGuiTextureFrame = -1;
+
     inline static ImTextureID GetImGuiTextureID(const Ref<Image2D>& image)
     {
         switch (RendererAPI::Current())
@@ -34,8 +44,34 @@ namespace UI {
                 const auto& imageInfo = vulkanImage->GetImageInfo();
                 if (!imageInfo.ImageView)
                     return nullptr;
-                auto textureID = ImGui_ImplVulkan_AddTexture(imageInfo.Sampler, imageInfo.ImageView, vulkanImage->GetDescriptor().imageLayout);
-                return (ImTextureID)(uint64_t)textureID;
+                VkImageLayout layout = vulkanImage->GetDescriptor().imageLayout;
+                int frame = ImGui::GetFrameCount();
+                if (frame != s_ImGuiTextureFrame)
+                {
+                    s_ImGuiTextureFrame = frame;
+                    // 延迟 FIF 帧淘汰：被归还 set 的最后使用命令已被同槽 fence 同步完成
+                    for (auto it = s_VulkanImGuiTextureCache.begin(); it != s_VulkanImGuiTextureCache.end(); )
+                    {
+                        if (it->second.LastUsedFrame <= frame - (int)VulkanFramesInFlight)
+                        {
+                            ImGui_ImplVulkan_RemoveTexture(it->second.Set);
+                            it = s_VulkanImGuiTextureCache.erase(it);
+                        }
+                        else
+                            ++it;
+                    }
+                }
+                VulkanImGuiTextureEntry& entry = s_VulkanImGuiTextureCache[imageInfo.ImageView];
+                if (entry.Set == VK_NULL_HANDLE || entry.Sampler != imageInfo.Sampler || entry.Layout != layout)
+                {
+                    if (entry.Set)
+                        ImGui_ImplVulkan_RemoveTexture(entry.Set);
+                    entry.Set = ImGui_ImplVulkan_AddTexture(imageInfo.Sampler, imageInfo.ImageView, layout);
+                    entry.Sampler = imageInfo.Sampler;
+                    entry.Layout = layout;
+                }
+                entry.LastUsedFrame = frame;
+                return (ImTextureID)entry.Set;
             }
         }
         return nullptr;

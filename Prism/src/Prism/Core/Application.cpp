@@ -20,6 +20,7 @@
 #include "Prism/Physics/Physics.h"
 
 #include "Prism/Asset/AssetManager.h"
+#include "Prism/Asset/ModelImporter.h"
 
 #include "Prism/ShaderCompiler/ShaderCompiler.h"
 
@@ -90,17 +91,25 @@ namespace Prism
         PR_PROFILE_FUNCTION();
 
         m_RenderThread.Pump();
+        m_RenderThread.Pump();
+        m_RenderThread.Pump();
         for (Layer* layer : m_LayerStack)
         {
             layer->OnDetach();
             delete layer;
         }
+        ModelImporter::Shutdown();
         Physics::Shutdown();
         AssetManager::Shutdown();
         PythonScriptEngine::Shutdown();
         CSharpScriptEngine::Shutdown();
-        Renderer::Shutdown();
+        
+        m_RenderThread.Pump();
+        m_RenderThread.Pump();
         m_SceneRenderer.reset();
+        Renderer::Shutdown();
+        m_RenderThread.Pump();
+        m_RenderThread.Pump();
         m_RenderThread.Terminate();
     }
     

@@ -61,10 +61,10 @@ namespace Prism
 
     void Renderer::Shutdown()
     {
-        s_Initialized = false;
-
         if (s_RendererAPI)
         {
+
+            s_RendererAPI->Shutdown();
             uint32_t delayFrames = s_Config.FramesInFlight;
             delayFrames = (delayFrames == 0) ? 1 : delayFrames;
             for (uint32_t i = 0; i < delayFrames && i < s_ResourceFreeQueueMax; i++)
@@ -73,7 +73,7 @@ namespace Prism
                 queue.Execute();
             }
 
-            s_RendererAPI->Shutdown();
+            s_Initialized = false;
             delete s_RendererAPI;
             s_RendererAPI = nullptr;
         }

@@ -10,11 +10,12 @@
 
 namespace Prism
 {
+    class RefCounted;
     namespace RefUtils
     {
-        void PRISM_API AddToLiveReferences(void* instance);
-        void PRISM_API RemoveFromLiveReferences(void* instance);
-        bool PRISM_API IsLive(void* instance);
+        void PRISM_API AddToLiveReferences(RefCounted* instance);
+        void PRISM_API RemoveFromLiveReferences(RefCounted* instance);
+        bool PRISM_API IsLive(RefCounted* instance);
         size_t PRISM_API GetLiveReferenceCount();
     }
 

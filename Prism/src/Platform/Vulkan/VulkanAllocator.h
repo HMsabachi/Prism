@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Platform/Vulkan/Vulkan.h"
 #include "Prism/Core/Ref.h"

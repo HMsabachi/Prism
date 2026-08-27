@@ -200,6 +200,7 @@ namespace Prism
         m_PostProcessMaterial.Reset();
         m_EditorDebugMaterial.Reset();
         m_EditorDebugAnimMaterial.Reset();
+        m_BRDFLUT.Reset();
     }
 
 

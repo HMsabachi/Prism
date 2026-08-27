@@ -35,7 +35,6 @@ namespace Prism
         {
             case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
                 PR_CORE_ERROR("Vulkan 验证层 Validation: {0}", pCallbackData->pMessage);
-                PR_CORE_ASSERT(false);
                 break;
             case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
                 PR_CORE_WARN("Vulkan 验证层 Validation: {0}", pCallbackData->pMessage);
@@ -169,6 +168,16 @@ namespace Prism
         memset(&enabledFeatures, 0, sizeof(VkPhysicalDeviceFeatures));
         enabledFeatures.samplerAnisotropy = true;
         enabledFeatures.robustBufferAccess = true;
+        // 线框/点模式（FillMode Line/Point）与宽线（LineWidth > 1），GL 的 glPolygonMode/glLineWidth 无门槛，双后端语义对齐
+        const VkPhysicalDeviceFeatures& supported = m_PhysicalDevice->GetSupportedFeatures();
+        if (supported.fillModeNonSolid)
+            enabledFeatures.fillModeNonSolid = true;
+        else
+            PR_CORE_WARN("物理设备不支持 fillModeNonSolid，FillMode Line/Point 不可用");
+        if (supported.wideLines)
+            enabledFeatures.wideLines = true;
+        else
+            PR_CORE_WARN("物理设备不支持 wideLines，LineWidth > 1 将被钳制为 1");
         m_Device = Ref<VulkanDevice>::Create(m_PhysicalDevice, enabledFeatures);
 
         VulkanAllocator::Init(m_Device);

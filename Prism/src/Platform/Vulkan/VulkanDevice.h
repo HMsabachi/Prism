@@ -31,6 +31,7 @@ namespace Prism
         const VkPhysicalDeviceProperties& GetProperties() const { return m_Properties; }
         const VkPhysicalDeviceLimits& GetLimits() const { return m_Properties.limits; }
         const VkPhysicalDeviceMemoryProperties& GetMemoryProperties() const { return m_MemoryProperties; }
+        const VkPhysicalDeviceFeatures& GetSupportedFeatures() const { return m_Features; }
 
         VkFormat GetDepthFormat() const { return m_DepthFormat; }
 

@@ -37,6 +37,8 @@ namespace Prism
 
         Ref<VulkanImage2D> BlackImage2D;
         Ref<VulkanImageCube> BlackImageCube;
+        Ref<VulkanTexture2D> BlackTexture2D;
+        Ref<VulkanTextureCube> BlackTextureCube;
 
         VulkanDescriptorSet GlobalDescriptorSet;
         bool IsGlobalDescriptorSetPrepared = false;
@@ -124,6 +126,8 @@ namespace Prism
         s_Data->BlackImage2D->Invalidate();
         s_Data->BlackImageCube = ImageCube::Create(ImageFormat::RGBA, 1, 1, blackPixel).As<VulkanImageCube>();
         s_Data->BlackImageCube->Invalidate();
+        s_Data->BlackTexture2D = Texture2D::Create(ImageFormat::RGBA, 1, 1, blackPixel).As<VulkanTexture2D>();
+        s_Data->BlackTextureCube = TextureCube::Create(ImageFormat::RGBA, 1, 1, blackPixel).As<VulkanTextureCube>();
     }
 
     void VulkanRenderer::Shutdown()
@@ -133,6 +137,8 @@ namespace Prism
         s_Data->FullscreenQuadIB = nullptr;
         s_Data->BlackImage2D = nullptr;
         s_Data->BlackImageCube = nullptr;
+        s_Data->BlackTexture2D = nullptr;
+        s_Data->BlackTextureCube = nullptr;
         delete s_Data;
         s_Data = nullptr;
     }
@@ -325,7 +331,7 @@ namespace Prism
 
     std::pair<Ref<TextureCube>, Ref<TextureCube>> VulkanRenderer::CreateEnvironmentMap(const std::string& filepath)
     {
-        return {};
+        return {s_Data->BlackTextureCube, s_Data->BlackTextureCube };
     }
 
     void VulkanRenderer::RenderMesh(Ref<Mesh> mesh, uint32_t submeshIndex, Ref<Material> material,

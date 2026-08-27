@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <vector>
 #include "Prism/Core/Core.h"
@@ -18,5 +18,6 @@ namespace Prism
     {
     public:
         static ModelImportResult Import(const std::string& filepath);
+        static void Shutdown();
     };
 }

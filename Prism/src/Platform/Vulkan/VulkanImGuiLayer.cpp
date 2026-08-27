@@ -8,6 +8,7 @@
 #include "imgui.h"
 #include "Prism/ImGui/ImGuizmo.h"
 
+#include "Vulkan.h"
 #include "VulkanContext.h"
 
 #include "backends/imgui_impl_glfw.h"
@@ -25,7 +26,7 @@ namespace Prism
     {
         if (err == 0)
             return;
-        fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
+        fprintf(stderr, "[vulkan] Error: VkResult = %s\n", Utils::VKResultToString(err));
         if (err < 0)
             abort();
     }

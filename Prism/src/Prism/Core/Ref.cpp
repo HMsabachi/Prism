@@ -4,22 +4,20 @@
 
 namespace Prism
 {
-    static std::unordered_set<void*> s_LiveReferences;
+    static std::unordered_set<RefCounted*> s_LiveReferences;
     static std::mutex s_LiveReferenceMutex;
 
     namespace RefUtils
     {
-        void PRISM_API AddToLiveReferences(void* instance)
+        void PRISM_API AddToLiveReferences(RefCounted* instance)
         {
-            if (Application::Get().IsRunning() != 1) return;
             PR_CORE_ASSERT(instance);
             std::scoped_lock<std::mutex> lock(s_LiveReferenceMutex);
             s_LiveReferences.insert(instance);
         }
 
-        void PRISM_API RemoveFromLiveReferences(void* instance)
+        void PRISM_API RemoveFromLiveReferences(RefCounted* instance)
         {
-            if (Application::Get().IsRunning() != 1) return;
             PR_CORE_ASSERT(instance);
             std::scoped_lock<std::mutex> lock(s_LiveReferenceMutex);
             auto it = s_LiveReferences.find(instance);
@@ -27,7 +25,7 @@ namespace Prism
             s_LiveReferences.erase(it);
         }
 
-        bool PRISM_API IsLive(void* instance)
+        bool PRISM_API IsLive(RefCounted* instance)
         {
             PR_CORE_ASSERT(instance);
             return s_LiveReferences.find(instance) != s_LiveReferences.end();

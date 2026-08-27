@@ -17,7 +17,7 @@ namespace Prism
 		case RendererAPIType::OpenGL:	result = Ref<OpenGLFramebuffer>::Create(spec); break;
 		case RendererAPIType::Vulkan:	result = Ref<VulkanFramebuffer>::Create(spec); break;
 		}
-		FramebufferPool::GetGlobal()->Add(result);
+		// FramebufferPool::GetGlobal()->Add(result);
 		return result;
 	}
 

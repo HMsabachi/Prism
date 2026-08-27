@@ -99,7 +99,7 @@ namespace Prism
     {
     public:
         ShaderLibrary() = default;
-        ~ShaderLibrary() = default;
+        ~ShaderLibrary() { PrismShader::s_AllShaders.clear(); };
 
         Ref<PrismShader> Load(const std::string& filePath);
         void LoadAll(const std::string& directory);

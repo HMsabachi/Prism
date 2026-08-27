@@ -266,14 +266,23 @@ namespace Prism
         if (m_ImageAvailableSemaphores.size() != VulkanFramesInFlight)
         {
             m_ImageAvailableSemaphores.resize(VulkanFramesInFlight);
-            m_RenderFinishedSemaphores.resize(VulkanFramesInFlight);
             VkSemaphoreCreateInfo semaphoreCreateInfo{};
             semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
             for (size_t i = 0; i < VulkanFramesInFlight; i++)
-            {
                 VK_CHECK_RESULT(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemaphores[i]));
-                VK_CHECK_RESULT(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &m_RenderFinishedSemaphores[i]));
-            }
+        }
+
+        // RenderFinished 按图像索引分配（present 后由呈现引擎异步释放，按帧槽复用会在下一轮 submit 撞 VUID-00067）
+        if (m_RenderFinishedSemaphores.size() != m_ImageCount)
+        {
+            for (VkSemaphore semaphore : m_RenderFinishedSemaphores)
+                vkDestroySemaphore(device, semaphore, nullptr);
+            m_RenderFinishedSemaphores.clear();
+            m_RenderFinishedSemaphores.resize(m_ImageCount);
+            VkSemaphoreCreateInfo semaphoreCreateInfo{};
+            semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+            for (VkSemaphore& semaphore : m_RenderFinishedSemaphores)
+                VK_CHECK_RESULT(vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &semaphore));
         }
 
         if (m_WaitFences.size() != VulkanFramesInFlight)
@@ -415,7 +424,7 @@ namespace Prism
         submitInfo.pWaitDstStageMask = &waitStageMask;
         submitInfo.pWaitSemaphores = &m_ImageAvailableSemaphores[m_CurrentFrameIndex];
         submitInfo.waitSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = &m_RenderFinishedSemaphores[m_CurrentFrameIndex];
+        submitInfo.pSignalSemaphores = &m_RenderFinishedSemaphores[m_CurrentImageIndex];
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pCommandBuffers = &m_CommandBuffers[m_CurrentFrameIndex].CommandBuffer;
         submitInfo.commandBufferCount = 1;
@@ -430,7 +439,7 @@ namespace Prism
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = &m_SwapChain;
         presentInfo.pImageIndices = &m_CurrentImageIndex;
-        presentInfo.pWaitSemaphores = &m_RenderFinishedSemaphores[m_CurrentFrameIndex];
+        presentInfo.pWaitSemaphores = &m_RenderFinishedSemaphores[m_CurrentImageIndex];
         presentInfo.waitSemaphoreCount = 1;
         VkResult result = fpQueuePresentKHR(m_Device->GetQueue(), &presentInfo);
 
@@ -460,6 +469,11 @@ namespace Prism
             if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
             {
                 OnResize(m_Width, m_Height);
+                // SUBOPTIMAL 路径首次 acquire 已 signal 信号量且未被消费，重试前重建该槽信号量避免二次 signal
+                vkDestroySemaphore(m_Device->GetVulkanDevice(), m_ImageAvailableSemaphores[m_CurrentFrameIndex], nullptr);
+                VkSemaphoreCreateInfo semaphoreCreateInfo{};
+                semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+                VK_CHECK_RESULT(vkCreateSemaphore(m_Device->GetVulkanDevice(), &semaphoreCreateInfo, nullptr, &m_ImageAvailableSemaphores[m_CurrentFrameIndex]));
                 VK_CHECK_RESULT(fpAcquireNextImageKHR(m_Device->GetVulkanDevice(), m_SwapChain, UINT64_MAX, m_ImageAvailableSemaphores[m_CurrentFrameIndex], (VkFence)nullptr, &imageIndex));
             }
         }

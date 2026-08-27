@@ -48,7 +48,10 @@ namespace Prism
             for (uint32_t i = 0; i < VulkanFramesInFlight; i++)
             {
                 if (buffers[i])
+                {
+                    VulkanAllocator::UnmapMemory(allocations[i]);
                     VulkanAllocator::DestroyBuffer(buffers[i], allocations[i]);
+                }
             }
         });
     }

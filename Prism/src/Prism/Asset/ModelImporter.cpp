@@ -49,6 +49,12 @@ namespace Prism
 
     static std::unordered_map<std::string, ModelImportResult> s_Result;
 
+
+    void ModelImporter::Shutdown()
+    {
+        s_Result.clear();
+    }
+
     ModelImportResult ModelImporter::Import(const std::string& filepath)
     {
         ModelImportResult result;
