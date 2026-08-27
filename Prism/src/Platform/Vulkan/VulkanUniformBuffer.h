@@ -16,18 +16,19 @@ namespace Prism
         virtual void SetData(const void* data, uint32_t size, uint32_t offset = 0) override;
         virtual void RT_SetData(const Buffer& buffer) override;
         virtual void RT_SetData(const void* data, uint32_t size, uint32_t offset = 0) override;
-        void RT_SetDataAll(const Buffer& buffer);
 
         virtual uint32_t GetSize() const override { return m_Size; }
 
         void RT_Create();
 
-        VkDescriptorBufferInfo GetDescriptor(uint32_t slotIndex) const;
+        VkDescriptorBufferInfo GetDescriptor() const;
     private:
         void Release();
         uint32_t CurrentSlotIndex() const;
     private:
         uint32_t m_Size = 0;
+        uint32_t m_LastWrittenSlot = 0;
+        uint32_t m_LastWriteFrame = 0;
 
         VkBuffer m_Buffers[VulkanFramesInFlight] = {};
         VmaAllocation m_Allocations[VulkanFramesInFlight] = {};

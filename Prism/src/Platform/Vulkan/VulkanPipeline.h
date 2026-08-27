@@ -32,17 +32,21 @@ namespace Prism
         virtual ~VulkanPipeline();
 
         void RT_Bind(VkCommandBuffer cmdBuf) const;
-        void RT_BindGolbalSet(VkCommandBuffer cmdBuf, VkDescriptorSet set) const;
+        void RT_BindGlobalSet(VkCommandBuffer cmdBuf, VkDescriptorSet set) const;
         void RT_BindRenderPassSet(VkCommandBuffer cmdBuf, VkDescriptorSet set) const;
         void RT_BindMaterialSet(VkCommandBuffer cmdBuf, VkDescriptorSet set) const;
         VkPipeline GetVulkanPipeline() const { return m_Pipeline; }
+        VkPipelineLayout GetPipelineLayout() const { return m_PipelineLayout; }
     private:
         VkPipeline m_Pipeline = VK_NULL_HANDLE;
         VkPipelineLayout m_PipelineLayout = VK_NULL_HANDLE;
 
-        VkDescriptorSet m_GlobalSet = VK_NULL_HANDLE;
-        VkDescriptorSet m_PassSet = VK_NULL_HANDLE;
-        VkDescriptorSet m_MaterialSet = VK_NULL_HANDLE;
+        mutable uint32_t m_GlobalFrameIndex = 0;
+        mutable VkDescriptorSet m_GlobalSet = VK_NULL_HANDLE;
+        mutable uint32_t m_PassFrameIndex = 0;
+        mutable VkDescriptorSet m_PassSet = VK_NULL_HANDLE;
+        mutable uint32_t m_MaterialFrameIndex = 0;
+        mutable VkDescriptorSet m_MaterialSet = VK_NULL_HANDLE;
     };
 
     class VulkanPipelineCache

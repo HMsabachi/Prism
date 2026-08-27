@@ -223,7 +223,7 @@ namespace Prism
             case RenderResourceType::UniformBuffer:
             {
                 Ref<VulkanUniformBuffer> ubo = bd.Resource.As<VulkanUniformBuffer>();
-                VkDescriptorBufferInfo bufferInfo = ubo->GetDescriptor(CurrentSlotIndex());
+                VkDescriptorBufferInfo bufferInfo = ubo->GetDescriptor();
                 if (bufferInfo.buffer == bd.NativeHandle[CurrentSlotIndex()]) continue;
                 bd.NativeHandle[CurrentSlotIndex()] = bufferInfo.buffer;
                 shouldWrites.emplace_back(binding, bufferInfo, VkDescriptorImageInfo{}, bd.Type);
@@ -232,7 +232,7 @@ namespace Prism
             case RenderResourceType::StorageBuffer:
             {
                 Ref<VulkanShaderStorageBuffer> ssbo = bd.Resource.As<VulkanShaderStorageBuffer>();
-                VkDescriptorBufferInfo bufferInfo = ssbo->GetDescriptor(CurrentSlotIndex());
+                VkDescriptorBufferInfo bufferInfo = ssbo->GetDescriptor();
                 if (bufferInfo.buffer == bd.NativeHandle[CurrentSlotIndex()]) continue;
                 bd.NativeHandle[CurrentSlotIndex()] = bufferInfo.buffer;
                 shouldWrites.emplace_back(binding, bufferInfo, VkDescriptorImageInfo{}, bd.Type);

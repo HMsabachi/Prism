@@ -36,6 +36,7 @@ namespace Prism
 
 
         VulkanDescriptorSet GlobalDescriptorSet;
+        bool IsGlobalDescriptorSetPrepared = false;
 
         VulkanPipelineCache PipelineCache;
     };
@@ -159,7 +160,6 @@ namespace Prism
             s_Data->ActiveCommandBuffer = drawCommandBuffer;
             PR_CORE_ASSERT(s_Data->ActiveCommandBuffer);
             VK_CHECK_RESULT(vkBeginCommandBuffer(drawCommandBuffer, &cmdBufInfo));
-            s_Data->GlobalDescriptorSet.RT_Prepare(); // 检查全局资源
         });
     }
 
@@ -169,6 +169,7 @@ namespace Prism
         {
             VK_CHECK_RESULT(vkEndCommandBuffer(s_Data->ActiveCommandBuffer));
             s_Data->ActiveCommandBuffer = nullptr;
+            s_Data->IsGlobalDescriptorSetPrepared = false;
         });
     }
 
@@ -219,6 +220,11 @@ namespace Prism
         Renderer::Submit([vkRenderPass]() mutable
         {
             s_Data->ActiveRenderPass = vkRenderPass;
+            if (!s_Data->IsGlobalDescriptorSetPrepared)
+            {
+                s_Data->GlobalDescriptorSet.RT_Prepare();
+                s_Data->IsGlobalDescriptorSetPrepared = true;
+            }
             vkRenderPass->RT_Prepare(); // 检查 renderpass 资源
             Ref<VulkanFramebuffer> framebuffer = vkRenderPass->GetSpecification().TargetFramebuffer.As<VulkanFramebuffer>();
             PR_CORE_ASSERT(framebuffer);
@@ -265,6 +271,39 @@ namespace Prism
 
     void VulkanRenderer::SubmitFullscreenQuad(Ref<Material> material, uint32_t passIndex, uint32_t drawIndex)
     {
+        Ref<VulkanMaterialBackend> backend = material->RT_GetBackend().As<VulkanMaterialBackend>();
+        Ref<VulkanShader> shader = material->GetProgram(passIndex).As<VulkanShader>();
+        Renderer::Submit([=]()
+        {
+            auto& pCache = s_Data->PipelineCache;
+            VkCommandBuffer cmdBuf = s_Data->ActiveCommandBuffer;
+            StaticVector<VertexBufferLayout, 4> vertexLayouts;
+            vertexLayouts.push_back(s_Data->FullscreenQuadVB->GetLayout());
+            VulkanPipelineSpecification spec{};
+            spec.Framebuffer = s_Data->ActiveRenderPass->GetSpecification().TargetFramebuffer.As<VulkanFramebuffer>();
+            spec.Shader = shader;
+            spec.State = material->GetRenderState(passIndex);
+            spec.Topology = PrimitiveType::Triangles;
+            spec.VertexLayouts = vertexLayouts;
+            // 绑定 Pipeline
+            WeakRef<VulkanPipeline> pipeline = pCache.Get(spec);
+            pipeline->RT_Bind(cmdBuf);
+            pipeline->RT_BindGlobalSet(cmdBuf, s_Data->GlobalDescriptorSet.RT_GetDescriptorSet());
+            pipeline->RT_BindRenderPassSet(cmdBuf, s_Data->ActiveRenderPass->RT_GetDescriptorSet());
+            pipeline->RT_BindMaterialSet(cmdBuf, backend->RT_GetDescriptorSet());
+            // Push Constant
+            int32_t drawIndexPC = (int32_t)drawIndex;
+            vkCmdPushConstants(cmdBuf, pipeline->GetPipelineLayout(),
+                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(int32_t), &drawIndexPC);
+            // 绑定 Vertex Buffer
+            VkBuffer vertBufs[] = { s_Data->FullscreenQuadVB->GetVulkanBuffer() };
+            VkDeviceSize vertOffs[] = { 0 };
+            vkCmdBindVertexBuffers(cmdBuf, 0, 1, vertBufs, vertOffs);
+            // 绑定 Index Buffer
+            vkCmdBindIndexBuffer(cmdBuf, s_Data->FullscreenQuadIB->GetVulkanBuffer(), 0, VK_INDEX_TYPE_UINT32);
+            // 绘制
+            vkCmdDrawIndexed(cmdBuf, s_Data->FullscreenQuadIB->GetCount(), 1, 0, 0, 0);
+        });
     }
 
     void VulkanRenderer::SetSceneEnvironment(const Ref<SceneEnvironment>& environment)
@@ -299,9 +338,13 @@ namespace Prism
             // 绑定 Pipeline
             WeakRef<VulkanPipeline> pipeline = pCache.Get(spec);
             pipeline->RT_Bind(cmdBuf);
-            pipeline->RT_BindGolbalSet(cmdBuf, s_Data->GlobalDescriptorSet.RT_GetDescriptorSet());
+            pipeline->RT_BindGlobalSet(cmdBuf, s_Data->GlobalDescriptorSet.RT_GetDescriptorSet());
             pipeline->RT_BindRenderPassSet(cmdBuf, s_Data->ActiveRenderPass->RT_GetDescriptorSet());
             pipeline->RT_BindMaterialSet(cmdBuf, backend->RT_GetDescriptorSet());
+            // Push Constant
+            int32_t drawIndexPC = (int32_t)drawIndex;
+            vkCmdPushConstants(cmdBuf, pipeline->GetPipelineLayout(),
+                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(int32_t), &drawIndexPC);
             // 绑定 Vertex Buffer
             VkBuffer vertBufs[] = { vertexBuffer->GetVulkanBuffer() };
             VkDeviceSize vertOffs[] = { 0 };
@@ -317,6 +360,7 @@ namespace Prism
 
     void VulkanRenderer::RenderQuad(Ref<Material> material, uint32_t passIndex, uint32_t drawIndex)
     {
+        SubmitFullscreenQuad(material, passIndex, drawIndex);
     }
 
     void VulkanRenderer::DispatchCompute(Ref<Shader> kernelShader,

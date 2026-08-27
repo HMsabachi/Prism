@@ -87,7 +87,14 @@ namespace Prism
 
     void VulkanShaderStorageBuffer::RT_SetData(const void* data, size_t size, size_t offset)
     {
-        memcpy(m_Mapped[CurrentSlotIndex()] + offset, data, size);
+        uint32_t frame = Renderer::RT_GetCurrentFrameIndex();
+        if (frame != m_LastWriteFrame)
+        {
+            uint32_t cur = frame % VulkanFramesInFlight;
+            m_LastWrittenSlot = (cur != m_LastWrittenSlot) ? cur : (m_LastWrittenSlot + 1) % VulkanFramesInFlight;
+            m_LastWriteFrame = frame;
+        }
+        memcpy(m_Mapped[m_LastWrittenSlot] + offset, data, size);
     }
 
     void VulkanShaderStorageBuffer::GetData(void* data, size_t size, size_t offset, bool sync) const
@@ -95,11 +102,10 @@ namespace Prism
         // TODO: GPU 回读路径待定
     }
 
-    VkDescriptorBufferInfo VulkanShaderStorageBuffer::GetDescriptor(uint32_t slotIndex) const
+    VkDescriptorBufferInfo VulkanShaderStorageBuffer::GetDescriptor() const
     {
-        PR_CORE_ASSERT(slotIndex < VulkanFramesInFlight, "Invalid slot index for shader storage buffer descriptor info!");
         VkDescriptorBufferInfo info{};
-        info.buffer = m_Buffers[slotIndex];
+        info.buffer = m_Buffers[m_LastWrittenSlot];
         info.offset = 0;
         info.range = m_Size;
         return info;

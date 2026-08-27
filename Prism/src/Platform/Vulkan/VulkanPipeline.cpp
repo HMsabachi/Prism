@@ -308,21 +308,27 @@ namespace Prism
     {
         vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
     }
-    void VulkanPipeline::RT_BindGolbalSet(VkCommandBuffer cmdBuf, VkDescriptorSet set) const
+    void VulkanPipeline::RT_BindGlobalSet(VkCommandBuffer cmdBuf, VkDescriptorSet set) const
     {
-        if (set == m_GlobalSet || set == VK_NULL_HANDLE) return;
+        uint32_t frameIndex = Renderer::RT_GetCurrentFrameIndex();
+        if (frameIndex == m_GlobalFrameIndex && set == m_GlobalSet) return;
+        m_GlobalFrameIndex = frameIndex; m_GlobalSet = set;
         vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
             m_PipelineLayout, Config::PRISM_VULKAN_SET_GLOBAL, 1, &set, 0, nullptr);
     }
     void VulkanPipeline::RT_BindRenderPassSet(VkCommandBuffer cmdBuf, VkDescriptorSet set) const
     {
-        if (set == m_PassSet || set == VK_NULL_HANDLE) return;
+        uint32_t frameIndex = Renderer::RT_GetCurrentFrameIndex();
+        if (frameIndex == m_PassFrameIndex && set == m_PassSet) return;
+        m_PassFrameIndex = frameIndex; m_PassSet = set;
         vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
             m_PipelineLayout, Config::PRISM_VULKAN_SET_RENDER_PASS, 1, &set, 0, nullptr);
     }
     void VulkanPipeline::RT_BindMaterialSet(VkCommandBuffer cmdBuf, VkDescriptorSet set) const
     {
-        if (set == m_MaterialSet || set == VK_NULL_HANDLE) return;
+        uint32_t frameIndex = Renderer::RT_GetCurrentFrameIndex();
+        if (frameIndex == m_MaterialFrameIndex && set == m_MaterialSet) return;
+        m_MaterialFrameIndex = frameIndex; m_MaterialSet = set;
         vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
             m_PipelineLayout, Config::PRISM_VULKAN_SET_MATERIAL, 1, &set, 0, nullptr);
     }
@@ -338,14 +344,11 @@ namespace Prism
 
     void VulkanPipelineCache::Shutdown()
     {
-        VkDevice device = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
-
         std::scoped_lock lock(m_Mutex);
-        for (auto& [hash, entry] : m_Pipelines)
-            vkDestroyPipeline(device, entry.Pipeline->GetVulkanPipeline(), nullptr);
 
         m_Pipelines.clear();
 
+        VkDevice device = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
         if (m_VkPipelineCache)
         {
             vkDestroyPipelineCache(device, m_VkPipelineCache, nullptr);

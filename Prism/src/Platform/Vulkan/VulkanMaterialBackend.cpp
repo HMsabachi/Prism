@@ -31,9 +31,10 @@ namespace Prism
 
     VkDescriptorSet VulkanMaterialBackend::RT_GetDescriptorSet() const
     {
+        bool isDirty = m_Material->m_DataDirty || m_Material->m_TexturesDirty;
         if (m_Material->m_DataDirty)
         {
-            m_UniformBuffer->RT_SetDataAll(m_Material->m_PropertyBuffer);
+            m_UniformBuffer->RT_SetData(m_Material->m_PropertyBuffer);
             m_Material->m_DataDirty = false;
         }
         if (m_Material->m_TexturesDirty)
@@ -41,7 +42,7 @@ namespace Prism
             SetTextureInputs();
             m_Material->m_TexturesDirty = false;
         }
-        m_DescriptorSet.RT_Prepare();
+        if (isDirty) m_DescriptorSet.RT_Prepare();
         return m_DescriptorSet.RT_GetDescriptorSet();
     }
 

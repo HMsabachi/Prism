@@ -22,15 +22,17 @@ namespace Prism
 
         void RT_Create();
 
-        VkDescriptorBufferInfo GetDescriptor(uint32_t slotIndex) const;
+        VkDescriptorBufferInfo GetDescriptor() const;
 
     private:
         void Release();
         uint32_t CurrentSlotIndex() const;
 
     private:
-        size_t m_Size = 0;
         BufferUsage m_Usage = BufferUsage::Dynamic;
+        size_t m_Size = 0;
+        uint32_t m_LastWrittenSlot = 0;
+        uint32_t m_LastWriteFrame = 0;
 
         VkBuffer m_Buffers[VulkanFramesInFlight] = {};
         VmaAllocation m_Allocations[VulkanFramesInFlight] = {};

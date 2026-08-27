@@ -95,21 +95,20 @@ namespace Prism
 
     void VulkanUniformBuffer::RT_SetData(const void* data, uint32_t size, uint32_t offset)
     {
-        uint32_t slot = CurrentSlotIndex();
-        memcpy(m_Mapped[slot] + offset, data, size);
+        uint32_t frame = Renderer::RT_GetCurrentFrameIndex();
+        if (frame != m_LastWriteFrame)
+        {
+            uint32_t cur = frame % VulkanFramesInFlight;
+            m_LastWrittenSlot = (cur != m_LastWrittenSlot) ? cur : (m_LastWrittenSlot + 1) % VulkanFramesInFlight;
+            m_LastWriteFrame = frame;
+        }
+        memcpy(m_Mapped[m_LastWrittenSlot] + offset, data, size);
     }
 
-    void VulkanUniformBuffer::RT_SetDataAll(const Buffer& buffer)
+    VkDescriptorBufferInfo VulkanUniformBuffer::GetDescriptor() const
     {
-        for (uint32_t i = 0; i < VulkanFramesInFlight; i++)
-            memcpy(m_Mapped[i], buffer.Data, (uint32_t)buffer.Size);
-    }
-
-    VkDescriptorBufferInfo VulkanUniformBuffer::GetDescriptor(uint32_t slotIndex) const
-    {
-        PR_CORE_ASSERT(slotIndex < VulkanFramesInFlight, "Invalid slot index for uniform buffer descriptor info!");
         VkDescriptorBufferInfo info{};
-        info.buffer = m_Buffers[slotIndex];
+        info.buffer = m_Buffers[m_LastWrittenSlot];
         info.offset = 0;
         info.range = m_Size;
         return info;
