@@ -25,6 +25,7 @@ namespace Prism
         SetTextureInputs();
         m_DescriptorSet.Bake();
 
+
         m_Material->m_DataDirty = true;
         m_Material->m_TexturesDirty = true;
     }
@@ -42,7 +43,7 @@ namespace Prism
             SetTextureInputs();
             m_Material->m_TexturesDirty = false;
         }
-        if (isDirty) m_DescriptorSet.RT_Prepare();
+        m_DescriptorSet.RT_Prepare();
         return m_DescriptorSet.RT_GetDescriptorSet();
     }
 

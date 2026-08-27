@@ -43,10 +43,7 @@ namespace Prism {
         PRISM_API bool Property(const std::string& label, glm::vec4& value, float min, float max, PropertyFlag flags = PropertyFlag::None);
         PRISM_API bool Property(const std::string& label, std::string& value, bool error = false);
         PRISM_API bool Property(const std::string& label, const char* value);
-        PRISM_API bool Property(const std::string& label, const Ref<Texture2D>& texture, uint32_t fallbackRendererID);
         PRISM_API bool Property(const std::string& label, const Ref<Texture2D>& texture, const Ref<::Prism::Image2D> fallback);
-        PRISM_API bool Property(const std::string& label, const Ref<TextureCube>& texture, uint32_t fallbackRendererID);
-        PRISM_API bool Property(const std::string& label, const Ref<TextureCube>& texture, const Ref<::Prism::Image2D> fallback);
         PRISM_API bool Property(const std::string& label, const char** options, int32_t optionCount, int32_t* selected);
 
         PRISM_API bool PropertySlider(const std::string& label, int& value, int min, int max);

@@ -6,6 +6,10 @@
 namespace Prism
 {
     class VulkanPipelineCache;
+    class VulkanTexture2D;
+    class VulkanTextureCube;
+    class VulkanImage2D;
+    class VulkanImageCube;
 
     class PRISM_API VulkanRenderer : public RendererAPI
     {
@@ -38,8 +42,11 @@ namespace Prism
 
         virtual RenderAPICapabilities& GetCapabilities() override;
 
-        static VkCommandBuffer GetCurrentCommandBuffer();
+        static VkCommandBuffer RT_GetCurrentCommandBuffer();
         static VulkanPipelineCache& GetPipelineCache();
+
+        static WeakRef<VulkanImage2D> RT_GetBlackImage2D();
+        static WeakRef<VulkanImageCube> RT_GetBlackImageCube();
     };
 
 }

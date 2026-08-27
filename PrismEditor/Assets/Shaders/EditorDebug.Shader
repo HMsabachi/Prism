@@ -89,11 +89,10 @@ Shader "Hidden/EditorDebug"
             GLSL
             {
                 #include "PrismEngine.glsl"
+                #include "Pass/GeometryPass.glsl"
 
                 attribute vec3 a_Position : POSITION;
                 attribute vec2 a_TexCoord : TEXCOORD0;
-
-                layout(location = 0) out vec4 FragColor;
 
                 varying VertexOutput
                 {

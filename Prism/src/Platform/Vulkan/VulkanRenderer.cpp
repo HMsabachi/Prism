@@ -13,6 +13,7 @@
 #include "VulkanShaderStorageBuffer.h"
 #include "VulkanVertexBuffer.h"
 #include "VulkanIndexBuffer.h"
+#include "VulkanTexture.h"
 
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Material.h"
@@ -34,6 +35,8 @@ namespace Prism
         Ref<VulkanVertexBuffer> FullscreenQuadVB;
         Ref<VulkanIndexBuffer> FullscreenQuadIB;
 
+        Ref<VulkanImage2D> BlackImage2D;
+        Ref<VulkanImageCube> BlackImageCube;
 
         VulkanDescriptorSet GlobalDescriptorSet;
         bool IsGlobalDescriptorSetPrepared = false;
@@ -115,11 +118,21 @@ namespace Prism
         s_Data->FullscreenQuadVB->SetLayout(layout);
         uint32_t indices[6] = { 0, 1, 2, 2, 3, 0 };
         s_Data->FullscreenQuadIB = IndexBuffer::Create(indices, 6 * sizeof(uint32_t)).As<VulkanIndexBuffer>();
+
+        float blackPixel[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+        s_Data->BlackImage2D = Image2D::Create(ImageFormat::RGBA, 1, 1, blackPixel).As<VulkanImage2D>();
+        s_Data->BlackImage2D->Invalidate();
+        s_Data->BlackImageCube = ImageCube::Create(ImageFormat::RGBA, 1, 1, blackPixel).As<VulkanImageCube>();
+        s_Data->BlackImageCube->Invalidate();
     }
 
     void VulkanRenderer::Shutdown()
     {
         s_Data->PipelineCache.Shutdown();
+        s_Data->FullscreenQuadVB = nullptr;
+        s_Data->FullscreenQuadIB = nullptr;
+        s_Data->BlackImage2D = nullptr;
+        s_Data->BlackImageCube = nullptr;
         delete s_Data;
         s_Data = nullptr;
     }
@@ -135,7 +148,7 @@ namespace Prism
         return s_Data->RenderCaps;
     }
 
-    VkCommandBuffer VulkanRenderer::GetCurrentCommandBuffer()
+    VkCommandBuffer VulkanRenderer::RT_GetCurrentCommandBuffer()
     {
         return s_Data ? s_Data->ActiveCommandBuffer : VK_NULL_HANDLE;
     }
@@ -369,4 +382,14 @@ namespace Prism
     {
     }
 
+
+    WeakRef<VulkanImage2D> VulkanRenderer::RT_GetBlackImage2D()
+    {
+        return s_Data->BlackImage2D;
+    }
+
+    WeakRef<VulkanImageCube> VulkanRenderer::RT_GetBlackImageCube()
+    {
+        return s_Data->BlackImageCube;
+    }
 }

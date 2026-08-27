@@ -35,6 +35,7 @@ namespace Prism
         {
             case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
                 PR_CORE_ERROR("Vulkan 验证层 Validation: {0}", pCallbackData->pMessage);
+                PR_CORE_ASSERT(false);
                 break;
             case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
                 PR_CORE_WARN("Vulkan 验证层 Validation: {0}", pCallbackData->pMessage);

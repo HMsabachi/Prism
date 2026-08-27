@@ -427,22 +427,22 @@ namespace Prism
         }
         if (config.EnableBloom)
         {
-            PR_PROFILE_SCOPE("BloomPass");
-            auto* rApi = Renderer::GetAPI();
-            int32_t passIndex = m_PostProcessMaterial->GetShader()->FindPassByName(SHADER_PASS_NAME_BLOOM_BLUR);
-            int index = 0;
-            for (int i = 0; i < 10; i++)
-            {
-                index = i % 2;
-                if (i == 0)
-                    m_BloomBlurPass[0]->SetInput(RENDER_PASS_INPUT_BINDING_BLOOM_BLUR_INPUT, m_GeoPass->GetOutput(1));
-                else
-                    m_BloomBlurPass[index]->SetInput(RENDER_PASS_INPUT_BINDING_BLOOM_BLUR_INPUT, m_BloomBlurPass[1 - index]->GetOutput(0));
-                rApi->BeginRenderPass(m_BloomBlurPass[index]);
-                m_PostProcessMaterial->SetBool("u_Horizontal", index == 0);
-                DrawFullscreen(m_PostProcessMaterial, passIndex);
-                rApi->EndRenderPass();
-            }
+            //PR_PROFILE_SCOPE("BloomPass");
+            //auto* rApi = Renderer::GetAPI();
+            //int32_t passIndex = m_PostProcessMaterial->GetShader()->FindPassByName(SHADER_PASS_NAME_BLOOM_BLUR);
+            //int index = 0;
+            //for (int i = 0; i < 10; i++)
+            //{
+            //    index = i % 2;
+            //    if (i == 0)
+            //        m_BloomBlurPass[0]->SetInput(RENDER_PASS_INPUT_BINDING_BLOOM_BLUR_INPUT, m_GeoPass->GetOutput(1));
+            //    else
+            //        m_BloomBlurPass[index]->SetInput(RENDER_PASS_INPUT_BINDING_BLOOM_BLUR_INPUT, m_BloomBlurPass[1 - index]->GetOutput(0));
+            //    rApi->BeginRenderPass(m_BloomBlurPass[index]);
+            //    m_PostProcessMaterial->SetBool("u_Horizontal", index == 0);
+            //    DrawFullscreen(m_PostProcessMaterial, passIndex);
+            //    rApi->EndRenderPass();
+            //}
         }
         else
         {

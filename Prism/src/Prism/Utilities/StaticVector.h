@@ -38,8 +38,8 @@ namespace Prism
         using const_pointer = const T*;
         using iterator = T*;
         using const_iterator = const T*;
-        using reverse_iterator = T*;
-        using const_reverse_iterator = const T*;
+        using reverse_iterator = std::reverse_iterator<iterator>;
+        using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
         constexpr StaticVector() noexcept = default;
 
@@ -153,14 +153,14 @@ namespace Prism
         [[nodiscard]] constexpr iterator begin() noexcept { return data(); }
         [[nodiscard]] constexpr const_iterator begin() const noexcept { return data(); }
         [[nodiscard]] constexpr const_iterator cbegin() const noexcept { return begin(); }
-        [[nodiscard]] constexpr reverse_iterator rbegin() noexcept { return end(); }
-        [[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept { return end(); }
+        [[nodiscard]] constexpr reverse_iterator rbegin() noexcept { return reverse_iterator(end()); }
+        [[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(end()); }
         [[nodiscard]] constexpr const_reverse_iterator crbegin() const noexcept { return rbegin(); }
         [[nodiscard]] constexpr iterator end() noexcept { return data() + m_Size; }
         [[nodiscard]] constexpr const_iterator end() const noexcept { return data() + m_Size; }
         [[nodiscard]] constexpr const_iterator cend() const noexcept { return end(); }
-        [[nodiscard]] constexpr reverse_iterator rend() noexcept { return begin(); }
-        [[nodiscard]] constexpr const_reverse_iterator rend() const noexcept { return begin(); }
+        [[nodiscard]] constexpr reverse_iterator rend() noexcept { return reverse_iterator(begin()); }
+        [[nodiscard]] constexpr const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
         [[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return rend(); }
 
         [[nodiscard]] constexpr std::size_t size() const noexcept { return m_Size; }

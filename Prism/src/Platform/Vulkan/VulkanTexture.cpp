@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "Platform/Vulkan/VulkanTexture.h"
 
 #include "Platform/Vulkan/VulkanContext.h"

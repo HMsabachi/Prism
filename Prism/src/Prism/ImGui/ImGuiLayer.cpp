@@ -3,6 +3,7 @@
 
 #include "Prism/Renderer/RendererAPI.h"
 #include "Platform/OpenGL/OpenGLImGuiLayer.h"
+#include "Platform/Vulkan/VulkanImGuiLayer.h"
 
 #include "imgui.h"
 
@@ -14,7 +15,7 @@ namespace Prism
         {
             case RendererAPIType::None:    return nullptr;
             case RendererAPIType::OpenGL:  return new OpenGLImGuiLayer();
-            // case RendererAPIType::Vulkan: return new VulkanImGuiLayer(); // TODO
+            case RendererAPIType::Vulkan: return new VulkanImGuiLayer(); // TODO
         }
         PR_CORE_ASSERT(false, "Unknown RendererAPI");
         return nullptr;

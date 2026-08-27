@@ -13,12 +13,12 @@ struct PrismObjectData
     int  AnimationOffset;
 };
 
-PRISM_GOLBAL_STORAGE_BUFFER(1) buffer PrismObjects
+PRISM_GOLBAL_STORAGE_BUFFER(1) readonly buffer PrismObjects
 {
     PrismObjectData Prism_Objects[];
 };
 
-PRISM_GOLBAL_STORAGE_BUFFER(2) buffer PrismAnimation
+PRISM_GOLBAL_STORAGE_BUFFER(2) readonly buffer PrismAnimation
 {
     mat4 Prism_AllBones[];
 };

@@ -155,8 +155,8 @@ namespace Prism
 
         RT_Release();
 
-        std::vector<VkAttachmentDescription> attachmentDescriptions;
-        std::vector<VkAttachmentReference> colorAttachmentReferences;
+        StaticVector<VkAttachmentDescription, 10> attachmentDescriptions;
+        StaticVector<VkAttachmentReference, 10> colorAttachmentReferences;
         VkAttachmentReference depthAttachmentReference{};
 
         m_ClearValues.resize(m_ColorAttachments.size() + (m_DepthAttachment ? 1 : 0));
@@ -209,46 +209,46 @@ namespace Prism
             subpassDescription.pDepthStencilAttachment = &depthAttachmentReference;
 
         // 子渲染通道依赖：颜色/深度 attachment 与下一 pass 的采样读之间的布局和内存依赖
-        std::vector<VkSubpassDependency> dependencies;
+        StaticVector<VkSubpassDependency, 10> dependencies;
         if (!m_ColorAttachments.empty())
         {
-            VkSubpassDependency& dependency = dependencies.emplace_back();
-            dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-            dependency.dstSubpass = 0;
-            dependency.srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-            dependency.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-            dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-            dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-            dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+            VkSubpassDependency& inputDependency = dependencies.emplace_back();
+            inputDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+            inputDependency.dstSubpass = 0;
+            inputDependency.srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            inputDependency.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+            inputDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            inputDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            inputDependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-            dependency = dependencies.emplace_back();
-            dependency.srcSubpass = 0;
-            dependency.dstSubpass = VK_SUBPASS_EXTERNAL;
-            dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-            dependency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-            dependency.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-            dependency.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-            dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+            VkSubpassDependency& outputDependency = dependencies.emplace_back();
+            outputDependency.srcSubpass = 0;
+            outputDependency.dstSubpass = VK_SUBPASS_EXTERNAL;
+            outputDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            outputDependency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            outputDependency.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            outputDependency.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+            outputDependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
         }
         if (m_DepthAttachment)
         {
-            VkSubpassDependency& dependency = dependencies.emplace_back();
-            dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-            dependency.dstSubpass = 0;
-            dependency.srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-            dependency.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-            dependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-            dependency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-            dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+            VkSubpassDependency& inputDependency = dependencies.emplace_back();
+            inputDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+            inputDependency.dstSubpass = 0;
+            inputDependency.srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            inputDependency.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+            inputDependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+            inputDependency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            inputDependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
-            dependency = dependencies.emplace_back();
-            dependency.srcSubpass = 0;
-            dependency.dstSubpass = VK_SUBPASS_EXTERNAL;
-            dependency.srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-            dependency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-            dependency.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-            dependency.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-            dependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
+            VkSubpassDependency& outputDependency = dependencies.emplace_back();
+            outputDependency.srcSubpass = 0;
+            outputDependency.dstSubpass = VK_SUBPASS_EXTERNAL;
+            outputDependency.srcStageMask = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+            outputDependency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            outputDependency.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            outputDependency.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+            outputDependency.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
         }
 
         VkRenderPassCreateInfo renderPassInfo{};

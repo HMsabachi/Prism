@@ -6,7 +6,9 @@
 
 #include "VulkanUniformBuffer.h"
 #include "VulkanImage.h"
+#include "VulkanTexture.h"
 #include "VulkanShaderStorageBuffer.h"
+#include "VulkanRenderer.h"
 
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Utilities/StaticVector.h"
@@ -217,7 +219,6 @@ namespace Prism
         StaticVector<ShouldWriteInfo, 16> shouldWrites;
         for (auto& [binding, bd] : m_Bindings)
         {
-            if (!bd.Resource || bd.Type == RenderResourceType::None) continue;
             switch (bd.Type)
             {
             case RenderResourceType::UniformBuffer:
@@ -240,7 +241,8 @@ namespace Prism
             }
             case RenderResourceType::Image2D:
             {
-                Ref<VulkanImage2D> image = bd.Resource.As<VulkanImage2D>();
+                WeakRef<VulkanImage2D> image = bd.Resource.As<VulkanImage2D>();
+                if (!image) image = VulkanRenderer::RT_GetBlackImage2D();
                 VkDescriptorImageInfo imageInfo = image->GetDescriptor();
                 if (imageInfo.imageView == bd.NativeHandle[CurrentSlotIndex()]) continue;
                 bd.NativeHandle[CurrentSlotIndex()] = imageInfo.imageView;
@@ -249,7 +251,8 @@ namespace Prism
             }
             case RenderResourceType::ImageCube:
             {
-                Ref<VulkanImageCube> image = bd.Resource.As<VulkanImageCube>();
+                WeakRef<VulkanImageCube> image = bd.Resource.As<VulkanImageCube>();
+                if (!image) image = VulkanRenderer::RT_GetBlackImageCube();
                 VkDescriptorImageInfo imageInfo = image->GetDescriptor();
                 if (imageInfo.imageView == bd.NativeHandle[CurrentSlotIndex()]) continue;
                 bd.NativeHandle[CurrentSlotIndex()] = imageInfo.imageView;
