@@ -23,7 +23,7 @@ Shader "Standard/TemplateBase"
             Name "ForwardBase"
             GLSL
             {
-                #include "PrismCommon.glsl"
+                #include "PrismEngine.glsl"
 
                 attribute vec3 a_Position : POSITION;
                 attribute vec2 a_TexCoord : TEXCOORD0; // 暂时这样需要修改
@@ -37,7 +37,7 @@ Shader "Standard/TemplateBase"
 
                 void main()
                 {
-                    gl_Position = Prism_ViewProjection * Prism_Model * vec4(a_Position, 1.0);
+                    gl_Position = Prism_ViewProjection * Prism_ObjectToWorld * vec4(a_Position, 1.0);
                     vs_Output.TexCoord = a_TexCoord;
                 }
 

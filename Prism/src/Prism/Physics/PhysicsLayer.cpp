@@ -23,6 +23,7 @@ namespace Prism {
         uint32_t layerId = GetNextLayerID();
         PhysicsLayer layer = { layerId, name, (uint32_t)BIT(layerId), BIT(layerId) };
         s_Layers.insert(s_Layers.begin() + layerId, layer);
+        s_LayerNames.insert(s_LayerNames.begin() + layerId, name);
 
         if (setCollisions)
         {
@@ -50,6 +51,7 @@ namespace Prism {
             }
         }
 
+        RemoveIfExists<std::string>(s_LayerNames, [&](const std::string& layerName) { return layerName == layerInfo.Name; });
         RemoveIfExists<PhysicsLayer>(s_Layers, [&](const PhysicsLayer& layer) { return layer.LayerID == layerId; });
     }
 
@@ -57,6 +59,8 @@ namespace Prism {
     {
         s_Layers.clear();
         s_Layers.push_back({ 0, "Default", BIT(0), BIT(0) });
+        s_LayerNames.clear();
+        s_LayerNames.push_back("Default");
     }
 
     void PhysicsLayerManager::SetLayerCollision(uint32_t layerId, uint32_t otherLayer, bool collides)
@@ -146,6 +150,7 @@ namespace Prism {
     }
 
     std::vector<PhysicsLayer> PhysicsLayerManager::s_Layers;
+    std::vector<std::string> PhysicsLayerManager::s_LayerNames;
     PhysicsLayer PhysicsLayerManager::s_NullLayer = { 0, "NULL", 0, -1 };
 
 }

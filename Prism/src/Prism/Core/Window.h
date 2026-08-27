@@ -7,6 +7,8 @@
 
 namespace Prism {
 
+	class RendererContext;
+
 	// Window properties 窗口属性
 	struct WindowProps
 	{
@@ -31,8 +33,8 @@ namespace Prism {
 
 		virtual ~Window() {}
 
-		// Called when window refreshes 窗口刷新时调用
-		virtual void OnUpdate() = 0;
+		virtual void ProcessEvents() = 0;
+		virtual void SwapBuffers() = 0;
 
 		virtual uint32_t GetWidth() const = 0;
 		virtual uint32_t GetHeight() const = 0;
@@ -49,6 +51,8 @@ namespace Prism {
 		virtual void SetTitle(const std::string& title) = 0;
 
 		virtual void* GetNativeWindow() const = 0;
+
+		virtual Ref<RendererContext> GetRenderContext() = 0;
 
 		static Window* Create(const WindowProps& props = WindowProps());
 	};

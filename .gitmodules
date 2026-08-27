@@ -19,3 +19,6 @@
 [submodule "Prism/vendor/pybind11"]
 	path = Prism/vendor/pybind11
 	url = git@github.com:HMsabachi/pybind11.git
+[submodule "Prism/vendor/tracy/tracy"]
+	path = Prism/vendor/tracy/tracy
+	url = https://github.com/wolfpld/tracy.git

@@ -9,13 +9,18 @@
 #include "Prism/ImGui/ImGuiLayer.h"
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Renderer2D.h"
+#include "Prism/Renderer/RendererContext.h"
+#include "Prism/Renderer/SceneRenderer.h"
 #include "Prism/Renderer/Buffer/Framebuffer.h"
+#include "Prism/Renderer/RenderCommandQueue.h"
 
 #include "Scripting/CSharp/CSharpScriptEngine.h"
 #include "Scripting/Python/PythonScriptEngine.h"
+#include <pybind11/pybind11.h>
 #include "Prism/Physics/Physics.h"
 
 #include "Prism/Asset/AssetManager.h"
+#include "Prism/Asset/ModelImporter.h"
 
 #include "Prism/ShaderCompiler/ShaderCompiler.h"
 
@@ -36,45 +41,76 @@ namespace Prism
 
     Application* Application::s_Instance = nullptr;
 
+    PRISM_API bool g_ApplicationRunning = true;
+
     Application::Application(const ApplicationProps& props)
-        : m_Props(props)
+        : m_Props(props), m_RenderThread(props.CoreThreadingPolicy)
     {
         PR_PROFILE_FUNCTION();
         PR_CORE_ASSERT(!s_Instance, "Application already exists! 应用已经存在");
         s_Instance = this;
 
         Initialize();
-
-        
     }
     void Application::Initialize()
     {
+        RendererAPI::SetCurrent(m_Props.RendererAPI);
+        m_RenderThread.Run();
         // 初始化窗口 Initialize Window
         m_Window = std::unique_ptr<Window>(Window::Create(WindowProps(m_Props.Name, m_Props.WindowWidth, m_Props.WindowHeight)));
+        m_RenderThread.Pump();
         m_Window->SetEventCallback(BIND_EVENT_FN(OnEvent));
         m_Window->Maximize();
         m_Window->SetVSync(m_Props.VSync);
+        m_RenderThread.Pump();
         // 初始化渲染器 Initialize Renderer
 
         // 初始化时间管理器 Initialize Time Manager
         Time::Init();
         ShaderCompiler::Init();
         // 初始化ImGui层 Initialize ImGui Layer
-        m_ImGuiLayer = new ImGuiLayer("ImGui");
+        m_ImGuiLayer = ImGuiLayer::Create();
         PushOverlay(m_ImGuiLayer);
         // 初始化 PhysX 物理引擎
         Physics::Init();
         // 初始化渲染器 Initialize Renderer
 
-        AssetTypes::Init();
         AssetManager::Init();
         Renderer::Init();
-        Renderer::WaitAndRender();
+
+
+
+        m_RenderThread.Pump();
+
+        m_SceneRenderer = std::make_unique<SceneRenderer>();
+        m_SceneRenderer->Initialize(1280, 720);
     }
 
     Application::~Application()
     {
         PR_PROFILE_FUNCTION();
+
+        m_RenderThread.Pump();
+        m_RenderThread.Pump();
+        m_RenderThread.Pump();
+        for (Layer* layer : m_LayerStack)
+        {
+            layer->OnDetach();
+            delete layer;
+        }
+        ModelImporter::Shutdown();
+        Physics::Shutdown();
+        AssetManager::Shutdown();
+        PythonScriptEngine::Shutdown();
+        CSharpScriptEngine::Shutdown();
+        
+        m_RenderThread.Pump();
+        m_RenderThread.Pump();
+        m_SceneRenderer.reset();
+        Renderer::Shutdown();
+        m_RenderThread.Pump();
+        m_RenderThread.Pump();
+        m_RenderThread.Terminate();
     }
     
 
@@ -103,25 +139,57 @@ namespace Prism
         OnShutdown();
     }
 
+    void Application::Close()
+    {
+        m_Running = false;
+    }
+
     void Application::OnUpdate()
     {
         PR_PROFILE_FUNCTION();
-        Time::Update();
+
+        pybind11::gil_scoped_release gilRelease;
+        {
+            PR_PROFILE_SCOPE("RenderThread Waiting");
+            m_RenderThread.BlockUntilRenderComplete();
+        }
+        PR_PROFILE_PLOT("App.EventQueue", (int64_t)m_EventQueue.size());
+        ProcessEvents();
+        m_RenderThread.NextFrame();
+        m_RenderThread.Kick();
         
         if (!m_Minimized)
         {
+            RendererAPI* rendererAPI = Renderer::GetAPI();
             PR_PROFILE_SCOPE("Update LayerStack")
+            Time::Update();
+            Renderer::Submit([this]() { m_Window->GetRenderContext()->BeginFrame(); });
+            rendererAPI->BeginFrame();
             for (Layer* layer : m_LayerStack)
                 layer->OnUpdate();
-
             Application* app = this;
             Renderer::Submit([app]() { app->RenderImGui(); });
-
-            Renderer::WaitAndRender();
+            rendererAPI->EndFrame();
+            Renderer::Submit([this]() { m_Window->SwapBuffers(); });
+            m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % Renderer::GetConfig().FramesInFlight;
         }
-        m_Window->OnUpdate();
+
+        PR_PROFILE_MARK_FRAME
     }
 #pragma region Private Methods 私有方法
+
+    void Application::ProcessEvents()
+    {
+        PR_PROFILE_FUNCTION();
+        m_Window->ProcessEvents();
+        std::deque<std::function<void()>> events;
+        {
+            std::scoped_lock<std::mutex> lock(m_EventQueueMutex);
+            events.swap(m_EventQueue);
+        }
+        for (auto& event : events)
+            event();
+    }
 
     void Application::OnInit()
     {
@@ -138,10 +206,6 @@ namespace Prism
 
     void Application::OnShutdown()
     {
-        m_LayerStack.Shutdown();
-        CSharpScriptEngine::Shutdown();
-        PythonScriptEngine::Shutdown();
-        Physics::Shutdown();
     }
 
     void Application::RenderImGui()
@@ -160,7 +224,9 @@ namespace Prism
         static float timer = 0.0f;
         timer += Time::GetDeltaTime();
         ImGui::Begin("Renderer");
-        auto& caps = RendererAPI::GetCapabilities();
+        auto& caps = Renderer::GetCapabilities();
+        const char* rendererAPIName = RendererAPI::Current() == RendererAPIType::OpenGL ? "OpenGL" : "Vulkan";
+        ImGui::Text("RendererAPI: %s", rendererAPIName);
         if (ImGui::TreeNode("Base Info"))
         {
             ImGui::Text("Vendor: %s", caps.Vendor.c_str());
@@ -171,6 +237,7 @@ namespace Prism
             ImGui::Text("MaxAnisotropy: %.0f", caps.MaxAnisotropy);
             ImGui::TreePop();
         }
+#if 0
         if (ImGui::TreeNode("2D Renderer Info"))
         {
             auto stats = Renderer2D::GetStats();
@@ -179,21 +246,27 @@ namespace Prism
             Renderer2D::ResetStats();
             ImGui::TreePop();
         }
+#endif
         ImGui::Text("RenderCommandQueue: %d", Renderer::GetRenderCommandQueue().GetSubmitCount());
+        uint32_t submitCount = Renderer::GetRenderCommandQueue().GetSubmitCount();
         Renderer::GetRenderCommandQueue().ResetSubmitCount();
-        static int fps0 = 0, fps1 = 0, capacity;
-        fps0 += (int)(1.0f / Time::GetDeltaTime());
-        fps0 >>= 1;
+        static uint64_t fream = 0, fps = 0, capacity;
+        ++fream;
         if (timer >= 1.0f)
         {
-            timer = 0.0f;
-            fps1 = fps0;
+            fps = static_cast<uint64_t>(fream / timer);
             capacity = Renderer::GetRenderCommandQueue().GetDataPoolCapacity();
+            timer = 0.0f;
+            fream = 0;
         }
         ImGui::Text("RenderDataCapacity: %dMB", capacity);
         ImGui::Text("LiveReferenceCount: %d", RefUtils::GetLiveReferenceCount());
-        ImGui::Text("Fps: %d", fps1);
+        ImGui::Text("Fps: %d", fps);
         ImGui::End();
+
+        PR_PROFILE_PLOT("App.LiveRefs", (int64_t)RefUtils::GetLiveReferenceCount());
+        PR_PROFILE_PLOT("Render.Submits", (int64_t)submitCount);
+        PR_PROFILE_PLOT("Render.DataPoolMB", (int64_t)Renderer::GetRenderCommandQueue().GetDataPoolCapacity());
     }
 
 #pragma region Event Handling 事件处理
@@ -201,6 +274,7 @@ namespace Prism
     {
         PR_PROFILE_FUNCTION();
         m_Running = false;
+        g_ApplicationRunning = false;
         return true;
     }
     bool Application::OnWindowResize(WindowResizeEvent& e)
@@ -214,14 +288,17 @@ namespace Prism
         }
         int width = e.GetWidth(), height = e.GetHeight();
 
-        Renderer::Submit([=]() { RendererAPI::SetViewport(0, 0, width, height); });
+        auto& window = m_Window;
+        Renderer::Submit([&window,width, height]() {
+            window->GetRenderContext()->OnResize(width, height);
+        });
 
-        auto& fbs = FramebufferPool::GetGlobal()->GetAll();
-        for (auto& fb : fbs)
-        {
-            if (!fb->GetSpecification().NoResize)
-                fb->Resize(width, height);
-        }
+        //auto& fbs = FramebufferPool::GetGlobal()->GetAll();
+        //for (auto& fb : fbs)
+        //{
+        //    if (!fb->GetSpecification().NoResize)
+        //        fb->Resize(width, height);
+        //}
 
         m_Minimized = false;
 

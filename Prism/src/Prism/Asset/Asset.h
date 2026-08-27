@@ -4,9 +4,9 @@
 
 namespace Prism {
 
-    enum class AssetType
+    enum class AssetType : int8_t
     {
-        Scene, Mesh, Texture, EnvMap, Audio, Script, PhysicsMat, Shader, Directory, Other, None
+        Scene, Mesh, Texture, EnvMap, Audio, Script, PhysicsMat, Shader, Directory, Other, None, Missing
     };
 
     using AssetHandle = UUID;
@@ -23,6 +23,8 @@ namespace Prism {
         AssetHandle ParentDirectory{};
         bool IsDataLoaded = false;
 
+        virtual bool operator==(const Asset& other) const { return Handle == other.Handle; }
+        virtual bool operator!=(const Asset& other) const { return !(*this == other); }
         virtual ~Asset() {}
     };
 

@@ -79,7 +79,6 @@ namespace Prism
         float fixedDt = Time::GetFixedDeltaTime();
         for (int i = 0; i < fixedSteps; i++)
         {
-            PR_PROFILE_SCOPE("FixedUpdate");
             for (auto* sys : m_SystemOrder) sys->OnFixedUpdate(fixedDt);
         }
 

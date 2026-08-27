@@ -1,12 +1,28 @@
 ﻿#include "prpch.h"
 #include "Material.h"
 #include "Prism/Asset/AssetManager.h"
-#include "Prism/Renderer/Buffer/UniformBuffer.h"
+#include "Buffer/UniformBuffer.h"
 #include "Prism/Renderer/Texture.h"
-#include "Prism/ShaderCompiler/PrismBindings.h"
+#include "Prism/Renderer/RendererAPI.h"
+
+#include "Platform/OpenGL/OpenGLMaterialBackend.h"
+#include "Platform/Vulkan/VulkanMaterialBackend.h"
 
 namespace Prism
 {
+
+
+    Ref<MaterialBackend> MaterialBackend::Create(const WeakRef<Material> material)
+    {
+        switch (RendererAPI::Current())
+        {
+        case RendererAPIType::OpenGL: return Ref<OpenGLMaterialBackend>::Create(material);
+        case RendererAPIType::Vulkan: return Ref<VulkanMaterialBackend>::Create(material);
+        }
+        PR_CORE_ASSERT(false, "Unknown RendererAPI!");
+        return nullptr;
+    }
+
 
     Ref<Material> Material::Create(AssetHandle shaderHandle)
     {
@@ -14,7 +30,7 @@ namespace Prism
     }
 
 
-    Ref<Prism::Material> Material::Create(const Ref<Material>& material)
+    Ref<Material> Material::Create(const Ref<Material>& material)
     {
         return Ref<Material>::Create(material);
     }
@@ -23,6 +39,7 @@ namespace Prism
         : m_Shader(AssetManager::GetAsset<PrismShader>(shaderHandle))
     {
         m_ReloadToken = m_Shader->AddShaderReloadedCallback(std::bind(&Material::OnShaderReloaded, this));
+        m_Backend = MaterialBackend::Create(this);
         AllocateStorage();
     }
 
@@ -31,13 +48,14 @@ namespace Prism
         : m_Shader(material->m_Shader)
     {
         m_ReloadToken = m_Shader->AddShaderReloadedCallback(std::bind(&Material::OnShaderReloaded, this));
+        m_Backend = MaterialBackend::Create(this);
         AllocateStorage();
 
         m_PropertyBuffer = material->m_PropertyBuffer;
         m_Textures = material->m_Textures;
         m_KeywordMask = material->m_KeywordMask;
         m_Name = material->m_Name;
-        m_Dirty = true;
+        m_DataDirty = true;
     }
 
     Material::~Material()
@@ -52,7 +70,7 @@ namespace Prism
         auto* uni = m_Shader->FindUniform(name);
         if (!uni) { PR_CORE_WARN("Material - uniform '{0}' not found", name); return; }
         m_PropertyBuffer.Write((const byte*)data, size, uni->BufferOffset);
-        m_Dirty = true;
+        m_DataDirty = true;
     }
 
     void Material::AllocateStorage()
@@ -62,11 +80,6 @@ namespace Prism
         auto& layout = m_Shader->GetMaterialLayout();
         uint32_t totalSize = layout.GetTotalSize();
         m_PropertyBuffer.Allocate(totalSize);
-        uint32_t maxTexSlot = 0;
-        for (auto& uni : m_Shader->GetUniforms())
-            if (uni.TextureSlot > (int32_t)maxTexSlot)
-                maxTexSlot = (uint32_t)uni.TextureSlot;
-        m_Textures.resize(maxTexSlot + 1);
         for (auto& uni : m_Shader->GetUniforms())
         {
             auto it = std::find_if(m_Uniforms.begin(), m_Uniforms.end(), [&](const PrismShaderCompiler::AST::ShaderUniform& u) { return u.Name == uni.Name; });
@@ -76,9 +89,9 @@ namespace Prism
                 uint32_t size = (uint32_t)uni.BufferSize;
                 if (PrismShaderCompiler::PropertyTypeUtil::IsTextureType(uni.Type))
                 {
-                    uint32_t tempSlot = (uint32_t)it->TextureSlot - Prism::Config::PRISM_BINDING_TEXTURE;
-                    uint32_t slot = (uint32_t)uni.TextureSlot - Prism::Config::PRISM_BINDING_TEXTURE;
-                    m_Textures[slot] = tempTextures[tempSlot];
+                    auto texIt = tempTextures.find((uint32_t)it->TextureSlot);
+                    if (texIt != tempTextures.end())
+                        m_Textures[(uint32_t)uni.TextureSlot] = texIt->second;
                     continue;
                 }
                 m_PropertyBuffer.Write((const byte*)&tempBuffer.Data[it->BufferOffset], size, offset);
@@ -94,10 +107,9 @@ namespace Prism
                 m_PropertyBuffer.Write((const byte*)&uni.DefaultValue[0], copySize, offset);
             }
         }
-        m_UniformBuffer = UniformBuffer::Create(Prism::Config::PRISM_BINDING_MATERIAL, totalSize);
-        m_UniformBuffer->SetData(m_PropertyBuffer);
         m_Uniforms = m_Shader->GetUniforms();
-        m_Dirty = false;
+        m_DataDirty = true;
+        m_Backend->OnAllocate();
     }
 
     void Material::OnShaderReloaded()
@@ -171,18 +183,16 @@ namespace Prism
     {
         auto* uni = m_Shader->FindUniform(name);
         if (!uni || uni->TextureSlot < 0) { PR_CORE_WARN("Material::SetTexture - '{0}' not found", name); return; }
-        uint32_t slot = (uint32_t)uni->TextureSlot - Prism::Config::PRISM_BINDING_TEXTURE;
-        if (m_Textures.size() <= slot) m_Textures.resize(slot + 1);
-        m_Textures[slot] = texture;
+        m_Textures[(uint32_t)uni->TextureSlot] = texture;
+        m_TexturesDirty = true;
     }
 
     void Material::SetTexture(const std::string& name, const Ref<TextureCube>& texture)
     {
         auto* uni = m_Shader->FindUniform(name);
         if (!uni || uni->TextureSlot < 0) { PR_CORE_WARN("Material::SetTexture - '{0}' not found", name); return; }
-        uint32_t slot = (uint32_t)uni->TextureSlot - Prism::Config::PRISM_BINDING_TEXTURE;
-        if (m_Textures.size() <= slot) m_Textures.resize(slot + 1);
-        m_Textures[slot] = texture;
+        m_Textures[(uint32_t)uni->TextureSlot] = texture;
+        m_TexturesDirty = true;
     }
 
 #pragma endregion
@@ -263,66 +273,22 @@ namespace Prism
     {
         auto* uni = m_Shader->FindUniform(name);
         if (!uni || uni->TextureSlot < 0 || uni->Type != PrismShaderCompiler::PropertyType::Texture2D) return nullptr;
-        uint32_t slot = (uint32_t)uni->TextureSlot - Prism::Config::PRISM_BINDING_TEXTURE;
-        if (slot >= m_Textures.size()) return nullptr;
-        return m_Textures[slot].As<Texture2D>();
+        auto it = m_Textures.find((uint32_t)uni->TextureSlot);
+        if (it == m_Textures.end()) return nullptr;
+        return it->second.As<Texture2D>();
     }
 
     Ref<TextureCube> Material::GetTextureCube(const std::string& name) const
     {
         auto* uni = m_Shader->FindUniform(name);
         if (!uni || uni->TextureSlot < 0 || uni->Type != PrismShaderCompiler::PropertyType::TextureCube) return nullptr;
-        uint32_t slot = (uint32_t)uni->TextureSlot - Prism::Config::PRISM_BINDING_TEXTURE;
-        if (slot >= m_Textures.size()) return nullptr;
-        return m_Textures[slot].As<TextureCube>();
-    }
-
-    bool Material::HasProperty(const std::string& name) const
-    {
-        return m_Shader->FindUniform(name) != nullptr;
+        auto it = m_Textures.find((uint32_t)uni->TextureSlot);
+        if (it == m_Textures.end()) return nullptr;
+        return it->second.As<TextureCube>();
     }
 
 #pragma endregion
 
-    Ref<Shader> Material::GetProgram(uint32_t passIndex) const
-    {
-        return m_Shader->GetPassProgram(passIndex, m_KeywordMask);
-    }
-
-    void Material::BindProgram(uint32_t passIndex) const
-    {
-        Ref<Shader> program = m_Shader->GetPassProgram(passIndex, m_KeywordMask);
-        program->Bind();
-        const auto& pass = m_Shader->GetPass(passIndex);
-        if (pass.RenderState)
-            program->ApplyRenderState(*pass.RenderState);
-    }
-
-    void Material::BindUniform() const
-    {
-        if (m_Dirty)
-        {
-            m_UniformBuffer->SetData(m_PropertyBuffer);
-            m_Dirty = false;
-        }
-        m_UniformBuffer->Bind();
-    }
-
-    void Material::BindTexture() const
-    {
-        for (size_t i = 0; i < m_Textures.size(); i++)
-        {
-            if (m_Textures[i])
-                m_Textures[i]->Bind((uint32_t)i + Prism::Config::PRISM_BINDING_TEXTURE);
-        }
-    }
-
-    void Material::Bind(uint32_t passIndex) const
-    {
-        BindProgram(passIndex);
-        BindUniform();
-        BindTexture();
-    }
 
     void Material::SetKeyword(const std::string& name, bool enabled)
     {

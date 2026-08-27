@@ -32,20 +32,17 @@ namespace Prism {
 
         if (s_Settings.BroadphaseAlgorithm != BroadphaseType::AutomaticBoxPrune)
         {
-            physx::PxBounds3* regionBounds = nullptr;
+            physx::PxBounds3* regionBounds = new physx::PxBounds3[(size_t)s_Settings.WorldBoundsSubdivisions * s_Settings.WorldBoundsSubdivisions];
             physx::PxBounds3 globalBounds(ToPhysXVector(s_Settings.WorldBoundsMin), ToPhysXVector(s_Settings.WorldBoundsMax));
             uint32_t regionCount = physx::PxBroadPhaseExt::createRegionsFromWorldBounds(regionBounds, globalBounds, s_Settings.WorldBoundsSubdivisions);
 
-            if (regionCount > 0 && regionBounds != nullptr)
+            for (uint32_t i = 0; i < regionCount; i++)
             {
-                for (uint32_t i = 0; i < regionCount; i++)
-                {
-                    physx::PxBroadPhaseRegion region;
-                    region.mBounds = regionBounds[i];
-                    s_Scene->addBroadPhaseRegion(region);
-                }
-                delete[] regionBounds;
+                physx::PxBroadPhaseRegion region;
+                region.mBounds = regionBounds[i];
+                s_Scene->addBroadPhaseRegion(region);
             }
+            delete[] regionBounds;
         }
     }
 

@@ -1,6 +1,7 @@
 ﻿#include "prpch.h"
 #include "ShaderStorageBuffer.h"
-#include "Platform/OpenGL/Buffer/OpenGLShaderStorageBuffer.h"
+#include "Platform/OpenGL/OpenGLShaderStorageBuffer.h"
+#include "Platform/Vulkan/VulkanShaderStorageBuffer.h"
 
 namespace Prism
 {
@@ -11,6 +12,7 @@ namespace Prism
 		{
 		case RendererAPIType::None:   return nullptr;
 		case RendererAPIType::OpenGL:  return Ref<OpenGLShaderStorageBuffer>::Create(size, usage);
+		case RendererAPIType::Vulkan: return Ref<VulkanShaderStorageBuffer>::Create(size, usage);
 		}
         return nullptr;
 	}

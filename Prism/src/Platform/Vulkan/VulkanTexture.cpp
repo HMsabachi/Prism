@@ -1,0 +1,174 @@
+﻿#include "prpch.h"
+#include "Platform/Vulkan/VulkanTexture.h"
+
+#include "Platform/Vulkan/VulkanContext.h"
+#include "Platform/Vulkan/VulkanDevice.h"
+#include "Prism/Core/RenderThread.h"
+#include "Prism/Renderer/Renderer.h"
+
+#include "stb_image.h"
+
+namespace Prism
+{
+    //////////////////////////////////////////////////////////////////////////////////
+    // Texture2D
+    //////////////////////////////////////////////////////////////////////////////////
+
+    VulkanTexture2D::VulkanTexture2D(const std::string& path, bool srgb)
+        : m_Path(path)
+    {
+        int width, height, channels;
+        Buffer imageData;
+        if (stbi_is_hdr(path.c_str()))
+        {
+            PR_CORE_INFO("Loading HDR texture {0}, srgb={1}", path, srgb);
+            float* data = stbi_loadf(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+            PR_CORE_ASSERT(data, "Could not read HDR image!");
+            m_Format = ImageFormat::RGBA16F;
+            imageData = Buffer::Copy((byte*)data, width * height * 4 * sizeof(float));
+            stbi_image_free(data);
+        }
+        else
+        {
+            PR_CORE_INFO("Loading texture {0}, srgb={1}", path, srgb);
+            stbi_uc* data = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+            PR_CORE_ASSERT(data, "Could not read image!");
+            m_Format = srgb ? ImageFormat::SRGB : ImageFormat::RGBA;
+            imageData = Buffer::Copy((byte*)data, width * height * 4);
+            stbi_image_free(data);
+        }
+
+        m_Width = width;
+        m_Height = height;
+        m_Loaded = true;
+
+        m_Image = Image2D::Create(m_Format, m_Width, m_Height, std::move(imageData));
+
+        if (RenderThread::IsCurrentThreadRT())
+            Invalidate();
+        else
+        {
+            Ref<VulkanTexture2D> instance = this;
+            Renderer::Submit([instance]() mutable
+            {
+                instance->Invalidate();
+            });
+        }
+    }
+
+    VulkanTexture2D::VulkanTexture2D(ImageFormat format, uint32_t width, uint32_t height, const void* data, TextureWrap wrap)
+        : m_Format(format), m_Wrap(wrap), m_Width(width), m_Height(height)
+    {
+        m_Loaded = true;
+
+        m_Image = Image2D::Create(format, width, height, data);
+        if (!data)
+            m_Image->GetBuffer().Allocate(Utils::GetImageMemorySize(format, width, height));
+
+        if (RenderThread::IsCurrentThreadRT())
+            Invalidate();
+        else
+        {
+            Ref<VulkanTexture2D> instance = this;
+            Renderer::Submit([instance]() mutable
+            {
+                instance->Invalidate();
+            });
+        }
+    }
+
+    VulkanTexture2D::~VulkanTexture2D()
+    {
+        if (m_Image)
+            m_Image->Release();
+    }
+
+    void VulkanTexture2D::Invalidate()
+    {
+        m_Image.As<VulkanImage2D>()->SetSamplerWrap(m_Wrap);
+        m_Image->Invalidate();
+    }
+
+    void VulkanTexture2D::Lock()
+    {
+    }
+
+    void VulkanTexture2D::Unlock()
+    {
+    }
+
+    Buffer VulkanTexture2D::GetWriteableBuffer()
+    {
+        return m_Image->GetBuffer();
+    }
+
+    uint32_t VulkanTexture2D::GetMipLevelCount() const
+    {
+        return Utils::CalculateMipCount(m_Width, m_Height);
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////
+    // TextureCube
+    //////////////////////////////////////////////////////////////////////////////////
+
+    VulkanTextureCube::VulkanTextureCube(ImageFormat format, uint32_t width, uint32_t height, const void* data)
+        : m_Format(format), m_Width(width), m_Height(height)
+    {
+        m_Image = ImageCube::Create(format, width, height, data);
+
+        if (RenderThread::IsCurrentThreadRT())
+            Invalidate();
+        else
+        {
+            Ref<VulkanTextureCube> instance = this;
+            Renderer::Submit([instance]() mutable
+            {
+                instance->Invalidate();
+            });
+        }
+    }
+
+    VulkanTextureCube::~VulkanTextureCube()
+    {
+        if (m_Image)
+            m_Image->Release();
+    }
+
+    void VulkanTextureCube::Invalidate()
+    {
+        m_Image->Invalidate();
+    }
+
+    uint32_t VulkanTextureCube::GetMipLevelCount() const
+    {
+        return Utils::CalculateMipCount(m_Width, m_Height);
+    }
+
+    VkImageView VulkanTextureCube::CreateImageViewSingleMip(uint32_t mip)
+    {
+        auto device = VulkanContext::GetCurrentDevice();
+
+        VkFormat format = Utils::VulkanImageFormat(m_Format);
+
+        VkImageViewCreateInfo view{};
+        view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        view.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+        view.format = format;
+        view.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+        view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        view.subresourceRange.baseMipLevel = mip;
+        view.subresourceRange.baseArrayLayer = 0;
+        view.subresourceRange.layerCount = 6;
+        view.subresourceRange.levelCount = 1;
+        view.image = m_Image.As<VulkanImageCube>()->GetImageInfo().Image;
+
+        VkImageView result;
+        VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &view, nullptr, &result));
+        return result;
+    }
+
+    void VulkanTextureCube::GenerateMips(bool readonly)
+    {
+        m_Image.As<VulkanImageCube>()->GenerateMips(readonly);
+    }
+}

@@ -2,9 +2,6 @@
 #include "ObjectsPanel.h"
 #include "Prism/ImGui/ImGui.h"
 
-#include "Prism/Core/Warning.h"
-PR_WARNING_DISABLE(4312)
-
 namespace Prism {
 
     ObjectsPanel::ObjectsPanel()
@@ -14,14 +11,14 @@ namespace Prism {
 
     void ObjectsPanel::DrawObject(const char* label, AssetHandle handle)
     {
-        ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(30, 30));
+        UI::Image(m_CubeImage->GetImage(), ImVec2(30, 30));
         ImGui::SameLine();
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 5);
         ImGui::Selectable(label);
 
         if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
         {
-            ImGui::Image((ImTextureID)m_CubeImage->GetRendererID(), ImVec2(20, 20));
+            UI::Image(m_CubeImage->GetImage(), ImVec2(20, 20));
             ImGui::SameLine();
 
             ImGui::Text(label);

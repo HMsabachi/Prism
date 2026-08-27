@@ -1,6 +1,13 @@
 ﻿#include "prpch.h"
 #include "ImGui.h"
 #include "Prism/Renderer/Texture.h"
+#include "Platform/OpenGL/OpenGLImage.h"
+#include "Platform/OpenGL/OpenGLTexture.h"
+#include "Platform/Vulkan/VulkanImage.h"
+#include "Platform/Vulkan/VulkanTexture.h"
+#include "backends/imgui_impl_vulkan.h"
+
+#include "Prism/Renderer/RendererAPI.h"
 #include "Prism/Core/Warning.h"
 PR_WARNING_DISABLE(4312)
 
@@ -11,6 +18,64 @@ namespace UI {
     static uint32_t s_Counter = 0;
     static char s_IDBuffer[16];
     static int s_CheckboxCount = 0;
+
+    struct VulkanImGuiTextureEntry
+    {
+        VkDescriptorSet Set = VK_NULL_HANDLE;
+        VkSampler Sampler = VK_NULL_HANDLE;
+        VkImageLayout Layout = VK_IMAGE_LAYOUT_UNDEFINED;
+        int LastUsedFrame = 0;
+    };
+    static std::unordered_map<VkImageView, VulkanImGuiTextureEntry> s_VulkanImGuiTextureCache;
+    static int s_ImGuiTextureFrame = -1;
+
+    inline static ImTextureID GetImGuiTextureID(const Ref<Image2D>& image)
+    {
+        switch (RendererAPI::Current())
+        {
+            case RendererAPIType::None:
+                PR_CORE_ASSERT(false, "RendererAPI::None is currently not supported!");
+                return nullptr;
+            case RendererAPIType::OpenGL:
+                return (ImTextureID)(uint64_t)image.As<OpenGLImage2D>()->GetRendererID();
+            case RendererAPIType::Vulkan:
+            {
+                Ref<VulkanImage2D> vulkanImage = image.As<VulkanImage2D>();
+                const auto& imageInfo = vulkanImage->GetImageInfo();
+                if (!imageInfo.ImageView)
+                    return nullptr;
+                VkImageLayout layout = vulkanImage->GetDescriptor().imageLayout;
+                int frame = ImGui::GetFrameCount();
+                if (frame != s_ImGuiTextureFrame)
+                {
+                    s_ImGuiTextureFrame = frame;
+                    // 延迟 FIF 帧淘汰：被归还 set 的最后使用命令已被同槽 fence 同步完成
+                    for (auto it = s_VulkanImGuiTextureCache.begin(); it != s_VulkanImGuiTextureCache.end(); )
+                    {
+                        if (it->second.LastUsedFrame <= frame - (int)VulkanFramesInFlight)
+                        {
+                            ImGui_ImplVulkan_RemoveTexture(it->second.Set);
+                            it = s_VulkanImGuiTextureCache.erase(it);
+                        }
+                        else
+                            ++it;
+                    }
+                }
+                VulkanImGuiTextureEntry& entry = s_VulkanImGuiTextureCache[imageInfo.ImageView];
+                if (entry.Set == VK_NULL_HANDLE || entry.Sampler != imageInfo.Sampler || entry.Layout != layout)
+                {
+                    if (entry.Set)
+                        ImGui_ImplVulkan_RemoveTexture(entry.Set);
+                    entry.Set = ImGui_ImplVulkan_AddTexture(imageInfo.Sampler, imageInfo.ImageView, layout);
+                    entry.Sampler = imageInfo.Sampler;
+                    entry.Layout = layout;
+                }
+                entry.LastUsedFrame = frame;
+                return (ImTextureID)entry.Set;
+            }
+        }
+        return nullptr;
+    }
 
     void PushID()
     {
@@ -269,15 +334,27 @@ namespace UI {
 
     // ── Texture types ──
 
-    bool Property(const std::string& label, const Ref<Texture2D>& texture, uint32_t fallbackRendererID)
+    void Image(const Ref<::Prism::Image2D>& image, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& b_color)
+    {
+        auto texID = GetImGuiTextureID(image);
+        ImGui::Image((void*)(intptr_t)texID, size, uv0, uv1);
+    }
+
+    bool ImageButton(const Ref<::Prism::Image2D>& image, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, int frame_padding, const ImVec4& bg_col, const ImVec4& tint_col)
+    {
+        auto texID = GetImGuiTextureID(image);
+        return ImGui::ImageButton((void*)(intptr_t)texID, size, uv0, uv1, frame_padding, bg_col, tint_col);
+    }
+
+    PRISM_API bool Property(const std::string& label, const Ref<Texture2D>& texture, const Ref<::Prism::Image2D> fallback)
     {
         ImGui::Text("%s", label.c_str());
         ImGui::NextColumn();
         ImGui::PushItemWidth(-1);
 
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
-        uint32_t texID = texture ? texture->GetRendererID() : fallbackRendererID;
-        ImGui::Image((void*)(intptr_t)texID, ImVec2(64, 64));
+        auto texID = texture ? GetImGuiTextureID(texture->GetImage()) : GetImGuiTextureID(fallback);
+        ImGui::Image(texID, ImVec2(64, 64));
         ImGui::PopStyleVar();
 
         bool clicked = false;
@@ -289,7 +366,7 @@ namespace UI {
                 ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
                 ImGui::TextUnformatted(texture->GetPath().c_str());
                 ImGui::PopTextWrapPos();
-                ImGui::Image((void*)(intptr_t)texture->GetRendererID(), ImVec2(384, 384));
+                ImGui::Image(texID, ImVec2(384, 384));
                 ImGui::EndTooltip();
             }
             if (ImGui::IsItemClicked())
@@ -300,30 +377,7 @@ namespace UI {
         ImGui::NextColumn();
         return clicked;
     }
-
-    bool Property(const std::string& label, const Ref<TextureCube>& texture, uint32_t fallbackRendererID)
-    {
-        ImGui::Text("%s", label.c_str());
-        ImGui::NextColumn();
-        ImGui::PushItemWidth(-1);
-
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
-        ImGui::Image((void*)(intptr_t)fallbackRendererID, ImVec2(64, 64));
-        ImGui::PopStyleVar();
-
-        if (ImGui::IsItemHovered() && texture)
-        {
-            ImGui::BeginTooltip();
-            ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-            ImGui::TextUnformatted(texture->GetPath().c_str());
-            ImGui::PopTextWrapPos();
-            ImGui::EndTooltip();
-        }
-
-        ImGui::PopItemWidth();
-        ImGui::NextColumn();
-        return false;
-    }
+  
 
     // ── Combo ──
 
@@ -359,8 +413,8 @@ namespace UI {
     }
 
 
-	PRISM_API bool PropertySlider(const std::string& label, int& value, int min, int max)
-	{
+    PRISM_API bool PropertySlider(const std::string& label, int& value, int min, int max)
+    {
         bool modified = false;
 
         ImGui::Text(label.c_str());
@@ -376,9 +430,27 @@ namespace UI {
         ImGui::NextColumn();
         return modified;
 
-	}
+    }
 
-	// ── Color ──
+    PRISM_API bool PropertySlider(const std::string& label, float& value, float min, float max)
+    {
+        bool modified = false;
+
+        ImGui::Text(label.c_str());
+        ImGui::NextColumn();
+        ImGui::PushItemWidth(-1);
+
+        s_IDBuffer[0] = '#';
+        s_IDBuffer[1] = '#';
+        memset(s_IDBuffer + 2, 0, 14);
+        _itoa(s_Counter++, s_IDBuffer + 2, 16);
+        modified = ImGui::SliderFloat(s_IDBuffer, &value, min, max);
+        ImGui::PopItemWidth();
+        ImGui::NextColumn();
+        return modified;
+    }
+
+    // ── Color ──
 
     bool PropertyColor(const std::string& label, glm::vec3& values)
     {

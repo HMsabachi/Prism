@@ -1,5 +1,6 @@
 ﻿#include "prpch.h"
 #include "ShaderCompiler.h"
+#include "Prism/ShaderCompiler/PrismBindings.h"
 
 #include "Prism/Utilities/Utilities.h"
 #include "Prism/Asset/AssetManager.h"
@@ -29,14 +30,19 @@ namespace Prism
     {
         using namespace PrismShaderCompiler;
 
-        CompilerConfig config;
+        CompilerConfig config = {
+        };
         config.IncludeRoot = "Assets/Shaders/Include";
-        config.EngineRoot = "Assets/Shaders/Engine";
         config.ReadFile = &Prism::File::ReadFile;
         config.OnLog = &ShaderCompiler_LogCallback;
         config.ResolveUsePass = [](const std::string& shaderName) -> CompiledShader {
             return AssetManager::GetShaderLibrary()->OnResolveUsePass(shaderName);
         };
+
+        config.OpenGLMaterialUniformBufferBinding = Config::GL_UBO_BASE_MATERIAL;
+        config.OpenGLTextureBeginBinding = Config::GL_TEX_BASE_MATERIAL;
+        config.VulkanMaterialUniformBufferSet = Config::PRISM_VULKAN_SET_MATERIAL;
+        config.VulkanTextureBeginSet = Config::PRISM_VULKAN_SET_MATERIAL;
 
         s_Instance = new PrismShaderCompiler::ShaderCompiler(config);
     }

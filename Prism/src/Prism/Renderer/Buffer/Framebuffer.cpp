@@ -1,9 +1,10 @@
 ﻿#include "prpch.h"
 #include "Framebuffer.h"
 
-#include "Platform/OpenGL/Buffer/OpenGLFramebuffer.h"
+#include "Platform/OpenGL/OpenGLFramebuffer.h"
+#include "Platform/Vulkan/VulkanFramebuffer.h"
 
-namespace Prism 
+namespace Prism
 {
 
 	Ref<Framebuffer> Framebuffer::Create(const FramebufferSpecification& spec)
@@ -11,11 +12,12 @@ namespace Prism
 		Ref<Framebuffer> result = nullptr;
 
 		switch (RendererAPI::Current())
-		{	
+		{
 		case RendererAPIType::None:		return nullptr;
-		case RendererAPIType::OpenGL:	result = Ref<OpenGLFramebuffer>::Create(spec);
+		case RendererAPIType::OpenGL:	result = Ref<OpenGLFramebuffer>::Create(spec); break;
+		case RendererAPIType::Vulkan:	result = Ref<VulkanFramebuffer>::Create(spec); break;
 		}
-		FramebufferPool::GetGlobal()->Add(result);
+		// FramebufferPool::GetGlobal()->Add(result);
 		return result;
 	}
 

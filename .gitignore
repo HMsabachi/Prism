@@ -6,6 +6,7 @@ bin/
 bin-int/
 build/
 obj/
+cache/
 Logs/
 Future/
 __pycache__/
@@ -19,6 +20,7 @@ Prism.Scripting/Prism.Scripting.csproj
 # Files
 *.meta
 *.pxm
+*.par
 **.pyc
 CLAUDE.md
 *.json
@@ -27,6 +29,7 @@ CLAUDE.md
 **.vcxproj.user
 **.vcxproj
 **.vcxproj.filters
+**.nsight-gfxproj
 *.ini
 *.targets
 *.csproj
@@ -38,3 +41,7 @@ CLAUDE.md
 /Prism/vendor/Rolky/Rolky.Native/x64/Debug
 /Prism/vendor/Rolky/Tests/Testing.Native/x64/Debug
 
+# vendor: Vulkan SDK download cache (installer/tarball)
+/Prism/vendor/VulkanSDK/
+
+/Prism.Scripting/obj

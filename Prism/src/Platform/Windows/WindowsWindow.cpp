@@ -1,11 +1,11 @@
 ﻿#include "prpch.h"
 #include "WindowsWindow.h"
 
-#include "Platform/OpenGL/OpenGLContect.h"
-
+#include "Prism/Core/Application.h"
 #include "Prism/Events/ApplicationEvent.h"
 #include "Prism/Events/MouseEvent.h"
 #include "Prism/Events/KeyEvent.h"
+#include "Prism/Renderer/Renderer.h"
 
 namespace Prism {
 
@@ -54,11 +54,20 @@ namespace Prism {
             glfwSetErrorCallback(GLFWErrorCallback);
             s_GLFWInitialized = true;
         }
-
+        switch (RendererAPI::Current())
+        {
+            case RendererAPIType::OpenGL:
+                break;
+            case RendererAPIType::Vulkan:
+                glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+                break;
+            default: PR_CORE_ASSERT(false, "Unknown RendererAPI!"); break;
+        }
+            
         m_Window = glfwCreateWindow((int)props.Width, (int)props.Height, m_Data.Title.c_str(), nullptr, nullptr);
         
         // 创建图形API上下文 Creat graphics API Context
-        CreatGraphicsApiContext();
+        CreateGraphicsApiContext();
 
         glfwSetWindowUserPointer(m_Window, &m_Data);
 
@@ -82,22 +91,21 @@ namespace Prism {
 
 
 
-    void WindowsWindow::OnUpdate()
+    void WindowsWindow::ProcessEvents()
     {
         PR_PROFILE_FUNCTION();
 
         glfwPollEvents();
-        m_Context->SwapBuffers();
+    }
+
+    void WindowsWindow::SwapBuffers()
+    {
+        m_RendererContext->SwapBuffers();
     }
 
     void WindowsWindow::SetVSync(bool enabled)
     {
-        PR_PROFILE_FUNCTION();
-        if (enabled)
-            glfwSwapInterval(1);
-        else
-            glfwSwapInterval(0);
-
+        m_RendererContext->SetVSync(enabled);
         m_Data.VSync = enabled;
     }
 
@@ -113,13 +121,19 @@ namespace Prism {
 
     void WindowsWindow::SetTitle(const std::string& title)
     {
-        glfwSetWindowTitle(m_Window, title.c_str());
+        if (RenderThread::IsCurrentThreadRT())
+            Application::Get().QueueEvent([=]() {
+                glfwSetWindowTitle(m_Window, title.c_str());
+                });
+        else
+            glfwSetWindowTitle(m_Window, title.c_str());
+
     }
 
-    void WindowsWindow::CreatGraphicsApiContext()
+    void WindowsWindow::CreateGraphicsApiContext()
     {
-        m_Context = new OpenGLContext(m_Window);
-        m_Context->Init();
+        m_RendererContext = RendererContext::Create(m_Window);
+        m_RendererContext->Create();
     }
 
     void WindowsWindow::SetGlfwEventCallback()

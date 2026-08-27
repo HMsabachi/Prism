@@ -45,6 +45,20 @@ namespace Prism {
         }
 
         {
+            auto& reg = m_Scene->GetRegistry();
+            auto colliderView = reg.view<TransformComponent>(entt::exclude<RigidBodyComponent>);
+            for (auto entity : colliderView)
+            {
+                if (reg.any_of<BoxColliderComponent, SphereColliderComponent, CapsuleColliderComponent, MeshColliderComponent>(entity))
+                {
+                    Entity e = { entity, m_Scene };
+                    if (!e.HasComponent<RigidBodyComponent>())
+                        e.AddComponent<RigidBodyComponent>();
+                }
+            }
+        }
+
+        {
             auto view = m_Scene->GetAllEntitiesWith<RigidBodyComponent>();
             for (auto entity : view)
             {
@@ -118,7 +132,7 @@ namespace Prism {
                     {
                         for (auto& debugMesh : collider.ProcessedMeshes)
                             rs->SubmitDebugMesh(debugMesh,
-                                m_Scene->GetTransformRelativeToParent(e));
+                                glm::rotate(m_Scene->GetTransformRelativeToParent(e), glm::radians(-90.0f), glm::vec3(1, 0, 0)));
                     }
                     else if (collider.CollisionMesh)
                     {

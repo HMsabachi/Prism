@@ -1,11 +1,12 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "../Shader.h"
 #include "ComputeShader.h"
-#include "ComputeShaderParserData.h"
-#include "ComputeShaderParser.h"
+
+#include "Prism/ShaderCompiler/ShaderCompiler.h"
 
 #include "../Texture.h"
 #include "../Renderer.h"
+#include "../Buffer/UniformBuffer.h"
 #include "../Buffer/ShaderStorageBuffer.h"
 
 
@@ -13,6 +14,21 @@ namespace Prism
 {
 
 	std::vector<Ref<ComputeShader>> ComputeShader::s_AllComputeShader;
+
+	static ComputeBindingKind ToComputeBindingKind(PrismShaderCompiler::CSL::ResourceKind kind)
+	{
+		using K = PrismShaderCompiler::CSL::ResourceKind;
+		using B = ComputeBindingKind;
+		switch (kind)
+		{
+		case K::UniformBuffer:   return B::UniformBuffer;
+		case K::StorageBuffer:   return B::StorageBuffer;
+		case K::Image2D:
+		case K::Image3D:
+		case K::ImageCube:       return B::Image;
+		default:                 return B::Sampler;
+		}
+	}
 
 	Ref<ComputeShader> ComputeShader::Create(const std::string& filePath)
 	{
@@ -35,27 +51,59 @@ namespace Prism
 
 	void ComputeShader::Load()
 	{
-		auto source = File::ReadFile(m_FilePath);
-		auto result = ComputeShaderParser::Parse(source);
-		uint32_t index = 0;
-		for (auto& resource : result.resources)
+		auto& compiler = ShaderCompiler::Get();
+		m_Compiled = compiler.CompileComputeFile(m_FilePath);
+
+		if (m_Compiled.ShaderName.empty())
 		{
-			Resource r;
-			r.name = resource.name;
-			r.type = resource.type;
-			r.binding = resource.binding;
-			m_ResourcesMap[r.name] = index++;
-			m_Resources.push_back(r);
+			PR_CORE_ERROR("ComputeShader::Load - Parse failed for '{}'", m_FilePath);
+			return;
 		}
-		for (auto& kernel : result.kernels)
+		m_Name = std::move(m_Compiled.ShaderName);
+
+		PR_CORE_INFO("CSL parsed '{}': {} kernels, {} resources",
+			m_Name, m_Compiled.Kernels.size(), m_Compiled.Resources.size());
+
+		uint32_t index = 0;
+		for (auto& resource : m_Compiled.Resources)
 		{
+			ComputeResourceBinding r;
+			r.Kind = ToComputeBindingKind(resource.Kind);
+			r.Binding = resource.Binding;
+			r.ReadOnly = resource.ReadOnly;
+			r.WriteOnly = resource.WriteOnly;
+
+			using K = PrismShaderCompiler::CSL::ResourceKind;
+			r.Layered = (resource.Kind == K::ImageCube);
+
+			std::string key = !resource.InstanceName.empty() ? resource.InstanceName
+				: !resource.BlockName.empty() ? resource.BlockName
+				: resource.Name;
+			m_ResourcesMap[key] = index++;
+			m_Resources.push_back(std::move(r));
+		}
+
+		for (uint32_t i = 0; i < m_Compiled.Kernels.size(); ++i)
+		{
+			auto out = compiler.GenerateComputeGLSL(m_Compiled, i);
+
+			for (auto& w : out.Warnings)
+				PR_CORE_WARN("CSL kernel '{}' GLSL: {}", m_Compiled.Kernels[i].Name, w);
+			for (auto& e : out.Errors)
+				PR_CORE_ERROR("CSL kernel '{}' GLSL: {}", m_Compiled.Kernels[i].Name, e);
+
 			Kernel k;
-			k.name = kernel.name;
-			k.groupSizeX = kernel.numThreads[0];
-			k.groupSizeY = kernel.numThreads[1];
-			k.groupSizeZ = kernel.numThreads[2];
-			k.shader.Reset(Shader::Create(kernel.source));
-			m_Kernels.push_back(k);
+			k.name = m_Compiled.Kernels[i].Name;
+			k.groupSizeX = m_Compiled.Kernels[i].GroupSizeX;
+			k.groupSizeY = m_Compiled.Kernels[i].GroupSizeY;
+			k.groupSizeZ = m_Compiled.Kernels[i].GroupSizeZ;
+
+			if (out.Errors.empty() && !out.Source.empty())
+				k.shader = Shader::Create(out.Source.c_str());
+			else
+				PR_CORE_ERROR("ComputeShader::Load - kernel '{}' produced no GLSL, skipped", k.name);
+
+			m_Kernels.push_back(std::move(k));
 		}
 	}
 
@@ -80,125 +128,36 @@ namespace Prism
 		return true;
 	}
 
-	void ComputeShader::SetBuffer(int32_t kernel,const std::string& name, Ref<ShaderStorageBuffer>& ssbo)
+	void ComputeShader::SetUniformBuffer(int32_t kernel, const std::string& name, Ref<UniformBuffer> ubo)
 	{
 		auto id = FindRes(name);
 		if (id == -1) return;
-		m_Resources[id].ssbo = ssbo;
+		m_Resources[id].UBO = ubo;
 	}
-	void ComputeShader::SetImage2D(int32_t kernel,const std::string& name, Ref<Texture2D>& tex, uint32_t level, bool layered)
+	void ComputeShader::SetBuffer(int32_t kernel, const std::string& name, Ref<ShaderStorageBuffer> ssbo)
 	{
 		auto id = FindRes(name);
 		if (id == -1) return;
-		m_Resources[id].texture2D = tex;
-		m_Resources[id].level = level;
-		m_Resources[id].layered = layered;
+		m_Resources[id].SSBO = ssbo;
 	}
-	void ComputeShader::SetImageCube(int32_t kernel, const std::string& name, Ref<TextureCube>& tex, uint32_t level, bool layered)
+	void ComputeShader::SetTexture(int32_t kernel, const std::string& name, Ref<Texture> tex)
 	{
 		auto id = FindRes(name);
 		if (id == -1) return;
-		m_Resources[id].textureCube = tex;
-		m_Resources[id].level = level;
-		m_Resources[id].layered = layered;
+		m_Resources[id].Texture = tex;
 	}
-	void ComputeShader::SetTexture2D(int32_t kernel, const std::string& name, Ref<Texture2D>& tex)
+	void ComputeShader::SetImage(int32_t kernel, const std::string& name, Ref<Texture> tex, uint32_t level)
 	{
 		auto id = FindRes(name);
 		if (id == -1) return;
-		m_Resources[id].texture2D = tex;
-	}
-	void ComputeShader::SetTextureCube(int32_t kernel, const std::string& name, Ref<TextureCube>& tex)
-	{
-		auto id = FindRes(name);
-		if (id == -1) return;
-		m_Resources[id].textureCube = tex;
-	}
-
-	void ComputeShader::SetInt(int32_t kernel, const std::string& name, int32_t value)
-	{
-		if(!IsLegalID(kernel)) return;
-		auto& k = m_Kernels[kernel];
-		k.shader->Bind();
-		k.shader->SetInt(name, value);
-	}
-
-	void ComputeShader::SetFloat(int32_t kernel, const std::string& name, float value)
-	{
-		if (!IsLegalID(kernel)) return;
-		auto& k = m_Kernels[kernel];
-		k.shader->Bind();
-		k.shader->SetFloat(name, value);
-	}
-
-	static TextureAccess GetTextureAccess(ComputeShaderResourceType type)
-	{
-		switch (type)
-		{
-		case ComputeShaderResourceType::None: return TextureAccess::ReadOnly;
-		case ComputeShaderResourceType::RBuffer: return TextureAccess::ReadOnly;
-		case ComputeShaderResourceType::WBuffer: return TextureAccess::WriteOnly;
-		case ComputeShaderResourceType::RWBuffer: return TextureAccess::ReadWrite;
-		case ComputeShaderResourceType::RImage2D: return TextureAccess::ReadOnly;
-		case ComputeShaderResourceType::WImage2D: return TextureAccess::WriteOnly;
-		case ComputeShaderResourceType::RWImage2D: return TextureAccess::ReadWrite;
-		case ComputeShaderResourceType::RImageCube: return TextureAccess::ReadOnly;
-		case ComputeShaderResourceType::WImageCube: return TextureAccess::WriteOnly;
-		case ComputeShaderResourceType::RWImageCube: return TextureAccess::ReadWrite;
-		case ComputeShaderResourceType::Texture2D: return TextureAccess::ReadOnly;
-		case ComputeShaderResourceType::TextureCube: return TextureAccess::ReadOnly;
-		default: return TextureAccess::ReadOnly;
-		}
-	}
-
-	static bool IsImage(ComputeShaderResourceType type)
-	{
-		switch (type)
-		{
-		case ComputeShaderResourceType::RImage2D:
-		case ComputeShaderResourceType::WImage2D:
-		case ComputeShaderResourceType::RWImage2D:
-		case ComputeShaderResourceType::RImageCube:
-		case ComputeShaderResourceType::WImageCube:
-		case ComputeShaderResourceType::RWImageCube:
-			return true;
-		default:
-			return false;
-		}
+		m_Resources[id].Texture = tex;
+		m_Resources[id].Level = level;
 	}
 
 	void ComputeShader::Dispatch(int32_t kernel, uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ)
 	{
 		if (!IsLegalID(kernel)) return;
-		std::unordered_set<Ref<Texture>> usedTextures;
-		std::unordered_set<Ref<ShaderStorageBuffer>> usedBuffer;
-		auto& k = m_Kernels[kernel];
-		k.shader->Bind();
-		for (auto& res : m_Resources)
-		{
-			if (auto ssbo = res.ssbo)
-			{
-				usedBuffer.insert(ssbo);
-				ssbo->Bind(res.binding);
-			}
-			if (auto texture = res.texture2D)
-			{
-				usedTextures.insert(texture);
-				if (IsImage(res.type))
-					texture->BindImage(res.binding, GetTextureAccess(res.type), res.layered, res.level);
-				else
-					texture->Bind(res.binding);
-			}
-			if (auto textureCube = res.textureCube)
-			{
-				usedTextures.insert(textureCube);
-				if (IsImage(res.type))
-					textureCube->BindImage(res.binding, GetTextureAccess(res.type), res.layered, res.level);
-				else
-					textureCube->Bind(res.binding);
-			}
-		}
-		k.shader->DispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
+		Renderer::GetAPI()->DispatchCompute(m_Kernels[kernel].shader, m_Resources, numGroupsX, numGroupsY, numGroupsZ);
 	}
 
 }

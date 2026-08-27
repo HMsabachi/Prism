@@ -2,20 +2,20 @@
 
 #ifdef PR_PLATFORM_WINDOWS
 
-extern Prism::Application* Prism::CreateApplication();
+extern Prism::Application* Prism::CreateApplication(int argc, char** argv);
+
+namespace Prism { extern PRISM_API bool g_ApplicationRunning; }
 
 int main(int argc, char** argv)
 {
-	PR_PROFILE_BEGIN_SESSION("Startup", "PrismProfile-Startup.json");
-	auto app = Prism::CreateApplication();
-	PR_PROFILE_END_SESSION();
-	PR_PROFILE_BEGIN_SESSION("Runtime", "PrismProfile-Runtime.json");
-	app->Run();
-	PR_PROFILE_END_SESSION();
-	PR_PROFILE_BEGIN_SESSION("Startup", "PrismProfile-Shutdown.json");
-	delete app;
-	PR_PROFILE_END_SESSION();
-	return 0;
+    while (Prism::g_ApplicationRunning)
+    {
+        auto app = Prism::CreateApplication(argc, argv);
+        PR_CORE_ASSERT(app, "Client Application is null!");
+        app->Run();
+        delete app;
+    }
+    return 0;
 }
 
 #endif

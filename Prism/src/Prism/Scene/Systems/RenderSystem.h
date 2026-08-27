@@ -1,7 +1,7 @@
 ﻿#pragma once
 
 #include "ISystem.h"
-#include "Prism/Renderer/RenderPipeline.h"
+#include "Prism/Renderer/SceneRenderer.h"
 
 namespace Prism
 {
@@ -24,18 +24,11 @@ namespace Prism
         void SubmitDebugMesh(Ref<Mesh> mesh, const glm::mat4& transform,
                              Ref<Material> material = nullptr);
 
-        Ref<RenderPass> GetFinalRenderPass();
-        uint32_t GetFinalColorBufferID();
-        RenderPipelineOptions& GetOptions();
         RenderConfig& GetConfig() { return m_Config; }
         const RenderConfig& GetConfig() const { return m_Config; }
 
-        static std::pair<Ref<TextureCube>, Ref<TextureCube>>
-            CreateEnvironmentMap(const std::string& filepath);
-
     private:
         Scene* m_Scene;
-        std::unique_ptr<RenderPipeline> m_Pipeline;
         RenderConfig m_Config;
         uint32_t m_ViewportWidth = 1280, m_ViewportHeight = 720;
 

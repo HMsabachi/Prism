@@ -9,14 +9,14 @@
 
 ## 1. 渲染架构总览
 
-Prism 采用 **RenderPipeline + RenderSystem** 架构，渲染流程由 `RenderSystem`（ECS System）驱动，`RenderPipeline` 执行多 Pass 渲染。
+Prism 采用 **SceneRenderer + RenderSystem** 架构。`SceneRenderer` 是应用级全局单例（生命周期归 Application，不随 Scene 重建），负责渲染管线编排与 GL 资源；`RenderSystem`（ECS System）每帧遍历场景收集 `FrameSnapshot` 并提交给 `SceneRenderer::Get().Execute()` 执行多 Pass 渲染。
 
 ```
 Scene::OnRender(dt)
   └── RenderSystem::OnRender(dt)
         ├── CollectMeshRenderers(snapshot)   ← 遍历 ECS 收集 MeshRenderer
         ├── CollectDebugDraws(snapshot)      ← 收集调试绘制
-        └── RenderPipeline::Execute(snapshot)
+        └── SceneRenderer::Get().Execute(snapshot)
               ├── BeginFrame()               ← 上传 Per-Frame UBO
               ├── UpdateShadowData()         ← CSM 级联分割
               ├── ShadowPass()               ← 4 级联深度渲染
@@ -46,18 +46,21 @@ class RenderSystem : public ISystem
 };
 ```
 
-### 2.2 RenderPipeline
+### 2.2 SceneRenderer
 
-位置：`Prism/src/Prism/Renderer/RenderPipeline.h`
+位置：`Prism/src/Prism/Renderer/SceneRenderer.h`（应用级全局单例，Application 持有生命周期）
 
 ```cpp
-class RenderPipeline
+class SceneRenderer
 {
+    static SceneRenderer& Get();  // 全局访问
+
     void Initialize(uint32_t viewportWidth, uint32_t viewportHeight);
     void Execute(const FrameSnapshot& snapshot);  // 执行完整渲染管线
 
     Ref<RenderPass> GetFinalRenderPass() const;
     const Ref<RenderPass>& GetShadowPass(uint32_t index) const;  // 0~3
+    Ref<Image2D> GetFinalImage() const;  // 最终输出供视口显示
 };
 ```
 
@@ -189,4 +192,4 @@ KeywordMask mask = mat->GetKeywordMask();
 2. 阴影 FBO 使用 `GL_CLAMP_TO_EDGE`，超出 [0,1] 范围不产生边缘泄漏
 3. CSM 对所有 Mesh 生效，暂不支持单独的投射/接收阴影标志
 4. Geometry Pass 输出到 MSAA 纹理，Composite Pass 做 resolve
-5. `RenderPipeline` 当前是单线程执行，多线程化在 [roadmap-render-thread.md](../.claude/roadmap-render-thread.md) 中规划
+5. `SceneRenderer` 当前是单线程执行，多线程化在 [roadmap-render-thread.md](../.claude/roadmap-render-thread.md) 中规划

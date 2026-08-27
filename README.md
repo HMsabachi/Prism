@@ -2,7 +2,7 @@
 
 ![Prism Engine Logo](https://github.com/HMsabachi/Prism/blob/main/Prism/assets/logo/WhiteLogo.png?raw=true "Prism Engine")
 
-**Prism** 是一个轻量级、模块化的跨平台游戏引擎，核心使用 **C++20** 开发。渲染后端基于 **OpenGL 4.5+**，内置 **PrismShaderCompiler** 自定义着色器编译器（支持 PSL → GLSL/HLSL/MSL/SPIR-V 多后端交叉编译），**3D 物理**集成 **NVIDIA PhysX**，**2D 物理**使用 **Box2D**。脚本系统支持 **C#**（.NET 9 + Rolky）和 **Python 3.13**（CPython 嵌入式），编辑器基于 **ImGui** 构建。
+**Prism** 是一个轻量级、模块化的跨平台游戏引擎，核心使用 **C++20** 开发。渲染支持 **OpenGL 4.5+** 与 **Vulkan** 双后端，采用命令式多线程渲染架构（主线程录制、渲染线程执行），并基于 **GPU Scene（SSBO 实例数据）** 驱动场景绘制。内置 **PrismShaderCompiler** 自定义着色器编译器（支持 PSL → GLSL/HLSL/MSL/SPIR-V 多后端交叉编译），**3D 物理**集成 **NVIDIA PhysX**，**2D 物理**使用 **Box2D**。脚本系统支持 **C#**（.NET 9 + Rolky）和 **Python 3.13**（CPython 嵌入式），编辑器基于 **ImGui** 构建。
 
 脚本系统采用 **Entity-Behaviour 架构**（类似 Unity），每个 Entity 可挂载多个 Behaviour 组件。C# 和 Python 脚本遵循统一的生命周期模型（`Awake` → `OnCreate` → `OnEnable` → `OnUpdate` → `LateUpdate` → `OnFixedUpdate` → `OnDisable` → `OnDestroy`），并支持 2D/3D 碰撞与触发回调。
 
@@ -33,6 +33,13 @@ premake5 xcode4        # macOS Xcode
 
 编译 `PrismEditor` 项目并运行，即可看到完整的编辑器界面，包含场景层级面板、属性面板、ImGuizmo 变换工具和视口渲染。
 
+渲染后端与线程模型通过命令行参数选择：
+
+```bash
+PrismEditor.exe -r vulkan              # --renderer opengl | vulkan，Debug 默认 Vulkan，Release 默认 OpenGL
+PrismEditor.exe -s                     # --singleThreaded 单线程渲染
+```
+
 ## 截图 / 演示
 
 ![Prism Engine UI](docs/Screenshot/Editor2.png "Prism Engine UI")
@@ -46,16 +53,33 @@ premake5 xcode4        # macOS Xcode
 - **多后端代码生成** — 从 PSL 统一源码交叉编译为 GLSL、HLSL、MSL、SPIR-V
 - **反射元数据** — 编译时提取属性布局、Uniform 绑定、管线状态，运行时无需手动绑定
 - **Shader 变体系统** — `#pragma shader_feature` 关键字 + 位掩码，自动编译 2^N 变体组合
-- **23 种属性类型** — Color3/4、Range、Texture2D/Cube、Vector2/3/4、Matrix4、Float/Int 等
 - 集成在引擎运行时 — `PrismShader` 通过 `PrismShaderCompiler` 库加载并编译 `.Shader` 文件
 
-### 现代渲染管线（RenderPipeline）
+### 多线程渲染架构
+- 主线程录制渲染命令 -> **RenderCommandQueue** -> 渲染线程执行；OpenGL / Vulkan 双后端共用骨架，适配层各自实现
+- 渲染状态操作全部经 `Renderer::Submit` 入队（无立即执行渲染状态），支持运行时切换单线程模式（`-s`）
+
+### Vulkan 渲染后端
+- 交换链（resize / 子最优重建 / 逐图像 RenderFinished 信号量）、渲染通道、帧缓冲、图形管线
+- **PSO 管线缓存** - 管线状态对象化，状态命中不重建
+- **VMA 显存管理** - UBO / SSBO 持久映射，分配池化管理
+- **Frames-in-Flight（FIF=2）** - 每帧槽独立命令缓冲、UBO/SSBO 副本与描述符集，消除 CPU 写 / GPU 读竞争
+- 全局描述符池 + **VulkanDescriptorSet** 动态绑定（绑定直传 + 反射校验布局）
+- ImGui Vulkan 集成（二级命令缓冲 + 纹理描述符 set 缓存）
+- **坐标语义统一** - 深度 z∈[0,1]（Vulkan 语义投影），GL 后端经 SPIRV-Cross `fixup_clipspace` 自动恢复 [-1,1]；front-face 与 FBO 采样语义双后端对齐，投影矩阵与 PSL 资产零改动通用
+
+### GPU Scene 与绑定体系
+- **GPU 实例数据** - `PrismObjects`（ObjectToWorld / PreviousModel / AnimationOffset）+ `PrismAnimation`（全骨骼矩阵）两个 std430 SSBO 每帧整块覆写，draw 只传 drawIndex（GL = uniform / Vulkan = push_constant），描述符不逐 draw 变化
+- **三层绑定布局** - 全局层 set 0（相机 / 时间 / 灯光帧 UBO）+ Pass 自持输入（阴影图等）+ 材质自持（材质 UBO + 纹理）
+- OpenGL 侧以 flat 绑定空间模拟同一语义，PSL 资产双后端通用
+
+### 现代渲染管线（SceneRenderer）
 - PBR 金属/粗糙度工作流 + HDR 渲染 + MSAA 8x 多重采样
 - **级联阴影映射（CSM）** — 4 级联、Practical Split Scheme 视锥分割、纹素对齐、可配置最大阴影距离
 - **PCF 软阴影** — 16 采样 Poisson Disk、旋转核去条纹、硬件 PCF 深度比较
 - 计算着色器（Compute Shader）+ SSBO
 - Geometry Pass（MSAA RGBA16F）→ Composite Pass（RGBA8 最终输出）
-- RenderPass 系统 + 多线程 RenderCommandQueue
+- RenderPass 系统
 - 模板测试封装 + Stencil Buffer 物体描边（Outline）
 - OpenGL State Cache 统一状态管理
 - IBL 环境光照（辐照度 + 预过滤辐射度 + BRDF LUT）
@@ -67,7 +91,7 @@ premake5 xcode4        # macOS Xcode
 - 统一生命周期 + 碰撞/触发回调
 - InternalCall 自动绑定机制（C# 端 `delegate* unmanaged[Cdecl]<>` 函数指针）
 - 编辑器运行时脚本热重载（Play 时自动重载）
-- C# 端完整 API：Input、Time、Log、Math（Vector2/3/4、Quaternion、Matrix4、Mathf、Noise、Interpolate）、Renderer（Material、Mesh、Texture2D、MeshFactory、Color）、Physics（Physics、Collider）
+- C# 端完整 API：Core（Input / Time / Log）、Math、Renderer（Material / Mesh / Texture2D）、Physics
 
 ### Python 脚本系统（Entity-Behaviour 架构）
 - Python 3.13 嵌入式 CPython 运行时
@@ -114,7 +138,7 @@ premake5 xcode4        # macOS Xcode
 - 物理资源（PhysicsMaterial、MeshCollider）资产化支持
 
 ### 场景系统
-- `RenderSystem` — 拥有 RenderPipeline，驱动每帧渲染、收集 MeshRenderer、提交调试绘制
+- `RenderSystem` — 拥有 SceneRenderer（全局单例），收集 FrameSnapshot 提交渲染，驱动每帧渲染、收集 MeshRenderer、提交调试绘制
 - `ScriptSystem` — 桥接场景生命周期到 C#/Python 脚本引擎
 - `PhysicsSystem` / `Physics2DSystem` — 3D/2D 物理场景管理
 - `SceneCamera` — 透视/正交投影、可配置远近平面
@@ -150,7 +174,7 @@ Prism/
 │   ├── src/Prism/
 │   │   ├── Core/                  # 应用框架、窗口、图层、日志、输入、Time、Ref、UUID
 │   │   ├── Events/                # 事件系统
-│   │   ├── Renderer/              # 渲染抽象层（RenderPipeline、RenderPass、Material、Mesh、Shader）
+│   │   ├── Renderer/              # 渲染抽象层（SceneRenderer、RenderPass、Material、Mesh、Shader）
 │   │   │   ├── Buffer/            # Frame/Object UBO、SSBO、Framebuffer
 │   │   │   ├── Camera/            # 相机系统
 │   │   │   ├── Shader/            # PrismShader（PSL 编译）、ShaderVariant
@@ -164,17 +188,11 @@ Prism/
 │   │   └── Utilities/             # 工具类
 │   ├── src/Platform/
 │   │   ├── OpenGL/                # OpenGL 后端（Buffer、FBO、Shader、Texture、SSBO 等）
+│   │   ├── Vulkan/                # Vulkan 后端（Context、SwapChain、Pipeline、DescriptorSet、VMA、ImGuiLayer）
 │   │   └── Windows/               # Windows 平台层（GLFW 窗口、输入）
 │   ├── src/Scripting/             # 多语言脚本引擎
 │   │   ├── CSharp/                # C++/C# 互操作（Rolky、InternalCall）
 │   │   └── Python/                # Python 脚本引擎（pybind11 嵌入、PrismEngine 模块）
-│   │       ├── PythonScriptEngine.h/.cpp           # 解释器生命周期 + 实例管理
-│   │       ├── PythonScriptWrappers.h/.cpp         # PrismEngine 原生模块定义
-│   │       ├── PythonScriptEngineRegistry.h/.cpp   # Component 类型注册
-│   │       ├── PythonScriptMetaRegistry.h/.cpp     # 类元数据缓存
-│   │       ├── PythonScriptStorage.h/.cpp          # 脚本实例存储
-│   │       ├── PythonField.h/.inl                  # 公共字段序列化
-│   │       └── PythonScriptTypeCasters.h           # glm ↔ pyglm 类型转换
 │   └── vendor/
 │       ├── PrismShaderCompiler/   # 自定义着色器编译器（PSL 解析、多后端代码生成）
 │       ├── PhysX/                 # NVIDIA PhysX 5.x SDK
@@ -207,7 +225,8 @@ Prism/
 | 类别 | 技术 |
 |------|------|
 | 语言 | C++20、C# 12 (.NET 9)、Python 3.13 |
-| 图形 API | OpenGL 4.5+ (Core Profile) |
+| 图形 API | OpenGL 4.5+ (Core Profile)、Vulkan |
+| 显存管理 | VulkanMemoryAllocator (VMA) |
 | 窗口 | GLFW |
 | 数学 | GLM |
 | ECS | entt（单头文件） |
@@ -228,7 +247,7 @@ Prism/
 - [PSL 语法参考](Prism/vendor/PrismShaderCompiler/docs/PSL-Syntax.md) — 权威 PSL 语言规范
 - [PrismShader 集成指南](docs/PrismShader.md) — 引擎侧 Shader 加载、变体管理、Pass 系统
 - [PrismShader 扩展指南](docs/PrismShaderExtension.md) — 如何扩展着色器系统
-- [Renderer 文档](docs/Renderer.md) — 渲染管线架构（RenderPipeline、CSM、PBR）
+- [Renderer 文档](docs/Renderer.md) — 渲染管线架构（SceneRenderer、CSM、PBR）
 - [Python 脚本引擎文档](docs/PythonScriptCore.md) — pybind11 架构、PrismEngine 模块 API、扩展指南
 - [Time 文档](docs/Time.md)
 - [Time Documentation (English)](docs/TimeEN.md)
@@ -244,9 +263,11 @@ Prism/
 - [x] **Python 3.13 多语言脚本系统**：CPython 嵌入式、pybind11 桥接、PGLM 数学转换
 - [x] **3D 物理系统（PhysX）**：刚体、4 种碰撞体、物理材质、触发器、碰撞回调、射线检测
 - [x] **资产管理系统**：EditorAssetManager / RuntimeAssetManager、AssetRegistry、ModelImporter
+- [x] **多线程渲染架构**：渲染线程 + RenderCommandQueue，OpenGL / Vulkan 双后端共用骨架
+- [x] **Vulkan 渲染后端**：PSO 缓存、Frames-in-Flight、VMA 显存管理、全局描述符池、坐标语义统一
+- [x] **GPU Scene 绑定体系**：三层绑定布局 + GPU 实例 SSBO + drawIndex
 - [ ] 资产引用与完整序列化管线
 - [ ] 跨平台窗口与渲染抽象
-- [ ] Vulkan 后端支持（长期目标）
 
 ## 许可证
 

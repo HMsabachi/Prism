@@ -7,7 +7,9 @@
 #include "Prism/Scene/Entity.h"
 #include "Prism/Scene/Components.h"
 #include "Prism/Asset/AssetManager.h"
+#include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/RenderPass.h"
+#include "Prism/Renderer/SceneRenderer.h"
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Buffer/Framebuffer.h"
 #include "Prism/Editor/EditorCamera.h"
@@ -26,18 +28,12 @@ namespace Prism
 #pragma region 生命周期
     void RenderSystem::OnCreate()
     {
-        m_Pipeline = std::make_unique<RenderPipeline>();
-        m_Pipeline->Initialize(1280, 720);
-
         auto skyboxShader = AssetManager::GetShaderLibrary()->Get("Custom/Skybox");
         m_Config.SkyboxMaterial = Material::Create(skyboxShader->Handle);
     }
 
     void RenderSystem::OnDestroy()
     {
-        if (m_Pipeline)
-            m_Pipeline->Shutdown();
-        m_Pipeline.reset();
     }
     void RenderSystem::OnRender(float dt)
     {
@@ -59,15 +55,13 @@ namespace Prism
             UI::EndPropertyGrid();
             UI::EndTreeNode();
         }
-        if (UI::BeginTreeNode(TR("Shadow Map"), false))
+        if (UI::BeginTreeNode(TR("Bloom")))
         {
-            static int cascadeIndex = 0;
             UI::BeginPropertyGrid();
-            UI::PropertySlider("Cascade Index", cascadeIndex, 0, 3);
+            UI::Property("Enable Bloom", m_Config.EnableBloom);
+            UI::Property("Bloom Threshold", m_Config.BloomThreshold, 0.1f, 0.0f, 10.0f);
+
             UI::EndPropertyGrid();
-            const auto& rendererID = m_Pipeline->GetShadowPass(cascadeIndex)->GetSpecification().TargetFramebuffer->GetDepthAttachmentRendererID();
-            float size = ImGui::GetContentRegionAvail().x;
-            ImGui::Image((void*)(uint64_t)rendererID, { size, size }, { 0, 1 }, { 1, 0 });
             UI::EndTreeNode();
         }
         ImGui::End();
@@ -75,9 +69,9 @@ namespace Prism
 
     void RenderSystem::Render()
     {
+        PR_PROFILE_FUNCTION();
         m_PendingSnapshot.DrawList.clear();
         m_PendingSnapshot.SelectedDrawList.clear();
-        m_PendingSnapshot.ShadowDrawList.clear();
 
         if (m_HasEditorCamera)
         {
@@ -151,11 +145,8 @@ namespace Prism
 
         m_PendingSnapshot.Config = m_Config;
 
-        // TODO(多线程):SubmitSnapshot 入队,渲染线程异步消费
-        if (m_Pipeline)
-            m_Pipeline->Execute(m_PendingSnapshot);
+        SceneRenderer::Get().Execute(m_PendingSnapshot);
 
-        // TODO(多线程): clear 需随双缓冲所有权调整,单线程下 Ref 保活安全
         m_PendingSnapshot.DebugDrawList.clear();
     }
 #pragma endregion
@@ -173,8 +164,6 @@ namespace Prism
             return;
         m_ViewportWidth = width;
         m_ViewportHeight = height;
-        if (m_Pipeline)
-            m_Pipeline->Resize(width, height);
     }
 
     void RenderSystem::SubmitDebugMesh(Ref<Mesh> mesh, const glm::mat4& transform,
@@ -183,29 +172,6 @@ namespace Prism
         for (uint32_t i = 0; i < mesh->GetSubmeshes().size(); i++)
             m_PendingSnapshot.DebugDrawList.push_back({ mesh, i, material, transform });
     }
-
-    Ref<RenderPass> RenderSystem::GetFinalRenderPass()
-    {
-        return m_Pipeline ? m_Pipeline->GetFinalRenderPass() : nullptr;
-    }
-
-    uint32_t RenderSystem::GetFinalColorBufferID()
-    {
-        return m_Pipeline ? m_Pipeline->GetFinalRenderPass()
-            ->GetSpecification().TargetFramebuffer->GetColorAttachmentRendererID() : 0;
-    }
-
-    RenderPipelineOptions& RenderSystem::GetOptions()
-    {
-        return m_Pipeline->GetOptions();
-    }
-
-    std::pair<Ref<TextureCube>, Ref<TextureCube>>
-    RenderSystem::CreateEnvironmentMap(const std::string& filepath)
-    {
-        return RenderPipeline::CreateEnvironmentMap(filepath);
-    }
-
 
     void RenderSystem::CollectMeshRenderers(FrameSnapshot& snapshot)
     {
@@ -243,19 +209,16 @@ namespace Prism
                 cmd.Material = mat;
                 cmd.Transform = worldTransform * submesh.Transform;
 
-                uint64_t program = mat ? (uint64_t)mat->GetProgram().Raw() : 0;
-                uint64_t material = (uint64_t)mat.Raw();
-                uint64_t mesh = (uint64_t)renderer.Mesh.Raw();
-                float dist = glm::distance(glm::vec3(cmd.Transform[3]), camPos);
-                uint64_t distQ = (uint64_t)(dist * 10.0f) & 0xFFFF;
-                cmd.SortKey = ((program & 0xFFFF) << 48) | ((material & 0xFFFF) << 32) | ((mesh & 0xFFFF) << 16) | distQ;
+                //uint64_t program = mat ? (uint64_t)mat->GetProgram().Raw() : 0;
+                //uint64_t material = (uint64_t)mat.Raw();
+                //uint64_t mesh = (uint64_t)renderer.Mesh.Raw();
+                //float dist = glm::distance(glm::vec3(cmd.Transform[3]), camPos);
+                //uint64_t distQ = (uint64_t)(dist * 10.0f) & 0xFFFF;
+                //cmd.SortKey = ((program & 0xFFFF) << 48) | ((material & 0xFFFF) << 32) | ((mesh & 0xFFFF) << 16) | distQ;
 
                 if (isSelected)
                     snapshot.SelectedDrawList.push_back(cmd);
-                else
-                    snapshot.DrawList.push_back(cmd);
-                cmd.SortKey = cmd.SortKey << 32;
-                snapshot.ShadowDrawList.push_back(cmd);
+                snapshot.DrawList.push_back(cmd);
             }
         }
     }

@@ -7,6 +7,7 @@ using Prism::UI::PropertyFlag;
 
 #include "Prism/ImGui/ImGuizmo.h"
 #include "Prism/Core/LanguageManager.h"
+#include "Prism/Core/Application.h"
 #include "Scripting/CSharp/CSharpScriptEngine.h"
 #include "Scripting/Python/PythonScriptEngine.h"
 #include "Prism/Scene/Systems/Physics2DSystem.h"
@@ -19,6 +20,7 @@ PR_WARNING_DISABLE(4312)
 #include "Prism/Editor/AssetEditorPanel.h"
 #include "Prism/Math/Math.h"
 #include "Prism/Utilities/FileSystem.h"
+#include "Platform/OpenGL/OpenGLTexture.h"
 
 #include <filesystem>
 
@@ -71,7 +73,7 @@ namespace Prism
             m_SceneHierarchyPanel->SetSelectionChangedCallback(std::bind(&EditorLayer::SelectEntity, this, std::placeholders::_1));
             m_SceneHierarchyPanel->SetEntityDeletedCallback(std::bind(&EditorLayer::OnEntityDeleted, this, std::placeholders::_1));
 
-            m_AssetManagerPanel = CreateScope<AssetManagerPanel>();
+            m_ContentBrowserPanel = CreateScope<ContentBrowserPanel>();
             m_ObjectsPanel = CreateScope<ObjectsPanel>();
 
             SceneSerializer serializer(m_EditorScene);
@@ -89,6 +91,7 @@ namespace Prism
             FileSystem::StopWatching();
             if (m_SceneState == SceneState::Play)
                 OnSceneStop();
+            AssetEditorPanel::UnregisterAllEditors();
              m_SceneHierarchyPanel = nullptr;
              m_EditorScene = nullptr;
         }
@@ -153,6 +156,7 @@ namespace Prism
                     rs->SetEditorCamera(m_EditorCamera);
                 m_ActiveScene->OnRender(ts);
 
+#if 0
                 if (m_DrawOnTopBoundingBoxes)
                 {
                     Renderer::BeginRenderPass(rs->GetFinalRenderPass(), false);
@@ -161,7 +165,9 @@ namespace Prism
                     Renderer2D::EndScene();
                     Renderer::EndRenderPass();
                 }
+#endif
 
+#if 0
                 if (m_SelectionContext.size() && false)
                 {
                     auto& selection = m_SelectionContext[0];
@@ -178,6 +184,7 @@ namespace Prism
                         Renderer::EndRenderPass();
                     }
                 }
+#endif
                 break;
             }
             case SceneState::Play:
@@ -188,6 +195,7 @@ namespace Prism
                 m_ActiveScene->OnUpdate();
                 m_ActiveScene->OnRender(ts);
 
+#if 0
                 // Box2D collider debug drawing
                 {
                     Renderer::BeginRenderPass(m_ActiveScene->GetSystem<RenderSystem>()->GetFinalRenderPass(), false);
@@ -229,6 +237,7 @@ namespace Prism
                     Renderer2D::EndScene();
                     Renderer::EndRenderPass();
                 }
+#endif
                 break;
             }
             case SceneState::Pause:
@@ -244,8 +253,7 @@ namespace Prism
 
         void EditorLayer::ShowBoundingBoxes(bool show, bool onTop /*= false*/)
         {
-            if (auto* rs = m_ActiveScene->GetSystem<RenderSystem>())
-                rs->GetOptions().ShowBoundingBoxes = show && !onTop;
+            SceneRenderer::Get().GetOptions().ShowBoundingBoxes = show && !onTop;
             m_DrawOnTopBoundingBoxes = show && onTop;
         }
 
@@ -279,7 +287,7 @@ namespace Prism
             return 0.0f;
         }
 
-        void EditorLayer::DrawMaterialProperty(const PrismShaderCompiler::AST::ShaderUniform& uni, Material& material)
+        void EditorLayer::DrawMaterialProperty(const PrismShaderCompiler::AST::ShaderUniform& uni, Ref<Material>& material)
         {
             const auto& name = uni.Name;
             const auto& displayName = uni.DisplayName.empty() ? uni.Name : uni.DisplayName;
@@ -288,82 +296,84 @@ namespace Prism
             {
             case PrismShaderCompiler::PropertyType::Float:
             {
-                float value = material.GetFloat(name);
+                float value = material->GetFloat(name);
                 if (Property(displayName, value))
-                    material.SetFloat(name, value);
+                    material->SetFloat(name, value);
                 break;
             }
             case PrismShaderCompiler::PropertyType::Range:
             {
-                float value = material.GetFloat(name);
+                float value = material->GetFloat(name);
                 if (Property(displayName, value, uni.RangeMin, uni.RangeMax, PropertyFlag::SliderProperty))
-                    material.SetFloat(name, value);
+                    material->SetFloat(name, value);
                 break;
             }
             case PrismShaderCompiler::PropertyType::Color:
             {
-                glm::vec4 color = material.GetColor(name);
+                glm::vec4 color = material->GetColor(name);
                 if (Property(displayName, color, PropertyFlag::ColorProperty))
-                    material.SetColor(name, color);
+                    material->SetColor(name, color);
                 break;
             }
             case PrismShaderCompiler::PropertyType::Color3:
             {
-                glm::vec3 color = material.GetColor3(name);
+                glm::vec3 color = material->GetColor3(name);
                 if (Property(displayName, color, PropertyFlag::ColorProperty))
-                    material.SetColor3(name, color);
+                    material->SetColor3(name, color);
                 break;
             }
             case PrismShaderCompiler::PropertyType::Vector2:
             {
-                glm::vec2 vec2 = material.GetVec2(name);
+                glm::vec2 vec2 = material->GetVec2(name);
                 if (Property(displayName, vec2))
-                    material.SetVec2(name, vec2);
+                    material->SetVec2(name, vec2);
                 break;
             }
             case PrismShaderCompiler::PropertyType::Vector3:
             {
-                glm::vec3 vec3 = material.GetVec3(name);
+                glm::vec3 vec3 = material->GetVec3(name);
                 if (Property(displayName, vec3))
-                    material.SetVec3(name, vec3);
+                    material->SetVec3(name, vec3);
                 break;
             }
             case PrismShaderCompiler::PropertyType::Vector4:
             {
-                glm::vec4 vec4 = material.GetVec4(name);
+                glm::vec4 vec4 = material->GetVec4(name);
                 if (Property(displayName, vec4))
-                    material.SetVec4(name, vec4);
+                    material->SetVec4(name, vec4);
                 break;
             }
             case PrismShaderCompiler::PropertyType::Int:
             {
-                int value = material.GetInt(name);
+                int value = material->GetInt(name);
                 if (Property(displayName, value))
-                    material.SetInt(name, value);
+                    material->SetInt(name, value);
                 break;
             }
             case PrismShaderCompiler::PropertyType::Bool:
             {
-                bool value = material.GetBool(name);
+                bool value = material->GetBool(name);
                 if (Property(displayName, value))
-                    material.SetBool(name, value);
+                    material->SetBool(name, value);
                 break;
             }
             case PrismShaderCompiler::PropertyType::Texture2D:
             {
-                auto texture2D = material.GetTexture2D(name);
-                if (Property(displayName, texture2D, m_CheckerboardTex->GetRendererID()))
+                auto texture2D = material->GetTexture2D(name);
+                if (Property(displayName, texture2D, m_CheckerboardTex->GetImage()))
                 {
-                    std::string filename = Application::Get().OpenFile("");
-                    if (!filename.empty())
-                        material.SetTexture(name, Texture2D::Create(filename));
+                    Application::Get().QueueEvent([material, name]() mutable {
+                        std::string filename = Application::Get().OpenFile("");
+                        if (!filename.empty())
+                            material->SetTexture(name, Texture2D::Create(filename));
+                    });
                 }
                 break;
             }
             case PrismShaderCompiler::PropertyType::TextureCube:
             {
-                auto textureCube = material.GetTextureCube(name);
-                Property(displayName, textureCube, m_CheckerboardTex->GetRendererID());
+                auto textureCube = material->GetTextureCube(name);
+                Property(displayName, textureCube, m_CheckerboardTex->GetImage());
                 break;
             }
             default:
@@ -571,20 +581,20 @@ namespace Prism
             ImGui::Begin("Toolbar");
             if (m_SceneState == SceneState::Edit)
             {
-                if (ImGui::ImageButton((ImTextureID)(m_PlayButtonTex->GetRendererID()), ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), -1, ImVec4(0, 0, 0, 0), ImVec4(0.9f, 0.9f, 0.9f, 1.0f)))
+                if (UI::ImageButton(m_PlayButtonTex->GetImage(), ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), -1, ImVec4(0, 0, 0, 0), ImVec4(0.9f, 0.9f, 0.9f, 1.0f)))
                 {
-                    OnScenePlay();
+                    Application::Get().QueueEvent([this]() { OnScenePlay(); });
                 }
             }
             else if (m_SceneState == SceneState::Play)
             {
-                if (ImGui::ImageButton((ImTextureID)(m_PlayButtonTex->GetRendererID()), ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), -1, ImVec4(1.0f, 1.0f, 1.0f, 0.2f)))
+                if (UI::ImageButton(m_PlayButtonTex->GetImage(), ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), -1, ImVec4(1.0f, 1.0f, 1.0f, 0.2f)))
                 {
-                    OnSceneStop();
+                    Application::Get().QueueEvent([this]() { OnSceneStop(); });
                 }
             }
             ImGui::SameLine();
-            if (ImGui::ImageButton((ImTextureID)(m_PlayButtonTex->GetRendererID()), ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), -1, ImVec4(0, 0, 0, 0), ImVec4(1.0f, 1.0f, 1.0f, 0.6f)))
+            if (UI::ImageButton(m_PlayButtonTex->GetImage(), ImVec2(32, 32), ImVec2(0, 0), ImVec2(1, 1), -1, ImVec4(0, 0, 0, 0), ImVec4(1.0f, 1.0f, 1.0f, 0.6f)))
             {
                 PR_CORE_INFO("PLAY!");
             }
@@ -605,15 +615,13 @@ namespace Prism
             auto viewportSize = ImGui::GetContentRegionAvail();
             //viewportSize.x *= 2;
             //viewportSize.y *= 2;
-            if (auto* rs = m_ActiveScene->GetSystem<RenderSystem>())
-                rs->SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
+            SceneRenderer::Get().RT_Resize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
             m_EditorCamera.SetProjectionMatrix(glm::perspectiveFov(glm::radians(45.0f), viewportSize.x, viewportSize.y, 0.1f, 10000.0f));
             m_EditorCamera.SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
             //viewportSize.x *= 0.5;
             //viewportSize.y *= 0.5;
 
-            if (auto* rs = m_ActiveScene->GetSystem<RenderSystem>())
-                ImGui::Image((void*)rs->GetFinalColorBufferID(), viewportSize, { 0, 1 }, { 1, 0 });
+            UI::Image(SceneRenderer::Get().GetFinalImage(), viewportSize, { 0, 1 }, { 1, 0 });
 
             if (ImGui::BeginDragDropTarget())
             {
@@ -841,7 +849,7 @@ namespace Prism
                             auto& uniforms = material->GetShader()->GetUniforms();
                             for (const auto& uni : uniforms)
                             {
-                                DrawMaterialProperty(uni, *material);
+                                DrawMaterialProperty(uni, material);
                             }
                             ImGui::Columns(1);
 
@@ -868,8 +876,9 @@ namespace Prism
             //CSharpScriptEngine::OnImGuiRender();
             //PythonScriptEngine::OnImGuiRender();
             PhysicsSettingsWindow::OnImGuiRender(m_ShowPhysicsSettings);
+            SceneRenderer::Get().OnImGuiRender();
             m_ActiveScene->OnImGuiRender();
-            m_AssetManagerPanel->OnImGuiRender();
+            m_ContentBrowserPanel->OnImGuiRender();
             m_ObjectsPanel->OnImGuiRender();
             AssetEditorPanel::OnImGuiRender();
             ImGui::End();
@@ -940,8 +949,7 @@ namespace Prism
                 {
                 case KeyCode::G:
                     // Toggle grid
-                    if (auto* rs = m_ActiveScene->GetSystem<RenderSystem>())
-                        rs->GetOptions().ShowGrid = !rs->GetOptions().ShowGrid;
+                    SceneRenderer::Get().GetOptions().ShowGrid = !SceneRenderer::Get().GetOptions().ShowGrid;
                     break;
                 case KeyCode::B:
                     // Toggle bounding boxes

@@ -13,6 +13,7 @@ namespace Prism {
         virtual void SetAsset(const Ref<Asset>& asset) override { m_Asset = (Ref<PhysicsMaterial>)asset; }
 
     private:
+        virtual void OnClose() override;
         virtual void Render() override;
 
     private:
@@ -27,6 +28,7 @@ namespace Prism {
         virtual void SetAsset(const Ref<Asset>& asset) override { m_Asset = (Ref<Texture2D>)asset; }
 
     private:
+        virtual void OnClose() override;
         virtual void Render() override;
 
     private:

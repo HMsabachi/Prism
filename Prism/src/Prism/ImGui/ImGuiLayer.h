@@ -1,36 +1,20 @@
-﻿#pragma once
+#pragma once
 
 #include "Prism/Core/Layer.h"
 
-struct ImGuiIO;
-
 namespace Prism
 {
-	class PRISM_API ImGuiLayer : public Layer
-	{
-	public:
-		ImGuiLayer();
-		ImGuiLayer(const std::string& name);
-		~ImGuiLayer();
-		
-		virtual void OnAttach() override;
-		virtual void OnDetach() override;
-		virtual void OnUpdate() override;
-		virtual void OnEvent(Event& event) override;
-		virtual void OnImGuiRender() override;
-	public:
-		void Begin();
-		void End();
+    class PRISM_API ImGuiLayer : public Layer
+    {
+    public:
+        ImGuiLayer() : Layer("ImGuiLayer") {}
+        virtual ~ImGuiLayer() = default;
 
-		void SetDarkThemeColors();
-	private:
+        virtual void Begin() = 0;
+        virtual void End() = 0;
 
+        void SetDarkThemeColors();
 
-	private:
-		void InitializeImGui();
-		void DestroyImGui();
-
-	private:
-		float m_Time = 0.0f;
-	};
+        static ImGuiLayer* Create();
+    };
 }

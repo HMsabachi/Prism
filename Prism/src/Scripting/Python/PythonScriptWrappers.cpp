@@ -80,15 +80,15 @@ namespace Prism::PythonScript
     class PythonTime
     {
     public:
-        static float GetDeltaTime() { return Time::GetDeltaTime(); }
-        static float GetUnscaledDeltaTime() { return Time::GetUnscaledDeltaTime(); }
-        static float GetTime() { return Time::GetTime(); }
-        static float GetUnscaledTime() { return Time::GetUnscaledTime(); }
-        static int64_t GetFrameCount() { return (int64_t)Time::GetFrameCount(); }
-        static float GetFixedDeltaTime() { return Time::GetFixedDeltaTime(); }
-        static void SetFixedDeltaTime(float fixedDeltaTime) { Time::SetFixedDeltaTime(fixedDeltaTime); }
-        static float GetTimeScale() { return Time::GetTimeScale(); }
-        static void SetTimeScale(float scale) { Time::SetTimeScale(scale); }
+        static float GetDeltaTime(py::object) { return Time::GetDeltaTime(); }
+        static float GetUnscaledDeltaTime(py::object) { return Time::GetUnscaledDeltaTime(); }
+        static float GetTime(py::object) { return Time::GetTime(); }
+        static float GetUnscaledTime(py::object) { return Time::GetUnscaledTime(); }
+        static int64_t GetFrameCount(py::object) { return (int64_t)Time::GetFrameCount(); }
+        static float GetFixedDeltaTime(py::object) { return Time::GetFixedDeltaTime(); }
+        static void SetFixedDeltaTime(py::object, float fixedDeltaTime) { Time::SetFixedDeltaTime(fixedDeltaTime); }
+        static float GetTimeScale(py::object) { return Time::GetTimeScale(); }
+        static void SetTimeScale(py::object, float scale) { Time::SetTimeScale(scale); }
     };
 
     class PythonLog
@@ -149,7 +149,7 @@ namespace Prism::PythonScript
     {
     public:
         PythonTexture2D(uint64_t handle) : PythonAsset(handle) {}
-        PythonTexture2D(uint32_t width, uint32_t height) : PythonAsset(0) { m_Handle = reinterpret_cast<uint64_t>(new Ref<Texture2D>(Texture2D::Create(TextureFormat::RGBA, width, height))); }
+        PythonTexture2D(uint32_t width, uint32_t height) : PythonAsset(0) { m_Handle = reinterpret_cast<uint64_t>(new Ref<Texture2D>(Texture2D::Create(ImageFormat::RGBA, width, height))); }
         virtual ~PythonTexture2D() override { if (m_Handle) delete (Ref<Texture2D>*)(m_Handle); m_Handle = 0; }
         virtual std::string __Repr__() override
         {

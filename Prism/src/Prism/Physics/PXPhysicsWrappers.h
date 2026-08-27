@@ -18,7 +18,7 @@ namespace Prism
         virtual void reportError(physx::PxErrorCode::Enum code, const char* message, const char* file, int line) override;
     };
 
-    class ContactListener : public physx::PxSimulationEventCallback
+    class ContactListener3D : public physx::PxSimulationEventCallback
     {
     public:
         virtual void onConstraintBreak(physx::PxConstraintInfo* constraints, physx::PxU32 count) override;
@@ -39,8 +39,8 @@ namespace Prism
         static void AddCapsuleCollider(PhysicsActor& actor);
         static void AddMeshCollider(PhysicsActor& actor);
 
-        static std::vector<physx::PxShape*> CreateConvexMesh(MeshColliderComponent& collider, const glm::vec3& size, bool invalidateOld = false);
-        static std::vector<physx::PxShape*> CreateTriangleMesh(MeshColliderComponent& collider, const glm::vec3& size, bool invalidateOld = false);
+        static std::vector<physx::PxShape*> CreateConvexMesh(MeshColliderComponent& collider, const glm::vec3& scale = glm::vec3(1.0f), bool invalidateOld = false);
+        static std::vector<physx::PxShape*> CreateTriangleMesh(MeshColliderComponent& collider, const glm::vec3& scale = glm::vec3(1.0f), bool invalidateOld = false);
 
         static bool Raycast(const glm::vec3& origin, const glm::vec3& direction, float maxDistance, RaycastHit* hit);
         static bool OverlapBox(const glm::vec3& origin, const glm::vec3& halfSize, std::array<physx::PxOverlapHit, OVERLAP_MAX_COLLIDERS>& buffer, uint32_t* count);

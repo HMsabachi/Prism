@@ -680,6 +680,7 @@ namespace Prism {
 
     bool SceneSerializer::Deserialize(const std::string& filepath)
     {
+        pybind11::gil_scoped_acquire gilAcquire;
         std::ifstream stream(filepath);
         std::stringstream strStream;
         strStream << stream.rdbuf();
@@ -750,8 +751,6 @@ namespace Prism {
                 }
             }
         }
-
-        std::vector<std::string> missingPaths;
 
         auto entities = data["Entities"];
         if (entities)
@@ -837,7 +836,7 @@ namespace Prism {
                     {
                         if (!CheckPath(meshPath))
                         {
-                            missingPaths.emplace_back(meshPath);
+                            PR_CORE_ERROR("Tried to load invalid mesh '{0}' in Entity {1}", meshPath, deserializedEntity.GetUUID());
                             Ref<Mesh> mesh;
                             deserializedEntity.AddComponent<MeshRendererComponent>(mesh);
                         }
@@ -937,8 +936,13 @@ namespace Prism {
                     component.IsTrigger = boxColliderComponent["IsTrigger"] ? boxColliderComponent["IsTrigger"].as<bool>() : false;
 
                     auto material = boxColliderComponent["Material"];
-                    if (material && AssetManager::IsAssetHandleValid(material.as<uint64_t>()))
-                        component.Material = AssetManager::GetAsset<PhysicsMaterial>(material.as<uint64_t>());
+                    if (material)
+                    {
+                        if (AssetManager::IsAssetHandleValid(material.as<uint64_t>()))
+                            component.Material = AssetManager::GetAsset<PhysicsMaterial>(material.as<uint64_t>());
+                        else
+                            PR_CORE_ERROR("Tried to load invalid Physics Material in Entity {0}", deserializedEntity.GetUUID());
+                    }
 
                     component.DebugMesh = MeshFactory::CreateBox(component.Size);
 
@@ -953,8 +957,13 @@ namespace Prism {
                     component.IsTrigger = sphereColliderComponent["IsTrigger"] ? sphereColliderComponent["IsTrigger"].as<bool>() : false;
 
                     auto material = sphereColliderComponent["Material"];
-                    if (material && AssetManager::IsAssetHandleValid(material.as<uint64_t>()))
-                        component.Material = AssetManager::GetAsset<PhysicsMaterial>(material.as<uint64_t>());
+                    if (material)
+                    {
+                        if (AssetManager::IsAssetHandleValid(material.as<uint64_t>()))
+                            component.Material = AssetManager::GetAsset<PhysicsMaterial>(material.as<uint64_t>());
+                        else
+                            PR_CORE_ERROR("Tried to load invalid Physics Material in Entity {0}", deserializedEntity.GetUUID());
+                    }
 
                     component.DebugMesh = MeshFactory::CreateSphere(component.Radius);
 
@@ -970,8 +979,13 @@ namespace Prism {
                     component.IsTrigger = capsuleColliderComponent["IsTrigger"] ? capsuleColliderComponent["IsTrigger"].as<bool>() : false;
 
                     auto material = capsuleColliderComponent["Material"];
-                    if (material && AssetManager::IsAssetHandleValid(material.as<uint64_t>()))
-                        component.Material = AssetManager::GetAsset<PhysicsMaterial>(material.as<uint64_t>());
+                    if (material)
+                    {
+                        if (AssetManager::IsAssetHandleValid(material.as<uint64_t>()))
+                            component.Material = AssetManager::GetAsset<PhysicsMaterial>(material.as<uint64_t>());
+                        else
+                            PR_CORE_ERROR("Tried to load invalid Physics Material in Entity {0}", deserializedEntity.GetUUID());
+                    }
 
                     component.DebugMesh = MeshFactory::CreateCapsule(component.Radius, component.Height);
 
@@ -987,13 +1001,14 @@ namespace Prism {
                     if (overrideMesh)
                     {
                         std::string meshPath = meshColliderComponent["AssetPath"].as<std::string>();
-                        if (!CheckPath(meshPath))
+                        if (CheckPath(meshPath))
                         {
-                            missingPaths.emplace_back(meshPath);
+                            collisionMesh = ModelImporter::Import(meshPath).Mesh;
                         }
                         else
                         {
-                            collisionMesh = ModelImporter::Import(meshPath).Mesh;
+                            PR_CORE_ERROR("Tried to load invalid mesh '{0}' in Entity {1}", meshPath, deserializedEntity.GetUUID());
+                            overrideMesh = false;
                         }
                     }
 
@@ -1005,15 +1020,18 @@ namespace Prism {
                         component.OverrideMesh = overrideMesh;
 
                         auto material = meshColliderComponent["Material"];
-                        if (material && AssetManager::IsAssetHandleValid(material.as<uint64_t>()))
+                        if (material)
                         {
-                            component.Material = AssetManager::GetAsset<PhysicsMaterial>(material.as<uint64_t>());
-
-                            if (component.IsConvex)
-                                PXPhysicsWrappers::CreateConvexMesh(component, deserializedEntity.Transformation().GetScale());
+                            if (AssetManager::IsAssetHandleValid(material.as<uint64_t>()))
+                                component.Material = AssetManager::GetAsset<PhysicsMaterial>(material.as<uint64_t>());
                             else
-                                PXPhysicsWrappers::CreateTriangleMesh(component, deserializedEntity.Transformation().GetScale());
+                                PR_CORE_ERROR("Tried to load invalid Physics Material in Entity {0}", deserializedEntity.GetUUID());
                         }
+
+                        if (component.IsConvex)
+                            PXPhysicsWrappers::CreateConvexMesh(component, deserializedEntity.Transformation().GetScale());
+                        else
+                            PXPhysicsWrappers::CreateTriangleMesh(component, deserializedEntity.Transformation().GetScale());
 
                         PR_CORE_INFO("  MeshColliderComponent: IsConvex={0}, OverrideMesh={1}", component.IsConvex, overrideMesh);
                     }
@@ -1239,22 +1257,19 @@ namespace Prism {
 
                     if (AssetManager::IsAssetHandleValid(assetHandle))
                         component.SceneEnvironment = AssetManager::GetAsset<Environment>(assetHandle);
+                    else
+                    {
+                        std::string filepath = skyLightComponent["AssetPath"] ? skyLightComponent["AssetPath"].as<std::string>() : "";
+                        if (filepath.empty())
+                            PR_CORE_ERROR("Tried to load non-existent environment map in Entity: {0}", deserializedEntity.GetUUID());
+                        else
+                            PR_CORE_ERROR("Tried to load invalid environment map '{0}' in Entity {1}", filepath, deserializedEntity.GetUUID());
+                    }
 
                     PR_CORE_INFO("  SkyLightComponent: Intensity={0}", component.Intensity);
                 }
             }
         }
-        if (missingPaths.size())
-        {
-            PR_CORE_ERROR("The following files could not be loaded:");
-            for (auto& path : missingPaths)
-            {
-                PR_CORE_ERROR("  {0}", path);
-            }
-
-            return false;
-        }
-
         return true;
     }
 

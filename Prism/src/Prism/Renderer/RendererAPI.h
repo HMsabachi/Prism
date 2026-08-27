@@ -1,14 +1,59 @@
 ﻿#pragma once
 #include "RendererTypes.h"
 #include "Prism/Utilities/BitFlags.h"
+#include "Prism/Core/Ref.h"
+#include "Prism/ShaderCompiler/PrismBindings.h"
+
+#include <string>
+#include <utility>
+#include <vector>
+#include <glm/glm.hpp>
+
+namespace PrismShaderCompiler { struct PipelineState; }
+
 namespace Prism
 {
+    class RenderPass;
+    class Mesh;
+    class Material;
+    class TextureCube;
+    class Image;
+    class Image2D;
+    class SceneEnvironment;
+    class Shader;
+    class UniformBuffer;
+    class ShaderStorageBuffer;
+    class Texture;
+
     using RendererID = uint32_t;
 
-    enum class RendererAPIType
+    enum class RendererAPIType : uint8_t
     {
         None = 0,
-        OpenGL = 1
+        OpenGL = 1,
+        Vulkan = 2
+    };
+
+    enum class ComputeBindingKind
+    {
+        None = 0,
+        UniformBuffer,
+        StorageBuffer,
+        Sampler,
+        Image
+    };
+
+    struct ComputeResourceBinding
+    {
+        ComputeBindingKind Kind = ComputeBindingKind::None;
+        uint32_t Binding = 0;
+        bool ReadOnly = false;
+        bool WriteOnly = false;
+        bool Layered = true;
+        uint32_t Level = 0;
+        Ref<UniformBuffer> UBO;
+        Ref<ShaderStorageBuffer> SSBO;
+        Ref<Texture> Texture;
     };
 
     struct RenderAPICapabilities
@@ -43,28 +88,40 @@ namespace Prism
         };
         typedef BitFlags<Barrier> BarrierFlags;
 #pragma endregion
-    private:
 
     public:
-        static void Init();
-        static void Shutdown();
-        static void SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height);
-        static void Clear(float r, float g, float b, float a);
-        static void SetClearColor(float r, float g, float b, float a);
-        static void DrawIndexed(uint32_t count, PrimitiveType type = PrimitiveType::Triangles, bool depthTest = true);
-        static void DrawIndexedBaseVertex(uint32_t count, uint32_t baseIndex, uint32_t baseVertex, PrimitiveType type = PrimitiveType::Triangles);
-        static void SetLineThickness(float thickness);
-        static void MemoryBarriers(BarrierFlags flags);
+        virtual ~RendererAPI() = default;
 
-        static RenderAPICapabilities& GetCapabilities()
-        {
-            static RenderAPICapabilities capabilities;
-            return capabilities;
-        }
+        virtual void Init() = 0;
+        virtual void Shutdown() = 0;
+
+        virtual void BeginFrame() = 0;
+        virtual void EndFrame() = 0;
+
+        virtual void BeginRenderPass(Ref<RenderPass> renderPass, bool clear = true) = 0;
+        virtual void EndRenderPass() = 0;
+        virtual void SubmitFullscreenQuad(Ref<Material> material, uint32_t passIndex, uint32_t drawIndex = 0) = 0;
+
+        virtual void SetSceneEnvironment(const Ref<SceneEnvironment>& environment) = 0;
+        virtual std::pair<Ref<TextureCube>, Ref<TextureCube>> CreateEnvironmentMap(const std::string& filepath) = 0;
+
+        virtual void SetGlobalUniformBuffer(uint32_t binding, Ref<UniformBuffer> ubo) = 0;
+        virtual void SetGlobalShaderStorageBuffer(uint32_t binding, Ref<ShaderStorageBuffer> ssbo) = 0;
+        virtual void SetGlobalTexture(uint32_t binding, Ref<Image> image) = 0;
+        virtual void BakeGlobalInputs() = 0;
+
+        virtual void RenderMesh(Ref<Mesh> mesh, uint32_t submeshIndex, Ref<Material> material,
+            uint32_t passIndex, uint32_t drawIndex = 0) = 0;
+        virtual void RenderQuad(Ref<Material> material, uint32_t passIndex, uint32_t drawIndex = 0) = 0;
+
+        virtual void DispatchCompute(Ref<Shader> kernelShader,
+            const std::vector<ComputeResourceBinding>& bindings,
+            uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ) = 0;
+
+        virtual RenderAPICapabilities& GetCapabilities() = 0;
 
         static RendererAPIType Current() { return s_CurrentRendererAPI; }
-    private:
-        static void LoadRequiredAssets();
+        static void SetCurrent(RendererAPIType api) { PR_CORE_ASSERT(s_CurrentRendererAPI == RendererAPIType::None); s_CurrentRendererAPI = api; }
     private:
         static RendererAPIType s_CurrentRendererAPI;
     };

@@ -1,24 +1,45 @@
 #include "prpch.h"
 #include "Shader.h"
 
+#include "Prism/ShaderCompiler/ShaderCompiler.h"
 #include "Platform/OpenGL/OpenGLShader.h"
+#include "Platform/Vulkan/VulkanShader.h"
 
 namespace Prism
 {
-    std::vector<Shader*> Shader::s_AllShaders;
 
-    Shader* Shader::Create(const std::string& vertexSource, const std::string& fragmentSource)
-    {
-        auto* result = new OpenGLShader(vertexSource, fragmentSource);
-        s_AllShaders.push_back(result);
-        return result;
-    }
+	Ref<Shader> Shader::Create(const PrismShaderCompiler::CompiledShader& shader,
+		uint32_t passIndex,
+		const std::vector<std::string>& keywords)
+	{
+		auto& compiler = ShaderCompiler::Get();
+		switch (RendererAPI::Current())
+		{
+		case RendererAPIType::OpenGL:
+		{
+			auto out = compiler.GenerateGLSL(shader, passIndex, keywords);
+			return Ref<Shader>(new OpenGLShader(out.VertexShader, out.FragmentShader));
+		}
+		case RendererAPIType::Vulkan:
+		{
+			auto out = compiler.GenerateSPIRV(shader, passIndex, keywords);
+			return Ref<Shader>(new VulkanShader(out.SpirvVertex, out.SpirvFragment, out.Reflection));
+		}
+		default:
+			PR_CORE_ASSERT(false, "Unknown RendererAPI!"); return nullptr;
+		}
+	}
 
-    Shader* Shader::Create(const std::string& computeSource)
-    {
-        auto* result = new OpenGLShader(computeSource);
-        s_AllShaders.push_back(result);
-        return result;
-    }
+	Ref<Shader> Shader::Create(const void* computeSource)
+	{
+		switch (RendererAPI::Current())
+		{
+		case RendererAPIType::OpenGL:
+			return Ref<Shader>(new OpenGLShader((const char*)computeSource));
+		// TODO: S5 VulkanComputePipeline 落地时接 Vulkan 分支
+		default:
+			PR_CORE_ASSERT(false, "Unknown RendererAPI!"); return nullptr;
+		}
+	}
 
 }

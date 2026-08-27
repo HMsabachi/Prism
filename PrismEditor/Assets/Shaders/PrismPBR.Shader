@@ -20,7 +20,7 @@ Shader "Standard/PrismPBR"
         Cull Back
         ZTest LEqual
         ZWrite On
-        Blend One OneMinusSrcAlpha
+        Blend One Zero
     }
 
     SubShader
@@ -34,7 +34,9 @@ Shader "Standard/PrismPBR"
             {
                 #pragma shader_feature SKINNED SHOW_CASCADES
                 #pragma shader_feature ALBEDO_MAP NORMAL_MAP METALNESS_MAP ROUGHNESS_MAP
-                #include "PrismCommon.glsl"
+                #include "PrismEngine.glsl"
+                #include "Pass/GeometryPass.glsl"
+                #include "PrismShadow.glsl"
                 attribute vec3 a_Position : POSITION;
                 attribute vec3 a_Normal : NORMAL;
                 attribute vec3 a_Tangent : TANGENT;
@@ -44,9 +46,6 @@ Shader "Standard/PrismPBR"
                 attribute ivec4 a_BoneIndices : BONEINDICES;
                 attribute vec4 a_BoneWeights : BONEWEIGHTS;
             #endif
-
-                layout(location = 0) out vec4 FragColor;
-                layout(location = 1) out vec4 BloomColor;
 
                 varying VertexOutput
                 {
@@ -63,12 +62,12 @@ Shader "Standard/PrismPBR"
                 void vert()
                 {
                     mat4 u_ViewProjectionMatrix = Prism_ViewProjection;
-                    mat4 u_ModelMatrix = Prism_Model;
+                    mat4 u_ModelMatrix = Prism_ObjectToWorld;
                 #ifdef SKINNED
-                    mat4 boneTransform = Prism_Bones[a_BoneIndices[0]] * a_BoneWeights[0];
-                    boneTransform += Prism_Bones[a_BoneIndices[1]] * a_BoneWeights[1];
-                    boneTransform += Prism_Bones[a_BoneIndices[2]] * a_BoneWeights[2];
-                    boneTransform += Prism_Bones[a_BoneIndices[3]] * a_BoneWeights[3];
+                    mat4 boneTransform = Prism_GetBoneMatrix(a_BoneIndices[0]) * a_BoneWeights[0];
+                    boneTransform += Prism_GetBoneMatrix(a_BoneIndices[1]) * a_BoneWeights[1];
+                    boneTransform += Prism_GetBoneMatrix(a_BoneIndices[2]) * a_BoneWeights[2];
+                    boneTransform += Prism_GetBoneMatrix(a_BoneIndices[3]) * a_BoneWeights[3];
 
                     vec4 localPosition = boneTransform * vec4(a_Position, 1.0);
 
@@ -252,8 +251,8 @@ Shader "Standard/PrismPBR"
                     vec3 lightContribution = Lighting(F0);
                     vec3 iblContribution = IBL(F0, Lr);
 
+                    // Main Color output
                     FragColor = vec4(lightContribution + iblContribution, 1.0);
-
                     // ShowCascades debug — uncomment #define SHOW_CASCADES above to enable
                 #ifdef SHOW_CASCADES
                     if (Prism_ShadowParams.z > 0.0)
@@ -269,9 +268,11 @@ Shader "Standard/PrismPBR"
                     }
                 #endif
 
-                    // Bloom
+                    // Bloom output
                     float brightness = dot(FragColor.rgb, vec3(0.2126, 0.7152, 0.0722));
                     BloomColor = brightness > 1.0 ? FragColor : vec4(0.0, 0.0, 0.0, 1.0);
+                    // Normal and roughness output
+                    NormalColor = vec4(normalize(m_Params.Normal) * 0.5 + 0.5, m_Params.Roughness);
                 }
 
             }
@@ -285,7 +286,8 @@ Shader "Standard/PrismPBR"
             GLSL
             {
                 #pragma shader_feature SKINNED
-                #include "PrismCommon.glsl"
+                #include "PrismEngine.glsl"
+                #include "Pass/ShadowPass.glsl"
 
                 attribute vec3 a_Position : POSITION;
             #ifdef SKINNED
@@ -296,14 +298,14 @@ Shader "Standard/PrismPBR"
                 void vert()
                 {
                 #ifdef SKINNED
-                    mat4 boneTransform = Prism_Bones[a_BoneIndices[0]] * a_BoneWeights[0];
-                    boneTransform += Prism_Bones[a_BoneIndices[1]] * a_BoneWeights[1];
-                    boneTransform += Prism_Bones[a_BoneIndices[2]] * a_BoneWeights[2];
-                    boneTransform += Prism_Bones[a_BoneIndices[3]] * a_BoneWeights[3];
+                    mat4 boneTransform = Prism_GetBoneMatrix(a_BoneIndices[0]) * a_BoneWeights[0];
+                    boneTransform += Prism_GetBoneMatrix(a_BoneIndices[1]) * a_BoneWeights[1];
+                    boneTransform += Prism_GetBoneMatrix(a_BoneIndices[2]) * a_BoneWeights[2];
+                    boneTransform += Prism_GetBoneMatrix(a_BoneIndices[3]) * a_BoneWeights[3];
                     vec4 localPosition = boneTransform * vec4(a_Position, 1.0);
-                    gl_Position = Prism_ShadowMatrices[int(Prism_ObjectReserved.x)] * Prism_Model * localPosition;
+                    gl_Position = Prism_ShadowMatrices[int(Prism_ObjectReserved.x)] * Prism_ObjectToWorld * localPosition;
                 #else
-                    gl_Position = Prism_ShadowMatrices[int(Prism_ObjectReserved.x)] * Prism_Model * vec4(a_Position, 1.0);
+                    gl_Position = Prism_ShadowMatrices[int(Prism_ObjectReserved.x)] * Prism_ObjectToWorld * vec4(a_Position, 1.0);
                 #endif
                 }
 

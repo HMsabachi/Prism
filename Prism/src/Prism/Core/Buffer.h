@@ -3,20 +3,20 @@
 
 namespace Prism {
 
-	struct PRISM_API Buffer
-	{
-		mutable bool ReadOnly;
-		byte* Data;
+    struct PRISM_API Buffer
+    {
+        mutable bool ReadOnly;
+        byte* Data;
         uint64_t Size;
 
-		Buffer()
-			: Data(nullptr), Size(0), ReadOnly(false)
-		{
-		}
-		Buffer(byte* data, uint64_t size)
-			: Data(data), Size(size), ReadOnly(false)
-		{
-		}
+        Buffer()
+            : Data(nullptr), Size(0), ReadOnly(false)
+        {
+        }
+        Buffer(byte* data, uint64_t size)
+            : Data(data), Size(size), ReadOnly(false)
+        {
+        }
         Buffer(const Buffer& other)
             : Data(nullptr), Size(0), ReadOnly(false)
         {
@@ -34,6 +34,7 @@ namespace Prism {
             other.Size = 0;
             other.ReadOnly = false;
         }
+        ~Buffer() { Free(); }
         void operator=(const Buffer& other)
         {
             if (this != &other)
@@ -62,100 +63,112 @@ namespace Prism {
         }
 
 
-		void SetReadOnly(bool readOnly) const { ReadOnly = readOnly; }
+        void SetReadOnly(bool readOnly) const { ReadOnly = readOnly; }
 
-		void Free()
-		{
-			delete[] Data;
-			Data = nullptr;
-			Size = 0;
-		}
-		Buffer Copy() const
-		{
-			Buffer copy;
-			copy.Allocate(Size);
-			memcpy(copy.Data, Data, Size);
-			return copy;
-		}
-		static Buffer Copy(const void* data, uint64_t size)
-		{
-			Buffer buffer;
-			buffer.Allocate(size);
-			memcpy(buffer.Data, data, size);
-			return buffer;
-		}
-		void Allocate(uint64_t size)
-		{
-			PR_CORE_ASSERT(!ReadOnly, "Cannot allocate a read-only buffer! 无法分配只读缓冲区");
-			delete[] Data;
-			Data = nullptr;
+        void Free()
+        {
+            delete[] Data;
+            Data = nullptr;
+            Size = 0;
+        }
+        void Release()
+        {
+            Free();
+        }
+        Buffer Copy() const
+        {
+            Buffer copy;
+            copy.Allocate(Size);
+            memcpy(copy.Data, Data, Size);
+            return copy;
+        }
+        static Buffer Copy(const void* data, uint64_t size)
+        {
+            Buffer buffer;
+            buffer.Allocate(size);
+            memcpy(buffer.Data, data, size);
+            return buffer;
+        }
+        void Allocate(uint64_t size)
+        {
+            PR_CORE_ASSERT(!ReadOnly, "Cannot allocate a read-only buffer! 无法分配只读缓冲区");
+            delete[] Data;
+            Data = nullptr;
 
-			if (size == 0)
-				return;
+            if (size == 0)
+                return;
 
-			Data = new byte[size];
-			Size = size;
+            Data = new byte[size];
+            Size = size;
             memset(Data, 0, Size);
-		}
+        }
 
-		void ZeroInitialize()
-		{
-			PR_CORE_ASSERT(!ReadOnly, "Cannot zero initialize a read-only buffer! 无法对只读缓冲区进行零初始化");
-			if (Data)
-				memset(Data, 0, Size);
-		}
+        void ZeroInitialize()
+        {
+            PR_CORE_ASSERT(!ReadOnly, "Cannot zero initialize a read-only buffer! 无法对只读缓冲区进行零初始化");
+            if (Data)
+                memset(Data, 0, Size);
+        }
 
-		template<typename T>
-		T& Read(uint64_t offset = 0) const
-		{
-			return *(T*)(Data + offset);
-		}
+        template<typename T>
+        T& Read(uint64_t offset = 0) const
+        {
+            return *(T*)(Data + offset);
+        }
 
-		void Write(const void* data, uint64_t size, uint64_t offset = 0)
-		{
-			PR_CORE_ASSERT(!ReadOnly, "Cannot write to a read-only buffer! 无法写入只读缓冲区");
-			PR_CORE_ASSERT(offset + size <= Size, "Buffer overflow! 缓冲区溢出");
-			memcpy(Data + offset, data, size);
-		}
+        byte* ReadBytes(uint64_t size, uint64_t offset = 0) const
+        {
+            PR_CORE_ASSERT(offset + size <= Size, "Buffer overflow! 缓冲区溢出");
+            byte* buffer = new byte[size];
+            memcpy(buffer, Data + offset, size);
+            return buffer;
+        }
 
-		operator bool() const
-		{
-			return Data;
-		}
+        void Write(const void* data, uint64_t size, uint64_t offset = 0)
+        {
+            PR_CORE_ASSERT(!ReadOnly, "Cannot write to a read-only buffer! 无法写入只读缓冲区");
+            PR_CORE_ASSERT(offset + size <= Size, "Buffer overflow! 缓冲区溢出");
+            memcpy(Data + offset, data, size);
+        }
 
-		byte& operator[](int index)
-		{
-			return Data[index];
-		}
+        operator bool() const
+        {
+            return Data;
+        }
 
-		byte operator[](int index) const
-		{
-			return Data[index];
-		}
+        byte& operator[](int index)
+        {
+            return Data[index];
+        }
 
-		template<typename T>
-		T* As()
-		{
-			return (T*)Data;
-		}
+        byte operator[](int index) const
+        {
+            return Data[index];
+        }
 
-		inline uint64_t GetSize() const { return Size; }
-	};
+        template<typename T>
+        T* As()
+        {
+            return (T*)Data;
+        }
 
-	struct PRISM_API BufferSafe : public Buffer
-	{
-		~BufferSafe()
-		{
-			Free();
-		}
+        inline uint64_t GetSize() const { return Size; }
+    };
 
-		static BufferSafe Copy(const void* data, uint64_t size)
-		{
-			BufferSafe buffer;
-			buffer.Allocate(size);
-			memcpy(buffer.Data, data, size);
-			return buffer;
-		}
-	};
+    struct PRISM_API BufferSafe : public Buffer
+    {
+        ~BufferSafe()
+        {
+            Free();
+        }
+
+        static BufferSafe Copy(const void* data, uint64_t size)
+        {
+            BufferSafe buffer;
+            buffer.Allocate(size);
+            memcpy(buffer.Data, data, size);
+            return buffer;
+        }
+    };
 
 }

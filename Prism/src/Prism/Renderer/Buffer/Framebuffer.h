@@ -1,33 +1,19 @@
-#pragma once
+﻿#pragma once
 #include "Prism/Renderer/RendererAPI.h"
+#include "Prism/Renderer/Image.h"
 #include <vector>
+#include <functional>
+#include <string>
+#include <glm/glm.hpp>
 
 namespace Prism {
-
-    enum class PRISM_API FramebufferTextureFormat
-    {
-        None = 0,
-
-        // Color
-        RGBA8 = 1,
-        RGBA16F = 2,
-        RGBA32F = 3,
-        RG32F = 4,
-
-        // Depth/stencil
-        DEPTH32F = 5,
-        DEPTH24STENCIL8 = 6,
-
-        // Defaults
-        Depth = DEPTH24STENCIL8
-    };
 
     struct FramebufferTextureSpecification
     {
         FramebufferTextureSpecification() = default;
-        FramebufferTextureSpecification(FramebufferTextureFormat format) : TextureFormat(format) {}
+        FramebufferTextureSpecification(ImageFormat format) : Format(format) {}
 
-        FramebufferTextureFormat TextureFormat;
+        ImageFormat Format;
         // TODO: filtering/wrap
     };
 
@@ -42,9 +28,10 @@ namespace Prism {
 
     struct PRISM_API FramebufferSpecification
     {
+        float Scale = 1.0f;
         uint32_t Width = 1280;
         uint32_t Height = 720;
-        glm::vec4 ClearColor;
+        glm::vec4 ClearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
         FramebufferAttachmentSpecification Attachments;
         uint32_t Samples = 1; // multisampling
 
@@ -53,6 +40,8 @@ namespace Prism {
 
         // SwapChainTarget = screen buffer (i.e. no framebuffer)
         bool SwapChainTarget = false;
+
+        std::string DebugName;
     };
 
     class PRISM_API Framebuffer : public RefCounted
@@ -60,23 +49,19 @@ namespace Prism {
     public:
         static Ref<Framebuffer> Create(const FramebufferSpecification& spec);
 
-        virtual const FramebufferSpecification& GetSpecification() const = 0;
-
         virtual ~Framebuffer() {}
-        virtual void Bind() const = 0;
-        virtual void Unbind() const = 0;
 
         virtual void Resize(uint32_t width, uint32_t height, bool forceRecreate = false) = 0;
-
-        virtual void BindTexture(uint32_t attachmentIndex = 0, uint32_t slot = 0) const = 0;
-        virtual void BindDepthTexture(uint32_t slot = 0) const = 0;
+        virtual void RT_Resize(uint32_t width, uint32_t height, bool forceRecreate = false) = 0;
+        virtual void AddResizeCallback(const std::function<void(Ref<Framebuffer>)>& func) = 0;
 
         virtual uint32_t GetWidth() const = 0;
         virtual uint32_t GetHeight() const = 0;
 
-        virtual RendererID GetRendererID() const = 0;
-        virtual RendererID GetColorAttachmentRendererID(int index = 0) const = 0;
-        virtual RendererID GetDepthAttachmentRendererID() const = 0;
+        virtual const Ref<Image2D>& GetImage(uint32_t attachmentIndex = 0) const = 0;
+        virtual const Ref<Image2D>& GetDepthImage() const = 0;
+
+        virtual const FramebufferSpecification& GetSpecification() const = 0;
     };
 
     class PRISM_API FramebufferPool final

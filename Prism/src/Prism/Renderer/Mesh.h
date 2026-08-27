@@ -24,7 +24,6 @@ namespace Assimp {
 
 namespace Prism
 {
-    class Pipeline;
     class VertexBuffer;
     class IndexBuffer;
 
@@ -191,7 +190,6 @@ namespace Prism {
         uint32_t m_BoneCount = 0;
         std::vector<BoneInfo> m_BoneInfo;
 
-        Ref<Pipeline> m_Pipeline;
         Ref<VertexBuffer> m_VertexBuffer;
         Ref<IndexBuffer> m_IndexBuffer;
 
@@ -213,7 +211,9 @@ namespace Prism {
         bool m_AnimationPlaying = true;
 
         friend class Renderer;
-        friend class RenderPipeline;
+        friend class SceneRenderer;
+        friend class OpenGLRenderer;
+        friend class VulkanRenderer;
         friend class SceneHierarchyPanel;
     };
 }
