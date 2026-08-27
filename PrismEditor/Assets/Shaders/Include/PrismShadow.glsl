@@ -108,7 +108,7 @@ float CascadeShadow(sampler2D shadowMap, vec3 worldPos, vec3 normal, int cascade
 {
     vec4 lightSpacePos = Prism_ShadowMatrices[cascade] * vec4(worldPos, 1.0);
     vec3 projCoords = lightSpacePos.xyz / lightSpacePos.w;
-    projCoords = projCoords * 0.5 + 0.5;
+    projCoords.xy = projCoords.xy * 0.5 + 0.5;
 
     float bias = GetShadowBias(normal, -Prism_Lights[0].Direction);
     bool softShadows = Prism_ShadowParams.w > 0.5;

@@ -1,8 +1,6 @@
 ﻿#include "prpch.h"
 #include "WindowsWindow.h"
 
-#include "Platform/OpenGL/OpenGLContext.h"
-
 #include "Prism/Core/Application.h"
 #include "Prism/Events/ApplicationEvent.h"
 #include "Prism/Events/MouseEvent.h"
@@ -107,12 +105,7 @@ namespace Prism {
 
     void WindowsWindow::SetVSync(bool enabled)
     {
-        Renderer::Submit([=]() {
-            if (enabled)
-                glfwSwapInterval(1);
-            else
-                glfwSwapInterval(0);
-        });
+        m_RendererContext->SetVSync(enabled);
         m_Data.VSync = enabled;
     }
 

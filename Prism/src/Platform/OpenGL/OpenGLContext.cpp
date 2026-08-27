@@ -51,4 +51,11 @@ namespace Prism {
         glfwSwapBuffers(m_WindowHandle);
     }
 
+    void OpenGLContext::SetVSync(bool enabled)
+    {
+        Renderer::Submit([this, enabled]() {
+            glfwSwapInterval(enabled ? 1 : 0);
+        });
+    }
+
 }

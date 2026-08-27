@@ -61,7 +61,7 @@ project "Prism"
     language "C++"
     staticruntime "off"
 
-    defines { "PR_DYNAMIC_LINK" , "_CRT_SECURE_NO_WARNINGS", "yaml_cpp_EXPORTS", "TRACY_ENABLE", "TRACY_ON_DEMAND"}
+    defines { "PR_DYNAMIC_LINK" , "_CRT_SECURE_NO_WARNINGS", "yaml_cpp_EXPORTS", "TRACY_ENABLE", "TRACY_ON_DEMAND", "GLM_FORCE_DEPTH_ZERO_TO_ONE"}
 
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")
@@ -221,7 +221,7 @@ project "PrismEditor"
     language "C++"
     staticruntime "off"
 
-    defines { "PR_DYNAMIC_LINK", "TRACY_ENABLE", "TRACY_ON_DEMAND" }
+    defines { "PR_DYNAMIC_LINK", "TRACY_ENABLE", "TRACY_ON_DEMAND", "GLM_FORCE_DEPTH_ZERO_TO_ONE" }
 
     targetdir ("bin/" .. outputdir .. "/%{prj.name}")
     objdir ("bin-int/" .. outputdir .. "/%{prj.name}")

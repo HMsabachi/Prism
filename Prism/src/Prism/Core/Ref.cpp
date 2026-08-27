@@ -4,8 +4,8 @@
 
 namespace Prism
 {
-    static std::unordered_set<RefCounted*> s_LiveReferences;
-    static std::mutex s_LiveReferenceMutex;
+    PRISM_API std::unordered_set<RefCounted*> s_LiveReferences;
+    PRISM_API std::mutex s_LiveReferenceMutex;
 
     namespace RefUtils
     {

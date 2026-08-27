@@ -678,7 +678,7 @@ namespace Prism
         float f = proj[1][1];
         float fov = 2.0f * atan(1.0f / f);
         float aspect = proj[1][1] / proj[0][0];
-        float nearClip = proj[3][2] / (proj[2][2] - 1.0f);
+        float nearClip = proj[3][2] / proj[2][2];
         float farClip = proj[3][2] / (proj[2][2] + 1.0f);
         farClip = glm::min(farClip, config.MaxShadowDistance);
 

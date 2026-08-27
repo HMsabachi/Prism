@@ -7,9 +7,10 @@
 
 #include <GLFW/glfw3.h>
 
-#include "Platform/Vulkan/Vulkan.h"
-#include "Platform/Vulkan/VulkanAllocator.h"
-#include "Platform/Vulkan/VulkanDescriptorSet.h"
+#include "Vulkan.h"
+#include "VulkanAllocator.h"
+#include "VulkanDescriptorSet.h"
+#include "Prism/Renderer/Renderer.h"
 
 namespace Prism
 {
@@ -105,9 +106,9 @@ namespace Prism
 
 #define VK_KHR_WIN32_SURFACE_EXTENSION_NAME "VK_KHR_win32_surface"
         std::vector<const char*> instanceExtensions = { VK_KHR_SURFACE_EXTENSION_NAME, VK_KHR_WIN32_SURFACE_EXTENSION_NAME };
-        instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         if (s_Validation)
         {
+            instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
             instanceExtensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
         }
 
@@ -192,6 +193,14 @@ namespace Prism
     void VulkanContext::OnResize(uint32_t width, uint32_t height)
     {
         m_SwapChain.OnResize(width, height, Application::Get().GetWindow().IsVSync());
+    }
+
+    void VulkanContext::SetVSync(bool enabled)
+    {
+        Ref<VulkanContext> instance = this;
+        Renderer::Submit([instance, enabled]() mutable {
+            instance->m_SwapChain.OnResize(instance->m_SwapChain.GetWidth(), instance->m_SwapChain.GetHeight(), enabled);
+        });
     }
 
     void VulkanContext::BeginFrame()

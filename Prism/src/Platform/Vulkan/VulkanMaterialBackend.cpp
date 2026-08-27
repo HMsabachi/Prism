@@ -4,6 +4,7 @@
 #include "VulkanUniformBuffer.h"
 #include "VulkanTexture.h"
 #include "Prism/Renderer/Texture.h"
+#include "Prism/Renderer/Renderer.h"
 
 namespace Prism
 {
@@ -32,18 +33,21 @@ namespace Prism
 
     VkDescriptorSet VulkanMaterialBackend::RT_GetDescriptorSet() const
     {
-        bool isDirty = m_Material->m_DataDirty || m_Material->m_TexturesDirty;
         if (m_Material->m_DataDirty)
         {
             m_UniformBuffer->RT_SetData(m_Material->m_PropertyBuffer);
             m_Material->m_DataDirty = false;
+            std::fill(std::begin(m_IsSetDirty), std::end(m_IsSetDirty), true);
         }
         if (m_Material->m_TexturesDirty)
         {
             SetTextureInputs();
             m_Material->m_TexturesDirty = false;
+            std::fill(std::begin(m_IsSetDirty), std::end(m_IsSetDirty), true);
         }
-        m_DescriptorSet.RT_Prepare();
+        if (m_IsSetDirty[Renderer::RT_GetCurrentFrameIndex()])
+            m_DescriptorSet.RT_Prepare();
+        m_IsSetDirty[Renderer::RT_GetCurrentFrameIndex()] = false;
         return m_DescriptorSet.RT_GetDescriptorSet();
     }
 

@@ -225,6 +225,8 @@ namespace Prism
         timer += Time::GetDeltaTime();
         ImGui::Begin("Renderer");
         auto& caps = Renderer::GetCapabilities();
+        const char* rendererAPIName = RendererAPI::Current() == RendererAPIType::OpenGL ? "OpenGL" : "Vulkan";
+        ImGui::Text("RendererAPI: %s", rendererAPIName);
         if (ImGui::TreeNode("Base Info"))
         {
             ImGui::Text("Vendor: %s", caps.Vendor.c_str());

@@ -20,6 +20,7 @@ namespace Prism
     private:
         mutable VulkanDescriptorSet m_DescriptorSet;
         mutable Ref<VulkanUniformBuffer> m_UniformBuffer;
+        mutable bool m_IsSetDirty[VulkanFramesInFlight];
         WeakRef<Material> m_Material;
     };
 }
