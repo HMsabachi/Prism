@@ -256,15 +256,19 @@ namespace Prism
         VkImageView imageView = m_Info.ImageView;
         VkSampler sampler = m_Info.Sampler;
         VmaAllocation allocation = m_Info.MemoryAlloc;
+        auto storageViews = std::move(m_StorageViews);
+        m_StorageViews.clear();
         m_Info = {};
 
-        Renderer::SubmitResourceFree([image, imageView, sampler, allocation]()
+        Renderer::SubmitResourceFree([image, imageView, sampler, allocation, storageViews]()
         {
             VkDevice device = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
             if (sampler)
                 vkDestroySampler(device, sampler, nullptr);
             if (imageView)
                 vkDestroyImageView(device, imageView, nullptr);
+            for (auto& [mip, view] : storageViews)
+                vkDestroyImageView(device, view, nullptr);
             if (image)
                 VulkanAllocator::DestroyImage(image, allocation);
         });
@@ -348,6 +352,27 @@ namespace Prism
             m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         m_DescriptorImageInfo.imageView = m_Info.ImageView;
         m_DescriptorImageInfo.sampler = m_Info.Sampler;
+    }
+
+    VkImageView VulkanImage2D::GetOrCreateStorageImageView(uint32_t mip)
+    {
+        auto it = m_StorageViews.find(mip);
+        if (it != m_StorageViews.end())
+            return it->second;
+
+        VkImageViewCreateInfo view{};
+        view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        view.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        view.format = Utils::VulkanImageFormat(m_Format);
+        view.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+        view.subresourceRange.aspectMask = Utils::IsDepthFormat(m_Format) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+        view.subresourceRange.baseMipLevel = mip;
+        view.subresourceRange.levelCount = 1;
+        view.subresourceRange.baseArrayLayer = 0;
+        view.subresourceRange.layerCount = 1;
+        view.image = m_Info.Image;
+        VK_CHECK_RESULT(vkCreateImageView(VulkanContext::GetCurrentDevice()->GetVulkanDevice(), &view, nullptr, &m_StorageViews[mip]));
+        return m_StorageViews[mip];
     }
 
     //////////////////////////////////////////////////////////////////////////////////
@@ -508,15 +533,19 @@ namespace Prism
         VkImageView imageView = m_Info.ImageView;
         VkSampler sampler = m_Info.Sampler;
         VmaAllocation allocation = m_Info.MemoryAlloc;
+        auto storageViews = std::move(m_StorageViews);
+        m_StorageViews.clear();
         m_Info = {};
 
-        Renderer::SubmitResourceFree([image, imageView, sampler, allocation]()
+        Renderer::SubmitResourceFree([image, imageView, sampler, allocation, storageViews]()
         {
             VkDevice device = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
             if (sampler)
                 vkDestroySampler(device, sampler, nullptr);
             if (imageView)
                 vkDestroyImageView(device, imageView, nullptr);
+            for (auto& [mip, view] : storageViews)
+                vkDestroyImageView(device, view, nullptr);
             if (image)
                 VulkanAllocator::DestroyImage(image, allocation);
         });
@@ -624,6 +653,27 @@ namespace Prism
         m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
         m_DescriptorImageInfo.imageView = m_Info.ImageView;
         m_DescriptorImageInfo.sampler = m_Info.Sampler;
+    }
+
+    VkImageView VulkanImageCube::GetOrCreateStorageImageView(uint32_t mip)
+    {
+        auto it = m_StorageViews.find(mip);
+        if (it != m_StorageViews.end())
+            return it->second;
+
+        VkImageViewCreateInfo view{};
+        view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        view.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+        view.format = Utils::VulkanImageFormat(m_Format);
+        view.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+        view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        view.subresourceRange.baseMipLevel = mip;
+        view.subresourceRange.levelCount = 1;
+        view.subresourceRange.baseArrayLayer = 0;
+        view.subresourceRange.layerCount = 6;
+        view.image = m_Info.Image;
+        VK_CHECK_RESULT(vkCreateImageView(VulkanContext::GetCurrentDevice()->GetVulkanDevice(), &view, nullptr, &m_StorageViews[mip]));
+        return m_StorageViews[mip];
     }
 
     namespace Utils

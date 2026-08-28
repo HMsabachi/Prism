@@ -433,53 +433,62 @@ namespace Prism
         }
     }
 
-    void OpenGLRenderer::DispatchCompute(Ref<Shader> kernelShader,
-        const std::vector<ComputeResourceBinding>& bindings,
+    void OpenGLRenderer::DispatchCompute(Ref<ComputeShader> computeShader, int32_t kernel,
         uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ)
     {
+        if (!computeShader)
+            return;
+        Ref<Shader> kernelShader = computeShader->GetKernelShader(kernel);
         if (!kernelShader)
             return;
 
-        Ref<Shader> capturedShader = kernelShader;
-        std::vector<ComputeResourceBinding> captured = bindings;
+        std::vector<ComputeResourceBinding> captured = computeShader->GetResources();
 
         Renderer::Submit([=]() {
-            RendererID program = capturedShader.As<OpenGLShader>()->GetRendererID();
+            RendererID program = kernelShader.As<OpenGLShader>()->GetRendererID();
             if (s_Data->LastComputeProgram != program)
             {
                 glUseProgram(program);
                 s_Data->LastComputeProgram = program;
             }
 
+            using K = PrismShaderCompiler::CSL::ResourceKind;
             for (const auto& res : captured)
             {
-                if (res.UBO)
-                {
-                    GLuint id = res.UBO.As<OpenGLUniformBuffer>()->GetRendererID();
-                    glBindBufferBase(GL_UNIFORM_BUFFER, res.Binding, id);
-                }
-                else if (res.SSBO)
-                {
-                    GLuint id = res.SSBO.As<OpenGLShaderStorageBuffer>()->GetRendererID();
-                    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, res.Binding, id);
-                }
-                else if (res.Texture)
-                {
-                    RendererID texId = 0;
-                    GLenum fmt = Utils::TextureFormatToGL(res.Texture->GetFormat());
-                    if (res.Texture->GetType() == TextureType::Texture2D)
-                        texId = res.Texture.As<OpenGLTexture2D>()->GetRendererID();
-                    else
-                        texId = res.Texture.As<OpenGLTextureCube>()->GetRendererID();
+                if (!res.res)
+                    continue;
 
-                    if (res.Kind == ComputeBindingKind::Image)
+                if (res.Resource.Kind == K::UniformBuffer)
+                {
+                    Ref<UniformBuffer> ubo = res.res.As<UniformBuffer>();
+                    glBindBufferBase(GL_UNIFORM_BUFFER, res.Resource.Binding, ubo.As<OpenGLUniformBuffer>()->GetRendererID());
+                }
+                else if (res.Resource.Kind == K::StorageBuffer)
+                {
+                    Ref<ShaderStorageBuffer> ssbo = res.res.As<ShaderStorageBuffer>();
+                    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, res.Resource.Binding, ssbo.As<OpenGLShaderStorageBuffer>()->GetRendererID());
+                }
+                else
+                {
+                    Ref<Texture> tex = res.res.As<Texture>();
+                    if (!tex)
+                        continue;
+
+                    RendererID texId = 0;
+                    GLenum fmt = Utils::TextureFormatToGL(tex->GetFormat());
+                    if (tex->GetType() == TextureType::Texture2D)
+                        texId = tex.As<OpenGLTexture2D>()->GetRendererID();
+                    else
+                        texId = tex.As<OpenGLTextureCube>()->GetRendererID();
+
+                    if (res.Resource.Kind == K::Image2D || res.Resource.Kind == K::Image3D || res.Resource.Kind == K::ImageCube)
                     {
-                        GLenum access = Utils::ComputeAccessToGL(res.ReadOnly, res.WriteOnly);
-                        glBindImageTexture(res.Binding, texId, res.Level, res.Layered, 0, access, fmt);
+                        GLenum access = Utils::ComputeAccessToGL(res.Resource.ReadOnly, res.Resource.WriteOnly);
+                        glBindImageTexture(res.Resource.Binding, texId, res.Level, res.Resource.Kind == K::ImageCube, 0, access, fmt);
                     }
                     else
                     {
-                        glBindTextureUnit(res.Binding, texId);
+                        glBindTextureUnit(res.Resource.Binding, texId);
                     }
                 }
             }

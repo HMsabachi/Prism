@@ -20,6 +20,15 @@ namespace Prism
         CreatePipelineLayout();
     }
 
+    VulkanShader::VulkanShader(const std::vector<uint32_t>& spirvCompute,
+        const PrismShaderCompiler::PassReflection& reflection)
+        : m_Reflection(reflection), m_IsCompute(true)
+    {
+        CreateShaderStage(VK_SHADER_STAGE_COMPUTE_BIT, spirvCompute);
+        CreateDescriptorSetLayouts();
+        CreatePipelineLayout();
+    }
+
     VulkanShader::~VulkanShader()
     {
         // 先入队销毁引用本 shader 的 pipeline，同队列 FIFO 保证先于 layout/module 执行
@@ -126,18 +135,22 @@ namespace Prism
 
     void VulkanShader::CreatePipelineLayout()
     {
-        // PrismDrawIndexPC{int}：
-        VkPushConstantRange pushConstantRange{};
-        pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-        pushConstantRange.offset = 0;
-        pushConstantRange.size = sizeof(int32_t);
-
         VkPipelineLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         layoutInfo.setLayoutCount = static_cast<uint32_t>(m_DescriptorSetLayouts.size());
         layoutInfo.pSetLayouts = m_DescriptorSetLayouts.data();
-        layoutInfo.pushConstantRangeCount = 1;
-        layoutInfo.pPushConstantRanges = &pushConstantRange;
+
+        if (!m_IsCompute)
+        {
+            // PrismDrawIndexPC{int}：
+            VkPushConstantRange pushConstantRange{};
+            pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+            pushConstantRange.offset = 0;
+            pushConstantRange.size = sizeof(int32_t);
+            layoutInfo.pushConstantRangeCount = 1;
+            layoutInfo.pPushConstantRanges = &pushConstantRange;
+        }
+
         VK_CHECK_RESULT(vkCreatePipelineLayout(VulkanContext::GetCurrentDevice()->GetVulkanDevice(), &layoutInfo, nullptr, &m_PipelineLayout));
     }
 }

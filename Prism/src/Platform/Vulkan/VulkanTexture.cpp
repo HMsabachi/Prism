@@ -144,27 +144,33 @@ namespace Prism
         return Utils::CalculateMipCount(m_Width, m_Height);
     }
 
-    VkImageView VulkanTextureCube::CreateImageViewSingleMip(uint32_t mip)
+    void VulkanTextureCube::CopyTo(Ref<TextureCube> destination) const
     {
-        auto device = VulkanContext::GetCurrentDevice();
+        VkImage srcImage = m_Image.As<VulkanImageCube>()->GetImageInfo().Image;
+        VkImage dstImage = destination->GetImage().As<VulkanImageCube>()->GetImageInfo().Image;
+        uint32_t width = m_Width, height = m_Height;
 
-        VkFormat format = Utils::VulkanImageFormat(m_Format);
+        Renderer::Submit([srcImage, dstImage, width, height]()
+        {
+            auto device = VulkanContext::GetCurrentDevice();
+            VkCommandBuffer copyCmd = device->GetCommandBuffer(true);
 
-        VkImageViewCreateInfo view{};
-        view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        view.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
-        view.format = format;
-        view.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-        view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        view.subresourceRange.baseMipLevel = mip;
-        view.subresourceRange.baseArrayLayer = 0;
-        view.subresourceRange.layerCount = 6;
-        view.subresourceRange.levelCount = 1;
-        view.image = m_Image.As<VulkanImageCube>()->GetImageInfo().Image;
+            VkImageCopy region{};
+            region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            region.srcSubresource.mipLevel = 0;
+            region.srcSubresource.baseArrayLayer = 0;
+            region.srcSubresource.layerCount = 6;
+            region.dstSubresource = region.srcSubresource;
+            region.extent = { width, height, 1 };
 
-        VkImageView result;
-        VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &view, nullptr, &result));
-        return result;
+            // 双方均处 GENERAL（VulkanImageCube 终态），vkCmdCopyImage 在 GENERAL 布局下合法
+            vkCmdCopyImage(copyCmd,
+                srcImage, VK_IMAGE_LAYOUT_GENERAL,
+                dstImage, VK_IMAGE_LAYOUT_GENERAL,
+                1, &region);
+
+            device->FlushCommandBuffer(copyCmd);
+        });
     }
 
     void VulkanTextureCube::GenerateMips(bool readonly)

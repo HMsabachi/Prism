@@ -9,6 +9,7 @@
 #include "VulkanMaterialBackend.h"
 #include "VulkanPipeline.h"
 #include "VulkanRenderPass.h"
+#include "VulkanShader.h"
 #include "VulkanUniformBuffer.h"
 #include "VulkanShaderStorageBuffer.h"
 #include "VulkanVertexBuffer.h"
@@ -18,6 +19,7 @@
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Material.h"
 #include "Prism/Renderer/Mesh.h"
+#include "Prism/Renderer/ComputeShader/ComputeShader.h"
 
 #include <glm/glm.hpp>
 #include <map>
@@ -47,6 +49,7 @@ namespace Prism
     };
 
     static VulkanRendererData* s_Data = nullptr;
+    static Ref<ComputeShader> s_EnvironmentShader;
 
     namespace Utils
     {
@@ -123,6 +126,7 @@ namespace Prism
 
         float blackPixel[16] = { 0.0f };
         s_Data->BlackImage2D = Image2D::Create(ImageFormat::RGBA, 1, 1, blackPixel).As<VulkanImage2D>();
+        s_Data->BlackImage2D->SetExtraUsage(VK_IMAGE_USAGE_STORAGE_BIT);
         s_Data->BlackImage2D->Invalidate();
         s_Data->BlackImageCube = ImageCube::Create(ImageFormat::RGBA, 1, 1, blackPixel).As<VulkanImageCube>();
         s_Data->BlackImageCube->Invalidate();
@@ -132,6 +136,8 @@ namespace Prism
 
     void VulkanRenderer::Shutdown()
     {
+        // 先于 s_Data 销毁：static Ref 析构链（VulkanShader -> PipelineCache::Erase 依赖 s_Data）
+        s_EnvironmentShader = nullptr;
         s_Data->PipelineCache.Shutdown();
         s_Data->FullscreenQuadVB = nullptr;
         s_Data->FullscreenQuadIB = nullptr;
@@ -331,7 +337,54 @@ namespace Prism
 
     std::pair<Ref<TextureCube>, Ref<TextureCube>> VulkanRenderer::CreateEnvironmentMap(const std::string& filepath)
     {
-        return {s_Data->BlackTextureCube, s_Data->BlackTextureCube };
+        PR_PROFILE_FUNCTION();
+        const uint32_t cubemapSize = 2048;
+        const uint32_t irradianceMapSize = 32;
+
+        if (!s_EnvironmentShader)
+            s_EnvironmentShader = ComputeShader::Create("Assets/Shaders/Environment.ComputeShader");
+
+        Ref<TextureCube> envUnfiltered = TextureCube::Create(ImageFormat::RGBA16F, cubemapSize, cubemapSize);
+        Ref<Texture2D> envEquirect = Texture2D::Create(filepath);
+        PR_CORE_ASSERT(envEquirect->GetFormat() == ImageFormat::RGBA16F, "Texture is not HDR!");
+
+        int toCubeKernel = s_EnvironmentShader->FindKernel("CSEquirectToCube");
+        s_EnvironmentShader->SetTexture(toCubeKernel, "u_EquirectangularTex", envEquirect);
+        s_EnvironmentShader->SetImage(toCubeKernel, "o_OutputCube", envUnfiltered);
+        s_EnvironmentShader->Dispatch(toCubeKernel, cubemapSize / 32, cubemapSize / 32, 6);
+        Renderer::Submit([envUnfiltered]()
+        {
+            envUnfiltered.As<VulkanTextureCube>()->GenerateMips();
+        });
+
+        Ref<TextureCube> envFiltered = TextureCube::Create(ImageFormat::RGBA16F, cubemapSize, cubemapSize);
+        envUnfiltered.As<VulkanTextureCube>()->CopyTo(envFiltered);
+
+        Ref<UniformBuffer> mipFilterUBO = UniformBuffer::Create(sizeof(float));
+        int mipFilter = s_EnvironmentShader->FindKernel("CSMipFilter");
+        s_EnvironmentShader->SetTexture(mipFilter, "u_InputCubeMap", envUnfiltered);
+        const float deltaRoughness = 1.0f / glm::max((float)(envFiltered->GetMipLevelCount() - 1.0f), 1.0f);
+        for (uint32_t level = 1, size = cubemapSize / 2; level < envFiltered->GetMipLevelCount(); level++, size /= 2)
+        {
+            const uint32_t numGroups = glm::max((uint32_t)1, size / 32);
+            s_EnvironmentShader->SetImage(mipFilter, "o_OutputCube", envFiltered, level);
+            float roughness = level * deltaRoughness;
+            mipFilterUBO->SetData(&roughness, sizeof(float));
+            s_EnvironmentShader->SetUniformBuffer(mipFilter, "MipFilterParams", mipFilterUBO);
+            s_EnvironmentShader->Dispatch(mipFilter, numGroups, numGroups, 6);
+        }
+
+        Ref<TextureCube> irradianceMap = TextureCube::Create(ImageFormat::RGBA16F, irradianceMapSize, irradianceMapSize);
+        int irradiance = s_EnvironmentShader->FindKernel("CSIrradiance");
+        s_EnvironmentShader->SetTexture(irradiance, "u_InputCubeMap", envFiltered);
+        s_EnvironmentShader->SetImage(irradiance, "o_OutputCube", irradianceMap);
+        s_EnvironmentShader->Dispatch(irradiance, irradianceMapSize / 32, irradianceMapSize / 32, 6);
+        Renderer::Submit([irradianceMap]()
+        {
+            irradianceMap.As<VulkanTextureCube>()->GenerateMips();
+        });
+
+        return { envFiltered, irradianceMap };
     }
 
     void VulkanRenderer::RenderMesh(Ref<Mesh> mesh, uint32_t submeshIndex, Ref<Material> material,
@@ -382,10 +435,89 @@ namespace Prism
         SubmitFullscreenQuad(material, passIndex, drawIndex);
     }
 
-    void VulkanRenderer::DispatchCompute(Ref<Shader> kernelShader,
-        const std::vector<ComputeResourceBinding>& bindings,
+    void VulkanRenderer::DispatchCompute(Ref<ComputeShader> computeShader, int32_t kernel,
         uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ)
     {
+        Ref<Shader> kernelShader = computeShader->GetKernelShader(kernel);
+        if (!kernelShader)
+            return;
+
+        // 快照必须在此刻（主线程）拷贝：Set* 是主线程立即变更，RT 读活状态与下一次 dispatch 竞争
+        std::vector<ComputeResourceBinding> captured = computeShader->GetResources();
+        Ref<VulkanShader> vkShader = kernelShader.As<VulkanShader>();
+
+        Renderer::Submit([=]() mutable {
+            auto& entry = s_Data->PipelineCache.GetCompute(vkShader.Raw());
+
+            // 反射是布局的事实源：按 (Set, Binding) 过滤快照，多 kernel 共用绑定表各取子集
+            using DK = PrismShaderCompiler::DescriptorKind;
+            for (const auto& desc : vkShader->GetReflection().Descriptors)
+            {
+                auto it = std::find_if(captured.begin(), captured.end(),
+                    [&desc](const ComputeResourceBinding& r)
+                    { return r.Resource.Set == desc.Set && r.Resource.Binding == desc.Binding; });
+                if (it == captured.end() || !it->res)
+                    continue;
+
+                auto& ds = entry.DescriptorSets[desc.Set];
+                if (desc.Kind == DK::UniformBuffer)
+                    ds.SetInput(desc.Binding, it->res.As<VulkanUniformBuffer>());
+                else if (desc.Kind == DK::StorageBuffer)
+                    ds.SetInput(desc.Binding, it->res.As<VulkanShaderStorageBuffer>());
+                else if (desc.Kind == DK::StorageImage)
+                {
+                    Ref<Texture> tex = it->res.As<Texture>();
+                    if (tex->GetType() == TextureType::Texture2D)
+                        ds.SetInput(desc.Binding, tex.As<VulkanTexture2D>()->GetImage().As<VulkanImage2D>(), it->Level);
+                    else
+                        ds.SetInput(desc.Binding, tex.As<VulkanTextureCube>()->GetImage().As<VulkanImageCube>(), it->Level);
+                }
+                else
+                {
+                    Ref<Texture> tex = it->res.As<Texture>();
+                    if (tex->GetType() == TextureType::Texture2D)
+                        ds.SetInput(desc.Binding, tex.As<VulkanTexture2D>()->GetImage().As<VulkanImage2D>());
+                    else
+                        ds.SetInput(desc.Binding, tex.As<VulkanTextureCube>()->GetImage().As<VulkanImageCube>());
+                }
+            }
+
+            for (auto& [set, ds] : entry.DescriptorSets)
+            {
+                if (!ds.IsBaked())
+                    ds.Bake();
+                ds.RT_Prepare();
+            }
+
+            // 帧内录帧缓冲（命令缓冲顺序即同步）；帧外 one-shot + fence
+            VkCommandBuffer cmdBuf = s_Data->ActiveCommandBuffer;
+            bool oneShot = (cmdBuf == nullptr);
+            if (oneShot)
+                cmdBuf = VulkanContext::GetCurrentDevice()->GetCommandBuffer(true);
+
+            vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, entry.Pipeline);
+            for (auto& [set, ds] : entry.DescriptorSets)
+            {
+                VkDescriptorSet sets[] = { ds.RT_GetDescriptorSet() };
+                vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE,
+                    vkShader->GetPipelineLayout(), set, 1, sets, 0, nullptr);
+            }
+
+            vkCmdDispatch(cmdBuf, numGroupsX, numGroupsY, numGroupsZ);
+
+            // 对齐 GL glMemoryBarrier(SHADER_STORAGE|IMAGE) 语义
+            VkMemoryBarrier memoryBarrier{};
+            memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+            memoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+            memoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+            vkCmdPipelineBarrier(cmdBuf,
+                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                0, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
+
+            if (oneShot)
+                VulkanContext::GetCurrentDevice()->FlushCommandBuffer(cmdBuf);
+        });
     }
 
 

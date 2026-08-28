@@ -15,21 +15,6 @@ namespace Prism
 
 	std::vector<Ref<ComputeShader>> ComputeShader::s_AllComputeShader;
 
-	static ComputeBindingKind ToComputeBindingKind(PrismShaderCompiler::CSL::ResourceKind kind)
-	{
-		using K = PrismShaderCompiler::CSL::ResourceKind;
-		using B = ComputeBindingKind;
-		switch (kind)
-		{
-		case K::UniformBuffer:   return B::UniformBuffer;
-		case K::StorageBuffer:   return B::StorageBuffer;
-		case K::Image2D:
-		case K::Image3D:
-		case K::ImageCube:       return B::Image;
-		default:                 return B::Sampler;
-		}
-	}
-
 	Ref<ComputeShader> ComputeShader::Create(const std::string& filePath)
 	{
 		auto shader = Ref<ComputeShader>::Create(filePath);
@@ -53,7 +38,6 @@ namespace Prism
 	{
 		auto& compiler = ShaderCompiler::Get();
 		m_Compiled = compiler.CompileComputeFile(m_FilePath);
-
 		if (m_Compiled.ShaderName.empty())
 		{
 			PR_CORE_ERROR("ComputeShader::Load - Parse failed for '{}'", m_FilePath);
@@ -68,13 +52,7 @@ namespace Prism
 		for (auto& resource : m_Compiled.Resources)
 		{
 			ComputeResourceBinding r;
-			r.Kind = ToComputeBindingKind(resource.Kind);
-			r.Binding = resource.Binding;
-			r.ReadOnly = resource.ReadOnly;
-			r.WriteOnly = resource.WriteOnly;
-
-			using K = PrismShaderCompiler::CSL::ResourceKind;
-			r.Layered = (resource.Kind == K::ImageCube);
+			r.Resource = resource;
 
 			std::string key = !resource.InstanceName.empty() ? resource.InstanceName
 				: !resource.BlockName.empty() ? resource.BlockName
@@ -85,23 +63,15 @@ namespace Prism
 
 		for (uint32_t i = 0; i < m_Compiled.Kernels.size(); ++i)
 		{
-			auto out = compiler.GenerateComputeGLSL(m_Compiled, i);
-
-			for (auto& w : out.Warnings)
-				PR_CORE_WARN("CSL kernel '{}' GLSL: {}", m_Compiled.Kernels[i].Name, w);
-			for (auto& e : out.Errors)
-				PR_CORE_ERROR("CSL kernel '{}' GLSL: {}", m_Compiled.Kernels[i].Name, e);
-
 			Kernel k;
 			k.name = m_Compiled.Kernels[i].Name;
 			k.groupSizeX = m_Compiled.Kernels[i].GroupSizeX;
 			k.groupSizeY = m_Compiled.Kernels[i].GroupSizeY;
 			k.groupSizeZ = m_Compiled.Kernels[i].GroupSizeZ;
 
-			if (out.Errors.empty() && !out.Source.empty())
-				k.shader = Shader::Create(out.Source.c_str());
-			else
-				PR_CORE_ERROR("ComputeShader::Load - kernel '{}' produced no GLSL, skipped", k.name);
+			k.shader = Shader::Create(m_Compiled, i);
+			if (!k.shader)
+				PR_CORE_ERROR("ComputeShader::Load - kernel '{}' produced no shader, skipped", k.name);
 
 			m_Kernels.push_back(std::move(k));
 		}
@@ -132,32 +102,40 @@ namespace Prism
 	{
 		auto id = FindRes(name);
 		if (id == -1) return;
-		m_Resources[id].UBO = ubo;
+		m_Resources[id].res = ubo;
 	}
 	void ComputeShader::SetBuffer(int32_t kernel, const std::string& name, Ref<ShaderStorageBuffer> ssbo)
 	{
 		auto id = FindRes(name);
 		if (id == -1) return;
-		m_Resources[id].SSBO = ssbo;
+		m_Resources[id].res = ssbo;
 	}
 	void ComputeShader::SetTexture(int32_t kernel, const std::string& name, Ref<Texture> tex)
 	{
 		auto id = FindRes(name);
 		if (id == -1) return;
-		m_Resources[id].Texture = tex;
+		m_Resources[id].res = tex;
 	}
 	void ComputeShader::SetImage(int32_t kernel, const std::string& name, Ref<Texture> tex, uint32_t level)
 	{
 		auto id = FindRes(name);
 		if (id == -1) return;
-		m_Resources[id].Texture = tex;
+		m_Resources[id].res = tex;
 		m_Resources[id].Level = level;
 	}
 
 	void ComputeShader::Dispatch(int32_t kernel, uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ)
 	{
 		if (!IsLegalID(kernel)) return;
-		Renderer::GetAPI()->DispatchCompute(m_Kernels[kernel].shader, m_Resources, numGroupsX, numGroupsY, numGroupsZ);
+		Ref<ComputeShader> instance = this;
+		Renderer::GetAPI()->DispatchCompute(instance, kernel, numGroupsX, numGroupsY, numGroupsZ);
+	}
+
+	Ref<Shader> ComputeShader::GetKernelShader(int32_t kernel) const
+	{
+		if (kernel < 0 || kernel >= (int32_t)m_Kernels.size())
+			return nullptr;
+		return m_Kernels[kernel].shader;
 	}
 
 }

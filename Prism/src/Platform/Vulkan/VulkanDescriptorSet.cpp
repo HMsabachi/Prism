@@ -167,6 +167,24 @@ namespace Prism
         m_Bindings[binding] = bd;
     }
 
+    void VulkanDescriptorSet::SetInput(uint32_t binding, Ref<VulkanImage2D> image, uint32_t level)
+    {
+        Binding bd = {};
+        bd.Type = RenderResourceType::StorageImage2D;
+        bd.Resource = image;
+        bd.Level = level;
+        m_Bindings[binding] = bd;
+    }
+
+    void VulkanDescriptorSet::SetInput(uint32_t binding, Ref<VulkanImageCube> image, uint32_t level)
+    {
+        Binding bd = {};
+        bd.Type = RenderResourceType::StorageImageCube;
+        bd.Resource = image;
+        bd.Level = level;
+        m_Bindings[binding] = bd;
+    }
+
     void VulkanDescriptorSet::Bake()
     {
         PR_CORE_ASSERT(!m_IsBaked, "VulkanDescriptorSet::Bake: Descriptor set is already baked!");
@@ -188,6 +206,10 @@ namespace Prism
             case RenderResourceType::Image2D:
             case RenderResourceType::ImageCube:
                 layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                break;
+            case RenderResourceType::StorageImage2D:
+            case RenderResourceType::StorageImageCube:
+                layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
                 break;
             default:
                 PR_CORE_ERROR("Unsupported resource type in VulkanDescriptorSet::Bake");
@@ -259,6 +281,30 @@ namespace Prism
                 shouldWrites.emplace_back(binding, VkDescriptorBufferInfo{}, imageInfo, bd.Type);
                 break;
             }
+            case RenderResourceType::StorageImage2D:
+            {
+                WeakRef<VulkanImage2D> image = bd.Resource.As<VulkanImage2D>();
+                if (!image) image = VulkanRenderer::RT_GetBlackImage2D();
+                VkDescriptorImageInfo imageInfo{};
+                imageInfo.imageView = image->GetOrCreateStorageImageView(image ? bd.Level : 0);
+                imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+                if (imageInfo.imageView == bd.NativeHandle[CurrentSlotIndex()]) continue;
+                bd.NativeHandle[CurrentSlotIndex()] = imageInfo.imageView;
+                shouldWrites.emplace_back(binding, VkDescriptorBufferInfo{}, imageInfo, bd.Type);
+                break;
+            }
+            case RenderResourceType::StorageImageCube:
+            {
+                WeakRef<VulkanImageCube> image = bd.Resource.As<VulkanImageCube>();
+                if (!image) image = VulkanRenderer::RT_GetBlackImageCube();
+                VkDescriptorImageInfo imageInfo{};
+                imageInfo.imageView = image->GetOrCreateStorageImageView(image ? bd.Level : 0);
+                imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+                if (imageInfo.imageView == bd.NativeHandle[CurrentSlotIndex()]) continue;
+                bd.NativeHandle[CurrentSlotIndex()] = imageInfo.imageView;
+                shouldWrites.emplace_back(binding, VkDescriptorBufferInfo{}, imageInfo, bd.Type);
+                break;
+            }
             default: PR_CORE_ASSERT(false, "Unsupported resource type in VulkanDescriptorSet::RT_Prepare"); break;
             }
         }
@@ -283,6 +329,11 @@ namespace Prism
             case RenderResourceType::Image2D:
             case RenderResourceType::ImageCube:
                 write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                write.pImageInfo = &info.imageInfo;
+                break;
+            case RenderResourceType::StorageImage2D:
+            case RenderResourceType::StorageImageCube:
+                write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
                 write.pImageInfo = &info.imageInfo;
                 break;
             default: PR_CORE_ASSERT(false, "Unsupported resource type in VulkanDescriptorSet::RT_Prepare"); break;

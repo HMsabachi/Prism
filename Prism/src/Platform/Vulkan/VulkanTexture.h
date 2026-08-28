@@ -65,8 +65,8 @@ namespace Prism
         virtual uint64_t GetHash() const override { return m_Image ? m_Image->GetHash() : 0; }
 
         const VkDescriptorImageInfo& GetVulkanDescriptorInfo() const { return m_Image.As<VulkanImageCube>()->GetDescriptor(); }
-        VkImageView CreateImageViewSingleMip(uint32_t mip);
 
+        void CopyTo(Ref<TextureCube> destination) const;
         void GenerateMips(bool readonly = false);
     private:
         void Invalidate();

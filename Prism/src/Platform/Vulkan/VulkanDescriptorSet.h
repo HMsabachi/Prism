@@ -16,7 +16,9 @@ namespace Prism
         UniformBuffer,
         StorageBuffer,
         Image2D,
-        ImageCube
+        ImageCube,
+        StorageImage2D,
+        StorageImageCube
     };
 
     class VulkanGlobalDescriptorPool
@@ -37,6 +39,7 @@ namespace Prism
             RenderResourceType Type = RenderResourceType::None;
             Ref<RefCounted> Resource;
             std::array<void*, VulkanFramesInFlight> NativeHandle{ nullptr };
+            uint32_t Level = 0;
         };
 
     public:
@@ -49,6 +52,8 @@ namespace Prism
         void SetInput(uint32_t binding, Ref<VulkanShaderStorageBuffer> buffer);
         void SetInput(uint32_t binding, Ref<VulkanImage2D> image);
         void SetInput(uint32_t binding, Ref<VulkanImageCube> image);
+        void SetInput(uint32_t binding, Ref<VulkanImage2D> image, uint32_t level);
+        void SetInput(uint32_t binding, Ref<VulkanImageCube> image, uint32_t level);
 
         void Reset();
         void Bake();

@@ -36,8 +36,7 @@ namespace Prism
             uint32_t passIndex, uint32_t drawIndex = 0) override;
         virtual void RenderQuad(Ref<Material> material, uint32_t passIndex, uint32_t drawIndex = 0) override;
 
-        virtual void DispatchCompute(Ref<Shader> kernelShader,
-            const std::vector<ComputeResourceBinding>& bindings,
+        virtual void DispatchCompute(Ref<ComputeShader> computeShader, int32_t kernel,
             uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ) override;
 
         virtual RenderAPICapabilities& GetCapabilities() override;

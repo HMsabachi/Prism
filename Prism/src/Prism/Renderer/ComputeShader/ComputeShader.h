@@ -1,13 +1,24 @@
 #pragma once
 #include <PrismShaderCore/CompilerCompute.h>
-#include "Prism/Renderer/RendererAPI.h"
+#include "Prism/Core/Ref.h"
 
 #include <unordered_map>
 
 namespace Prism
 {
+	class Shader;
 	class Texture2D;
 	class TextureCube;
+	class UniformBuffer;
+	class ShaderStorageBuffer;
+	class Texture;
+
+	struct ComputeResourceBinding
+	{
+		PrismShaderCompiler::CSL::ComputeResource Resource;
+		Ref<RefCounted> res;
+		uint32_t Level = 0;
+	};
 
 	class ComputeShader : public RefCounted
 	{
@@ -27,6 +38,9 @@ namespace Prism
 		void SetImage(int32_t kernel, const std::string& name, Ref<Texture> tex, uint32_t level = 0);
 
 		void Dispatch(int32_t kernel, uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ);
+
+		Ref<Shader> GetKernelShader(int32_t kernel) const;
+		const std::vector<ComputeResourceBinding>& GetResources() const { return m_Resources; }
 
 	private:
 		int32_t FindRes(const std::string& name);

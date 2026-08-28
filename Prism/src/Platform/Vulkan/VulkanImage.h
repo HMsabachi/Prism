@@ -6,6 +6,8 @@
 
 #include "VulkanMemoryAllocator/vk_mem_alloc.h"
 
+#include <map>
+
 namespace Prism
 {
     struct VulkanImageInfo
@@ -49,6 +51,7 @@ namespace Prism
         void RT_Invalidate();
         void GenerateMips();
         void UpdateDescriptor();
+        VkImageView GetOrCreateStorageImageView(uint32_t mip);
     private:
         ImageFormat m_Format = ImageFormat::None;
         uint32_t m_Width = 0, m_Height = 0;
@@ -60,6 +63,7 @@ namespace Prism
 
         VulkanImageInfo m_Info;
         VkDescriptorImageInfo m_DescriptorImageInfo = {};
+        std::map<uint32_t, VkImageView> m_StorageViews;
     };
 
     class PRISM_API VulkanImageCube : public ImageCube
@@ -88,6 +92,7 @@ namespace Prism
 
         void GenerateMips(bool readonly = false);
         void UpdateDescriptor();
+        VkImageView GetOrCreateStorageImageView(uint32_t mip);
     private:
         ImageFormat m_Format = ImageFormat::None;
         uint32_t m_Width = 0, m_Height = 0;
@@ -96,6 +101,7 @@ namespace Prism
 
         VulkanImageInfo m_Info;
         VkDescriptorImageInfo m_DescriptorImageInfo = {};
+        std::map<uint32_t, VkImageView> m_StorageViews;
     };
 
     namespace Utils

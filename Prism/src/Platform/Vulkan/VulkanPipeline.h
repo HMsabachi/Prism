@@ -2,10 +2,12 @@
 
 #include "Prism/Core/Ref.h"
 #include "Prism/Renderer/RendererTypes.h"
+#include "Platform/Vulkan/VulkanDescriptorSet.h"
 #include <PrismShaderCore/Pipeline/PipelineState.h>
 
 #include "Platform/Vulkan/Vulkan.h"
 
+#include <map>
 #include <mutex>
 #include <span>
 #include <unordered_map>
@@ -52,10 +54,19 @@ namespace Prism
     class VulkanPipelineCache
     {
     public:
+        struct ComputeEntry
+        {
+            ~ComputeEntry();
+
+            VkPipeline Pipeline = VK_NULL_HANDLE;
+            std::map<uint32_t, VulkanDescriptorSet> DescriptorSets;
+        };
+
         void Init();
         void Shutdown();
 
         WeakRef<VulkanPipeline> Get(const VulkanPipelineSpecification& spec);
+        ComputeEntry& GetCompute(VulkanShader* shader);
         void Erase(VulkanShader* shader);
     private:
         struct Entry
@@ -65,9 +76,11 @@ namespace Prism
         };
 
         Ref<VulkanPipeline> Create(const VulkanPipelineSpecification& spec);
+        VkPipeline CreateComputePipeline(VulkanShader* shader);
 
         std::mutex m_Mutex;
         std::unordered_map<uint64_t, Entry> m_Pipelines;
+        std::unordered_map<VulkanShader*, ComputeEntry> m_ComputePipelines;
         VkPipelineCache m_VkPipelineCache = VK_NULL_HANDLE;
     };
 }

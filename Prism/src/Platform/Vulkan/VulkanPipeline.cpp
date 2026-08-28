@@ -333,6 +333,22 @@ namespace Prism
             m_PipelineLayout, Config::PRISM_VULKAN_SET_MATERIAL, 1, &set, 0, nullptr);
     }
 
+    VulkanPipelineCache::ComputeEntry::~ComputeEntry()
+    {
+        DescriptorSets.clear();
+
+        if (!Pipeline)
+            return;
+
+        VkPipeline pipeline = Pipeline;
+        Renderer::SubmitResourceFree([pipeline]()
+        {
+            auto device = VulkanContext::GetCurrentDevice();
+            PR_CORE_ASSERT(device, "VulkanPipelineCache::ComputeEntry::~ComputeEntry: VulkanContext::GetCurrentDevice() returned nullptr");
+            vkDestroyPipeline(device->GetVulkanDevice(), pipeline, nullptr);
+        });
+    }
+
     void VulkanPipelineCache::Init()
     {
         // TODO: 磁盘持久化
@@ -346,6 +362,7 @@ namespace Prism
     {
         std::scoped_lock lock(m_Mutex);
 
+        m_ComputePipelines.clear();
         m_Pipelines.clear();
 
         VkDevice device = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
@@ -375,9 +392,35 @@ namespace Prism
         return Ref<VulkanPipeline>::Create(spec, m_VkPipelineCache);
     }
 
+    VkPipeline VulkanPipelineCache::CreateComputePipeline(VulkanShader* shader)
+    {
+        VkDevice device = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
+
+        VkComputePipelineCreateInfo pipelineInfo{};
+        pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+        pipelineInfo.layout = shader->GetPipelineLayout();
+        pipelineInfo.stage = shader->GetPipelineShaderStageCreateInfos()[0];
+        pipelineInfo.flags = 0;
+
+        VkPipeline pipeline = VK_NULL_HANDLE;
+        VK_CHECK_RESULT(vkCreateComputePipelines(device, m_VkPipelineCache, 1,
+            &pipelineInfo, nullptr, &pipeline));
+        return pipeline;
+    }
+
+    VulkanPipelineCache::ComputeEntry& VulkanPipelineCache::GetCompute(VulkanShader* shader)
+    {
+        std::scoped_lock lock(m_Mutex);
+        auto [it, inserted] = m_ComputePipelines.try_emplace(shader);
+        if (inserted)
+            it->second.Pipeline = CreateComputePipeline(shader);
+        return it->second;
+    }
+
     void VulkanPipelineCache::Erase(VulkanShader* shader)
     {
         std::scoped_lock lock(m_Mutex);
+        m_ComputePipelines.erase(shader);
         for (auto it = m_Pipelines.begin(); it != m_Pipelines.end();)
         {
             if (it->second.Shader == shader)
