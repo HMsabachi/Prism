@@ -245,7 +245,8 @@ namespace Prism
             {
             case RenderResourceType::UniformBuffer:
             {
-                Ref<VulkanUniformBuffer> ubo = bd.Resource.As<VulkanUniformBuffer>();
+                WeakRef<VulkanUniformBuffer> ubo = bd.Resource.As<VulkanUniformBuffer>();
+                if (!ubo) ubo = VulkanRenderer::RT_GetEmptyUniformBuffer();
                 VkDescriptorBufferInfo bufferInfo = ubo->GetDescriptor();
                 if (bufferInfo.buffer == bd.NativeHandle[CurrentSlotIndex()]) continue;
                 bd.NativeHandle[CurrentSlotIndex()] = bufferInfo.buffer;
@@ -254,7 +255,8 @@ namespace Prism
             }
             case RenderResourceType::StorageBuffer:
             {
-                Ref<VulkanShaderStorageBuffer> ssbo = bd.Resource.As<VulkanShaderStorageBuffer>();
+                WeakRef<VulkanShaderStorageBuffer> ssbo = bd.Resource.As<VulkanShaderStorageBuffer>();
+                if (!ssbo) ssbo = VulkanRenderer::RT_GetEmptyShaderStorageBuffer();
                 VkDescriptorBufferInfo bufferInfo = ssbo->GetDescriptor();
                 if (bufferInfo.buffer == bd.NativeHandle[CurrentSlotIndex()]) continue;
                 bd.NativeHandle[CurrentSlotIndex()] = bufferInfo.buffer;

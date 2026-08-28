@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Prism/Renderer/Texture.h"
 #include "Platform/Vulkan/Vulkan.h"
@@ -67,7 +67,7 @@ namespace Prism
         const VkDescriptorImageInfo& GetVulkanDescriptorInfo() const { return m_Image.As<VulkanImageCube>()->GetDescriptor(); }
 
         void CopyTo(Ref<TextureCube> destination) const;
-        void GenerateMips(bool readonly = false);
+        void RT_GenerateMips(bool readonly = false);
     private:
         void Invalidate();
     private:

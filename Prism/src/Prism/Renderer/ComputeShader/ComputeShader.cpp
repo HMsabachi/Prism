@@ -18,7 +18,7 @@ namespace Prism
 	Ref<ComputeShader> ComputeShader::Create(const std::string& filePath)
 	{
 		auto shader = Ref<ComputeShader>::Create(filePath);
-		s_AllComputeShader.push_back(shader);
+		// s_AllComputeShader.push_back(shader);
 		return shader;
 	}
 

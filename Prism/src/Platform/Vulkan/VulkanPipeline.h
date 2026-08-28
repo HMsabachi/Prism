@@ -54,19 +54,11 @@ namespace Prism
     class VulkanPipelineCache
     {
     public:
-        struct ComputeEntry
-        {
-            ~ComputeEntry();
-
-            VkPipeline Pipeline = VK_NULL_HANDLE;
-            std::map<uint32_t, VulkanDescriptorSet> DescriptorSets;
-        };
-
         void Init();
         void Shutdown();
 
         WeakRef<VulkanPipeline> Get(const VulkanPipelineSpecification& spec);
-        ComputeEntry& GetCompute(VulkanShader* shader);
+        VkPipeline GetCompute(VulkanShader* shader);
         void Erase(VulkanShader* shader);
     private:
         struct Entry
@@ -80,7 +72,7 @@ namespace Prism
 
         std::mutex m_Mutex;
         std::unordered_map<uint64_t, Entry> m_Pipelines;
-        std::unordered_map<VulkanShader*, ComputeEntry> m_ComputePipelines;
+        std::unordered_map<VulkanShader*, VkPipeline> m_ComputePipelines;
         VkPipelineCache m_VkPipelineCache = VK_NULL_HANDLE;
     };
 }

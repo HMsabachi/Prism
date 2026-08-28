@@ -49,7 +49,7 @@ namespace Prism
 
         void RT_Resize(const uint32_t width, const uint32_t height);
         void RT_Invalidate();
-        void GenerateMips();
+        void RT_GenerateMips();
         void UpdateDescriptor();
         VkImageView GetOrCreateStorageImageView(uint32_t mip);
     private:
@@ -90,7 +90,7 @@ namespace Prism
 
         const VkDescriptorImageInfo& GetDescriptor() const { return m_DescriptorImageInfo; }
 
-        void GenerateMips(bool readonly = false);
+        void RT_GenerateMips(bool readonly = false);
         void UpdateDescriptor();
         VkImageView GetOrCreateStorageImageView(uint32_t mip);
     private:

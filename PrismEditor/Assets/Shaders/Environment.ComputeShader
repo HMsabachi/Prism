@@ -8,7 +8,7 @@ layout(binding = 0) uniform sampler2D u_EquirectangularTex;
 layout(binding = 1) uniform samplerCube u_InputCubeMap;
 layout(rgba16f, binding = 2) uniform imageCube o_OutputCube;
 
-layout(std140, binding = 4) uniform MipFilterParams
+layout(std140, binding = 3) uniform MipFilterParams
 {
     float u_Roughness;
 };

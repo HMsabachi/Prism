@@ -10,6 +10,8 @@ namespace Prism
     class VulkanTextureCube;
     class VulkanImage2D;
     class VulkanImageCube;
+    class VulkanUniformBuffer;
+    class VulkanShaderStorageBuffer;
 
     class PRISM_API VulkanRenderer : public RendererAPI
     {
@@ -46,6 +48,8 @@ namespace Prism
 
         static WeakRef<VulkanImage2D> RT_GetBlackImage2D();
         static WeakRef<VulkanImageCube> RT_GetBlackImageCube();
+        static WeakRef<VulkanUniformBuffer> RT_GetEmptyUniformBuffer();
+        static WeakRef<VulkanShaderStorageBuffer> RT_GetEmptyShaderStorageBuffer();
     };
 
 }

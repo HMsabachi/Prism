@@ -225,7 +225,7 @@ namespace Prism
 
             VulkanAllocator::DestroyBuffer(stagingBuffer, stagingAllocation);
 
-            GenerateMips();
+            RT_GenerateMips();
         }
         else
         {
@@ -276,7 +276,7 @@ namespace Prism
         m_DescriptorImageInfo = {};
     }
 
-    void VulkanImage2D::GenerateMips()
+    void VulkanImage2D::RT_GenerateMips()
     {
         auto device = VulkanContext::GetCurrentDevice();
 
@@ -553,7 +553,7 @@ namespace Prism
         m_DescriptorImageInfo = {};
     }
 
-    void VulkanImageCube::GenerateMips(bool readonly)
+    void VulkanImageCube::RT_GenerateMips(bool readonly)
     {
         auto device = VulkanContext::GetCurrentDevice();
 

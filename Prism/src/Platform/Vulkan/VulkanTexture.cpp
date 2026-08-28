@@ -153,7 +153,7 @@ namespace Prism
         Renderer::Submit([srcImage, dstImage, width, height]()
         {
             auto device = VulkanContext::GetCurrentDevice();
-            VkCommandBuffer copyCmd = device->GetCommandBuffer(true);
+            VkCommandBuffer copyCmd = device->GetCommandBuffer(true, true);
 
             VkImageCopy region{};
             region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -169,12 +169,12 @@ namespace Prism
                 dstImage, VK_IMAGE_LAYOUT_GENERAL,
                 1, &region);
 
-            device->FlushCommandBuffer(copyCmd);
+            device->FlushCommandBuffer(copyCmd, true);
         });
     }
 
-    void VulkanTextureCube::GenerateMips(bool readonly)
+    void VulkanTextureCube::RT_GenerateMips(bool readonly)
     {
-        m_Image.As<VulkanImageCube>()->GenerateMips(readonly);
+        m_Image.As<VulkanImageCube>()->RT_GenerateMips(readonly);
     }
 }

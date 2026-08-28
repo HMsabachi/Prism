@@ -333,22 +333,6 @@ namespace Prism
             m_PipelineLayout, Config::PRISM_VULKAN_SET_MATERIAL, 1, &set, 0, nullptr);
     }
 
-    VulkanPipelineCache::ComputeEntry::~ComputeEntry()
-    {
-        DescriptorSets.clear();
-
-        if (!Pipeline)
-            return;
-
-        VkPipeline pipeline = Pipeline;
-        Renderer::SubmitResourceFree([pipeline]()
-        {
-            auto device = VulkanContext::GetCurrentDevice();
-            PR_CORE_ASSERT(device, "VulkanPipelineCache::ComputeEntry::~ComputeEntry: VulkanContext::GetCurrentDevice() returned nullptr");
-            vkDestroyPipeline(device->GetVulkanDevice(), pipeline, nullptr);
-        });
-    }
-
     void VulkanPipelineCache::Init()
     {
         // TODO: 磁盘持久化
@@ -408,19 +392,31 @@ namespace Prism
         return pipeline;
     }
 
-    VulkanPipelineCache::ComputeEntry& VulkanPipelineCache::GetCompute(VulkanShader* shader)
+    VkPipeline VulkanPipelineCache::GetCompute(VulkanShader* shader)
     {
         std::scoped_lock lock(m_Mutex);
         auto [it, inserted] = m_ComputePipelines.try_emplace(shader);
         if (inserted)
-            it->second.Pipeline = CreateComputePipeline(shader);
+            it->second = CreateComputePipeline(shader);
         return it->second;
     }
 
     void VulkanPipelineCache::Erase(VulkanShader* shader)
     {
         std::scoped_lock lock(m_Mutex);
-        m_ComputePipelines.erase(shader);
+        auto it = m_ComputePipelines.find(shader);
+        if (it != m_ComputePipelines.end())
+        {
+            VkPipeline pipeline = it->second;
+            Renderer::SubmitResourceFree([pipeline]()
+            {
+                auto device = VulkanContext::GetCurrentDevice();
+                PR_CORE_ASSERT(device, "VulkanPipelineCache::ComputeEntry::~ComputeEntry: VulkanContext::GetCurrentDevice() returned nullptr");
+                vkDestroyPipeline(device->GetVulkanDevice(), pipeline, nullptr);
+            });
+            m_ComputePipelines.erase(it);
+        }
+        
         for (auto it = m_Pipelines.begin(); it != m_Pipelines.end();)
         {
             if (it->second.Shader == shader)
