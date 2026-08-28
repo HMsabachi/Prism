@@ -20,6 +20,7 @@
 #include "Prism/Renderer/Material.h"
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/ComputeShader/ComputeShader.h"
+#include "Prism/ImGui/ImGui.h"
 
 #include <glm/glm.hpp>
 #include <map>
@@ -167,7 +168,20 @@ namespace Prism
     }
 
 
-    void VulkanRenderer::BeginFrame()
+	void VulkanRenderer::OnImGuiRender()
+	{
+        auto& caps = s_Data->RenderCaps;
+        uint32_t extensionCount = VulkanContext::GetCurrentDevice()->GetPhysicalDevice()->GetExtensionCount();
+        uint32_t pipelineCount = s_Data->PipelineCache.GetPipelineCount();
+        ImGui::Text("RendererAPI: Vulkan %s", caps.Version.c_str());
+        ImGui::Text("Renderer: %s", caps.Renderer.c_str());
+        ImGui::Text("ExtensionCount: %d", extensionCount);
+        ImGui::Text("MaxSamples: %d", caps.MaxSamples);
+        ImGui::Text("MaxTextureUnits: %d", caps.MaxTextureUnits);
+        ImGui::Text("PipelineCache: %d", pipelineCount);
+	}
+
+	void VulkanRenderer::BeginFrame()
     {
         Renderer::Submit([]()
         {

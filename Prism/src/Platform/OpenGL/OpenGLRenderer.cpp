@@ -1,6 +1,9 @@
 ﻿#include "prpch.h"
 #include "OpenGLRenderer.h"
 
+#include "Prism/ImGui/ImGui.h"
+#include "Prism/ShaderCompiler/PrismBindings.h"
+
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/RenderPass.h"
 #include "Prism/Renderer/Mesh.h"
@@ -13,7 +16,6 @@
 #include "Prism/Renderer/Buffer/VertexBuffer.h"
 #include "Prism/Renderer/Buffer/IndexBuffer.h"
 #include "Prism/Renderer/Buffer/UniformBuffer.h"
-#include "Prism/ShaderCompiler/PrismBindings.h"
 #include "OpenGLShader.h"
 #include "OpenGLTexture.h"
 #include "OpenGLMaterialBackend.h"
@@ -231,7 +233,18 @@ namespace Prism
         return s_Data->RenderCaps;
     }
 
-    void OpenGLRenderer::BeginFrame()
+
+	void OpenGLRenderer::OnImGuiRender()
+	{
+        auto& caps = s_Data->RenderCaps;
+        ImGui::Text("RendererAPI: OpenGL %s", caps.Version.c_str());
+        ImGui::Text("Renderer: %s", caps.Renderer.c_str());
+        ImGui::Text("MaxSamples: %d", caps.MaxSamples);
+        ImGui::Text("MaxTextureUnits: %d", caps.MaxTextureUnits);
+        ImGui::Text("MaxAnisotropy: %.1f", caps.MaxAnisotropy);
+	}
+
+	void OpenGLRenderer::BeginFrame()
     {
         Renderer::Submit([]() {
             const uint32_t releaseIndex = Renderer::GetCurrentFrameIndex() % Renderer::GetConfig().FramesInFlight;

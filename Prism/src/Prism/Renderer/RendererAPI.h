@@ -75,6 +75,8 @@ namespace Prism
 
         virtual RenderAPICapabilities& GetCapabilities() = 0;
 
+        virtual void OnImGuiRender() = 0;
+
         static RendererAPIType Current() { return s_CurrentRendererAPI; }
         static void SetCurrent(RendererAPIType api) { PR_CORE_ASSERT(s_CurrentRendererAPI == RendererAPIType::None); s_CurrentRendererAPI = api; }
     private:

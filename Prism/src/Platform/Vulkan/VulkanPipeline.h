@@ -72,6 +72,8 @@ namespace Prism
         WeakRef<VulkanComputePipeline> GetCompute(VulkanShader* shader);
 
         void Erase(VulkanShader* shader);
+
+        uint32_t GetPipelineCount() const { return (uint32_t)m_Pipelines.size() + (uint32_t)m_ComputePipelines.size(); }
     private:
         struct Entry
         {

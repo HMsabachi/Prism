@@ -40,6 +40,8 @@ namespace Prism
 
         virtual RenderAPICapabilities& GetCapabilities() override;
 
+        virtual void OnImGuiRender() override;
+
         static VulkanPipelineCache& GetPipelineCache();
 
         static WeakRef<VulkanImage2D> RT_GetBlackImage2D();

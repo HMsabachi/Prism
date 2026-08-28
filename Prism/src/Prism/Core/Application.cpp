@@ -225,18 +225,8 @@ namespace Prism
         timer += Time::GetDeltaTime();
         ImGui::Begin("Renderer");
         auto& caps = Renderer::GetCapabilities();
-        const char* rendererAPIName = RendererAPI::Current() == RendererAPIType::OpenGL ? "OpenGL" : "Vulkan";
-        ImGui::Text("RendererAPI: %s", rendererAPIName);
-        if (ImGui::TreeNode("Base Info"))
-        {
-            ImGui::Text("Vendor: %s", caps.Vendor.c_str());
-            ImGui::Text("Renderer: %s", caps.Renderer.c_str());
-            ImGui::Text("Version: %s", caps.Version.c_str());
-            ImGui::Text("MaxSamples: %d", caps.MaxSamples);
-            ImGui::Text("MaxTextureUnits: %d", caps.MaxTextureUnits);
-            ImGui::Text("MaxAnisotropy: %.0f", caps.MaxAnisotropy);
-            ImGui::TreePop();
-        }
+        RendererAPI* rApi = Renderer::GetAPI();
+        rApi->OnImGuiRender();
 #if 0
         if (ImGui::TreeNode("2D Renderer Info"))
         {

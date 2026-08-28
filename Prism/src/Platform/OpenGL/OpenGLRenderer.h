@@ -32,6 +32,9 @@ namespace Prism
 
         virtual RenderAPICapabilities& GetCapabilities() override;
 
+        virtual void OnImGuiRender() override;
+
+
     private:
         void RT_BindMaterial(Ref<Material> material, uint32_t passIndex);
     };

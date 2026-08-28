@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Platform/Vulkan/Vulkan.h"
 #include "Prism/Core/Ref.h"
@@ -23,6 +23,7 @@ namespace Prism
         ~VulkanPhysicalDevice();
 
         bool IsExtensionSupported(const std::string& extensionName) const;
+        uint32_t GetExtensionCount() const { return (uint32_t)m_SupportedExtensions.size(); }
         uint32_t GetMemoryTypeIndex(uint32_t typeBits, VkMemoryPropertyFlags properties) const;
 
         VkPhysicalDevice GetVulkanPhysicalDevice() const { return m_PhysicalDevice; }

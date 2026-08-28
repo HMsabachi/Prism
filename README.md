@@ -2,9 +2,9 @@
 
 ![Prism Engine Logo](https://github.com/HMsabachi/Prism/blob/main/Prism/assets/logo/WhiteLogo.png?raw=true "Prism Engine")
 
-**Prism** 是一个轻量级、模块化的跨平台游戏引擎，核心使用 **C++20** 开发。渲染支持 **OpenGL 4.5+** 与 **Vulkan** 双后端，采用命令式多线程渲染架构（主线程录制、渲染线程执行），并基于 **GPU Scene（SSBO 实例数据）** 驱动场景绘制。内置 **PrismShaderCompiler** 自定义着色器编译器（支持 PSL → GLSL/HLSL/MSL/SPIR-V 多后端交叉编译），**3D 物理**集成 **NVIDIA PhysX**，**2D 物理**使用 **Box2D**。脚本系统支持 **C#**（.NET 9 + Rolky）和 **Python 3.13**（CPython 嵌入式），编辑器基于 **ImGui** 构建。
+**Prism** 是一个轻量级、模块化的跨平台游戏引擎，核心使用 **C++20** 开发。渲染支持 **OpenGL** 与 **Vulkan** 双后端，采用命令式多线程渲染架构，并基于 **GPU Scene** 驱动场景绘制。内置 **PrismShaderCompiler** 自定义着色器编译器（支持 PSL → GLSL/HLSL/MSL/SPIR-V 多后端交叉编译），**3D 物理**集成 **NVIDIA PhysX**，**2D 物理**使用 **Box2D**。脚本系统支持 **C#**（.NET 9 + Rolky）和 **Python 3.13**（CPython 嵌入式），编辑器基于 **ImGui** 构建。
 
-脚本系统采用 **Entity-Behaviour 架构**（类似 Unity），每个 Entity 可挂载多个 Behaviour 组件。C# 和 Python 脚本遵循统一的生命周期模型（`Awake` → `OnCreate` → `OnEnable` → `OnUpdate` → `LateUpdate` → `OnFixedUpdate` → `OnDisable` → `OnDestroy`），并支持 2D/3D 碰撞与触发回调。
+脚本系统采用 **Entity-Behaviour 架构**，每个 Entity 可挂载多个 Behaviour 组件。C# 和 Python 脚本遵循统一的生命周期模型（`Awake` → `OnCreate` → `OnEnable` → `OnUpdate` → `LateUpdate` → `OnFixedUpdate` → `OnDisable` → `OnDestroy`），并支持 2D/3D 碰撞与触发回调。
 
 > **注意：最新开发进度在 `Prism3D` 分支**（`git checkout Prism3D`）。
 
@@ -36,7 +36,7 @@ premake5 xcode4        # macOS Xcode
 渲染后端与线程模型通过命令行参数选择：
 
 ```bash
-PrismEditor.exe -r vulkan              # --renderer opengl | vulkan，Debug 默认 Vulkan，Release 默认 OpenGL
+PrismEditor.exe -r vulkan              # --renderer opengl | vulkan
 PrismEditor.exe -s                     # --singleThreaded 单线程渲染
 ```
 
@@ -67,20 +67,25 @@ PrismEditor.exe -s                     # --singleThreaded 单线程渲染
 - 全局描述符池 + **VulkanDescriptorSet** 动态绑定（绑定直传 + 反射校验布局）
 - ImGui Vulkan 集成（二级命令缓冲 + 纹理描述符 set 缓存）
 - **坐标语义统一** - 深度 z∈[0,1]（Vulkan 语义投影），GL 后端经 SPIRV-Cross `fixup_clipspace` 自动恢复 [-1,1]；front-face 与 FBO 采样语义双后端对齐，投影矩阵与 PSL 资产零改动通用
+### OpenGL 渲染后端
+- OpenGL 4.5+ 核心模式，支持 GL_ARB_direct_state_access、GL_ARB_multi_draw_indirect、GL_ARB_bindless_texture
+- **多重采样（MSAA）** - 8x MSAA，FBO 多重采样渲染 + Resolve
+- **OpenGL State Cache** - 统一状态管理，减少冗余状态切换
+- **OpenGL 多线程渲染** - 渲染线程独立 GL 上下文，主线程录制渲染命令入队，渲染线程执行
+- **OpenGL 纹理绑定优化** - 纹理绑定缓存 + bindless texture，减少 draw 调用的纹理切换开销
+- **OpenGL 多实例渲染** - glMultiDrawElementsIndirect + glBindBufferBase，支持 GPU 实例数据 SSBO + drawIndex 传递
 
 ### GPU Scene 与绑定体系
-- **GPU 实例数据** - `PrismObjects`（ObjectToWorld / PreviousModel / AnimationOffset）+ `PrismAnimation`（全骨骼矩阵）两个 std430 SSBO 每帧整块覆写，draw 只传 drawIndex（GL = uniform / Vulkan = push_constant），描述符不逐 draw 变化
+- **GPU 实例数据** - `PrismObjects`（ObjectToWorld / PreviousModel / AnimationOffset）+ `PrismAnimation`（全骨骼矩阵）两个 std430 SSBO 每帧整块覆写，draw 只传 drawIndex（GL = uniform / Vulkan = push_constant）
 - **三层绑定布局** - 全局层 set 0（相机 / 时间 / 灯光帧 UBO）+ Pass 自持输入（阴影图等）+ 材质自持（材质 UBO + 纹理）
-- OpenGL 侧以 flat 绑定空间模拟同一语义，PSL 资产双后端通用
+- PSL 资产双后端通用
 
 ### 现代渲染管线（SceneRenderer）
 - PBR 金属/粗糙度工作流 + HDR 渲染 + MSAA 8x 多重采样
 - **级联阴影映射（CSM）** — 4 级联、Practical Split Scheme 视锥分割、纹素对齐、可配置最大阴影距离
 - **PCF 软阴影** — 16 采样 Poisson Disk、旋转核去条纹、硬件 PCF 深度比较
 - 计算着色器（Compute Shader）+ SSBO
-- Geometry Pass（MSAA RGBA16F）→ Composite Pass（RGBA8 最终输出）
 - RenderPass 系统
-- 模板测试封装 + Stencil Buffer 物体描边（Outline）
 - OpenGL State Cache 统一状态管理
 - IBL 环境光照（辐照度 + 预过滤辐射度 + BRDF LUT）
 - Assimp 模型导入与子网格管理
@@ -225,11 +230,10 @@ Prism/
 | 类别 | 技术 |
 |------|------|
 | 语言 | C++20、C# 12 (.NET 9)、Python 3.13 |
-| 图形 API | OpenGL 4.5+ (Core Profile)、Vulkan |
-| 显存管理 | VulkanMemoryAllocator (VMA) |
+| 图形 API | OpenGL 、Vulkan |
 | 窗口 | GLFW |
 | 数学 | GLM |
-| ECS | entt（单头文件） |
+| ECS | entt|
 | UI | ImGui + ImGuizmo |
 | 3D 物理 | NVIDIA PhysX 5.x |
 | 2D 物理 | Box2D |
@@ -244,7 +248,7 @@ Prism/
 
 ## 技术文档
 
-- [PSL 语法参考](Prism/vendor/PrismShaderCompiler/docs/PSL-Syntax.md) — 权威 PSL 语言规范
+- [PSL 语法参考](Prism/vendor/PrismShaderCompiler/docs/PSL-Syntax.md) — PSL 语言规范
 - [PrismShader 集成指南](docs/PrismShader.md) — 引擎侧 Shader 加载、变体管理、Pass 系统
 - [PrismShader 扩展指南](docs/PrismShaderExtension.md) — 如何扩展着色器系统
 - [Renderer 文档](docs/Renderer.md) — 渲染管线架构（SceneRenderer、CSM、PBR）
