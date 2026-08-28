@@ -43,7 +43,6 @@ namespace Prism
 
         virtual RenderAPICapabilities& GetCapabilities() override;
 
-        static VkCommandBuffer RT_GetCurrentCommandBuffer();
         static VulkanPipelineCache& GetPipelineCache();
 
         static WeakRef<VulkanImage2D> RT_GetBlackImage2D();

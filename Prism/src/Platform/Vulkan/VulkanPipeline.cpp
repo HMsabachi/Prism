@@ -169,12 +169,12 @@ namespace Prism
         }
     }
 
+#pragma region VulkanPipeline
+
     VulkanPipeline::VulkanPipeline(const VulkanPipelineSpecification& spec, VkPipelineCache pipelineCache)
     {
         VkDevice device = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
         const auto& state = spec.State;
-
-        // 顶点输入：每个 vertex buffer 一个 binding，location 与 PSL codegen 的 SemanticToLocation 对齐
         PR_CORE_ASSERT(!spec.VertexLayouts.empty(), "VulkanPipeline: VertexLayouts must not be empty");
         StaticVector<VkVertexInputBindingDescription, 8> bindingDescriptions;
         StaticVector<VkVertexInputAttributeDescription, 15> attributeDescriptions;
@@ -218,7 +218,6 @@ namespace Prism
         rasterizationState.depthBiasSlopeFactor = state.DepthBiasFactor;
         rasterizationState.lineWidth = state.LineWidth;
 
-        // 每个 color attachment 一份 blend 状态（未启用混合也要 colorWriteMask）
         std::vector<VkPipelineColorBlendAttachmentState> blendAttachmentStates(spec.Framebuffer->GetColorAttachmentCount());
         for (auto& blendAttachment : blendAttachmentStates)
         {
@@ -288,7 +287,6 @@ namespace Prism
             &pipelineInfo, nullptr, &m_Pipeline));
         m_PipelineLayout = spec.Shader->GetPipelineLayout();
     }
-
     VulkanPipeline::~VulkanPipeline()
     {
         if (!m_Pipeline)
@@ -303,36 +301,107 @@ namespace Prism
         });
     }
 
-
     void VulkanPipeline::RT_Bind(VkCommandBuffer cmdBuf) const
     {
         vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
+        if (m_BoundCommandBuffer != cmdBuf)
+        {
+            m_BoundCommandBuffer = cmdBuf;
+            m_GlobalSet = VK_NULL_HANDLE;
+            m_PassSet = VK_NULL_HANDLE;
+            m_MaterialSet = VK_NULL_HANDLE;
+        }
     }
     void VulkanPipeline::RT_BindGlobalSet(VkCommandBuffer cmdBuf, VkDescriptorSet set) const
     {
-        uint32_t frameIndex = Renderer::RT_GetCurrentFrameIndex();
-        if (frameIndex == m_GlobalFrameIndex && set == m_GlobalSet) return;
-        m_GlobalFrameIndex = frameIndex; m_GlobalSet = set;
+        if (set == m_GlobalSet) return; m_GlobalSet = set;
         vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
             m_PipelineLayout, Config::PRISM_VULKAN_SET_GLOBAL, 1, &set, 0, nullptr);
     }
     void VulkanPipeline::RT_BindRenderPassSet(VkCommandBuffer cmdBuf, VkDescriptorSet set) const
     {
-        uint32_t frameIndex = Renderer::RT_GetCurrentFrameIndex();
-        if (frameIndex == m_PassFrameIndex && set == m_PassSet) return;
-        m_PassFrameIndex = frameIndex; m_PassSet = set;
+        if (set == m_PassSet) return; m_PassSet = set;
         vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
             m_PipelineLayout, Config::PRISM_VULKAN_SET_RENDER_PASS, 1, &set, 0, nullptr);
     }
     void VulkanPipeline::RT_BindMaterialSet(VkCommandBuffer cmdBuf, VkDescriptorSet set) const
     {
-        uint32_t frameIndex = Renderer::RT_GetCurrentFrameIndex();
-        if (frameIndex == m_MaterialFrameIndex && set == m_MaterialSet) return;
-        m_MaterialFrameIndex = frameIndex; m_MaterialSet = set;
+        if (set == m_MaterialSet) return; m_MaterialSet = set;
         vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
             m_PipelineLayout, Config::PRISM_VULKAN_SET_MATERIAL, 1, &set, 0, nullptr);
     }
+    void VulkanPipeline::RT_BindPushConstant(VkCommandBuffer cmdBuf, uint32_t offset, uint32_t size, const void* data) const
+    {
+        vkCmdPushConstants(cmdBuf, m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, offset, size, data);
+    }
 
+#pragma endregion
+
+#pragma region VulkanComputePipeline
+
+    static VkFence s_ComputeFence = nullptr;
+
+    VulkanComputePipeline::VulkanComputePipeline(WeakRef<VulkanShader> shader, VkPipelineCache pipelineCache)
+    {
+        m_PipelineLayout = shader->GetPipelineLayout();
+        VkDevice device = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
+        VkComputePipelineCreateInfo pipelineInfo{};
+        pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+        pipelineInfo.layout = m_PipelineLayout;
+        pipelineInfo.stage = shader->GetPipelineShaderStageCreateInfos()[0];
+        pipelineInfo.flags = 0;
+        VK_CHECK_RESULT(vkCreateComputePipelines(device, pipelineCache, 1, &pipelineInfo, nullptr, &m_Pipeline));
+    }
+    VulkanComputePipeline::~VulkanComputePipeline()
+    {
+        VkPipeline pipeline = m_Pipeline;
+        Renderer::SubmitResourceFree([pipeline]()
+        {
+            auto device = VulkanContext::GetCurrentDevice();
+            PR_CORE_ASSERT(device, "VulkanPipelineCache::ComputeEntry::~ComputeEntry: VulkanContext::GetCurrentDevice() returned nullptr");
+            vkDestroyPipeline(device->GetVulkanDevice(), pipeline, nullptr);
+        });
+    }
+
+
+    void VulkanComputePipeline::RT_Execute(VkDescriptorSet* sets, uint32_t setCount, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+    {
+        VkDevice device = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
+        VkQueue computeQueue = VulkanContext::GetCurrentDevice()->GetComputeQueue();
+        VkCommandBuffer computeCommandBuffer = VulkanContext::GetCurrentDevice()->GetCommandBuffer(true, true);
+
+
+        vkCmdBindPipeline(computeCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_Pipeline);
+        for (uint32_t i = 0; i < setCount; i++)
+        {
+            vkCmdBindDescriptorSets(computeCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout, 0, 1, &sets[i], 0, 0);
+            vkCmdDispatch(computeCommandBuffer, groupCountX, groupCountY, groupCountZ);
+        }
+
+        vkEndCommandBuffer(computeCommandBuffer);
+        if (!s_ComputeFence)
+        {
+            VkFenceCreateInfo fenceCreateInfo{};
+            fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+            fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+            VK_CHECK_RESULT(vkCreateFence(device, &fenceCreateInfo, nullptr, &s_ComputeFence));
+        }
+        vkWaitForFences(device, 1, &s_ComputeFence, VK_TRUE, UINT64_MAX);
+        vkResetFences(device, 1, &s_ComputeFence);
+
+        VkSubmitInfo computeSubmitInfo{};
+        computeSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        computeSubmitInfo.commandBufferCount = 1;
+        computeSubmitInfo.pCommandBuffers = &computeCommandBuffer;
+        VK_CHECK_RESULT(vkQueueSubmit(computeQueue, 1, &computeSubmitInfo, s_ComputeFence));
+        
+        vkWaitForFences(device, 1, &s_ComputeFence, VK_TRUE, UINT64_MAX);
+        
+    }
+
+#pragma endregion
+
+#pragma region VulkanPipelineCache
     void VulkanPipelineCache::Init()
     {
         // TODO: 磁盘持久化
@@ -366,57 +435,27 @@ namespace Prism
         if (it != m_Pipelines.end())
             return it->second.Pipeline;
 
-        Ref<VulkanPipeline> pipeline = Create(spec);
+        Ref<VulkanPipeline> pipeline = Ref<VulkanPipeline>::Create(spec, m_VkPipelineCache);
         m_Pipelines.emplace(hash, Entry{ pipeline, spec.Shader.Raw() });
         return m_Pipelines[hash].Pipeline;
     }
 
-    Ref<VulkanPipeline> VulkanPipelineCache::Create(const VulkanPipelineSpecification& spec)
-    {
-        return Ref<VulkanPipeline>::Create(spec, m_VkPipelineCache);
-    }
-
-    VkPipeline VulkanPipelineCache::CreateComputePipeline(VulkanShader* shader)
-    {
-        VkDevice device = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
-
-        VkComputePipelineCreateInfo pipelineInfo{};
-        pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-        pipelineInfo.layout = shader->GetPipelineLayout();
-        pipelineInfo.stage = shader->GetPipelineShaderStageCreateInfos()[0];
-        pipelineInfo.flags = 0;
-
-        VkPipeline pipeline = VK_NULL_HANDLE;
-        VK_CHECK_RESULT(vkCreateComputePipelines(device, m_VkPipelineCache, 1,
-            &pipelineInfo, nullptr, &pipeline));
-        return pipeline;
-    }
-
-    VkPipeline VulkanPipelineCache::GetCompute(VulkanShader* shader)
+    WeakRef<VulkanComputePipeline> VulkanPipelineCache::GetCompute(VulkanShader* shader)
     {
         std::scoped_lock lock(m_Mutex);
-        auto [it, inserted] = m_ComputePipelines.try_emplace(shader);
-        if (inserted)
-            it->second = CreateComputePipeline(shader);
-        return it->second;
+        auto it = m_ComputePipelines.find(shader);
+        if (it != m_ComputePipelines.end())
+            return it->second;
+        Ref<VulkanComputePipeline> pipeline = Ref<VulkanComputePipeline>::Create(shader, m_VkPipelineCache);
+        m_ComputePipelines.emplace(shader, pipeline);
+        return m_ComputePipelines[shader];
     }
 
     void VulkanPipelineCache::Erase(VulkanShader* shader)
     {
         std::scoped_lock lock(m_Mutex);
-        auto it = m_ComputePipelines.find(shader);
-        if (it != m_ComputePipelines.end())
-        {
-            VkPipeline pipeline = it->second;
-            Renderer::SubmitResourceFree([pipeline]()
-            {
-                auto device = VulkanContext::GetCurrentDevice();
-                PR_CORE_ASSERT(device, "VulkanPipelineCache::ComputeEntry::~ComputeEntry: VulkanContext::GetCurrentDevice() returned nullptr");
-                vkDestroyPipeline(device->GetVulkanDevice(), pipeline, nullptr);
-            });
-            m_ComputePipelines.erase(it);
-        }
-        
+        if (m_ComputePipelines.find(shader) != m_ComputePipelines.end())
+            m_ComputePipelines.erase(shader);
         for (auto it = m_Pipelines.begin(); it != m_Pipelines.end();)
         {
             if (it->second.Shader == shader)
@@ -425,4 +464,7 @@ namespace Prism
                 ++it;
         }
     }
+
+#pragma endregion
+
 }

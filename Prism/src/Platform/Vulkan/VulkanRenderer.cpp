@@ -166,10 +166,6 @@ namespace Prism
         return s_Data->RenderCaps;
     }
 
-    VkCommandBuffer VulkanRenderer::RT_GetCurrentCommandBuffer()
-    {
-        return s_Data ? s_Data->ActiveCommandBuffer : VK_NULL_HANDLE;
-    }
 
     void VulkanRenderer::BeginFrame()
     {
@@ -318,14 +314,12 @@ namespace Prism
             spec.VertexLayouts = vertexLayouts;
             // 绑定 Pipeline
             WeakRef<VulkanPipeline> pipeline = pCache.Get(spec);
+            uint32_t drawIndexPC = drawIndex;
             pipeline->RT_Bind(cmdBuf);
             pipeline->RT_BindGlobalSet(cmdBuf, s_Data->GlobalDescriptorSet.RT_GetDescriptorSet());
             pipeline->RT_BindRenderPassSet(cmdBuf, s_Data->ActiveRenderPass->RT_GetDescriptorSet());
             pipeline->RT_BindMaterialSet(cmdBuf, backend->RT_GetDescriptorSet());
-            // Push Constant
-            uint32_t drawIndexPC = drawIndex;
-            vkCmdPushConstants(cmdBuf, pipeline->GetPipelineLayout(),
-                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(uint32_t), &drawIndexPC);
+            pipeline->RT_BindPushConstant(cmdBuf, 0, sizeof(uint32_t), &drawIndexPC);
             // 绑定 Vertex Buffer
             VkBuffer vertBufs[] = { s_Data->FullscreenQuadVB->GetVulkanBuffer() };
             VkDeviceSize vertOffs[] = { 0 };
@@ -364,14 +358,12 @@ namespace Prism
             spec.VertexLayouts = vertexLayouts;
             // 绑定 Pipeline
             WeakRef<VulkanPipeline> pipeline = pCache.Get(spec);
+            int32_t drawIndexPC = (int32_t)drawIndex;
             pipeline->RT_Bind(cmdBuf);
             pipeline->RT_BindGlobalSet(cmdBuf, s_Data->GlobalDescriptorSet.RT_GetDescriptorSet());
             pipeline->RT_BindRenderPassSet(cmdBuf, s_Data->ActiveRenderPass->RT_GetDescriptorSet());
             pipeline->RT_BindMaterialSet(cmdBuf, backend->RT_GetDescriptorSet());
-            // Push Constant
-            int32_t drawIndexPC = (int32_t)drawIndex;
-            vkCmdPushConstants(cmdBuf, pipeline->GetPipelineLayout(),
-                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(int32_t), &drawIndexPC);
+            pipeline->RT_BindPushConstant(cmdBuf, 0, sizeof(uint32_t), &drawIndexPC);
             // 绑定 Vertex Buffer
             VkBuffer vertBufs[] = { vertexBuffer->GetVulkanBuffer() };
             VkDeviceSize vertOffs[] = { 0 };
@@ -452,7 +444,6 @@ namespace Prism
         Ref<VulkanShader> vkShader = kernelShader.As<VulkanShader>();
 
         Renderer::Submit([=]() mutable {
-            VkPipeline pipeline = s_Data->PipelineCache.GetCompute(vkShader.Raw());
             VulkanDescriptorSet tempSet;
             using DK = PrismShaderCompiler::DescriptorKind;
             for (const auto& binding : captured)
@@ -504,30 +495,12 @@ namespace Prism
             }
             tempSet.Bake();
             tempSet.RT_Prepare();
-
-
-            VkCommandBuffer cmdBuf = VulkanContext::GetCurrentDevice()->GetCommandBuffer(true, true);
-
-            vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
-
-            VkDescriptorSet sets[] = { tempSet.RT_GetDescriptorSet() };
-            vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE,
-                vkShader->GetPipelineLayout(), 0, 1, sets, 0, nullptr);
-
-            vkCmdDispatch(cmdBuf, numGroupsX, numGroupsY, numGroupsZ);
-
-            VkMemoryBarrier memoryBarrier{};
-            memoryBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-            memoryBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-            memoryBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
-            vkCmdPipelineBarrier(cmdBuf,
-                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                0, 1, &memoryBarrier, 0, nullptr, 0, nullptr);
-
-            VulkanContext::GetCurrentDevice()->FlushCommandBuffer(cmdBuf, true);
+            WeakRef<VulkanComputePipeline> pipeline = s_Data->PipelineCache.GetCompute(vkShader.Raw());
+            VkDescriptorSet descriptorSets[] = { tempSet.RT_GetDescriptorSet() };
+            pipeline->RT_Execute(descriptorSets, 1, numGroupsX, numGroupsY, numGroupsZ);
         });
     }
+
 
 
     WeakRef<VulkanImage2D> VulkanRenderer::RT_GetBlackImage2D()
