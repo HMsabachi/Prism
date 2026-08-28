@@ -37,8 +37,6 @@ namespace Prism
         virtual Buffer GetBuffer() const override { return m_ImageData; }
         virtual Buffer& GetBuffer() override { return m_ImageData; }
 
-        virtual uint64_t GetHash() const override { return (uint64_t)m_Info.Image; }
-
         VulkanImageInfo& GetImageInfo() { return m_Info; }
         const VulkanImageInfo& GetImageInfo() const { return m_Info; }
 
@@ -83,7 +81,8 @@ namespace Prism
         virtual Buffer GetBuffer() const override { return m_ImageData; }
         virtual Buffer& GetBuffer() override { return m_ImageData; }
 
-        virtual uint64_t GetHash() const override { return (uint64_t)m_Info.Image; }
+        virtual void GenerateMipMap() override;
+        virtual void CopyTo(Ref<ImageCube> destination) const override;
 
         VulkanImageInfo& GetImageInfo() { return m_Info; }
         const VulkanImageInfo& GetImageInfo() const { return m_Info; }

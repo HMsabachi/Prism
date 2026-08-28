@@ -331,10 +331,6 @@ namespace Prism
         });
     }
 
-    void VulkanRenderer::SetSceneEnvironment(const Ref<SceneEnvironment>& environment)
-    {
-    }
-
     
     void VulkanRenderer::RenderMesh(Ref<Mesh> mesh, uint32_t submeshIndex, Ref<Material> material,
         uint32_t passIndex, uint32_t drawIndex)
@@ -380,58 +376,6 @@ namespace Prism
     void VulkanRenderer::RenderQuad(Ref<Material> material, uint32_t passIndex, uint32_t drawIndex)
     {
         SubmitFullscreenQuad(material, passIndex, drawIndex);
-    }
-
-    std::pair<Ref<TextureCube>, Ref<TextureCube>> VulkanRenderer::CreateEnvironmentMap(const std::string& filepath)
-    {
-        PR_PROFILE_FUNCTION();
-        const uint32_t cubemapSize = 2048;
-        const uint32_t irradianceMapSize = 32;
-
-        if (!s_EnvironmentShader)
-            s_EnvironmentShader = ComputeShader::Create("Assets/Shaders/Environment.ComputeShader");
-
-        Ref<TextureCube> envUnfiltered = TextureCube::Create(ImageFormat::RGBA32F, cubemapSize, cubemapSize);
-        Ref<Texture2D> envEquirect = Texture2D::Create(filepath);
-        PR_CORE_ASSERT(envEquirect->GetFormat() == ImageFormat::RGBA32F, "Texture is not HDR!");
-
-        int toCubeKernel = s_EnvironmentShader->FindKernel("CSEquirectToCube");
-        s_EnvironmentShader->SetTexture(toCubeKernel, "u_EquirectangularTex", envEquirect);
-        s_EnvironmentShader->SetImage(toCubeKernel, "o_OutputCube", envUnfiltered);
-        s_EnvironmentShader->Dispatch(toCubeKernel, cubemapSize / 32, cubemapSize / 32, 6);
-        Renderer::Submit([envUnfiltered]()
-        {
-            envUnfiltered.As<VulkanTextureCube>()->RT_GenerateMips();
-        });
-
-        Ref<TextureCube> envFiltered = TextureCube::Create(ImageFormat::RGBA32F, cubemapSize, cubemapSize);
-        envUnfiltered.As<VulkanTextureCube>()->CopyTo(envFiltered);
-
-        Ref<UniformBuffer> mipFilterUBO = UniformBuffer::Create(sizeof(float));
-        int mipFilter = s_EnvironmentShader->FindKernel("CSMipFilter");
-        s_EnvironmentShader->SetTexture(mipFilter, "u_InputCubeMap", envUnfiltered);
-        const float deltaRoughness = 1.0f / glm::max((float)(envFiltered->GetMipLevelCount() - 1.0f), 1.0f);
-        for (uint32_t level = 1, size = cubemapSize / 2; level < envFiltered->GetMipLevelCount(); level++, size /= 2)
-        {
-            const uint32_t numGroups = glm::max((uint32_t)1, size / 32);
-            s_EnvironmentShader->SetImage(mipFilter, "o_OutputCube", envFiltered, level);
-            float roughness = level * deltaRoughness;
-            mipFilterUBO->SetData(&roughness, sizeof(float));
-            s_EnvironmentShader->SetUniformBuffer(mipFilter, "MipFilterParams", mipFilterUBO);
-            s_EnvironmentShader->Dispatch(mipFilter, numGroups, numGroups, 6);
-        }
-
-        Ref<TextureCube> irradianceMap = TextureCube::Create(ImageFormat::RGBA32F, irradianceMapSize, irradianceMapSize);
-        int irradiance = s_EnvironmentShader->FindKernel("CSIrradiance");
-        s_EnvironmentShader->SetTexture(irradiance, "u_InputCubeMap", envFiltered);
-        s_EnvironmentShader->SetImage(irradiance, "o_OutputCube", irradianceMap);
-        s_EnvironmentShader->Dispatch(irradiance, irradianceMapSize / 32, irradianceMapSize / 32, 6);
-        Renderer::Submit([irradianceMap]()
-        {
-            irradianceMap.As<VulkanTextureCube>()->RT_GenerateMips();
-        });
-
-        return { envFiltered, irradianceMap };
     }
 
     void VulkanRenderer::DispatchCompute(Ref<ComputeShader> computeShader, int32_t kernel,

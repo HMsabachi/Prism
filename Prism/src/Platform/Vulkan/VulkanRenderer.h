@@ -26,9 +26,6 @@ namespace Prism
         virtual void EndRenderPass() override;
         virtual void SubmitFullscreenQuad(Ref<Material> material, uint32_t passIndex, uint32_t drawIndex = 0) override;
 
-        virtual void SetSceneEnvironment(const Ref<SceneEnvironment>& environment) override;
-        virtual std::pair<Ref<TextureCube>, Ref<TextureCube>> CreateEnvironmentMap(const std::string& filepath) override;
-
         virtual void SetGlobalUniformBuffer(uint32_t binding, Ref<UniformBuffer> ubo) override;
         virtual void SetGlobalShaderStorageBuffer(uint32_t binding, Ref<ShaderStorageBuffer> ssbo) override;
         virtual void SetGlobalTexture(uint32_t binding, Ref<Image> image) override;

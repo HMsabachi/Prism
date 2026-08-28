@@ -553,6 +553,43 @@ namespace Prism
         m_DescriptorImageInfo = {};
     }
 
+    void VulkanImageCube::GenerateMipMap()
+    {
+        Ref<VulkanImageCube> instance = this;
+        Renderer::Submit([instance]() mutable
+        {
+            instance->RT_GenerateMips();
+        });
+    }
+
+    void VulkanImageCube::CopyTo(Ref<ImageCube> destination) const
+    {
+        VkImage srcImage = m_Info.Image;
+        VkImage dstImage = destination.As<VulkanImageCube>()->GetImageInfo().Image;
+        uint32_t width = m_Width, height = m_Height;
+
+        Renderer::Submit([srcImage, dstImage, width, height]()
+        {
+            auto device = VulkanContext::GetCurrentDevice();
+            VkCommandBuffer copyCmd = device->GetCommandBuffer(true, true);
+
+            VkImageCopy region{};
+            region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            region.srcSubresource.mipLevel = 0;
+            region.srcSubresource.baseArrayLayer = 0;
+            region.srcSubresource.layerCount = 6;
+            region.dstSubresource = region.srcSubresource;
+            region.extent = { width, height, 1 };
+
+            vkCmdCopyImage(copyCmd,
+                srcImage, VK_IMAGE_LAYOUT_GENERAL,
+                dstImage, VK_IMAGE_LAYOUT_GENERAL,
+                1, &region);
+
+            device->FlushCommandBuffer(copyCmd, true);
+        });
+    }
+
     void VulkanImageCube::RT_GenerateMips(bool readonly)
     {
         auto device = VulkanContext::GetCurrentDevice();

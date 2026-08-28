@@ -176,25 +176,6 @@ namespace Prism {
         return Texture::CalculateMipMapCount(m_Image->GetWidth(), m_Image->GetHeight());
     }
 
-    void OpenGLTextureCube::GenerateMipMap() const
-    {
-        Ref<const OpenGLTextureCube> instance = this;
-        Renderer::Submit([instance]() mutable
-        {
-            glBindTexture(GL_TEXTURE_CUBE_MAP, instance->GetRendererID());
-            glGenerateTextureMipmap(instance->GetRendererID());
-        });
-    }
-
-    void OpenGLTextureCube::CopyTo(Ref<TextureCube> destination) const
-    {
-        Ref<const OpenGLTextureCube> instance = this;
-        Renderer::Submit([instance, destination]() mutable
-        {
-            glCopyImageSubData(instance->GetRendererID(), GL_TEXTURE_CUBE_MAP, 0, 0, 0, 0, destination.As<OpenGLTextureCube>()->GetRendererID(), GL_TEXTURE_CUBE_MAP, 0, 0, 0, 0, instance->GetWidth(), instance->GetHeight(), 6);
-        });
-    }
-
 
     void OpenGLTextureCube::RT_Bind(uint32_t slot) const
     {

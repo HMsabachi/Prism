@@ -31,6 +31,7 @@ Prism::Application* Prism::CreateApplication(int argc, char** argv)
     Prism::RendererAPIType renderer = Prism::RendererAPIType::OpenGL;
 #endif
     // renderer = Prism::RendererAPIType::OpenGL;
+    renderer = Prism::RendererAPIType::Vulkan;
 
     app.add_flag("-s,--singleThreaded", single, "singleThreaded / 单线程渲染");
     app.add_flag("--no-vsync", noVSync, "disable VSync / 关闭垂直同步");
@@ -51,7 +52,7 @@ Prism::Application* Prism::CreateApplication(int argc, char** argv)
     Props.Name = "PrismEditor";
     Props.WindowWidth = 1920;
     Props.WindowHeight = 1080;
-    Props.VSync = false;
+    Props.VSync = true;
     Props.CoreThreadingPolicy = single ? Prism::ThreadingPolicy::SingleThreaded : Prism::ThreadingPolicy::MultiThreaded;
     Props.RendererAPI = renderer;
     return new PrismEditorApplication(Props);

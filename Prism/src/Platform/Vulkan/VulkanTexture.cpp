@@ -143,38 +143,4 @@ namespace Prism
     {
         return Utils::CalculateMipCount(m_Width, m_Height);
     }
-
-    void VulkanTextureCube::CopyTo(Ref<TextureCube> destination) const
-    {
-        VkImage srcImage = m_Image.As<VulkanImageCube>()->GetImageInfo().Image;
-        VkImage dstImage = destination->GetImage().As<VulkanImageCube>()->GetImageInfo().Image;
-        uint32_t width = m_Width, height = m_Height;
-
-        Renderer::Submit([srcImage, dstImage, width, height]()
-        {
-            auto device = VulkanContext::GetCurrentDevice();
-            VkCommandBuffer copyCmd = device->GetCommandBuffer(true, true);
-
-            VkImageCopy region{};
-            region.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            region.srcSubresource.mipLevel = 0;
-            region.srcSubresource.baseArrayLayer = 0;
-            region.srcSubresource.layerCount = 6;
-            region.dstSubresource = region.srcSubresource;
-            region.extent = { width, height, 1 };
-
-            // 双方均处 GENERAL（VulkanImageCube 终态），vkCmdCopyImage 在 GENERAL 布局下合法
-            vkCmdCopyImage(copyCmd,
-                srcImage, VK_IMAGE_LAYOUT_GENERAL,
-                dstImage, VK_IMAGE_LAYOUT_GENERAL,
-                1, &region);
-
-            device->FlushCommandBuffer(copyCmd, true);
-        });
-    }
-
-    void VulkanTextureCube::RT_GenerateMips(bool readonly)
-    {
-        m_Image.As<VulkanImageCube>()->RT_GenerateMips(readonly);
-    }
 }

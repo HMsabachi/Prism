@@ -24,8 +24,6 @@ namespace Prism {
         virtual Buffer GetBuffer() const override { return m_ImageData; }
         virtual Buffer& GetBuffer() override { return m_ImageData; }
 
-        virtual uint64_t GetHash() const override { return (uint64_t)m_RendererID; }
-
         void RT_Resize(const uint32_t width, const uint32_t height);
         void RT_Bind(uint32_t slot) const;
 
@@ -62,12 +60,13 @@ namespace Prism {
         virtual Buffer GetBuffer() const override { return m_ImageData; }
         virtual Buffer& GetBuffer() override { return m_ImageData; }
 
+        virtual void GenerateMipMap() override;
+        virtual void CopyTo(Ref<ImageCube> destination) const override;
+
         void RT_Bind(uint32_t slot) const;
 
         RendererID& GetRendererID() { return m_RendererID; }
         RendererID GetRendererID() const { return m_RendererID; }
-
-        virtual uint64_t GetHash() const override { return (uint64_t)m_RendererID; }
     private:
         RendererID m_RendererID = 0;
         uint32_t m_Width, m_Height;

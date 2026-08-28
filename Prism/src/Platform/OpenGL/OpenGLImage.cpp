@@ -170,6 +170,24 @@ namespace Prism {
     }
 
 
+    void OpenGLImageCube::GenerateMipMap()
+    {
+        Ref<OpenGLImageCube> instance = this;
+        Renderer::Submit([instance]() mutable
+        {
+            glBindTexture(GL_TEXTURE_CUBE_MAP, instance->GetRendererID());
+            glGenerateTextureMipmap(instance->GetRendererID());
+        });
+    }
+    void OpenGLImageCube::CopyTo(Ref<ImageCube> destination) const
+    {
+        Ref<const OpenGLImageCube> instance = this;
+        Renderer::Submit([instance, destination]() mutable
+        {
+            glCopyImageSubData(instance->GetRendererID(), GL_TEXTURE_CUBE_MAP, 0, 0, 0, 0, destination.As<OpenGLImageCube>()->GetRendererID(), GL_TEXTURE_CUBE_MAP, 0, 0, 0, 0, instance->GetWidth(), instance->GetHeight(), 6);
+        });
+    }
+
     void OpenGLImageCube::RT_Bind(uint32_t slot) const
     {
         glBindTextureUnit(slot, m_RendererID);

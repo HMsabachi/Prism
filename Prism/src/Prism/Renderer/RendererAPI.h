@@ -1,6 +1,5 @@
 ﻿#pragma once
 #include "RendererTypes.h"
-#include "Prism/Utilities/BitFlags.h"
 #include "Prism/Core/Ref.h"
 #include "Prism/ShaderCompiler/PrismBindings.h"
 
@@ -48,23 +47,6 @@ namespace Prism
 
     class PRISM_API RendererAPI
     {
-    public:
-#pragma region 数据结构
-        enum class PRISM_API Barrier
-        {
-            None = 0,
-            ShaderStorage = BIT(0),
-            VertexAttribArray = BIT(1),
-            ElementArray = BIT(2),
-            ImageAccess = BIT(3),
-            TextureFetch = BIT(4),
-            TextureUpdate = BIT(5),
-            Framebuffer = BIT(6),
-            Command = BIT(7),
-            All = BIT(8)
-        };
-        typedef BitFlags<Barrier> BarrierFlags;
-#pragma endregion
 
     public:
         virtual ~RendererAPI() = default;
@@ -78,9 +60,6 @@ namespace Prism
         virtual void BeginRenderPass(Ref<RenderPass> renderPass, bool clear = true) = 0;
         virtual void EndRenderPass() = 0;
         virtual void SubmitFullscreenQuad(Ref<Material> material, uint32_t passIndex, uint32_t drawIndex = 0) = 0;
-
-        virtual void SetSceneEnvironment(const Ref<SceneEnvironment>& environment) = 0;
-        virtual std::pair<Ref<TextureCube>, Ref<TextureCube>> CreateEnvironmentMap(const std::string& filepath) = 0;
 
         virtual void SetGlobalUniformBuffer(uint32_t binding, Ref<UniformBuffer> ubo) = 0;
         virtual void SetGlobalShaderStorageBuffer(uint32_t binding, Ref<ShaderStorageBuffer> ssbo) = 0;
@@ -101,5 +80,4 @@ namespace Prism
     private:
         static RendererAPIType s_CurrentRendererAPI;
     };
-    using MBarrier = RendererAPI::Barrier;
 }

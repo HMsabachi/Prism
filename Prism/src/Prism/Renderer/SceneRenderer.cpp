@@ -663,7 +663,6 @@ namespace Prism
         m_FrameData.Lights[0].Radiance = directionalLight.Radiance;
         m_FrameData.Lights[0].Multiplier = directionalLight.Multiplier;
         m_FrameUBO->SetData(&m_FrameData, sizeof(m_FrameData));
-        rApi->SetSceneEnvironment(config.SceneEnvironment);
         
     }
 

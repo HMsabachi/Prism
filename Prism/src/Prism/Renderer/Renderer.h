@@ -92,6 +92,7 @@ namespace Prism
 
         static RendererAPI* GetAPI();
         static RenderAPICapabilities& GetCapabilities();
+        static std::pair<Ref<TextureCube>, Ref<TextureCube>> CreateEnvironmentMap(const std::string& filepath);
 
         // 渲染线程相关（Phase 1 骨架）
         static void WaitAndRender();
