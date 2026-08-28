@@ -74,7 +74,7 @@ namespace Prism {
             PR_CORE_ASSERT(data, "Could not read HDR image!");
             m_IsHDR = true;
             uint32_t size = width * height * 4 * sizeof(float);
-            m_Image = Image2D::Create(ImageFormat::RGBA16F, width, height, Buffer::Copy(data, size));
+            m_Image = Image2D::Create(ImageFormat::RGBA32F, width, height, Buffer::Copy(data, size));
             stbi_image_free(data);
         }
         else

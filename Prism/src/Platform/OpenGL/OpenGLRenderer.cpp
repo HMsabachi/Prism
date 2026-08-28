@@ -345,11 +345,11 @@ namespace Prism
         const uint32_t cubemapSize = 2048;
         const uint32_t irradianceMapSize = 32;
 
-        Ref<TextureCube> envUnfiltered = TextureCube::Create(ImageFormat::RGBA16F, cubemapSize, cubemapSize);
+        Ref<TextureCube> envUnfiltered = TextureCube::Create(ImageFormat::RGBA32F, cubemapSize, cubemapSize);
         if (!s_EnvironmentShader)
             s_EnvironmentShader = ComputeShader::Create("Assets/Shaders/Environment.ComputeShader");
         Ref<Texture2D> envEquirect = Texture2D::Create(filepath);
-        PR_CORE_ASSERT(envEquirect->GetFormat() == ImageFormat::RGBA16F, "Texture is not HDR!");
+        PR_CORE_ASSERT(envEquirect->GetFormat() == ImageFormat::RGBA32F, "Texture is not HDR!");
 
         int toCubeKernel = s_EnvironmentShader->FindKernel("CSEquirectToCube");
         s_EnvironmentShader->SetTexture(toCubeKernel, "u_EquirectangularTex", envEquirect);
@@ -357,7 +357,7 @@ namespace Prism
         s_EnvironmentShader->Dispatch(toCubeKernel, cubemapSize / 32, cubemapSize / 32, 6);
         envUnfiltered.As<OpenGLTextureCube>()->GenerateMipMap();
 
-        Ref<TextureCube> envFiltered = TextureCube::Create(ImageFormat::RGBA16F, cubemapSize, cubemapSize);
+        Ref<TextureCube> envFiltered = TextureCube::Create(ImageFormat::RGBA32F, cubemapSize, cubemapSize);
         envUnfiltered.As<OpenGLTextureCube>()->CopyTo(envFiltered);
 
         Ref<UniformBuffer> mipFilterUBO = UniformBuffer::Create(sizeof(float));
@@ -374,7 +374,7 @@ namespace Prism
             s_EnvironmentShader->Dispatch(mipFilter, numGroups, numGroups, 6);
         }
 
-        Ref<TextureCube> irradianceMap = TextureCube::Create(ImageFormat::RGBA16F, irradianceMapSize, irradianceMapSize);
+        Ref<TextureCube> irradianceMap = TextureCube::Create(ImageFormat::RGBA32F, irradianceMapSize, irradianceMapSize);
         int irradiance = s_EnvironmentShader->FindKernel("CSIrradiance");
         s_EnvironmentShader->SetTexture(irradiance, "u_InputCubeMap", envFiltered);
         s_EnvironmentShader->SetImage(irradiance, "o_OutputCube", irradianceMap);

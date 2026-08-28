@@ -24,7 +24,7 @@ namespace Prism
             PR_CORE_INFO("Loading HDR texture {0}, srgb={1}", path, srgb);
             float* data = stbi_loadf(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
             PR_CORE_ASSERT(data, "Could not read HDR image!");
-            m_Format = ImageFormat::RGBA16F;
+            m_Format = ImageFormat::RGBA32F;
             imageData = Buffer::Copy((byte*)data, width * height * 4 * sizeof(float));
             stbi_image_free(data);
         }
