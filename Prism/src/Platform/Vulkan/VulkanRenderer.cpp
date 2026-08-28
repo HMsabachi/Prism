@@ -9,6 +9,7 @@
 #include "VulkanMaterialBackend.h"
 #include "VulkanPipeline.h"
 #include "VulkanRenderPass.h"
+#include "VulkanShader.h"
 #include "VulkanUniformBuffer.h"
 #include "VulkanShaderStorageBuffer.h"
 #include "VulkanVertexBuffer.h"
@@ -18,6 +19,7 @@
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Material.h"
 #include "Prism/Renderer/Mesh.h"
+#include "Prism/Renderer/ComputeShader/ComputeShader.h"
 
 #include <glm/glm.hpp>
 #include <map>
@@ -37,6 +39,8 @@ namespace Prism
 
         Ref<VulkanImage2D> BlackImage2D;
         Ref<VulkanImageCube> BlackImageCube;
+        Ref<VulkanUniformBuffer> EmptyUniformBuffer;
+        Ref<VulkanShaderStorageBuffer> EmptyShaderStorageBuffer;
         Ref<VulkanTexture2D> BlackTexture2D;
         Ref<VulkanTextureCube> BlackTextureCube;
 
@@ -47,6 +51,7 @@ namespace Prism
     };
 
     static VulkanRendererData* s_Data = nullptr;
+    static Ref<ComputeShader> s_EnvironmentShader;
 
     namespace Utils
     {
@@ -123,22 +128,29 @@ namespace Prism
 
         float blackPixel[16] = { 0.0f };
         s_Data->BlackImage2D = Image2D::Create(ImageFormat::RGBA, 1, 1, blackPixel).As<VulkanImage2D>();
+        s_Data->BlackImage2D->SetExtraUsage(VK_IMAGE_USAGE_STORAGE_BIT);
         s_Data->BlackImage2D->Invalidate();
         s_Data->BlackImageCube = ImageCube::Create(ImageFormat::RGBA, 1, 1, blackPixel).As<VulkanImageCube>();
         s_Data->BlackImageCube->Invalidate();
         s_Data->BlackTexture2D = Texture2D::Create(ImageFormat::RGBA, 1, 1, blackPixel).As<VulkanTexture2D>();
         s_Data->BlackTextureCube = TextureCube::Create(ImageFormat::RGBA, 1, 1, blackPixel).As<VulkanTextureCube>();
+        s_Data->EmptyUniformBuffer = UniformBuffer::Create(1).As<VulkanUniformBuffer>();
+        s_Data->EmptyShaderStorageBuffer = ShaderStorageBuffer::Create(1).As <VulkanShaderStorageBuffer>();
     }
 
     void VulkanRenderer::Shutdown()
     {
-        s_Data->PipelineCache.Shutdown();
+        // 先于 s_Data 销毁：static Ref 析构链（VulkanShader -> PipelineCache::Erase 依赖 s_Data）
+        s_EnvironmentShader = nullptr;
         s_Data->FullscreenQuadVB = nullptr;
         s_Data->FullscreenQuadIB = nullptr;
         s_Data->BlackImage2D = nullptr;
         s_Data->BlackImageCube = nullptr;
         s_Data->BlackTexture2D = nullptr;
         s_Data->BlackTextureCube = nullptr;
+        s_Data->EmptyUniformBuffer = nullptr;
+        s_Data->EmptyShaderStorageBuffer = nullptr;
+        s_Data->PipelineCache.Shutdown();
         delete s_Data;
         s_Data = nullptr;
     }
@@ -154,10 +166,6 @@ namespace Prism
         return s_Data->RenderCaps;
     }
 
-    VkCommandBuffer VulkanRenderer::RT_GetCurrentCommandBuffer()
-    {
-        return s_Data ? s_Data->ActiveCommandBuffer : VK_NULL_HANDLE;
-    }
 
     void VulkanRenderer::BeginFrame()
     {
@@ -306,14 +314,12 @@ namespace Prism
             spec.VertexLayouts = vertexLayouts;
             // 绑定 Pipeline
             WeakRef<VulkanPipeline> pipeline = pCache.Get(spec);
+            uint32_t drawIndexPC = drawIndex;
             pipeline->RT_Bind(cmdBuf);
             pipeline->RT_BindGlobalSet(cmdBuf, s_Data->GlobalDescriptorSet.RT_GetDescriptorSet());
             pipeline->RT_BindRenderPassSet(cmdBuf, s_Data->ActiveRenderPass->RT_GetDescriptorSet());
             pipeline->RT_BindMaterialSet(cmdBuf, backend->RT_GetDescriptorSet());
-            // Push Constant
-            uint32_t drawIndexPC = drawIndex;
-            vkCmdPushConstants(cmdBuf, pipeline->GetPipelineLayout(),
-                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(uint32_t), &drawIndexPC);
+            pipeline->RT_BindPushConstant(cmdBuf, 0, sizeof(uint32_t), &drawIndexPC);
             // 绑定 Vertex Buffer
             VkBuffer vertBufs[] = { s_Data->FullscreenQuadVB->GetVulkanBuffer() };
             VkDeviceSize vertOffs[] = { 0 };
@@ -325,15 +331,7 @@ namespace Prism
         });
     }
 
-    void VulkanRenderer::SetSceneEnvironment(const Ref<SceneEnvironment>& environment)
-    {
-    }
-
-    std::pair<Ref<TextureCube>, Ref<TextureCube>> VulkanRenderer::CreateEnvironmentMap(const std::string& filepath)
-    {
-        return {s_Data->BlackTextureCube, s_Data->BlackTextureCube };
-    }
-
+    
     void VulkanRenderer::RenderMesh(Ref<Mesh> mesh, uint32_t submeshIndex, Ref<Material> material,
         uint32_t passIndex, uint32_t drawIndex)
     {
@@ -356,14 +354,12 @@ namespace Prism
             spec.VertexLayouts = vertexLayouts;
             // 绑定 Pipeline
             WeakRef<VulkanPipeline> pipeline = pCache.Get(spec);
+            int32_t drawIndexPC = (int32_t)drawIndex;
             pipeline->RT_Bind(cmdBuf);
             pipeline->RT_BindGlobalSet(cmdBuf, s_Data->GlobalDescriptorSet.RT_GetDescriptorSet());
             pipeline->RT_BindRenderPassSet(cmdBuf, s_Data->ActiveRenderPass->RT_GetDescriptorSet());
             pipeline->RT_BindMaterialSet(cmdBuf, backend->RT_GetDescriptorSet());
-            // Push Constant
-            int32_t drawIndexPC = (int32_t)drawIndex;
-            vkCmdPushConstants(cmdBuf, pipeline->GetPipelineLayout(),
-                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(int32_t), &drawIndexPC);
+            pipeline->RT_BindPushConstant(cmdBuf, 0, sizeof(uint32_t), &drawIndexPC);
             // 绑定 Vertex Buffer
             VkBuffer vertBufs[] = { vertexBuffer->GetVulkanBuffer() };
             VkDeviceSize vertOffs[] = { 0 };
@@ -382,11 +378,73 @@ namespace Prism
         SubmitFullscreenQuad(material, passIndex, drawIndex);
     }
 
-    void VulkanRenderer::DispatchCompute(Ref<Shader> kernelShader,
-        const std::vector<ComputeResourceBinding>& bindings,
+    void VulkanRenderer::DispatchCompute(Ref<ComputeShader> computeShader, int32_t kernel,
         uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ)
     {
+        Ref<Shader> kernelShader = computeShader->GetKernelShader(kernel);
+        if (!kernelShader)
+            return;
+        std::vector<ComputeResourceBinding> captured = computeShader->GetResources();
+        Ref<VulkanShader> vkShader = kernelShader.As<VulkanShader>();
+
+        Renderer::Submit([=]() mutable {
+            VulkanDescriptorSet tempSet;
+            using DK = PrismShaderCompiler::DescriptorKind;
+            for (const auto& binding : captured)
+            {
+                Ref<RefCounted> res = binding.res;
+                uint32_t set = binding.Resource.Set;
+                uint32_t bindingIndex = binding.Resource.Binding;
+                switch (binding.Resource.Kind)
+                {
+                case PrismShaderCompiler::CSL::ResourceKind::StorageBuffer:
+                {
+                    tempSet.SetInput(bindingIndex, res.As<VulkanShaderStorageBuffer>());
+                    break;
+                }
+                case PrismShaderCompiler::CSL::ResourceKind::UniformBuffer:
+                {
+                    tempSet.SetInput(bindingIndex, res.As<VulkanUniformBuffer>());
+                    break;
+                }
+                case PrismShaderCompiler::CSL::ResourceKind::Sampler2D:
+                {
+                    Ref<VulkanImage2D> image = res ? res.As<VulkanTexture2D>()->GetImage().As<VulkanImage2D>() : nullptr;
+                    tempSet.SetInput(bindingIndex, image);
+                    break;
+                }
+                case PrismShaderCompiler::CSL::ResourceKind::SamplerCube:
+                {
+                    Ref<VulkanImageCube> image = res ? res.As<VulkanTextureCube>()->GetImage().As<VulkanImageCube>() : nullptr;
+                    tempSet.SetInput(bindingIndex, image);
+                    break;
+                }
+                case PrismShaderCompiler::CSL::ResourceKind::Image2D:
+                {
+                    Ref<VulkanImage2D> image = res ? res.As<VulkanTexture2D>()->GetImage().As<VulkanImage2D>() : nullptr;
+                    tempSet.SetInput(bindingIndex, image, binding.Level);
+                    break;
+                }
+                case PrismShaderCompiler::CSL::ResourceKind::ImageCube:
+                {
+                    Ref<VulkanImageCube> image = res ? res.As<VulkanTextureCube>()->GetImage().As<VulkanImageCube>() : nullptr;
+                    tempSet.SetInput(bindingIndex, image, binding.Level);
+                    break;
+                }
+                default:
+                    PR_CORE_ASSERT(false, "VulkanRenderer::DispatchCompute: 未知的 ResourceKind!");
+                    break;
+
+                }
+            }
+            tempSet.Bake();
+            tempSet.RT_Prepare();
+            WeakRef<VulkanComputePipeline> pipeline = s_Data->PipelineCache.GetCompute(vkShader.Raw());
+            VkDescriptorSet descriptorSets[] = { tempSet.RT_GetDescriptorSet() };
+            pipeline->RT_Execute(descriptorSets, 1, numGroupsX, numGroupsY, numGroupsZ);
+        });
     }
+
 
 
     WeakRef<VulkanImage2D> VulkanRenderer::RT_GetBlackImage2D()
@@ -398,4 +456,16 @@ namespace Prism
     {
         return s_Data->BlackImageCube;
     }
+
+    WeakRef<VulkanUniformBuffer> VulkanRenderer::RT_GetEmptyUniformBuffer()
+    {
+        return s_Data->EmptyUniformBuffer;
+    }
+
+
+    WeakRef<VulkanShaderStorageBuffer> VulkanRenderer::RT_GetEmptyShaderStorageBuffer()
+    {
+        return s_Data->EmptyShaderStorageBuffer;
+    }
+
 }

@@ -10,6 +10,10 @@
 
 #include "yaml-cpp/yaml.h"
 
+namespace Prism::Utils {
+
+}
+
 namespace Prism {
 
     void AssetSerializer::CopyMetadata(const Ref<Asset>& from, Ref<Asset>& to) const
@@ -46,7 +50,7 @@ namespace Prism {
 
     bool EnvironmentSerializer::TryLoadData(Ref<Asset>& asset) const
     {
-        auto [radiance, irradiance] = Renderer::GetAPI()->CreateEnvironmentMap(asset->FilePath);
+        auto [radiance, irradiance] = Renderer::CreateEnvironmentMap(asset->FilePath);
         if (!radiance || !irradiance)
             return false;
 

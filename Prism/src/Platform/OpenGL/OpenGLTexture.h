@@ -30,7 +30,6 @@ namespace Prism {
 
         virtual Buffer GetWriteableBuffer() override;
         virtual Ref<Image2D> GetImage() const override { return m_Image; }
-        virtual uint64_t GetHash() const override { return m_Image->GetHash(); }
 
         void RT_Bind(uint32_t slot) const;
         void RT_Init(bool mipmapSampler);
@@ -64,11 +63,7 @@ namespace Prism {
         virtual uint32_t GetHeight() const override { return m_Image->GetHeight(); }
         virtual uint32_t GetMipLevelCount() const override;
 
-        void GenerateMipMap() const;
-        void CopyTo(Ref<TextureCube> destination) const;
-
         virtual const std::string& GetPath() const override { return FilePath; }
-        virtual uint64_t GetHash() const override { return m_Image->GetHash(); }
         virtual Ref<ImageCube> GetImage() const override { return m_Image; }
 
         void RT_Bind(uint32_t slot) const;

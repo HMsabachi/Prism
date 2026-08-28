@@ -43,10 +43,6 @@ namespace Prism {
 
         virtual Buffer GetBuffer() const = 0;
         virtual Buffer& GetBuffer() = 0;
-
-        virtual uint64_t GetHash() const = 0;
-
-        // TODO: usage (eg. shader read)
     };
 
     class PRISM_API Image2D : public Image
@@ -59,6 +55,10 @@ namespace Prism {
 
     class PRISM_API ImageCube : public Image
     {
+    public:
+        virtual void GenerateMipMap() = 0;
+        virtual void CopyTo(Ref<ImageCube> destination) const = 0;
+
     public:
         static Ref<ImageCube> Create(ImageFormat format, uint32_t width, uint32_t height, const void* data = nullptr);
     };

@@ -24,7 +24,7 @@ namespace Prism
             PR_CORE_INFO("Loading HDR texture {0}, srgb={1}", path, srgb);
             float* data = stbi_loadf(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
             PR_CORE_ASSERT(data, "Could not read HDR image!");
-            m_Format = ImageFormat::RGBA16F;
+            m_Format = ImageFormat::RGBA32F;
             imageData = Buffer::Copy((byte*)data, width * height * 4 * sizeof(float));
             stbi_image_free(data);
         }
@@ -142,33 +142,5 @@ namespace Prism
     uint32_t VulkanTextureCube::GetMipLevelCount() const
     {
         return Utils::CalculateMipCount(m_Width, m_Height);
-    }
-
-    VkImageView VulkanTextureCube::CreateImageViewSingleMip(uint32_t mip)
-    {
-        auto device = VulkanContext::GetCurrentDevice();
-
-        VkFormat format = Utils::VulkanImageFormat(m_Format);
-
-        VkImageViewCreateInfo view{};
-        view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        view.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
-        view.format = format;
-        view.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
-        view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        view.subresourceRange.baseMipLevel = mip;
-        view.subresourceRange.baseArrayLayer = 0;
-        view.subresourceRange.layerCount = 6;
-        view.subresourceRange.levelCount = 1;
-        view.image = m_Image.As<VulkanImageCube>()->GetImageInfo().Image;
-
-        VkImageView result;
-        VK_CHECK_RESULT(vkCreateImageView(device->GetVulkanDevice(), &view, nullptr, &result));
-        return result;
-    }
-
-    void VulkanTextureCube::GenerateMips(bool readonly)
-    {
-        m_Image.As<VulkanImageCube>()->GenerateMips(readonly);
     }
 }

@@ -1,4 +1,4 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "Platform/Vulkan/VulkanDevice.h"
 
 #include "Platform/Vulkan/VulkanContext.h"
@@ -295,7 +295,7 @@ namespace Prism
 
     void VulkanDevice::FlushCommandBuffer(VkCommandBuffer commandBuffer, bool compute)
     {
-        FlushCommandBuffer(commandBuffer, m_Queue, compute);
+        FlushCommandBuffer(commandBuffer, compute ? m_ComputeQueue : m_Queue, compute);
     }
 
     void VulkanDevice::FlushCommandBuffer(VkCommandBuffer commandBuffer, VkQueue queue, bool compute)

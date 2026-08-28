@@ -74,7 +74,7 @@ namespace Prism {
             PR_CORE_ASSERT(data, "Could not read HDR image!");
             m_IsHDR = true;
             uint32_t size = width * height * 4 * sizeof(float);
-            m_Image = Image2D::Create(ImageFormat::RGBA16F, width, height, Buffer::Copy(data, size));
+            m_Image = Image2D::Create(ImageFormat::RGBA32F, width, height, Buffer::Copy(data, size));
             stbi_image_free(data);
         }
         else
@@ -174,25 +174,6 @@ namespace Prism {
     uint32_t OpenGLTextureCube::GetMipLevelCount() const
     {
         return Texture::CalculateMipMapCount(m_Image->GetWidth(), m_Image->GetHeight());
-    }
-
-    void OpenGLTextureCube::GenerateMipMap() const
-    {
-        Ref<const OpenGLTextureCube> instance = this;
-        Renderer::Submit([instance]() mutable
-        {
-            glBindTexture(GL_TEXTURE_CUBE_MAP, instance->GetRendererID());
-            glGenerateTextureMipmap(instance->GetRendererID());
-        });
-    }
-
-    void OpenGLTextureCube::CopyTo(Ref<TextureCube> destination) const
-    {
-        Ref<const OpenGLTextureCube> instance = this;
-        Renderer::Submit([instance, destination]() mutable
-        {
-            glCopyImageSubData(instance->GetRendererID(), GL_TEXTURE_CUBE_MAP, 0, 0, 0, 0, destination.As<OpenGLTextureCube>()->GetRendererID(), GL_TEXTURE_CUBE_MAP, 0, 0, 0, 0, instance->GetWidth(), instance->GetHeight(), 6);
-        });
     }
 
 

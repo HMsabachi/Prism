@@ -10,6 +10,9 @@
 #include "Platform/Vulkan/VulkanRenderer.h"
 #include "Platform/Vulkan/Vulkan.h"
 
+#include "Prism/Renderer/Texture.h"
+#include "Prism/Renderer/ComputeShader/ComputeShader.h"
+#include "Prism/Renderer/Buffer/UniformBuffer.h"
 #include "Camera/Camera.h"
 
 namespace Prism
@@ -19,6 +22,7 @@ namespace Prism
     static RendererAPI* s_RendererAPI = nullptr;
     static RendererConfig s_Config;
     bool Renderer::s_Initialized = false;
+    static Ref<ComputeShader> s_EnvironmentShader;
 
     static void InitRendererAPI()
     {
@@ -63,7 +67,7 @@ namespace Prism
     {
         if (s_RendererAPI)
         {
-
+            s_EnvironmentShader = nullptr;
             s_RendererAPI->Shutdown();
             uint32_t delayFrames = s_Config.FramesInFlight;
             delayFrames = (delayFrames == 0) ? 1 : delayFrames;
@@ -77,10 +81,6 @@ namespace Prism
             delete s_RendererAPI;
             s_RendererAPI = nullptr;
         }
-
-        /*delete s_CommandQueue[0];
-        delete s_CommandQueue[1];
-        s_CommandQueue[0] = s_CommandQueue[1] = nullptr;*/
     }
 
 
@@ -98,8 +98,53 @@ namespace Prism
 
     RenderAPICapabilities& Renderer::GetCapabilities() { return s_RendererAPI->GetCapabilities(); }
 
-    // 无参版本：执行当前 submissionIndex 槽（单线程同步路径，兼容旧主循环与 GetData sync）。
-    // 保留是因为 Application/OpenGLContext/SSBO 的既有调用点还没切到 Pump/Kick 流程（Phase 3 再改）。
+
+	std::pair<Ref<TextureCube>, Ref<TextureCube>> Renderer::CreateEnvironmentMap(const std::string& filepath)
+	{
+        PR_PROFILE_FUNCTION();
+        const uint32_t cubemapSize = 2048;
+        const uint32_t irradianceMapSize = 32;
+
+        Ref<TextureCube> envUnfiltered = TextureCube::Create(ImageFormat::RGBA32F, cubemapSize, cubemapSize);
+        if (!s_EnvironmentShader)
+            s_EnvironmentShader = ComputeShader::Create("Assets/Shaders/Environment.ComputeShader");
+        Ref<Texture2D> envEquirect = Texture2D::Create(filepath);
+        PR_CORE_ASSERT(envEquirect->GetFormat() == ImageFormat::RGBA32F, "Texture is not HDR!");
+
+        int toCubeKernel = s_EnvironmentShader->FindKernel("CSEquirectToCube");
+        s_EnvironmentShader->SetTexture(toCubeKernel, "u_EquirectangularTex", envEquirect);
+        s_EnvironmentShader->SetImage(toCubeKernel, "o_OutputCube", envUnfiltered);
+        s_EnvironmentShader->Dispatch(toCubeKernel, cubemapSize / 32, cubemapSize / 32, 6);
+        envUnfiltered->GetImage()->GenerateMipMap();
+
+        Ref<TextureCube> envFiltered = TextureCube::Create(ImageFormat::RGBA32F, cubemapSize, cubemapSize);
+        envUnfiltered->GetImage()->CopyTo(envFiltered->GetImage());
+
+        Ref<UniformBuffer> mipFilterUBO = UniformBuffer::Create(sizeof(float));
+        int mipFilter = s_EnvironmentShader->FindKernel("CSMipFilter");
+        s_EnvironmentShader->SetTexture(mipFilter, "u_InputCubeMap", envUnfiltered);
+        const float deltaRoughness = 1.0f / glm::max((float)(envFiltered->GetMipLevelCount() - 1.0f), 1.0f);
+        for (uint32_t level = 1, size = cubemapSize / 2; level < envFiltered->GetMipLevelCount(); level++, size /= 2)
+        {
+            const uint32_t numGroups = glm::max((uint32_t)1, size / 32);
+            s_EnvironmentShader->SetImage(mipFilter, "o_OutputCube", envFiltered, level);
+            float roughness = level * deltaRoughness;
+            mipFilterUBO->SetData(&roughness, sizeof(float));
+            s_EnvironmentShader->SetUniformBuffer(mipFilter, "MipFilterParams", mipFilterUBO);
+            s_EnvironmentShader->Dispatch(mipFilter, numGroups, numGroups, 6);
+        }
+
+        Ref<TextureCube> irradianceMap = TextureCube::Create(ImageFormat::RGBA32F, irradianceMapSize, irradianceMapSize);
+        int irradiance = s_EnvironmentShader->FindKernel("CSIrradiance");
+        s_EnvironmentShader->SetTexture(irradiance, "u_InputCubeMap", envFiltered);
+        s_EnvironmentShader->SetImage(irradiance, "o_OutputCube", irradianceMap);
+        s_EnvironmentShader->Dispatch(irradiance, irradianceMapSize / 32, irradianceMapSize / 32, 6);
+        irradianceMap->GetImage()->GenerateMipMap();
+
+        return { envFiltered, irradianceMap };
+	}
+
+	// 无参版本：执行当前 submissionIndex 槽（单线程同步路径，兼容旧主循环与 GetData sync）。
     void Renderer::WaitAndRender()
     {
         s_CommandQueue[GetRenderQueueSubmissionIndex()].Execute();

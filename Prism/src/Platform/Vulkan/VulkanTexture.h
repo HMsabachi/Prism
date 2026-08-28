@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Prism/Renderer/Texture.h"
 #include "Platform/Vulkan/Vulkan.h"
@@ -33,7 +33,6 @@ namespace Prism
         virtual bool Loaded() const override { return m_Loaded; }
         virtual const std::string& GetPath() const override { return m_Path; }
 
-        virtual uint64_t GetHash() const override { return m_Image ? m_Image->GetHash() : 0; }
 
         const VkDescriptorImageInfo& GetVulkanDescriptorInfo() const { return m_Image.As<VulkanImage2D>()->GetDescriptor(); }
     private:
@@ -62,12 +61,8 @@ namespace Prism
 
         virtual Ref<ImageCube> GetImage() const override { return m_Image; }
 
-        virtual uint64_t GetHash() const override { return m_Image ? m_Image->GetHash() : 0; }
-
         const VkDescriptorImageInfo& GetVulkanDescriptorInfo() const { return m_Image.As<VulkanImageCube>()->GetDescriptor(); }
-        VkImageView CreateImageViewSingleMip(uint32_t mip);
 
-        void GenerateMips(bool readonly = false);
     private:
         void Invalidate();
     private:
