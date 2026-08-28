@@ -52,7 +52,7 @@ namespace Prism {
         {
             std::string Title;
             uint32_t Width, Height;
-            bool VSync;
+            bool VSync = false;
 
             EventCallbackFn EventCallback;
         };

@@ -147,14 +147,14 @@ namespace Prism
         {
             for (size_t i = 0; i < presentModeCount; i++)
             {
-                if (presentModes[i] == VK_PRESENT_MODE_MAILBOX_KHR)
-                {
-                    swapchainPresentMode = VK_PRESENT_MODE_MAILBOX_KHR;
-                    break;
-                }
-                if ((swapchainPresentMode != VK_PRESENT_MODE_MAILBOX_KHR) && (presentModes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR))
+                if (presentModes[i] == VK_PRESENT_MODE_IMMEDIATE_KHR)
                 {
                     swapchainPresentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+                    break;
+                }
+                if ((swapchainPresentMode != VK_PRESENT_MODE_IMMEDIATE_KHR) && (presentModes[i] == VK_PRESENT_MODE_MAILBOX_KHR))
+                {
+                    swapchainPresentMode = VK_PRESENT_MODE_MAILBOX_KHR;
                 }
             }
         }
@@ -447,7 +447,7 @@ namespace Prism
         {
             if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
             {
-                OnResize(m_Width, m_Height);
+                OnResize(m_Width, m_Height, m_VSync);
             }
             else
             {
@@ -468,7 +468,7 @@ namespace Prism
         {
             if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
             {
-                OnResize(m_Width, m_Height);
+                OnResize(m_Width, m_Height, m_VSync);
                 // SUBOPTIMAL 路径首次 acquire 已 signal 信号量且未被消费，重试前重建该槽信号量避免二次 signal
                 vkDestroySemaphore(m_Device->GetVulkanDevice(), m_ImageAvailableSemaphores[m_CurrentFrameIndex], nullptr);
                 VkSemaphoreCreateInfo semaphoreCreateInfo{};
