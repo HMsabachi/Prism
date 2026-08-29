@@ -16,7 +16,7 @@ namespace Prism
     struct ShaderCacheEntry
     {
         uint64_t KeyHash = 0;
-        uint8_t Backend = 0;
+        uint64_t Backend = 0;
         std::span<const uint8_t> Source_1;
         std::span<const uint8_t> Source_2;
         std::span<const PrismShaderCompiler::DescriptorInfo> Reflection;

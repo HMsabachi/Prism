@@ -7,6 +7,7 @@
 
 #include <PrismShaderCore/Generator/ReflectionGenerator.h>
 
+#include <span>
 #include <vector>
 
 namespace Prism
@@ -14,8 +15,8 @@ namespace Prism
     class VulkanShader : public Shader
     {
     public:
-        VulkanShader(const std::vector<uint32_t>& spirvVertex, const std::vector<uint32_t>& spirvFragment, const PrismShaderCompiler::PassReflection& reflection);
-        VulkanShader(const std::vector<uint32_t>& spirvCompute, const PrismShaderCompiler::PassReflection& reflection);
+        VulkanShader(std::span<const uint8_t> spirvVertex, std::span<const uint8_t> spirvFragment, std::span<const PrismShaderCompiler::DescriptorInfo> reflection);
+        VulkanShader(std::span<const uint8_t> spirvCompute, std::span<const PrismShaderCompiler::DescriptorInfo> reflection);
         virtual ~VulkanShader();
 
         const StaticVector<VkPipelineShaderStageCreateInfo, 2>& GetPipelineShaderStageCreateInfos() const { return m_ShaderStages; }
@@ -23,7 +24,7 @@ namespace Prism
         const PrismShaderCompiler::PassReflection& GetReflection() const { return m_Reflection; }
         bool IsCompute() const { return m_IsCompute; }
     private:
-        void CreateShaderStage(VkShaderStageFlagBits stage, const std::vector<uint32_t>& code);
+        void CreateShaderStage(VkShaderStageFlagBits stage, std::span<const uint8_t> code);
         void CreateDescriptorSetLayouts();
         void CreatePipelineLayout();
     private:

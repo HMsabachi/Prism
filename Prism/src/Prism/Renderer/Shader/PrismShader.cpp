@@ -54,7 +54,7 @@ namespace Prism
             return;
         }
 
-        m_Name = std::move(m_Compiled.ShaderName);
+        m_Name = m_Compiled.ShaderName;
         for (const auto& tag : m_Compiled.Tags)
             m_ShaderTags[Hash::GenerateFNVHash64(tag.first)] = Hash::GenerateFNVHash64(tag.second);
 

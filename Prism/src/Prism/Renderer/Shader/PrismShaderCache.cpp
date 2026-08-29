@@ -23,7 +23,7 @@ namespace Prism
 
     //[Entries]  数据块，length - prefixed 连续内存   // 加载后整块保留
     //每条目（按 IndexTable.Offset 定位）：
-    //u8   Backend          // 1=OpenGL 2=Vulkan；加载时靠它区分 GLSL / SPIR-V
+    //u64   Backend          // 1=OpenGL 2=Vulkan；加载时靠它区分 GLSL / SPIR-V
     //u64  VertexSize + VertexSize 字节
     //u64  FragmentSize + FragmentSize 字节
     //u64  ReflectionSize + ReflectionSize 字节
@@ -44,6 +44,7 @@ namespace Prism
             hash ^= static_cast<uint64_t>(byte);
             hash *= SHADER_CACHE_FNV_PRIME;
         }
+        return hash;
     }
 
     struct ShaderCacheHeader
@@ -64,6 +65,7 @@ namespace Prism
     PrismShaderCache& PrismShaderCache::Get()
     {
         static PrismShaderCache s_Instance;
+        s_Instance.m_EntryData.reserve(10 * 1024 * 1024);  // 预留 10MB
         return s_Instance;
     }
 
@@ -158,21 +160,25 @@ namespace Prism
     void PrismShaderCache::AddEntry(const ShaderCacheEntry& entry)
     {
         if (entry.KeyHash == 0) return;
-        uint64_t totalSize = sizeof(uint64_t) + sizeof(uint8_t)
+        uint64_t totalSize = sizeof(entry.KeyHash) + sizeof(entry.Backend)
             + sizeof(uint64_t) + entry.Source_1.size_bytes()
             + sizeof(uint64_t) + entry.Source_2.size_bytes()
             + sizeof(uint64_t) + entry.Reflection.size_bytes();
+        totalSize = (totalSize + 7) & ~7ULL;
         uint64_t oldSize = m_EntryData.size();
         m_EntryData.resize(oldSize + totalSize);
         uint8_t* p = m_EntryData.data() + oldSize / sizeof(uint8_t);
-        *reinterpret_cast<uint64_t*>(p) = entry.KeyHash; p += sizeof(uint64_t);
-        *p = entry.Backend; ++p;
-        *reinterpret_cast<uint64_t*>(p) = entry.Source_1.size_bytes(); p += sizeof(uint64_t);
-        std::memcpy(p, entry.Source_1.data(), entry.Source_1.size_bytes()); p += entry.Source_1.size_bytes();
-        *reinterpret_cast<uint64_t*>(p) = entry.Source_2.size_bytes(); p += sizeof(uint64_t);
-        std::memcpy(p, entry.Source_2.data(), entry.Source_2.size_bytes()); p += entry.Source_2.size_bytes();
-        *reinterpret_cast<uint64_t*>(p) = entry.Reflection.size_bytes(); p += sizeof(uint64_t);
-        std::memcpy(p, entry.Reflection.data(), entry.Reflection.size_bytes()); p += entry.Reflection.size_bytes();
+        std::memcpy(p, &entry.KeyHash, sizeof(entry.KeyHash)); p += sizeof(entry.KeyHash);
+        std::memcpy(p, &entry.Backend, sizeof(entry.Backend)); p += sizeof(entry.Backend);
+        uint64_t size = entry.Source_1.size_bytes();
+        std::memcpy(p, &size, sizeof(size)); p += sizeof(size);
+        std::memcpy(p, entry.Source_1.data(), size); p += size;
+        size = entry.Source_2.size_bytes();
+        std::memcpy(p, &size, sizeof(size)); p += sizeof(size);
+        std::memcpy(p, entry.Source_2.data(), size); p += size;
+        size = entry.Reflection.size_bytes();
+        std::memcpy(p, &size, sizeof(size)); p += sizeof(size);
+        std::memcpy(p, entry.Reflection.data(), size); p += size;
         m_EntryIndex[entry.KeyHash] = oldSize;
     }
     bool PrismShaderCache::FindEntry(uint64_t keyHash, ShaderCacheEntry* outEntry) const
@@ -186,7 +192,7 @@ namespace Prism
         uint64_t hash = *reinterpret_cast<const uint64_t*>(p); p += sizeof(uint64_t);
         if (keyHash != hash) return false;
         outEntry->KeyHash = keyHash;
-        outEntry->Backend = *p; ++p;
+        outEntry->Backend = *reinterpret_cast<const uint64_t*>(p); p += sizeof(uint64_t);
         uint64_t size = *reinterpret_cast<const uint64_t*>(p); p += sizeof(uint64_t);
         outEntry->Source_1 = { p, size / sizeof(uint8_t) }; p += size;
         size = *reinterpret_cast<const uint64_t*>(p); p += sizeof(uint64_t);
@@ -194,6 +200,7 @@ namespace Prism
         size = *reinterpret_cast<const uint64_t*>(p); p += sizeof(uint64_t);
         outEntry->Reflection = { reinterpret_cast<const DescriptorInfo*>(p),
             size / sizeof(DescriptorInfo) }; p += size;
+        return true;
     }
 
     uint64_t PrismShaderCache::GenerateSourceSetFingerprint(std::string_view rootPath)

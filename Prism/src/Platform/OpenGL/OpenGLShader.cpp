@@ -7,8 +7,9 @@
 
 namespace Prism
 {
-    OpenGLShader::OpenGLShader(const std::string& vertexSource, const std::string& fragmentSource)
-        : m_VertexSource(vertexSource), m_FragmentSource(fragmentSource)
+    OpenGLShader::OpenGLShader(std::span<const uint8_t> vertexSource, std::span<const uint8_t> fragmentSource)
+        : m_VertexSource(reinterpret_cast<const char*>(vertexSource.data()), vertexSource.size()),
+          m_FragmentSource(reinterpret_cast<const char*>(fragmentSource.data()), fragmentSource.size())
     {
         if (RenderThread::IsCurrentThreadRT())
         {
@@ -21,8 +22,8 @@ namespace Prism
         }
     }
 
-    OpenGLShader::OpenGLShader(const char* computeSource)
-        : m_ComputeSource(computeSource), m_IsCompute(true)
+    OpenGLShader::OpenGLShader(std::span<const uint8_t> computeSource)
+        : m_ComputeSource(reinterpret_cast<const char*>(computeSource.data()), computeSource.size()), m_IsCompute(true)
     {
         if (RenderThread::IsCurrentThreadRT())
         {

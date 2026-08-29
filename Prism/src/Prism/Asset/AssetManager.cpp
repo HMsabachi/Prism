@@ -1,10 +1,11 @@
-#include "prpch.h"
+﻿#include "prpch.h"
 #include "AssetManager.h"
 
 #include "Prism/Core/Hash.h"
 #include "Prism/Utilities/StringUtils.h"
 #include "Prism/Utilities/FileSystem.h"
 #include "Prism/Renderer/Shader/PrismShader.h"
+#include "Prism/Renderer/Shader/PrismShaderCache.h"
 
 #include "yaml-cpp/yaml.h"
 
@@ -16,6 +17,7 @@ namespace Prism {
 
     void AssetManager::Init()
     {
+        PrismShaderCache::Get().Init("Assets/Shaders");
         s_ShaderLibrary = Ref<ShaderLibrary>::Create();
         if (!FileSystem::Exists("DataCache"))
             FileSystem::CreateFolder("DataCache");
@@ -38,6 +40,7 @@ namespace Prism {
 
     void AssetManager::Shutdown()
     {
+        PrismShaderCache::Get().Shutdown();
         s_AssetRegistry.clear();
         s_LoadedAssets.clear();
         s_ShaderLibrary.Reset();
