@@ -1,12 +1,27 @@
 ﻿#include "prpch.h"
 #include "Shader.h"
 
+#include "Prism/Core/Hash.h"
 #include "Prism/ShaderCompiler/ShaderCompiler.h"
 #include "Platform/OpenGL/OpenGLShader.h"
 #include "Platform/Vulkan/VulkanShader.h"
+#include "Prism/Renderer/Shader/PrismShaderCache.h"
 
 namespace Prism
 {
+    inline static constexpr uint64_t GenerateShaderKeyHash(const PrismShaderCompiler::CompiledShader& shader,
+        uint32_t passIndex,
+        const std::vector<std::string>& keywords)
+    {
+        constexpr uint64_t FNV_PRIME = 1099511628211ULL;
+        constexpr uint64_t OFFSET_BASIS = 14695981039346656037ULL;
+        uint64_t hash = OFFSET_BASIS;
+        hash ^= Hash::GenerateFNVHash64(shader.ShaderName); hash *= FNV_PRIME;
+        hash ^= static_cast<uint64_t>(passIndex); hash *= FNV_PRIME;
+        for (const auto& kw : keywords) { hash ^= Hash::GenerateFNVHash64(kw); hash *= FNV_PRIME; }
+        hash ^= static_cast<uint64_t>(static_cast<uint8_t>(RendererAPI::Current())); hash *= FNV_PRIME;
+        return hash;
+    }
 
     Ref<Shader> Shader::Create(const PrismShaderCompiler::CompiledShader& shader,
         uint32_t passIndex,
@@ -63,5 +78,5 @@ namespace Prism
         }
         return nullptr;
     }
-
+   
 }
