@@ -249,6 +249,8 @@ namespace Prism {
         if (extension == "fbx") return AssetType::Mesh;
         if (extension == "obj") return AssetType::Mesh;
         if (extension == "blend") return AssetType::Mesh;
+        if (extension == "gltf") return AssetType::Mesh;
+        if (extension == "jpg") return AssetType::Texture;
         if (extension == "png") return AssetType::Texture;
         if (extension == "hdr") return AssetType::EnvMap;
         if (extension == "ppm") return AssetType::PhysicsMat;

@@ -905,7 +905,7 @@ namespace Prism
         }
         bool EditorLayer::OnKeyPressedEvent(KeyPressedEvent& e)
         {
-            if (m_ViewportPanelFocused)
+            if (m_SelectionContext.size())
             {
                 switch (e.GetKeyCode())
                 {
@@ -1003,17 +1003,16 @@ namespace Prism
                             continue;
 
                         auto& submeshes = mesh->GetSubmeshes();
-                        constexpr float lastT = std::numeric_limits<float>::max();
+                        glm::mat4 worldTransform = m_EditorScene->GetTransformRelativeToParent(entity);
                         for (uint32_t i = 0; i < submeshes.size(); i++)
                         {
                             auto& submesh = submeshes[i];
-                            glm::mat4 worldTransform = m_ActiveScene->GetTransformRelativeToParent(entity);
                             Ray ray = {
                                 glm::inverse(worldTransform * submesh.Transform) * glm::vec4(origin, 1.0f),
                                 glm::inverse(glm::mat3(worldTransform) * glm::mat3(submesh.Transform)) * direction
                             };
 
-                            float t;
+                            float t = 0.0f;
                             bool intersects = ray.IntersectsAABB(submesh.BoundingBox, t);
                             if (intersects)
                             {

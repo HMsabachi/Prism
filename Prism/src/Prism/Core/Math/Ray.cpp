@@ -47,18 +47,18 @@ namespace Prism
 
 	bool Ray::IntersectsTriangle(const glm::vec3& v0, const glm::vec3& v1, const glm::vec3& v2, float& t) const
 	{
-		glm::vec3 e1 = v1 - v0;
-		glm::vec3 e2 = v2 - v0;
-		glm::vec3 n = glm::cross(e1, e2);
-		float det = glm::dot(Direction, n);
-		float invdet = 1.0f / det;
+		const glm::vec3 e1 = v1 - v0;
+		const glm::vec3 e2 = v2 - v0;
+		const glm::vec3 n = glm::cross(e1, e2);
+		const float det = -glm::dot(Direction, n);
+		const float invdet = 1.0f / det;
 
-		glm::vec3 v1o = Origin - v0;
-		glm::vec3 Dv1o = glm::cross(Direction, v1o);
-		float u = glm::dot(e2, Dv1o) * invdet;
-		float v = -glm::dot(e1, Dv1o) * invdet;
-		t = glm::dot(v1o, Dv1o) * invdet;
-		return (det >= 1e-6f && u >= 0.0f && v >= 0.0f && u + v <= 1.0f && t >= 0.0f);
+		const glm::vec3 ao = Origin - v0;
+		const glm::vec3 dao = glm::cross(ao, Direction);
+		const float u = glm::dot(e2, dao) * invdet;
+		const float v = -glm::dot(e1, dao) * invdet;
+		t = glm::dot(ao, n) * invdet;
+		return (det >= 1e-6f && t >= 0.0f && u >= 0.0f && v >= 0.0f && u + v <= 1.0f);
 	}
 
 }

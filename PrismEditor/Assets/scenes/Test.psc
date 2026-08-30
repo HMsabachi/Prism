@@ -14,45 +14,24 @@ Environment:
 PhysicsLayers:
   []
 Entities:
-  - Entity: 9753572125788562516
+  - Entity: 1295599128685309981
     Parent: 0
     Children:
       []
     TagComponent:
-      Tag: sponza
-    TransformComponent:
-      Position: [0, 0, 0]
-      Rotation: [0, 0, 0]
-      Scale: [0.02, 0.02, 0.02]
-    MeshRendererComponent:
-      AssetPath: Assets/meshes/sponza/sponza.obj
-    CSharpScriptComponent:
-      Behaviours:
-        []
-    PythonScriptComponent:
-      Behaviours:
-        []
-  - Entity: 13776631932832522861
-    Parent: 0
-    Children:
-      []
-    TagComponent:
-      Tag: Sky Light
+      Tag: Cube
     TransformComponent:
       Position: [0, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+    MeshRendererComponent:
+      AssetPath: Assets/meshes/Default/Cube.fbx
     CSharpScriptComponent:
       Behaviours:
         []
     PythonScriptComponent:
       Behaviours:
         []
-    SkyLightComponent:
-      Intensity: 1
-      Angle: 0
-      SkyboxLod: 0
-      EnvironmentMap: 2825478391973848339
   - Entity: 17335677611182898434
     Parent: 0
     Children:
@@ -75,18 +54,39 @@ Entities:
       CastShadows: true
       SoftShadows: true
       LightSize: 0.5
-  - Entity: 1295599128685309981
+  - Entity: 13776631932832522861
     Parent: 0
     Children:
       []
     TagComponent:
-      Tag: Cube
+      Tag: Sky Light
     TransformComponent:
       Position: [0, 0, 0]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
+    CSharpScriptComponent:
+      Behaviours:
+        []
+    PythonScriptComponent:
+      Behaviours:
+        []
+    SkyLightComponent:
+      Intensity: 1
+      Angle: 0
+      SkyboxLod: 0
+      EnvironmentMap: 2825478391973848339
+  - Entity: 9753572125788562516
+    Parent: 0
+    Children:
+      []
+    TagComponent:
+      Tag: sponza
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.02, 0.02, 0.02]
     MeshRendererComponent:
-      AssetPath: Assets/meshes/Default/Cube.fbx
+      AssetPath: Assets/meshes/sponza/sponza.obj
     CSharpScriptComponent:
       Behaviours:
         []

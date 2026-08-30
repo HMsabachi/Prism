@@ -214,7 +214,8 @@ namespace Prism
             aiColor3D aiColor;
             aiString aiTexPath;
             bool hasAlbedoMap = false;
-            if (aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &aiTexPath) == AI_SUCCESS)
+            if (aiMat->GetTexture(aiTextureType_BASE_COLOR, 0, &aiTexPath) == AI_SUCCESS ||
+                aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &aiTexPath) == AI_SUCCESS)
             {
                 auto texPath = (parentDir / std::string(aiTexPath.data)).string();
                 auto texture = Texture2D::Create(texPath, true);
@@ -242,7 +243,7 @@ namespace Prism
                 }
             }
 
-            if (aiMat->GetTexture(aiTextureType_REFLECTION, 0, &aiTexPath) == AI_SUCCESS)
+            if (aiMat->GetTexture(aiTextureType_METALNESS, 0, &aiTexPath) == AI_SUCCESS)
             {
                 auto texPath = (parentDir / std::string(aiTexPath.data)).string();
                 auto texture = Texture2D::Create(texPath);
@@ -253,7 +254,8 @@ namespace Prism
                 }
             }
 
-            if (aiMat->GetTexture(aiTextureType_SHININESS, 0, &aiTexPath) == AI_SUCCESS)
+            if (aiMat->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, 0, &aiTexPath) == AI_SUCCESS ||
+                aiMat->GetTexture(aiTextureType_SHININESS, 0, &aiTexPath) == AI_SUCCESS)
             {
                 auto texPath = (parentDir / std::string(aiTexPath.data)).string();
                 auto texture = Texture2D::Create(texPath);

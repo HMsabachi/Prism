@@ -23,10 +23,12 @@ namespace Prism {
         m_AssetIconMap[""] = Texture2D::Create("assets/editor/folder.png");
         m_AssetIconMap["fbx"] = Texture2D::Create("assets/editor/fbx.png");
         m_AssetIconMap["obj"] = Texture2D::Create("assets/editor/obj.png");
+        m_AssetIconMap["gltf"] = Texture2D::Create("assets/editor/gltf.png");
         m_AssetIconMap["wav"] = Texture2D::Create("assets/editor/wav.png");
         m_AssetIconMap["cs"] = Texture2D::Create("assets/editor/csc.png");
         m_AssetIconMap["py"] = Texture2D::Create("assets/editor/pyc.png");
         m_AssetIconMap["png"] = Texture2D::Create("assets/editor/png.png");
+        m_AssetIconMap["jpg"] = Texture2D::Create("assets/editor/jpg.png");
         m_AssetIconMap["blend"] = Texture2D::Create("assets/editor/blend.png");
         m_AssetIconMap["psc"] = Texture2D::Create("assets/editor/prism.png");
         m_AssetIconMap["Shader"] = Texture2D::Create("assets/editor/shader.png");
