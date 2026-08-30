@@ -12,9 +12,7 @@ Shader "Standard/PrismPBR"
         // PBR texture inputs
         u_AlbedoTexture("颜色贴图", Texture2D) = {}
         u_NormalTexture("法线贴图", Texture2D) = {}
-        u_MetalnessTexture("金属度贴图", Texture2D) = {}
-        u_RoughnessTexture("粗糙度贴图", Texture2D) = {}
-        u_AoTexture("环境光遮蔽贴图", Texture2D) = {}
+        u_OrmTexture("金属/粗糙/遮蔽合并贴图", Texture2D) = {}
         u_EmissiveTexture("自发光贴图", Texture2D) = {}
     }
 
@@ -222,12 +220,12 @@ Shader "Standard/PrismPBR"
                     m_Params.Albedo = u_AlbedoColor;
                 #endif
                 #ifdef METALNESS_MAP
-                    m_Params.Metalness = texture(u_MetalnessTexture, vs_Output.TexCoord).r;
+                    m_Params.Metalness = texture(u_OrmTexture, vs_Output.TexCoord).b;
                 #else
                     m_Params.Metalness = u_Metalness;
                 #endif
                 #ifdef ROUGHNESS_MAP
-                    m_Params.Roughness = texture(u_RoughnessTexture, vs_Output.TexCoord).r;
+                    m_Params.Roughness = texture(u_OrmTexture, vs_Output.TexCoord).g;
                 #else
                     m_Params.Roughness = u_Roughness;
                 #endif
@@ -253,7 +251,7 @@ Shader "Standard/PrismPBR"
                     vec3 iblContribution = IBL(F0, Lr);
 
                 #ifdef AO_MAP
-                    iblContribution *= texture(u_AoTexture, vs_Output.TexCoord).r;
+                    iblContribution *= texture(u_OrmTexture, vs_Output.TexCoord).r;
                 #endif
 
                 #ifdef EMISSIVE_MAP

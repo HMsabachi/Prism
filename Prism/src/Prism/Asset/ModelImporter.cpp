@@ -1,5 +1,6 @@
 ﻿#include "prpch.h"
 #include "ModelImporter.h"
+#include "TexturePacker.h"
 
 #include "Prism/Asset/AssetManager.h"
 #include "Prism/Renderer/Texture.h"
@@ -264,37 +265,45 @@ namespace Prism
                 }
             }
 
-            if (aiMat->GetTexture(aiTextureType_METALNESS, 0, &aiTexPath) == AI_SUCCESS)
+            std::vector<OrmPackSource> ormSources;
+            aiString mrPath;
+            if (aiMat->GetTexture(aiTextureType_GLTF_METALLIC_ROUGHNESS, 0, &mrPath) == AI_SUCCESS)
             {
-                auto texPath = (parentDir / std::string(aiTexPath.data)).string();
-                auto texture = Texture2D::Create(texPath);
-                if (texture->Loaded())
-                {
-                    material->SetTexture("u_MetalnessTexture", texture);
-                    material->SetKeyword("METALNESS_MAP", true);
-                }
+                std::string p = (parentDir / std::string(mrPath.data)).string();
+                ormSources.push_back({ p, 2, 2 });
+                ormSources.push_back({ p, 1, 1 });
             }
-
-            if (aiMat->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, 0, &aiTexPath) == AI_SUCCESS ||
-                aiMat->GetTexture(aiTextureType_SHININESS, 0, &aiTexPath) == AI_SUCCESS)
+            else
             {
-                auto texPath = (parentDir / std::string(aiTexPath.data)).string();
-                auto texture = Texture2D::Create(texPath);
-                if (texture->Loaded())
-                {
-                    material->SetTexture("u_RoughnessTexture", texture);
-                    material->SetKeyword("ROUGHNESS_MAP", true);
-                }
+                if (aiMat->GetTexture(aiTextureType_METALNESS, 0, &aiTexPath) == AI_SUCCESS)
+                    ormSources.push_back({ (parentDir / std::string(aiTexPath.data)).string(), 0, 2 });
+                if (aiMat->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, 0, &aiTexPath) == AI_SUCCESS ||
+                    aiMat->GetTexture(aiTextureType_SHININESS, 0, &aiTexPath) == AI_SUCCESS)
+                    ormSources.push_back({ (parentDir / std::string(aiTexPath.data)).string(), 0, 1 });
             }
-
             if (aiMat->GetTexture(aiTextureType_AMBIENT_OCCLUSION, 0, &aiTexPath) == AI_SUCCESS)
+                ormSources.push_back({ (parentDir / std::string(aiTexPath.data)).string(), 0, 0 });
+
+            if (!ormSources.empty())
             {
-                auto texPath = (parentDir / std::string(aiTexPath.data)).string();
-                auto texture = Texture2D::Create(texPath);
-                if (texture->Loaded())
+                std::string ormName = material->GetName();
+                for (char& ch : ormName)
+                    if (ch == '/' || ch == '\\' || ch == ':' || ch == '*' || ch == '?' || ch == '"' || ch == '<' || ch == '>' || ch == '|')
+                        ch = '_';
+                std::filesystem::path cachePath = parentDir / (ormName + "_ORM.cache");
+                if (!std::filesystem::exists(cachePath))
+                    PackOrmTexture(ormSources, cachePath.string());
+
+                auto ormTexture = Texture2D::Create(cachePath.string(), false);
+                if (ormTexture->Loaded())
                 {
-                    material->SetTexture("u_AoTexture", texture);
-                    material->SetKeyword("AO_MAP", true);
+                    material->SetTexture("u_OrmTexture", ormTexture);
+                    for (const auto& s : ormSources)
+                    {
+                        if (s.DstChannel == 2) material->SetKeyword("METALNESS_MAP", true);
+                        else if (s.DstChannel == 1) material->SetKeyword("ROUGHNESS_MAP", true);
+                        else if (s.DstChannel == 0) material->SetKeyword("AO_MAP", true);
+                    }
                 }
             }
 

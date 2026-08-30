@@ -250,6 +250,8 @@ namespace Prism {
         if (extension == "obj") return AssetType::Mesh;
         if (extension == "blend") return AssetType::Mesh;
         if (extension == "gltf") return AssetType::Mesh;
+        if (extension == "glb") return AssetType::Mesh;
+        if (extension == "pmx") return AssetType::Mesh;
         if (extension == "jpg") return AssetType::Texture;
         if (extension == "png") return AssetType::Texture;
         if (extension == "hdr") return AssetType::EnvMap;
