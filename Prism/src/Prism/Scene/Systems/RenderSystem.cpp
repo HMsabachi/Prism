@@ -209,13 +209,6 @@ namespace Prism
                 cmd.Material = mat;
                 cmd.Transform = worldTransform * submesh.Transform;
 
-                //uint64_t program = mat ? (uint64_t)mat->GetProgram().Raw() : 0;
-                //uint64_t material = (uint64_t)mat.Raw();
-                //uint64_t mesh = (uint64_t)renderer.Mesh.Raw();
-                //float dist = glm::distance(glm::vec3(cmd.Transform[3]), camPos);
-                //uint64_t distQ = (uint64_t)(dist * 10.0f) & 0xFFFF;
-                //cmd.SortKey = ((program & 0xFFFF) << 48) | ((material & 0xFFFF) << 32) | ((mesh & 0xFFFF) << 16) | distQ;
-
                 if (isSelected)
                     snapshot.SelectedDrawList.push_back(cmd);
                 snapshot.DrawList.push_back(cmd);
