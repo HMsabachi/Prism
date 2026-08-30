@@ -12,7 +12,7 @@
 namespace Prism
 {
     //[Header]  定长
-    //u32  Magic = 0x53484452   // "SHDR"
+    //u32  Magic = 0x50534843   // "PSHC"
     //u32  FormatVersion = 1
     //u64  SourceSetFingerprint 
     //u32  EntryCount
@@ -30,8 +30,8 @@ namespace Prism
 
     // ===== 磁盘格式常量 =====
 
-    constexpr uint32_t SHADER_CACHE_MAGIC = 0x53484452;  // "SHDR"
-    constexpr uint32_t SHADER_CACHE_FORMAT_VERSION = 0x00000100;
+    constexpr uint64_t SHADER_CACHE_MAGIC = 0x5053484144455243ULL; // "PSHADERC"
+    constexpr uint32_t SHADER_CACHE_FORMAT_VERSION = 0x00000100U; // 0.0.1.0
 
     constexpr uint64_t SHADER_CACHE_FNV_OFFSET_BASIS = 14695981039346656037ULL;
     constexpr uint64_t SHADER_CACHE_FNV_PRIME = 1099511628211ULL;
@@ -49,7 +49,7 @@ namespace Prism
 
     struct ShaderCacheHeader
     {
-        uint32_t Magic = SHADER_CACHE_MAGIC;
+        uint64_t Magic = SHADER_CACHE_MAGIC;
         uint32_t FormatVersion = SHADER_CACHE_FORMAT_VERSION;
         uint64_t SourceSetFingerprint = 0;
         uint32_t EntryCount = 0;
