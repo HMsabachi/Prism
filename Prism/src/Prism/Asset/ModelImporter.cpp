@@ -194,7 +194,7 @@ namespace Prism
         for (unsigned i = 0; i < scene->mNumMaterials; i++)
         {
             auto* aiMat = scene->mMaterials[i];
-            auto material = Material::Create(shader->Handle);
+            auto material = Material::Create(shader);
 
             if (meshData.IsAnimated)
                 material->SetKeyword("SKINNED", true);
@@ -202,39 +202,58 @@ namespace Prism
             aiString name;
             if (aiMat->Get(AI_MATKEY_NAME, name) == AI_SUCCESS)
                 material->SetName(name.C_Str());
+            else
+                material->SetName("Mat " + std::to_string(i));
 
-            float shininess = 80.0f;
-            aiMat->Get(AI_MATKEY_SHININESS, shininess);
-            material->SetFloat("u_Roughness", 1.0f - glm::sqrt(shininess / 100.0f));
+            float roughness = 0.0f;
+            if (aiMat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness) != AI_SUCCESS)
+            {
+                float glossiness = 1.0f;
+                if (aiMat->Get(AI_MATKEY_GLOSSINESS_FACTOR, glossiness) == AI_SUCCESS)
+                    roughness = 1.0f - glossiness;
+                else
+                {
+                    float shininess = 80.0f;
+                    aiMat->Get(AI_MATKEY_SHININESS, shininess);
+                    roughness = 1.0f - glm::sqrt(shininess / 100.0f);
+                }
+            }
+            material->SetFloat("u_Roughness", roughness);
 
             float metalness = 0.0f;
-            aiMat->Get(AI_MATKEY_REFLECTIVITY, metalness);
+            if (aiMat->Get(AI_MATKEY_METALLIC_FACTOR, metalness) != AI_SUCCESS)
+                aiMat->Get(AI_MATKEY_REFLECTIVITY, metalness);
             material->SetFloat("u_Metalness", metalness);
 
             aiColor3D aiColor;
             aiString aiTexPath;
             bool hasAlbedoMap = false;
-            if (aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &aiTexPath) == AI_SUCCESS)
+            if (aiMat->GetTexture(aiTextureType_BASE_COLOR, 0, &aiTexPath) == AI_SUCCESS ||
+                aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &aiTexPath) == AI_SUCCESS)
             {
                 auto texPath = (parentDir / std::string(aiTexPath.data)).string();
-                if (texPath.find_first_of(".tga") == std::string::npos)
+                auto texture = Texture2D::Create(texPath, true);
+                if (texture->Loaded())
                 {
-                    auto texture = Texture2D::Create(texPath, true);
-                    if (texture->Loaded())
-                    {
-                        material->SetTexture("u_AlbedoTexture", texture);
-                        material->SetKeyword("ALBEDO_MAP", true);
-                        hasAlbedoMap = true;
-                    }
+                    material->SetTexture("u_AlbedoTexture", texture);
+                    material->SetKeyword("ALBEDO_MAP", true);
+                    hasAlbedoMap = true;
                 }
             }
             if (!hasAlbedoMap)
             {
-                aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, aiColor);
-                material->SetColor3("u_AlbedoColor", glm::vec3{aiColor.r, aiColor.g, aiColor.b});
+                aiColor4D baseColor;
+                if (aiMat->Get(AI_MATKEY_BASE_COLOR, baseColor) == AI_SUCCESS)
+                    material->SetColor3("u_AlbedoColor", glm::vec3{baseColor.r, baseColor.g, baseColor.b});
+                else
+                {
+                    aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, aiColor);
+                    material->SetColor3("u_AlbedoColor", glm::vec3{aiColor.r, aiColor.g, aiColor.b});
+                }
             }
 
-            if (aiMat->GetTexture(aiTextureType_NORMALS, 0, &aiTexPath) == AI_SUCCESS)
+            if (aiMat->GetTexture(aiTextureType_NORMAL_CAMERA, 0, &aiTexPath) == AI_SUCCESS ||
+                aiMat->GetTexture(aiTextureType_NORMALS, 0, &aiTexPath) == AI_SUCCESS)
             {
                 auto texPath = (parentDir / std::string(aiTexPath.data)).string();
                 auto texture = Texture2D::Create(texPath);
@@ -245,7 +264,19 @@ namespace Prism
                 }
             }
 
-            if (aiMat->GetTexture(aiTextureType_SHININESS, 0, &aiTexPath) == AI_SUCCESS)
+            if (aiMat->GetTexture(aiTextureType_METALNESS, 0, &aiTexPath) == AI_SUCCESS)
+            {
+                auto texPath = (parentDir / std::string(aiTexPath.data)).string();
+                auto texture = Texture2D::Create(texPath);
+                if (texture->Loaded())
+                {
+                    material->SetTexture("u_MetalnessTexture", texture);
+                    material->SetKeyword("METALNESS_MAP", true);
+                }
+            }
+
+            if (aiMat->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, 0, &aiTexPath) == AI_SUCCESS ||
+                aiMat->GetTexture(aiTextureType_SHININESS, 0, &aiTexPath) == AI_SUCCESS)
             {
                 auto texPath = (parentDir / std::string(aiTexPath.data)).string();
                 auto texture = Texture2D::Create(texPath);
@@ -253,6 +284,36 @@ namespace Prism
                 {
                     material->SetTexture("u_RoughnessTexture", texture);
                     material->SetKeyword("ROUGHNESS_MAP", true);
+                }
+            }
+
+            if (aiMat->GetTexture(aiTextureType_AMBIENT_OCCLUSION, 0, &aiTexPath) == AI_SUCCESS)
+            {
+                auto texPath = (parentDir / std::string(aiTexPath.data)).string();
+                auto texture = Texture2D::Create(texPath);
+                if (texture->Loaded())
+                {
+                    material->SetTexture("u_AoTexture", texture);
+                    material->SetKeyword("AO_MAP", true);
+                }
+            }
+
+            aiColor3D emissiveColor;
+            if (aiMat->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor) == AI_SUCCESS)
+                material->SetColor3("u_EmissiveColor", glm::vec3{emissiveColor.r, emissiveColor.g, emissiveColor.b});
+
+            float emissiveIntensity = 1.0f;
+            aiMat->Get(AI_MATKEY_EMISSIVE_INTENSITY, emissiveIntensity);
+            material->SetFloat("u_EmissiveIntensity", emissiveIntensity);
+
+            if (aiMat->GetTexture(aiTextureType_EMISSIVE, 0, &aiTexPath) == AI_SUCCESS)
+            {
+                auto texPath = (parentDir / std::string(aiTexPath.data)).string();
+                auto texture = Texture2D::Create(texPath, true);
+                if (texture->Loaded())
+                {
+                    material->SetTexture("u_EmissiveTexture", texture);
+                    material->SetKeyword("EMISSIVE_MAP", true);
                 }
             }
 

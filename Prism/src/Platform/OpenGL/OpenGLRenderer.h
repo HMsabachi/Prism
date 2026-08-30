@@ -36,6 +36,6 @@ namespace Prism
 
 
     private:
-        void RT_BindMaterial(Ref<Material> material, uint32_t passIndex);
+        void RT_BindMaterial(WeakRef<Material> material, uint32_t passIndex);
     };
 }

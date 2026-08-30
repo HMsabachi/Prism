@@ -65,13 +65,14 @@ namespace Prism {
     {
         FilePath = path;
         PR_PROFILE_FUNCTION();
-
+        void* data = nullptr;
         int width, height, channels;
         if (stbi_is_hdr(path.c_str()))
         {
             PR_CORE_INFO("Loading HDR texture {0}, srgb={1}", path, srgb);
-            float* data = stbi_loadf(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
-            PR_CORE_ASSERT(data, "Could not read HDR image!");
+            data = stbi_loadf(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+            // PR_CORE_ASSERT(data, "Could not read HDR image!");
+            if (!data) { PR_CORE_ERROR("Could not read image: {0}", path); return; }
             m_IsHDR = true;
             uint32_t size = width * height * 4 * sizeof(float);
             m_Image = Image2D::Create(ImageFormat::RGBA32F, width, height, Buffer::Copy(data, size));
@@ -80,8 +81,9 @@ namespace Prism {
         else
         {
             PR_CORE_INFO("Loading texture {0}, srgb={1}", path, srgb);
-            stbi_uc* data = stbi_load(path.c_str(), &width, &height, &channels, srgb ? STBI_rgb : STBI_rgb_alpha);
-            PR_CORE_ASSERT(data, "Could not read image!");
+            data = stbi_load(path.c_str(), &width, &height, &channels, srgb ? STBI_rgb : STBI_rgb_alpha);
+            // PR_CORE_ASSERT(data, "Could not read image!");
+            if (!data) { PR_CORE_ERROR("Could not read image: {0}", path); return; }
             ImageFormat format = srgb ? ImageFormat::SRGB : ImageFormat::RGBA;
             uint32_t size = width * height * Utils::GetImageFormatBPP(format);
             m_Image = Image2D::Create(format, width, height, Buffer::Copy(data, size));

@@ -40,9 +40,9 @@ namespace Prism
         RenderAPICapabilities RenderCaps;
         OpenGLVertexArrayCache VertexArrayCache;
         Ref<RenderPass> ActiveRenderPass;
-        Ref<Shader> LastProgram;
-        Ref<Material> LastMaterial;
-        Ref<Mesh> LastMesh;
+        WeakRef<OpenGLShader> LastProgram;
+        WeakRef<Material> LastMaterial;
+        WeakRef<Mesh> LastMesh;
         Ref<VertexBuffer> FullscreenQuadVB;
         Ref<IndexBuffer> FullscreenQuadIB;
         RendererID LastComputeProgram = 0;
@@ -234,17 +234,17 @@ namespace Prism
     }
 
 
-	void OpenGLRenderer::OnImGuiRender()
-	{
+    void OpenGLRenderer::OnImGuiRender()
+    {
         auto& caps = s_Data->RenderCaps;
         ImGui::Text("RendererAPI: OpenGL %s", caps.Version.c_str());
         ImGui::Text("Renderer: %s", caps.Renderer.c_str());
         ImGui::Text("MaxSamples: %d", caps.MaxSamples);
         ImGui::Text("MaxTextureUnits: %d", caps.MaxTextureUnits);
         ImGui::Text("MaxAnisotropy: %.1f", caps.MaxAnisotropy);
-	}
+    }
 
-	void OpenGLRenderer::BeginFrame()
+    void OpenGLRenderer::BeginFrame()
     {
         Renderer::Submit([]() {
             const uint32_t releaseIndex = Renderer::GetCurrentFrameIndex() % Renderer::GetConfig().FramesInFlight;
@@ -333,10 +333,10 @@ namespace Prism
         Renderer::Submit([=]() mutable {
             RT_BindMaterial(material, passIndex);
             glUniform1i(0, drawIndex);
-            if (mesh != s_Data->LastMesh)
+            if (mesh.AsWeak<Mesh>() != s_Data->LastMesh)
             {
                 s_Data->VertexArrayCache.RT_Get(mesh->m_VertexBuffer)->RT_Bind();
-                mesh->m_IndexBuffer.As<OpenGLIndexBuffer>()->RT_Bind();
+                mesh->m_IndexBuffer.AsWeak<OpenGLIndexBuffer>()->RT_Bind();
                 s_Data->LastMesh = mesh;
             }
             auto& submesh = mesh->m_Submeshes[submeshIndex];
@@ -350,18 +350,18 @@ namespace Prism
     }
 
 
-    void OpenGLRenderer::RT_BindMaterial(Ref<Material> material, uint32_t passIndex)
+    void OpenGLRenderer::RT_BindMaterial(WeakRef<Material> material, uint32_t passIndex)
     {
         if (!material) return;
         if (material != s_Data->LastMaterial)
         {
-            const Ref<Shader>& program = material->GetProgram(passIndex);
+            WeakRef<OpenGLShader> program = material->GetProgram(passIndex).AsWeak<OpenGLShader>();
             const auto& renderState = material->GetRenderState(passIndex);
             OpenGLPipelineState::RT_SetupPipelineState(renderState);
             s_Data->LastMaterial = material;
             if (!(program == s_Data->LastProgram))
             {
-                program.As<OpenGLShader>()->RT_Bind();
+                program->RT_Bind();
                 s_Data->LastProgram = program;
             }
             for (const auto& [index, tex] : material->GetTextures())
@@ -369,12 +369,12 @@ namespace Prism
                 if (!tex) continue;
                 uint32_t unit = Config::GL_TEX_BASE_MATERIAL + index;
                 if (tex->GetType() == TextureType::Texture2D)
-                    tex.As<OpenGLTexture2D>()->GetImage().As<OpenGLImage2D>()->RT_Bind(unit);
+                    tex.AsWeak<OpenGLTexture2D>()->GetImage().AsWeak<OpenGLImage2D>()->RT_Bind(unit);
                 else
-                    tex.As<OpenGLTextureCube>()->GetImage().As<OpenGLImageCube>()->RT_Bind(unit);
+                    tex.AsWeak<OpenGLTextureCube>()->GetImage().AsWeak<OpenGLImageCube>()->RT_Bind(unit);
             }
-            const Ref<UniformBuffer>& ubo = material->RT_GetBackend().As<OpenGLMaterialBackend>()->RT_GetUniformBuffer();
-            glBindBufferBase(GL_UNIFORM_BUFFER, Config::GL_UBO_BASE_MATERIAL, ubo.As<OpenGLUniformBuffer>()->GetRendererID());
+            const Ref<UniformBuffer>& ubo = material->RT_GetBackend().AsWeak<OpenGLMaterialBackend>()->RT_GetUniformBuffer();
+            glBindBufferBase(GL_UNIFORM_BUFFER, Config::GL_UBO_BASE_MATERIAL, ubo.AsWeak<OpenGLUniformBuffer>()->GetRendererID());
         }
     }
 

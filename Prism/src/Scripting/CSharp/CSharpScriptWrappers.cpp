@@ -594,7 +594,7 @@ namespace Prism {
             std::string name = shaderName;
             Rolky::String::Free(shaderName);
             const auto& shader = AssetManager::GetShaderLibrary()->Get(name);
-            return new Ref<Material>(Material::Create(shader->Handle));
+            return new Ref<Material>(Material::Create(shader));
         }
 
         void Prism_Material_Destructor(Ref<Material>* _this)

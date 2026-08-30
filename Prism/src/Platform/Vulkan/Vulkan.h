@@ -5,7 +5,7 @@
 namespace Prism
 {
     // TODO: 需与 RendererConfig.FramesInFlight（S2 VulkanRenderer 分支设为 2）保持一致，Context 创建早于 Renderer::Init 读不到配置
-    constexpr uint32_t VulkanFramesInFlight = 2;
+    constexpr uint32_t VulkanFramesInFlight = 3;
 
     namespace Utils
     {

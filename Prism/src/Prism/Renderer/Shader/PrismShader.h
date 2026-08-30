@@ -5,8 +5,6 @@
 #include "Prism/Utilities/Delegate.h"
 #include <PrismShaderCore/Compiler.h>
 #include <PrismShaderCore/Pipeline/PipelineState.h>
-#include <functional>
-#include <optional>
 #include <unordered_map>
 
 namespace Prism

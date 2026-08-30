@@ -679,48 +679,50 @@ namespace Prism
                 float snapValues[3] = { snapValue, snapValue, snapValue };
                 if (m_SelectionMode == SelectionMode::Entity)
                 {
-                    ImGuizmo::Manipulate(glm::value_ptr(m_EditorCamera.GetViewMatrix()),
+                    if (ImGuizmo::Manipulate(glm::value_ptr(m_EditorCamera.GetViewMatrix()),
                         glm::value_ptr(m_EditorCamera.GetProjectionMatrix()),
                         (ImGuizmo::OPERATION)m_GizmoType,
                         ImGuizmo::LOCAL,
                         glm::value_ptr(transform),
                         nullptr,
-                        snap ? snapValues : nullptr);
-
-                    glm::vec3 translation, rotation, scale;
-                    Math::DecomposeTransform(transform, translation, rotation, scale);
-
-                    Entity parent = m_ActiveScene->FindEntityByUUID(selection.Entity.GetParentUUID());
-                    if (parent)
+                        snap ? snapValues : nullptr))
                     {
-                        glm::vec3 parentTranslation, parentRotation, parentScale;
-                        Math::DecomposeTransform(m_ActiveScene->GetTransformRelativeToParent(parent), parentTranslation, parentRotation, parentScale);
+                        glm::vec3 translation, rotation, scale;
+                        Math::DecomposeTransform(transform, translation, rotation, scale);
 
-                        glm::vec3 deltaRotation = (rotation - parentRotation) - glm::radians(tc.GetRotation());
-                        tc.SetPosition(translation - parentTranslation);
-                        tc.SetRotation(tc.GetRotation() + glm::degrees(deltaRotation));
-                        tc.SetScale(scale);
-                    }
-                    else
-                    {
-                        glm::vec3 deltaRotation = rotation - glm::radians(tc.GetRotation());
-                        tc.SetPosition(translation);
-                        tc.SetRotation(tc.GetRotation() + glm::degrees(deltaRotation));
-                        tc.SetScale(scale);
+                        Entity parent = m_ActiveScene->FindEntityByUUID(selection.Entity.GetParentUUID());
+                        if (parent)
+                        {
+                            glm::vec3 parentTranslation, parentRotation, parentScale;
+                            Math::DecomposeTransform(m_ActiveScene->GetTransformRelativeToParent(parent), parentTranslation, parentRotation, parentScale);
+
+                            glm::vec3 deltaRotation = (rotation - parentRotation) - glm::radians(tc.GetRotation());
+                            tc.SetPosition(translation - parentTranslation);
+                            tc.SetRotation(tc.GetRotation() + glm::degrees(deltaRotation));
+                            tc.SetScale(scale);
+                        }
+                        else
+                        {
+                            glm::vec3 deltaRotation = rotation - glm::radians(tc.GetRotation());
+                            tc.SetPosition(translation);
+                            tc.SetRotation(tc.GetRotation() + glm::degrees(deltaRotation));
+                            tc.SetScale(scale);
+                        }
                     }
                 }
                 else
                 {
                     glm::mat4 transformBase = transform * selection.Mesh->Transform;
-                    ImGuizmo::Manipulate(glm::value_ptr(m_EditorCamera.GetViewMatrix()),
+                    if (ImGuizmo::Manipulate(glm::value_ptr(m_EditorCamera.GetViewMatrix()),
                         glm::value_ptr(m_EditorCamera.GetProjectionMatrix()),
                         (ImGuizmo::OPERATION)m_GizmoType,
                         ImGuizmo::LOCAL,
                         glm::value_ptr(transformBase),
                         nullptr,
-                        snap ? snapValues : nullptr);
-
-                    selection.Mesh->Transform = glm::inverse(transform) * transformBase;
+                        snap ? snapValues : nullptr))
+                    {
+                        selection.Mesh->Transform = glm::inverse(transform) * transformBase;
+                    }
                 }
             }
             ImGui::End();
@@ -836,7 +838,7 @@ namespace Prism
                                         if (ImGui::Selectable(name.c_str(), isSelected))
                                         {
                                             if (shader != currentShader)
-                                                material->SetShader(shader->Handle);
+                                                material->SetShader(shader);
                                         }
                                         if (isSelected)
                                             ImGui::SetItemDefaultFocus();
@@ -905,7 +907,7 @@ namespace Prism
         }
         bool EditorLayer::OnKeyPressedEvent(KeyPressedEvent& e)
         {
-            if (m_ViewportPanelFocused)
+            if (m_SelectionContext.size())
             {
                 switch (e.GetKeyCode())
                 {
@@ -1003,17 +1005,16 @@ namespace Prism
                             continue;
 
                         auto& submeshes = mesh->GetSubmeshes();
-                        constexpr float lastT = std::numeric_limits<float>::max();
+                        glm::mat4 worldTransform = m_EditorScene->GetTransformRelativeToParent(entity);
                         for (uint32_t i = 0; i < submeshes.size(); i++)
                         {
                             auto& submesh = submeshes[i];
-                            glm::mat4 worldTransform = m_ActiveScene->GetTransformRelativeToParent(entity);
                             Ray ray = {
                                 glm::inverse(worldTransform * submesh.Transform) * glm::vec4(origin, 1.0f),
                                 glm::inverse(glm::mat3(worldTransform) * glm::mat3(submesh.Transform)) * direction
                             };
 
-                            float t;
+                            float t = 0.0f;
                             bool intersects = ray.IntersectsAABB(submesh.BoundingBox, t);
                             if (intersects)
                             {

@@ -312,10 +312,10 @@ namespace Prism
 
     void VulkanRenderer::SubmitFullscreenQuad(Ref<Material> material, uint32_t passIndex, uint32_t drawIndex)
     {
-        Ref<VulkanMaterialBackend> backend = material->RT_GetBackend().As<VulkanMaterialBackend>();
-        Ref<VulkanShader> shader = material->GetProgram(passIndex).As<VulkanShader>();
         Renderer::Submit([=]()
         {
+            WeakRef<VulkanMaterialBackend> backend = material->RT_GetBackend().AsWeak<VulkanMaterialBackend>();
+            WeakRef<VulkanShader> shader = material->GetProgram(passIndex).AsWeak<VulkanShader>();
             auto& pCache = s_Data->PipelineCache;
             VkCommandBuffer cmdBuf = s_Data->ActiveCommandBuffer;
             StaticVector<VertexBufferLayout, 4> vertexLayouts;
@@ -349,12 +349,12 @@ namespace Prism
     void VulkanRenderer::RenderMesh(Ref<Mesh> mesh, uint32_t submeshIndex, Ref<Material> material,
         uint32_t passIndex, uint32_t drawIndex)
     {
-        Ref<VulkanVertexBuffer> vertexBuffer = mesh->m_VertexBuffer.As<VulkanVertexBuffer>();
-        Ref<VulkanIndexBuffer> indexBuffer = mesh->m_IndexBuffer.As<VulkanIndexBuffer>();
-        Ref<VulkanMaterialBackend> backend = material->RT_GetBackend().As<VulkanMaterialBackend>();
-        Ref<VulkanShader> shader = material->GetProgram(passIndex).As<VulkanShader>();
         Renderer::Submit([=]()
         {
+            WeakRef<VulkanVertexBuffer> vertexBuffer = mesh->m_VertexBuffer.AsWeak<VulkanVertexBuffer>();
+            WeakRef<VulkanIndexBuffer> indexBuffer = mesh->m_IndexBuffer.AsWeak<VulkanIndexBuffer>();
+            WeakRef<VulkanMaterialBackend> backend = material->RT_GetBackend().AsWeak<VulkanMaterialBackend>();
+            WeakRef<VulkanShader> shader = material->GetProgram(passIndex).AsWeak<VulkanShader>();
             auto& pCache = s_Data->PipelineCache;
             VkCommandBuffer cmdBuf = s_Data->ActiveCommandBuffer;
             auto& submesh = mesh->m_Submeshes[submeshIndex];

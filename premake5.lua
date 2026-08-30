@@ -21,6 +21,7 @@ VULKAN_SDK = os.getenv("VULKAN_SDK")
 IncludeDir = {}
 IncludeDir["AllVendor"] = "Prism/vendor"
 IncludeDir["GLFW"] = "Prism/vendor/GLFW/include"
+IncludeDir["assimp"] = "Prism/vendor/assimp/include"
 IncludeDir["Glad"] = "Prism/vendor/Glad/include"
 IncludeDir["ImGui"] = "Prism/vendor/imgui"
 IncludeDir["glm"] = "Prism/vendor/glm"
@@ -42,6 +43,7 @@ IncludeDir["Tracy"] = "Prism/vendor/tracy/tracy/public"
 LibraryDir = {}
 LibraryDir["nethost"] = "Prism/vendor/nethost"
 LibraryDir["PhysX"] = "Prism/vendor/PhysX/lib"
+LibraryDir["assimp"] = "Prism/vendor/assimp/bin/"
 LibraryDir["Vulkan"] = "%{VULKAN_SDK}/Lib"
 group "Dependencies"
     include "Prism/vendor/GLFW"
@@ -91,11 +93,11 @@ project "Prism"
         "%{prj.name}/vendor/spdlog/include",
         "%{IncludeDir.AllVendor}",
         "%{IncludeDir.GLFW}",
+        "%{IncludeDir.assimp}",
         "%{IncludeDir.Glad}",
         "%{IncludeDir.ImGui}",
         "%{IncludeDir.glm}",
         "%{IncludeDir.stb_image}",
-        "%{prj.name}/vendor/assimp/include",
         "%{IncludeDir.nethost}",
         "%{IncludeDir.entt}",
         "%{IncludeDir.FastNoise}",
@@ -108,12 +110,6 @@ project "Prism"
         "%{IncludeDir.PrismShaderCore}",
         "%{IncludeDir.Vulkan}",
         "%{IncludeDir.Tracy}"
-    }
-
-    libdirs
-    {
-        -- ==================== .NET 9 nethost 库路径 ====================
-        "C:/Program Files/dotnet/packs/Microsoft.NETCore.App.Host.win-x64/9.0.*/build/native"
     }
 
     links
@@ -133,7 +129,8 @@ project "Prism"
     libdirs
     {
         "%{IncludeDir.nethost}",
-        "%{LibraryDir.PhysX}/%{cfg.buildcfg}",
+        "%{LibraryDir.PhysX}",
+        "%{LibraryDir.assimp}",
         "%{LibraryDir.Vulkan}",
         "vendor/Python/libs"
     }
@@ -157,9 +154,8 @@ project "Prism"
 
         postbuildcommands
         {
-            ("{COPY} %{cfg.buildtarget.relpath} \"../bin/" .. outputdir .. "/PrismEditor/\""),
+            ("{COPY} %{cfg.buildtarget.relpath} \"../bin/%{outputdir}/PrismEditor/\""),
             ('{COPY} "vendor/nethost/*.dll" "../bin/%{outputdir}/PrismEditor/"'),
-            ('{COPY} "vendor/PhysX/bin/%{cfg.buildcfg}/*.dll" "../bin/%{outputdir}/PrismEditor/"'),
             ('{COPY} "../vendor/Python/python313.dll" "../bin/%{outputdir}/PrismEditor/"'),
             ('{COPY} "../vendor/Python/python3.dll" "../bin/%{outputdir}/PrismEditor/"'),
             ('{COPY} "../vendor/Python/vcruntime140.dll" "../bin/%{outputdir}/PrismEditor/"'),
@@ -172,15 +168,25 @@ project "Prism"
         optimize "Off"
         symbols "On"
         runtime "Debug"
+        libdirs
+        {
+            "%{LibraryDir.PhysX}/Debug",
+            "%{LibraryDir.assimp}/Windows/Debug",
+        }
         links
         {
-            "Prism/vendor/assimp/bin/Debug/assimp-vc141-mtd.lib",
+            "assimp-vc143-mtd.lib",
             "PhysX_64.lib",
             "PhysXCommon_64.lib",
             "PhysXCooking_64.lib",
             "PhysXFoundation_64.lib",
             "PhysXExtensions_static_64.lib",
             "PhysXPvdSDK_static_64.lib"
+        }
+        postbuildcommands
+        {
+            ('{COPY} "vendor/PhysX/bin/Debug/*.dll" "../bin/%{outputdir}/PrismEditor/"'),
+            ('{COPY} "vendor/assimp/bin/Windows/Debug/*.dll" "../bin/%{outputdir}/PrismEditor/"'),
         }
         
 
@@ -188,15 +194,25 @@ project "Prism"
         defines {"PR_RELEASE", "NDEBUG"}
         optimize "On"
         runtime "Release"
+        libdirs
+        {
+            "%{LibraryDir.PhysX}/Release",
+            "%{LibraryDir.assimp}/Windows/Release",
+        }
         links
         {
-            "Prism/vendor/assimp/bin/Release/assimp-vc141-mt.lib",
+            "assimp-vc143-mt.lib",
             "PhysX_64.lib",
             "PhysXCommon_64.lib",
             "PhysXCooking_64.lib",
             "PhysXFoundation_64.lib",
             "PhysXExtensions_static_64.lib",
             "PhysXPvdSDK_static_64.lib"
+        }
+        postbuildcommands
+        {
+            ('{COPY} "vendor/PhysX/bin/Release/*.dll" "../bin/%{outputdir}/PrismEditor/"'),
+            ('{COPY} "vendor/assimp/bin/Windows/Release/*.dll" "../bin/%{outputdir}/PrismEditor/"'),
         }
 
 
@@ -204,9 +220,14 @@ project "Prism"
         defines {"PR_DIST", "NDEBUG"}
         optimize "On"
         runtime "Release"
+        libdirs
+        {
+            "%{LibraryDir.PhysX}/Release",
+            "%{LibraryDir.assimp}/Windows/Release",
+        }
         links
         {
-            "Prism/vendor/assimp/bin/Release/assimp-vc141-mt.lib",
+            "assimp-vc143-mt.lib",
             "PhysX_64.lib",
             "PhysXCommon_64.lib",
             "PhysXCooking_64.lib",
@@ -214,7 +235,11 @@ project "Prism"
             "PhysXExtensions_static_64.lib",
             "PhysXPvdSDK_static_64.lib"
         }
-
+        postbuildcommands
+        {
+            ('{COPY} "vendor/PhysX/bin/Release/*.dll" "../bin/%{outputdir}/PrismEditor/"'),
+            ('{COPY} "vendor/assimp/bin/Windows/Release/*.dll" "../bin/%{outputdir}/PrismEditor/"'),
+        }
 project "PrismEditor"
     location "PrismEditor"
     kind "ConsoleApp"
@@ -274,40 +299,16 @@ project "PrismEditor"
         optimize "Off"
         symbols "On"
         runtime "Debug"
-        links
-        {
-            "Prism/vendor/assimp/bin/Debug/assimp-vc141-mtd.lib"
-        }
-        postbuildcommands
-        {
-            ("{COPY} ../Prism/vendor/assimp/bin/Debug/ \"../bin/" .. outputdir .. "/%{prj.name}/\""),
-        }
 
     filter "configurations:Release"
         defines "PR_RELEASE"
         optimize "On"
         runtime "Release"
-        links
-        {
-            "Prism/vendor/assimp/bin/Release/assimp-vc141-mt.lib"
-        }
-        postbuildcommands
-        {
-            ("{COPY} ../Prism/vendor/assimp/bin/Release/ \"../bin/" .. outputdir .. "/%{prj.name}/\""),
-        }
 
     filter "configurations:Dist"
         defines "PR_DIST"
         optimize "On"
         runtime  "Release"
-        links
-        {
-            "Prism/vendor/assimp/bin/Release/assimp-vc141-mt.lib"
-        }
-        postbuildcommands
-        {
-            ("{COPY} ../Prism/vendor/assimp/bin/Release/ \"../bin/" .. outputdir .. "/%{prj.name}/\""),
-        }
 
 group ""
 workspace "PrismManaged"

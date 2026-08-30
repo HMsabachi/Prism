@@ -10,20 +10,22 @@
 
 namespace Prism
 {
-    VulkanShader::VulkanShader(const std::vector<uint32_t>& spirvVertex, const std::vector<uint32_t>& spirvFragment,
-        const PrismShaderCompiler::PassReflection& reflection)
-        : m_Reflection(reflection)
+    VulkanShader::VulkanShader(std::span<const uint8_t> spirvVertex, std::span<const uint8_t> spirvFragment,
+        std::span<const PrismShaderCompiler::DescriptorInfo> reflection)
+        : m_Reflection{}
     {
+        m_Reflection.Descriptors.assign(reflection.begin(), reflection.end());
         CreateShaderStage(VK_SHADER_STAGE_VERTEX_BIT, spirvVertex);
         CreateShaderStage(VK_SHADER_STAGE_FRAGMENT_BIT, spirvFragment);
         CreateDescriptorSetLayouts();
         CreatePipelineLayout();
     }
 
-    VulkanShader::VulkanShader(const std::vector<uint32_t>& spirvCompute,
-        const PrismShaderCompiler::PassReflection& reflection)
-        : m_Reflection(reflection), m_IsCompute(true)
+    VulkanShader::VulkanShader(std::span<const uint8_t> spirvCompute,
+        std::span<const PrismShaderCompiler::DescriptorInfo> reflection)
+        : m_Reflection{}, m_IsCompute(true)
     {
+        m_Reflection.Descriptors.assign(reflection.begin(), reflection.end());
         CreateShaderStage(VK_SHADER_STAGE_COMPUTE_BIT, spirvCompute);
         CreateDescriptorSetLayouts();
         CreatePipelineLayout();
@@ -48,15 +50,15 @@ namespace Prism
         });
     }
 
-    void VulkanShader::CreateShaderStage(VkShaderStageFlagBits stage, const std::vector<uint32_t>& code)
+    void VulkanShader::CreateShaderStage(VkShaderStageFlagBits stage, std::span<const uint8_t> code)
     {
         PR_CORE_ASSERT(!code.empty(), "VulkanShader::CreateShaderStage: SPIR-V 为空!");
 
         VkDevice device = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
         VkShaderModuleCreateInfo moduleInfo{};
         moduleInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-        moduleInfo.codeSize = code.size() * sizeof(uint32_t);
-        moduleInfo.pCode = code.data();
+        moduleInfo.codeSize = code.size_bytes();
+        moduleInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
         VkShaderModule module = VK_NULL_HANDLE;
         VK_CHECK_RESULT(vkCreateShaderModule(device, &moduleInfo, nullptr, &module));
         m_ShaderModules.push_back(module);

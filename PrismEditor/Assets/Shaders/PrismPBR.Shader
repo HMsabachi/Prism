@@ -3,16 +3,19 @@ Shader "Standard/PrismPBR"
 {
     Properties
     {
-        u_Color("主色", Color3) = (1, 1, 1)
         u_AlbedoColor("颜色", Color3) = (1, 1, 1)
+        u_EmissiveColor("自发光颜色", Color3) = (0, 0, 0)
         u_Metalness("金属度", Range(0, 1)) = 1.0
         u_Roughness("粗糙度", Range(0, 1)) = 0.0
+        u_EmissiveIntensity("自发光强度", Range(0, 10)) = 1.0
         u_EnvMapRotation("环境光旋转", Range(0, 360)) = 0
         // PBR texture inputs
         u_AlbedoTexture("颜色贴图", Texture2D) = {}
         u_NormalTexture("法线贴图", Texture2D) = {}
         u_MetalnessTexture("金属度贴图", Texture2D) = {}
         u_RoughnessTexture("粗糙度贴图", Texture2D) = {}
+        u_AoTexture("环境光遮蔽贴图", Texture2D) = {}
+        u_EmissiveTexture("自发光贴图", Texture2D) = {}
     }
 
     RenderCommand
@@ -33,7 +36,7 @@ Shader "Standard/PrismPBR"
             GLSL
             {
                 #pragma shader_feature SKINNED SHOW_CASCADES
-                #pragma shader_feature ALBEDO_MAP NORMAL_MAP METALNESS_MAP ROUGHNESS_MAP
+                #pragma shader_feature ALBEDO_MAP NORMAL_MAP METALNESS_MAP ROUGHNESS_MAP AO_MAP EMISSIVE_MAP
                 #include "PrismEngine.glsl"
                 #include "Pass/GeometryPass.glsl"
                 #include "PrismShadow.glsl"
@@ -229,8 +232,6 @@ Shader "Standard/PrismPBR"
                     m_Params.Roughness = u_Roughness;
                 #endif
                     m_Params.Roughness = max(m_Params.Roughness, 0.05); // Minimum roughness of 0.05 to keep specular highlight
-
-                    m_Params.Albedo = mix(m_Params.Albedo, u_Color, 0.2);
                     // Normals (either from vertex or map)
                 #ifdef NORMAL_MAP
                     m_Params.Normal = normalize(2.0 * texture(u_NormalTexture, vs_Output.TexCoord).rgb - 1.0);
@@ -251,8 +252,19 @@ Shader "Standard/PrismPBR"
                     vec3 lightContribution = Lighting(F0);
                     vec3 iblContribution = IBL(F0, Lr);
 
+                #ifdef AO_MAP
+                    iblContribution *= texture(u_AoTexture, vs_Output.TexCoord).r;
+                #endif
+
+                #ifdef EMISSIVE_MAP
+                    vec3 emissive = texture(u_EmissiveTexture, vs_Output.TexCoord).rgb;
+                #else
+                    vec3 emissive = vec3(1.0);
+                #endif
+                    emissive *= u_EmissiveColor * u_EmissiveIntensity;
+
                     // Main Color output
-                    FragColor = vec4(lightContribution + iblContribution, 1.0);
+                    FragColor = vec4(lightContribution + iblContribution + emissive, 1.0);
                     // ShowCascades debug — uncomment #define SHOW_CASCADES above to enable
                 #ifdef SHOW_CASCADES
                     if (Prism_ShadowParams.z > 0.0)

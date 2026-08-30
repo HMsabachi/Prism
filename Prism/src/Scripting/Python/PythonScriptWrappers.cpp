@@ -174,7 +174,7 @@ namespace Prism::PythonScript
         PythonMaterial(const char* shaderName) : PythonAsset(0)
         {
             const auto& shader = AssetManager::GetShaderLibrary()->Get(shaderName);
-            m_Handle = reinterpret_cast<uint64_t>(new Ref<Material>(Material::Create(shader->Handle)));
+            m_Handle = reinterpret_cast<uint64_t>(new Ref<Material>(Material::Create(shader)));
         }
         virtual ~PythonMaterial() override { if (m_Handle) delete (Ref<Material>*)(m_Handle); m_Handle = 0; }
         virtual std::string __Repr__() override

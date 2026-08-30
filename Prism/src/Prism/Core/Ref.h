@@ -49,6 +49,9 @@ namespace Prism
     };
 
     template<typename T>
+    class WeakRef;
+
+    template<typename T>
     class Ref
     {
     public:
@@ -163,10 +166,9 @@ namespace Prism
         }
 
         template<typename T2>
-        Ref<T2> As() const
-        {
-            return Ref<T2>(*this);
-        }
+        Ref<T2> As() const { return Ref<T2>(*this); }
+        template<typename T2>
+        inline WeakRef<T2> AsWeak() const;
 
         template<typename... Args>
         static Ref<T> Create(Args&&... args)
@@ -178,15 +180,9 @@ namespace Prism
 #endif
         }
 
-        bool operator==(const Ref<T>& other) const
-        {
-            return m_Instance == other.m_Instance;
-        }
+        bool operator==(const Ref<T>& other) const { return m_Instance == other.m_Instance; }
 
-        bool operator!=(const Ref<T>& other) const
-        {
-            return !(*this == other);
-        }
+        bool operator!=(const Ref<T>& other) const { return !(*this == other); }
 
         bool EqualsObject(const Ref<T>& other)
         {
@@ -224,6 +220,9 @@ namespace Prism
 
         WeakRef(Ref<T> ref)
             : m_Instance(ref.Raw()){}
+        template<typename T2>
+        WeakRef(Ref<T2>&& other)
+            : m_Instance((T*)other.m_Instance) { other.m_Instance = nullptr; }
         WeakRef(T* instance)
             : m_Instance(instance){}
 
@@ -242,11 +241,21 @@ namespace Prism
         template<typename T2>
         WeakRef<T2> As() const
         {
-            return WeakRef<T2>(dynamic_cast<T2*>(m_Instance));
+            return WeakRef<T2>(m_Instance);
         }
+        bool operator==(const WeakRef<T>& other) const { return m_Instance == other.m_Instance; }
+
+        bool operator!=(const WeakRef<T>& other) const { return !(*this == other); }
     private:
         T* m_Instance = nullptr;
+        template<typename T2>
+        friend class WeakRef;
     };
+
+
+    template<typename T> template<typename T2>
+    inline WeakRef<T2> Ref<T>::AsWeak() const { return WeakRef<T2>(*this); }
+
 }
 
 namespace std

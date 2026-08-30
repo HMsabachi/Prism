@@ -11,6 +11,10 @@
 #include "Prism/ShaderCompiler/PrismBindings.h"
 #include "Prism/Utilities/StaticVector.h"
 
+#include <span>
+#include <vector>
+#include <fstream>
+
 namespace Prism
 {
     namespace Utils
@@ -402,23 +406,61 @@ namespace Prism
 #pragma endregion
 
 #pragma region VulkanPipelineCache
+    constexpr uint64_t VulkanPipelineCacheMagic = 0x50564b5049504c43ULL; // "PVKPIPELC"
+    struct VulkanPipelineCacheHeader
+    {
+        uint64_t Magic = 0;
+        uint64_t DataSize = 0;
+    };
     void VulkanPipelineCache::Init()
     {
         // TODO: 磁盘持久化
-        VkPipelineCacheCreateInfo createInfo{};
-        createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
-        VK_CHECK_RESULT(vkCreatePipelineCache(VulkanContext::GetCurrentDevice()->GetVulkanDevice(),
-            &createInfo, nullptr, &m_VkPipelineCache));
+        bool hasCacheFile = false;
+        std::ifstream cacheFile("DataCache/VulkanPipeline.cache", std::ios::binary);
+        if (cacheFile.is_open())
+        {
+            VulkanPipelineCacheHeader header;
+            cacheFile.read(reinterpret_cast<char*>(&header), sizeof(VulkanPipelineCacheHeader));
+            if (header.Magic == VulkanPipelineCacheMagic && header.DataSize > 0)
+            {
+                std::vector<uint8_t> cacheData(header.DataSize);
+                cacheFile.read(reinterpret_cast<char*>(cacheData.data()), header.DataSize);
+                VkPipelineCacheCreateInfo createInfo{};
+                createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+                createInfo.initialDataSize = header.DataSize;
+                createInfo.pInitialData = cacheData.data();
+                if (VK_SUCCESS == vkCreatePipelineCache(VulkanContext::GetCurrentDevice()->GetVulkanDevice(),
+                    &createInfo, nullptr, &m_VkPipelineCache)) hasCacheFile = true;
+                
+            }
+        }
+        if (!hasCacheFile)
+        {
+            VkPipelineCacheCreateInfo createInfo{};
+            createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+            VK_CHECK_RESULT(vkCreatePipelineCache(VulkanContext::GetCurrentDevice()->GetVulkanDevice(),
+                &createInfo, nullptr, &m_VkPipelineCache));
+        }
     }
 
     void VulkanPipelineCache::Shutdown()
     {
         std::scoped_lock lock(m_Mutex);
-
+        VkDevice device = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
+        VulkanPipelineCacheHeader header;
+        header.Magic = VulkanPipelineCacheMagic;
+        vkGetPipelineCacheData(device, m_VkPipelineCache, &header.DataSize, nullptr);
+        std::vector<uint8_t> cacheData(header.DataSize);
+        vkGetPipelineCacheData(device, m_VkPipelineCache, &header.DataSize, cacheData.data());
+        std::ofstream cacheFile("DataCache/VulkanPipeline.cache", std::ios::binary);
+        if (cacheFile.is_open())
+        {
+            cacheFile.write(reinterpret_cast<const char*>(&header), sizeof(VulkanPipelineCache));
+            cacheFile.write(reinterpret_cast<const char*>(cacheData.data()), header.DataSize);
+        }
         m_ComputePipelines.clear();
         m_Pipelines.clear();
 
-        VkDevice device = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
         if (m_VkPipelineCache)
         {
             vkDestroyPipelineCache(device, m_VkPipelineCache, nullptr);
