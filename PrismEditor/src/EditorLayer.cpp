@@ -836,7 +836,7 @@ namespace Prism
                                         if (ImGui::Selectable(name.c_str(), isSelected))
                                         {
                                             if (shader != currentShader)
-                                                material->SetShader(shader->Handle);
+                                                material->SetShader(shader);
                                         }
                                         if (isSelected)
                                             ImGui::SetItemDefaultFocus();

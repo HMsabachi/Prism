@@ -99,12 +99,12 @@ namespace Prism
 
         // Create Scene Renderer Materials
         auto postProcessShader = AssetManager::GetShaderLibrary()->Get("PostProcess/PrismPostProcess");
-        m_PostProcessMaterial = Material::Create(postProcessShader->Handle);
+        m_PostProcessMaterial = Material::Create(postProcessShader);
         auto editorDebugShader = AssetManager::GetShaderLibrary()->Get("Hidden/EditorDebug");
-        m_EditorDebugMaterial = Material::Create(editorDebugShader->Handle);
+        m_EditorDebugMaterial = Material::Create(editorDebugShader);
         m_EditorDebugMaterial->SetFloat("u_Scale", 16.025f);
         m_EditorDebugMaterial->SetFloat("u_Res", 0.025f);
-        m_EditorDebugAnimMaterial = Material::Create(editorDebugShader->Handle);
+        m_EditorDebugAnimMaterial = Material::Create(editorDebugShader);
         m_EditorDebugAnimMaterial->SetKeyword("SKINNED", true);
 
         // Create Shadow Passes

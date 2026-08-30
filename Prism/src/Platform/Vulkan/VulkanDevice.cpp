@@ -58,7 +58,7 @@ namespace Prism
                 for (const auto& ext : extensions)
                 {
                     m_SupportedExtensions.emplace(ext.extensionName);
-                    PR_CORE_TRACE("  {0}", ext.extensionName);
+                    // PR_CORE_TRACE("  {0}", ext.extensionName);
                 }
             }
         }

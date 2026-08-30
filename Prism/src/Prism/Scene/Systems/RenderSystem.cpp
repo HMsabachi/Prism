@@ -29,7 +29,7 @@ namespace Prism
     void RenderSystem::OnCreate()
     {
         auto skyboxShader = AssetManager::GetShaderLibrary()->Get("Custom/Skybox");
-        m_Config.SkyboxMaterial = Material::Create(skyboxShader->Handle);
+        m_Config.SkyboxMaterial = Material::Create(skyboxShader);
     }
 
     void RenderSystem::OnDestroy()

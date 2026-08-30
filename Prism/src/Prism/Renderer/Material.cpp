@@ -24,9 +24,9 @@ namespace Prism
     }
 
 
-    Ref<Material> Material::Create(AssetHandle shaderHandle)
+    Ref<Material> Material::Create(const Ref<PrismShader>& shader)
     {
-        return Ref<Material>::Create(shaderHandle);
+        return Ref<Material>::Create(shader);
     }
 
 
@@ -35,8 +35,8 @@ namespace Prism
         return Ref<Material>::Create(material);
     }
 
-    Material::Material(AssetHandle shaderHandle)
-        : m_Shader(AssetManager::GetAsset<PrismShader>(shaderHandle))
+    Material::Material(const Ref<PrismShader>& shader)
+        : m_Shader(shader)
     {
         m_ReloadToken = m_Shader->AddShaderReloadedCallback(std::bind(&Material::OnShaderReloaded, this));
         m_Backend = MaterialBackend::Create(this);
@@ -117,11 +117,11 @@ namespace Prism
         AllocateStorage();
     }
 
-    void Material::SetShader(AssetHandle shaderHandle)
+    void Material::SetShader(const Ref<PrismShader>& shader)
     {
         if (m_Shader && m_ReloadToken != 0)
             m_Shader->RemoveShaderReloadedCallback(m_ReloadToken);
-        m_Shader = AssetManager::GetAsset<PrismShader>(shaderHandle);
+        m_Shader = shader;
         m_ReloadToken = m_Shader->AddShaderReloadedCallback(std::bind(&Material::OnShaderReloaded, this));
         AllocateStorage();
         m_KeywordMask = 0;

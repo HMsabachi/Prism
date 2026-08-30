@@ -194,7 +194,7 @@ namespace Prism
         for (unsigned i = 0; i < scene->mNumMaterials; i++)
         {
             auto* aiMat = scene->mMaterials[i];
-            auto material = Material::Create(shader->Handle);
+            auto material = Material::Create(shader);
 
             if (meshData.IsAnimated)
                 material->SetKeyword("SKINNED", true);
@@ -217,15 +217,12 @@ namespace Prism
             if (aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &aiTexPath) == AI_SUCCESS)
             {
                 auto texPath = (parentDir / std::string(aiTexPath.data)).string();
-                if (texPath.find_first_of(".tga") == std::string::npos)
+                auto texture = Texture2D::Create(texPath, true);
+                if (texture->Loaded())
                 {
-                    auto texture = Texture2D::Create(texPath, true);
-                    if (texture->Loaded())
-                    {
-                        material->SetTexture("u_AlbedoTexture", texture);
-                        material->SetKeyword("ALBEDO_MAP", true);
-                        hasAlbedoMap = true;
-                    }
+                    material->SetTexture("u_AlbedoTexture", texture);
+                    material->SetKeyword("ALBEDO_MAP", true);
+                    hasAlbedoMap = true;
                 }
             }
             if (!hasAlbedoMap)
@@ -242,6 +239,17 @@ namespace Prism
                 {
                     material->SetTexture("u_NormalTexture", texture);
                     material->SetKeyword("NORMAL_MAP", true);
+                }
+            }
+
+            if (aiMat->GetTexture(aiTextureType_REFLECTION, 0, &aiTexPath) == AI_SUCCESS)
+            {
+                auto texPath = (parentDir / std::string(aiTexPath.data)).string();
+                auto texture = Texture2D::Create(texPath);
+                if (texture->Loaded())
+                {
+                    material->SetTexture("u_MetalnessTexture", texture);
+                    material->SetKeyword("METALNESS_MAP", true);
                 }
             }
 

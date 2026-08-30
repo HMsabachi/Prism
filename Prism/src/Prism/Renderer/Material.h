@@ -27,16 +27,16 @@ namespace Prism
     class PRISM_API Material : public RefCounted
     {
     public:
-        static Ref<Material> Create(AssetHandle shaderHandle);
+        static Ref<Material> Create(const Ref<PrismShader>& shader);
         static Ref<Material> Create(const Ref<Material>& material);
 
     public:
-        Material(AssetHandle shaderHandle);
+        Material(const Ref<PrismShader>& shader);
         Material(const Ref<Material>& material);
         virtual ~Material();
 
         const Ref<PrismShader>& GetShader() const { return m_Shader; }
-        void SetShader(AssetHandle shaderHandle);
+        void SetShader(const Ref<PrismShader>& shader);
 
         // Name
         const std::string& GetName() const { return m_Name; }
