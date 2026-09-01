@@ -42,9 +42,9 @@ PrismEditor.exe -s                     # --singleThreaded 单线程渲染
 
 ## 截图 / 演示
 
-![Prism Engine UI](docs/Screenshot/Editor2.png "Prism Engine UI")
+![Prism Engine UI](docs/Screenshot/Editor4.png "Prism Engine UI")
 
-![Prism Engine UI](docs/Screenshot/Editor3.png "Prism Engine UI")
+![Prism Engine UI](docs/Screenshot/Editor2.png "Prism Engine UI")
 
 ## 特性一览
 

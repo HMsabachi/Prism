@@ -18,6 +18,11 @@ namespace Prism {
     {
     }
 
+    OpenGLImage2D::OpenGLImage2D(ImageFormat format, uint32_t width, uint32_t height, std::vector<Buffer>&& mips)
+        : m_Width(width), m_Height(height), m_Format(format), m_Mips(std::move(mips))
+    {
+    }
+
     OpenGLImage2D::~OpenGLImage2D()
     {
         // Should this be submitted?
@@ -65,7 +70,30 @@ namespace Prism {
 
         glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
 
-        if (m_ImageData)
+        if (!m_Mips.empty())
+        {
+            uint32_t mipCount = (uint32_t)m_Mips.size();
+            glTextureStorage2D(m_RendererID, mipCount, internalFormat, m_Width, m_Height);
+            bool compressed = Utils::IsCompressedFormat(m_Format);
+            for (uint32_t i = 0; i < mipCount; i++)
+            {
+                uint32_t w = std::max(1u, m_Width >> i);
+                uint32_t h = std::max(1u, m_Height >> i);
+                if (compressed)
+                {
+                    uint32_t bw = (w + 3) & ~3u;
+                    uint32_t bh = (h + 3) & ~3u;
+                    glCompressedTextureSubImage2D(m_RendererID, i, 0, 0, bw, bh, internalFormat, (GLsizei)m_Mips[i].Size, m_Mips[i].Data);
+                }
+                else
+                {
+                    GLenum format = Utils::OpenGLImageFormat(m_Format);
+                    GLenum dataType = Utils::OpenGLFormatDataType(m_Format);
+                    glTextureSubImage2D(m_RendererID, i, 0, 0, w, h, format, dataType, m_Mips[i].Data);
+                }
+            }
+        }
+        else if (m_ImageData)
         {
             uint32_t mipCount = Utils::CalculateMipCount(m_Width, m_Height);
             glTextureStorage2D(m_RendererID, mipCount, internalFormat, m_Width, m_Height);
@@ -87,7 +115,7 @@ namespace Prism {
         // Sampler
         // TODO: should be separate from Image2D
         glCreateSamplers(1, &m_SamplerRendererID);
-        glSamplerParameteri(m_SamplerRendererID, GL_TEXTURE_MIN_FILTER, m_ImageData ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+        glSamplerParameteri(m_SamplerRendererID, GL_TEXTURE_MIN_FILTER, (m_ImageData || !m_Mips.empty()) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
         glSamplerParameteri(m_SamplerRendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glSamplerParameteri(m_SamplerRendererID, GL_TEXTURE_WRAP_R, GL_REPEAT);
         glSamplerParameteri(m_SamplerRendererID, GL_TEXTURE_WRAP_S, GL_REPEAT);

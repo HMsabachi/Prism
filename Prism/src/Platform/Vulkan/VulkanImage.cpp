@@ -66,6 +66,11 @@ namespace Prism
             m_ImageData = Buffer::Copy((byte*)data, Utils::GetImageMemorySize(format, width, height));
     }
 
+    VulkanImage2D::VulkanImage2D(ImageFormat format, uint32_t width, uint32_t height, std::vector<Buffer>&& mips)
+        : m_Format(format), m_Width(width), m_Height(height), m_Mips(std::move(mips))
+    {
+    }
+
     VulkanImage2D::~VulkanImage2D()
     {
         Release();
@@ -106,7 +111,8 @@ namespace Prism
         if (m_Format == ImageFormat::DEPTH24STENCIL8)
             aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
 
-        uint32_t mipCount = m_ImageData ? Utils::CalculateMipCount(m_Width, m_Height) : 1;
+        uint32_t mipCount = !m_Mips.empty() ? (uint32_t)m_Mips.size()
+            : m_ImageData ? Utils::CalculateMipCount(m_Width, m_Height) : 1;
 
         VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         if (Utils::IsDepthFormat(m_Format))
@@ -175,7 +181,81 @@ namespace Prism
         subresourceRange.levelCount = 1;
         subresourceRange.layerCount = 1;
 
-        if (m_ImageData)
+        if (!m_Mips.empty())
+        {
+            uint64_t totalSize = 0;
+            for (auto& mip : m_Mips)
+                totalSize += mip.Size;
+
+            VkBuffer stagingBuffer;
+            VkBufferCreateInfo stagingCreateInfo{};
+            stagingCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+            stagingCreateInfo.size = totalSize;
+            stagingCreateInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            stagingCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+            VmaAllocation stagingAllocation = VulkanAllocator::AllocateBuffer(stagingCreateInfo, VMA_MEMORY_USAGE_CPU_ONLY, stagingBuffer);
+
+            uint8_t* stagingData = VulkanAllocator::MapMemory<uint8_t>(stagingAllocation);
+            uint64_t dstOffset = 0;
+            for (auto& mip : m_Mips)
+            {
+                memcpy(stagingData + dstOffset, mip.Data, mip.Size);
+                dstOffset += mip.Size;
+            }
+            VulkanAllocator::UnmapMemory(stagingAllocation);
+
+            VkCommandBuffer copyCmd = device->GetCommandBuffer(true);
+
+            VkImageSubresourceRange allMips = {};
+            allMips.aspectMask = aspectMask;
+            allMips.baseMipLevel = 0;
+            allMips.levelCount = mipCount;
+            allMips.layerCount = 1;
+
+            Utils::InsertImageMemoryBarrier(copyCmd, m_Info.Image,
+                0, VK_ACCESS_TRANSFER_WRITE_BIT,
+                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                allMips);
+
+            bool compressed = Utils::IsCompressedFormat(m_Format);
+            std::vector<VkBufferImageCopy> regions(mipCount);
+            uint32_t bufferOffset = 0;
+            for (uint32_t i = 0; i < mipCount; i++)
+            {
+                uint32_t w = std::max(1u, m_Width >> i);
+                uint32_t h = std::max(1u, m_Height >> i);
+                VkBufferImageCopy& region = regions[i];
+                region.imageSubresource.aspectMask = aspectMask;
+                region.imageSubresource.mipLevel = i;
+                region.imageSubresource.baseArrayLayer = 0;
+                region.imageSubresource.layerCount = 1;
+                region.imageExtent.width = compressed ? ((w + 3) & ~3u) : w;
+                region.imageExtent.height = compressed ? ((h + 3) & ~3u) : h;
+                region.imageExtent.depth = 1;
+                region.bufferOffset = bufferOffset;
+                bufferOffset += (uint32_t)m_Mips[i].Size;
+            }
+
+            vkCmdCopyBufferToImage(
+                copyCmd,
+                stagingBuffer,
+                m_Info.Image,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                mipCount,
+                regions.data());
+
+            Utils::InsertImageMemoryBarrier(copyCmd, m_Info.Image,
+                VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                allMips);
+
+            device->FlushCommandBuffer(copyCmd);
+
+            VulkanAllocator::DestroyBuffer(stagingBuffer, stagingAllocation);
+        }
+        else if (m_ImageData)
         {
             VkBuffer stagingBuffer;
             VkBufferCreateInfo stagingCreateInfo{};
@@ -727,6 +807,17 @@ namespace Prism
                 case ImageFormat::RG32F:           return VK_FORMAT_R32G32_SFLOAT;
                 case ImageFormat::DEPTH32F:        return VK_FORMAT_D32_SFLOAT;
                 case ImageFormat::DEPTH24STENCIL8: return VulkanContext::GetCurrentDevice()->GetPhysicalDevice()->GetDepthFormat();
+                case ImageFormat::BC1:             return VK_FORMAT_BC1_RGBA_UNORM_BLOCK;
+                case ImageFormat::BC1SRGB:         return VK_FORMAT_BC1_RGBA_SRGB_BLOCK;
+                case ImageFormat::BC2:             return VK_FORMAT_BC2_UNORM_BLOCK;
+                case ImageFormat::BC2SRGB:         return VK_FORMAT_BC2_SRGB_BLOCK;
+                case ImageFormat::BC3:             return VK_FORMAT_BC3_UNORM_BLOCK;
+                case ImageFormat::BC3SRGB:         return VK_FORMAT_BC3_SRGB_BLOCK;
+                case ImageFormat::BC4:             return VK_FORMAT_BC4_UNORM_BLOCK;
+                case ImageFormat::BC5:             return VK_FORMAT_BC5_UNORM_BLOCK;
+                case ImageFormat::BC6H:            return VK_FORMAT_BC6H_UFLOAT_BLOCK;
+                case ImageFormat::BC7:             return VK_FORMAT_BC7_UNORM_BLOCK;
+                case ImageFormat::BC7SRGB:         return VK_FORMAT_BC7_SRGB_BLOCK;
             }
             PR_CORE_ASSERT(false, "Unknown image format");
             return VK_FORMAT_UNDEFINED;

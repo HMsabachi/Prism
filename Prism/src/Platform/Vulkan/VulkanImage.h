@@ -23,6 +23,7 @@ namespace Prism
     public:
         VulkanImage2D(ImageFormat format, uint32_t width, uint32_t height, Buffer buffer, uint32_t samples = 1);
         VulkanImage2D(ImageFormat format, uint32_t width, uint32_t height, const void* data = nullptr, uint32_t samples = 1);
+        VulkanImage2D(ImageFormat format, uint32_t width, uint32_t height, std::vector<Buffer>&& mips);
         virtual ~VulkanImage2D();
 
         virtual void Resize(const uint32_t width, const uint32_t height) override;
@@ -58,6 +59,7 @@ namespace Prism
         VkImageUsageFlags m_ExtraUsage = 0;
 
         Buffer m_ImageData;
+        std::vector<Buffer> m_Mips; // DDS 预压缩 mip 链，含 level 0
 
         VulkanImageInfo m_Info;
         VkDescriptorImageInfo m_DescriptorImageInfo = {};
