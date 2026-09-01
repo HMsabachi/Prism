@@ -25,7 +25,7 @@ namespace Prism
         constexpr uint32_t s_DescriptorPoolSetCapacity = 256;
         constexpr uint32_t s_MaxBindingsPerSet = 16;
         std::mutex s_DescriptorPoolMutex;
-        StaticVector<DescriptorPoolBucket, 10> s_DescriptorPools;
+        std::vector<DescriptorPoolBucket> s_DescriptorPools;
     }
 
     VkDescriptorPool VulkanGlobalDescriptorPool::Allocate(VkDescriptorSetLayout layout, uint32_t setCount, VkDescriptorSet* outSets)

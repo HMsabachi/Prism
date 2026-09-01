@@ -5,6 +5,7 @@
 #include "Platform/Vulkan/VulkanDevice.h"
 #include "Prism/Core/RenderThread.h"
 #include "Prism/Renderer/Renderer.h"
+#include "Prism/Utilities/TextureUtils.h"
 
 #include "stb_image.h"
 
@@ -17,6 +18,30 @@ namespace Prism
     VulkanTexture2D::VulkanTexture2D(const std::string& path, bool srgb)
         : m_Path(path)
     {
+        if (IsDDSFile(path))
+        {
+            TextureLoadResult dds;
+            if (!LoadDDS(path, dds))
+            {
+                PR_CORE_ERROR("Failed to load DDS: {0}", path);
+                return;
+            }
+            m_Format = dds.Format;
+            m_Width = dds.Width;
+            m_Height = dds.Height;
+            m_Loaded = true;
+            m_Image = Image2D::Create(dds.Format, dds.Width, dds.Height, std::move(dds.Mips));
+
+            if (RenderThread::IsCurrentThreadRT())
+                Invalidate();
+            else
+            {
+                Ref<VulkanTexture2D> instance = this;
+                Renderer::Submit([instance]() mutable { instance->Invalidate(); });
+            }
+            return;
+        }
+
         int width, height, channels;
         Buffer imageData;
         void* data = nullptr;

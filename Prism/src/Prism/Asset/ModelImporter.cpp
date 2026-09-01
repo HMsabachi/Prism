@@ -1,6 +1,7 @@
 ﻿#include "prpch.h"
 #include "ModelImporter.h"
-#include "TexturePacker.h"
+
+#include "Prism/Utilities/TextureUtils.h"
 
 #include "Prism/Asset/AssetManager.h"
 #include "Prism/Renderer/Texture.h"

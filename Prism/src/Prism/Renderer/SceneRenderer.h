@@ -92,8 +92,8 @@ namespace Prism
         static constexpr uint32_t PRISM_MAX_LIGHTS = 1;
         static constexpr uint32_t PRISM_MAX_CASCADES = 4;
         static constexpr uint32_t PRISM_MAX_BONES = 128;
-        static constexpr uint32_t PRISM_MAX_OBJECTS = 4096;
-        static constexpr uint32_t PRISM_MAX_TOTAL_BONES = 16384;
+        static constexpr uint32_t PRISM_MAX_OBJECTS = 16374;
+        static constexpr uint32_t PRISM_MAX_TOTAL_BONES = 131072;
 
         struct alignas(16) FrameData
         {

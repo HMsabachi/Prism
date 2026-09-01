@@ -10,6 +10,7 @@ namespace Prism {
     public:
         OpenGLImage2D(ImageFormat format, uint32_t width, uint32_t height, Buffer buffer, uint32_t samples = 1);
         OpenGLImage2D(ImageFormat format, uint32_t width, uint32_t height, const void* data = nullptr, uint32_t samples = 1);
+        OpenGLImage2D(ImageFormat format, uint32_t width, uint32_t height, std::vector<Buffer>&& mips);
         virtual ~OpenGLImage2D();
 
         virtual void Resize(const uint32_t width, const uint32_t height) override;
@@ -41,6 +42,7 @@ namespace Prism {
         ImageFormat m_Format;
 
         Buffer m_ImageData;
+        std::vector<Buffer> m_Mips; // DDS 预压缩 mip 链，含 level 0
     };
 
     class PRISM_API OpenGLImageCube : public ImageCube
@@ -91,6 +93,19 @@ namespace Prism {
         constexpr GLenum P_GL_UNSIGNED_BYTE = 0x1401;
         constexpr GLenum P_GL_FLOAT = 0x1406;
 
+        // block-compressed
+        constexpr GLenum P_GL_COMPRESSED_RGBA_S3TC_DXT1_EXT = 0x83F1;       // BC1
+        constexpr GLenum P_GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT = 0x8C4D; // BC1 sRGB
+        constexpr GLenum P_GL_COMPRESSED_RGBA_S3TC_DXT3_EXT = 0x83F2;       // BC2
+        constexpr GLenum P_GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT = 0x8C4E; // BC2 sRGB
+        constexpr GLenum P_GL_COMPRESSED_RGBA_S3TC_DXT5_EXT = 0x83F3;       // BC3
+        constexpr GLenum P_GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT = 0x8C4F; // BC3 sRGB
+        constexpr GLenum P_GL_COMPRESSED_RED_RGTC1 = 0x8DBB;                // BC4
+        constexpr GLenum P_GL_COMPRESSED_RG_RGTC2 = 0x8DBD;                 // BC5
+        constexpr GLenum P_GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT = 0x8E8F;  // BC6H
+        constexpr GLenum P_GL_COMPRESSED_RGBA_BPTC_UNORM = 0x8E8C;          // BC7
+        constexpr GLenum P_GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM = 0x8E8D;    // BC7 sRGB
+
         inline GLenum OpenGLImageFormat(ImageFormat format)
         {
             switch (format)
@@ -118,6 +133,17 @@ namespace Prism {
                 case ImageFormat::RG32F:           return P_GL_RG32F;
                 case ImageFormat::DEPTH24STENCIL8: return P_GL_DEPTH24_STENCIL8;
                 case ImageFormat::DEPTH32F:        return P_GL_DEPTH_COMPONENT32F;
+                case ImageFormat::BC1:             return P_GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+                case ImageFormat::BC1SRGB:         return P_GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT;
+                case ImageFormat::BC2:             return P_GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+                case ImageFormat::BC2SRGB:         return P_GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT;
+                case ImageFormat::BC3:             return P_GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+                case ImageFormat::BC3SRGB:         return P_GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;
+                case ImageFormat::BC4:             return P_GL_COMPRESSED_RED_RGTC1;
+                case ImageFormat::BC5:             return P_GL_COMPRESSED_RG_RGTC2;
+                case ImageFormat::BC6H:            return P_GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT;
+                case ImageFormat::BC7:             return P_GL_COMPRESSED_RGBA_BPTC_UNORM;
+                case ImageFormat::BC7SRGB:         return P_GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM;
             }
             PR_CORE_ASSERT(false, "Unknown image format");
             return 0;

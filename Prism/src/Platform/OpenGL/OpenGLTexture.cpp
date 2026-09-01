@@ -3,6 +3,7 @@
 
 #include "Prism/Renderer/RendererAPI.h"
 #include "Prism/Renderer/Renderer.h"
+#include "Prism/Utilities/TextureUtils.h"
 #include "Prism/Core/RenderThread.h"
 
 #include <glad/glad.h>
@@ -65,6 +66,32 @@ namespace Prism {
     {
         FilePath = path;
         PR_PROFILE_FUNCTION();
+
+        if (IsDDSFile(path))
+        {
+            TextureLoadResult dds;
+            if (!LoadDDS(path, dds))
+            {
+                PR_CORE_ERROR("Failed to load DDS: {0}", path);
+                return;
+            }
+            m_Width = dds.Width;
+            m_Height = dds.Height;
+            m_Loaded = true;
+            m_Image = Image2D::Create(dds.Format, dds.Width, dds.Height, std::move(dds.Mips));
+
+            if (RenderThread::IsCurrentThreadRT())
+            {
+                RT_Init(true);
+            }
+            else
+            {
+                Ref<OpenGLTexture2D> instance = this;
+                Renderer::Submit([instance]() mutable { instance->RT_Init(true); });
+            }
+            return;
+        }
+
         void* data = nullptr;
         int width, height, channels;
         if (stbi_is_hdr(path.c_str()))
