@@ -327,6 +327,36 @@ namespace Prism
                 }
             }
 
+            if (aiMat->GetTexture(aiTextureType_AMBIENT_OCCLUSION, 0, &aiTexPath) == AI_SUCCESS)
+            {
+                auto texPath = (parentDir / std::string(aiTexPath.data)).string();
+                auto texture = Texture2D::Create(texPath);
+                if (texture->Loaded())
+                {
+                    material->SetTexture("u_AoTexture", texture);
+                    material->SetKeyword("AO_MAP", true);
+                }
+            }
+
+            aiColor3D emissiveColor;
+            if (aiMat->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor) == AI_SUCCESS)
+                material->SetColor3("u_EmissiveColor", glm::vec3{emissiveColor.r, emissiveColor.g, emissiveColor.b});
+
+            float emissiveIntensity = 1.0f;
+            aiMat->Get(AI_MATKEY_EMISSIVE_INTENSITY, emissiveIntensity);
+            material->SetFloat("u_EmissiveIntensity", emissiveIntensity);
+
+            if (aiMat->GetTexture(aiTextureType_EMISSIVE, 0, &aiTexPath) == AI_SUCCESS)
+            {
+                auto texPath = (parentDir / std::string(aiTexPath.data)).string();
+                auto texture = Texture2D::Create(texPath, true);
+                if (texture->Loaded())
+                {
+                    material->SetTexture("u_EmissiveTexture", texture);
+                    material->SetKeyword("EMISSIVE_MAP", true);
+                }
+            }
+
             materialLookup[i] = material;
         }
 
