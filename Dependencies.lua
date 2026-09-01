@@ -1,0 +1,28 @@
+-- Include directories relative to root folder (solution directory)
+IncludeDir = {}
+IncludeDir["AllVendor"] = "Prism/vendor"
+IncludeDir["GLFW"] = "Prism/vendor/GLFW/include"
+IncludeDir["assimp"] = "Prism/vendor/assimp/include"
+IncludeDir["Glad"] = "Prism/vendor/Glad/include"
+IncludeDir["ImGui"] = "Prism/vendor/imgui"
+IncludeDir["glm"] = "Prism/vendor/glm"
+IncludeDir["stb_image"] = "Prism/vendor/stb_image"
+IncludeDir["nethost"] = "Prism/vendor/nethost"
+IncludeDir["entt"] = "Prism/vendor/entt/include"
+IncludeDir["FastNoise"] = "Prism/vendor/FastNoise"
+IncludeDir["Rolky"] = "Prism/vendor/Rolky/Rolky.Native/Include"
+IncludeDir["yaml"] = "Prism/vendor/yaml-cpp/include"
+IncludeDir["Box2D"] = "Prism/vendor/box2d/include"
+IncludeDir["PhysX"] = "Prism/vendor/PhysX/include"
+IncludeDir["PrismShaderCore"] = "Prism/vendor/PrismShaderCompiler/PrismShaderCore/include/"
+IncludeDir["Vulkan"] = "%{VULKAN_SDK}/Include"
+IncludeDir["Python"] = "vendor/Python/include/Python"
+IncludeDir["pybind11"] = "Prism/vendor/pybind11/include"
+IncludeDir["CLI11"] = "Prism/vendor/CLI11/Include"
+IncludeDir["Tracy"] = "Prism/vendor/tracy/tracy/public"
+
+LibraryDir = {}
+LibraryDir["nethost"] = "Prism/vendor/nethost"
+LibraryDir["PhysX"] = "Prism/vendor/PhysX/lib"
+LibraryDir["assimp"] = "Prism/vendor/assimp/bin/"
+LibraryDir["Vulkan"] = "%{VULKAN_SDK}/Lib"

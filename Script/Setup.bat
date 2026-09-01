@@ -1,6 +1,6 @@
 @echo off
 REM Prism - one-shot environment bootstrap (Windows)
-REM Chains: Python (build/tooling scripts) -> .NET SDK 9 -> Vulkan SDK.
+REM Chains: Python (build/tooling scripts) -> .NET SDK 9 -> Vulkan SDK -> shader compiler deps (glslang + SPIRV-Cross).
 REM Does NOT touch vendor/Python (the engine's embedded CPython interpreter).
 setlocal
 
@@ -9,7 +9,7 @@ echo  Prism - Environment Setup
 echo ========================================
 echo.
 
-echo [1/3] Python
+echo [1/4] Python
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Setup-Python.ps1"
 if %ERRORLEVEL% NEQ 0 (
     echo.
@@ -19,7 +19,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 echo.
 
-echo [2/3] .NET SDK
+echo [2/4] .NET SDK
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Setup-DotNetSDK.ps1"
 if %ERRORLEVEL% NEQ 0 (
     echo.
@@ -29,7 +29,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 echo.
 
-echo [3/3] Vulkan SDK
+echo [3/4] Vulkan SDK
 REM Vulkan script needs these pip packages; install up front (idempotent - pip skips what's already present).
 python -m pip install --disable-pip-version-check requests colorama fake-useragent
 if %ERRORLEVEL% NEQ 0 (
@@ -50,6 +50,23 @@ if %ERRORLEVEL% NEQ 0 (
     echo  Python and .NET SDK are ready.
     echo  Vulkan SDK still pending - see messages above.
     echo ========================================
+    pause
+    exit /b 1
+)
+
+echo.
+echo [4/4] Shader compiler dependencies
+where cmake >nul 2>nul
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo [XX] CMake not found in PATH. Install CMake and re-run this script.
+    pause
+    exit /b 1
+)
+call "%~dp0..\Prism\vendor\PrismShaderCompiler\BuildDeps.bat"
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo [XX] Shader compiler dependencies failed. See messages above.
     pause
     exit /b 1
 )

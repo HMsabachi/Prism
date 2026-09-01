@@ -18,7 +18,17 @@ cd Prism
 git checkout Prism3D
 ```
 
-### 2. 生成项目文件
+### 2. 配置环境（Windows）
+
+首次构建前运行环境引导脚本，它会依次安装 Python、.NET SDK、Vulkan SDK，并自动编译 PrismShaderCompiler 的依赖库（glslang + SPIRV-Cross）：
+
+```bat
+Script\Setup.bat
+```
+
+> 前置条件：已安装 Visual Studio 2022 与 CMake（编译 shader 编译器依赖需要）。
+
+### 3. 生成项目文件
 
 - **Windows**：双击运行 `Win-GenerateProjects.bat`
 - **其他平台**：手动执行
@@ -29,7 +39,7 @@ premake5 gmake         # Linux / macOS Makefile
 premake5 xcode4        # macOS Xcode
 ```
 
-### 3. 编译并运行
+### 4. 编译并运行
 
 编译 `PrismEditor` 项目并运行，即可看到完整的编辑器界面，包含场景层级面板、属性面板、ImGuizmo 变换工具和视口渲染。
 

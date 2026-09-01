@@ -11,8 +11,8 @@ from colorama import Back, Style
 # --- Section: Config ---
 
 VULKAN_SDK = os.environ.get('VULKAN_SDK')
-PRISM_REQUIRED_VULKAN_VERSION = '1.4.'            # any 1.4.x release is fine (Hazel Vulkan port gates on VK_API_VERSION_1_2, of which 1.4 is a superset)
-PRISM_INSTALL_VULKAN_VERSION = '1.4.321.1'        # install this exact one if no 1.4 is present
+PRISM_REQUIRED_VULKAN_VERSIONS = ('1.3.', '1.4.') # any 1.3.x or 1.4.x release is fine (Hazel Vulkan port gates on VK_API_VERSION_1_2, of which 1.3/1.4 are supersets)
+PRISM_INSTALL_VULKAN_VERSION = '1.4.321.1'        # install this exact one if no supported version is present
 VULKAN_SDK_INSTALLER_URL = f'https://sdk.lunarg.com/sdk/download/{PRISM_INSTALL_VULKAN_VERSION}/windows/VulkanSDK-{PRISM_INSTALL_VULKAN_VERSION}-Installer.exe'
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -106,9 +106,9 @@ def CheckVulkanSDK():
         print(f"{Style.BRIGHT}{Back.RED}You don't have the Vulkan SDK installed! (VULKAN_SDK env var not set){Style.RESET_ALL}")
         InstallVulkanPrompt()
         return False
-    elif PRISM_REQUIRED_VULKAN_VERSION not in VULKAN_SDK:
+    elif not any(v in VULKAN_SDK for v in PRISM_REQUIRED_VULKAN_VERSIONS):
         print(f'Located Vulkan SDK at {VULKAN_SDK}')
-        print(f"{Style.BRIGHT}{Back.RED}Incorrect Vulkan SDK version! (Prism requires {PRISM_REQUIRED_VULKAN_VERSION}*){Style.RESET_ALL}")
+        print(f"{Style.BRIGHT}{Back.RED}Incorrect Vulkan SDK version! (Prism requires 1.3.x or 1.4.x){Style.RESET_ALL}")
         InstallVulkanPrompt()
         return False
 
@@ -137,7 +137,7 @@ def CheckVulkanSDKDebugLibs():
 
 def main():
     print(f"{Style.BRIGHT}Prism - Vulkan SDK Environment Check{Style.RESET_ALL}")
-    print(f'Required: Vulkan SDK {PRISM_REQUIRED_VULKAN_VERSION}* (install version {PRISM_INSTALL_VULKAN_VERSION})')
+    print(f'Required: Vulkan SDK 1.3.x or 1.4.x (install version {PRISM_INSTALL_VULKAN_VERSION})')
     print()
 
     if not CheckVulkanSDK():
