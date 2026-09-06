@@ -23,6 +23,7 @@ namespace Prism
     static RendererConfig s_Config;
     bool Renderer::s_Initialized = false;
     static Ref<ComputeShader> s_EnvironmentShader;
+    static Ref<ComputeShader> s_PreethamSkyShader;
 
     static void InitRendererAPI()
     {
@@ -68,6 +69,7 @@ namespace Prism
         if (s_RendererAPI)
         {
             s_EnvironmentShader = nullptr;
+            s_PreethamSkyShader = nullptr;
             s_RendererAPI->Shutdown();
             uint32_t delayFrames = s_Config.FramesInFlight;
             delayFrames = (delayFrames == 0) ? 1 : delayFrames;
@@ -142,6 +144,29 @@ namespace Prism
         irradianceMap->GetImage()->GenerateMipMap();
 
         return { envFiltered, irradianceMap };
+	}
+
+	Ref<TextureCube> Renderer::CreatePreethamSky(float turbidity, float azimuth, float inclination)
+	{
+        PR_PROFILE_FUNCTION();
+        const uint32_t cubemapSize = 2048;
+
+        Ref<TextureCube> envUnfiltered = TextureCube::Create(ImageFormat::RGBA32F, cubemapSize, cubemapSize);
+        if (!s_PreethamSkyShader)
+            s_PreethamSkyShader = ComputeShader::Create("Assets/Shaders/PreethamSky.ComputeShader");
+
+        int preethamKernel = s_PreethamSkyShader->FindKernel("CSPreethamSky");
+
+        glm::vec3 params = { turbidity, azimuth, inclination };
+        Ref<UniformBuffer> preethamUBO = UniformBuffer::Create(sizeof(glm::vec3));
+        preethamUBO->SetData(&params, sizeof(glm::vec3));
+
+        s_PreethamSkyShader->SetImage(preethamKernel, "o_CubeMap", envUnfiltered);
+        s_PreethamSkyShader->SetUniformBuffer(preethamKernel, "PreethamParams", preethamUBO);
+        s_PreethamSkyShader->Dispatch(preethamKernel, cubemapSize / 32, cubemapSize / 32, 6);
+        envUnfiltered->GetImage()->GenerateMipMap();
+
+        return envUnfiltered;
 	}
 
 	// 无参版本：执行当前 submissionIndex 槽（单线程同步路径，兼容旧主循环与 GetData sync）。

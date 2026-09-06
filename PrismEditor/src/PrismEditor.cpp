@@ -30,7 +30,7 @@ Prism::Application* Prism::CreateApplication(int argc, char** argv)
 #else
     Prism::RendererAPIType renderer = Prism::RendererAPIType::OpenGL;
 #endif
-    // renderer = Prism::RendererAPIType::OpenGL;
+    renderer = Prism::RendererAPIType::OpenGL;
     renderer = Prism::RendererAPIType::Vulkan;
 
     app.add_flag("-s,--singleThreaded", single, "singleThreaded / 单线程渲染");

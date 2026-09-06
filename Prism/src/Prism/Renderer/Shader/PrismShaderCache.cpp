@@ -12,7 +12,7 @@
 namespace Prism
 {
     //[Header]  定长
-    //u32  Magic = 0x50534843   // "PSHC"
+    //u64  Magic = { 'P', 'S', 'H', 'A', 'D', 'E', 'R', 'C' };
     //u32  FormatVersion = 1
     //u64  SourceSetFingerprint 
     //u32  EntryCount
@@ -30,7 +30,7 @@ namespace Prism
 
     // ===== 磁盘格式常量 =====
 
-    constexpr uint64_t SHADER_CACHE_MAGIC = 0x5053484144455243ULL; // "PSHADERC"
+    constexpr char SHADER_CACHE_MAGIC[8] = { 'P', 'S', 'H', 'A', 'D', 'E', 'R', 'C' };
     constexpr uint32_t SHADER_CACHE_FORMAT_VERSION = 0x00000100U; // 0.0.1.0
 
     constexpr uint64_t SHADER_CACHE_FNV_OFFSET_BASIS = 14695981039346656037ULL;
@@ -49,7 +49,7 @@ namespace Prism
 
     struct ShaderCacheHeader
     {
-        uint64_t Magic = SHADER_CACHE_MAGIC;
+        char Magic[8] = {};
         uint32_t FormatVersion = SHADER_CACHE_FORMAT_VERSION;
         uint64_t SourceSetFingerprint = 0;
         uint32_t EntryCount = 0;
@@ -87,6 +87,7 @@ namespace Prism
     bool PrismShaderCache::WriteCacheFile(std::string_view filePath)
     {
         ShaderCacheHeader header;
+        std::memcpy(header.Magic, SHADER_CACHE_MAGIC, sizeof(header.Magic));
         header.SourceSetFingerprint = m_SourceSetFingerprint;
         header.EntryCount = static_cast<uint32_t>(m_EntryIndex.size());
 
@@ -128,7 +129,7 @@ namespace Prism
         if (!in)
             return false;
 
-        if (header.Magic != SHADER_CACHE_MAGIC || header.FormatVersion != SHADER_CACHE_FORMAT_VERSION)
+        if (std::memcmp(header.Magic, SHADER_CACHE_MAGIC, sizeof(SHADER_CACHE_MAGIC)) != 0 || header.FormatVersion != SHADER_CACHE_FORMAT_VERSION)
             return false;
         if (header.SourceSetFingerprint != m_SourceSetFingerprint)
             return false;

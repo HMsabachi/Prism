@@ -319,6 +319,9 @@ namespace Prism {
         float Intensity = 1.0f;
         float Angle = 0.0f;
         float SkyboxLod = 0.0f;
+
+        bool DynamicSky = false;
+        glm::vec3 TurbidityAzimuthInclination = { 2.0f, 0.0f, 0.0f };
     };
 
 }

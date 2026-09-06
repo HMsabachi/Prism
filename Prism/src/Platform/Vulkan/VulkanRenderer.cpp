@@ -45,6 +45,8 @@ namespace Prism
         Ref<VulkanTexture2D> BlackTexture2D;
         Ref<VulkanTextureCube> BlackTextureCube;
 
+        WeakRef<VulkanPipeline> BoundPipeline;
+
         VulkanDescriptorSet GlobalDescriptorSet;
         bool IsGlobalDescriptorSetPrepared = false;
 
@@ -261,6 +263,7 @@ namespace Prism
         Renderer::Submit([vkRenderPass]() mutable
         {
             s_Data->ActiveRenderPass = vkRenderPass;
+            s_Data->BoundPipeline = nullptr;
             if (!s_Data->IsGlobalDescriptorSetPrepared)
             {
                 s_Data->GlobalDescriptorSet.RT_Prepare();
@@ -369,9 +372,13 @@ namespace Prism
             // 绑定 Pipeline
             WeakRef<VulkanPipeline> pipeline = pCache.Get(spec);
             int32_t drawIndexPC = (int32_t)drawIndex;
-            pipeline->RT_Bind(cmdBuf);
-            pipeline->RT_BindGlobalSet(cmdBuf, s_Data->GlobalDescriptorSet.RT_GetDescriptorSet());
-            pipeline->RT_BindRenderPassSet(cmdBuf, s_Data->ActiveRenderPass->RT_GetDescriptorSet());
+            if (pipeline != s_Data->BoundPipeline)
+            {
+                pipeline->RT_Bind(cmdBuf);
+                pipeline->RT_BindGlobalSet(cmdBuf, s_Data->GlobalDescriptorSet.RT_GetDescriptorSet());
+                pipeline->RT_BindRenderPassSet(cmdBuf, s_Data->ActiveRenderPass->RT_GetDescriptorSet());
+                s_Data->BoundPipeline = pipeline;
+            }
             pipeline->RT_BindMaterialSet(cmdBuf, backend->RT_GetDescriptorSet());
             pipeline->RT_BindPushConstant(cmdBuf, 0, sizeof(uint32_t), &drawIndexPC);
             // 绑定 Vertex Buffer

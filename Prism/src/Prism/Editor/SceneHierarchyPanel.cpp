@@ -7,6 +7,7 @@
 #include "Prism/Core/Warning.h"
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/MeshFactory.h"
+#include "Prism/Renderer/Renderer.h"
 #include "Prism/Asset/ModelImporter.h"
 #include "Prism/Physics/Physics.h"
 #include "Prism/Physics/PhysicsActor.h"
@@ -660,6 +661,23 @@ namespace Prism {
                 UI::Property(TR("Intensity"), component.Intensity, 0.01f, 0.0f, 5.0f);
                 UI::Property(TR("Angle"), component.Angle, 0.01f, 0.0f, 360.0f);
                 UI::Property(TR("Skybox LOD"), component.SkyboxLod, 0.01f, 0.0f, 10.0f);
+                bool shouldUpdateSky = UI::Property(TR("Dynamic Sky"), component.DynamicSky);
+                if (component.DynamicSky)
+                {
+                    shouldUpdateSky = UI::Property(TR("Turbidity"), component.TurbidityAzimuthInclination.x, 0.01f, 0.0f, 20.0f);
+                    shouldUpdateSky |= UI::Property(TR("Azimuth"), component.TurbidityAzimuthInclination.y, 0.01f, 0.0f, 6.28318f);
+                    shouldUpdateSky |= UI::Property(TR("Inclination"), component.TurbidityAzimuthInclination.z, 0.01f, 0.0f, 6.28318f);
+                    if (shouldUpdateSky)
+                    {
+                        Application::Get().QueueEvent([&] {
+                            Ref<TextureCube> preethamEnv = Renderer::CreatePreethamSky(
+                                component.TurbidityAzimuthInclination.x,
+                                component.TurbidityAzimuthInclination.y,
+                                component.TurbidityAzimuthInclination.z);
+                            component.SceneEnvironment = Ref<Environment>::Create(preethamEnv, preethamEnv);
+                        });
+                    }
+                }
                 UI::EndPropertyGrid();
             });
 

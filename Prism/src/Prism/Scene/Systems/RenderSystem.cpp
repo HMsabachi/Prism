@@ -130,6 +130,14 @@ namespace Prism
             for (auto entity : lights)
             {
                 auto& skyLightComponent = lights.get<SkyLightComponent>(entity);
+                if (!skyLightComponent.SceneEnvironment && skyLightComponent.DynamicSky)
+                {
+                    Ref<TextureCube> preethamEnv = Renderer::CreatePreethamSky(
+                        skyLightComponent.TurbidityAzimuthInclination.x,
+                        skyLightComponent.TurbidityAzimuthInclination.y,
+                        skyLightComponent.TurbidityAzimuthInclination.z);
+                    skyLightComponent.SceneEnvironment = Ref<Environment>::Create(preethamEnv, preethamEnv);
+                }
                 m_Config.SceneEnvironment = skyLightComponent.SceneEnvironment;
                 m_Config.SceneEnvironmentIntensity = skyLightComponent.Intensity;
                 m_Config.SkyboxLod = skyLightComponent.SkyboxLod;

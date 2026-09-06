@@ -406,10 +406,10 @@ namespace Prism
 #pragma endregion
 
 #pragma region VulkanPipelineCache
-    constexpr uint64_t VulkanPipelineCacheMagic = 0x50564b5049504c43ULL; // "PVKPIPELC"
+    constexpr char VulkanPipelineCacheMagic[8] = { 'P', 'V', 'K', 'P', 'I', 'P', 'E', 'L' };
     struct VulkanPipelineCacheHeader
     {
-        uint64_t Magic = 0;
+        char Magic[8] = {};
         uint64_t DataSize = 0;
     };
     void VulkanPipelineCache::Init()
@@ -421,7 +421,7 @@ namespace Prism
         {
             VulkanPipelineCacheHeader header;
             cacheFile.read(reinterpret_cast<char*>(&header), sizeof(VulkanPipelineCacheHeader));
-            if (header.Magic == VulkanPipelineCacheMagic && header.DataSize > 0)
+            if (std::memcmp(header.Magic, VulkanPipelineCacheMagic, sizeof(VulkanPipelineCacheMagic)) == 0 && header.DataSize > 0)
             {
                 std::vector<uint8_t> cacheData(header.DataSize);
                 cacheFile.read(reinterpret_cast<char*>(cacheData.data()), header.DataSize);
@@ -448,7 +448,7 @@ namespace Prism
         std::scoped_lock lock(m_Mutex);
         VkDevice device = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
         VulkanPipelineCacheHeader header;
-        header.Magic = VulkanPipelineCacheMagic;
+        std::memcpy(header.Magic, VulkanPipelineCacheMagic, sizeof(VulkanPipelineCacheMagic));
         vkGetPipelineCacheData(device, m_VkPipelineCache, &header.DataSize, nullptr);
         std::vector<uint8_t> cacheData(header.DataSize);
         vkGetPipelineCacheData(device, m_VkPipelineCache, &header.DataSize, cacheData.data());

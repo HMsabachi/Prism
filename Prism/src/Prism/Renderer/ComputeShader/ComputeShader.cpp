@@ -43,7 +43,7 @@ namespace Prism
 			PR_CORE_ERROR("ComputeShader::Load - Parse failed for '{}'", m_FilePath);
 			return;
 		}
-		m_Name = std::move(m_Compiled.ShaderName);
+		m_Name = m_Compiled.ShaderName;
 
 		PR_CORE_INFO("CSL parsed '{}': {} kernels, {} resources",
 			m_Name, m_Compiled.Kernels.size(), m_Compiled.Resources.size());

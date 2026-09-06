@@ -575,6 +575,8 @@ namespace Prism {
             out << YAML::Key << "Intensity" << YAML::Value << slc.Intensity;
             out << YAML::Key << "Angle" << YAML::Value << slc.Angle;
             out << YAML::Key << "SkyboxLod" << YAML::Value << slc.SkyboxLod;
+            out << YAML::Key << "DynamicSky" << YAML::Value << slc.DynamicSky;
+            out << YAML::Key << "TurbidityAzimuthInclination" << YAML::Value << slc.TurbidityAzimuthInclination;
             if (slc.SceneEnvironment)
                 out << YAML::Key << "EnvironmentMap" << YAML::Value << slc.SceneEnvironment->Handle;
             out << YAML::EndMap;
@@ -1245,6 +1247,8 @@ namespace Prism {
                     component.Intensity = skyLightComponent["Intensity"] ? skyLightComponent["Intensity"].as<float>() : 1.0f;
                     component.Angle = skyLightComponent["Angle"] ? skyLightComponent["Angle"].as<float>() : 0.0f;
                     component.SkyboxLod = skyLightComponent["SkyboxLod"] ? skyLightComponent["SkyboxLod"].as<float>() : 0.0f;
+                    component.DynamicSky = skyLightComponent["DynamicSky"] ? skyLightComponent["DynamicSky"].as<bool>() : false;
+                    component.TurbidityAzimuthInclination = skyLightComponent["TurbidityAzimuthInclination"] ? skyLightComponent["TurbidityAzimuthInclination"].as<glm::vec3>() : glm::vec3(2.0f, 0.0f, 0.0f);
 
                     AssetHandle assetHandle;
                     if (skyLightComponent["EnvironmentMap"])
