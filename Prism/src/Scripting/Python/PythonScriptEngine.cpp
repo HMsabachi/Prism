@@ -200,10 +200,9 @@ namespace Prism
                 py::object* fieldType = field.GetPyType();
                 if (IsSubClassOf(*fieldType, *GetPythonType(PYTHON_TYPE_ASSET)))
                 {
-                    auto asset = field.GetBuffer().As<Ref<Asset>>();
-                    if (!asset) continue;
-                    Ref<Asset>* assetPtr = new Ref<Asset>(*asset);
-                    auto object = instantiateClass(*fieldType, (uint64_t)assetPtr);
+                    uint64_t assetPtr = field.GetBuffer().Read<uint64_t>();
+                    auto object = instantiateClass(*fieldType);
+                    object.attr("SetAsset")(assetPtr);
                     instance.attr(field.GetName().c_str()) = object;
                 }
                 field.SetInstance(&instance);
