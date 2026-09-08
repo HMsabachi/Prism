@@ -154,9 +154,8 @@ namespace Prism
                 if (field.GetBuffer().Data && field.GetBuffer().Size > 0)
                 {
                     auto fieldType = field.GetManagedType();
-                    Ref<Asset> asset = field.GetValue<Ref<Asset>>();
-                    if (!asset) continue;
-                    Ref<Asset>* assetPtr = new Ref<Asset>(asset);
+                    void* assetPtr = field.GetValue<void*>();
+                    if (!assetPtr) continue;
                     auto object = fieldType->CreateInstance(assetPtr);
                     instance.SetFieldValue(field.GetName(), object);
                 }

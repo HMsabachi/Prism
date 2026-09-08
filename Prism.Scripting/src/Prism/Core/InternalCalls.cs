@@ -8,6 +8,12 @@ namespace Prism
 #pragma warning disable CS0649
     internal static unsafe class InternalCalls
     {
+        // RefCounted
+        internal static delegate* unmanaged[Cdecl]<IntPtr, void> Prism_RefCounted_Destructor;
+        // Asset
+        internal static delegate* unmanaged[Cdecl]<IntPtr, AssetType> Prism_Asset_GetType;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt64> Prism_Asset_GetHandle;
+        // Log
         internal static delegate* unmanaged[Cdecl]<Log.LogLevel, NativeString, void> Prism_Log_LogMessage;
         // Time
         internal static delegate* unmanaged[Cdecl]<float> Prism_Time_GetDeltaTime;
@@ -44,16 +50,13 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<UInt64, IntPtr*, UInt64, void> Prism_MeshRendererComponent_SetMaterials;
         // Mesh
         internal static delegate* unmanaged[Cdecl]<NativeString, IntPtr> Prism_Mesh_Constructor;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, void> Prism_Mesh_Destructor;
         internal static delegate* unmanaged[Cdecl]<float, float, IntPtr> Prism_MeshFactory_CreatePlane;
         // Texture2D
         internal static delegate* unmanaged[Cdecl]<UInt32, UInt32, IntPtr> Prism_Texture2D_Constructor;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, void> Prism_Texture2D_Destructor;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeArray<Vector4>, Int32, void> Prism_Texture2D_SetData;
         // Material
         internal static delegate* unmanaged[Cdecl]<NativeString, IntPtr> Prism_Material_Constructor;
         internal static delegate* unmanaged[Cdecl]<IntPtr*, void> Prism_Material_GetDefaultMaterial;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, void> Prism_Material_Destructor;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, float, void> Prism_Material_SetFloat;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, int, void> Prism_Material_SetInt;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, Bool32, void> Prism_Material_SetBool;

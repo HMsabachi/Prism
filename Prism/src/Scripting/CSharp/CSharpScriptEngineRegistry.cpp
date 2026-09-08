@@ -59,6 +59,11 @@ namespace Prism
         auto& engineAssembly = CSharpScriptEngine::GetEngineAssembly();
 #define PR_ADD_INTERNAL_CALL(func) engineAssembly.AddInternalCall("Prism.InternalCalls", #func, (void*)&func)
         using namespace Script;
+        // RefCounted
+        PR_ADD_INTERNAL_CALL(Prism_RefCounted_Destructor);
+        // Asset
+        PR_ADD_INTERNAL_CALL(Prism_Asset_GetType);
+        PR_ADD_INTERNAL_CALL(Prism_Asset_GetHandle);
         // Log
         PR_ADD_INTERNAL_CALL(Prism_Log_LogMessage);
         // Time
@@ -98,7 +103,6 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_MeshRendererComponent_SetMaterials);
         // Mesh
         PR_ADD_INTERNAL_CALL(Prism_Mesh_Constructor);
-        PR_ADD_INTERNAL_CALL(Prism_Mesh_Destructor);
         PR_ADD_INTERNAL_CALL(Prism_MeshFactory_CreatePlane);
         // RigidBody2DComponent
         PR_ADD_INTERNAL_CALL(Prism_RigidBody2DComponent_ApplyLinearImpulse);
@@ -146,11 +150,9 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_Physics_SetGravity);
         // Texture2D
         PR_ADD_INTERNAL_CALL(Prism_Texture2D_Constructor);
-        PR_ADD_INTERNAL_CALL(Prism_Texture2D_Destructor);
         PR_ADD_INTERNAL_CALL(Prism_Texture2D_SetData);
         // Material
         PR_ADD_INTERNAL_CALL(Prism_Material_Constructor);
-        PR_ADD_INTERNAL_CALL(Prism_Material_Destructor);
         PR_ADD_INTERNAL_CALL(Prism_Material_SetFloat);
         PR_ADD_INTERNAL_CALL(Prism_Material_SetInt);
         PR_ADD_INTERNAL_CALL(Prism_Material_SetBool);

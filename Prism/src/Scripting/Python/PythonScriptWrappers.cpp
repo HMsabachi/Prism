@@ -101,23 +101,23 @@ namespace Prism::PythonScript
         static void Error(const char* message) { PR_CORE_ERROR("[Python] {}", message); }
         static void Critical(const char* message) { PR_CORE_FATAL("[Python] {}", message); }
     };
-    class PythonRef
+    class PythonRefCounted
     {
     protected:
         Ref<RefCounted> m_Ref;
     public:
-        PythonRef() = default;
-        PythonRef(Ref<RefCounted> ref) : m_Ref(std::move(ref)) {}
+        PythonRefCounted() = default;
+        PythonRefCounted(Ref<RefCounted> ref) : m_Ref(std::move(ref)) {}
         void SetRef(uint64_t refPtr) { m_Ref = reinterpret_cast<RefCounted*>(refPtr); }
-        virtual ~PythonRef() = default;
+        virtual ~PythonRefCounted() = default;
         virtual std::string __Repr__() { return fmt::format(" <Ref Handle = {}>", (uint64_t)m_Ref.Raw()); }
     };
 
-    class PythonAsset : public PythonRef
+    class PythonAsset : public PythonRefCounted
     {
     public:
         PythonAsset() = default;
-        PythonAsset(Ref<Asset> asset) : PythonRef(std::move(asset)) {}
+        PythonAsset(Ref<Asset> asset) : PythonRefCounted(std::move(asset)) {}
         void SetAsset(uint64_t assetPtr) { m_Ref = reinterpret_cast<Asset*>(assetPtr); }
         virtual ~PythonAsset() = default;
         virtual std::string __Repr__() { return fmt::format(" <Asset Handle = {}>", (uint64_t)m_Ref.Raw()); }
@@ -156,13 +156,13 @@ namespace Prism::PythonScript
         Ref<Texture2D> GetTexture() const { return m_Ref.As<Texture2D>(); }
     };
 
-    class PythonMaterial : public PythonRef
+    class PythonMaterial : public PythonRefCounted
     {
     public:
         PythonMaterial() = default;
-        PythonMaterial(Ref<Material> material) : PythonRef(std::move(material)) {}
+        PythonMaterial(Ref<Material> material) : PythonRefCounted(std::move(material)) {}
         PythonMaterial(const char* shaderName)
-            : PythonRef(Material::Create(AssetManager::GetShaderLibrary()->Get(shaderName))) {}
+            : PythonRefCounted(Material::Create(AssetManager::GetShaderLibrary()->Get(shaderName))) {}
         virtual std::string __Repr__()
         {
             std::string result;
@@ -857,11 +857,11 @@ PYBIND11_MODULE(PrismEngine, m)
         .def_static("Error", &PythonLog::Error)
         .def_static("Critical", &PythonLog::Critical);
 
-    py::class_<PythonRef>(m, "Ref")
+    py::class_<PythonRefCounted>(m, "Ref")
         .def(py::init<>())
-        .def("SetRef", &PythonRef::SetRef)
-        .def("__repr__", &PythonRef::__Repr__);
-    py::class_<PythonAsset, PythonRef>(m, "Asset")
+        .def("SetRef", &PythonRefCounted::SetRef)
+        .def("__repr__", &PythonRefCounted::__Repr__);
+    py::class_<PythonAsset, PythonRefCounted>(m, "Asset")
         .def(py::init<>())
         .def("__repr__", &PythonAsset::__Repr__);
     py::class_<PythonMesh, PythonAsset>(m, "Mesh")
@@ -872,7 +872,7 @@ PYBIND11_MODULE(PrismEngine, m)
         .def(py::init<>())
         .def(py::init<uint32_t, uint32_t>())
         .def("__repr__", &PythonTexture2D::__Repr__);
-    py::class_<PythonMaterial, PythonRef>(m, "Material")
+    py::class_<PythonMaterial, PythonRefCounted>(m, "Material")
         .def(py::init<>())
         .def(py::init<const char*>())
         .def("__repr__", &PythonMaterial::__Repr__)
@@ -1214,7 +1214,7 @@ namespace Prism
             s_PythonTypeCache[PYTHON_TYPE_MATERIALREF] = py::type::of<PythonMaterial>();
             s_PythonTypeCache[PYTHON_TYPE_TEXTURE2DREF] = py::type::of<PythonTexture2D>();
             s_PythonTypeCache[PYTHON_TYPE_ASSET] = py::type::of<PythonAsset>();
-            s_PythonTypeCache[PYTHON_TYPE_REF] = py::type::of<PythonRef>();
+            s_PythonTypeCache[PYTHON_TYPE_REF] = py::type::of<PythonRefCounted>();
 
             for (const auto& [id, type] : s_PythonTypeCache)
                 PR_CORE_INFO("[Python Meta] 注册类型: {} -> {}", id, (std::string)pybind11::str(type));

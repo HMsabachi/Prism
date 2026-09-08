@@ -48,7 +48,19 @@ namespace Prism {
             PR_CORE_ASSERT(entityMap.find(entityID) != entityMap.end(), "Invalid entity ID or entity doesn't exist in scene!");
             return entityMap.at(entityID);
         }
+#pragma region RefCounted
 
+        void Prism_RefCounted_Destructor(RefCounted* nativePtr)
+        {
+            nativePtr->DecRefCount();
+            if (nativePtr->GetRefCount() == 0) delete nativePtr;
+        }
+#pragma endregion
+
+#pragma region Asset
+        uint32_t Prism_Asset_GetType(Asset* nativePtr) { return (uint32_t)nativePtr->Type; }
+        uint64_t Prism_Asset_GetHandle(Asset* nativePtr) { return (uint64_t)nativePtr->Handle; }
+#pragma endregion
 
 #pragma region Log
 
@@ -326,34 +338,38 @@ namespace Prism {
 #pragma endregion
 #pragma region MeshRendererComponent
 
-        void* Prism_MeshRendererComponent_GetMesh(uint64_t entityID)
+        Mesh* Prism_MeshRendererComponent_GetMesh(uint64_t entityID)
         {
             Entity entity = GetEntityFromEntityID(entityID);
             auto& meshComponent = entity.GetComponent<MeshRendererComponent>();
-            return new Ref<Mesh>(meshComponent.Mesh);
+            if (meshComponent.Mesh)
+                meshComponent.Mesh->IncRefCount();
+            return meshComponent.Mesh.Raw();
         }
 
-        void Prism_MeshRendererComponent_SetMesh(uint64_t entityID, Ref<Mesh>* inMesh)
+        void Prism_MeshRendererComponent_SetMesh(uint64_t entityID, Mesh* inMesh)
         {
             Entity entity = GetEntityFromEntityID(entityID);
             auto& meshComponent = entity.GetComponent<MeshRendererComponent>();
-            meshComponent.Mesh = inMesh ? *inMesh : nullptr;
+            meshComponent.Mesh = inMesh ? inMesh : nullptr;
         }
-        void Prism_MeshRendererComponent_GetMaterial(uint64_t entityID, Ref<Material>** outMaterial, uint64_t index)
+        void Prism_MeshRendererComponent_GetMaterial(uint64_t entityID, Material** outMaterial, uint64_t index)
         {
             PR_CORE_TRACE(entityID);
             Entity entity = GetEntityFromEntityID(entityID);
             auto& meshComponent = entity.GetComponent<MeshRendererComponent>();
             if (index >= meshComponent.Materials.size()) PR_CORE_ERROR("Material index out of range");
-            *outMaterial = new Ref<Material>(meshComponent.Materials[index]);
+            if (meshComponent.Materials[index])
+                meshComponent.Materials[index]->IncRefCount();
+            *outMaterial = meshComponent.Materials[index].Raw();
         }
 
-        void Prism_MeshRendererComponent_SetMaterial(uint64_t entityID, Ref<Material>* inMaterial, uint64_t index)
+        void Prism_MeshRendererComponent_SetMaterial(uint64_t entityID, Material* inMaterial, uint64_t index)
         {
             Entity entity = GetEntityFromEntityID(entityID);
             auto& meshComponent = entity.GetComponent<MeshRendererComponent>();
             if (index >= meshComponent.Materials.size()) PR_CORE_ERROR("Material index out of range");
-            meshComponent.Materials[index] = *inMaterial;
+            meshComponent.Materials[index] = inMaterial ? inMaterial : nullptr;
         }
 
         uint64_t Prism_MeshRendererComponent_GetMaterialCount(uint64_t entityID)
@@ -370,7 +386,10 @@ namespace Prism {
             for (size_t i = 0; i < mc.Materials.size(); i++)
             {
                 if (mc.Materials[i])
-                    outHandles[i] = new Ref<Material>(mc.Materials[i]);
+                {
+                    mc.Materials[i]->IncRefCount();
+                    outHandles[i] = mc.Materials[i].Raw();
+                }
                 else
                     outHandles[i] = nullptr;
             }
@@ -383,13 +402,7 @@ namespace Prism {
             mc.Materials.resize(count);
             for (uint64_t i = 0; i < count; i++)
             {
-                if (inHandles[i])
-                {
-                    auto& matRef = *static_cast<Ref<Material>*>(inHandles[i]);
-                    mc.Materials[i] = matRef;
-                }
-                else
-                    mc.Materials[i] = nullptr;
+                mc.Materials[i] = inHandles[i] ? static_cast<Material*>(inHandles[i]) : nullptr;
             }
         }
 
@@ -398,50 +411,42 @@ namespace Prism {
 #pragma region Mesh
         
 
-        Prism::Ref<Prism::Mesh>* Prism_Mesh_Constructor(Rolky::String filepath)
+        Mesh* Prism_Mesh_Constructor(Rolky::String filepath)
         {
             std::string path = filepath;
             Rolky::String::Free(filepath);
             auto result = ModelImporter::Import(path);
-            return new Ref<Mesh>(result.Mesh);
-        }
-
-        void Prism_Mesh_Destructor(Ref<Mesh>* _this)
-        {
-            Ref<Mesh>* instance = (Ref<Mesh>*)_this;
-            delete _this;
+            result.Mesh->IncRefCount();
+            return result.Mesh.Raw();
         }
 
 
-        void* Prism_MeshFactory_CreatePlane(float width, float height)
+        Mesh* Prism_MeshFactory_CreatePlane(float width, float height)
         {
-            return new Ref<Mesh>(ModelImporter::Import("assets/models/Plane1m.obj").Mesh);
+            Ref<Mesh> result = ModelImporter::Import("assets/models/Plane1m.obj").Mesh;
+            result->IncRefCount();
+            return result.Raw();
         }
 
 #pragma endregion
 
 #pragma region Texture2D
-        void* Prism_Texture2D_Constructor(uint32_t width, uint32_t height)
+        Texture2D* Prism_Texture2D_Constructor(uint32_t width, uint32_t height)
         {
-            auto result = Texture2D::Create(ImageFormat::RGBA, width, height);
-            return new Ref<Texture2D>(result);
+            Ref<Texture2D> result = Texture2D::Create(ImageFormat::RGBA, width, height);
+            result->IncRefCount();
+            return result.Raw();
         }
 
-        void Prism_Texture2D_Destructor(Ref<Texture2D>* _this)
+        void Prism_Texture2D_SetData(Texture2D* _this, Rolky::Array<glm::vec4> inData, int32_t count)
         {
-            delete _this;
-        }
-
-        void Prism_Texture2D_SetData(Ref<Texture2D>* _this, Rolky::Array<glm::vec4> inData, int32_t count)
-        {
-            Ref<Texture2D>& instance = *_this;
             uint32_t dataSize = count * sizeof(glm::vec4) / 4;
-            instance->Lock();
-            Buffer buffer = instance->GetWriteableBuffer();
+            _this->Lock();
+            Buffer buffer = _this->GetWriteableBuffer();
             PR_CORE_ASSERT(dataSize <= buffer.Size);
             uint8_t* pixels = (uint8_t*)buffer.Data;
             uint32_t index = 0;
-            for (uint32_t i = 0; i < instance->GetWidth() * instance->GetHeight(); i++)
+            for (uint32_t i = 0; i < _this->GetWidth() * _this->GetHeight(); i++)
             {
                 glm::vec4& value = inData[i];
                 *pixels++ = (uint32_t)(value.x * 255.0f);
@@ -450,7 +455,7 @@ namespace Prism {
                 *pixels++ = (uint32_t)(value.w * 255.0f);
             }
             inData.Free(inData);
-            instance->Unlock();
+            _this->Unlock();
         }
 
 #pragma endregion
@@ -589,92 +594,89 @@ namespace Prism {
 #pragma endregion
 
 #pragma region Material
-        Ref<Material>* Prism_Material_Constructor(Rolky::String shaderName)
+        Material* Prism_Material_Constructor(Rolky::String shaderName)
         {
             std::string name = shaderName;
             Rolky::String::Free(shaderName);
             const auto& shader = AssetManager::GetShaderLibrary()->Get(name);
-            return new Ref<Material>(Material::Create(shader));
-        }
-
-        void Prism_Material_Destructor(Ref<Material>* _this)
-        {
-            delete _this;
+            Ref<Material> material = Material::Create(shader);
+            material->IncRefCount();
+            return material.Raw();
         }
 
 
-        void Prism_Material_SetFloat(Ref<Material>* _this, Rolky::String uniform, float value)
+        void Prism_Material_SetFloat(Material* _this, Rolky::String uniform, float value)
         {
-            (*_this)->SetFloat(uniform, value);
+            _this->SetFloat(uniform, value);
             uniform.Free(uniform);
         }
 
-        void Prism_Material_SetInt(Ref<Material>* _this, Rolky::String uniform, int value)
+        void Prism_Material_SetInt(Material* _this, Rolky::String uniform, int value)
         {
-            (*_this)->SetInt(uniform, value);
+            _this->SetInt(uniform, value);
             uniform.Free(uniform);
         }
 
-        void Prism_Material_SetBool(Ref<Material>* _this, Rolky::String uniform, Rolky::Bool32 value)
+        void Prism_Material_SetBool(Material* _this, Rolky::String uniform, Rolky::Bool32 value)
         {
-            (*_this)->SetBool(uniform, value);
+            _this->SetBool(uniform, value);
             uniform.Free(uniform);
         }
 
-        void Prism_Material_SetVector2(Ref<Material>* _this, Rolky::String uniform, glm::vec2* value)
+        void Prism_Material_SetVector2(Material* _this, Rolky::String uniform, glm::vec2* value)
         {
-            (*_this)->SetVec2(uniform, *value);
+            _this->SetVec2(uniform, *value);
             uniform.Free(uniform);
         }
 
-        void Prism_Material_SetColor3(Ref<Material>* _this, Rolky::String uniform, glm::vec3* value)
+        void Prism_Material_SetColor3(Material* _this, Rolky::String uniform, glm::vec3* value)
         {
-            (*_this)->SetColor3(uniform, *value);
+            _this->SetColor3(uniform, *value);
             uniform.Free(uniform);
         }
 
-        void Prism_Material_SetColor(Ref<Material>* _this, Rolky::String uniform, glm::vec4* value)
+        void Prism_Material_SetColor(Material* _this, Rolky::String uniform, glm::vec4* value)
         {
-            (*_this)->SetColor(uniform, *value);
+            _this->SetColor(uniform, *value);
             uniform.Free(uniform);
         }
 
-        void Prism_Material_SetMatrix4(Ref<Material>* _this, Rolky::String uniform, glm::mat4* value)
+        void Prism_Material_SetMatrix4(Material* _this, Rolky::String uniform, glm::mat4* value)
         {
-            (*_this)->SetMatrix4(uniform, *value);
+            _this->SetMatrix4(uniform, *value);
             uniform.Free(uniform);
         }
 
-        void Prism_Material_SetTexture(Ref<Material>* _this, Rolky::String uniform, Ref<Texture2D>* texture)
+        void Prism_Material_SetTexture(Material* _this, Rolky::String uniform, Texture2D* texture)
         {
-            (*_this)->SetTexture(uniform, *texture);
+            _this->SetTexture(uniform, Ref<Texture2D>(texture));
             uniform.Free(uniform);
         }
 
-        void Prism_Material_SetVector3(Ref<Material>* _this, Rolky::String uniform, glm::vec3* value)
+        void Prism_Material_SetVector3(Material* _this, Rolky::String uniform, glm::vec3* value)
         {
-            (*_this)->SetVec3(uniform, *value);
+            _this->SetVec3(uniform, *value);
             uniform.Free(uniform);
         }
 
-        void Prism_Material_SetVector4(Ref<Material>* _this, Rolky::String uniform, glm::vec4* value)
+        void Prism_Material_SetVector4(Material* _this, Rolky::String uniform, glm::vec4* value)
         {
-            (*_this)->SetVec4(uniform, *value);
+            _this->SetVec4(uniform, *value);
             uniform.Free(uniform);
         }
 
-        void Prism_Material_SetKeyword(Ref<Material>* _this, Rolky::String name, Rolky::Bool32 enabled)
+        void Prism_Material_SetKeyword(Material* _this, Rolky::String name, Rolky::Bool32 enabled)
         {
             std::string kwName = name;
             name.Free(name);
-            (*_this)->SetKeyword(kwName, enabled);
+            _this->SetKeyword(kwName, enabled);
         }
 
-        Rolky::Bool32 Prism_Material_IsKeywordEnabled(Ref<Material>* _this, Rolky::String name)
+        Rolky::Bool32 Prism_Material_IsKeywordEnabled(Material* _this, Rolky::String name)
         {
             std::string kwName = name;
             name.Free(name);
-            return (*_this)->IsKeywordEnabled(kwName);
+            return _this->IsKeywordEnabled(kwName);
         }
 
 #pragma endregion
@@ -744,7 +746,8 @@ namespace Prism {
                         data.EntityID = entity.GetUUID();
                         data.ColliderType = 3; // Mesh
                         data.IsTrigger = mc.IsTrigger;
-                        data.MeshHandle = new Ref<Mesh>(mc.CollisionMesh);
+                        mc.CollisionMesh->IncRefCount();
+                        data.MeshHandle = mc.CollisionMesh.Raw();
                         results[arrayIndex++] = data;
                     }
                 }
@@ -812,7 +815,8 @@ namespace Prism {
                         data.EntityID = entity.GetUUID();
                         data.ColliderType = 3; // Mesh
                         data.IsTrigger = mc.IsTrigger;
-                        data.MeshHandle = new Ref<Mesh>(mc.CollisionMesh);
+                        mc.CollisionMesh->IncRefCount();
+                        data.MeshHandle = mc.CollisionMesh.Raw();
                         results[arrayIndex++] = data;
                     }
                 }
@@ -880,7 +884,8 @@ namespace Prism {
                         data.EntityID = entity.GetUUID();
                         data.ColliderType = 3;
                         data.IsTrigger = mc.IsTrigger;
-                        data.MeshHandle = new Ref<Mesh>(mc.CollisionMesh);
+                        mc.CollisionMesh->IncRefCount();
+                        data.MeshHandle = mc.CollisionMesh.Raw();
                         results[arrayIndex++] = data;
                     }
                 }
@@ -948,7 +953,8 @@ namespace Prism {
                         data.EntityID = entity.GetUUID();
                         data.ColliderType = 3;
                         data.IsTrigger = mc.IsTrigger;
-                        data.MeshHandle = new Ref<Mesh>(mc.CollisionMesh);
+                        mc.CollisionMesh->IncRefCount();
+                        data.MeshHandle = mc.CollisionMesh.Raw();
                         outBuffer[i] = data;
                     }
                 }
@@ -1015,7 +1021,8 @@ namespace Prism {
                         data.EntityID = entity.GetUUID();
                         data.ColliderType = 3;
                         data.IsTrigger = mc.IsTrigger;
-                        data.MeshHandle = new Ref<Mesh>(mc.CollisionMesh);
+                        mc.CollisionMesh->IncRefCount();
+                        data.MeshHandle = mc.CollisionMesh.Raw();
                         outBuffer[i] = data;
                     }
                 }
@@ -1082,7 +1089,8 @@ namespace Prism {
                         data.EntityID = entity.GetUUID();
                         data.ColliderType = 3;
                         data.IsTrigger = mc.IsTrigger;
-                        data.MeshHandle = new Ref<Mesh>(mc.CollisionMesh);
+                        mc.CollisionMesh->IncRefCount();
+                        data.MeshHandle = mc.CollisionMesh.Raw();
                         outBuffer[i] = data;
                     }
                 }

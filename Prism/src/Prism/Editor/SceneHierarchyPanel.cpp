@@ -1012,7 +1012,7 @@ namespace Prism {
                                         if (field.IsRuntime())
                                         {
                                             auto fieldType = field.GetManagedType();
-                                            Ref<Mesh>* assetPtr = new Ref<Mesh>(asset);
+                                            void* assetPtr = (void*)asset.Raw();
                                             auto object = fieldType->CreateInstance(assetPtr);
                                             field.SetValue(object);
                                         }

@@ -14,6 +14,8 @@ namespace Prism
     class Mesh;
     class Texture2D;
     class Material;
+    class RefCounted;
+    class Asset;
     struct RaycastHit;
     enum class KeyCode : uint16_t;
     enum class MouseButton : uint16_t;
@@ -25,8 +27,12 @@ namespace Prism
 {
     namespace Script
     {
-
-#pragma region Log
+        // RefCounted
+        void Prism_RefCounted_Destructor(RefCounted* nativePtr);
+        // Asset
+        uint32_t Prism_Asset_GetType(Asset* nativePtr);
+        uint64_t Prism_Asset_GetHandle(Asset* nativePtr);
+        // Log
         enum class LogLevel : int32_t
         {
             Trace = BIT(0),
@@ -37,7 +43,6 @@ namespace Prism
             Critical = BIT(5)
         };
         void Prism_Log_LogMessage(LogLevel level, Rolky::String inFormattedMessage);
-#pragma endregion
         // Time
         float Prism_Time_GetDeltaTime();
         float Prism_Time_GetUnscaledDeltaTime();
@@ -87,23 +92,21 @@ namespace Prism
         void Prism_TransformComponent_GetTransform(uint64_t entityID, ScriptTransform* outTransform);
         void Prism_TransformComponent_SetTransform(uint64_t entityID, ScriptTransform* inTransform);
         // MeshRendererComponent
-        void* Prism_MeshRendererComponent_GetMesh(uint64_t entityID);
-        void Prism_MeshRendererComponent_SetMesh(uint64_t entityID, Ref<Mesh>* inMesh);
-        void Prism_MeshRendererComponent_GetMaterial(uint64_t entityID, Ref<Material>** outMaterial, uint64_t index);
-        void Prism_MeshRendererComponent_SetMaterial(uint64_t entityID, Ref<Material>* inMaterial, uint64_t index);
+        Mesh* Prism_MeshRendererComponent_GetMesh(uint64_t entityID);
+        void Prism_MeshRendererComponent_SetMesh(uint64_t entityID, Mesh* inMesh);
+        void Prism_MeshRendererComponent_GetMaterial(uint64_t entityID, Material** outMaterial, uint64_t index);
+        void Prism_MeshRendererComponent_SetMaterial(uint64_t entityID, Material* inMaterial, uint64_t index);
         uint64_t Prism_MeshRendererComponent_GetMaterialCount(uint64_t entityID);
         void Prism_MeshRendererComponent_GetMaterials(uint64_t entityID, void** outHandles);
         void Prism_MeshRendererComponent_SetMaterials(uint64_t entityID, void** inHandles, uint64_t count);
         // Mesh
-        Ref<Mesh>* Prism_Mesh_Constructor(Rolky::String filepath);
-        void Prism_Mesh_Destructor(Ref<Mesh>* _this);
-        void* Prism_MeshFactory_CreatePlane(float width, float height);
+        Mesh* Prism_Mesh_Constructor(Rolky::String filepath);
+        Mesh* Prism_MeshFactory_CreatePlane(float width, float height);
 
         // Renderer
         // Texture2D
-        void* Prism_Texture2D_Constructor(uint32_t width, uint32_t height);
-        void Prism_Texture2D_Destructor(Ref<Texture2D>* _this);
-        void Prism_Texture2D_SetData(Ref<Texture2D>* _this, Rolky::Array<glm::vec4> inData, int32_t count);
+        Texture2D* Prism_Texture2D_Constructor(uint32_t width, uint32_t height);
+        void Prism_Texture2D_SetData(Texture2D* _this, Rolky::Array<glm::vec4> inData, int32_t count);
 
         // RigidBody2DComponent
         void Prism_RigidBody2DComponent_ApplyLinearImpulse(uint64_t entityID, glm::vec2* impulse, glm::vec2* offset, Rolky::Bool32 wake);
@@ -135,19 +138,18 @@ namespace Prism
         void Prism_Physics_SetGravity(float gravity);
 
         // Material
-        Ref<Material>* Prism_Material_Constructor(Rolky::String shaderName);
-        void Prism_Material_Destructor(Ref<Material>* _this);
-        void Prism_Material_SetFloat(Ref<Material>* _this, Rolky::String uniform, float value);
-        void Prism_Material_SetInt(Ref<Material>* _this, Rolky::String uniform, int value);
-        void Prism_Material_SetBool(Ref<Material>* _this, Rolky::String uniform, Rolky::Bool32 value);
-        void Prism_Material_SetVector2(Ref<Material>* _this, Rolky::String uniform, glm::vec2* value);
-        void Prism_Material_SetColor3(Ref<Material>* _this, Rolky::String uniform, glm::vec3* value);
-        void Prism_Material_SetColor(Ref<Material>* _this, Rolky::String uniform, glm::vec4* value);
-        void Prism_Material_SetMatrix4(Ref<Material>* _this, Rolky::String uniform, glm::mat4* value);
-        void Prism_Material_SetVector3(Ref<Material>* _this, Rolky::String uniform, glm::vec3* value);
-        void Prism_Material_SetVector4(Ref<Material>* _this, Rolky::String uniform, glm::vec4* value);
-        void Prism_Material_SetTexture(Ref<Material>* _this, Rolky::String uniform, Ref<Texture2D>* texture);
-        void Prism_Material_SetKeyword(Ref<Material>* _this, Rolky::String name, Rolky::Bool32 enabled);
-        Rolky::Bool32 Prism_Material_IsKeywordEnabled(Ref<Material>* _this, Rolky::String name);
+        Material* Prism_Material_Constructor(Rolky::String shaderName);
+        void Prism_Material_SetFloat(Material* _this, Rolky::String uniform, float value);
+        void Prism_Material_SetInt(Material* _this, Rolky::String uniform, int value);
+        void Prism_Material_SetBool(Material* _this, Rolky::String uniform, Rolky::Bool32 value);
+        void Prism_Material_SetVector2(Material* _this, Rolky::String uniform, glm::vec2* value);
+        void Prism_Material_SetColor3(Material* _this, Rolky::String uniform, glm::vec3* value);
+        void Prism_Material_SetColor(Material* _this, Rolky::String uniform, glm::vec4* value);
+        void Prism_Material_SetMatrix4(Material* _this, Rolky::String uniform, glm::mat4* value);
+        void Prism_Material_SetVector3(Material* _this, Rolky::String uniform, glm::vec3* value);
+        void Prism_Material_SetVector4(Material* _this, Rolky::String uniform, glm::vec4* value);
+        void Prism_Material_SetTexture(Material* _this, Rolky::String uniform, Texture2D* texture);
+        void Prism_Material_SetKeyword(Material* _this, Rolky::String name, Rolky::Bool32 enabled);
+        Rolky::Bool32 Prism_Material_IsKeywordEnabled(Material* _this, Rolky::String name);
     }
 }
