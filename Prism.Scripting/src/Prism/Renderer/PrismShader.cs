@@ -83,13 +83,5 @@ namespace Prism
                 return value;
             }
         }
-
-        public override string ToString()
-        {
-            string result =
-                $"PrismShader({m_NativePtr})\n" +
-                $"Name: {Name}";
-            return result;
-        }
     }
 }

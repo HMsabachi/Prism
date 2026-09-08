@@ -156,13 +156,116 @@ namespace Prism::PythonScript
         Ref<Texture2D> GetTexture() const { return m_Ref.As<Texture2D>(); }
     };
 
+    class PythonPrismShader : public PythonAsset
+    {
+    public:
+        PythonPrismShader() = default;
+        PythonPrismShader(Ref<PrismShader> shader) : PythonAsset(shader) {}
+        static PythonPrismShader GetShader(const char* name)
+        {
+            return PythonPrismShader(AssetManager::GetShaderLibrary()->Get(name));
+        }
+        virtual std::string __Repr__() override
+        {
+            Ref<PrismShader> shader = m_Ref.As<PrismShader>();
+            if (shader)
+                return fmt::format(" <Shader Handle = {} Name = {}>", (uint64_t)shader.Raw(), shader->GetName());
+            return fmt::format(" <Shader Handle = {}>", (uint64_t)m_Ref.Raw());
+        }
+        std::string GetName() const
+        {
+            Ref<PrismShader> shader = m_Ref.As<PrismShader>();
+            return shader ? shader->GetName() : "";
+        }
+        uint32_t GetUniformCount() const
+        {
+            Ref<PrismShader> shader = m_Ref.As<PrismShader>();
+            return shader ? (uint32_t)shader->GetUniforms().size() : 0;
+        }
+        PrismShaderCompiler::PropertyType GetUniformType(uint32_t index) const
+        {
+            Ref<PrismShader> shader = m_Ref.As<PrismShader>();
+            if (!shader) return PrismShaderCompiler::PropertyType::None;
+            const auto& uniforms = shader->GetUniforms();
+            if (index >= uniforms.size()) return PrismShaderCompiler::PropertyType::None;
+            return uniforms[index].Type;
+        }
+        std::string GetUniformName(uint32_t index) const
+        {
+            Ref<PrismShader> shader = m_Ref.As<PrismShader>();
+            if (!shader) return "";
+            const auto& uniforms = shader->GetUniforms();
+            if (index >= uniforms.size()) return "";
+            return uniforms[index].Name;
+        }
+        std::string GetUniformDisplayName(uint32_t index) const
+        {
+            Ref<PrismShader> shader = m_Ref.As<PrismShader>();
+            if (!shader) return "";
+            const auto& uniforms = shader->GetUniforms();
+            if (index >= uniforms.size()) return "";
+            return uniforms[index].DisplayName;
+        }
+        py::object GetUniformDefaultValue(uint32_t index) const
+        {
+            Ref<PrismShader> shader = m_Ref.As<PrismShader>();
+            if (!shader) return py::none();
+            const auto& uniforms = shader->GetUniforms();
+            if (index >= uniforms.size()) return py::none();
+            const auto& uni = uniforms[index];
+            const auto& dv = uni.DefaultValue;
+            using PT = PrismShaderCompiler::PropertyType;
+            switch (uni.Type)
+            {
+            case PT::Float:
+            case PT::Range:
+                return dv.empty() ? py::none() : py::cast(dv[0].Float);
+            case PT::Int:
+            case PT::Enum:
+                return dv.empty() ? py::none() : py::cast(dv[0].Int);
+            case PT::Bool:
+                return dv.empty() ? py::none() : py::cast(dv[0].Bool);
+            case PT::Vector2:
+                if (dv.size() >= 2) return py::cast(glm::vec2(dv[0].Float, dv[1].Float));
+                return py::none();
+            case PT::Vector3:
+            case PT::Color3:
+                if (dv.size() >= 3) return py::cast(glm::vec3(dv[0].Float, dv[1].Float, dv[2].Float));
+                return py::none();
+            case PT::Vector4:
+            case PT::Color:
+                if (dv.size() >= 4) return py::cast(glm::vec4(dv[0].Float, dv[1].Float, dv[2].Float, dv[3].Float));
+                return py::none();
+            case PT::Matrix4:
+            {
+                if (dv.size() >= 16)
+                {
+                    glm::mat4 m(1.0f);
+                    for (int i = 0; i < 16; ++i) glm::value_ptr(m)[i] = dv[i].Float;
+                    return py::cast(m);
+                }
+                return py::none();
+            }
+            case PT::Matrix3:
+            case PT::Texture2D:
+            case PT::Texture2DMS:
+            case PT::TextureCube:
+            case PT::None:
+            default:
+                return py::none();
+            }
+        }
+    public:
+        Ref<PrismShader> GetShaderRef() const { return m_Ref.As<PrismShader>(); }
+    };
+
     class PythonMaterial : public PythonRefCounted
     {
     public:
         PythonMaterial() = default;
         PythonMaterial(Ref<Material> material) : PythonRefCounted(std::move(material)) {}
-        PythonMaterial(const char* shaderName)
-            : PythonRefCounted(Material::Create(AssetManager::GetShaderLibrary()->Get(shaderName))) {}
+        PythonMaterial(const PythonPrismShader& shader)
+            : PythonRefCounted(Material::Create(shader.GetShaderRef())) {}
         virtual std::string __Repr__()
         {
             std::string result;
@@ -872,9 +975,37 @@ PYBIND11_MODULE(PrismEngine, m)
         .def(py::init<>())
         .def(py::init<uint32_t, uint32_t>())
         .def("__repr__", &PythonTexture2D::__Repr__);
+    py::enum_<PrismShaderCompiler::PropertyType>(m, "UniformType")
+        .value("None", PrismShaderCompiler::PropertyType::None)
+        .value("Bool", PrismShaderCompiler::PropertyType::Bool)
+        .value("Color", PrismShaderCompiler::PropertyType::Color)
+        .value("Color3", PrismShaderCompiler::PropertyType::Color3)
+        .value("Float", PrismShaderCompiler::PropertyType::Float)
+        .value("Int", PrismShaderCompiler::PropertyType::Int)
+        .value("Vector2", PrismShaderCompiler::PropertyType::Vector2)
+        .value("Vector3", PrismShaderCompiler::PropertyType::Vector3)
+        .value("Vector4", PrismShaderCompiler::PropertyType::Vector4)
+        .value("Range", PrismShaderCompiler::PropertyType::Range)
+        .value("Matrix3", PrismShaderCompiler::PropertyType::Matrix3)
+        .value("Matrix4", PrismShaderCompiler::PropertyType::Matrix4)
+        .value("Texture2D", PrismShaderCompiler::PropertyType::Texture2D)
+        .value("Texture2DMS", PrismShaderCompiler::PropertyType::Texture2DMS)
+        .value("TextureCube", PrismShaderCompiler::PropertyType::TextureCube)
+        .value("Enum", PrismShaderCompiler::PropertyType::Enum);
+    py::class_<PythonPrismShader, PythonAsset>(m, "PrismShader")
+        .def(py::init<>())
+        .def_static("GetShader", &PythonPrismShader::GetShader)
+        .def("__repr__", &PythonPrismShader::__Repr__)
+        .def_property_readonly("Name", &PythonPrismShader::GetName)
+        .def("GetName", &PythonPrismShader::GetName)
+        .def("GetUniformCount", &PythonPrismShader::GetUniformCount)
+        .def("GetUniformType", &PythonPrismShader::GetUniformType)
+        .def("GetUniformName", &PythonPrismShader::GetUniformName)
+        .def("GetUniformDisplayName", &PythonPrismShader::GetUniformDisplayName)
+        .def("GetUniformDefaultValue", &PythonPrismShader::GetUniformDefaultValue);
     py::class_<PythonMaterial, PythonRefCounted>(m, "Material")
         .def(py::init<>())
-        .def(py::init<const char*>())
+        .def(py::init<const PythonPrismShader&>())
         .def("__repr__", &PythonMaterial::__Repr__)
         .def("SetFloat", &PythonMaterial::SetFloat)
         .def("SetInt", &PythonMaterial::SetInt)

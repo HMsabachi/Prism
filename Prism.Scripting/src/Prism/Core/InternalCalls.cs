@@ -13,6 +13,9 @@ namespace Prism
         // Asset
         internal static delegate* unmanaged[Cdecl]<IntPtr, AssetType> Prism_Asset_GetType;
         internal static delegate* unmanaged[Cdecl]<IntPtr, UInt64> Prism_Asset_GetHandle;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString*, void> Prism_Asset_GetFilePath;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString*, void> Prism_Asset_GetFileName;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString*, void> Prism_Asset_GetExtension;
         // Log
         internal static delegate* unmanaged[Cdecl]<Log.LogLevel, NativeString, void> Prism_Log_LogMessage;
         // Time
@@ -54,6 +57,9 @@ namespace Prism
         // Texture2D
         internal static delegate* unmanaged[Cdecl]<UInt32, UInt32, IntPtr> Prism_Texture2D_Constructor;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeArray<Vector4>, Int32, void> Prism_Texture2D_SetData;
+        // UniformBuffer
+        internal static delegate* unmanaged[Cdecl]<UInt32, IntPtr> Prism_UniformBuffer_Constructor;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr, UInt32, void> Prism_UniformBuffer_SetData;
         // PrismShader
         internal static delegate* unmanaged[Cdecl]<NativeString, IntPtr> Prism_PrismShader_GetShader;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString*, void> Prism_PrismShader_GetName;

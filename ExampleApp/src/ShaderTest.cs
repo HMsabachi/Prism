@@ -15,6 +15,9 @@ namespace Example
             // Test: PrismShader
             var shader = PrismShader.GetShader("Standard/PrismPBR");
             Log.Trace($"Shader Name: {shader.Name}");
+            Log.Trace($"Shader FilePath: {shader.FilePath}");
+            Log.Trace($"Shader FileName: {shader.FileName}");
+            Log.Trace($"Shader Extension: {shader.Extension}");
             Log.Trace($"Shader UnifromCount: {shader.GetUniformCount()}");
             for (UInt32 i = 0; i < shader.GetUniformCount(); i++)
             {

@@ -14,6 +14,7 @@ namespace Prism
     class Mesh;
     class Texture2D;
     class PrismShader;
+    class UniformBuffer;
     class Material;
     class RefCounted;
     class Asset;
@@ -33,6 +34,9 @@ namespace Prism
         // Asset
         uint32_t Prism_Asset_GetType(Asset* nativePtr);
         uint64_t Prism_Asset_GetHandle(Asset* nativePtr);
+        void Prism_Asset_GetFilePath(Asset* nativePtr, Rolky::String* outStr);
+        void Prism_Asset_GetFileName(Asset* nativePtr, Rolky::String* outStr);
+        void Prism_Asset_GetExtension(Asset* nativePtr, Rolky::String* outStr);
         // Log
         enum class LogLevel : int32_t
         {
@@ -137,6 +141,9 @@ namespace Prism
         void Prism_Physics_OverlapSphereNonAlloc(glm::vec3* origin, float radius, OverlapHitData* outBuffer, int32_t bufferSize, int32_t* outCount);
         float Prism_Physics_GetGravity();
         void Prism_Physics_SetGravity(float gravity);
+        // UniformBuffer
+        UniformBuffer* Prism_UniformBuffer_Constructor(uint32_t size);
+        void Prism_UniformBuffer_SetData(UniformBuffer* _this, void* data, uint32_t size);
         // PrismShader
         PrismShader* Prism_PrismShader_GetShader(Rolky::String shaderName);
         void Prism_PrismShader_GetName(PrismShader* _this, Rolky::String* outName);

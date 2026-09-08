@@ -64,6 +64,9 @@ namespace Prism
         // Asset
         PR_ADD_INTERNAL_CALL(Prism_Asset_GetType);
         PR_ADD_INTERNAL_CALL(Prism_Asset_GetHandle);
+        PR_ADD_INTERNAL_CALL(Prism_Asset_GetFilePath);
+        PR_ADD_INTERNAL_CALL(Prism_Asset_GetFileName);
+        PR_ADD_INTERNAL_CALL(Prism_Asset_GetExtension);
         // Log
         PR_ADD_INTERNAL_CALL(Prism_Log_LogMessage);
         // Time
@@ -151,6 +154,9 @@ namespace Prism
         // Texture2D
         PR_ADD_INTERNAL_CALL(Prism_Texture2D_Constructor);
         PR_ADD_INTERNAL_CALL(Prism_Texture2D_SetData);
+        // UniformBuffer
+        PR_ADD_INTERNAL_CALL(Prism_UniformBuffer_Constructor);
+        PR_ADD_INTERNAL_CALL(Prism_UniformBuffer_SetData);
         // PrismShader
         PR_ADD_INTERNAL_CALL(Prism_PrismShader_GetShader);
         PR_ADD_INTERNAL_CALL(Prism_PrismShader_GetName);

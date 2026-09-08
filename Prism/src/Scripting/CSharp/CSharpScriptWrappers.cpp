@@ -17,6 +17,7 @@
 #include "Prism/Scene/Systems/TransformSystem.h"
 #include "Scripting/CSharp/CSharpScriptMetaRegistry.h"
 #include "Prism/Renderer/Renderer.h"
+#include "Prism/Renderer/Buffer/UniformBuffer.h"
 #include "Prism/Asset/AssetManager.h"
 #include "Prism/Asset/ModelImporter.h"
 #include <glm/gtc/type_ptr.hpp>
@@ -60,6 +61,9 @@ namespace Prism {
 #pragma region Asset
         uint32_t Prism_Asset_GetType(Asset* nativePtr) { return (uint32_t)nativePtr->Type; }
         uint64_t Prism_Asset_GetHandle(Asset* nativePtr) { return (uint64_t)nativePtr->Handle; }
+        void Prism_Asset_GetFilePath(Asset* nativePtr, Rolky::String* outStr) { outStr->Assign(nativePtr->FilePath); }
+        void Prism_Asset_GetFileName(Asset* nativePtr, Rolky::String* outStr) { outStr->Assign(nativePtr->FileName); }
+        void Prism_Asset_GetExtension(Asset* nativePtr, Rolky::String* outStr) { outStr->Assign(nativePtr->Extension); }
 #pragma endregion
 
 #pragma region Log
@@ -591,6 +595,18 @@ namespace Prism {
             actor->SetAngularVelocity(*velocity);
         }
 
+#pragma endregion
+#pragma region UniformBuffer
+        UniformBuffer* Prism_UniformBuffer_Constructor(uint32_t size)
+        {
+            Ref<UniformBuffer> result = UniformBuffer::Create(size);
+            result->IncRefCount();
+            return result.Raw();
+        }
+        void Prism_UniformBuffer_SetData(UniformBuffer* _this, void* data, uint32_t size)
+        {
+            _this->SetData(data, size);
+        }
 #pragma endregion
 
 #pragma region PrismShader
