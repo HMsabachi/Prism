@@ -25,6 +25,7 @@ namespace Example
             {
                 m_MeshRenderer.Mesh = mesh;
                 m_BoundMesh = mesh;
+                Log.Trace($"Asset Type :{mesh.Type}");
             }
         }
     }

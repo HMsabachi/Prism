@@ -7,7 +7,7 @@ namespace Prism
     public class RefCounted
     {
         protected IntPtr m_NativePtr = IntPtr.Zero;
-        internal IntPtr NativePtr => m_NativePtr;
+        internal IntPtr GetNativePtr() => m_NativePtr;
         protected RefCounted(IntPtr nativePtr) => m_NativePtr = nativePtr;
         ~RefCounted()
         {

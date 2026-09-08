@@ -48,7 +48,7 @@ namespace Prism
             }
             set
             {
-                IntPtr ptr = value == null ? IntPtr.Zero : value.NativePtr;
+                IntPtr ptr = value == null ? IntPtr.Zero : value.GetNativePtr();
                 unsafe { InternalCalls.Prism_MeshRendererComponent_SetMesh(Entity.ID, ptr); }
             }
         }
@@ -62,7 +62,7 @@ namespace Prism
             }
             set
             {
-                IntPtr ptr = value.NativePtr;
+                IntPtr ptr = value.GetNativePtr();
                 unsafe { InternalCalls.Prism_MeshRendererComponent_SetMaterial(Entity.ID, ptr, 0); }
             }
         }
@@ -90,7 +90,7 @@ namespace Prism
                     int count = value.Length;
                     var handles = new IntPtr[count];
                     for (int i = 0; i < count; i++)
-                        handles[i] = value[i] != null ? value[i].NativePtr : IntPtr.Zero;
+                        handles[i] = value[i] != null ? value[i].GetNativePtr() : IntPtr.Zero;
                     fixed (IntPtr* p = handles)
                         InternalCalls.Prism_MeshRendererComponent_SetMaterials(Entity.ID, p, (uint)count);
                 }
@@ -109,7 +109,7 @@ namespace Prism
 
         public void SetMaterial(int index, Material material)
         {
-            IntPtr ptr = material != null ? material.NativePtr : IntPtr.Zero;
+            IntPtr ptr = material != null ? material.GetNativePtr() : IntPtr.Zero;
             unsafe { InternalCalls.Prism_MeshRendererComponent_SetMaterial(Entity.ID, ptr, (uint)index); }
         }
 
