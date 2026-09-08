@@ -196,14 +196,14 @@ namespace Prism::PythonScript
 
     public:
         PythonEntity(uint64_t id = 0) : m_EntityID(id) {}
-        ~PythonEntity() { PR_CORE_TRACE("[Python] Destroyed Entity {0}", m_EntityID); }
+        ~PythonEntity() { /*PR_CORE_TRACE("[Python] Destroyed Entity {0}", m_EntityID);*/ }
         std::string __Repr__() { return fmt::format(" <Entity ID = {}>", m_EntityID); }
 
         uint64_t GetID() const { return m_EntityID; }
         void SetID(uint64_t id)
         {
             m_EntityID = id;
-            PR_CORE_TRACE("[Python] Created Entity {0}", id);
+            // PR_CORE_TRACE("[Python] Created Entity {0}", id);
         }
 
         pybind11::object GetComponent(pybind11::object cls)

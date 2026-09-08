@@ -30,7 +30,7 @@ namespace Example
 
         private Collider[] m_Colliders = new Collider[10];
 
-        void OnCreate()
+        public void OnCreate()
         {
             m_Transform = GetComponent<TransformComponent>();
             m_RigidBody = GetComponent<RigidBodyComponent>();

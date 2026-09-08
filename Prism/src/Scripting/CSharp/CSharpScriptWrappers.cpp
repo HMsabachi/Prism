@@ -593,17 +593,88 @@ namespace Prism {
 
 #pragma endregion
 
-#pragma region Material
-        Material* Prism_Material_Constructor(Rolky::String shaderName)
+#pragma region PrismShader
+        PrismShader* Prism_PrismShader_GetShader(Rolky::String shaderName)
         {
-            std::string name = shaderName;
-            Rolky::String::Free(shaderName);
-            const auto& shader = AssetManager::GetShaderLibrary()->Get(name);
-            Ref<Material> material = Material::Create(shader);
+            Rolky::ScopedString name(shaderName);
+            Ref<PrismShader> shader = AssetManager::GetShaderLibrary()->Get(name);
+            shader->IncRefCount();
+            return shader.Raw();
+        }
+        void Prism_PrismShader_GetName(PrismShader* _this, Rolky::String* outName)
+        {
+            outName->Assign(_this->GetName());
+        }
+        uint32_t Prism_PrismShader_GetUniformCount(PrismShader* _this)
+        {
+            auto& uniforms = _this->GetUniforms();
+            return (uint32_t)uniforms.size();
+        }
+        uint32_t Prism_PrismShader_GetUniformType(PrismShader* _this, uint32_t index)
+        {
+            auto& uniforms = _this->GetUniforms();
+            if (index >= uniforms.size())
+            {
+                PR_CORE_ERROR("Uniform index out of range");
+                return static_cast<uint32_t>(PrismShaderCompiler::PropertyType::None);
+            }
+            return static_cast<uint32_t>(uniforms[index].Type);
+        }
+        void Prism_PrismShader_GetUniformName(PrismShader* _this, uint32_t index, Rolky::String* outName)
+        {
+            auto& uniforms = _this->GetUniforms();
+            if (index >= uniforms.size())
+            {
+                PR_CORE_ERROR("Uniform index out of range");
+                outName->Assign("");
+                return;
+            }
+            outName->Assign(uniforms[index].Name);
+        }
+
+        void Prism_PrismShader_GetUniformDisplayName(PrismShader* _this, uint32_t index, Rolky::String* outName)
+        {
+            auto& uniforms = _this->GetUniforms();
+            if (index >= uniforms.size())
+            {
+                PR_CORE_ERROR("Uniform index out of range");
+                outName->Assign("");
+                return;
+            }
+            outName->Assign(uniforms[index].DisplayName);
+        }
+
+        void Prism_PrismShader_GetUniformDefualtValue(PrismShader* _this, uint32_t index, void* data)
+        {
+            auto& uniforms = _this->GetUniforms();
+            if (index >= uniforms.size())
+            {
+                PR_CORE_ERROR("Uniform index out of range");
+                return;
+            }
+            auto& uni = uniforms[index];
+            uint32_t offset = (uint32_t)uni.BufferOffset;
+            uint32_t size = (uint32_t)uni.BufferSize;
+            if (size == 0) return;
+            if (!uni.DefaultValue.empty())
+            {
+                uint32_t copySize = (uint32_t)(uni.DefaultValue.size() * sizeof(PrismShaderCompiler::Scalar));
+                if (copySize > size) copySize = size;
+                memcpy(data, uni.DefaultValue.data(), copySize);
+            }
+        }
+
+#pragma endregion
+
+
+#pragma region Material
+
+        Material* Prism_Material_Constructor(PrismShader* shader)
+        {
+            Ref<Material> material = Material::Create(Ref<PrismShader>(shader));
             material->IncRefCount();
             return material.Raw();
         }
-
 
         void Prism_Material_SetFloat(Material* _this, Rolky::String uniform, float value)
         {

@@ -54,9 +54,16 @@ namespace Prism
         // Texture2D
         internal static delegate* unmanaged[Cdecl]<UInt32, UInt32, IntPtr> Prism_Texture2D_Constructor;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeArray<Vector4>, Int32, void> Prism_Texture2D_SetData;
+        // PrismShader
+        internal static delegate* unmanaged[Cdecl]<NativeString, IntPtr> Prism_PrismShader_GetShader;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString*, void> Prism_PrismShader_GetName;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32> Prism_PrismShader_GetUniformCount;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32, UniformType> Prism_PrismShader_GetUniformType;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32, NativeString*, void> Prism_PrismShader_GetUniformName;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32, NativeString*, void> Prism_PrismShader_GetUniformDisplayName;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32, IntPtr, void> Prism_PrismShader_GetUniformDefualtValue;
         // Material
-        internal static delegate* unmanaged[Cdecl]<NativeString, IntPtr> Prism_Material_Constructor;
-        internal static delegate* unmanaged[Cdecl]<IntPtr*, void> Prism_Material_GetDefaultMaterial;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr> Prism_Material_Constructor;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, float, void> Prism_Material_SetFloat;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, int, void> Prism_Material_SetInt;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, Bool32, void> Prism_Material_SetBool;

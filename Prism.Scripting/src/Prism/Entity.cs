@@ -5,11 +5,11 @@ namespace Prism
     public class Entity
     {
         private ulong m_ID;
-        public ulong ID { get { return m_ID; } internal set { m_ID = value; Log.Trace("Created Entity {0}", ID); } }
+        public ulong ID { get { return m_ID; } internal set { m_ID = value; /*Log.Trace("Created Entity {0}", ID);*/ } }
 
         public Entity() => m_ID = 0;
         internal Entity(ulong id) => ID = id;
-        ~Entity() => Log.Trace("Destroyed Entity {0}", ID);
+        // ~Entity() => Log.Trace("Destroyed Entity {0}", ID);
 
         public TransformComponent Transform => GetComponent<TransformComponent>();
 

@@ -151,6 +151,14 @@ namespace Prism
         // Texture2D
         PR_ADD_INTERNAL_CALL(Prism_Texture2D_Constructor);
         PR_ADD_INTERNAL_CALL(Prism_Texture2D_SetData);
+        // PrismShader
+        PR_ADD_INTERNAL_CALL(Prism_PrismShader_GetShader);
+        PR_ADD_INTERNAL_CALL(Prism_PrismShader_GetName);
+        PR_ADD_INTERNAL_CALL(Prism_PrismShader_GetUniformCount);
+        PR_ADD_INTERNAL_CALL(Prism_PrismShader_GetUniformType);
+        PR_ADD_INTERNAL_CALL(Prism_PrismShader_GetUniformName);
+        PR_ADD_INTERNAL_CALL(Prism_PrismShader_GetUniformDisplayName);
+        PR_ADD_INTERNAL_CALL(Prism_PrismShader_GetUniformDefualtValue);
         // Material
         PR_ADD_INTERNAL_CALL(Prism_Material_Constructor);
         PR_ADD_INTERNAL_CALL(Prism_Material_SetFloat);

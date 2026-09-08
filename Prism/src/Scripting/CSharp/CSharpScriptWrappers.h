@@ -13,6 +13,7 @@ namespace Prism
     struct OverlapHitData;
     class Mesh;
     class Texture2D;
+    class PrismShader;
     class Material;
     class RefCounted;
     class Asset;
@@ -136,9 +137,16 @@ namespace Prism
         void Prism_Physics_OverlapSphereNonAlloc(glm::vec3* origin, float radius, OverlapHitData* outBuffer, int32_t bufferSize, int32_t* outCount);
         float Prism_Physics_GetGravity();
         void Prism_Physics_SetGravity(float gravity);
-
+        // PrismShader
+        PrismShader* Prism_PrismShader_GetShader(Rolky::String shaderName);
+        void Prism_PrismShader_GetName(PrismShader* _this, Rolky::String* outName);
+        uint32_t Prism_PrismShader_GetUniformCount(PrismShader* _this);
+        uint32_t Prism_PrismShader_GetUniformType(PrismShader* _this, uint32_t index);
+        void Prism_PrismShader_GetUniformName(PrismShader* _this, uint32_t index, Rolky::String* outName);
+        void Prism_PrismShader_GetUniformDisplayName(PrismShader* _this, uint32_t index, Rolky::String* outName);
+        void Prism_PrismShader_GetUniformDefualtValue(PrismShader* _this, uint32_t index, void* data);
         // Material
-        Material* Prism_Material_Constructor(Rolky::String shaderName);
+        Material* Prism_Material_Constructor(PrismShader* shader);
         void Prism_Material_SetFloat(Material* _this, Rolky::String uniform, float value);
         void Prism_Material_SetInt(Material* _this, Rolky::String uniform, int value);
         void Prism_Material_SetBool(Material* _this, Rolky::String uniform, Rolky::Bool32 value);

@@ -5,9 +5,9 @@ namespace Prism
     public class Material : RefCounted
     {
 
-        public Material(string shaderName) : base(IntPtr.Zero)
+        public Material(PrismShader shader) : base(IntPtr.Zero)
         {
-            unsafe { m_NativePtr = InternalCalls.Prism_Material_Constructor(shaderName); }
+            unsafe { m_NativePtr = InternalCalls.Prism_Material_Constructor(shader.GetNativePtr()); }
         }
 
         internal Material(IntPtr nativePtr) : base(nativePtr) { }

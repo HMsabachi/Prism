@@ -327,9 +327,5 @@ namespace Prism
         return m_Shaders.at(name);
     }
 
-    const std::unordered_map<std::string, Ref<Prism::PrismShader>>& ShaderLibrary::GetAll() const
-    {
-        return m_Shaders;
-    }
 
 }

@@ -556,7 +556,8 @@ namespace Prism
             if (ImGui::TreeNode(TR("Shaders")))
             {
                 auto& shaders = Prism::PrismShader::s_AllShaders;
-                for (auto& shader : shaders)
+                auto& shaderMap = Prism::AssetManager::GetShaderLibrary()->GetAll();
+                for (auto& [name, shader] : shaderMap)
                 {
                     if (ImGui::TreeNode(shader->GetName().c_str()))
                     {

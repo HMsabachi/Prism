@@ -9,7 +9,7 @@ namespace Prism
     };
     public class Asset : RefCounted
     {
-        protected Asset(nint nativePtr) : base(nativePtr) { }
+        protected Asset(IntPtr nativePtr) : base(nativePtr) { }
 
         public AssetType Type
         {
