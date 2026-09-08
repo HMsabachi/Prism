@@ -198,11 +198,11 @@ namespace Prism
             for (auto& [hash, field] : binding.Fields)
             {
                 py::object* fieldType = field.GetPyType();
-                if (IsSubClassOf(*fieldType, *GetPythonType(PYTHON_TYPE_ASSET)))
+                if (IsSubClassOf(*fieldType, *GetPythonType(PYTHON_TYPE_REF)))
                 {
                     uint64_t assetPtr = field.GetBuffer().Read<uint64_t>();
                     auto object = instantiateClass(*fieldType);
-                    object.attr("SetAsset")(assetPtr);
+                    object.attr("SetRef")(assetPtr);
                     instance.attr(field.GetName().c_str()) = object;
                 }
                 field.SetInstance(&instance);

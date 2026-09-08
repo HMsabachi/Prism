@@ -101,19 +101,26 @@ namespace Prism::PythonScript
         static void Error(const char* message) { PR_CORE_ERROR("[Python] {}", message); }
         static void Critical(const char* message) { PR_CORE_FATAL("[Python] {}", message); }
     };
-
-    class PythonAsset
+    class PythonRef
     {
     protected:
-        Ref<Asset> m_Asset;
+        Ref<RefCounted> m_Ref;
+    public:
+        PythonRef() = default;
+        PythonRef(Ref<RefCounted> ref) : m_Ref(std::move(ref)) {}
+        void SetRef(uint64_t refPtr) { m_Ref = reinterpret_cast<RefCounted*>(refPtr); }
+        virtual ~PythonRef() = default;
+        virtual std::string __Repr__() { return fmt::format(" <Ref Handle = {}>", (uint64_t)m_Ref.Raw()); }
+    };
+
+    class PythonAsset : public PythonRef
+    {
     public:
         PythonAsset() = default;
-        PythonAsset(Ref<Asset> asset) : m_Asset(std::move(asset)) {}
-        PythonAsset(Asset* asset) : m_Asset(asset) {}
-        void SetAsset(uint64_t assetPtr) { m_Asset = reinterpret_cast<Asset*>(assetPtr); }
+        PythonAsset(Ref<Asset> asset) : PythonRef(std::move(asset)) {}
+        void SetAsset(uint64_t assetPtr) { m_Ref = reinterpret_cast<Asset*>(assetPtr); }
         virtual ~PythonAsset() = default;
-        virtual std::string __Repr__() { return fmt::format(" <Asset Handle = {}>", (uint64_t)m_Asset.Raw()); }
-        const Ref<Asset>& GetAsset() const { return m_Asset; }
+        virtual std::string __Repr__() { return fmt::format(" <Asset Handle = {}>", (uint64_t)m_Ref.Raw()); }
     };
 
     class PythonMesh : public PythonAsset
@@ -122,9 +129,9 @@ namespace Prism::PythonScript
         PythonMesh() = default;
         PythonMesh(Ref<Mesh> mesh) : PythonAsset(mesh) {}
         PythonMesh(const char* filepath) : PythonAsset(ModelImporter::Import(filepath).Mesh) {}
-        virtual std::string __Repr__() override { return fmt::format(" <Mesh Handle = {}>", (uint64_t)m_Asset.Raw()); }
+        virtual std::string __Repr__() override { return fmt::format(" <Mesh Handle = {}>", (uint64_t)m_Ref.Raw()); }
     public:
-        Ref<Mesh> GetMesh() const { return m_Asset.As<Mesh>(); }
+        Ref<Mesh> GetMesh() const { return m_Ref.As<Mesh>(); }
     };
 
     class PythonTexture2D : public PythonAsset
@@ -136,7 +143,7 @@ namespace Prism::PythonScript
         virtual std::string __Repr__() override
         {
             std::string result;
-            Ref<Texture2D> texture = m_Asset.As<Texture2D>();
+            Ref<Texture2D> texture = m_Ref.As<Texture2D>();
             if (texture)
             {
                 result = fmt::format(" <Texture2D Handle = {} Width = {} height = {}>"
@@ -146,43 +153,41 @@ namespace Prism::PythonScript
             return result;
         }
     public:
-        Ref<Texture2D> GetTexture() const { return m_Asset.As<Texture2D>(); }
+        Ref<Texture2D> GetTexture() const { return m_Ref.As<Texture2D>(); }
     };
 
-    class PythonMaterial
+    class PythonMaterial : public PythonRef
     {
-        Ref<Material> m_Material;
     public:
         PythonMaterial() = default;
-        PythonMaterial(Ref<Material> material) : m_Material(std::move(material)) {}
-        PythonMaterial(Material* material) : m_Material(material) {}
+        PythonMaterial(Ref<Material> material) : PythonRef(std::move(material)) {}
         PythonMaterial(const char* shaderName)
-            : m_Material(Material::Create(AssetManager::GetShaderLibrary()->Get(shaderName))) {}
+            : PythonRef(Material::Create(AssetManager::GetShaderLibrary()->Get(shaderName))) {}
         virtual std::string __Repr__()
         {
             std::string result;
-            if (m_Material)
+            if (GetMaterial())
             {
                 result = fmt::format(" <Material Handle = {} Shader = {}>"
-                    , (uint64_t)m_Material.Raw(), m_Material->GetShader()->GetName());
+                    , (uint64_t)m_Ref.Raw(), GetMaterial()->GetShader()->GetName());
             }
-            else result = fmt::format(" <Material Handle = {}>", (uint64_t)m_Material.Raw());
+            else result = fmt::format(" <Material Handle = {}>", (uint64_t)m_Ref.Raw());
             return result;
         }
-        void SetFloat(const char* uniform, float value) { m_Material->SetFloat(uniform, value); }
-        void SetInt(const char* uniform, int value) { m_Material->SetInt(uniform, value); }
-        void SetBool(const char* uniform, bool value) { m_Material->SetBool(uniform, value); }
-        void SetVector2(const char* uniform, const glm::vec2& value) { m_Material->SetVec2(uniform, value); }
-        void SetVector3(const char* uniform, const glm::vec3& value) { m_Material->SetVec3(uniform, value); }
-        void SetVector4(const char* uniform, const glm::vec4& value) { m_Material->SetVec4(uniform, value); }
-        void SetColor3(const char* uniform, const glm::vec3& value) { m_Material->SetColor3(uniform, value); }
-        void SetColor(const char* uniform, const glm::vec4& value) { m_Material->SetColor(uniform, value); }
-        void SetMatrix4(const char* uniform, const glm::mat4& value) { m_Material->SetMatrix4(uniform, value); }
-        void SetTexture(const char* uniform, const PythonTexture2D& texture) { m_Material->SetTexture(uniform, texture.GetTexture()); }
-        void SetKeyword(const char* name, bool enabled) { m_Material->SetKeyword(name, enabled); }
-        bool IsKeywordEnabled(const char* name) { return m_Material->IsKeywordEnabled(name); }
+        void SetFloat(const char* uniform, float value) { GetMaterial()->SetFloat(uniform, value); }
+        void SetInt(const char* uniform, int value) { GetMaterial()->SetInt(uniform, value); }
+        void SetBool(const char* uniform, bool value) { GetMaterial()->SetBool(uniform, value); }
+        void SetVector2(const char* uniform, const glm::vec2& value) { GetMaterial()->SetVec2(uniform, value); }
+        void SetVector3(const char* uniform, const glm::vec3& value) { GetMaterial()->SetVec3(uniform, value); }
+        void SetVector4(const char* uniform, const glm::vec4& value) { GetMaterial()->SetVec4(uniform, value); }
+        void SetColor3(const char* uniform, const glm::vec3& value) { GetMaterial()->SetColor3(uniform, value); }
+        void SetColor(const char* uniform, const glm::vec4& value) { GetMaterial()->SetColor(uniform, value); }
+        void SetMatrix4(const char* uniform, const glm::mat4& value) { GetMaterial()->SetMatrix4(uniform, value); }
+        void SetTexture(const char* uniform, const PythonTexture2D& texture) { GetMaterial()->SetTexture(uniform, texture.GetTexture()); }
+        void SetKeyword(const char* name, bool enabled) { GetMaterial()->SetKeyword(name, enabled); }
+        bool IsKeywordEnabled(const char* name) { return GetMaterial()->IsKeywordEnabled(name); }
     public:
-        Ref<Material> GetMaterial() const { return m_Material; }
+        Ref<Material> GetMaterial() const { return m_Ref.As<Material>(); }
     };
 
     class PythonEntity
@@ -852,9 +857,12 @@ PYBIND11_MODULE(PrismEngine, m)
         .def_static("Error", &PythonLog::Error)
         .def_static("Critical", &PythonLog::Critical);
 
-    py::class_<PythonAsset>(m, "Asset")
+    py::class_<PythonRef>(m, "Ref")
         .def(py::init<>())
-        .def("SetAsset", &PythonAsset::SetAsset)
+        .def("SetRef", &PythonRef::SetRef)
+        .def("__repr__", &PythonRef::__Repr__);
+    py::class_<PythonAsset, PythonRef>(m, "Asset")
+        .def(py::init<>())
         .def("__repr__", &PythonAsset::__Repr__);
     py::class_<PythonMesh, PythonAsset>(m, "Mesh")
         .def(py::init<>())
@@ -864,9 +872,8 @@ PYBIND11_MODULE(PrismEngine, m)
         .def(py::init<>())
         .def(py::init<uint32_t, uint32_t>())
         .def("__repr__", &PythonTexture2D::__Repr__);
-    py::class_<PythonMaterial>(m, "Material")
+    py::class_<PythonMaterial, PythonRef>(m, "Material")
         .def(py::init<>())
-        .def(py::init([](uint64_t ptr) { return PythonMaterial(reinterpret_cast<Material*>(ptr)); }))
         .def(py::init<const char*>())
         .def("__repr__", &PythonMaterial::__Repr__)
         .def("SetFloat", &PythonMaterial::SetFloat)
@@ -1207,6 +1214,7 @@ namespace Prism
             s_PythonTypeCache[PYTHON_TYPE_MATERIALREF] = py::type::of<PythonMaterial>();
             s_PythonTypeCache[PYTHON_TYPE_TEXTURE2DREF] = py::type::of<PythonTexture2D>();
             s_PythonTypeCache[PYTHON_TYPE_ASSET] = py::type::of<PythonAsset>();
+            s_PythonTypeCache[PYTHON_TYPE_REF] = py::type::of<PythonRef>();
 
             for (const auto& [id, type] : s_PythonTypeCache)
                 PR_CORE_INFO("[Python Meta] 注册类型: {} -> {}", id, (std::string)pybind11::str(type));

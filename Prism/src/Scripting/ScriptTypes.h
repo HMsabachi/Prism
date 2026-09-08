@@ -35,6 +35,7 @@ namespace Prism
     constexpr uint64_t PYTHON_TYPE_MATERIALREF = Hash::GenerateFNVHash64("PYTHON_TYPE_MATERIALREF");
     constexpr uint64_t PYTHON_TYPE_TEXTURE2DREF = Hash::GenerateFNVHash64("PYTHON_TYPE_TEXTURE2DREF");
 
+    constexpr uint64_t PYTHON_TYPE_REF = Hash::GenerateFNVHash("PYTHON_TYPE_REF");
     constexpr uint64_t PYTHON_TYPE_ASSET = Hash::GenerateFNVHash("PYTHON_TYPE_ASSET");
 
     enum class ScriptFieldType : uint16_t
