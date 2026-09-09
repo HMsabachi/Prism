@@ -437,7 +437,7 @@ namespace Prism {
 #pragma region Texture2D
         Texture2D* Prism_Texture2D_Constructor(uint32_t width, uint32_t height)
         {
-            Ref<Texture2D> result = Texture2D::Create(ImageFormat::RGBA, width, height);
+            Ref<Texture2D> result = Texture2D::Create(ImageFormat::RGBA8, width, height);
             result->IncRefCount();
             return result.Raw();
         }

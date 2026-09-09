@@ -20,7 +20,6 @@ PR_WARNING_DISABLE(4312)
 #include "Prism/Editor/AssetEditorPanel.h"
 #include "Prism/Math/Math.h"
 #include "Prism/Utilities/FileSystem.h"
-#include "Platform/OpenGL/OpenGLTexture.h"
 
 #include <filesystem>
 

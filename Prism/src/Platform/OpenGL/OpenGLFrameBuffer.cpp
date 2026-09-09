@@ -19,8 +19,10 @@ namespace Prism {
         {
             switch (format)
             {
-                case ImageFormat::DEPTH32F:        return GL_DEPTH_ATTACHMENT;
-                case ImageFormat::DEPTH24STENCIL8: return GL_DEPTH_STENCIL_ATTACHMENT;
+                case ImageFormat::DEPTH16:
+                case ImageFormat::DEPTH32F:         return GL_DEPTH_ATTACHMENT;
+                case ImageFormat::DEPTH24STENCIL8:
+                case ImageFormat::DEPTH32FSTENCIL8: return GL_DEPTH_STENCIL_ATTACHMENT;
             }
             PR_CORE_ASSERT(false, "Unknown depth format");
             return 0;
@@ -49,8 +51,10 @@ namespace Prism {
         {
             switch (format)
             {
+                case ImageFormat::DEPTH16:
                 case ImageFormat::DEPTH24STENCIL8:
                 case ImageFormat::DEPTH32F:
+                case ImageFormat::DEPTH32FSTENCIL8:
                     return true;
             }
             return false;

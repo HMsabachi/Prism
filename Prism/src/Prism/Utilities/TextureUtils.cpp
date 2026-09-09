@@ -68,16 +68,16 @@ namespace Prism
             switch (dxgi)
             {
                 case 71: format = ImageFormat::BC1; return true;
-                case 72: format = ImageFormat::BC1SRGB; return true;
+                case 72: format = ImageFormat::BC1_SRGB; return true;
                 case 74: format = ImageFormat::BC2; return true;
-                case 75: format = ImageFormat::BC2SRGB; return true;
+                case 75: format = ImageFormat::BC2_SRGB; return true;
                 case 77: format = ImageFormat::BC3; return true;
-                case 78: format = ImageFormat::BC3SRGB; return true;
+                case 78: format = ImageFormat::BC3_SRGB; return true;
                 case 80: format = ImageFormat::BC4; return true;
                 case 83: format = ImageFormat::BC5; return true;
-                case 95: format = ImageFormat::BC6H; return true;
+                case 95: format = ImageFormat::BC6H_UF16; return true;
                 case 98: format = ImageFormat::BC7; return true;
-                case 99: format = ImageFormat::BC7SRGB; return true;
+                case 99: format = ImageFormat::BC7_SRGB; return true;
                 default: return false;
             }
         }

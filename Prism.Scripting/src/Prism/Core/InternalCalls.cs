@@ -76,7 +76,7 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, Vector3*, void> Prism_Material_SetColor3;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, Vector4*, void> Prism_Material_SetColor;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, Matrix4*, void> Prism_Material_SetMatrix4;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, IntPtr, void> Prism_Material_SetTexture;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, IntPtr, void> Prism_Material_SetTexture2D;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, Vector2*, void> Prism_Material_SetVector2;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, Vector3*, void> Prism_Material_SetVector3;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, Vector4*, void> Prism_Material_SetVector4;

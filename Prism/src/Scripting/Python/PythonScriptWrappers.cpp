@@ -139,7 +139,7 @@ namespace Prism::PythonScript
     public:
         PythonTexture2D() = default;
         PythonTexture2D(Ref<Texture2D> texture) : PythonAsset(texture) {}
-        PythonTexture2D(uint32_t width, uint32_t height) : PythonAsset(Texture2D::Create(ImageFormat::RGBA, width, height)) {}
+        PythonTexture2D(uint32_t width, uint32_t height) : PythonAsset(Texture2D::Create(ImageFormat::RGBA8, width, height)) {}
         virtual std::string __Repr__() override
         {
             std::string result;

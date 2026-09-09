@@ -4,14 +4,18 @@ using System.Runtime.CompilerServices;
 using Rolky.Managed.Interop;
 namespace Prism
 {
+    public class Texture : Asset
+    {
+        internal Texture(IntPtr nativePtr) : base(nativePtr) { }
+
+    }
     public class Texture2D : Asset
     {
-
+        internal Texture2D(IntPtr nativePtr) : base(nativePtr) { }
         public Texture2D(uint width, uint height) : base(IntPtr.Zero)
         {
             unsafe { m_NativePtr = InternalCalls.Prism_Texture2D_Constructor(width, height);}
         }
-        internal Texture2D(IntPtr nativePtr) : base(nativePtr) { }
 
         public void SetData(Vector4[] data)
         {

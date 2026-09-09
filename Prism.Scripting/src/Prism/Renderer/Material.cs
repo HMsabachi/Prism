@@ -59,7 +59,7 @@ namespace Prism
 
         public void SetTexture2D(string uniform, Texture2D texture)
         {
-            unsafe { InternalCalls.Prism_Material_SetTexture(m_NativePtr, uniform, texture.GetNativePtr()); }
+            unsafe { InternalCalls.Prism_Material_SetTexture2D(m_NativePtr, uniform, texture.GetNativePtr()); }
         }
 
         public void SetKeyword(string name, bool enabled)
