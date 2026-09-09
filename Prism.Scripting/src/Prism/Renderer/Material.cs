@@ -57,7 +57,7 @@ namespace Prism
             unsafe { InternalCalls.Prism_Material_SetVector4(m_NativePtr, uniform, &value); }
         }
 
-        public void SetTexture(string uniform, Texture2D texture)
+        public void SetTexture2D(string uniform, Texture2D texture)
         {
             unsafe { InternalCalls.Prism_Material_SetTexture(m_NativePtr, uniform, texture.GetNativePtr()); }
         }

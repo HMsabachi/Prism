@@ -73,7 +73,7 @@ namespace Prism
             }
         }
 
-        public T GetUniformDefaultValue<T>(UInt32 index) where T : struct
+        public T GetUniformDefaultValue<T>(UInt32 index) where T : unmanaged
         {
             unsafe
             {

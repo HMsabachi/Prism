@@ -11,24 +11,18 @@ namespace Prism
             unsafe { m_NativePtr = InternalCalls.Prism_UniformBuffer_Constructor(size); }
         }
 
-        public void SetData<T>(in T[] data) where T : unmanaged
+        public unsafe void SetData<T>(in T[] data) where T : unmanaged
         {
-            unsafe
+            fixed (T* ptr = data)
             {
-                fixed (T* ptr = data)
-                {
-                    InternalCalls.Prism_UniformBuffer_SetData(m_NativePtr, (IntPtr)ptr, (UInt32)(sizeof(T) * data.Length));
-                }
+                InternalCalls.Prism_UniformBuffer_SetData(m_NativePtr, (IntPtr)ptr, (UInt32)(sizeof(T) * data.Length));
             }
         }
-        public void SetData<T>(in T data) where T : unmanaged
+        public unsafe void SetData<T>(in T data) where T : unmanaged
         {
-            unsafe
+            fixed (T* ptr = &data)
             {
-                fixed (T* ptr = &data)
-                {
-                    InternalCalls.Prism_UniformBuffer_SetData(m_NativePtr, (IntPtr)ptr, (UInt32)sizeof(T));
-                }
+                InternalCalls.Prism_UniformBuffer_SetData(m_NativePtr, (IntPtr)ptr, (UInt32)sizeof(T));
             }
             
         }

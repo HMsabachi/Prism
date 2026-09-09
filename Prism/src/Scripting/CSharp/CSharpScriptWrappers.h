@@ -163,7 +163,7 @@ namespace Prism
         void Prism_Material_SetMatrix4(Material* _this, Rolky::String uniform, glm::mat4* value);
         void Prism_Material_SetVector3(Material* _this, Rolky::String uniform, glm::vec3* value);
         void Prism_Material_SetVector4(Material* _this, Rolky::String uniform, glm::vec4* value);
-        void Prism_Material_SetTexture(Material* _this, Rolky::String uniform, Texture2D* texture);
+        void Prism_Material_SetTexture2D(Material* _this, Rolky::String uniform, Texture2D* texture);
         void Prism_Material_SetKeyword(Material* _this, Rolky::String name, Rolky::Bool32 enabled);
         Rolky::Bool32 Prism_Material_IsKeywordEnabled(Material* _this, Rolky::String name);
     }

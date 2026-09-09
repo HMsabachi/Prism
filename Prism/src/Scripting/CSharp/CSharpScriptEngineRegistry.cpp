@@ -176,7 +176,7 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_Material_SetVector2);
         PR_ADD_INTERNAL_CALL(Prism_Material_SetVector3);
         PR_ADD_INTERNAL_CALL(Prism_Material_SetVector4);
-        PR_ADD_INTERNAL_CALL(Prism_Material_SetTexture);
+        PR_ADD_INTERNAL_CALL(Prism_Material_SetTexture2D);
         PR_ADD_INTERNAL_CALL(Prism_Material_SetKeyword);
         PR_ADD_INTERNAL_CALL(Prism_Material_IsKeywordEnabled);
 

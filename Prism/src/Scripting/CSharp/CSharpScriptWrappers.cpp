@@ -734,7 +734,7 @@ namespace Prism {
             uniform.Free(uniform);
         }
 
-        void Prism_Material_SetTexture(Material* _this, Rolky::String uniform, Texture2D* texture)
+        void Prism_Material_SetTexture2D(Material* _this, Rolky::String uniform, Texture2D* texture)
         {
             _this->SetTexture(uniform, Ref<Texture2D>(texture));
             uniform.Free(uniform);
