@@ -151,9 +151,24 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_Physics_OverlapSphereNonAlloc);
         PR_ADD_INTERNAL_CALL(Prism_Physics_GetGravity);
         PR_ADD_INTERNAL_CALL(Prism_Physics_SetGravity);
+        // Image
+        PR_ADD_INTERNAL_CALL(Prism_Image_GetWidth);
+        PR_ADD_INTERNAL_CALL(Prism_Image_GetHeight);
+        PR_ADD_INTERNAL_CALL(Prism_Image_GetSamples);
+        PR_ADD_INTERNAL_CALL(Prism_Image_GetFormat);
+        PR_ADD_INTERNAL_CALL(Prism_Image2D_Constructor);
+        PR_ADD_INTERNAL_CALL(Prism_ImageCube_Constructor);
+        PR_ADD_INTERNAL_CALL(Prism_ImageCube_GenerateMipMap);
+        PR_ADD_INTERNAL_CALL(Prism_ImageCube_CopyTo);
         // Texture2D
+        PR_ADD_INTERNAL_CALL(Prism_Texture_GetWidth);
+        PR_ADD_INTERNAL_CALL(Prism_Texture_GetHeight);
+        PR_ADD_INTERNAL_CALL(Prism_Texture_GetFormat);
         PR_ADD_INTERNAL_CALL(Prism_Texture2D_Constructor);
         PR_ADD_INTERNAL_CALL(Prism_Texture2D_SetData);
+        PR_ADD_INTERNAL_CALL(Prism_Texture2D_GetImage);
+        PR_ADD_INTERNAL_CALL(Prism_TextureCube_Constructor);
+        PR_ADD_INTERNAL_CALL(Prism_TextureCube_GetImage);
         // UniformBuffer
         PR_ADD_INTERNAL_CALL(Prism_UniformBuffer_Constructor);
         PR_ADD_INTERNAL_CALL(Prism_UniformBuffer_SetData);

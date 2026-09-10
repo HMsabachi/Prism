@@ -5,10 +5,11 @@ namespace Prism
     public class UniformBuffer : RefCounted
     {
         protected UniformBuffer(nint nativePtr) : base(nativePtr) { }
-
-        public UniformBuffer(UInt32 size) : base(IntPtr.Zero)
+        public static UniformBuffer Create(UInt32 size)
         {
-            unsafe { m_NativePtr = InternalCalls.Prism_UniformBuffer_Constructor(size); }
+            IntPtr nativePtr = IntPtr.Zero;
+            unsafe { nativePtr = InternalCalls.Prism_UniformBuffer_Constructor(size); }
+            return new UniformBuffer(nativePtr);
         }
 
         public unsafe void SetData<T>(in T[] data) where T : unmanaged

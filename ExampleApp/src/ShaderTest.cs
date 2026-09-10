@@ -10,6 +10,7 @@ namespace Example
     public class ShaderTest : Behaviour
     {
         List<Material> materials = new List<Material>();
+        UInt32[] data = new UInt32[128];
         public void OnCreate()
         {
             // Test: PrismShader
@@ -27,10 +28,13 @@ namespace Example
                 Vector3 uniformValue = shader.GetUniformDefaultValue<Vector3>(i);
                 Log.Trace($"Uniform {i}: {uniformName}, {uniformDisplayName}, Type: {uniformType}, Value: {uniformValue}");
             }
-            for (UInt32 i = 0; i < 100; i++)
-            {
-                materials.Add(new Material(shader));
-            }
+            Image2D image = Image2D.Create<UInt32>(ImageFormat.RGB8, 8, 8, data, 1);
+            Log.Trace($"Image2D: {image.Width}x{image.Height}, Format: {image.Format}, Samples: {image.Samples}");
+            Texture2D texture = Texture2D.Create(10, 10);
+            Log.Trace($"Texture2D: {texture.Width}x{texture.Height}, Format: {texture.Format}");
+            image = texture.GetImage();
+            Log.Trace($"Texture2D Image2D: {image.Width}x{image.Height}, Format: {image.Format}, Samples: {image.Samples}");
+
         }
 
         public void OnUpdate()

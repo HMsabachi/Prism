@@ -54,9 +54,24 @@ namespace Prism
         // Mesh
         internal static delegate* unmanaged[Cdecl]<NativeString, IntPtr> Prism_Mesh_Constructor;
         internal static delegate* unmanaged[Cdecl]<float, float, IntPtr> Prism_MeshFactory_CreatePlane;
-        // Texture2D
+        // Image
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32> Prism_Image_GetWidth;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32> Prism_Image_GetHeight;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32> Prism_Image_GetSamples;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, ImageFormat> Prism_Image_GetFormat;
+        internal static delegate* unmanaged[Cdecl]<ImageFormat, UInt32, UInt32, IntPtr, UInt32, IntPtr> Prism_Image2D_Constructor;
+        internal static delegate* unmanaged[Cdecl]<ImageFormat, UInt32, UInt32, IntPtr, IntPtr> Prism_ImageCube_Constructor;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, void> Prism_ImageCube_GenerateMipMap;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr, void> Prism_ImageCube_CopyTo;
+        // Texture
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32> Prism_Texture_GetWidth;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32> Prism_Texture_GetHeight;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, ImageFormat> Prism_Texture_GetFormat;
         internal static delegate* unmanaged[Cdecl]<UInt32, UInt32, IntPtr> Prism_Texture2D_Constructor;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeArray<Vector4>, Int32, void> Prism_Texture2D_SetData;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr> Prism_Texture2D_GetImage;
+        internal static delegate* unmanaged[Cdecl]<ImageFormat, UInt32, UInt32, IntPtr, IntPtr> Prism_TextureCube_Constructor;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr> Prism_TextureCube_GetImage;
         // UniformBuffer
         internal static delegate* unmanaged[Cdecl]<UInt32, IntPtr> Prism_UniformBuffer_Constructor;
         internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr, UInt32, void> Prism_UniformBuffer_SetData;

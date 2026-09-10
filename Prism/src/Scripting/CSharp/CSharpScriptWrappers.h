@@ -12,15 +12,21 @@ namespace Prism
 {
     struct OverlapHitData;
     class Mesh;
+    class Texture;
     class Texture2D;
+    class TextureCube;
     class PrismShader;
     class UniformBuffer;
     class Material;
+    class Image;
+    class Image2D;
+    class ImageCube;
     class RefCounted;
     class Asset;
     struct RaycastHit;
     enum class KeyCode : uint16_t;
     enum class MouseButton : uint16_t;
+    enum class ImageFormat;
     enum class CursorMode;
 
 }
@@ -107,11 +113,25 @@ namespace Prism
         // Mesh
         Mesh* Prism_Mesh_Constructor(Rolky::String filepath);
         Mesh* Prism_MeshFactory_CreatePlane(float width, float height);
+        // Image
+        uint32_t Prism_Image_GetWidth(Image* _this);
+        uint32_t Prism_Image_GetHeight(Image* _this);
+        uint32_t Prism_Image_GetSamples(Image* _this);
+        ImageFormat Prism_Image_GetFormat(Image* _this);
+        Image2D* Prism_Image2D_Constructor(ImageFormat format, uint32_t width, uint32_t height, const void* data, uint32_t samples);
+        ImageCube* Prism_ImageCube_Constructor(ImageFormat format, uint32_t width, uint32_t height, const void* data);
+        void Prism_ImageCube_GenerateMipMap(ImageCube* _this);
+        void Prism_ImageCube_CopyTo(ImageCube* _this, ImageCube* destination);
 
-        // Renderer
         // Texture2D
+        uint32_t Prism_Texture_GetWidth(Texture* _this);
+        uint32_t Prism_Texture_GetHeight(Texture* _this);
+        ImageFormat Prism_Texture_GetFormat(Texture* _this);
         Texture2D* Prism_Texture2D_Constructor(uint32_t width, uint32_t height);
         void Prism_Texture2D_SetData(Texture2D* _this, Rolky::Array<glm::vec4> inData, int32_t count);
+        Image2D* Prism_Texture2D_GetImage(Texture2D* _this);
+        TextureCube* Prism_TextureCube_Constructor(ImageFormat format, uint32_t width, uint32_t height, const void* data);
+        ImageCube* Prism_TextureCube_GetImage(TextureCube* _this);
 
         // RigidBody2DComponent
         void Prism_RigidBody2DComponent_ApplyLinearImpulse(uint64_t entityID, glm::vec2* impulse, glm::vec2* offset, Rolky::Bool32 wake);

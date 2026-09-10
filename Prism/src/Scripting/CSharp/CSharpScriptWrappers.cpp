@@ -434,7 +434,33 @@ namespace Prism {
 
 #pragma endregion
 
-#pragma region Texture2D
+#pragma region Image
+        uint32_t Prism_Image_GetWidth(Image* _this) { return _this->GetWidth();}
+        uint32_t Prism_Image_GetHeight(Image* _this) { return _this->GetHeight(); }
+        uint32_t Prism_Image_GetSamples(Image* _this) { return _this->GetSamples(); }
+        ImageFormat Prism_Image_GetFormat(Image* _this) { return _this->GetFormat(); }
+
+        Image2D* Prism_Image2D_Constructor(ImageFormat format, uint32_t width, uint32_t height, const void* data, uint32_t samples)
+        {
+            Ref<Image2D> result = Image2D::Create(format, width, height, data, samples);
+            result->IncRefCount();
+            return result.Raw();
+        }
+        ImageCube* Prism_ImageCube_Constructor(ImageFormat format, uint32_t width, uint32_t height, const void* data)
+        {
+            Ref<ImageCube> result = ImageCube::Create(format, width, height, data);
+            result->IncRefCount();
+            return result.Raw();
+        }
+        void Prism_ImageCube_GenerateMipMap(ImageCube* _this) { _this->GenerateMipMap(); }
+        void Prism_ImageCube_CopyTo(ImageCube* _this, ImageCube* destination) { _this->CopyTo(destination); }
+
+#pragma endregion
+
+#pragma region Texture
+        uint32_t Prism_Texture_GetWidth(Texture* _this) { return _this->GetWidth(); }
+        uint32_t Prism_Texture_GetHeight(Texture* _this) { return _this->GetHeight(); }
+        ImageFormat Prism_Texture_GetFormat(Texture* _this) { return _this->GetFormat(); }
         Texture2D* Prism_Texture2D_Constructor(uint32_t width, uint32_t height)
         {
             Ref<Texture2D> result = Texture2D::Create(ImageFormat::RGBA8, width, height);
@@ -461,7 +487,24 @@ namespace Prism {
             inData.Free(inData);
             _this->Unlock();
         }
-
+        Image2D* Prism_Texture2D_GetImage(Texture2D* _this)
+        {
+            Ref<Image2D> image = _this->GetImage();
+            image->IncRefCount();
+            return image.Raw();
+        }
+        TextureCube* Prism_TextureCube_Constructor(ImageFormat format, uint32_t width, uint32_t height, const void* data)
+        {
+            Ref<TextureCube> result = TextureCube::Create(format, width, height, data);
+            result->IncRefCount();
+            return result.Raw();
+        }
+        ImageCube* Prism_TextureCube_GetImage(TextureCube* _this)
+        {
+            Ref<ImageCube> image = _this->GetImage();
+            image->IncRefCount();
+            return image.Raw();
+        }
 #pragma endregion
 
 #pragma region RigidBody2DComponent

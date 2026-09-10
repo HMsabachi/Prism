@@ -4,13 +4,13 @@ namespace Prism
 {
     public class Material : RefCounted
     {
-
-        public Material(PrismShader shader) : base(IntPtr.Zero)
-        {
-            unsafe { m_NativePtr = InternalCalls.Prism_Material_Constructor(shader.GetNativePtr()); }
-        }
-
         internal Material(IntPtr nativePtr) : base(nativePtr) { }
+        public static Material Create(PrismShader shader)
+        {
+            IntPtr nativePtr = IntPtr.Zero;
+            unsafe { nativePtr = InternalCalls.Prism_Material_Constructor(shader.GetNativePtr()); }
+            return new Material(nativePtr);
+        }
 
         public void SetFloat(string uniform, float value)
         {

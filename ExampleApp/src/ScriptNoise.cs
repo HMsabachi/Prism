@@ -7,7 +7,7 @@ namespace Example
         private void OnCreate()
         {
             var shader = PrismShader.GetShader("Custom/NoiseTest");
-            var material = new Material(shader);
+            var material = Material.Create(shader);
             var meshComponent = GetComponent<MeshRendererComponent>();
             meshComponent.SetMaterial(0, material);
         }

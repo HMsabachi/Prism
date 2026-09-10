@@ -28,7 +28,7 @@ namespace Example
             uint width = (uint)noiseMap.GetLength(0);
             uint height = (uint)noiseMap.GetLength(1);
 
-            Texture2D texture = new Texture2D(width, height);
+            Texture2D texture = Texture2D.Create(width, height);
             Vector4[] colorMap = new Vector4[width * height];
             for (int y = 0; y < height; y++)
             {
