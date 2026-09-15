@@ -1,10 +1,11 @@
-from Prism import (
-    Behaviour, Log, Time, Input, KeyCodes,
+from PrismEngine import (
+    Behaviour, Log, Time, Input, KeyCode as KeyCodes,
     TransformComponent, MeshRendererComponent,
+    Texture2D, MeshFactory,
 )
 from Prism.Math import Vector2, Vector3, Vector4
 from Prism.Math.Mathf import Mathf
-from Prism.Renderer import Color, Texture2D, MeshFactory
+from Prism.Renderer import Color
 import Noise as NoiseUtil
 
 
@@ -27,11 +28,17 @@ class MapGenerator(Behaviour):
         width = len(noiseMap)
         height = len(noiseMap[0]) if width > 0 else 0
 
-        texture = Texture2D(width, height)
-        colorMap = []
+        texture = Texture2D.Create(width, height)
+        colorMap = bytearray(width * height * 4)
+        index = 0
         for y in range(height):
             for x in range(width):
-                colorMap.append(Mathf.Lerp(Color.Black, Color.White, noiseMap[x][y]))
+                color = Mathf.Lerp(Color.Black, Color.White, noiseMap[x][y])
+                colorMap[index] = int(color.x * 255.0)
+                colorMap[index + 1] = int(color.y * 255.0)
+                colorMap[index + 2] = int(color.z * 255.0)
+                colorMap[index + 3] = int(color.w * 255.0)
+                index += 4
 
         texture.SetData(colorMap)
 
@@ -49,7 +56,7 @@ class MapGenerator(Behaviour):
 
         material = meshComponent.GetMaterial(1)
         material.SetKeyword("ALBEDO_MAP", True)
-        material.SetTexture("u_AlbedoTexture", texture)
+        material.SetTexture2D("u_AlbedoTexture", texture)
 
         transformComponent = self.GetComponent(TransformComponent)
         position = transformComponent.Position

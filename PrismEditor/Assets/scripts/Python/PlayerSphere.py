@@ -1,9 +1,8 @@
-from Prism.Prism import Behaviour
-from Prism.Core import *
-from Prism.Component import *
+from PrismEngine import (
+    Behaviour, Input, KeyCode as KeyCodes, Log,
+    TransformComponent, MeshRendererComponent, RigidBodyComponent, Material,
+)
 from Prism.Math import *
-from Prism.Physics import *
-from Prism.Renderer import *
 from RandomColor import RandomColor
 
 class PlayerSphere(Behaviour):

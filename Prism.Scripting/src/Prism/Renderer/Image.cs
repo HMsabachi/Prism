@@ -151,7 +151,7 @@ namespace Prism
         {
             unsafe { InternalCalls.Prism_ImageCube_GenerateMipMap(m_NativePtr); }
         }
-        public void CopeTo(ImageCube target)
+        public void CopyTo(ImageCube target)
         {
             unsafe { InternalCalls.Prism_ImageCube_CopyTo(m_NativePtr, target.GetNativePtr()); }
         }

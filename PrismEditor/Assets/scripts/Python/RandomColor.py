@@ -1,5 +1,5 @@
 import random
-from Prism.Prism import Behaviour, MeshRendererComponent, Time, Log
+from PrismEngine import Behaviour, MeshRendererComponent, Time, Log
 from Prism.Math import Vector3
 
 

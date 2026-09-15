@@ -777,7 +777,7 @@ namespace Prism {
             return;
 
         uint64_t entityID = (uint64_t)e.GetComponent<IDComponent>().ID;
-        PythonScriptEngine::Instantiate(entityID, "Prism.Entity", *m_PythonScriptStorage);
+        PythonScriptEngine::Instantiate(entityID, "PrismEngine.Entity", *m_PythonScriptStorage);
         auto& comp = registry.get<PythonScriptComponent>(entity);
         comp.ScriptID = entityID;
 

@@ -1,1 +1,0 @@
-from PrismEngine import Collider, BoxCollider, SphereCollider, CapsuleCollider, MeshCollider

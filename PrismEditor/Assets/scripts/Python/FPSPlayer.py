@@ -1,14 +1,12 @@
-from Prism.Entity import Entity
-from Prism.Behaviour import Behaviour
-from Prism.Component import TransformComponent, RigidBodyComponent, MeshRendererComponent, ForceMode
-from Prism.Physics.Collider import BoxCollider, SphereCollider, CapsuleCollider, MeshCollider
-from Prism.Physics.Physics import Physics, RaycastHit
-from Prism.Core.Input import Input, CursorMode, MouseButton
-from Prism.Core.KeyCodes import KeyCodes
-from Prism.Core.Log import Log
+from PrismEngine import (
+    Entity, Behaviour,
+    TransformComponent, RigidBodyComponent, MeshRendererComponent, ForceMode,
+    BoxCollider, SphereCollider, CapsuleCollider, MeshCollider,
+    Physics, RaycastHit,
+    Input, CursorMode, MouseButton, KeyCode as KeyCodes, Log, Time,
+)
 from Prism.Math import Vector2, Vector3
 from Prism.Math.Mathf import Mathf
-from Prism.Core.Time import Time
 
 
 class FPSPlayer(Behaviour):

@@ -1,4 +1,4 @@
-from Prism import Behaviour, Time
+from PrismEngine import Behaviour, Time
 from Prism.Math import Vector3
 
 

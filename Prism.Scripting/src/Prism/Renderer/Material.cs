@@ -27,7 +27,7 @@ namespace Prism
             unsafe { InternalCalls.Prism_Material_SetBool(m_NativePtr, uniform, value); }
         }
 
-        public void SetVec2(string uniform, Vector2 value)
+        public void SetVector2(string uniform, Vector2 value)
         {
             unsafe { InternalCalls.Prism_Material_SetVector2(m_NativePtr, uniform, &value); }
         }

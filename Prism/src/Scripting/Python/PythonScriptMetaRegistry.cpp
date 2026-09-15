@@ -311,13 +311,13 @@ namespace Prism
 
         try
         {
-            py::module_ prismMod = py::module::import("Prism");
-            py::object behaviourClass = prismMod.attr("Behaviour");
+            py::module_ engineMod = py::module::import("PrismEngine");
+            py::object behaviourClass = engineMod.attr("Behaviour");
             ScanDirectory("Assets/scripts/Python", "", behaviourClass);
         }
         catch (py::error_already_set& e)
         {
-            PR_CORE_WARN("[Python Meta] Prism.Behaviour 不可用，跳过扫描: {}", e.what());
+            PR_CORE_WARN("[Python Meta] PrismEngine.Behaviour 不可用，跳过扫描: {}", e.what());
             PyErr_Clear();
         }
 

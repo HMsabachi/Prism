@@ -1,6 +1,4 @@
-from Prism import Behaviour, Log, MeshRendererComponent
-from Prism.Renderer.Material import Material
-from Prism.Renderer.PrismShader import PrismShader
+from PrismEngine import Behaviour, Log, MeshRendererComponent, Material, PrismShader
 
 
 class ScriptNoise(Behaviour):

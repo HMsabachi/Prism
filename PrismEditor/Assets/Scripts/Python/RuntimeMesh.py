@@ -1,5 +1,4 @@
 from PrismEngine import *
-from Prism.Component import MeshRendererComponent
 
 class RuntimeMesh(Behaviour):
     mesh: Mesh = None

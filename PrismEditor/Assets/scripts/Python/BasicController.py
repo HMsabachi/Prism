@@ -1,6 +1,5 @@
-from Prism import Behaviour, Entity, Time
+from PrismEngine import Behaviour, Entity, Time, TransformComponent
 from Prism.Math import Vector3
-from Prism.Component import TransformComponent
 
 
 class BasicController(Behaviour):

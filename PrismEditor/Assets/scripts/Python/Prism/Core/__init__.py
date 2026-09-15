@@ -1,5 +1,8 @@
 # Prism 核心 API
-from Prism.Core.Input import Input
-from Prism.Core.Time import Time
-from Prism.Core.Log import Log
-from Prism.Core.KeyCodes import KeyCodes
+from Prism.Core.Exceptions import (
+    EngineException,
+    MissingReferenceException,
+    EntityNotFoundException,
+    ComponentNotFoundException,
+    ResourceLoadException,
+)
