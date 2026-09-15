@@ -7,9 +7,9 @@
 #include "Prism/Core/Log.h"
 #include "Prism/Scene/Entity.h"
 #include "Prism/Utilities/Delegate.h"
-#include "CSharpScriptStorage.h"
 
 #include <Rolky/HostInstance.hpp>
+#include <Rolky/ManagedObject.hpp>
 
 
 namespace Prism
@@ -37,18 +37,11 @@ namespace Prism
         static void Initialize();
         static void Shutdown();
 
-        template<typename... TArgs>
-        static UUID InstantiateEngine(UUID scriptID, std::string_view className, CSharpScriptStorage& storage, TArgs&&... args);
-
         static Rolky::ManagedObject* GetManagedObject(UUID sceneID, UUID scriptID);
-        static void RemoveManagedObject(CSharpScriptStorage& storage, UUID scriptID);
         static void ReleaseAll();
 
         static UUID AddBehaviour(Entity& entity, CSharpBehaviourBinding& binding);
         static void RemoveBehaviour(Entity& entity, UUID behaviourID);
-
-        // Storage lookup
-        static CSharpEntityScriptStorage& GetEntityScriptStorage(CSharpScriptStorage& storage, UUID scriptID);
 
         // Assembly management
         static void LoadEngineAssembly(const std::string& path);
@@ -89,21 +82,5 @@ namespace Prism
 
         static std::string s_EngineAssemblyPath;
     };
-
-
-    template<typename... TArgs>
-    UUID CSharpScriptEngine::InstantiateEngine(UUID scriptID, std::string_view className, CSharpScriptStorage& storage, TArgs&&... args)
-    {
-        auto type = GetEngineAssembly().GetLocalType(className);
-        PR_CORE_ASSERT(type, "Class not found in engine assembly!");
-        auto instance = type.CreateInstance(std::forward<TArgs>(args)...);
-        UUID sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
-        auto& sceneMap = s_ManagedObjects[sceneID];
-        auto [it, inserted] = sceneMap.emplace(scriptID, std::move(instance));
-        PR_CORE_ASSERT(inserted, "ScriptID collision in s_ManagedObjects!");
-        it->second.SetPropertyValue<uint64_t>("ID", (uint64_t)scriptID);
-        storage.Store(scriptID, &it->second);
-        return scriptID;
-    }
 
 }

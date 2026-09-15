@@ -4,7 +4,6 @@
 #include "Prism/Core/Ref.h"
 #include "Prism/Scene/Entity.h"
 #include "Prism/Utilities/Delegate.h"
-#include "PythonScriptStorage.h"
 #include <unordered_map>
 
 namespace pybind11
@@ -29,15 +28,10 @@ namespace Prism
 
         static std::unordered_map<UUID, std::unordered_map<UUID, pybind11::object>> s_PythonScriptObjects;
 
-        static UUID Instantiate(UUID scriptID, const std::string& className, PythonScriptStorage& storage);
-
-        static PythonEntityScriptStorage& GetEntityScriptStorage(PythonScriptStorage& storage, UUID scriptID);
-
         static UUID AddBehaviour(Entity& entity, PythonBehaviourBinding& binding);
         static void RemoveBehaviour(Entity& entity, UUID behaviourID);
 
         static pybind11::object* GetScriptObject(UUID sceneID, UUID scriptID);
-        static void RemoveScriptObject(PythonScriptStorage& storage, UUID scriptID);
         static void ReleaseAll();
 
         static void ReloadPythonScripts();

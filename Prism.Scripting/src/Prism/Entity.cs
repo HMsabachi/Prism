@@ -93,5 +93,16 @@ namespace Prism
             // TODO: Verify the entity id
             return new Entity(entityID);
         }
+
+        // ── 值语义 ──
+        public override bool Equals(object? obj) => obj is Entity other && m_ID == other.m_ID;
+        public override int GetHashCode() => m_ID.GetHashCode();
+        public static bool operator ==(Entity left, Entity right)
+        {
+            if (ReferenceEquals(left, right)) return true;
+            if (left is null || right is null) return false;
+            return left.m_ID == right.m_ID;
+        }
+        public static bool operator !=(Entity left, Entity right) => !(left == right);
     }
 }

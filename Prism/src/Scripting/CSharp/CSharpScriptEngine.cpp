@@ -1,6 +1,5 @@
 ﻿#include "prpch.h"
 #include "CSharpScriptEngine.h"
-#include "CSharpScriptStorage.h"
 #include "CSharpScriptEngineRegistry.h"
 #include "CSharpScriptMetaRegistry.h"
 #include "Prism/Scene/Scene.h"
@@ -78,13 +77,6 @@ namespace Prism
         s_Initialized = false;
     }
 
-    CSharpEntityScriptStorage& CSharpScriptEngine::GetEntityScriptStorage(CSharpScriptStorage& storage, UUID scriptID)
-    {
-        auto it = storage.EntityStorage.find(scriptID);
-        PR_CORE_ASSERT(it != storage.EntityStorage.end(), "CSharpScript entity not found!");
-        return it->second;
-    }
-
     Rolky::ManagedObject* CSharpScriptEngine::GetManagedObject(UUID sceneID, UUID scriptID)
     {
         auto sceneIt = s_ManagedObjects.find(sceneID);
@@ -94,37 +86,12 @@ namespace Prism
         return objIt != sceneIt->second.end() ? &objIt->second : nullptr;
     }
 
-    void CSharpScriptEngine::RemoveManagedObject(CSharpScriptStorage& storage, UUID scriptID)
-    {
-        auto sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
-        PR_CORE_ASSERT(sceneID, "没有场景上下文");
-
-        auto sceneIt = s_ManagedObjects.find(sceneID);
-        if (sceneIt != s_ManagedObjects.end())
-        {
-            sceneIt->second.erase(scriptID);
-            if (sceneIt->second.empty())
-                s_ManagedObjects.erase(sceneIt);
-            storage.Remove(scriptID);
-        }
-        else
-            PR_CORE_WARN("[CSharp] Attempted to remove managed object with scriptID {0} but no objects found for sceneID {1}", (uint64_t)scriptID, (uint64_t)sceneID);
-        
-    }
-
     UUID CSharpScriptEngine::AddBehaviour(Entity& entity, CSharpBehaviourBinding& binding)
     {
         UUID sceneID = s_SceneContext ? s_SceneContext->GetUUID() : UUID(0);
         PR_CORE_ASSERT(sceneID, "没有场景上下文");
 
-        UUID entityID = entity.GetUUID();
-
-        auto* entityObj = GetManagedObject(sceneID, entityID);
-        if (!entityObj)
-        {
-            PR_CORE_ERROR("[CSharp] Cannot add behaviour: Entity managed object not found for {0}", (uint64_t)entityID);
-            return 0;
-        }
+        uint64_t entityID = (uint64_t)entity.GetUUID();
 
         auto* meta = CSharpScriptMetaRegistry::GetClassMetadata(binding.ClassID);
         if (!meta)
@@ -167,7 +134,9 @@ namespace Prism
             }
         }
 
-        instance.SetPropertyValueRaw("Entity", entityObj);
+        auto& entityType = GetEngineAssembly().GetLocalType("Prism.Entity");
+        PR_CORE_ASSERT(entityType, "[CSharp] Prism.Entity type not found in engine assembly")
+        instance.SetPropertyValue("Entity", entityType.CreateInstance(entityID));
 
         UUID behaviourID = binding.BehaviourID;
         auto& sceneMap = s_ManagedObjects[sceneID];
@@ -177,7 +146,7 @@ namespace Prism
         for (auto& [hash, field] : binding.Fields)
             field.SetInstance(&it->second);
 
-        PR_CORE_INFO("[CSharp] Added behaviour {0} ({1}) to entity {2}", meta->ClassName, (uint64_t)behaviourID, (uint64_t)entityID);
+        PR_CORE_INFO("[CSharp] Added behaviour {0} ({1}) to entity {2}", meta->ClassName, (uint64_t)behaviourID, entityID);
         return behaviourID;
     }
 

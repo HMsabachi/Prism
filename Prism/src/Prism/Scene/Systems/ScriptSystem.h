@@ -8,8 +8,6 @@
 
 namespace Prism {
 
-    struct CSharpScriptStorage;
-    struct PythonScriptStorage;
     class Scene;
 
     class PRISM_API ScriptSystem : public ISystem {
@@ -61,8 +59,6 @@ namespace Prism {
         void OnPythonPostReload();
 
         Scene* m_Scene;
-        CSharpScriptStorage* m_CSharpScriptStorage = nullptr;
-        PythonScriptStorage* m_PythonScriptStorage = nullptr;
         bool m_IsPlaying = false;
 
         std::unordered_map<UUID, CSharpBehaviourBinding*> m_CSharpBindingMap;

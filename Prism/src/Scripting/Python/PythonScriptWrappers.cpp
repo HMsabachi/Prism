@@ -513,6 +513,10 @@ namespace Prism::PythonScript
             // PR_CORE_TRACE("[Python] Created Entity {0}", id);
         }
 
+        bool __Eq__(const PythonEntity& other) const { return m_EntityID == other.m_EntityID; }
+        bool __Ne__(const PythonEntity& other) const { return m_EntityID != other.m_EntityID; }
+        int64_t __Hash__() const { return (int64_t)m_EntityID; }
+
         pybind11::object GetComponent(pybind11::object cls)
         {
             py::object behaviourClass = py::module::import("PrismEngine").attr("Behaviour");
@@ -543,7 +547,7 @@ namespace Prism::PythonScript
             if (s_PythonHasComponentFuncs.count(typeId) && s_PythonHasComponentFuncs.at(typeId)(entity))
             {
                 py::object component = cls();
-                component.attr("Entity") = py::cast(this);
+                component.attr("Entity") = py::cast(PythonEntity(m_EntityID));
                 return component;
             }
             return py::none();
@@ -570,7 +574,7 @@ namespace Prism::PythonScript
             uint64_t typeId = reinterpret_cast<uint64_t>(cls.ptr());
             s_PythonCreateComponentFuncs.at(typeId)(entity);
             py::object component = cls();
-            component.attr("Entity") = py::cast(this);
+            component.attr("Entity") = py::cast(PythonEntity(m_EntityID));
             return component;
         }
 
@@ -1356,6 +1360,9 @@ PYBIND11_MODULE(PrismEngine, m)
     py::class_<PythonEntity>(m, "Entity")
         .def(py::init<uint64_t>(), py::arg("id") = 0)
         .def("__repr__", &PythonEntity::__Repr__)
+        .def("__eq__", &PythonEntity::__Eq__)
+        .def("__ne__", &PythonEntity::__Ne__)
+        .def("__hash__", &PythonEntity::__Hash__)
         .def_property("ID", &PythonEntity::GetID, &PythonEntity::SetID)
         .def_property_readonly("_id", &PythonEntity::GetID)
         .def("GetComponent", &PythonEntity::GetComponent)
