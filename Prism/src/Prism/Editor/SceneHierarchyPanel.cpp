@@ -1012,7 +1012,7 @@ namespace Prism {
                                         if (field.IsRuntime())
                                         {
                                             auto fieldType = field.GetManagedType();
-                                            Ref<Mesh>* assetPtr = new Ref<Mesh>(asset);
+                                            void* assetPtr = (void*)asset.Raw();
                                             auto object = fieldType->CreateInstance(assetPtr);
                                             field.SetValue(object);
                                         }
@@ -1178,9 +1178,9 @@ namespace Prism {
                                     {
                                         if (field.IsRuntime())
                                         {
-                                            auto fieldType = field.GetPyType();
-                                            Ref<Mesh>* assetPtr = new Ref<Mesh>(asset);
-                                            auto object = (*fieldType)((uint64_t)assetPtr);
+                                            pybind11::gil_scoped_acquire gilAcquire;
+                                            auto object = (*field.GetPyType())();
+                                            object.attr("SetRef")((uint64_t)asset.Raw());
                                             field.SetValue(object);
                                         }
                                     }

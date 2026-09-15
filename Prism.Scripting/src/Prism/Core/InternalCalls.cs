@@ -8,6 +8,15 @@ namespace Prism
 #pragma warning disable CS0649
     internal static unsafe class InternalCalls
     {
+        // RefCounted
+        internal static delegate* unmanaged[Cdecl]<IntPtr, void> Prism_RefCounted_Destructor;
+        // Asset
+        internal static delegate* unmanaged[Cdecl]<IntPtr, AssetType> Prism_Asset_GetType;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt64> Prism_Asset_GetHandle;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString*, void> Prism_Asset_GetFilePath;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString*, void> Prism_Asset_GetFileName;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString*, void> Prism_Asset_GetExtension;
+        // Log
         internal static delegate* unmanaged[Cdecl]<Log.LogLevel, NativeString, void> Prism_Log_LogMessage;
         // Time
         internal static delegate* unmanaged[Cdecl]<float> Prism_Time_GetDeltaTime;
@@ -44,23 +53,45 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<UInt64, IntPtr*, UInt64, void> Prism_MeshRendererComponent_SetMaterials;
         // Mesh
         internal static delegate* unmanaged[Cdecl]<NativeString, IntPtr> Prism_Mesh_Constructor;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, void> Prism_Mesh_Destructor;
         internal static delegate* unmanaged[Cdecl]<float, float, IntPtr> Prism_MeshFactory_CreatePlane;
-        // Texture2D
+        // Image
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32> Prism_Image_GetWidth;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32> Prism_Image_GetHeight;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32> Prism_Image_GetSamples;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, ImageFormat> Prism_Image_GetFormat;
+        internal static delegate* unmanaged[Cdecl]<ImageFormat, UInt32, UInt32, IntPtr, UInt32, IntPtr> Prism_Image2D_Constructor;
+        internal static delegate* unmanaged[Cdecl]<ImageFormat, UInt32, UInt32, IntPtr, IntPtr> Prism_ImageCube_Constructor;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, void> Prism_ImageCube_GenerateMipMap;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr, void> Prism_ImageCube_CopyTo;
+        // Texture
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32> Prism_Texture_GetWidth;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32> Prism_Texture_GetHeight;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, ImageFormat> Prism_Texture_GetFormat;
         internal static delegate* unmanaged[Cdecl]<UInt32, UInt32, IntPtr> Prism_Texture2D_Constructor;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, void> Prism_Texture2D_Destructor;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeArray<Vector4>, Int32, void> Prism_Texture2D_SetData;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr> Prism_Texture2D_GetImage;
+        internal static delegate* unmanaged[Cdecl]<ImageFormat, UInt32, UInt32, IntPtr, IntPtr> Prism_TextureCube_Constructor;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr> Prism_TextureCube_GetImage;
+        // UniformBuffer
+        internal static delegate* unmanaged[Cdecl]<UInt32, IntPtr> Prism_UniformBuffer_Constructor;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr, UInt32, void> Prism_UniformBuffer_SetData;
+        // PrismShader
+        internal static delegate* unmanaged[Cdecl]<NativeString, IntPtr> Prism_PrismShader_GetShader;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString*, void> Prism_PrismShader_GetName;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32> Prism_PrismShader_GetUniformCount;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32, UniformType> Prism_PrismShader_GetUniformType;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32, NativeString*, void> Prism_PrismShader_GetUniformName;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32, NativeString*, void> Prism_PrismShader_GetUniformDisplayName;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32, IntPtr, void> Prism_PrismShader_GetUniformDefualtValue;
         // Material
-        internal static delegate* unmanaged[Cdecl]<NativeString, IntPtr> Prism_Material_Constructor;
-        internal static delegate* unmanaged[Cdecl]<IntPtr*, void> Prism_Material_GetDefaultMaterial;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, void> Prism_Material_Destructor;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr> Prism_Material_Constructor;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, float, void> Prism_Material_SetFloat;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, int, void> Prism_Material_SetInt;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, Bool32, void> Prism_Material_SetBool;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, Vector3*, void> Prism_Material_SetColor3;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, Vector4*, void> Prism_Material_SetColor;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, Matrix4*, void> Prism_Material_SetMatrix4;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, IntPtr, void> Prism_Material_SetTexture;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, IntPtr, void> Prism_Material_SetTexture2D;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, Vector2*, void> Prism_Material_SetVector2;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, Vector3*, void> Prism_Material_SetVector3;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, Vector4*, void> Prism_Material_SetVector4;

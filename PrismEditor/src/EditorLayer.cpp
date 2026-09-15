@@ -20,7 +20,6 @@ PR_WARNING_DISABLE(4312)
 #include "Prism/Editor/AssetEditorPanel.h"
 #include "Prism/Math/Math.h"
 #include "Prism/Utilities/FileSystem.h"
-#include "Platform/OpenGL/OpenGLTexture.h"
 
 #include <filesystem>
 
@@ -556,7 +555,8 @@ namespace Prism
             if (ImGui::TreeNode(TR("Shaders")))
             {
                 auto& shaders = Prism::PrismShader::s_AllShaders;
-                for (auto& shader : shaders)
+                auto& shaderMap = Prism::AssetManager::GetShaderLibrary()->GetAll();
+                for (auto& [name, shader] : shaderMap)
                 {
                     if (ImGui::TreeNode(shader->GetName().c_str()))
                     {

@@ -59,6 +59,14 @@ namespace Prism
         auto& engineAssembly = CSharpScriptEngine::GetEngineAssembly();
 #define PR_ADD_INTERNAL_CALL(func) engineAssembly.AddInternalCall("Prism.InternalCalls", #func, (void*)&func)
         using namespace Script;
+        // RefCounted
+        PR_ADD_INTERNAL_CALL(Prism_RefCounted_Destructor);
+        // Asset
+        PR_ADD_INTERNAL_CALL(Prism_Asset_GetType);
+        PR_ADD_INTERNAL_CALL(Prism_Asset_GetHandle);
+        PR_ADD_INTERNAL_CALL(Prism_Asset_GetFilePath);
+        PR_ADD_INTERNAL_CALL(Prism_Asset_GetFileName);
+        PR_ADD_INTERNAL_CALL(Prism_Asset_GetExtension);
         // Log
         PR_ADD_INTERNAL_CALL(Prism_Log_LogMessage);
         // Time
@@ -98,7 +106,6 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_MeshRendererComponent_SetMaterials);
         // Mesh
         PR_ADD_INTERNAL_CALL(Prism_Mesh_Constructor);
-        PR_ADD_INTERNAL_CALL(Prism_Mesh_Destructor);
         PR_ADD_INTERNAL_CALL(Prism_MeshFactory_CreatePlane);
         // RigidBody2DComponent
         PR_ADD_INTERNAL_CALL(Prism_RigidBody2DComponent_ApplyLinearImpulse);
@@ -144,13 +151,37 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_Physics_OverlapSphereNonAlloc);
         PR_ADD_INTERNAL_CALL(Prism_Physics_GetGravity);
         PR_ADD_INTERNAL_CALL(Prism_Physics_SetGravity);
+        // Image
+        PR_ADD_INTERNAL_CALL(Prism_Image_GetWidth);
+        PR_ADD_INTERNAL_CALL(Prism_Image_GetHeight);
+        PR_ADD_INTERNAL_CALL(Prism_Image_GetSamples);
+        PR_ADD_INTERNAL_CALL(Prism_Image_GetFormat);
+        PR_ADD_INTERNAL_CALL(Prism_Image2D_Constructor);
+        PR_ADD_INTERNAL_CALL(Prism_ImageCube_Constructor);
+        PR_ADD_INTERNAL_CALL(Prism_ImageCube_GenerateMipMap);
+        PR_ADD_INTERNAL_CALL(Prism_ImageCube_CopyTo);
         // Texture2D
+        PR_ADD_INTERNAL_CALL(Prism_Texture_GetWidth);
+        PR_ADD_INTERNAL_CALL(Prism_Texture_GetHeight);
+        PR_ADD_INTERNAL_CALL(Prism_Texture_GetFormat);
         PR_ADD_INTERNAL_CALL(Prism_Texture2D_Constructor);
-        PR_ADD_INTERNAL_CALL(Prism_Texture2D_Destructor);
         PR_ADD_INTERNAL_CALL(Prism_Texture2D_SetData);
+        PR_ADD_INTERNAL_CALL(Prism_Texture2D_GetImage);
+        PR_ADD_INTERNAL_CALL(Prism_TextureCube_Constructor);
+        PR_ADD_INTERNAL_CALL(Prism_TextureCube_GetImage);
+        // UniformBuffer
+        PR_ADD_INTERNAL_CALL(Prism_UniformBuffer_Constructor);
+        PR_ADD_INTERNAL_CALL(Prism_UniformBuffer_SetData);
+        // PrismShader
+        PR_ADD_INTERNAL_CALL(Prism_PrismShader_GetShader);
+        PR_ADD_INTERNAL_CALL(Prism_PrismShader_GetName);
+        PR_ADD_INTERNAL_CALL(Prism_PrismShader_GetUniformCount);
+        PR_ADD_INTERNAL_CALL(Prism_PrismShader_GetUniformType);
+        PR_ADD_INTERNAL_CALL(Prism_PrismShader_GetUniformName);
+        PR_ADD_INTERNAL_CALL(Prism_PrismShader_GetUniformDisplayName);
+        PR_ADD_INTERNAL_CALL(Prism_PrismShader_GetUniformDefualtValue);
         // Material
         PR_ADD_INTERNAL_CALL(Prism_Material_Constructor);
-        PR_ADD_INTERNAL_CALL(Prism_Material_Destructor);
         PR_ADD_INTERNAL_CALL(Prism_Material_SetFloat);
         PR_ADD_INTERNAL_CALL(Prism_Material_SetInt);
         PR_ADD_INTERNAL_CALL(Prism_Material_SetBool);
@@ -160,7 +191,7 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_Material_SetVector2);
         PR_ADD_INTERNAL_CALL(Prism_Material_SetVector3);
         PR_ADD_INTERNAL_CALL(Prism_Material_SetVector4);
-        PR_ADD_INTERNAL_CALL(Prism_Material_SetTexture);
+        PR_ADD_INTERNAL_CALL(Prism_Material_SetTexture2D);
         PR_ADD_INTERNAL_CALL(Prism_Material_SetKeyword);
         PR_ADD_INTERNAL_CALL(Prism_Material_IsKeywordEnabled);
 

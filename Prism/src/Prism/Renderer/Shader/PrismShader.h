@@ -105,7 +105,7 @@ namespace Prism
 
         PrismShaderCompiler::CompiledShader OnResolveUsePass(const std::string& name);
         const Ref<PrismShader>& Get(const std::string& name) const;
-        const std::unordered_map<std::string, Ref<PrismShader>>& GetAll() const;
+        std::unordered_map<std::string, Ref<PrismShader>>& GetAll() { return m_Shaders; }
     private:
         std::unordered_map<std::string, Ref<PrismShader>> m_Shaders;
         std::unordered_map<std::string, std::string> m_PathFromName;

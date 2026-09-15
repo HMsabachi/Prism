@@ -6,8 +6,6 @@
 
 #include <Rolky/GC.hpp>
 
-#include "Scripting/CSharp/CSharpScriptStorage.h"
-#include "Scripting/Python/PythonScriptStorage.h"
 #include "Scripting/CSharp/CSharpScriptEngine.h"
 #include "Scripting/Python/PythonScriptEngine.h"
 #include "Scripting/CSharp/CSharpScriptMetaRegistry.h"
@@ -29,9 +27,6 @@ namespace Prism {
     ScriptSystem::ScriptSystem(Scene* scene)
         : m_Scene(scene)
     {
-        m_CSharpScriptStorage = new CSharpScriptStorage();
-        m_PythonScriptStorage = new PythonScriptStorage();
-
         auto& registry = scene->GetRegistry();
         registry.on_construct<CSharpScriptComponent>().connect<&ScriptSystem::OnCSharpScriptComponentConstruct>(this);
         registry.on_destroy<CSharpScriptComponent>().connect<&ScriptSystem::OnCSharpScriptComponentDestroy>(this);
@@ -59,21 +54,6 @@ namespace Prism {
         registry.on_destroy<CSharpScriptComponent>().disconnect(this);
         registry.on_construct<PythonScriptComponent>().disconnect(this);
         registry.on_destroy<PythonScriptComponent>().disconnect(this);
-
-        if (m_CSharpScriptStorage->EntityStorage.size() > 0)
-        {
-            PR_CORE_WARN("[ScriptSystem] C# 脚本实例在销毁时可能会导致内存泄漏: {0} 个脚本实例.", m_CSharpScriptStorage->EntityStorage.size());
-            m_CSharpScriptStorage->Clear();
-        }
-        if (m_PythonScriptStorage->EntityStorage.size() > 0)
-        {
-            PR_CORE_WARN("[ScriptSystem] Python 脚本实例在销毁时可能会导致内存泄漏: {0} 个脚本实例.", m_PythonScriptStorage->EntityStorage.size());
-            m_PythonScriptStorage->Clear();
-        }
-        delete m_CSharpScriptStorage;
-        m_CSharpScriptStorage = nullptr;
-        delete m_PythonScriptStorage;
-        m_PythonScriptStorage = nullptr;
 
         UUID currentSceneID = m_Scene->GetUUID();
         CSharpScriptEngine::s_ManagedObjects.erase(currentSceneID);
@@ -709,10 +689,7 @@ namespace Prism {
         if (!e.HasComponent<IDComponent>())
             return;
 
-        uint64_t entityID = (uint64_t)e.GetComponent<IDComponent>().ID;
-        CSharpScriptEngine::InstantiateEngine(entityID, "Prism.Entity", *m_CSharpScriptStorage);
         auto& comp = registry.get<CSharpScriptComponent>(entity);
-        comp.ScriptID = entityID;
 
         auto oldBehaviours = std::move(comp.Behaviours);
         for (auto& [oldBid, oldBinding] : oldBehaviours)
@@ -755,17 +732,9 @@ namespace Prism {
     {
         CSharpScriptEngine::SetSceneContext(m_Scene);
         auto& comp = registry.get<CSharpScriptComponent>(entity);
-        UUID sceneID = m_Scene->GetUUID();
 
         for (auto& [bid, binding] : comp.Behaviours)
             m_CSharpBindingMap.erase(bid);
-
-        if (comp.ScriptID)
-        {
-            auto& entry = CSharpScriptEngine::GetEntityScriptStorage(*m_CSharpScriptStorage, comp.ScriptID);
-            CSharpScriptEngine::RemoveManagedObject(*m_CSharpScriptStorage, comp.ScriptID);
-            comp.ScriptID = 0;
-        }
     }
 
     void ScriptSystem::OnPythonScriptComponentConstruct(entt::registry& registry, entt::entity entity)
@@ -776,11 +745,7 @@ namespace Prism {
         if (!e.HasComponent<IDComponent>())
             return;
 
-        uint64_t entityID = (uint64_t)e.GetComponent<IDComponent>().ID;
-        PythonScriptEngine::Instantiate(entityID, "Prism.Entity", *m_PythonScriptStorage);
         auto& comp = registry.get<PythonScriptComponent>(entity);
-        comp.ScriptID = entityID;
-
 
         auto oldBehaviours = std::move(comp.Behaviours);
 
@@ -828,17 +793,9 @@ namespace Prism {
         pybind11::gil_scoped_acquire gilAcquire;
         PythonScriptEngine::SetSceneContext(m_Scene);
         auto& comp = registry.get<PythonScriptComponent>(entity);
-        UUID sceneID = m_Scene->GetUUID();
 
         for (auto& [bid, binding] : comp.Behaviours)
             m_PythonBindingMap.erase(bid);
-
-        if (comp.ScriptID)
-        {
-            auto& entry = PythonScriptEngine::GetEntityScriptStorage(*m_PythonScriptStorage, comp.ScriptID);
-            PythonScriptEngine::RemoveScriptObject(*m_PythonScriptStorage, comp.ScriptID);
-            comp.ScriptID = 0;
-        }
     }
 
     void ScriptSystem::OnCSharpPreUnload()

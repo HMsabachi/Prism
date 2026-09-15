@@ -15,11 +15,11 @@ namespace Prism {
     {
         switch (format)
         {
-        case ImageFormat::RGB:     return GL_RGB;
-        case ImageFormat::SRGB:    return GL_SRGB8;
-        case ImageFormat::RGBA:    return GL_RGBA;
-        case ImageFormat::RGBA16F: return GL_RGBA16F;
-        case ImageFormat::RGBA32F: return GL_RGBA32F;
+        case ImageFormat::RGB8:       return GL_RGB8;
+        case ImageFormat::RGBA8_SRGB: return GL_SRGB8_ALPHA8;
+        case ImageFormat::RGBA8:      return GL_RGBA8;
+        case ImageFormat::RGBA16F:    return GL_RGBA16F;
+        case ImageFormat::RGBA32F:    return GL_RGBA32F;
         }
         PR_CORE_ASSERT(false, "Unknown texture format!");
         return 0;
@@ -108,10 +108,10 @@ namespace Prism {
         else
         {
             PR_CORE_INFO("Loading texture {0}, srgb={1}", path, srgb);
-            data = stbi_load(path.c_str(), &width, &height, &channels, srgb ? STBI_rgb : STBI_rgb_alpha);
+            data = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
             // PR_CORE_ASSERT(data, "Could not read image!");
             if (!data) { PR_CORE_ERROR("Could not read image: {0}", path); return; }
-            ImageFormat format = srgb ? ImageFormat::SRGB : ImageFormat::RGBA;
+            ImageFormat format = srgb ? ImageFormat::RGBA8_SRGB : ImageFormat::RGBA8;
             uint32_t size = width * height * Utils::GetImageFormatBPP(format);
             m_Image = Image2D::Create(format, width, height, Buffer::Copy(data, size));
             stbi_image_free(data);

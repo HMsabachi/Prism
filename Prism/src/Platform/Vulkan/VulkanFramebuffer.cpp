@@ -15,7 +15,8 @@ namespace Prism
     {
         bool IsDepthFormat(ImageFormat format)
         {
-            return format == ImageFormat::DEPTH32F || format == ImageFormat::DEPTH24STENCIL8;
+            return format == ImageFormat::DEPTH16 || format == ImageFormat::DEPTH32F ||
+                   format == ImageFormat::DEPTH24STENCIL8 || format == ImageFormat::DEPTH32FSTENCIL8;
         }
     }
 

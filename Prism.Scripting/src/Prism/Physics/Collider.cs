@@ -7,19 +7,14 @@ namespace Prism
     {
         public ulong EntityID { get; protected set; }
         public bool IsTrigger { get; protected set; }
+        public Entity Entity { get; protected set; }
 
-        private Entity m_Entity;
         private RigidBodyComponent m_RigidBody;
 
-        public Entity Entity
+        protected Collider(ulong entityID)
         {
-            get
-            {
-                if (m_Entity == null)
-                    m_Entity = new Entity(EntityID);
-
-                return m_Entity;
-            }
+            EntityID = entityID;
+            Entity = new Entity(entityID);
         }
 
         public RigidBodyComponent RigidBody
@@ -51,9 +46,8 @@ namespace Prism
         public Vector3 Size { get; protected set; }
         public Vector3 Offset { get; protected set; }
 
-        internal BoxCollider(ulong entityID, bool isTrigger, Vector3 size, Vector3 offset)
+        internal BoxCollider(ulong entityID, bool isTrigger, Vector3 size, Vector3 offset) : base(entityID)
         {
-            EntityID = entityID;
             IsTrigger = isTrigger;
             Size = size;
             Offset = offset;
@@ -64,9 +58,8 @@ namespace Prism
     {
         public float Radius { get; protected set; }
 
-        internal SphereCollider(ulong entityID, bool isTrigger, float radius)
+        internal SphereCollider(ulong entityID, bool isTrigger, float radius) : base(entityID)
         {
-            EntityID = entityID;
             IsTrigger = isTrigger;
             Radius = radius;
         }
@@ -77,9 +70,8 @@ namespace Prism
         public float Radius { get; protected set; }
         public float Height { get; protected set; }
 
-        internal CapsuleCollider(ulong entityID, bool isTrigger, float radius, float height)
+        internal CapsuleCollider(ulong entityID, bool isTrigger, float radius, float height) : base(entityID)
         {
-            EntityID = entityID;
             IsTrigger = isTrigger;
             Radius = radius;
             Height = height;
@@ -90,9 +82,8 @@ namespace Prism
     {
         public Mesh Mesh { get; protected set; }
 
-        internal MeshCollider(ulong entityID, bool isTrigger, IntPtr mesh)
+        internal MeshCollider(ulong entityID, bool isTrigger, IntPtr mesh) : base(entityID)
         {
-            EntityID = entityID;
             IsTrigger = isTrigger;
             Mesh = new Mesh(mesh);
         }

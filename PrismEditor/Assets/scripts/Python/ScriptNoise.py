@@ -1,10 +1,10 @@
-from Prism import Behaviour, Log, MeshRendererComponent
-from Prism.Renderer.Material import Material
+from PrismEngine import Behaviour, Log, MeshRendererComponent, Material, PrismShader
 
 
 class ScriptNoise(Behaviour):
     def OnCreate(self):
-        material = Material("Custom/NoiseTest")
+        shader = PrismShader.GetShader("Custom/NoiseTest")
+        material = Material(shader)
         meshComponent = self.GetComponent(MeshRendererComponent)
         meshComponent.SetMaterial(0, material)
 

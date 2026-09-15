@@ -96,11 +96,46 @@ namespace Prism
         {
             switch (format)
             {
-            case ImageFormat::RGB:     return GL_RGB;
-            case ImageFormat::SRGB:    return GL_SRGB8;
-            case ImageFormat::RGBA:    return GL_RGBA;
+            case ImageFormat::R8:         return GL_R8;
+            case ImageFormat::RG8:        return GL_RG8;
+            case ImageFormat::RGB8:       return GL_RGB8;
+            case ImageFormat::RGBA8:      return GL_RGBA8;
+
+            case ImageFormat::R8_SNORM:    return GL_R8_SNORM;
+            case ImageFormat::RG8_SNORM:   return GL_RG8_SNORM;
+            case ImageFormat::RGB8_SNORM:  return GL_RGB8_SNORM;
+            case ImageFormat::RGBA8_SNORM: return GL_RGBA8_SNORM;
+
+            case ImageFormat::R16F:    return GL_R16F;
+            case ImageFormat::RG16F:   return GL_RG16F;
+            case ImageFormat::RGB16F:  return GL_RGB16F;
             case ImageFormat::RGBA16F: return GL_RGBA16F;
+
+            case ImageFormat::R32F:    return GL_R32F;
+            case ImageFormat::RG32F:   return GL_RG32F;
+            case ImageFormat::RGB32F:  return GL_RGB32F;
             case ImageFormat::RGBA32F: return GL_RGBA32F;
+
+            case ImageFormat::R16_UINT:    return GL_R16UI;
+            case ImageFormat::RG16_UINT:   return GL_RG16UI;
+            case ImageFormat::RGBA16_UINT: return GL_RGBA16UI;
+            case ImageFormat::R32_UINT:    return GL_R32UI;
+            case ImageFormat::RG32_UINT:   return GL_RG32UI;
+            case ImageFormat::RGBA32_UINT: return GL_RGBA32UI;
+
+            case ImageFormat::R16_SINT:    return GL_R16I;
+            case ImageFormat::RG16_SINT:   return GL_RG16I;
+            case ImageFormat::RGBA16_SINT: return GL_RGBA16I;
+            case ImageFormat::R32_SINT:    return GL_R32I;
+            case ImageFormat::RG32_SINT:   return GL_RG32I;
+            case ImageFormat::RGBA32_SINT: return GL_RGBA32I;
+
+            case ImageFormat::RGB565:   return P_GL_RGB565;
+            case ImageFormat::RGBA4:    return GL_RGBA4;
+            case ImageFormat::RGB5A1:   return GL_RGB5_A1;
+            case ImageFormat::RGB10A2:  return GL_RGB10_A2;
+            case ImageFormat::RG11B10F: return GL_R11F_G11F_B10F;
+            case ImageFormat::RGB9E5:   return GL_RGB9_E5;
             }
             PR_CORE_ASSERT(false, "Unknown texture format!");
             return 0;

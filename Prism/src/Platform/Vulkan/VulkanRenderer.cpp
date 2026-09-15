@@ -130,13 +130,13 @@ namespace Prism
         s_Data->FullscreenQuadIB = IndexBuffer::Create(indices, 6 * sizeof(uint32_t)).As<VulkanIndexBuffer>();
 
         float blackPixel[16] = { 0.0f };
-        s_Data->BlackImage2D = Image2D::Create(ImageFormat::RGBA, 1, 1, blackPixel).As<VulkanImage2D>();
+        s_Data->BlackImage2D = Image2D::Create(ImageFormat::RGBA8, 1, 1, blackPixel).As<VulkanImage2D>();
         s_Data->BlackImage2D->SetExtraUsage(VK_IMAGE_USAGE_STORAGE_BIT);
         s_Data->BlackImage2D->Invalidate();
-        s_Data->BlackImageCube = ImageCube::Create(ImageFormat::RGBA, 1, 1, blackPixel).As<VulkanImageCube>();
+        s_Data->BlackImageCube = ImageCube::Create(ImageFormat::RGBA8, 1, 1, blackPixel).As<VulkanImageCube>();
         s_Data->BlackImageCube->Invalidate();
-        s_Data->BlackTexture2D = Texture2D::Create(ImageFormat::RGBA, 1, 1, blackPixel).As<VulkanTexture2D>();
-        s_Data->BlackTextureCube = TextureCube::Create(ImageFormat::RGBA, 1, 1, blackPixel).As<VulkanTextureCube>();
+        s_Data->BlackTexture2D = Texture2D::Create(ImageFormat::RGBA8, 1, 1, blackPixel).As<VulkanTexture2D>();
+        s_Data->BlackTextureCube = TextureCube::Create(ImageFormat::RGBA8, 1, 1, blackPixel).As<VulkanTextureCube>();
         s_Data->EmptyUniformBuffer = UniformBuffer::Create(1).As<VulkanUniformBuffer>();
         s_Data->EmptyShaderStorageBuffer = ShaderStorageBuffer::Create(1).As <VulkanShaderStorageBuffer>();
     }

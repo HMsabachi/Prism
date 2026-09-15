@@ -1,4 +1,4 @@
-from Prism import Log
+from PrismEngine import Log
 
 
 class Test:

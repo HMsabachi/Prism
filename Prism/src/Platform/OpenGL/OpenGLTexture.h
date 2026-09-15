@@ -43,7 +43,7 @@ namespace Prism {
         Ref<Image2D> m_Image;
         mutable uint32_t m_BindSlot = 0;
         TextureWrap m_Wrap = TextureWrap::Clamp;
-        uint32_t m_Width, m_Height;
+        uint32_t m_Width = 0, m_Height = 0;
 
         bool m_IsHDR = false;
 

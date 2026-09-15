@@ -12,11 +12,21 @@ namespace Prism
 {
     struct OverlapHitData;
     class Mesh;
+    class Texture;
     class Texture2D;
+    class TextureCube;
+    class PrismShader;
+    class UniformBuffer;
     class Material;
+    class Image;
+    class Image2D;
+    class ImageCube;
+    class RefCounted;
+    class Asset;
     struct RaycastHit;
     enum class KeyCode : uint16_t;
     enum class MouseButton : uint16_t;
+    enum class ImageFormat;
     enum class CursorMode;
 
 }
@@ -25,8 +35,15 @@ namespace Prism
 {
     namespace Script
     {
-
-#pragma region Log
+        // RefCounted
+        void Prism_RefCounted_Destructor(RefCounted* nativePtr);
+        // Asset
+        uint32_t Prism_Asset_GetType(Asset* nativePtr);
+        uint64_t Prism_Asset_GetHandle(Asset* nativePtr);
+        void Prism_Asset_GetFilePath(Asset* nativePtr, Rolky::String* outStr);
+        void Prism_Asset_GetFileName(Asset* nativePtr, Rolky::String* outStr);
+        void Prism_Asset_GetExtension(Asset* nativePtr, Rolky::String* outStr);
+        // Log
         enum class LogLevel : int32_t
         {
             Trace = BIT(0),
@@ -37,7 +54,6 @@ namespace Prism
             Critical = BIT(5)
         };
         void Prism_Log_LogMessage(LogLevel level, Rolky::String inFormattedMessage);
-#pragma endregion
         // Time
         float Prism_Time_GetDeltaTime();
         float Prism_Time_GetUnscaledDeltaTime();
@@ -87,23 +103,35 @@ namespace Prism
         void Prism_TransformComponent_GetTransform(uint64_t entityID, ScriptTransform* outTransform);
         void Prism_TransformComponent_SetTransform(uint64_t entityID, ScriptTransform* inTransform);
         // MeshRendererComponent
-        void* Prism_MeshRendererComponent_GetMesh(uint64_t entityID);
-        void Prism_MeshRendererComponent_SetMesh(uint64_t entityID, Ref<Mesh>* inMesh);
-        void Prism_MeshRendererComponent_GetMaterial(uint64_t entityID, Ref<Material>** outMaterial, uint64_t index);
-        void Prism_MeshRendererComponent_SetMaterial(uint64_t entityID, Ref<Material>* inMaterial, uint64_t index);
+        Mesh* Prism_MeshRendererComponent_GetMesh(uint64_t entityID);
+        void Prism_MeshRendererComponent_SetMesh(uint64_t entityID, Mesh* inMesh);
+        void Prism_MeshRendererComponent_GetMaterial(uint64_t entityID, Material** outMaterial, uint64_t index);
+        void Prism_MeshRendererComponent_SetMaterial(uint64_t entityID, Material* inMaterial, uint64_t index);
         uint64_t Prism_MeshRendererComponent_GetMaterialCount(uint64_t entityID);
         void Prism_MeshRendererComponent_GetMaterials(uint64_t entityID, void** outHandles);
         void Prism_MeshRendererComponent_SetMaterials(uint64_t entityID, void** inHandles, uint64_t count);
         // Mesh
-        Ref<Mesh>* Prism_Mesh_Constructor(Rolky::String filepath);
-        void Prism_Mesh_Destructor(Ref<Mesh>* _this);
-        void* Prism_MeshFactory_CreatePlane(float width, float height);
+        Mesh* Prism_Mesh_Constructor(Rolky::String filepath);
+        Mesh* Prism_MeshFactory_CreatePlane(float width, float height);
+        // Image
+        uint32_t Prism_Image_GetWidth(Image* _this);
+        uint32_t Prism_Image_GetHeight(Image* _this);
+        uint32_t Prism_Image_GetSamples(Image* _this);
+        ImageFormat Prism_Image_GetFormat(Image* _this);
+        Image2D* Prism_Image2D_Constructor(ImageFormat format, uint32_t width, uint32_t height, const void* data, uint32_t samples);
+        ImageCube* Prism_ImageCube_Constructor(ImageFormat format, uint32_t width, uint32_t height, const void* data);
+        void Prism_ImageCube_GenerateMipMap(ImageCube* _this);
+        void Prism_ImageCube_CopyTo(ImageCube* _this, ImageCube* destination);
 
-        // Renderer
         // Texture2D
-        void* Prism_Texture2D_Constructor(uint32_t width, uint32_t height);
-        void Prism_Texture2D_Destructor(Ref<Texture2D>* _this);
-        void Prism_Texture2D_SetData(Ref<Texture2D>* _this, Rolky::Array<glm::vec4> inData, int32_t count);
+        uint32_t Prism_Texture_GetWidth(Texture* _this);
+        uint32_t Prism_Texture_GetHeight(Texture* _this);
+        ImageFormat Prism_Texture_GetFormat(Texture* _this);
+        Texture2D* Prism_Texture2D_Constructor(uint32_t width, uint32_t height);
+        void Prism_Texture2D_SetData(Texture2D* _this, Rolky::Array<glm::vec4> inData, int32_t count);
+        Image2D* Prism_Texture2D_GetImage(Texture2D* _this);
+        TextureCube* Prism_TextureCube_Constructor(ImageFormat format, uint32_t width, uint32_t height, const void* data);
+        ImageCube* Prism_TextureCube_GetImage(TextureCube* _this);
 
         // RigidBody2DComponent
         void Prism_RigidBody2DComponent_ApplyLinearImpulse(uint64_t entityID, glm::vec2* impulse, glm::vec2* offset, Rolky::Bool32 wake);
@@ -133,21 +161,30 @@ namespace Prism
         void Prism_Physics_OverlapSphereNonAlloc(glm::vec3* origin, float radius, OverlapHitData* outBuffer, int32_t bufferSize, int32_t* outCount);
         float Prism_Physics_GetGravity();
         void Prism_Physics_SetGravity(float gravity);
-
+        // UniformBuffer
+        UniformBuffer* Prism_UniformBuffer_Constructor(uint32_t size);
+        void Prism_UniformBuffer_SetData(UniformBuffer* _this, void* data, uint32_t size);
+        // PrismShader
+        PrismShader* Prism_PrismShader_GetShader(Rolky::String shaderName);
+        void Prism_PrismShader_GetName(PrismShader* _this, Rolky::String* outName);
+        uint32_t Prism_PrismShader_GetUniformCount(PrismShader* _this);
+        uint32_t Prism_PrismShader_GetUniformType(PrismShader* _this, uint32_t index);
+        void Prism_PrismShader_GetUniformName(PrismShader* _this, uint32_t index, Rolky::String* outName);
+        void Prism_PrismShader_GetUniformDisplayName(PrismShader* _this, uint32_t index, Rolky::String* outName);
+        void Prism_PrismShader_GetUniformDefualtValue(PrismShader* _this, uint32_t index, void* data);
         // Material
-        Ref<Material>* Prism_Material_Constructor(Rolky::String shaderName);
-        void Prism_Material_Destructor(Ref<Material>* _this);
-        void Prism_Material_SetFloat(Ref<Material>* _this, Rolky::String uniform, float value);
-        void Prism_Material_SetInt(Ref<Material>* _this, Rolky::String uniform, int value);
-        void Prism_Material_SetBool(Ref<Material>* _this, Rolky::String uniform, Rolky::Bool32 value);
-        void Prism_Material_SetVector2(Ref<Material>* _this, Rolky::String uniform, glm::vec2* value);
-        void Prism_Material_SetColor3(Ref<Material>* _this, Rolky::String uniform, glm::vec3* value);
-        void Prism_Material_SetColor(Ref<Material>* _this, Rolky::String uniform, glm::vec4* value);
-        void Prism_Material_SetMatrix4(Ref<Material>* _this, Rolky::String uniform, glm::mat4* value);
-        void Prism_Material_SetVector3(Ref<Material>* _this, Rolky::String uniform, glm::vec3* value);
-        void Prism_Material_SetVector4(Ref<Material>* _this, Rolky::String uniform, glm::vec4* value);
-        void Prism_Material_SetTexture(Ref<Material>* _this, Rolky::String uniform, Ref<Texture2D>* texture);
-        void Prism_Material_SetKeyword(Ref<Material>* _this, Rolky::String name, Rolky::Bool32 enabled);
-        Rolky::Bool32 Prism_Material_IsKeywordEnabled(Ref<Material>* _this, Rolky::String name);
+        Material* Prism_Material_Constructor(PrismShader* shader);
+        void Prism_Material_SetFloat(Material* _this, Rolky::String uniform, float value);
+        void Prism_Material_SetInt(Material* _this, Rolky::String uniform, int value);
+        void Prism_Material_SetBool(Material* _this, Rolky::String uniform, Rolky::Bool32 value);
+        void Prism_Material_SetVector2(Material* _this, Rolky::String uniform, glm::vec2* value);
+        void Prism_Material_SetColor3(Material* _this, Rolky::String uniform, glm::vec3* value);
+        void Prism_Material_SetColor(Material* _this, Rolky::String uniform, glm::vec4* value);
+        void Prism_Material_SetMatrix4(Material* _this, Rolky::String uniform, glm::mat4* value);
+        void Prism_Material_SetVector3(Material* _this, Rolky::String uniform, glm::vec3* value);
+        void Prism_Material_SetVector4(Material* _this, Rolky::String uniform, glm::vec4* value);
+        void Prism_Material_SetTexture2D(Material* _this, Rolky::String uniform, Texture2D* texture);
+        void Prism_Material_SetKeyword(Material* _this, Rolky::String name, Rolky::Bool32 enabled);
+        Rolky::Bool32 Prism_Material_IsKeywordEnabled(Material* _this, Rolky::String name);
     }
 }

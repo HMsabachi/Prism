@@ -95,7 +95,6 @@ namespace Prism
         static std::pair<Ref<TextureCube>, Ref<TextureCube>> CreateEnvironmentMap(const std::string& filepath);
         static Ref<TextureCube> CreatePreethamSky(float turbidity, float azimuth, float inclination);
 
-        // 渲染线程相关（Phase 1 骨架）
         static void WaitAndRender();
         static void WaitAndRender(RenderThread* renderThread);
         static void RenderThreadFunc(RenderThread* renderThread);

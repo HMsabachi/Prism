@@ -28,7 +28,7 @@ namespace Example
             uint width = (uint)noiseMap.GetLength(0);
             uint height = (uint)noiseMap.GetLength(1);
 
-            Texture2D texture = new Texture2D(width, height);
+            Texture2D texture = Texture2D.Create(width, height);
             Vector4[] colorMap = new Vector4[width * height];
             for (int y = 0; y < height; y++)
             {
@@ -55,7 +55,7 @@ namespace Example
 
             Material material = meshComponent.GetMaterial(1);
             material.SetKeyword("ALBEDO_MAP", true);
-            material.SetTexture("u_AlbedoTexture", texture);
+            material.SetTexture2D("u_AlbedoTexture", texture);
 
             TransformComponent transformComponent = GetComponent<TransformComponent>();
             /*Vector3 position = Entity.GetTransform().Translation;

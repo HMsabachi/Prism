@@ -5,11 +5,11 @@ namespace Prism
     public class Entity
     {
         private ulong m_ID;
-        public ulong ID { get { return m_ID; } internal set { m_ID = value; Log.Trace("Created Entity {0}", ID); } }
+        public ulong ID { get { return m_ID; } internal set { m_ID = value; /*Log.Trace("Created Entity {0}", ID);*/ } }
 
         public Entity() => m_ID = 0;
         internal Entity(ulong id) => ID = id;
-        ~Entity() => Log.Trace("Destroyed Entity {0}", ID);
+        // ~Entity() => Log.Trace("Destroyed Entity {0}", ID);
 
         public TransformComponent Transform => GetComponent<TransformComponent>();
 
@@ -93,5 +93,16 @@ namespace Prism
             // TODO: Verify the entity id
             return new Entity(entityID);
         }
+
+        // ── 值语义 ──
+        public override bool Equals(object? obj) => obj is Entity other && m_ID == other.m_ID;
+        public override int GetHashCode() => m_ID.GetHashCode();
+        public static bool operator ==(Entity left, Entity right)
+        {
+            if (ReferenceEquals(left, right)) return true;
+            if (left is null || right is null) return false;
+            return left.m_ID == right.m_ID;
+        }
+        public static bool operator !=(Entity left, Entity right) => !(left == right);
     }
 }

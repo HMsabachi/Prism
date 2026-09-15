@@ -177,7 +177,7 @@ namespace Prism
         FramebufferSpecification compFBSpec;
         compFBSpec.Width = viewportWidth;
         compFBSpec.Height = viewportHeight;
-        compFBSpec.Attachments = { ImageFormat::RGBA };
+        compFBSpec.Attachments = { ImageFormat::RGBA8 };
         compFBSpec.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
         RenderPassSpecification compRPSpec;
         compRPSpec.TargetFramebuffer = Framebuffer::Create(compFBSpec);

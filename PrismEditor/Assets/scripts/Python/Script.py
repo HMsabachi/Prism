@@ -1,5 +1,5 @@
 import math
-from Prism import Behaviour, Input, Time, KeyCodes, Log
+from PrismEngine import Behaviour, Input, Time, KeyCode as KeyCodes, Log
 from Prism.Math import Vector3
 
 

@@ -49,7 +49,6 @@ Prism/src/Scripting/Python/
 ├── PythonScriptEngine.h/.cpp       # 解释器生命周期、实例管理
 ├── PythonScriptEngineRegistry.h/.cpp  # Component 类型注册
 ├── PythonScriptMetaRegistry.h/.cpp    # Python 类元数据缓存
-├── PythonScriptStorage.h/.cpp         # 脚本实例存储
 ├── PythonScriptWrappers.h/.cpp        # PrismEngine 模块定义（PYBIND11_MODULE）
 ├── PythonField.h/.inl                 # 公共字段序列化支持
 └── PythonScriptTypeCasters.h          # glm ↔ pyglm 类型转换

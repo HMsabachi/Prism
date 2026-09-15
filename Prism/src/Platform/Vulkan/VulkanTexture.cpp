@@ -61,7 +61,7 @@ namespace Prism
             data = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
             // PR_CORE_ASSERT(data, "Could not read image!");
             if (!data) { PR_CORE_ERROR("Could not read image: {0}", path); return; }
-            m_Format = srgb ? ImageFormat::SRGB : ImageFormat::RGBA;
+            m_Format = srgb ? ImageFormat::RGBA8_SRGB : ImageFormat::RGBA8;
             imageData = Buffer::Copy((byte*)data, width * height * 4);
             stbi_image_free(data);
         }

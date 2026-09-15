@@ -129,13 +129,11 @@ namespace Prism {
 
     struct CSharpScriptComponent
     {
-        UUID ScriptID = 0;
         std::unordered_map<UUID, CSharpBehaviourBinding> Behaviours;
     };
 
     struct PythonScriptComponent
     {
-        UUID ScriptID = 0;
         std::unordered_map<UUID, PythonBehaviourBinding> Behaviours;
     };
 

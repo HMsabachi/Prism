@@ -1,6 +1,6 @@
 import random
 from Prism.Math import Vector2
-from Prism import Noise as PrismNoise
+from PrismEngine import Noise as PrismNoise
 
 
 def InverseLerp(min_val, max_val, value):

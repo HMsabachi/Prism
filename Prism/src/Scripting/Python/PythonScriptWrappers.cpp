@@ -1,6 +1,8 @@
 ﻿#include "prpch.h"
 #include "Prism/Renderer/Material.h"
 #include "Prism/Renderer/Texture.h"
+#include "Prism/Renderer/Image.h"
+#include "Prism/Renderer/Buffer/UniformBuffer.h"
 #include "Prism/Core/Math/Noise.h"
 #include "Prism/Core/Input.h"
 #include "Prism/Physics/PXPhysicsWrappers.h"
@@ -22,6 +24,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <glm/gtc/type_ptr.hpp>
+#include <cstring>
 #include <box2d/box2d.h>
 #include <PhysX/PxPhysicsAPI.h>
 
@@ -60,6 +63,45 @@ namespace Prism::PythonScript
 {
     struct PythonTransform
     { glm::vec3 Position; glm::vec3 Rotation; glm::vec3 Scale; glm::vec3 Up; glm::vec3 Right; glm::vec3 Forward; };
+
+    struct PythonBufferView
+    {
+        Py_buffer View{};
+        bool Valid = false;
+
+        explicit PythonBufferView(const py::object& object)
+        {
+            if (object.is_none())
+                return;
+            if (PyObject_GetBuffer(object.ptr(), &View, PyBUF_SIMPLE) == 0)
+                Valid = true;
+            else
+                PyErr_Clear();
+        }
+        ~PythonBufferView() { if (Valid) PyBuffer_Release(&View); }
+
+        PythonBufferView(const PythonBufferView&) = delete;
+        PythonBufferView& operator=(const PythonBufferView&) = delete;
+
+        const void* Data() const { return View.buf; }
+        uint32_t Size() const { return Valid ? (uint32_t)View.len : 0; }
+    };
+
+    inline uint32_t GetExpectedPixelDataSize(ImageFormat format, uint32_t width, uint32_t height, uint32_t faces = 1)
+    {
+        // None 与压缩格式无法按 BPP 推算
+        if (format == ImageFormat::None || Utils::IsCompressedFormat(format))
+            return 0;
+        return Utils::GetImageMemorySize(format, width, height) * faces;
+    }
+
+    inline void ValidatePixelData(const PythonBufferView& view, ImageFormat format, uint32_t width, uint32_t height, const char* api, uint32_t faces = 1)
+    {
+        const uint32_t expected = GetExpectedPixelDataSize(format, width, height, faces);
+        if (expected != 0 && view.Size() < expected)
+            throw std::runtime_error(fmt::format("{}: data needs at least {} bytes for {}x{}, got {}!"
+                , api, expected, width, height, view.Size()));
+    }
 
     class PythonNoise
     {
@@ -101,108 +143,358 @@ namespace Prism::PythonScript
         static void Error(const char* message) { PR_CORE_ERROR("[Python] {}", message); }
         static void Critical(const char* message) { PR_CORE_FATAL("[Python] {}", message); }
     };
-
-    class PythonAsset
+    class PythonRefCounted
     {
     protected:
-        uint64_t m_Handle = 0;
+        Ref<RefCounted> m_Ref;
     public:
-        PythonAsset(uint64_t handle) : m_Handle(handle) {}
-        PythonAsset(const PythonAsset& other) : m_Handle(reinterpret_cast<uint64_t>(new Ref<Asset>(*reinterpret_cast<Ref<Asset>*>(other.m_Handle)))) {}
-        PythonAsset& operator=(const PythonAsset& other)
-        {
-            if (m_Handle) delete (Ref<Asset>*)(m_Handle);
-            m_Handle = reinterpret_cast<uint64_t>(new Ref<Asset>(*reinterpret_cast<Ref<Asset>*>(other.m_Handle)));
-            return *this;
-        }
-        PythonAsset(PythonAsset&& other) noexcept : m_Handle(other.m_Handle) { other.m_Handle = 0; }
-        PythonAsset& operator=(PythonAsset&& other) noexcept
-        {
-            if (m_Handle) delete (Ref<Asset>*)(m_Handle);
-            m_Handle = other.m_Handle;
-            other.m_Handle = 0;
-            return *this;
-        }
-        virtual ~PythonAsset() { if (m_Handle) delete (Ref<Asset>*)(m_Handle); m_Handle = 0; }
-        virtual std::string __Repr__() { return fmt::format(" <Asset Handle = {}>", m_Handle); }
-        virtual uint64_t GetHandle() const { return m_Handle; }
+        PythonRefCounted() = default;
+        PythonRefCounted(Ref<RefCounted> ref) : m_Ref(std::move(ref)) {}
+        void SetRef(uint64_t refPtr) { m_Ref = reinterpret_cast<RefCounted*>(refPtr); }
+        virtual ~PythonRefCounted() = default;
+        virtual std::string __Repr__() { return fmt::format(" <Ref Handle = {}>", (uint64_t)m_Ref.Raw()); }
+    };
+
+    class PythonAsset : public PythonRefCounted
+    {
     public:
-        Ref<Asset>& GetInstance() const { return *reinterpret_cast<Ref<Asset>*>(m_Handle); }
+        PythonAsset() = default;
+        PythonAsset(Ref<Asset> asset) : PythonRefCounted(std::move(asset)) {}
+        void SetAsset(uint64_t assetPtr) { m_Ref = reinterpret_cast<Asset*>(assetPtr); }
+        virtual ~PythonAsset() = default;
+        virtual std::string __Repr__() { return fmt::format(" <Asset Handle = {}>", (uint64_t)m_Ref.Raw()); }
+
+        AssetType GetType() const { Ref<Asset> asset = m_Ref.As<Asset>(); return asset ? asset->Type : AssetType::None; }
+        uint64_t GetHandle() const { Ref<Asset> asset = m_Ref.As<Asset>(); return asset ? (uint64_t)asset->Handle : 0; }
+        std::string GetFilePath() const { Ref<Asset> asset = m_Ref.As<Asset>(); return asset ? asset->FilePath : ""; }
+        std::string GetFileName() const { Ref<Asset> asset = m_Ref.As<Asset>(); return asset ? asset->FileName : ""; }
+        std::string GetExtension() const { Ref<Asset> asset = m_Ref.As<Asset>(); return asset ? asset->Extension : ""; }
     };
 
     class PythonMesh : public PythonAsset
     {
     public:
-        PythonMesh(uint64_t handle) : PythonAsset(handle) {}
-        PythonMesh(const char* filepath) : PythonAsset(0)
-        {
-            auto result = ModelImporter::Import(filepath);
-            m_Handle = reinterpret_cast<uint64_t>(new Ref<Mesh>(result.Mesh));
-        }
-        virtual ~PythonMesh() override { if (m_Handle) delete (Ref<Mesh>*)(m_Handle); m_Handle = 0; }
-        virtual std::string __Repr__() override { return fmt::format(" <Mesh Handle = {}>", m_Handle); }
+        PythonMesh() = default;
+        PythonMesh(Ref<Mesh> mesh) : PythonAsset(mesh) {}
+        PythonMesh(const char* filepath) : PythonAsset(ModelImporter::Import(filepath).Mesh) {}
+        virtual std::string __Repr__() override { return fmt::format(" <Mesh Handle = {}>", (uint64_t)m_Ref.Raw()); }
     public:
-        Ref<Mesh>& GetInstance() const { return *reinterpret_cast<Ref<Mesh>*>(m_Handle); }
+        Ref<Mesh> GetMesh() const { return m_Ref.As<Mesh>(); }
     };
 
-    class PythonTexture2D : public PythonAsset
+    class PythonImage : public PythonRefCounted
     {
     public:
-        PythonTexture2D(uint64_t handle) : PythonAsset(handle) {}
-        PythonTexture2D(uint32_t width, uint32_t height) : PythonAsset(0) { m_Handle = reinterpret_cast<uint64_t>(new Ref<Texture2D>(Texture2D::Create(ImageFormat::RGBA, width, height))); }
-        virtual ~PythonTexture2D() override { if (m_Handle) delete (Ref<Texture2D>*)(m_Handle); m_Handle = 0; }
+        PythonImage() = default;
+        PythonImage(Ref<Image> image) : PythonRefCounted(std::move(image)) {}
         virtual std::string __Repr__() override
         {
-            std::string result;
-            auto& texture = GetInstance();
+            Ref<Image> image = m_Ref.As<Image>();
+            if (image)
+                return fmt::format(" <Image Handle = {} Width = {} Height = {}>"
+                    , (uint64_t)image.Raw(), image->GetWidth(), image->GetHeight());
+            return fmt::format(" <Image Handle = {}>", (uint64_t)m_Ref.Raw());
+        }
+        uint32_t GetWidth() const { Ref<Image> image = m_Ref.As<Image>(); return image ? image->GetWidth() : 0; }
+        uint32_t GetHeight() const { Ref<Image> image = m_Ref.As<Image>(); return image ? image->GetHeight() : 0; }
+        uint32_t GetSamples() const { Ref<Image> image = m_Ref.As<Image>(); return image ? image->GetSamples() : 0; }
+        ImageFormat GetFormat() const { Ref<Image> image = m_Ref.As<Image>(); return image ? image->GetFormat() : ImageFormat::None; }
+    public:
+        Ref<Image> GetImage() const { return m_Ref.As<Image>(); }
+    };
+
+    class PythonImage2D : public PythonImage
+    {
+    public:
+        PythonImage2D() = default;
+        PythonImage2D(Ref<Image2D> image) : PythonImage(image) {}
+        static PythonImage2D Create(ImageFormat format, uint32_t width, uint32_t height, const py::object& data, uint32_t samples)
+        {
+            PythonBufferView view(data);
+            if (!data.is_none() && !view.Valid)
+                throw std::runtime_error("Image2D.Create: data must support the buffer protocol!");
+            ValidatePixelData(view, format, width, height, "Image2D.Create");
+            return PythonImage2D(Image2D::Create(format, width, height, view.Data(), samples));
+        }
+    };
+
+    class PythonImageCube : public PythonImage
+    {
+    public:
+        PythonImageCube() = default;
+        PythonImageCube(Ref<ImageCube> image) : PythonImage(image) {}
+        static PythonImageCube Create(ImageFormat format, uint32_t width, uint32_t height, const py::object& data)
+        {
+            PythonBufferView view(data);
+            if (!data.is_none() && !view.Valid)
+                throw std::runtime_error("ImageCube.Create: data must support the buffer protocol!");
+            ValidatePixelData(view, format, width, height, "ImageCube.Create", 6);
+            return PythonImageCube(ImageCube::Create(format, width, height, view.Data()));
+        }
+        void GenerateMipMap() { Ref<ImageCube> image = GetImageCube(); if (image) image->GenerateMipMap(); }
+        void CopyTo(const PythonImageCube& target) { Ref<ImageCube> image = GetImageCube(); if (image) image->CopyTo(target.GetImageCube()); }
+    public:
+        Ref<ImageCube> GetImageCube() const { return m_Ref.As<ImageCube>(); }
+    };
+
+    class PythonTexture : public PythonAsset
+    {
+    public:
+        PythonTexture() = default;
+        PythonTexture(Ref<Texture> texture) : PythonAsset(std::move(texture)) {}
+        uint32_t GetWidth() const { Ref<Texture> texture = m_Ref.As<Texture>(); return texture ? texture->GetWidth() : 0; }
+        uint32_t GetHeight() const { Ref<Texture> texture = m_Ref.As<Texture>(); return texture ? texture->GetHeight() : 0; }
+        ImageFormat GetFormat() const { Ref<Texture> texture = m_Ref.As<Texture>(); return texture ? texture->GetFormat() : ImageFormat::None; }
+    };
+
+    class PythonTexture2D : public PythonTexture
+    {
+    public:
+        PythonTexture2D() = default;
+        PythonTexture2D(Ref<Texture2D> texture) : PythonTexture(texture) {}
+        static PythonTexture2D Create(uint32_t width, uint32_t height)
+        {
+            return PythonTexture2D(Texture2D::Create(ImageFormat::RGBA8, width, height));
+        }
+        virtual std::string __Repr__() override
+        {
+            Ref<Texture2D> texture = GetTexture();
             if (texture)
+                return fmt::format(" <Texture2D Handle = {} Width = {} height = {}>"
+                    , (uint64_t)texture.Raw(), texture->GetWidth(), texture->GetHeight());
+            return fmt::format(" <Texture2D Handle = {}>", (uint64_t)m_Ref.Raw());
+        }
+        void SetData(const py::object& data)
+        {
+            Ref<Texture2D> texture = GetTexture();
+            if (!texture)
+                throw std::runtime_error("Texture2D.SetData: invalid texture!");
+            PythonBufferView view(data);
+            if (!view.Valid)
+                throw std::runtime_error("Texture2D.SetData: data must support the buffer protocol!");
+            const uint32_t expected = texture->GetWidth() * texture->GetHeight() * 4;
+            if (view.Size() != expected)
+                throw std::runtime_error(fmt::format("Texture2D.SetData: expected {} RGBA8 bytes, got {}!", expected, view.Size()));
+
+            texture->Lock();
+            // GetWriteableBuffer() 按值返回，取到的是 Buffer 深拷贝，写入会丢失；必须取 Image2D 的 Buffer 引用
+            Ref<Image2D> image = texture->GetImage();
+            if (!image)
             {
-                result = fmt::format(" <Texture2D Handle = {} Width = {} height = {}>"
-                    , m_Handle, texture->GetWidth(), texture->GetHeight());
+                texture->Unlock();
+                throw std::runtime_error("Texture2D.SetData: texture has no image!");
             }
-            else result = fmt::format(" <Texture2D Handle = {}>", m_Handle);
-            return result;
+            Buffer& buffer = image->GetBuffer();
+            std::memcpy(buffer.Data, view.Data(), expected);
+            texture->Unlock();
+        }
+        PythonImage2D GetImage() const
+        {
+            Ref<Texture2D> texture = GetTexture();
+            return texture ? PythonImage2D(texture->GetImage()) : PythonImage2D();
         }
     public:
-        Ref<Texture2D>& GetInstance() const { return *reinterpret_cast<Ref<Texture2D>*>(m_Handle); }
+        Ref<Texture2D> GetTexture() const { return m_Ref.As<Texture2D>(); }
     };
 
-    class PythonMaterial : public PythonAsset
+    class PythonTextureCube : public PythonTexture
     {
     public:
-        PythonMaterial(uint64_t handle) : PythonAsset(handle) {}
-        PythonMaterial(const char* shaderName) : PythonAsset(0)
+        PythonTextureCube() = default;
+        PythonTextureCube(Ref<TextureCube> texture) : PythonTexture(texture) {}
+        static PythonTextureCube Create(ImageFormat format, uint32_t width, uint32_t height, const py::object& data)
         {
-            const auto& shader = AssetManager::GetShaderLibrary()->Get(shaderName);
-            m_Handle = reinterpret_cast<uint64_t>(new Ref<Material>(Material::Create(shader)));
+            PythonBufferView view(data);
+            if (!data.is_none() && !view.Valid)
+                throw std::runtime_error("TextureCube.Create: data must support the buffer protocol!");
+            ValidatePixelData(view, format, width, height, "TextureCube.Create", 6);
+            return PythonTextureCube(TextureCube::Create(format, width, height, view.Data()));
         }
-        virtual ~PythonMaterial() override { if (m_Handle) delete (Ref<Material>*)(m_Handle); m_Handle = 0; }
         virtual std::string __Repr__() override
         {
-            std::string result;
-            if (m_Handle)
+            Ref<TextureCube> texture = GetTextureCube();
+            if (texture)
+                return fmt::format(" <TextureCube Handle = {} Width = {} height = {}>"
+                    , (uint64_t)texture.Raw(), texture->GetWidth(), texture->GetHeight());
+            return fmt::format(" <TextureCube Handle = {}>", (uint64_t)m_Ref.Raw());
+        }
+        PythonImageCube GetImage() const
+        {
+            Ref<TextureCube> texture = GetTextureCube();
+            return texture ? PythonImageCube(texture->GetImage()) : PythonImageCube();
+        }
+    public:
+        Ref<TextureCube> GetTextureCube() const { return m_Ref.As<TextureCube>(); }
+    };
+
+    class PythonPrismShader : public PythonAsset
+    {
+    public:
+        PythonPrismShader() = default;
+        PythonPrismShader(Ref<PrismShader> shader) : PythonAsset(shader) {}
+        static PythonPrismShader GetShader(const char* name)
+        {
+            return PythonPrismShader(AssetManager::GetShaderLibrary()->Get(name));
+        }
+        virtual std::string __Repr__() override
+        {
+            Ref<PrismShader> shader = m_Ref.As<PrismShader>();
+            if (shader)
+                return fmt::format(" <Shader Handle = {} Name = {}>", (uint64_t)shader.Raw(), shader->GetName());
+            return fmt::format(" <Shader Handle = {}>", (uint64_t)m_Ref.Raw());
+        }
+        std::string GetName() const
+        {
+            Ref<PrismShader> shader = m_Ref.As<PrismShader>();
+            return shader ? shader->GetName() : "";
+        }
+        uint32_t GetUniformCount() const
+        {
+            Ref<PrismShader> shader = m_Ref.As<PrismShader>();
+            return shader ? (uint32_t)shader->GetUniforms().size() : 0;
+        }
+        PrismShaderCompiler::PropertyType GetUniformType(uint32_t index) const
+        {
+            Ref<PrismShader> shader = m_Ref.As<PrismShader>();
+            if (!shader) return PrismShaderCompiler::PropertyType::None;
+            const auto& uniforms = shader->GetUniforms();
+            if (index >= uniforms.size()) return PrismShaderCompiler::PropertyType::None;
+            return uniforms[index].Type;
+        }
+        std::string GetUniformName(uint32_t index) const
+        {
+            Ref<PrismShader> shader = m_Ref.As<PrismShader>();
+            if (!shader) return "";
+            const auto& uniforms = shader->GetUniforms();
+            if (index >= uniforms.size()) return "";
+            return uniforms[index].Name;
+        }
+        std::string GetUniformDisplayName(uint32_t index) const
+        {
+            Ref<PrismShader> shader = m_Ref.As<PrismShader>();
+            if (!shader) return "";
+            const auto& uniforms = shader->GetUniforms();
+            if (index >= uniforms.size()) return "";
+            return uniforms[index].DisplayName;
+        }
+        py::object GetUniformDefaultValue(uint32_t index) const
+        {
+            Ref<PrismShader> shader = m_Ref.As<PrismShader>();
+            if (!shader) return py::none();
+            const auto& uniforms = shader->GetUniforms();
+            if (index >= uniforms.size()) return py::none();
+            const auto& uni = uniforms[index];
+            const auto& dv = uni.DefaultValue;
+            using PT = PrismShaderCompiler::PropertyType;
+            switch (uni.Type)
             {
-                auto& material = *reinterpret_cast<Ref<Material>*>(m_Handle);
-                result = fmt::format(" <Material Handle = {} Shader = {}>"
-                    , m_Handle, material->GetShader()->GetName());
+            case PT::Float:
+            case PT::Range:
+                return dv.empty() ? py::none() : py::cast(dv[0].Float);
+            case PT::Int:
+            case PT::Enum:
+                return dv.empty() ? py::none() : py::cast(dv[0].Int);
+            case PT::Bool:
+                return dv.empty() ? py::none() : py::cast(dv[0].Bool);
+            case PT::Vector2:
+                if (dv.size() >= 2) return py::cast(glm::vec2(dv[0].Float, dv[1].Float));
+                return py::none();
+            case PT::Vector3:
+            case PT::Color3:
+                if (dv.size() >= 3) return py::cast(glm::vec3(dv[0].Float, dv[1].Float, dv[2].Float));
+                return py::none();
+            case PT::Vector4:
+            case PT::Color:
+                if (dv.size() >= 4) return py::cast(glm::vec4(dv[0].Float, dv[1].Float, dv[2].Float, dv[3].Float));
+                return py::none();
+            case PT::Matrix4:
+            {
+                if (dv.size() >= 16)
+                {
+                    glm::mat4 m(1.0f);
+                    for (int i = 0; i < 16; ++i) glm::value_ptr(m)[i] = dv[i].Float;
+                    return py::cast(m);
+                }
+                return py::none();
             }
-            else result = fmt::format(" <Material Handle = {}>", m_Handle);
+            case PT::Matrix3:
+            case PT::Texture2D:
+            case PT::Texture2DMS:
+            case PT::TextureCube:
+            case PT::None:
+            default:
+                return py::none();
+            }
+        }
+    public:
+        Ref<PrismShader> GetShaderRef() const { return m_Ref.As<PrismShader>(); }
+    };
+
+    class PythonMaterial : public PythonRefCounted
+    {
+    public:
+        PythonMaterial() = default;
+        PythonMaterial(Ref<Material> material) : PythonRefCounted(std::move(material)) {}
+        PythonMaterial(const PythonPrismShader& shader)
+            : PythonRefCounted(Material::Create(shader.GetShaderRef())) {}
+        virtual std::string __Repr__()
+        {
+            std::string result;
+            if (GetMaterial())
+            {
+                result = fmt::format(" <Material Handle = {} Shader = {}>"
+                    , (uint64_t)m_Ref.Raw(), GetMaterial()->GetShader()->GetName());
+            }
+            else result = fmt::format(" <Material Handle = {}>", (uint64_t)m_Ref.Raw());
             return result;
         }
-        void SetFloat(const char* uniform, float value) { GetInstance()->SetFloat(uniform, value); }
-        void SetInt(const char* uniform, int value) { GetInstance()->SetInt(uniform, value); }
-        void SetBool(const char* uniform, bool value) { GetInstance()->SetBool(uniform, value); }
-        void SetVector2(const char* uniform, const glm::vec2& value) { GetInstance()->SetVec2(uniform, value); }
-        void SetVector3(const char* uniform, const glm::vec3& value) { GetInstance()->SetVec3(uniform, value); }
-        void SetVector4(const char* uniform, const glm::vec4& value) { GetInstance()->SetVec4(uniform, value); }
-        void SetColor3(const char* uniform, const glm::vec3& value) { GetInstance()->SetColor3(uniform, value); }
-        void SetColor(const char* uniform, const glm::vec4& value) { GetInstance()->SetColor(uniform, value); }
-        void SetMatrix4(const char* uniform, const glm::mat4& value) { GetInstance()->SetMatrix4(uniform, value); }
-        void SetTexture(const char* uniform, const PythonTexture2D& texture) { GetInstance()->SetTexture(uniform, texture.GetInstance()); }
-        void SetKeyword(const char* name, bool enabled) { GetInstance()->SetKeyword(name, enabled); }
-        bool IsKeywordEnabled(const char* name) { return GetInstance()->IsKeywordEnabled(name); }
+        void SetFloat(const char* uniform, float value) { GetMaterial()->SetFloat(uniform, value); }
+        void SetInt(const char* uniform, int value) { GetMaterial()->SetInt(uniform, value); }
+        void SetBool(const char* uniform, bool value) { GetMaterial()->SetBool(uniform, value); }
+        void SetVector2(const char* uniform, const glm::vec2& value) { GetMaterial()->SetVec2(uniform, value); }
+        void SetVector3(const char* uniform, const glm::vec3& value) { GetMaterial()->SetVec3(uniform, value); }
+        void SetVector4(const char* uniform, const glm::vec4& value) { GetMaterial()->SetVec4(uniform, value); }
+        void SetColor3(const char* uniform, const glm::vec3& value) { GetMaterial()->SetColor3(uniform, value); }
+        void SetColor(const char* uniform, const glm::vec4& value) { GetMaterial()->SetColor(uniform, value); }
+        void SetMatrix4(const char* uniform, const glm::mat4& value) { GetMaterial()->SetMatrix4(uniform, value); }
+        void SetTexture2D(const char* uniform, const PythonTexture2D& texture) { GetMaterial()->SetTexture(uniform, texture.GetTexture()); }
+        void SetKeyword(const char* name, bool enabled) { GetMaterial()->SetKeyword(name, enabled); }
+        bool IsKeywordEnabled(const char* name) { return GetMaterial()->IsKeywordEnabled(name); }
     public:
-        Ref<Material>& GetInstance() const { return *reinterpret_cast<Ref<Material>*>(m_Handle); }
+        Ref<Material> GetMaterial() const { return m_Ref.As<Material>(); }
+    };
+
+    class PythonUniformBuffer : public PythonRefCounted
+    {
+    public:
+        PythonUniformBuffer() = default;
+        PythonUniformBuffer(Ref<UniformBuffer> buffer) : PythonRefCounted(std::move(buffer)) {}
+        static PythonUniformBuffer Create(uint32_t size)
+        {
+            return PythonUniformBuffer(UniformBuffer::Create(size));
+        }
+        virtual std::string __Repr__() override
+        {
+            Ref<UniformBuffer> buffer = GetUniformBuffer();
+            if (buffer)
+                return fmt::format(" <UniformBuffer Handle = {} Size = {}>", (uint64_t)buffer.Raw(), buffer->GetSize());
+            return fmt::format(" <UniformBuffer Handle = {}>", (uint64_t)m_Ref.Raw());
+        }
+        void SetData(const py::object& data, uint32_t offset)
+        {
+            Ref<UniformBuffer> buffer = GetUniformBuffer();
+            if (!buffer)
+                throw std::runtime_error("UniformBuffer.SetData: invalid uniform buffer!");
+            PythonBufferView view(data);
+            if (!view.Valid)
+                throw std::runtime_error("UniformBuffer.SetData: data must support the buffer protocol!");
+            if ((uint64_t)offset + view.Size() > buffer->GetSize())
+                throw std::runtime_error(fmt::format("UniformBuffer.SetData: write range [{}, {}) exceeds buffer size {}!"
+                    , offset, offset + view.Size(), buffer->GetSize()));
+            buffer->SetData(view.Data(), view.Size(), offset);
+        }
+    public:
+        Ref<UniformBuffer> GetUniformBuffer() const { return m_Ref.As<UniformBuffer>(); }
     };
 
     class PythonEntity
@@ -211,19 +503,23 @@ namespace Prism::PythonScript
 
     public:
         PythonEntity(uint64_t id = 0) : m_EntityID(id) {}
-        ~PythonEntity() { PR_CORE_TRACE("[Python] Destroyed Entity {0}", m_EntityID); }
+        ~PythonEntity() { /*PR_CORE_TRACE("[Python] Destroyed Entity {0}", m_EntityID);*/ }
         std::string __Repr__() { return fmt::format(" <Entity ID = {}>", m_EntityID); }
 
         uint64_t GetID() const { return m_EntityID; }
         void SetID(uint64_t id)
         {
             m_EntityID = id;
-            PR_CORE_TRACE("[Python] Created Entity {0}", id);
+            // PR_CORE_TRACE("[Python] Created Entity {0}", id);
         }
+
+        bool __Eq__(const PythonEntity& other) const { return m_EntityID == other.m_EntityID; }
+        bool __Ne__(const PythonEntity& other) const { return m_EntityID != other.m_EntityID; }
+        int64_t __Hash__() const { return (int64_t)m_EntityID; }
 
         pybind11::object GetComponent(pybind11::object cls)
         {
-            py::object behaviourClass = py::module::import("Prism").attr("Behaviour");
+            py::object behaviourClass = py::module::import("PrismEngine").attr("Behaviour");
 
             if (PyObject_IsSubclass(cls.ptr(), behaviourClass.ptr()) && cls.ptr() != behaviourClass.ptr())
             {
@@ -251,7 +547,7 @@ namespace Prism::PythonScript
             if (s_PythonHasComponentFuncs.count(typeId) && s_PythonHasComponentFuncs.at(typeId)(entity))
             {
                 py::object component = cls();
-                component.attr("Entity") = py::cast(this);
+                component.attr("Entity") = py::cast(PythonEntity(m_EntityID));
                 return component;
             }
             return py::none();
@@ -259,7 +555,7 @@ namespace Prism::PythonScript
 
         pybind11::object CreateComponent(pybind11::object cls)
         {
-            py::object behaviourClass = py::module::import("Prism").attr("Behaviour");
+            py::object behaviourClass = py::module::import("PrismEngine").attr("Behaviour");
 
             if (PyObject_IsSubclass(cls.ptr(), behaviourClass.ptr()) && cls.ptr() != behaviourClass.ptr())
             {
@@ -278,13 +574,13 @@ namespace Prism::PythonScript
             uint64_t typeId = reinterpret_cast<uint64_t>(cls.ptr());
             s_PythonCreateComponentFuncs.at(typeId)(entity);
             py::object component = cls();
-            component.attr("Entity") = py::cast(this);
+            component.attr("Entity") = py::cast(PythonEntity(m_EntityID));
             return component;
         }
 
         bool HasComponent(pybind11::object cls)
         {
-            py::object behaviourClass = py::module::import("Prism").attr("Behaviour");
+            py::object behaviourClass = py::module::import("PrismEngine").attr("Behaviour");
 
             if (PyObject_IsSubclass(cls.ptr(), behaviourClass.ptr()) && cls.ptr() != behaviourClass.ptr())
             {
@@ -304,7 +600,7 @@ namespace Prism::PythonScript
 
         pybind11::object GetTransform()
         {
-            py::object transformCompClass = py::module::import("Prism").attr("Component").attr("TransformComponent");
+            py::object transformCompClass = py::module::import("PrismEngine").attr("TransformComponent");
             return GetComponent(transformCompClass);
         }
 
@@ -545,26 +841,21 @@ namespace Prism::PythonScript
         {
             Entity e = GetEntityImpt();
             auto& mc = e.GetComponent<MeshRendererComponent>();
-            if (mc.Mesh)
-                return PythonMesh(reinterpret_cast<uint64_t>(new Ref<Mesh>(mc.Mesh)));
-            return PythonMesh((uint64_t)0);
+            return PythonMesh(mc.Mesh);
         }
         void SetMesh(const PythonMesh& mesh)
         {
             Entity e = GetEntityImpt();
             auto& mc = e.GetComponent<MeshRendererComponent>();
-            if (mesh.GetHandle())
-                mc.Mesh = *reinterpret_cast<Ref<Mesh>*>(mesh.GetHandle());
-            else
-                mc.Mesh = nullptr;
+            mc.Mesh = mesh.GetMesh();
         }
         PythonMaterial GetMaterial(uint32_t index = 0) const
         {
             Entity e = GetEntityImpt();
             auto& mc = e.GetComponent<MeshRendererComponent>();
             if (!mc.Materials.empty() && mc.Materials[index])
-                return PythonMaterial(reinterpret_cast<uint64_t>(new Ref<Material>(mc.Materials[index])));
-            return PythonMaterial((uint64_t)0);
+                return PythonMaterial(mc.Materials[index]);
+            return PythonMaterial();
         }
         void SetMaterial(const PythonMaterial& material, uint32_t index = 0)
         {
@@ -572,8 +863,8 @@ namespace Prism::PythonScript
             auto& mc = e.GetComponent<MeshRendererComponent>();
             if (!mc.Materials.empty())
             {
-                if (material.GetHandle())
-                    mc.Materials[index] = *reinterpret_cast<Ref<Material>*>(material.GetHandle());
+                if (material.GetMaterial())
+                    mc.Materials[index] = material.GetMaterial();
                 else PR_CORE_WARN("[Python] Attempted to set null material on MeshRendererComponent!");
             }
         }
@@ -584,12 +875,7 @@ namespace Prism::PythonScript
             std::vector<PythonMaterial> result;
             result.reserve(mc.Materials.size());
             for (auto& mat : mc.Materials)
-            {
-                if (mat)
-                    result.emplace_back(reinterpret_cast<uint64_t>(new Ref<Material>(mat)));
-                else
-                    result.emplace_back(static_cast<uint64_t>(0));
-            }
+                result.emplace_back(mat);
             return result;
         }
         void SetMaterials(const std::vector<PythonMaterial>& materials)
@@ -598,12 +884,7 @@ namespace Prism::PythonScript
             auto& mc = e.GetComponent<MeshRendererComponent>();
             mc.Materials.resize(materials.size());
             for (size_t i = 0; i < materials.size(); ++i)
-            {
-                if (materials[i].GetHandle())
-                    mc.Materials[i] = *reinterpret_cast<Ref<Material>*>(materials[i].GetHandle());
-                else
-                    mc.Materials[i] = nullptr;
-            }
+                mc.Materials[i] = materials[i].GetMaterial();
         }
         uint32_t GetMaterialCount() const
         {
@@ -835,7 +1116,7 @@ namespace Prism::PythonScript
             {
                 auto& mc = entity.GetComponent<MeshColliderComponent>();
                 auto meshCollider = std::make_shared<PythonMeshCollider>(
-                    PythonEntity(entity.GetUUID()), mc.IsTrigger, PythonMesh(reinterpret_cast<uint64_t>(new Ref<Mesh>(mc.CollisionMesh)))
+                    PythonEntity(entity.GetUUID()), mc.IsTrigger, PythonMesh(mc.CollisionMesh)
                 );
                 return meshCollider;
             }
@@ -848,9 +1129,10 @@ namespace Prism::PythonScript
     public:
         static PythonMesh CreatePlane(float width, float height)
         {
-            return reinterpret_cast<uint64_t>(new Ref<Mesh>(ModelImporter::Import("assets/models/Plane1m.obj").Mesh));
+            return PythonMesh(ModelImporter::Import("assets/models/Plane1m.obj").Mesh);
         }
     };
+
 } // namespace Prism::PythonScript
 
 // PrismEngine Module Registe
@@ -886,21 +1168,174 @@ PYBIND11_MODULE(PrismEngine, m)
         .def_static("Error", &PythonLog::Error)
         .def_static("Critical", &PythonLog::Critical);
 
-    py::class_<PythonAsset>(m, "Asset")
-        .def(py::init<uint64_t>())
+    py::class_<PythonRefCounted>(m, "Ref")
+        .def(py::init<>())
+        .def("SetRef", &PythonRefCounted::SetRef)
+        .def("__repr__", &PythonRefCounted::__Repr__);
+    py::enum_<AssetType>(m, "AssetType")
+        .value("Scene", AssetType::Scene)
+        .value("Mesh", AssetType::Mesh)
+        .value("Texture", AssetType::Texture)
+        .value("EnvMap", AssetType::EnvMap)
+        .value("Audio", AssetType::Audio)
+        .value("Script", AssetType::Script)
+        .value("PhysicsMat", AssetType::PhysicsMat)
+        .value("Shader", AssetType::Shader)
+        .value("Directory", AssetType::Directory)
+        .value("Other", AssetType::Other)
+        .value("None", AssetType::None)
+        .value("Missing", AssetType::Missing);
+    py::class_<PythonAsset, PythonRefCounted>(m, "Asset")
+        .def(py::init<>())
         .def("__repr__", &PythonAsset::__Repr__)
-        .def_property_readonly("_handle", &PythonMesh::GetHandle); // TODO: Remove this
+        .def_property_readonly("Type", &PythonAsset::GetType)
+        .def_property_readonly("Handle", &PythonAsset::GetHandle)
+        .def_property_readonly("FilePath", &PythonAsset::GetFilePath)
+        .def_property_readonly("FileName", &PythonAsset::GetFileName)
+        .def_property_readonly("Extension", &PythonAsset::GetExtension);
     py::class_<PythonMesh, PythonAsset>(m, "Mesh")
-        .def(py::init<uint64_t>())
+        .def(py::init<>())
         .def(py::init<const char*>())
         .def("__repr__", &PythonMesh::__Repr__);
-    py::class_<PythonTexture2D, PythonAsset>(m, "Texture2D")
-        .def(py::init<uint64_t>())
-        .def(py::init<uint32_t, uint32_t>())
-        .def("__repr__", &PythonTexture2D::__Repr__);
-    py::class_<PythonMaterial, PythonAsset>(m, "Material")
-        .def(py::init<uint64_t>())
-        .def(py::init<const char*>())
+    py::enum_<ImageFormat>(m, "ImageFormat")
+        .value("None", ImageFormat::None)
+        .value("R8", ImageFormat::R8)
+        .value("RG8", ImageFormat::RG8)
+        .value("RGB8", ImageFormat::RGB8)
+        .value("RGBA8", ImageFormat::RGBA8)
+        .value("R8_SRGB", ImageFormat::R8_SRGB)
+        .value("RG8_SRGB", ImageFormat::RG8_SRGB)
+        .value("RGB8_SRGB", ImageFormat::RGB8_SRGB)
+        .value("RGBA8_SRGB", ImageFormat::RGBA8_SRGB)
+        .value("R8_SNORM", ImageFormat::R8_SNORM)
+        .value("RG8_SNORM", ImageFormat::RG8_SNORM)
+        .value("RGB8_SNORM", ImageFormat::RGB8_SNORM)
+        .value("RGBA8_SNORM", ImageFormat::RGBA8_SNORM)
+        .value("R16F", ImageFormat::R16F)
+        .value("RG16F", ImageFormat::RG16F)
+        .value("RGB16F", ImageFormat::RGB16F)
+        .value("RGBA16F", ImageFormat::RGBA16F)
+        .value("R32F", ImageFormat::R32F)
+        .value("RG32F", ImageFormat::RG32F)
+        .value("RGB32F", ImageFormat::RGB32F)
+        .value("RGBA32F", ImageFormat::RGBA32F)
+        .value("R16_UINT", ImageFormat::R16_UINT)
+        .value("RG16_UINT", ImageFormat::RG16_UINT)
+        .value("RGBA16_UINT", ImageFormat::RGBA16_UINT)
+        .value("R32_UINT", ImageFormat::R32_UINT)
+        .value("RG32_UINT", ImageFormat::RG32_UINT)
+        .value("RGBA32_UINT", ImageFormat::RGBA32_UINT)
+        .value("R16_SINT", ImageFormat::R16_SINT)
+        .value("RG16_SINT", ImageFormat::RG16_SINT)
+        .value("RGBA16_SINT", ImageFormat::RGBA16_SINT)
+        .value("R32_SINT", ImageFormat::R32_SINT)
+        .value("RG32_SINT", ImageFormat::RG32_SINT)
+        .value("RGBA32_SINT", ImageFormat::RGBA32_SINT)
+        .value("RGB565", ImageFormat::RGB565)
+        .value("RGBA4", ImageFormat::RGBA4)
+        .value("RGB5A1", ImageFormat::RGB5A1)
+        .value("RGB10A2", ImageFormat::RGB10A2)
+        .value("RG11B10F", ImageFormat::RG11B10F)
+        .value("RGB9E5", ImageFormat::RGB9E5)
+        .value("DEPTH16", ImageFormat::DEPTH16)
+        .value("DEPTH24STENCIL8", ImageFormat::DEPTH24STENCIL8)
+        .value("DEPTH32F", ImageFormat::DEPTH32F)
+        .value("DEPTH32FSTENCIL8", ImageFormat::DEPTH32FSTENCIL8)
+        .value("BC1", ImageFormat::BC1)
+        .value("BC1_SRGB", ImageFormat::BC1_SRGB)
+        .value("BC2", ImageFormat::BC2)
+        .value("BC2_SRGB", ImageFormat::BC2_SRGB)
+        .value("BC3", ImageFormat::BC3)
+        .value("BC3_SRGB", ImageFormat::BC3_SRGB)
+        .value("BC4", ImageFormat::BC4)
+        .value("BC5", ImageFormat::BC5)
+        .value("BC6H_UF16", ImageFormat::BC6H_UF16)
+        .value("BC6H_SF16", ImageFormat::BC6H_SF16)
+        .value("BC7", ImageFormat::BC7)
+        .value("BC7_SRGB", ImageFormat::BC7_SRGB)
+        .value("ETC2_RGB8", ImageFormat::ETC2_RGB8)
+        .value("ETC2_RGB8_SRGB", ImageFormat::ETC2_RGB8_SRGB)
+        .value("ETC2_RGBA8", ImageFormat::ETC2_RGBA8)
+        .value("ETC2_RGBA8_SRGB", ImageFormat::ETC2_RGBA8_SRGB)
+        .value("ASTC_4x4", ImageFormat::ASTC_4x4)
+        .value("ASTC_5x5", ImageFormat::ASTC_5x5)
+        .value("ASTC_6x6", ImageFormat::ASTC_6x6)
+        .value("ASTC_8x8", ImageFormat::ASTC_8x8)
+        .value("Depth", ImageFormat::Depth);
+    py::class_<PythonImage, PythonRefCounted>(m, "Image")
+        .def(py::init<>())
+        .def("__repr__", &PythonImage::__Repr__)
+        .def_property_readonly("Width", &PythonImage::GetWidth)
+        .def_property_readonly("Height", &PythonImage::GetHeight)
+        .def_property_readonly("Samples", &PythonImage::GetSamples)
+        .def_property_readonly("Format", &PythonImage::GetFormat)
+        .def("GetWidth", &PythonImage::GetWidth)
+        .def("GetHeight", &PythonImage::GetHeight)
+        .def("GetSamples", &PythonImage::GetSamples)
+        .def("GetFormat", &PythonImage::GetFormat);
+    py::class_<PythonImage2D, PythonImage>(m, "Image2D")
+        .def(py::init<>())
+        .def_static("Create", &PythonImage2D::Create,
+            py::arg("format"), py::arg("width"), py::arg("height"), py::arg("data") = py::none(), py::arg("samples") = 1)
+        .def("__repr__", &PythonImage2D::__Repr__);
+    py::class_<PythonImageCube, PythonImage>(m, "ImageCube")
+        .def(py::init<>())
+        .def_static("Create", &PythonImageCube::Create,
+            py::arg("format"), py::arg("width"), py::arg("height"), py::arg("data") = py::none())
+        .def("__repr__", &PythonImageCube::__Repr__)
+        .def("GenerateMipMap", &PythonImageCube::GenerateMipMap)
+        .def("CopyTo", &PythonImageCube::CopyTo);
+    py::class_<PythonTexture, PythonAsset>(m, "Texture")
+        .def(py::init<>())
+        .def_property_readonly("Width", &PythonTexture::GetWidth)
+        .def_property_readonly("Height", &PythonTexture::GetHeight)
+        .def_property_readonly("Format", &PythonTexture::GetFormat)
+        .def("GetWidth", &PythonTexture::GetWidth)
+        .def("GetHeight", &PythonTexture::GetHeight)
+        .def("GetFormat", &PythonTexture::GetFormat);
+    py::class_<PythonTexture2D, PythonTexture>(m, "Texture2D")
+        .def(py::init<>())
+        .def_static("Create", &PythonTexture2D::Create, py::arg("width"), py::arg("height"))
+        .def("__repr__", &PythonTexture2D::__Repr__)
+        .def("SetData", &PythonTexture2D::SetData)
+        .def("GetImage", &PythonTexture2D::GetImage);
+    py::class_<PythonTextureCube, PythonTexture>(m, "TextureCube")
+        .def(py::init<>())
+        .def_static("Create", &PythonTextureCube::Create,
+            py::arg("format"), py::arg("width"), py::arg("height"), py::arg("data") = py::none())
+        .def("__repr__", &PythonTextureCube::__Repr__)
+        .def("GetImage", &PythonTextureCube::GetImage);
+    py::enum_<PrismShaderCompiler::PropertyType>(m, "UniformType")
+        .value("None", PrismShaderCompiler::PropertyType::None)
+        .value("Bool", PrismShaderCompiler::PropertyType::Bool)
+        .value("Color", PrismShaderCompiler::PropertyType::Color)
+        .value("Color3", PrismShaderCompiler::PropertyType::Color3)
+        .value("Float", PrismShaderCompiler::PropertyType::Float)
+        .value("Int", PrismShaderCompiler::PropertyType::Int)
+        .value("Vector2", PrismShaderCompiler::PropertyType::Vector2)
+        .value("Vector3", PrismShaderCompiler::PropertyType::Vector3)
+        .value("Vector4", PrismShaderCompiler::PropertyType::Vector4)
+        .value("Range", PrismShaderCompiler::PropertyType::Range)
+        .value("Matrix3", PrismShaderCompiler::PropertyType::Matrix3)
+        .value("Matrix4", PrismShaderCompiler::PropertyType::Matrix4)
+        .value("Texture2D", PrismShaderCompiler::PropertyType::Texture2D)
+        .value("Texture2DMS", PrismShaderCompiler::PropertyType::Texture2DMS)
+        .value("TextureCube", PrismShaderCompiler::PropertyType::TextureCube)
+        .value("Enum", PrismShaderCompiler::PropertyType::Enum);
+    py::class_<PythonPrismShader, PythonAsset>(m, "PrismShader")
+        .def(py::init<>())
+        .def_static("GetShader", &PythonPrismShader::GetShader)
+        .def("__repr__", &PythonPrismShader::__Repr__)
+        .def_property_readonly("Name", &PythonPrismShader::GetName)
+        .def("GetName", &PythonPrismShader::GetName)
+        .def("GetUniformCount", &PythonPrismShader::GetUniformCount)
+        .def("GetUniformType", &PythonPrismShader::GetUniformType)
+        .def("GetUniformName", &PythonPrismShader::GetUniformName)
+        .def("GetUniformDisplayName", &PythonPrismShader::GetUniformDisplayName)
+        .def("GetUniformDefaultValue", &PythonPrismShader::GetUniformDefaultValue);
+    py::class_<PythonMaterial, PythonRefCounted>(m, "Material")
+        .def(py::init<>())
+        .def(py::init<const PythonPrismShader&>())
         .def("__repr__", &PythonMaterial::__Repr__)
         .def("SetFloat", &PythonMaterial::SetFloat)
         .def("SetInt", &PythonMaterial::SetInt)
@@ -911,15 +1346,23 @@ PYBIND11_MODULE(PrismEngine, m)
         .def("SetColor3", &PythonMaterial::SetColor3)
         .def("SetColor", &PythonMaterial::SetColor)
         .def("SetMatrix4", &PythonMaterial::SetMatrix4)
-        .def("SetTexture", &PythonMaterial::SetTexture)
+        .def("SetTexture2D", &PythonMaterial::SetTexture2D)
         .def("SetKeyword", &PythonMaterial::SetKeyword)
         .def("IsKeywordEnabled", &PythonMaterial::IsKeywordEnabled);
+    py::class_<PythonUniformBuffer, PythonRefCounted>(m, "UniformBuffer")
+        .def(py::init<>())
+        .def_static("Create", &PythonUniformBuffer::Create)
+        .def("__repr__", &PythonUniformBuffer::__Repr__)
+        .def("SetData", &PythonUniformBuffer::SetData, py::arg("data"), py::arg("offset") = 0);
     py::class_<PythonMeshFactory>(m, "MeshFactory")
         .def_static("CreatePlane", &PythonMeshFactory::CreatePlane);
 
     py::class_<PythonEntity>(m, "Entity")
         .def(py::init<uint64_t>(), py::arg("id") = 0)
         .def("__repr__", &PythonEntity::__Repr__)
+        .def("__eq__", &PythonEntity::__Eq__)
+        .def("__ne__", &PythonEntity::__Ne__)
+        .def("__hash__", &PythonEntity::__Hash__)
         .def_property("ID", &PythonEntity::GetID, &PythonEntity::SetID)
         .def_property_readonly("_id", &PythonEntity::GetID)
         .def("GetComponent", &PythonEntity::GetComponent)
@@ -1218,7 +1661,7 @@ namespace Prism
         {
             py::module_ builtins = py::module_::import("builtins");
             py::module_ math = py::module_::import("Prism.Math");
-            py::module_ prism = py::module_::import("Prism");
+            py::module_ engine = py::module_::import("PrismEngine");
             using namespace Prism::PythonScript;
             s_PythonTypeCache[PYTHON_TYPE_NONE] = py::type::of(py::none());
             s_PythonTypeCache[PYTHON_TYPE_FLOAT] = builtins.attr("float");
@@ -1240,6 +1683,7 @@ namespace Prism
             s_PythonTypeCache[PYTHON_TYPE_MATERIALREF] = py::type::of<PythonMaterial>();
             s_PythonTypeCache[PYTHON_TYPE_TEXTURE2DREF] = py::type::of<PythonTexture2D>();
             s_PythonTypeCache[PYTHON_TYPE_ASSET] = py::type::of<PythonAsset>();
+            s_PythonTypeCache[PYTHON_TYPE_REF] = py::type::of<PythonRefCounted>();
 
             for (const auto& [id, type] : s_PythonTypeCache)
                 PR_CORE_INFO("[Python Meta] 注册类型: {} -> {}", id, (std::string)pybind11::str(type));

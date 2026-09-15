@@ -5,24 +5,13 @@ using System.Runtime.CompilerServices;
 namespace Prism
 {
     [EditorAssignable]
-    public class Mesh
+    public class Mesh : Asset
     {
-        public Mesh(string filepath)
+        public unsafe Mesh(string filepath) : base(InternalCalls.Prism_Mesh_Constructor(filepath))
         {
-            unsafe { m_UnmanagedInstance = InternalCalls.Prism_Mesh_Constructor(filepath); }
         }
-        internal Mesh(IntPtr unmanagedInstance)
-        {
-            m_UnmanagedInstance = unmanagedInstance;
-        }
+        internal Mesh(IntPtr nativePtr) : base(nativePtr) { }
 
-        ~Mesh()
-        {
-            unsafe { InternalCalls.Prism_Mesh_Destructor(m_UnmanagedInstance); }
-        }
-
-        public override string ToString() => $"Mesh({m_UnmanagedInstance})";
-
-        internal IntPtr m_UnmanagedInstance;
+        public override string ToString() => $"Mesh({m_NativePtr})";
     }
 }

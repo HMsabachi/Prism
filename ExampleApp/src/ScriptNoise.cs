@@ -1,4 +1,4 @@
-using Prism;
+﻿using Prism;
 
 namespace Example
 {
@@ -6,7 +6,8 @@ namespace Example
     {
         private void OnCreate()
         {
-            var material = new Material("Custom/NoiseTest");
+            var shader = PrismShader.GetShader("Custom/NoiseTest");
+            var material = Material.Create(shader);
             var meshComponent = GetComponent<MeshRendererComponent>();
             meshComponent.SetMaterial(0, material);
         }
