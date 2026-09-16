@@ -107,8 +107,6 @@ namespace Prism
 
     VulkanTexture2D::~VulkanTexture2D()
     {
-        if (m_Image)
-            m_Image->Release();
     }
 
     void VulkanTexture2D::Invalidate()
@@ -158,8 +156,6 @@ namespace Prism
 
     VulkanTextureCube::~VulkanTextureCube()
     {
-        if (m_Image)
-            m_Image->Release();
     }
 
     void VulkanTextureCube::Invalidate()

@@ -1,70 +1,77 @@
-#pragma once
+﻿#pragma once
 #include <PrismShaderCore/CompilerCompute.h>
 #include "Prism/Core/Ref.h"
 
-#include <unordered_map>
+#include <string>
+#include <vector>
 
 namespace Prism
 {
 	class Shader;
-	class Texture2D;
-	class TextureCube;
 	class UniformBuffer;
 	class ShaderStorageBuffer;
-	class Texture;
-
-	struct ComputeResourceBinding
-	{
-		PrismShaderCompiler::CSL::ComputeResource Resource;
-		Ref<RefCounted> res;
-		uint32_t Level = 0;
-	};
+	class Image2D;
+	class ImageCube;
 
 	class ComputeShader : public RefCounted
 	{
 	public:
 		static Ref<ComputeShader> Create(const std::string& filePath);
 
-		ComputeShader(const std::string& filePath);
-		~ComputeShader();
+		virtual ~ComputeShader() = default;
 
-		void Load();
+		int32_t FindKernel(const std::string& name) const;
+		bool HasKernel(const std::string& name) const;
+		void GetKernelThreadGroupSizes(int32_t kernel, uint32_t& x, uint32_t& y, uint32_t& z) const;
 
-		int32_t FindKernel(const std::string& name);
-
-		void SetUniformBuffer(int32_t kernel, const std::string& name, Ref<UniformBuffer> ubo);
-		void SetBuffer(int32_t kernel, const std::string& name, Ref<ShaderStorageBuffer> ssbo);
-		void SetTexture(int32_t kernel, const std::string& name, Ref<Texture> tex);
-		void SetImage(int32_t kernel, const std::string& name, Ref<Texture> tex, uint32_t level = 0);
-
-		void Dispatch(int32_t kernel, uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ);
+		const std::string& GetName() const { return m_Name; }
+		const std::string& GetFilePath() const { return m_FilePath; }
+		size_t GetKernelCount() const { return m_Kernels.size(); }
 
 		Ref<Shader> GetKernelShader(int32_t kernel) const;
-		const std::vector<ComputeResourceBinding>& GetResources() const { return m_Resources; }
 
-	private:
-		int32_t FindRes(const std::string& name);
-		bool IsLegalID(int32_t kernel);
+		virtual void SetUniformBuffer(int32_t kernel, const std::string& name, Ref<UniformBuffer> ubo) = 0;
+		virtual void SetBuffer(int32_t kernel, const std::string& name, Ref<ShaderStorageBuffer> ssbo) = 0;
+        virtual void SetTexture2D(int32_t kernel, const std::string& name, Ref<Image2D> image) = 0;
+        virtual void SetTextureCube(int32_t kernel, const std::string& name, Ref<ImageCube> image) = 0;
+        virtual void SetImage2D(int32_t kernel, const std::string& name, Ref<Image2D> image, uint32_t level = 0) = 0;
+        virtual void SetImageCube(int32_t kernel, const std::string& name, Ref<ImageCube> image, uint32_t level = 0) = 0;
 
-		struct Kernel
+		virtual void Dispatch(int32_t kernel, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) = 0;
+
+	protected:
+		ComputeShader(const std::string& filePath);
+		void Load();
+
+		struct Slot
 		{
-			Ref<Shader> shader;
-			std::string name;
-			uint32_t groupSizeX = 1;
-			uint32_t groupSizeY = 1;
-			uint32_t groupSizeZ = 1;
+			uint32_t Set = 0;
+			uint32_t Binding = 0;
+			PrismShaderCompiler::CSL::ResourceKind Kind = PrismShaderCompiler::CSL::ResourceKind::StorageBuffer;
+			bool ReadOnly = false;
+			bool WriteOnly = false;
+			std::string Name;
 		};
 
-		std::vector<Kernel> m_Kernels;
-		std::vector<ComputeResourceBinding> m_Resources;
-		std::unordered_map<std::string, int32_t> m_ResourcesMap;
+		struct KernelInfo
+		{
+			std::string Name;
+			uint32_t GroupSizeX = 1;
+			uint32_t GroupSizeY = 1;
+			uint32_t GroupSizeZ = 1;
+		};
+
+		int32_t FindSlot(const std::string& name, PrismShaderCompiler::CSL::ResourceKind expected) const;
+		bool IsLegalKernel(int32_t kernel) const;
+
+		std::vector<KernelInfo> m_Kernels;
+		std::vector<Slot> m_Slots;
+
+		std::vector<Ref<Shader>> m_KernelShaders;
 
 		PrismShaderCompiler::CompiledComputeShader m_Compiled;
 
 		std::string m_Name;
 		std::string m_FilePath;
-
-	public:
-		static std::vector<Ref<ComputeShader>> s_AllComputeShader;
 	};
 }

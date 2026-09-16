@@ -1,37 +1,54 @@
 ﻿#include "prpch.h"
-#include "../Shader.h"
 #include "ComputeShader.h"
 
 #include "Prism/ShaderCompiler/ShaderCompiler.h"
+#include "Prism/Renderer/Shader.h"
+#include "Prism/Renderer/RendererAPI.h"
 
-#include "../Texture.h"
-#include "../Renderer.h"
-#include "../Buffer/UniformBuffer.h"
-#include "../Buffer/ShaderStorageBuffer.h"
-
+#include "Platform/OpenGL/OpenGLComputeShader.h"
+#include "Platform/Vulkan/VulkanComputeShader.h"
 
 namespace Prism
 {
-
-	std::vector<Ref<ComputeShader>> ComputeShader::s_AllComputeShader;
+	static const char* ResourceKindName(PrismShaderCompiler::CSL::ResourceKind kind)
+	{
+		using K = PrismShaderCompiler::CSL::ResourceKind;
+		switch (kind)
+		{
+		case K::StorageBuffer:        return "StorageBuffer";
+		case K::UniformBuffer:        return "UniformBuffer";
+		case K::Sampler2D:            return "Sampler2D";
+		case K::Sampler2DMS:          return "Sampler2DMS";
+		case K::Sampler2DShadow:      return "Sampler2DShadow";
+		case K::Sampler2DArray:       return "Sampler2DArray";
+		case K::Sampler2DArrayShadow: return "Sampler2DArrayShadow";
+		case K::Sampler3D:            return "Sampler3D";
+		case K::SamplerCube:          return "SamplerCube";
+		case K::SamplerCubeShadow:    return "SamplerCubeShadow";
+		case K::Image2D:              return "Image2D";
+		case K::Image3D:              return "Image3D";
+		case K::ImageCube:            return "ImageCube";
+		}
+		return "Unknown";
+	}
 
 	Ref<ComputeShader> ComputeShader::Create(const std::string& filePath)
 	{
-		auto shader = Ref<ComputeShader>::Create(filePath);
-		// s_AllComputeShader.push_back(shader);
-		return shader;
+		switch (RendererAPI::Current())
+		{
+		case RendererAPIType::None:   return nullptr;
+		case RendererAPIType::OpenGL: return Ref<OpenGLComputeShader>::Create(filePath);
+		case RendererAPIType::Vulkan: return Ref<VulkanComputeShader>::Create(filePath);
+		}
+		PR_CORE_ASSERT(false, "Unknown RendererAPI!");
+		return nullptr;
 	}
 
 	ComputeShader::ComputeShader(const std::string& filePath)
-		:m_FilePath(std::filesystem::absolute(filePath).string())
+		: m_FilePath(std::filesystem::absolute(filePath).string())
 	{
 		PR_PROFILE_FUNCTION();
 		Load();
-	}
-
-	ComputeShader::~ComputeShader()
-	{
-
 	}
 
 	void ComputeShader::Load()
@@ -45,97 +62,102 @@ namespace Prism
 		}
 		m_Name = m_Compiled.ShaderName;
 
-		PR_CORE_INFO("CSL parsed '{}': {} kernels, {} resources",
-			m_Name, m_Compiled.Kernels.size(), m_Compiled.Resources.size());
-
-		uint32_t index = 0;
 		for (auto& resource : m_Compiled.Resources)
 		{
-			ComputeResourceBinding r;
-			r.Resource = resource;
-
-			std::string key = !resource.InstanceName.empty() ? resource.InstanceName
+			Slot slot;
+			slot.Set = resource.Set;
+			slot.Binding = resource.Binding;
+			slot.Kind = resource.Kind;
+			slot.ReadOnly = resource.ReadOnly;
+			slot.WriteOnly = resource.WriteOnly;
+			slot.Name = !resource.InstanceName.empty() ? resource.InstanceName
 				: !resource.BlockName.empty() ? resource.BlockName
 				: resource.Name;
-			m_ResourcesMap[key] = index++;
-			m_Resources.push_back(std::move(r));
+			m_Slots.push_back(std::move(slot));
 		}
 
 		for (uint32_t i = 0; i < m_Compiled.Kernels.size(); ++i)
 		{
-			Kernel k;
-			k.name = m_Compiled.Kernels[i].Name;
-			k.groupSizeX = m_Compiled.Kernels[i].GroupSizeX;
-			k.groupSizeY = m_Compiled.Kernels[i].GroupSizeY;
-			k.groupSizeZ = m_Compiled.Kernels[i].GroupSizeZ;
-
-			k.shader = Shader::Create(m_Compiled, i);
-			if (!k.shader)
-				PR_CORE_ERROR("ComputeShader::Load - kernel '{}' produced no shader, skipped", k.name);
-
+			KernelInfo k;
+			k.Name = m_Compiled.Kernels[i].Name;
+			k.GroupSizeX = m_Compiled.Kernels[i].GroupSizeX;
+			k.GroupSizeY = m_Compiled.Kernels[i].GroupSizeY;
+			k.GroupSizeZ = m_Compiled.Kernels[i].GroupSizeZ;
 			m_Kernels.push_back(std::move(k));
+
+			m_KernelShaders.push_back(Shader::Create(m_Compiled, i));
+			if (!m_KernelShaders.back())
+				PR_CORE_ERROR("ComputeShader::Load - kernel '{}' produced no shader", m_Kernels.back().Name);
 		}
+
+		PR_CORE_INFO("CSL parsed '{}': {} kernels, {} resources", m_Name, m_Kernels.size(), m_Slots.size());
 	}
 
-	int32_t ComputeShader::FindKernel(const std::string& name)
+	int32_t ComputeShader::FindKernel(const std::string& name) const
 	{
-		for (int32_t i = 0; i < m_Kernels.size(); i++)
-			if (m_Kernels[i].name == name) return i;
+		for (size_t i = 0; i < m_Kernels.size(); ++i)
+		{
+			if (m_Kernels[i].Name == name)
+				return (int32_t)i;
+		}
+		PR_CORE_ERROR("ComputeShader '{}': 找不到名为 '{}' 的 kernel", m_Name, name);
 		return -1;
 	}
-	int32_t ComputeShader::FindRes(const std::string& name)
+
+	bool ComputeShader::HasKernel(const std::string& name) const
 	{
-		if (m_ResourcesMap.find(name) == m_ResourcesMap.end()) return -1;
-		return m_ResourcesMap[name];
-	}
-	bool ComputeShader::IsLegalID(int32_t kernel)
-	{
-		if (kernel < 0 || kernel >= m_Kernels.size())
+		for (const auto& kernel : m_Kernels)
 		{
-			PR_CORE_ERROR("不合法的 Kernel ID {0}", kernel);
+			if (kernel.Name == name)
+				return true;
+		}
+		return false;
+	}
+
+	void ComputeShader::GetKernelThreadGroupSizes(int32_t kernel, uint32_t& x, uint32_t& y, uint32_t& z) const
+	{
+		if (!IsLegalKernel(kernel))
+			return;
+		x = m_Kernels[kernel].GroupSizeX;
+		y = m_Kernels[kernel].GroupSizeY;
+		z = m_Kernels[kernel].GroupSizeZ;
+	}
+
+	int32_t ComputeShader::FindSlot(const std::string& name, PrismShaderCompiler::CSL::ResourceKind expected) const
+	{
+		for (size_t i = 0; i < m_Slots.size(); ++i)
+		{
+			const Slot& slot = m_Slots[i];
+			if (slot.Name != name)
+				continue;
+
+			if (slot.Kind != expected)
+			{
+				PR_CORE_ERROR("ComputeShader '{}': 资源 '{}' 类型不符，声明为 {}，按 {} 绑定",
+					m_Name, name, ResourceKindName(slot.Kind), ResourceKindName(expected));
+				return -1;
+			}
+			return (int32_t)i;
+		}
+
+		PR_CORE_ERROR("ComputeShader '{}': 找不到资源 '{}'", m_Name, name);
+		return -1;
+	}
+
+	bool ComputeShader::IsLegalKernel(int32_t kernel) const
+	{
+		if (kernel < 0 || kernel >= (int32_t)m_Kernels.size())
+		{
+			PR_CORE_ERROR("ComputeShader '{}': 不合法的 Kernel ID {}", m_Name, kernel);
 			return false;
 		}
 		return true;
 	}
 
-	void ComputeShader::SetUniformBuffer(int32_t kernel, const std::string& name, Ref<UniformBuffer> ubo)
-	{
-		auto id = FindRes(name);
-		if (id == -1) return;
-		m_Resources[id].res = ubo;
-	}
-	void ComputeShader::SetBuffer(int32_t kernel, const std::string& name, Ref<ShaderStorageBuffer> ssbo)
-	{
-		auto id = FindRes(name);
-		if (id == -1) return;
-		m_Resources[id].res = ssbo;
-	}
-	void ComputeShader::SetTexture(int32_t kernel, const std::string& name, Ref<Texture> tex)
-	{
-		auto id = FindRes(name);
-		if (id == -1) return;
-		m_Resources[id].res = tex;
-	}
-	void ComputeShader::SetImage(int32_t kernel, const std::string& name, Ref<Texture> tex, uint32_t level)
-	{
-		auto id = FindRes(name);
-		if (id == -1) return;
-		m_Resources[id].res = tex;
-		m_Resources[id].Level = level;
-	}
-
-	void ComputeShader::Dispatch(int32_t kernel, uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ)
-	{
-		if (!IsLegalID(kernel)) return;
-		Ref<ComputeShader> instance = this;
-		Renderer::GetAPI()->DispatchCompute(instance, kernel, numGroupsX, numGroupsY, numGroupsZ);
-	}
-
 	Ref<Shader> ComputeShader::GetKernelShader(int32_t kernel) const
 	{
-		if (kernel < 0 || kernel >= (int32_t)m_Kernels.size())
+		if (kernel < 0 || kernel >= (int32_t)m_KernelShaders.size())
 			return nullptr;
-		return m_Kernels[kernel].shader;
+		return m_KernelShaders[kernel];
 	}
-
 }

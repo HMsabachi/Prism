@@ -172,6 +172,25 @@ namespace Prism
         // UniformBuffer
         PR_ADD_INTERNAL_CALL(Prism_UniformBuffer_Constructor);
         PR_ADD_INTERNAL_CALL(Prism_UniformBuffer_SetData);
+        // ShaderStorageBuffer
+        PR_ADD_INTERNAL_CALL(Prism_ShaderStorageBuffer_Constructor);
+        PR_ADD_INTERNAL_CALL(Prism_ShaderStorageBuffer_SetData);
+        PR_ADD_INTERNAL_CALL(Prism_ShaderStorageBuffer_GetData);
+        PR_ADD_INTERNAL_CALL(Prism_ShaderStorageBuffer_GetSize);
+        // ComputeShader
+        PR_ADD_INTERNAL_CALL(Prism_ComputeShader_Constructor);
+        PR_ADD_INTERNAL_CALL(Prism_ComputeShader_GetName);
+        PR_ADD_INTERNAL_CALL(Prism_ComputeShader_GetKernelCount);
+        PR_ADD_INTERNAL_CALL(Prism_ComputeShader_FindKernel);
+        PR_ADD_INTERNAL_CALL(Prism_ComputeShader_HasKernel);
+        PR_ADD_INTERNAL_CALL(Prism_ComputeShader_GetKernelThreadGroupSizes);
+        PR_ADD_INTERNAL_CALL(Prism_ComputeShader_SetUniformBuffer);
+        PR_ADD_INTERNAL_CALL(Prism_ComputeShader_SetBuffer);
+        PR_ADD_INTERNAL_CALL(Prism_ComputeShader_SetTexture2D);
+        PR_ADD_INTERNAL_CALL(Prism_ComputeShader_SetTextureCube);
+        PR_ADD_INTERNAL_CALL(Prism_ComputeShader_SetImage2D);
+        PR_ADD_INTERNAL_CALL(Prism_ComputeShader_SetImageCube);
+        PR_ADD_INTERNAL_CALL(Prism_ComputeShader_Dispatch);
         // PrismShader
         PR_ADD_INTERNAL_CALL(Prism_PrismShader_GetShader);
         PR_ADD_INTERNAL_CALL(Prism_PrismShader_GetName);

@@ -45,7 +45,6 @@ namespace Prism
         WeakRef<Mesh> LastMesh;
         Ref<VertexBuffer> FullscreenQuadVB;
         Ref<IndexBuffer> FullscreenQuadIB;
-        RendererID LastComputeProgram = 0;
         uint32_t TextureUnitTier = 32;
     };
 
@@ -92,55 +91,6 @@ namespace Prism
         }
 
 
-        static GLenum TextureFormatToGL(ImageFormat format)
-        {
-            switch (format)
-            {
-            case ImageFormat::R8:         return GL_R8;
-            case ImageFormat::RG8:        return GL_RG8;
-            case ImageFormat::RGB8:       return GL_RGB8;
-            case ImageFormat::RGBA8:      return GL_RGBA8;
-
-            case ImageFormat::R8_SNORM:    return GL_R8_SNORM;
-            case ImageFormat::RG8_SNORM:   return GL_RG8_SNORM;
-            case ImageFormat::RGB8_SNORM:  return GL_RGB8_SNORM;
-            case ImageFormat::RGBA8_SNORM: return GL_RGBA8_SNORM;
-
-            case ImageFormat::R16F:    return GL_R16F;
-            case ImageFormat::RG16F:   return GL_RG16F;
-            case ImageFormat::RGB16F:  return GL_RGB16F;
-            case ImageFormat::RGBA16F: return GL_RGBA16F;
-
-            case ImageFormat::R32F:    return GL_R32F;
-            case ImageFormat::RG32F:   return GL_RG32F;
-            case ImageFormat::RGB32F:  return GL_RGB32F;
-            case ImageFormat::RGBA32F: return GL_RGBA32F;
-
-            case ImageFormat::R16_UINT:    return GL_R16UI;
-            case ImageFormat::RG16_UINT:   return GL_RG16UI;
-            case ImageFormat::RGBA16_UINT: return GL_RGBA16UI;
-            case ImageFormat::R32_UINT:    return GL_R32UI;
-            case ImageFormat::RG32_UINT:   return GL_RG32UI;
-            case ImageFormat::RGBA32_UINT: return GL_RGBA32UI;
-
-            case ImageFormat::R16_SINT:    return GL_R16I;
-            case ImageFormat::RG16_SINT:   return GL_RG16I;
-            case ImageFormat::RGBA16_SINT: return GL_RGBA16I;
-            case ImageFormat::R32_SINT:    return GL_R32I;
-            case ImageFormat::RG32_SINT:   return GL_RG32I;
-            case ImageFormat::RGBA32_SINT: return GL_RGBA32I;
-
-            case ImageFormat::RGB565:   return P_GL_RGB565;
-            case ImageFormat::RGBA4:    return GL_RGBA4;
-            case ImageFormat::RGB5A1:   return GL_RGB5_A1;
-            case ImageFormat::RGB10A2:  return GL_RGB10_A2;
-            case ImageFormat::RG11B10F: return GL_R11F_G11F_B10F;
-            case ImageFormat::RGB9E5:   return GL_RGB9_E5;
-            }
-            PR_CORE_ASSERT(false, "Unknown texture format!");
-            return 0;
-        }
-
         static GLenum TextureAccessToGL(TextureAccess access)
         {
             switch (access)
@@ -151,13 +101,6 @@ namespace Prism
             }
             PR_CORE_ASSERT(false, "Unknown texture access!");
             return 0;
-        }
-
-        static GLenum ComputeAccessToGL(bool readOnly, bool writeOnly)
-        {
-            if (readOnly && !writeOnly)  return GL_READ_ONLY;
-            if (writeOnly && !readOnly)  return GL_WRITE_ONLY;
-            return GL_READ_WRITE;
         }
     }
 
@@ -413,68 +356,4 @@ namespace Prism
         }
     }
 
-    void OpenGLRenderer::DispatchCompute(Ref<ComputeShader> computeShader, int32_t kernel,
-        uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ)
-    {
-        if (!computeShader)
-            return;
-        Ref<Shader> kernelShader = computeShader->GetKernelShader(kernel);
-        if (!kernelShader)
-            return;
-
-        std::vector<ComputeResourceBinding> captured = computeShader->GetResources();
-
-        Renderer::Submit([=]() {
-            RendererID program = kernelShader.As<OpenGLShader>()->GetRendererID();
-            if (s_Data->LastComputeProgram != program)
-            {
-                glUseProgram(program);
-                s_Data->LastComputeProgram = program;
-            }
-
-            using K = PrismShaderCompiler::CSL::ResourceKind;
-            for (const auto& res : captured)
-            {
-                if (!res.res)
-                    continue;
-
-                if (res.Resource.Kind == K::UniformBuffer)
-                {
-                    Ref<UniformBuffer> ubo = res.res.As<UniformBuffer>();
-                    glBindBufferBase(GL_UNIFORM_BUFFER, res.Resource.Binding, ubo.As<OpenGLUniformBuffer>()->GetRendererID());
-                }
-                else if (res.Resource.Kind == K::StorageBuffer)
-                {
-                    Ref<ShaderStorageBuffer> ssbo = res.res.As<ShaderStorageBuffer>();
-                    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, res.Resource.Binding, ssbo.As<OpenGLShaderStorageBuffer>()->GetRendererID());
-                }
-                else
-                {
-                    Ref<Texture> tex = res.res.As<Texture>();
-                    if (!tex)
-                        continue;
-
-                    RendererID texId = 0;
-                    GLenum fmt = Utils::TextureFormatToGL(tex->GetFormat());
-                    if (tex->GetType() == TextureType::Texture2D)
-                        texId = tex.As<OpenGLTexture2D>()->GetRendererID();
-                    else
-                        texId = tex.As<OpenGLTextureCube>()->GetRendererID();
-
-                    if (res.Resource.Kind == K::Image2D || res.Resource.Kind == K::Image3D || res.Resource.Kind == K::ImageCube)
-                    {
-                        GLenum access = Utils::ComputeAccessToGL(res.Resource.ReadOnly, res.Resource.WriteOnly);
-                        glBindImageTexture(res.Resource.Binding, texId, res.Level, res.Resource.Kind == K::ImageCube, 0, access, fmt);
-                    }
-                    else
-                    {
-                        glBindTextureUnit(res.Resource.Binding, texId);
-                    }
-                }
-            }
-
-            glDispatchCompute(numGroupsX, numGroupsY, numGroupsZ);
-            glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-        });
-    }
 }

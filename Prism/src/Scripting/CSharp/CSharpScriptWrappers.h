@@ -17,6 +17,8 @@ namespace Prism
     class TextureCube;
     class PrismShader;
     class UniformBuffer;
+    class ShaderStorageBuffer;
+    class ComputeShader;
     class Material;
     class Image;
     class Image2D;
@@ -164,6 +166,25 @@ namespace Prism
         // UniformBuffer
         UniformBuffer* Prism_UniformBuffer_Constructor(uint32_t size);
         void Prism_UniformBuffer_SetData(UniformBuffer* _this, void* data, uint32_t size);
+        // ShaderStorageBuffer
+        ShaderStorageBuffer* Prism_ShaderStorageBuffer_Constructor(uint32_t size, uint32_t usage);
+        void Prism_ShaderStorageBuffer_SetData(ShaderStorageBuffer* _this, void* data, uint32_t size, uint32_t offset);
+        void Prism_ShaderStorageBuffer_GetData(ShaderStorageBuffer* _this, void* data, uint32_t size, uint32_t offset, Rolky::Bool32 sync);
+        uint32_t Prism_ShaderStorageBuffer_GetSize(ShaderStorageBuffer* _this);
+        // ComputeShader
+        ComputeShader* Prism_ComputeShader_Constructor(Rolky::String filePath);
+        void Prism_ComputeShader_GetName(ComputeShader* _this, Rolky::String* outName);
+        uint32_t Prism_ComputeShader_GetKernelCount(ComputeShader* _this);
+        int32_t Prism_ComputeShader_FindKernel(ComputeShader* _this, Rolky::String name);
+        Rolky::Bool32 Prism_ComputeShader_HasKernel(ComputeShader* _this, Rolky::String name);
+        void Prism_ComputeShader_GetKernelThreadGroupSizes(ComputeShader* _this, int32_t kernel, uint32_t* x, uint32_t* y, uint32_t* z);
+        void Prism_ComputeShader_SetUniformBuffer(ComputeShader* _this, int32_t kernel, Rolky::String name, UniformBuffer* buffer);
+        void Prism_ComputeShader_SetBuffer(ComputeShader* _this, int32_t kernel, Rolky::String name, ShaderStorageBuffer* buffer);
+        void Prism_ComputeShader_SetTexture2D(ComputeShader* _this, int32_t kernel, Rolky::String name, Image2D* image);
+        void Prism_ComputeShader_SetTextureCube(ComputeShader* _this, int32_t kernel, Rolky::String name, ImageCube* image);
+        void Prism_ComputeShader_SetImage2D(ComputeShader* _this, int32_t kernel, Rolky::String name, Image2D* image, uint32_t level);
+        void Prism_ComputeShader_SetImageCube(ComputeShader* _this, int32_t kernel, Rolky::String name, ImageCube* image, uint32_t level);
+        void Prism_ComputeShader_Dispatch(ComputeShader* _this, int32_t kernel, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ);
         // PrismShader
         PrismShader* Prism_PrismShader_GetShader(Rolky::String shaderName);
         void Prism_PrismShader_GetName(PrismShader* _this, Rolky::String* outName);

@@ -18,7 +18,6 @@ namespace Prism
     class Image2D;
     class SceneEnvironment;
     class Shader;
-    class ComputeShader;
     class UniformBuffer;
     class ShaderStorageBuffer;
     class Texture;
@@ -69,9 +68,6 @@ namespace Prism
         virtual void RenderMesh(Ref<Mesh> mesh, uint32_t submeshIndex, Ref<Material> material,
             uint32_t passIndex, uint32_t drawIndex = 0) = 0;
         virtual void RenderQuad(Ref<Material> material, uint32_t passIndex, uint32_t drawIndex = 0) = 0;
-
-        virtual void DispatchCompute(Ref<ComputeShader> computeShader, int32_t kernel,
-            uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ) = 0;
 
         virtual RenderAPICapabilities& GetCapabilities() = 0;
 
