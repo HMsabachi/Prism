@@ -4,10 +4,17 @@
 
 namespace Prism
 {
+    class OpenGLShader;
+
     class OpenGLComputeShader : public ComputeShader
     {
     public:
         OpenGLComputeShader(const std::string& filePath);
+
+        virtual int32_t FindKernel(const std::string& name) const override;
+        virtual bool HasKernel(const std::string& name) const override;
+        virtual void GetKernelThreadGroupSizes(int32_t kernel, uint32_t& x, uint32_t& y, uint32_t& z) const override;
+        virtual size_t GetKernelCount() const override { return m_Kernels.size(); }
 
         virtual void SetUniformBuffer(int32_t kernel, const std::string& name, Ref<UniformBuffer> ubo) override;
         virtual void SetBuffer(int32_t kernel, const std::string& name, Ref<ShaderStorageBuffer> ssbo) override;
@@ -17,21 +24,20 @@ namespace Prism
         virtual void SetImageCube(int32_t kernel, const std::string& name, Ref<ImageCube> image, uint32_t level = 0) override;
         virtual void Dispatch(int32_t kernel, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) override;
 
+    protected:
+        virtual bool IsLegalKernel(int32_t kernel) const override;
+
     private:
-        struct SlotValue
+        class Kernel : public RefCounted
         {
-            Ref<RefCounted> Resource;
-            uint32_t Level = 0;
+        public:
+            std::string Name;
+            uint32_t GroupSizeX = 1;
+            uint32_t GroupSizeY = 1;
+            uint32_t GroupSizeZ = 1;
+            Ref<OpenGLShader> Shader;
         };
 
-        struct KernelValues
-        {
-            std::vector<SlotValue> Slots;
-        };
-
-        void SetSlot(int32_t kernel, const std::string& name,
-            PrismShaderCompiler::CSL::ResourceKind kind, Ref<RefCounted> resource, uint32_t level);
-
-        std::vector<KernelValues> m_KernelValues;
+        std::vector<Ref<Kernel>> m_Kernels;
     };
 }

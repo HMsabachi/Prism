@@ -136,7 +136,7 @@ namespace Prism {
     {
         Ref<Image2D> image = m_Image;
         Renderer::SubmitResourceFree([image]() mutable {
-            image->Release();
+            // image->Release();
         });
     }
 

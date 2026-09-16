@@ -26,70 +26,172 @@ namespace Prism
         return GL_READ_WRITE;
     }
 
-    namespace
-    {
-        struct GLDispatchBinding
-        {
-            uint32_t Binding = 0;
-            K Kind = K::StorageBuffer;
-            bool ReadOnly = false;
-            bool WriteOnly = false;
-            uint32_t Level = 0;
-            Ref<RefCounted> Resource;
-        };
-    }
-
     OpenGLComputeShader::OpenGLComputeShader(const std::string& filePath)
         : ComputeShader(filePath)
     {
-        m_KernelValues.resize(m_Kernels.size());
-        for (auto& values : m_KernelValues)
-            values.Slots.resize(m_Slots.size());
+        m_Kernels.reserve(m_Compiled.Kernels.size());
+        for (size_t i = 0; i < m_Compiled.Kernels.size(); ++i)
+        {
+            const auto& compiled = m_Compiled.Kernels[i];
+
+            Ref<Kernel> kernel = Ref<Kernel>::Create();
+            kernel->Name = compiled.Name;
+            kernel->GroupSizeX = compiled.GroupSizeX;
+            kernel->GroupSizeY = compiled.GroupSizeY;
+            kernel->GroupSizeZ = compiled.GroupSizeZ;
+            kernel->Shader = Shader::Create(m_Compiled, (uint32_t)i).As<OpenGLShader>();
+
+            if (!kernel->Shader)
+                PR_CORE_ERROR("OpenGLComputeShader '{}': kernel '{}' 未产生 OpenGLShader", m_Name, kernel->Name);
+
+            m_Kernels.push_back(std::move(kernel));
+        }
     }
 
-    void OpenGLComputeShader::SetSlot(int32_t kernel, const std::string& name, K kind,
-        Ref<RefCounted> resource, uint32_t level)
+    int32_t OpenGLComputeShader::FindKernel(const std::string& name) const
+    {
+        for (size_t i = 0; i < m_Kernels.size(); ++i)
+        {
+            if (m_Kernels[i]->Name == name)
+                return (int32_t)i;
+        }
+        PR_CORE_ERROR("ComputeShader '{}': 找不到名为 '{}' 的 kernel", m_Name, name);
+        return -1;
+    }
+
+    bool OpenGLComputeShader::HasKernel(const std::string& name) const
+    {
+        for (const Ref<Kernel>& kernel : m_Kernels)
+        {
+            if (kernel->Name == name)
+                return true;
+        }
+        return false;
+    }
+
+    void OpenGLComputeShader::GetKernelThreadGroupSizes(int32_t kernel, uint32_t& x, uint32_t& y, uint32_t& z) const
     {
         if (!IsLegalKernel(kernel))
             return;
+        x = m_Kernels[kernel]->GroupSizeX;
+        y = m_Kernels[kernel]->GroupSizeY;
+        z = m_Kernels[kernel]->GroupSizeZ;
+    }
 
-        int32_t slot = FindSlot(name, kind);
-        if (slot < 0)
-            return;
-
-        SlotValue& value = m_KernelValues[kernel].Slots[slot];
-        value.Resource = std::move(resource);
-        value.Level = level;
+    bool OpenGLComputeShader::IsLegalKernel(int32_t kernel) const
+    {
+        if (kernel < 0 || kernel >= (int32_t)m_Kernels.size())
+        {
+            PR_CORE_ERROR("ComputeShader '{}': 不合法的 Kernel ID {}", m_Name, kernel);
+            return false;
+        }
+        return true;
     }
 
     void OpenGLComputeShader::SetUniformBuffer(int32_t kernel, const std::string& name, Ref<UniformBuffer> ubo)
     {
-        SetSlot(kernel, name, K::UniformBuffer, ubo, 0);
+        if (!IsLegalKernel(kernel))
+            return;
+
+        int32_t slot = FindSlot(name, K::UniformBuffer);
+        if (slot < 0 || !ubo)
+            return;
+
+        uint32_t binding = m_Slots[slot].Binding;
+
+        Renderer::Submit([binding, ubo]()
+        {
+            glBindBufferBase(GL_UNIFORM_BUFFER, binding, ubo.As<OpenGLUniformBuffer>()->GetRendererID());
+        });
     }
 
     void OpenGLComputeShader::SetBuffer(int32_t kernel, const std::string& name, Ref<ShaderStorageBuffer> ssbo)
     {
-        SetSlot(kernel, name, K::StorageBuffer, ssbo, 0);
+        if (!IsLegalKernel(kernel))
+            return;
+
+        int32_t slot = FindSlot(name, K::StorageBuffer);
+        if (slot < 0 || !ssbo)
+            return;
+
+        uint32_t binding = m_Slots[slot].Binding;
+
+        Renderer::Submit([binding, ssbo]()
+        {
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, ssbo.As<OpenGLShaderStorageBuffer>()->GetRendererID());
+        });
     }
 
     void OpenGLComputeShader::SetTexture2D(int32_t kernel, const std::string& name, Ref<Image2D> image)
     {
-        SetSlot(kernel, name, K::Sampler2D, image, 0);
+        if (!IsLegalKernel(kernel))
+            return;
+
+        int32_t slot = FindSlot(name, K::Sampler2D);
+        if (slot < 0 || !image)
+            return;
+
+        uint32_t binding = m_Slots[slot].Binding;
+
+        Renderer::Submit([binding, image]()
+        {
+            glBindTextureUnit(binding, image.As<OpenGLImage2D>()->GetRendererID());
+        });
     }
 
     void OpenGLComputeShader::SetTextureCube(int32_t kernel, const std::string& name, Ref<ImageCube> image)
     {
-        SetSlot(kernel, name, K::SamplerCube, image, 0);
+        if (!IsLegalKernel(kernel))
+            return;
+
+        int32_t slot = FindSlot(name, K::SamplerCube);
+        if (slot < 0 || !image)
+            return;
+
+        uint32_t binding = m_Slots[slot].Binding;
+
+        Renderer::Submit([binding, image]()
+        {
+            glBindTextureUnit(binding, image.As<OpenGLImageCube>()->GetRendererID());
+        });
     }
 
     void OpenGLComputeShader::SetImage2D(int32_t kernel, const std::string& name, Ref<Image2D> image, uint32_t level)
     {
-        SetSlot(kernel, name, K::Image2D, image, level);
+        if (!IsLegalKernel(kernel))
+            return;
+
+        int32_t slot = FindSlot(name, K::Image2D);
+        if (slot < 0 || !image)
+            return;
+
+        uint32_t binding = m_Slots[slot].Binding;
+        GLenum access = ComputeAccessToGL(m_Slots[slot].ReadOnly, m_Slots[slot].WriteOnly);
+
+        Renderer::Submit([binding, level, access, image]()
+        {
+            glBindImageTexture(binding, image.As<OpenGLImage2D>()->GetRendererID(), level, GL_FALSE, 0,
+                access, Utils::OpenGLImageInternalFormat(image->GetFormat()));
+        });
     }
 
     void OpenGLComputeShader::SetImageCube(int32_t kernel, const std::string& name, Ref<ImageCube> image, uint32_t level)
     {
-        SetSlot(kernel, name, K::ImageCube, image, level);
+        if (!IsLegalKernel(kernel))
+            return;
+
+        int32_t slot = FindSlot(name, K::ImageCube);
+        if (slot < 0 || !image)
+            return;
+
+        uint32_t binding = m_Slots[slot].Binding;
+        GLenum access = ComputeAccessToGL(m_Slots[slot].ReadOnly, m_Slots[slot].WriteOnly);
+
+        Renderer::Submit([binding, level, access, image]()
+        {
+            glBindImageTexture(binding, image.As<OpenGLImageCube>()->GetRendererID(), level, GL_TRUE, 0,
+                access, Utils::OpenGLImageInternalFormat(image->GetFormat()));
+        });
     }
 
     void OpenGLComputeShader::Dispatch(int32_t kernel, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ)
@@ -97,63 +199,18 @@ namespace Prism
         if (!IsLegalKernel(kernel))
             return;
 
-        Ref<Shader> kernelShader = m_KernelShaders[kernel];
-        if (!kernelShader)
+        Ref<Kernel> kernelInfo = m_Kernels[kernel];
+        if (!kernelInfo->Shader)
             return;
 
-        const std::vector<SlotValue>& values = m_KernelValues[kernel].Slots;
-        std::vector<GLDispatchBinding> captured;
-        captured.reserve(m_Slots.size());
-        for (size_t i = 0; i < m_Slots.size(); ++i)
-        {
-            if (!values[i].Resource)
-                continue;
+        RendererID program = kernelInfo->Shader->GetRendererID();
 
-            captured.push_back({ m_Slots[i].Binding, m_Slots[i].Kind, m_Slots[i].ReadOnly,
-                m_Slots[i].WriteOnly, values[i].Level, values[i].Resource });
-        }
-
-        RendererID program = kernelShader.As<OpenGLShader>()->GetRendererID();
-
-        Renderer::Submit([captured = std::move(captured), program, groupsX, groupsY, groupsZ]()
+        Renderer::Submit([program, groupsX, groupsY, groupsZ]()
         {
             if (s_LastComputeProgram != program)
             {
                 glUseProgram(program);
                 s_LastComputeProgram = program;
-            }
-
-            for (const GLDispatchBinding& entry : captured)
-            {
-                if (entry.Kind == K::UniformBuffer)
-                {
-                    Ref<UniformBuffer> ubo = entry.Resource.As<UniformBuffer>();
-                    glBindBufferBase(GL_UNIFORM_BUFFER, entry.Binding, ubo.As<OpenGLUniformBuffer>()->GetRendererID());
-                }
-                else if (entry.Kind == K::StorageBuffer)
-                {
-                    Ref<ShaderStorageBuffer> ssbo = entry.Resource.As<ShaderStorageBuffer>();
-                    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, entry.Binding, ssbo.As<OpenGLShaderStorageBuffer>()->GetRendererID());
-                }
-                else
-                {
-                    Ref<Image> image = entry.Resource.As<Image>();
-                    bool isCube = entry.Kind == K::SamplerCube || entry.Kind == K::ImageCube;
-                    RendererID imageId = isCube
-                        ? image.As<OpenGLImageCube>()->GetRendererID()
-                        : image.As<OpenGLImage2D>()->GetRendererID();
-
-                    if (entry.Kind == K::Image2D || entry.Kind == K::Image3D || entry.Kind == K::ImageCube)
-                    {
-                        glBindImageTexture(entry.Binding, imageId, entry.Level, entry.Kind != K::Image2D, 0,
-                            ComputeAccessToGL(entry.ReadOnly, entry.WriteOnly),
-                            Utils::OpenGLImageInternalFormat(image->GetFormat()));
-                    }
-                    else
-                    {
-                        glBindTextureUnit(entry.Binding, imageId);
-                    }
-                }
             }
 
             glDispatchCompute(groupsX, groupsY, groupsZ);
