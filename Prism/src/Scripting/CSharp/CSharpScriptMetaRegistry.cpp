@@ -46,6 +46,8 @@ namespace Prism
         if (nameStr == "Prism.Mesh")                  return ScriptFieldType::MeshRef;
         if (nameStr == "Prism.Material")              return ScriptFieldType::MaterialRef;
         if (nameStr == "Prism.Texture2D")             return ScriptFieldType::Texture2DRef;
+        if (nameStr == "Prism.PrismShader")           return ScriptFieldType::PrismShaderRef;
+        if (nameStr == "Prism.ComputeShader")         return ScriptFieldType::ComputeShaderRef;
 
         return ScriptFieldType::None;
     }
@@ -127,6 +129,8 @@ namespace Prism
             case ScriptFieldType::MeshRef:
             case ScriptFieldType::MaterialRef:
             case ScriptFieldType::Texture2DRef:
+            case ScriptFieldType::PrismShaderRef:
+            case ScriptFieldType::ComputeShaderRef:
             {
                 void* nullPtr = nullptr;
                 meta.DefaultValue = Buffer::Copy(&nullPtr, sizeof(void*));

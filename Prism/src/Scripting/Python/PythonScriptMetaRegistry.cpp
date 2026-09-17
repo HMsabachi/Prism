@@ -110,6 +110,20 @@ namespace Prism
                     meta.PyType = GetPythonType(PYTHON_TYPE_TEXTURE2DREF);
                     break;
                 }
+                case ScriptFieldType::PrismShaderRef:
+                {
+                    void* nullPtr = nullptr;
+                    meta.DefaultValue = Buffer::Copy(&nullPtr, sizeof(void*));
+                    meta.PyType = GetPythonType(PYTHON_TYPE_PRISMSHADERREF);
+                    break;
+                }
+                case ScriptFieldType::ComputeShaderRef:
+                {
+                    void* nullPtr = nullptr;
+                    meta.DefaultValue = Buffer::Copy(&nullPtr, sizeof(void*));
+                    meta.PyType = GetPythonType(PYTHON_TYPE_COMPUTESHADERREF);
+                    break;
+                }
                 default:
                     break;
             }
@@ -187,7 +201,9 @@ namespace Prism
                     else if (typeObj.is(*GetPythonType(PYTHON_TYPE_VECTOR4))) fieldType = ScriptFieldType::Vector4;
                     else if (typeObj.is(*GetPythonType(PYTHON_TYPE_MESHREF))) fieldType = ScriptFieldType::MeshRef;
                     //else if (typeObj.is(*GetPythonType(PYTHON_TYPE_MATERIALREF))) fieldType = ScriptFieldType::MaterialRef;
-                    //else if (typeObj.is(*GetPythonType(PYTHON_TYPE_TEXTURE2DREF))) fieldType = ScriptFieldType::Texture2DRef;
+                    else if (typeObj.is(*GetPythonType(PYTHON_TYPE_TEXTURE2DREF))) fieldType = ScriptFieldType::Texture2DRef;
+                    else if (typeObj.is(*GetPythonType(PYTHON_TYPE_PRISMSHADERREF))) fieldType = ScriptFieldType::PrismShaderRef;
+                    else if (typeObj.is(*GetPythonType(PYTHON_TYPE_COMPUTESHADERREF))) fieldType = ScriptFieldType::ComputeShaderRef;
 
                     if (fieldType == ScriptFieldType::None) continue;
                     PR_CORE_INFO("[Python Meta]     字段: {0} : {1}", fieldName, (std::string)py::str(typeObj));

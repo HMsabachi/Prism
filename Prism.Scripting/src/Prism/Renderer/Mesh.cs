@@ -4,7 +4,6 @@ using System.Runtime.CompilerServices;
 
 namespace Prism
 {
-    [EditorAssignable]
     public class Mesh : Asset
     {
         public unsafe Mesh(string filepath) : base(InternalCalls.Prism_Mesh_Constructor(filepath))

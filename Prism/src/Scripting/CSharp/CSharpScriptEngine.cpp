@@ -113,10 +113,10 @@ namespace Prism
             PR_CORE_ERROR("[CSharp] Failed to create instance of {0}", meta->FullName);
             return 0;
         }
-        auto& editorAssignableAttribType = s_EngineAssemblyData->Assembly->GetLocalType("Prism.EditorAssignableAttribute");
+        auto& refCountedType = s_EngineAssemblyData->Assembly->GetLocalType("Prism.RefCounted");
         for (auto& [hash, field] : binding.Fields)
         {
-            if (field.GetManagedType()->HasAttribute(editorAssignableAttribType))
+            if (field.GetManagedType()->IsSubclassOf(refCountedType))
             {
                 if (field.GetBuffer().Data && field.GetBuffer().Size > 0)
                 {

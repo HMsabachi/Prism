@@ -11,10 +11,32 @@ namespace Example
     {
         List<Material> materials = new List<Material>();
         UInt32[] data = new UInt32[128];
+        public ComputeShader computeShader;
+        public PrismShader shader;
         public void OnCreate()
         {
             // Test: PrismShader
-            var shader = PrismShader.GetShader("Standard/PrismPBR");
+            PrismShader shader;
+            ComputeShader computeShader;
+            if (this.shader != null)
+            {
+                shader = this.shader;
+            }
+            else
+            {
+                shader = PrismShader.GetShader("Standard/PrismPBR");
+                Log.Warn("Shader is not valid, using default shader");
+            }
+            if (this.computeShader != null)
+            {
+                computeShader = this.computeShader;
+            }
+            else
+            {
+                computeShader = ComputeShader.Create("Assets/Shaders/Environment.ComputeShader");
+                Log.Warn("ComputeShader is not valid, using default compute shader");
+            }
+
             Log.Trace($"Shader Name: {shader.Name}");
             Log.Trace($"Shader FilePath: {shader.FilePath}");
             Log.Trace($"Shader FileName: {shader.FileName}");
@@ -34,8 +56,7 @@ namespace Example
             Log.Trace($"Texture2D: {texture.Width}x{texture.Height}, Format: {texture.Format}");
             image = texture.GetImage();
             Log.Trace($"Texture2D Image2D: {image.Width}x{image.Height}, Format: {image.Format}, Samples: {image.Samples}");
-            var comShader = ComputeShader.Create("Assets/Shaders/Environment.ComputeShader");
-            Log.Trace($"ComputeShader: {comShader.Name}");
+            Log.Trace($"ComputeShader: {computeShader.Name}");
         }
 
         public void OnUpdate()

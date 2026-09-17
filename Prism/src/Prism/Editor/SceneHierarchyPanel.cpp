@@ -7,6 +7,9 @@
 #include "Prism/Core/Warning.h"
 #include "Prism/Renderer/Mesh.h"
 #include "Prism/Renderer/MeshFactory.h"
+#include "Prism/Renderer/Texture.h"
+#include "Prism/Renderer/Shader/PrismShader.h"
+#include "Prism/Renderer/ComputeShader/ComputeShader.h"
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Asset/ModelImporter.h"
 #include "Prism/Physics/Physics.h"
@@ -1019,6 +1022,54 @@ namespace Prism {
                                     }
                                     break;
                                 }
+                                case ScriptFieldType::Texture2DRef:
+                                {
+                                    Ref<Texture2D>& asset = *field.GetBuffer().As<Ref<Texture2D>>();
+                                    std::string label = field.GetName() + "(Texture2D)";
+                                    if (UI::PropertyAssetReference(label, asset, AssetType::Texture))
+                                    {
+                                        if (field.IsRuntime())
+                                        {
+                                            auto fieldType = field.GetManagedType();
+                                            void* assetPtr = (void*)asset.Raw();
+                                            auto object = fieldType->CreateInstance(assetPtr);
+                                            field.SetValue(object);
+                                        }
+                                    }
+                                    break;
+                                }
+                                case ScriptFieldType::PrismShaderRef:
+                                {
+                                    Ref<PrismShader>& asset = *field.GetBuffer().As<Ref<PrismShader>>();
+                                    std::string label = field.GetName() + "(PrismShader)";
+                                    if (UI::PropertyAssetReference(label, asset, AssetType::Shader))
+                                    {
+                                        if (field.IsRuntime())
+                                        {
+                                            auto fieldType = field.GetManagedType();
+                                            void* assetPtr = (void*)asset.Raw();
+                                            auto object = fieldType->CreateInstance(assetPtr);
+                                            field.SetValue(object);
+                                        }
+                                    }
+                                    break;
+                                }
+                                case ScriptFieldType::ComputeShaderRef:
+                                {
+                                    Ref<ComputeShader>& asset = *field.GetBuffer().As<Ref<ComputeShader>>();
+                                    std::string label = field.GetName() + "(ComputeShader)";
+                                    if (UI::PropertyAssetReference(label, asset, AssetType::ComputeShader))
+                                    {
+                                        if (field.IsRuntime())
+                                        {
+                                            auto fieldType = field.GetManagedType();
+                                            void* assetPtr = (void*)asset.Raw();
+                                            auto object = fieldType->CreateInstance(assetPtr);
+                                            field.SetValue(object);
+                                        }
+                                    }
+                                    break;
+                                }
                                 default:
                                     break;
                             }
@@ -1175,6 +1226,54 @@ namespace Prism {
                                     Ref<Mesh>& asset = *field.GetBuffer().As<Ref<Mesh>>();
                                     std::string label = field.GetName() + "(Mesh)";
                                     if (UI::PropertyAssetReference(label, asset, AssetType::Mesh))
+                                    {
+                                        if (field.IsRuntime())
+                                        {
+                                            pybind11::gil_scoped_acquire gilAcquire;
+                                            auto object = (*field.GetPyType())();
+                                            object.attr("SetRef")((uint64_t)asset.Raw());
+                                            field.SetValue(object);
+                                        }
+                                    }
+                                    break;
+                                }
+                                case ScriptFieldType::Texture2DRef:
+                                {
+                                    Ref<Texture2D>& asset = *field.GetBuffer().As<Ref<Texture2D>>();
+                                    std::string label = field.GetName() + "(Texture2D)";
+                                    if (UI::PropertyAssetReference(label, asset, AssetType::Texture))
+                                    {
+                                        if (field.IsRuntime())
+                                        {
+                                            pybind11::gil_scoped_acquire gilAcquire;
+                                            auto object = (*field.GetPyType())();
+                                            object.attr("SetRef")((uint64_t)asset.Raw());
+                                            field.SetValue(object);
+                                        }
+                                    }
+                                    break;
+                                }
+                                case ScriptFieldType::PrismShaderRef:
+                                {
+                                    Ref<PrismShader>& asset = *field.GetBuffer().As<Ref<PrismShader>>();
+                                    std::string label = field.GetName() + "(PrismShader)";
+                                    if (UI::PropertyAssetReference(label, asset, AssetType::Shader))
+                                    {
+                                        if (field.IsRuntime())
+                                        {
+                                            pybind11::gil_scoped_acquire gilAcquire;
+                                            auto object = (*field.GetPyType())();
+                                            object.attr("SetRef")((uint64_t)asset.Raw());
+                                            field.SetValue(object);
+                                        }
+                                    }
+                                    break;
+                                }
+                                case ScriptFieldType::ComputeShaderRef:
+                                {
+                                    Ref<ComputeShader>& asset = *field.GetBuffer().As<Ref<ComputeShader>>();
+                                    std::string label = field.GetName() + "(ComputeShader)";
+                                    if (UI::PropertyAssetReference(label, asset, AssetType::ComputeShader))
                                     {
                                         if (field.IsRuntime())
                                         {

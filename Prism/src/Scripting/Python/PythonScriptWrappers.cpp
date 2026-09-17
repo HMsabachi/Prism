@@ -1861,6 +1861,8 @@ namespace Prism
             s_PythonTypeCache[PYTHON_TYPE_MESHREF] = py::type::of<PythonMesh>();
             s_PythonTypeCache[PYTHON_TYPE_MATERIALREF] = py::type::of<PythonMaterial>();
             s_PythonTypeCache[PYTHON_TYPE_TEXTURE2DREF] = py::type::of<PythonTexture2D>();
+            s_PythonTypeCache[PYTHON_TYPE_PRISMSHADERREF] = py::type::of<PythonPrismShader>();
+            s_PythonTypeCache[PYTHON_TYPE_COMPUTESHADERREF] = py::type::of<PythonComputeShader>();
             s_PythonTypeCache[PYTHON_TYPE_ASSET] = py::type::of<PythonAsset>();
             s_PythonTypeCache[PYTHON_TYPE_REF] = py::type::of<PythonRefCounted>();
 

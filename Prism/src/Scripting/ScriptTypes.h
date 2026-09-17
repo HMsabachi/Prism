@@ -34,6 +34,8 @@ namespace Prism
     constexpr uint64_t PYTHON_TYPE_MESHREF = Hash::GenerateFNVHash64("PYTHON_TYPE_MESHREF");
     constexpr uint64_t PYTHON_TYPE_MATERIALREF = Hash::GenerateFNVHash64("PYTHON_TYPE_MATERIALREF");
     constexpr uint64_t PYTHON_TYPE_TEXTURE2DREF = Hash::GenerateFNVHash64("PYTHON_TYPE_TEXTURE2DREF");
+    constexpr uint64_t PYTHON_TYPE_PRISMSHADERREF = Hash::GenerateFNVHash64("PYTHON_TYPE_PRISMSHADERREF");
+    constexpr uint64_t PYTHON_TYPE_COMPUTESHADERREF = Hash::GenerateFNVHash64("PYTHON_TYPE_COMPUTESHADERREF");
 
     constexpr uint64_t PYTHON_TYPE_REF = Hash::GenerateFNVHash("PYTHON_TYPE_REF");
     constexpr uint64_t PYTHON_TYPE_ASSET = Hash::GenerateFNVHash("PYTHON_TYPE_ASSET");
@@ -47,7 +49,8 @@ namespace Prism
         UInt8, UInt16, UInt32, UInt64,
         Vector2, Vector3, Vector4,
         Object,
-        MeshRef, MaterialRef, Texture2DRef
+        MeshRef, MaterialRef, Texture2DRef,
+        PrismShaderRef, ComputeShaderRef
     };
 
     inline uint64_t DataTypeSize(ScriptFieldType type)
@@ -73,6 +76,8 @@ namespace Prism
         case Prism::ScriptFieldType::MeshRef:
         case Prism::ScriptFieldType::MaterialRef:
         case Prism::ScriptFieldType::Texture2DRef:
+        case Prism::ScriptFieldType::PrismShaderRef:
+        case Prism::ScriptFieldType::ComputeShaderRef:
             return sizeof(void*);
         default: PR_CORE_ASSERT(false, "未注册的类型");
         }
