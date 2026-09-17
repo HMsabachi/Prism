@@ -677,7 +677,15 @@ namespace Prism {
         ComputeShader* Prism_ComputeShader_Constructor(Rolky::String filePath)
         {
             Rolky::ScopedString path(filePath);
-            Ref<ComputeShader> result = ComputeShader::Create(path);
+
+            AssetHandle handle = AssetManager::GetAssetHandleFromFilePath(path);
+            if (!AssetManager::IsAssetHandleValid(handle))
+            {
+                PR_CORE_ERROR("ComputeShader '{0}' 不是已注册的资产", (std::string)path);
+                return nullptr;
+            }
+
+            Ref<ComputeShader> result = AssetManager::GetAsset<ComputeShader>(handle);
             if (!result)
                 return nullptr;
             result->IncRefCount();

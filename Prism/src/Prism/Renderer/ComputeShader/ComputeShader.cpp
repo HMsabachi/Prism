@@ -3,6 +3,8 @@
 
 #include "Prism/ShaderCompiler/ShaderCompiler.h"
 #include "Prism/Renderer/RendererAPI.h"
+#include "Prism/Asset/AssetManager.h"
+#include "Prism/Utilities/StringUtils.h"
 
 #include "Platform/OpenGL/OpenGLComputeShader.h"
 #include "Platform/Vulkan/VulkanComputeShader.h"
@@ -43,10 +45,23 @@ namespace Prism
         return nullptr;
     }
 
+    Ref<ComputeShader> ComputeShader::Create(AssetHandle handle)
+    {
+        return AssetManager::GetAsset<ComputeShader>(handle);
+    }
+
     ComputeShader::ComputeShader(const std::string& filePath)
         : m_FilePath(std::filesystem::absolute(filePath).string())
     {
         PR_PROFILE_FUNCTION();
+
+        Type = AssetType::ComputeShader;
+        FilePath = filePath;
+        std::replace(FilePath.begin(), FilePath.end(), '\\', '/');
+        FileName = Utils::RemoveExtension(Utils::GetFilename(FilePath));
+        Extension = Utils::GetExtension(FilePath);
+        IsDataLoaded = true;
+
         Load();
     }
 

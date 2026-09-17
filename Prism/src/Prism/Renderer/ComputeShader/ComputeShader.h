@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include <PrismShaderCore/CompilerCompute.h>
 #include "Prism/Core/Ref.h"
+#include "Prism/Asset/Asset.h"
 
 #include <string>
 #include <vector>
@@ -12,10 +13,11 @@ namespace Prism
     class Image2D;
     class ImageCube;
 
-    class ComputeShader : public RefCounted
+    class ComputeShader : public Asset
     {
     public:
         static Ref<ComputeShader> Create(const std::string& filePath);
+        static Ref<ComputeShader> Create(AssetHandle handle);
 
         virtual ~ComputeShader() = default;
 

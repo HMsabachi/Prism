@@ -26,6 +26,7 @@ class AssetType:
     Script : int
     PhysicsMat : int
     Shader : int
+    ComputeShader : int
     Directory : int
     Other : int
     None_ : int  # 运行时名称为 None
@@ -220,7 +221,7 @@ class ShaderStorageBuffer:
     def GetData(self, data: Any, offset: int = 0, sync: bool = False) -> None: ...
     def GetSize(self) -> int: ...
     def __repr__(self) -> str: ...
-class ComputeShader:
+class ComputeShader(Asset):
     @staticmethod
     def Create(filePath: str) -> ComputeShader: ...
     def GetName(self) -> str: ...

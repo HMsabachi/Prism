@@ -11,6 +11,7 @@ namespace Prism {
         s_Serializers[AssetType::PhysicsMat] = CreateScope<PhysicsMaterialSerializer>();
         // Prism 适配：Shader 资源走 ShaderLibrary（PSL）
         s_Serializers[AssetType::Shader] = CreateScope<ShaderSerializer>();
+        s_Serializers[AssetType::ComputeShader] = CreateScope<ComputeShaderSerializer>();
     }
 
     void AssetImporter::Serialize(const Ref<Asset>& asset)

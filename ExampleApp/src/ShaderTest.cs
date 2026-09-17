@@ -34,7 +34,8 @@ namespace Example
             Log.Trace($"Texture2D: {texture.Width}x{texture.Height}, Format: {texture.Format}");
             image = texture.GetImage();
             Log.Trace($"Texture2D Image2D: {image.Width}x{image.Height}, Format: {image.Format}, Samples: {image.Samples}");
-
+            var comShader = ComputeShader.Create("Assets/Shaders/Environment.ComputeShader");
+            Log.Trace($"ComputeShader: {comShader.Name}");
         }
 
         public void OnUpdate()

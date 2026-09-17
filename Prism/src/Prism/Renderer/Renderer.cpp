@@ -12,6 +12,7 @@
 
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/ComputeShader/ComputeShader.h"
+#include "Prism/Asset/AssetManager.h"
 #include "Prism/Renderer/Buffer/UniformBuffer.h"
 #include "Camera/Camera.h"
 
@@ -109,7 +110,7 @@ namespace Prism
 
         Ref<TextureCube> envUnfiltered = TextureCube::Create(ImageFormat::RGBA32F, cubemapSize, cubemapSize);
         if (!s_EnvironmentShader)
-            s_EnvironmentShader = ComputeShader::Create("Assets/Shaders/Environment.ComputeShader");
+            s_EnvironmentShader = AssetManager::GetAsset<ComputeShader>("Assets/Shaders/Environment.ComputeShader");
         Ref<Texture2D> envEquirect = Texture2D::Create(filepath);
         PR_CORE_ASSERT(envEquirect->GetFormat() == ImageFormat::RGBA32F, "Texture is not HDR!");
 
@@ -153,7 +154,7 @@ namespace Prism
 
         Ref<TextureCube> envUnfiltered = TextureCube::Create(ImageFormat::RGBA32F, cubemapSize, cubemapSize);
         if (!s_PreethamSkyShader)
-            s_PreethamSkyShader = ComputeShader::Create("Assets/Shaders/PreethamSky.ComputeShader");
+            s_PreethamSkyShader = AssetManager::GetAsset<ComputeShader>("Assets/Shaders/PreethamSky.ComputeShader");
 
         int preethamKernel = s_PreethamSkyShader->FindKernel("CSPreethamSky");
 

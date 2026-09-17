@@ -554,14 +554,18 @@ namespace Prism::PythonScript
         Ref<ShaderStorageBuffer> GetShaderStorageBuffer() const { return m_Ref.As<ShaderStorageBuffer>(); }
     };
 
-    class PythonComputeShader : public PythonRefCounted
+    class PythonComputeShader : public PythonAsset
     {
     public:
         PythonComputeShader() = default;
-        PythonComputeShader(Ref<ComputeShader> shader) : PythonRefCounted(std::move(shader)) {}
+        PythonComputeShader(Ref<ComputeShader> shader) : PythonAsset(std::move(shader)) {}
         static PythonComputeShader Create(const char* filePath)
         {
-            Ref<ComputeShader> shader = ComputeShader::Create(filePath);
+            AssetHandle handle = AssetManager::GetAssetHandleFromFilePath(filePath);
+            if (!AssetManager::IsAssetHandleValid(handle))
+                throw std::runtime_error(fmt::format("ComputeShader.Create: '{}' is not a registered asset!", filePath));
+
+            Ref<ComputeShader> shader = AssetManager::GetAsset<ComputeShader>(handle);
             if (!shader)
                 throw std::runtime_error(fmt::format("ComputeShader.Create: failed to load '{}'!", filePath));
             return PythonComputeShader(shader);
@@ -1332,6 +1336,7 @@ PYBIND11_MODULE(PrismEngine, m)
         .value("Script", AssetType::Script)
         .value("PhysicsMat", AssetType::PhysicsMat)
         .value("Shader", AssetType::Shader)
+        .value("ComputeShader", AssetType::ComputeShader)
         .value("Directory", AssetType::Directory)
         .value("Other", AssetType::Other)
         .value("None", AssetType::None)
@@ -1512,7 +1517,7 @@ PYBIND11_MODULE(PrismEngine, m)
         .def("SetData", &PythonShaderStorageBuffer::SetData, py::arg("data"), py::arg("offset") = 0)
         .def("GetData", &PythonShaderStorageBuffer::GetData, py::arg("data"), py::arg("offset") = 0, py::arg("sync") = false)
         .def("GetSize", &PythonShaderStorageBuffer::GetSize);
-    py::class_<PythonComputeShader, PythonRefCounted>(m, "ComputeShader")
+    py::class_<PythonComputeShader, PythonAsset>(m, "ComputeShader")
         .def(py::init<>())
         .def_static("Create", &PythonComputeShader::Create, py::arg("filePath"))
         .def("__repr__", &PythonComputeShader::__Repr__)

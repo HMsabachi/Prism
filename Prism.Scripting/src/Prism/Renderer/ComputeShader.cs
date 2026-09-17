@@ -3,7 +3,7 @@ using Rolky.Managed.Interop;
 
 namespace Prism
 {
-    public class ComputeShader : RefCounted
+    public class ComputeShader : Asset
     {
         internal ComputeShader(IntPtr nativePtr) : base(nativePtr) { }
 

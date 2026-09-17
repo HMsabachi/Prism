@@ -7,7 +7,7 @@ namespace Prism
 {
     public enum AssetType : UInt32
     {
-        Scene, Mesh, Texture, EnvMap, Audio, Script, PhysicsMat, Shader, Directory, Other, None, Missing
+        Scene, Mesh, Texture, EnvMap, Audio, Script, PhysicsMat, Shader, ComputeShader, Directory, Other, None, Missing
     };
     public class Asset : RefCounted
     {
