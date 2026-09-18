@@ -40,8 +40,6 @@ namespace Prism
             VulkanDescriptorSet Set;
         };
 
-        void InsertDispatchBarriers(VkCommandBuffer cmdBuf, const Kernel& kernel, bool afterDispatch) const;
-
         std::vector<Kernel> m_Kernels;
     };
 }

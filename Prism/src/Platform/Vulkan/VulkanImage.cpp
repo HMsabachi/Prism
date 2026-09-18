@@ -50,12 +50,22 @@ namespace Prism
     {
         m_Specification.Width = width;
         m_Specification.Height = height;
-        Invalidate();
+        RT_Invalidate();
     }
 
     void VulkanImage2D::Invalidate()
     {
-        RT_Invalidate();
+        if (RenderThread::IsCurrentThreadRT())
+        {
+            RT_Invalidate();
+            return;
+        }
+
+        Ref<VulkanImage2D> instance = this;
+        Renderer::Submit([instance]() mutable
+        {
+            instance->RT_Invalidate();
+        });
     }
 
     void VulkanImage2D::RT_Invalidate()
@@ -446,6 +456,21 @@ namespace Prism
     }
 
     void VulkanImageCube::Invalidate()
+    {
+        if (RenderThread::IsCurrentThreadRT())
+        {
+            RT_Invalidate();
+            return;
+        }
+
+        Ref<VulkanImageCube> instance = this;
+        Renderer::Submit([instance]() mutable
+        {
+            instance->RT_Invalidate();
+        });
+    }
+
+    void VulkanImageCube::RT_Invalidate()
     {
         auto device = VulkanContext::GetCurrentDevice();
         auto vulkanDevice = device->GetVulkanDevice();

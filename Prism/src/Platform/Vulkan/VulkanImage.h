@@ -45,7 +45,7 @@ namespace Prism
 
         void SetSamplerWrap(TextureWrap wrap) { m_Wrap = wrap; }
 
-        void RT_Resize(const uint32_t width, const uint32_t height);
+        virtual void RT_Resize(const uint32_t width, const uint32_t height) override;
         void RT_Invalidate();
         void RT_GenerateMips();
         void UpdateDescriptor();
@@ -91,6 +91,7 @@ namespace Prism
 
         const VkDescriptorImageInfo& GetDescriptor() const { return m_DescriptorImageInfo; }
 
+        void RT_Invalidate();
         void RT_GenerateMips(bool readonly = false);
         void UpdateDescriptor();
         VkImageView GetOrCreateStorageImageView(uint32_t mip);

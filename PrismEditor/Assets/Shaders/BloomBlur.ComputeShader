@@ -1,0 +1,61 @@
+#version 450
+
+#pragma kernel CSBloomBlurHFirst
+#pragma kernel CSBloomBlurH
+#pragma kernel CSBloomBlurV
+#pragma kernel CSClear
+
+layout(binding = 0) uniform sampler2D u_Input;
+layout(rgba16f, binding = 1) uniform image2D o_Output;
+
+vec3 Fetch(in ivec2 coord, in ivec2 resolution) {
+    return texelFetch(u_Input, clamp(coord, ivec2(0), resolution - 1), 0).rgb;
+}
+
+vec3 BlurAxis(in ivec2 coord, in ivec2 resolution, in ivec2 direction) {
+    vec3 result = Fetch(coord, resolution) * 0.227027;
+    result += Fetch(coord + direction, resolution) * 0.1945946;
+    result += Fetch(coord - direction, resolution) * 0.1945946;
+    result += Fetch(coord + direction * 2, resolution) * 0.1216216;
+    result += Fetch(coord - direction * 2, resolution) * 0.1216216;
+    result += Fetch(coord + direction * 3, resolution) * 0.054054;
+    result += Fetch(coord - direction * 3, resolution) * 0.054054;
+    result += Fetch(coord + direction * 4, resolution) * 0.016216;
+    result += Fetch(coord - direction * 4, resolution) * 0.016216;
+    return result;
+}
+
+[numthreads(16, 16, 1)]
+void CSBloomBlurHFirst() {
+    ivec2 resolution = imageSize(o_Output);
+    if (gl_GlobalInvocationID.x >= uint(resolution.x) || gl_GlobalInvocationID.y >= uint(resolution.y)) return;
+
+    ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
+    imageStore(o_Output, coord, vec4(BlurAxis(coord, resolution, ivec2(1, 0)), 1.0));
+}
+
+[numthreads(16, 16, 1)]
+void CSBloomBlurH() {
+    ivec2 resolution = imageSize(o_Output);
+    if (gl_GlobalInvocationID.x >= uint(resolution.x) || gl_GlobalInvocationID.y >= uint(resolution.y)) return;
+
+    ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
+    imageStore(o_Output, coord, vec4(BlurAxis(coord, resolution, ivec2(1, 0)), 1.0));
+}
+
+[numthreads(16, 16, 1)]
+void CSBloomBlurV() {
+    ivec2 resolution = imageSize(o_Output);
+    if (gl_GlobalInvocationID.x >= uint(resolution.x) || gl_GlobalInvocationID.y >= uint(resolution.y)) return;
+
+    ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
+    imageStore(o_Output, coord, vec4(BlurAxis(coord, resolution, ivec2(0, 1)), 1.0));
+}
+
+[numthreads(16, 16, 1)]
+void CSClear() {
+    ivec2 resolution = imageSize(o_Output);
+    if (gl_GlobalInvocationID.x >= uint(resolution.x) || gl_GlobalInvocationID.y >= uint(resolution.y)) return;
+
+    imageStore(o_Output, ivec2(gl_GlobalInvocationID.xy), vec4(0.0, 0.0, 0.0, 1.0));
+}

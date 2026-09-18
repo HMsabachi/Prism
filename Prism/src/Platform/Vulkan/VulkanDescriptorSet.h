@@ -63,8 +63,6 @@ namespace Prism
 
         bool IsBaked() const { return m_IsBaked; }
         VkDescriptorSet RT_GetDescriptorSet() const { PR_CORE_ASSERT(m_IsBaked); return m_DescriptorSets[CurrentSlotIndex()]; };
-
-        const std::map<uint32_t, Binding>& GetBindings() const { return m_Bindings; }
     private:
         uint32_t CurrentSlotIndex() const;
     private:

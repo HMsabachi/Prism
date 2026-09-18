@@ -318,7 +318,9 @@ namespace Prism
     {
         Renderer::Submit([]()
         {
+            PR_CORE_ASSERT(s_Data->ActiveRenderPass, "没有活动的渲染通道！您是否调用了两次 Renderer::EndRenderPass？");
             vkCmdEndRenderPass(s_Data->ActiveCommandBuffer);
+            s_Data->ActiveRenderPass = nullptr;
         });
     }
 

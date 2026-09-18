@@ -141,8 +141,10 @@ namespace Prism {
 
     class PRISM_API Image2D : public Image
     {
-        virtual void Resize(const uint32_t width, const uint32_t height) = 0;
     public:
+        virtual void Resize(const uint32_t width, const uint32_t height) = 0;
+        virtual void RT_Resize(const uint32_t width, const uint32_t height) = 0;
+
         static Ref<Image2D> Create(const ImageSpecification& specification, Buffer buffer = Buffer());
         static Ref<Image2D> Create(const ImageSpecification& specification, std::vector<Buffer>&& mips);
     };

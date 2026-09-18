@@ -228,7 +228,7 @@ namespace Prism
                 continue;
 
             const std::string ext = it->path().extension().string();
-            if (ext != ".Shader" && ext != ".glsl")
+            if (ext != ".Shader" && ext != ".glsl" && ext != ".ComputeShader")
                 continue;
 
             FileRecord rec;

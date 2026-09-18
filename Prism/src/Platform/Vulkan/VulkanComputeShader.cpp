@@ -1,7 +1,6 @@
 ﻿#include "prpch.h"
 #include "VulkanComputeShader.h"
 
-#include "VulkanBarrier.h"
 #include "VulkanContext.h"
 #include "VulkanDevice.h"
 #include "VulkanImage.h"
@@ -263,89 +262,11 @@ namespace Prism
                 cmdBuf = VulkanRenderer::RT_GetActiveCommandBuffer();
             }
 
-            self->InsertDispatchBarriers(cmdBuf, kernelInfo, false);
             pipeline->RT_Dispatch(cmdBuf, descriptorSets, 1, groupsX, groupsY, groupsZ);
-            self->InsertDispatchBarriers(cmdBuf, kernelInfo, true);
 
             if (device)
                 device->FlushCommandBuffer(cmdBuf);
         });
     }
 
-    void VulkanComputeShader::InsertDispatchBarriers(VkCommandBuffer cmdBuf, const Kernel& kernel, bool afterDispatch) const
-    {
-        VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-        VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-        VkAccessFlags srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
-            | VK_ACCESS_TRANSFER_WRITE_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
-        VkAccessFlags dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
-        if (afterDispatch)
-        {
-            srcStageMask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-            dstStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-            srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-            dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT
-                | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT
-                | VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_MEMORY_READ_BIT;
-        }
-
-        VkImageSubresourceRange range{};
-        range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        range.baseMipLevel = 0;
-        range.levelCount = VK_REMAINING_MIP_LEVELS;
-        range.baseArrayLayer = 0;
-        range.layerCount = VK_REMAINING_ARRAY_LAYERS;
-
-        const auto& bindings = kernel.Set.GetBindings();
-        for (const Slot& slot : m_Slots)
-        {
-            auto it = bindings.find(slot.Binding);
-            if (it == bindings.end())
-                continue;
-
-            const bool writable = !slot.ReadOnly
-                && (slot.Kind == K::StorageBuffer || slot.Kind == K::Image2D || slot.Kind == K::ImageCube);
-            if (afterDispatch && !writable)
-                continue;
-
-            const VulkanDescriptorSet::Binding& binding = it->second;
-            switch (slot.Kind)
-            {
-            case K::StorageBuffer:
-            {
-                WeakRef<VulkanShaderStorageBuffer> ssbo = binding.Resource.As<VulkanShaderStorageBuffer>();
-                if (!ssbo)
-                    break;
-                VkDescriptorBufferInfo info = ssbo->GetDescriptor();
-                Utils::InsertBufferMemoryBarrier(cmdBuf, info.buffer, info.offset, info.range,
-                    srcAccessMask, dstAccessMask, srcStageMask, dstStageMask);
-                break;
-            }
-            case K::Sampler2D:
-            case K::Image2D:
-            {
-                WeakRef<VulkanImage2D> image = binding.Resource.As<VulkanImage2D>();
-                if (!image)
-                    break;
-                VkImageLayout layout = image->GetDescriptor().imageLayout;
-                Utils::InsertImageMemoryBarrier(cmdBuf, image->GetImageInfo().Image,
-                    srcAccessMask, dstAccessMask, layout, layout, srcStageMask, dstStageMask, range);
-                break;
-            }
-            case K::SamplerCube:
-            case K::ImageCube:
-            {
-                WeakRef<VulkanImageCube> image = binding.Resource.As<VulkanImageCube>();
-                if (!image)
-                    break;
-                VkImageLayout layout = image->GetDescriptor().imageLayout;
-                Utils::InsertImageMemoryBarrier(cmdBuf, image->GetImageInfo().Image,
-                    srcAccessMask, dstAccessMask, layout, layout, srcStageMask, dstStageMask, range);
-                break;
-            }
-            default:
-                break;
-            }
-        }
-    }
 }

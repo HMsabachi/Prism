@@ -43,10 +43,25 @@ namespace Prism {
     {
         m_Specification.Width = width;
         m_Specification.Height = height;
-        Invalidate();
+        RT_Invalidate();
     }
 
     void OpenGLImage2D::Invalidate()
+    {
+        if (RenderThread::IsCurrentThreadRT())
+        {
+            RT_Invalidate();
+            return;
+        }
+
+        Ref<OpenGLImage2D> instance = this;
+        Renderer::Submit([instance]() mutable
+        {
+            instance->RT_Invalidate();
+        });
+    }
+
+    void OpenGLImage2D::RT_Invalidate()
     {
         if (m_RendererID)
             Release();
@@ -153,6 +168,21 @@ namespace Prism {
     }
 
     void OpenGLImageCube::Invalidate()
+    {
+        if (RenderThread::IsCurrentThreadRT())
+        {
+            RT_Invalidate();
+            return;
+        }
+
+        Ref<OpenGLImageCube> instance = this;
+        Renderer::Submit([instance]() mutable
+        {
+            instance->RT_Invalidate();
+        });
+    }
+
+    void OpenGLImageCube::RT_Invalidate()
     {
         if (m_RendererID)
             Release();
