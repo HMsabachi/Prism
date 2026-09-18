@@ -85,9 +85,9 @@ namespace Prism
             unsafe { InternalCalls.Prism_ComputeShader_SetImageCube(m_NativePtr, kernel, name, image.GetNativePtr(), level); }
         }
 
-        public void Dispatch(int kernel, UInt32 groupsX, UInt32 groupsY, UInt32 groupsZ)
+        public void Dispatch(int kernel, UInt32 groupsX, UInt32 groupsY, UInt32 groupsZ, bool force = false)
         {
-            unsafe { InternalCalls.Prism_ComputeShader_Dispatch(m_NativePtr, kernel, groupsX, groupsY, groupsZ); }
+            unsafe { InternalCalls.Prism_ComputeShader_Dispatch(m_NativePtr, kernel, groupsX, groupsY, groupsZ, force); }
         }
     }
 }

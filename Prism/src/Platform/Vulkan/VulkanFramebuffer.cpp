@@ -215,6 +215,8 @@ namespace Prism
             subpassDescription.pDepthStencilAttachment = &depthAttachmentReference;
 
         // 子渲染通道依赖：颜色/深度 attachment 与下一 pass 的采样读之间的布局和内存依赖
+        // TODO: 下面两组的 srcStageMask/srcAccessMask 只有 FRAGMENT_SHADER/SHADER_READ，不含 COMPUTE_SHADER/SHADER_WRITE，
+        // 所以 compute 写 image 后由后续 pass 采样目前没有同步保证。暂未显形，出现花屏/闪帧时把这两组放宽
         StaticVector<VkSubpassDependency, 10> dependencies;
         if (!m_ColorAttachments.empty())
         {

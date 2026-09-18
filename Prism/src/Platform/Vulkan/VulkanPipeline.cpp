@@ -369,11 +369,8 @@ namespace Prism
     void VulkanComputePipeline::RT_Dispatch(VkCommandBuffer cmdBuf, VkDescriptorSet* sets, uint32_t setCount, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
     {
         vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_Pipeline);
-        for (uint32_t i = 0; i < setCount; i++)
-        {
-            vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout, 0, 1, &sets[i], 0, 0);
-            vkCmdDispatch(cmdBuf, groupCountX, groupCountY, groupCountZ);
-        }
+        vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout, 0, setCount, sets, 0, 0);
+        vkCmdDispatch(cmdBuf, groupCountX, groupCountY, groupCountZ);
     }
 
 #pragma endregion

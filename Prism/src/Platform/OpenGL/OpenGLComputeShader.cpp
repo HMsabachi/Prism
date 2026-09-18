@@ -199,19 +199,16 @@ namespace Prism
         if (!IsLegalKernel(kernel))
             return;
 
-        Ref<Kernel> kernelInfo = m_Kernels[kernel];
-        if (!kernelInfo->Shader)
-            return;
+        Ref<OpenGLComputeShader> self = this;
 
-        RendererID program = kernelInfo->Shader->GetRendererID();
-
-        Renderer::Submit([program, groupsX, groupsY, groupsZ]()
+        Renderer::Submit([self, kernel, groupsX, groupsY, groupsZ]()
         {
-            if (s_LastComputeProgram != program)
-            {
-                glUseProgram(program);
-                s_LastComputeProgram = program;
-            }
+            Ref<Kernel> kernelInfo = self->m_Kernels[kernel];
+            if (!kernelInfo->Shader)
+                return;
+
+            RendererID program = kernelInfo->Shader->GetRendererID();
+            glUseProgram(program);
 
             glDispatchCompute(groupsX, groupsY, groupsZ);
             glMemoryBarrier(GL_ALL_BARRIER_BITS);

@@ -187,7 +187,7 @@ namespace Prism
         void Prism_ComputeShader_SetTextureCube(ComputeShader* _this, int32_t kernel, Rolky::String name, ImageCube* image);
         void Prism_ComputeShader_SetImage2D(ComputeShader* _this, int32_t kernel, Rolky::String name, Image2D* image, uint32_t level);
         void Prism_ComputeShader_SetImageCube(ComputeShader* _this, int32_t kernel, Rolky::String name, ImageCube* image, uint32_t level);
-        void Prism_ComputeShader_Dispatch(ComputeShader* _this, int32_t kernel, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ);
+        void Prism_ComputeShader_Dispatch(ComputeShader* _this, int32_t kernel, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ, Rolky::Bool32 force);
         // PrismShader
         PrismShader* Prism_PrismShader_GetShader(Rolky::String shaderName);
         void Prism_PrismShader_GetName(PrismShader* _this, Rolky::String* outName);

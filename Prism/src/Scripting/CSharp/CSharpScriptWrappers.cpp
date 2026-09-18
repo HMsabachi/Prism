@@ -766,9 +766,9 @@ namespace Prism {
             Rolky::ScopedString resourceName(name);
             _this->SetImageCube(kernel, resourceName, Ref<ImageCube>(image), level);
         }
-        void Prism_ComputeShader_Dispatch(ComputeShader* _this, int32_t kernel, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ)
+        void Prism_ComputeShader_Dispatch(ComputeShader* _this, int32_t kernel, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ, Rolky::Bool32 force)
         {
-            _this->Dispatch(kernel, groupsX, groupsY, groupsZ, true);
+            _this->Dispatch(kernel, groupsX, groupsY, groupsZ, force);
         }
 #pragma endregion
 

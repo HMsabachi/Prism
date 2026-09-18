@@ -646,10 +646,10 @@ namespace Prism::PythonScript
             Ref<ComputeShader> shader = RequireComputeShader("SetImageCube");
             shader->SetImageCube(kernel, name, image.GetImageCube(), level);
         }
-        void Dispatch(int32_t kernel, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ)
+        void Dispatch(int32_t kernel, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ, bool force = false)
         {
             Ref<ComputeShader> shader = RequireComputeShader("Dispatch");
-            shader->Dispatch(kernel, groupsX, groupsY, groupsZ, true);
+            shader->Dispatch(kernel, groupsX, groupsY, groupsZ, force);
         }
     public:
         Ref<ComputeShader> GetComputeShader() const { return m_Ref.As<ComputeShader>(); }
@@ -1557,7 +1557,7 @@ PYBIND11_MODULE(PrismEngine, m)
         .def("SetTextureCube", &PythonComputeShader::SetTextureCube, py::arg("kernel"), py::arg("name"), py::arg("image"))
         .def("SetImage2D", &PythonComputeShader::SetImage2D, py::arg("kernel"), py::arg("name"), py::arg("image"), py::arg("level") = 0)
         .def("SetImageCube", &PythonComputeShader::SetImageCube, py::arg("kernel"), py::arg("name"), py::arg("image"), py::arg("level") = 0)
-        .def("Dispatch", &PythonComputeShader::Dispatch, py::arg("kernel"), py::arg("groupsX"), py::arg("groupsY"), py::arg("groupsZ"));
+        .def("Dispatch", &PythonComputeShader::Dispatch, py::arg("kernel"), py::arg("groupsX"), py::arg("groupsY"), py::arg("groupsZ"), py::arg("force") = false);
     py::class_<PythonMeshFactory>(m, "MeshFactory")
         .def_static("CreatePlane", &PythonMeshFactory::CreatePlane);
 
