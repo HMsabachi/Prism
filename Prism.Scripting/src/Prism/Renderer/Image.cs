@@ -1,5 +1,6 @@
 ﻿
 using System;
+using System.Runtime.InteropServices;
 
 namespace Prism
 {
@@ -95,6 +96,31 @@ namespace Prism
         // Defaults
         Depth = DEPTH24STENCIL8
     };
+    public enum ImageUsage
+    {
+        None = 0,
+        Texture,
+        Attachment,
+        Storage
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ImageSpecification
+    {
+        public ImageFormat Format;
+        public ImageUsage Usage;
+        public UInt32 Width;
+        public UInt32 Height;
+        public UInt32 Samples;
+
+        public ImageSpecification()
+        {
+            Format = ImageFormat.RGBA8;
+            Usage = ImageUsage.Texture;
+            Width = 1;
+            Height = 1;
+            Samples = 1;
+        }
+    }
     public class Image : RefCounted
     {
         internal Image(nint nativePtr) : base(nativePtr) { }
@@ -102,6 +128,7 @@ namespace Prism
         public UInt32 Height => GetHeight();
         public UInt32 Samples => GetSamples();
         public ImageFormat Format => GetFormat();
+        public ImageUsage Usage => GetUsage();
         public unsafe UInt32 GetWidth()
         {
             return InternalCalls.Prism_Image_GetWidth(m_NativePtr);
@@ -118,17 +145,21 @@ namespace Prism
         {
             return InternalCalls.Prism_Image_GetFormat(m_NativePtr);
         }
+        public unsafe ImageUsage GetUsage()
+        {
+            return InternalCalls.Prism_Image_GetUsage(m_NativePtr);
+        }
     }
     public class Image2D : Image
     {
         internal Image2D(nint nativePtr) : base(nativePtr) { }
-        public static unsafe Image2D Create<T>(ImageFormat format, UInt32 width, UInt32 height, in T[] data, UInt32 samples = 1)
+        public static unsafe Image2D Create<T>(ImageSpecification specification, in T[] data)
             where T : unmanaged
         {
             IntPtr nativePtr = IntPtr.Zero;
             fixed (T* ptr = data)
             {
-                nativePtr = InternalCalls.Prism_Image2D_Constructor(format, width, height, (IntPtr)ptr, samples);
+                nativePtr = InternalCalls.Prism_Image2D_Constructor(&specification, (IntPtr)ptr);
             }
             return new Image2D(nativePtr);
         }
@@ -137,13 +168,13 @@ namespace Prism
     public class ImageCube : Image
     {
         internal ImageCube(nint nativePtr) : base(nativePtr) { }
-        public static unsafe ImageCube Create<T>(ImageFormat format, UInt32 width, UInt32 height, in T[] data)
+        public static unsafe ImageCube Create<T>(ImageSpecification specification, in T[] data)
             where T : unmanaged
         {
             IntPtr nativePtr = IntPtr.Zero;
             fixed (T* ptr = data)
             {
-                nativePtr = InternalCalls.Prism_ImageCube_Constructor(format, width, height, (IntPtr)ptr);
+                nativePtr = InternalCalls.Prism_ImageCube_Constructor(&specification, (IntPtr)ptr);
             }
             return new ImageCube(nativePtr);
         }

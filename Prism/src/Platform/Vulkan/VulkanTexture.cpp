@@ -30,7 +30,12 @@ namespace Prism
             m_Width = dds.Width;
             m_Height = dds.Height;
             m_Loaded = true;
-            m_Image = Image2D::Create(dds.Format, dds.Width, dds.Height, std::move(dds.Mips));
+
+            ImageSpecification specification{};
+            specification.Format = dds.Format;
+            specification.Width = dds.Width;
+            specification.Height = dds.Height;
+            m_Image = Image2D::Create(specification, std::move(dds.Mips));
 
             if (RenderThread::IsCurrentThreadRT())
                 Invalidate();
@@ -70,7 +75,11 @@ namespace Prism
         m_Height = height;
         m_Loaded = true;
 
-        m_Image = Image2D::Create(m_Format, m_Width, m_Height, std::move(imageData));
+        ImageSpecification specification{};
+        specification.Format = m_Format;
+        specification.Width = m_Width;
+        specification.Height = m_Height;
+        m_Image = Image2D::Create(specification, std::move(imageData));
 
         if (RenderThread::IsCurrentThreadRT())
             Invalidate();
@@ -89,7 +98,16 @@ namespace Prism
     {
         m_Loaded = true;
 
-        m_Image = Image2D::Create(format, width, height, data);
+        ImageSpecification specification{};
+        specification.Format = format;
+        specification.Width = width;
+        specification.Height = height;
+
+        if (data)
+            m_Image = Image2D::Create(specification, Buffer::Copy(data, Utils::GetImageMemorySize(format, width, height)));
+        else
+            m_Image = Image2D::Create(specification);
+
         if (!data)
             m_Image->GetBuffer().Allocate(Utils::GetImageMemorySize(format, width, height));
 
@@ -140,7 +158,15 @@ namespace Prism
     VulkanTextureCube::VulkanTextureCube(ImageFormat format, uint32_t width, uint32_t height, const void* data)
         : m_Format(format), m_Width(width), m_Height(height)
     {
-        m_Image = ImageCube::Create(format, width, height, data);
+        ImageSpecification specification{};
+        specification.Format = format;
+        specification.Width = width;
+        specification.Height = height;
+
+        if (data)
+            m_Image = ImageCube::Create(specification, Buffer::Copy(data, Utils::GetImageMemorySize(format, width, height) * 6));
+        else
+            m_Image = ImageCube::Create(specification);
 
         if (RenderThread::IsCurrentThreadRT())
             Invalidate();

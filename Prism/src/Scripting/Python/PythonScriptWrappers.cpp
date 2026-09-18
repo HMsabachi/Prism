@@ -202,6 +202,7 @@ namespace Prism::PythonScript
         uint32_t GetHeight() const { Ref<Image> image = m_Ref.As<Image>(); return image ? image->GetHeight() : 0; }
         uint32_t GetSamples() const { Ref<Image> image = m_Ref.As<Image>(); return image ? image->GetSamples() : 0; }
         ImageFormat GetFormat() const { Ref<Image> image = m_Ref.As<Image>(); return image ? image->GetFormat() : ImageFormat::None; }
+        ImageUsage GetUsage() const { Ref<Image> image = m_Ref.As<Image>(); return image ? image->GetUsage() : ImageUsage::None; }
     public:
         Ref<Image> GetImage() const { return m_Ref.As<Image>(); }
     };
@@ -211,13 +212,18 @@ namespace Prism::PythonScript
     public:
         PythonImage2D() = default;
         PythonImage2D(Ref<Image2D> image) : PythonImage(image) {}
-        static PythonImage2D Create(ImageFormat format, uint32_t width, uint32_t height, const py::object& data, uint32_t samples)
+        static PythonImage2D Create(const ImageSpecification& specification, const py::object& data)
         {
             PythonBufferView view(data);
             if (!data.is_none() && !view.Valid)
                 throw std::runtime_error("Image2D.Create: data must support the buffer protocol!");
-            ValidatePixelData(view, format, width, height, "Image2D.Create");
-            return PythonImage2D(Image2D::Create(format, width, height, view.Data(), samples));
+            ValidatePixelData(view, specification.Format, specification.Width, specification.Height, "Image2D.Create");
+
+            Buffer imageData;
+            if (view.Data())
+                imageData = Buffer::Copy(view.Data(), Utils::GetImageMemorySize(specification.Format, specification.Width, specification.Height));
+
+            return PythonImage2D(Image2D::Create(specification, std::move(imageData)));
         }
     public:
         Ref<Image2D> GetImage2D() const { return m_Ref.As<Image2D>(); }
@@ -228,13 +234,18 @@ namespace Prism::PythonScript
     public:
         PythonImageCube() = default;
         PythonImageCube(Ref<ImageCube> image) : PythonImage(image) {}
-        static PythonImageCube Create(ImageFormat format, uint32_t width, uint32_t height, const py::object& data)
+        static PythonImageCube Create(const ImageSpecification& specification, const py::object& data)
         {
             PythonBufferView view(data);
             if (!data.is_none() && !view.Valid)
                 throw std::runtime_error("ImageCube.Create: data must support the buffer protocol!");
-            ValidatePixelData(view, format, width, height, "ImageCube.Create", 6);
-            return PythonImageCube(ImageCube::Create(format, width, height, view.Data()));
+            ValidatePixelData(view, specification.Format, specification.Width, specification.Height, "ImageCube.Create", 6);
+
+            Buffer imageData;
+            if (view.Data())
+                imageData = Buffer::Copy(view.Data(), Utils::GetImageMemorySize(specification.Format, specification.Width, specification.Height) * 6);
+
+            return PythonImageCube(ImageCube::Create(specification, std::move(imageData)));
         }
         void GenerateMipMap() { Ref<ImageCube> image = GetImageCube(); if (image) image->GenerateMipMap(); }
         void CopyTo(const PythonImageCube& target) { Ref<ImageCube> image = GetImageCube(); if (image) image->CopyTo(target.GetImageCube()); }
@@ -1418,6 +1429,18 @@ PYBIND11_MODULE(PrismEngine, m)
         .value("ASTC_6x6", ImageFormat::ASTC_6x6)
         .value("ASTC_8x8", ImageFormat::ASTC_8x8)
         .value("Depth", ImageFormat::Depth);
+    py::enum_<ImageUsage>(m, "ImageUsage")
+        .value("None", ImageUsage::None)
+        .value("Texture", ImageUsage::Texture)
+        .value("Attachment", ImageUsage::Attachment)
+        .value("Storage", ImageUsage::Storage);
+    py::class_<ImageSpecification>(m, "ImageSpecification")
+        .def(py::init<>())
+        .def_readwrite("Format", &ImageSpecification::Format)
+        .def_readwrite("Usage", &ImageSpecification::Usage)
+        .def_readwrite("Width", &ImageSpecification::Width)
+        .def_readwrite("Height", &ImageSpecification::Height)
+        .def_readwrite("Samples", &ImageSpecification::Samples);
     py::class_<PythonImage, PythonRefCounted>(m, "Image")
         .def(py::init<>())
         .def("__repr__", &PythonImage::__Repr__)
@@ -1425,19 +1448,21 @@ PYBIND11_MODULE(PrismEngine, m)
         .def_property_readonly("Height", &PythonImage::GetHeight)
         .def_property_readonly("Samples", &PythonImage::GetSamples)
         .def_property_readonly("Format", &PythonImage::GetFormat)
+        .def_property_readonly("Usage", &PythonImage::GetUsage)
         .def("GetWidth", &PythonImage::GetWidth)
         .def("GetHeight", &PythonImage::GetHeight)
         .def("GetSamples", &PythonImage::GetSamples)
-        .def("GetFormat", &PythonImage::GetFormat);
+        .def("GetFormat", &PythonImage::GetFormat)
+        .def("GetUsage", &PythonImage::GetUsage);
     py::class_<PythonImage2D, PythonImage>(m, "Image2D")
         .def(py::init<>())
         .def_static("Create", &PythonImage2D::Create,
-            py::arg("format"), py::arg("width"), py::arg("height"), py::arg("data") = py::none(), py::arg("samples") = 1)
+            py::arg("specification"), py::arg("data") = py::none())
         .def("__repr__", &PythonImage2D::__Repr__);
     py::class_<PythonImageCube, PythonImage>(m, "ImageCube")
         .def(py::init<>())
         .def_static("Create", &PythonImageCube::Create,
-            py::arg("format"), py::arg("width"), py::arg("height"), py::arg("data") = py::none())
+            py::arg("specification"), py::arg("data") = py::none())
         .def("__repr__", &PythonImageCube::__Repr__)
         .def("GenerateMipMap", &PythonImageCube::GenerateMipMap)
         .def("CopyTo", &PythonImageCube::CopyTo);

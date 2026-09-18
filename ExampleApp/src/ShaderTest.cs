@@ -50,7 +50,8 @@ namespace Example
                 Vector3 uniformValue = shader.GetUniformDefaultValue<Vector3>(i);
                 Log.Trace($"Uniform {i}: {uniformName}, {uniformDisplayName}, Type: {uniformType}, Value: {uniformValue}");
             }
-            Image2D image = Image2D.Create<UInt32>(ImageFormat.RGB8, 8, 8, data, 1);
+            ImageSpecification specification = new ImageSpecification { Format = ImageFormat.RGB8, Width = 8, Height = 8 };
+            Image2D image = Image2D.Create<UInt32>(specification, data);
             Log.Trace($"Image2D: {image.Width}x{image.Height}, Format: {image.Format}, Samples: {image.Samples}");
             Texture2D texture = Texture2D.Create(10, 10);
             Log.Trace($"Texture2D: {texture.Width}x{texture.Height}, Format: {texture.Format}");

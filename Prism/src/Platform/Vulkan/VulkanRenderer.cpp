@@ -130,10 +130,19 @@ namespace Prism
         s_Data->FullscreenQuadIB = IndexBuffer::Create(indices, 6 * sizeof(uint32_t)).As<VulkanIndexBuffer>();
 
         float blackPixel[16] = { 0.0f };
-        s_Data->BlackImage2D = Image2D::Create(ImageFormat::RGBA8, 1, 1, blackPixel).As<VulkanImage2D>();
-        s_Data->BlackImage2D->SetExtraUsage(VK_IMAGE_USAGE_STORAGE_BIT);
+        uint64_t blackPixelSize = Utils::GetImageMemorySize(ImageFormat::RGBA8, 1, 1);
+
+        ImageSpecification blackSpecification{};
+        blackSpecification.Format = ImageFormat::RGBA8;
+        blackSpecification.Width = 1;
+        blackSpecification.Height = 1;
+
+        blackSpecification.Usage = ImageUsage::Storage;
+        s_Data->BlackImage2D = Image2D::Create(blackSpecification, Buffer::Copy(blackPixel, blackPixelSize)).As<VulkanImage2D>();
         s_Data->BlackImage2D->Invalidate();
-        s_Data->BlackImageCube = ImageCube::Create(ImageFormat::RGBA8, 1, 1, blackPixel).As<VulkanImageCube>();
+
+        blackSpecification.Usage = ImageUsage::Texture;
+        s_Data->BlackImageCube = ImageCube::Create(blackSpecification, Buffer::Copy(blackPixel, blackPixelSize * 6)).As<VulkanImageCube>();
         s_Data->BlackImageCube->Invalidate();
         s_Data->BlackTexture2D = Texture2D::Create(ImageFormat::RGBA8, 1, 1, blackPixel).As<VulkanTexture2D>();
         s_Data->BlackTextureCube = TextureCube::Create(ImageFormat::RGBA8, 1, 1, blackPixel).As<VulkanTextureCube>();

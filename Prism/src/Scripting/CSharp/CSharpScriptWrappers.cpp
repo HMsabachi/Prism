@@ -441,16 +441,39 @@ namespace Prism {
         uint32_t Prism_Image_GetHeight(Image* _this) { return _this->GetHeight(); }
         uint32_t Prism_Image_GetSamples(Image* _this) { return _this->GetSamples(); }
         ImageFormat Prism_Image_GetFormat(Image* _this) { return _this->GetFormat(); }
+        ImageUsage Prism_Image_GetUsage(Image* _this) { return _this->GetUsage(); }
 
-        Image2D* Prism_Image2D_Constructor(ImageFormat format, uint32_t width, uint32_t height, const void* data, uint32_t samples)
+        Image2D* Prism_Image2D_Constructor(const ScriptImageSpecification* specification, const void* data)
         {
-            Ref<Image2D> result = Image2D::Create(format, width, height, data, samples);
+            ImageSpecification imageSpecification{};
+            imageSpecification.Format = specification->Format;
+            imageSpecification.Usage = specification->Usage;
+            imageSpecification.Width = specification->Width;
+            imageSpecification.Height = specification->Height;
+            imageSpecification.Samples = specification->Samples;
+
+            Buffer imageData;
+            if (data)
+                imageData = Buffer::Copy(data, Utils::GetImageMemorySize(specification->Format, specification->Width, specification->Height));
+
+            Ref<Image2D> result = Image2D::Create(imageSpecification, std::move(imageData));
             result->IncRefCount();
             return result.Raw();
         }
-        ImageCube* Prism_ImageCube_Constructor(ImageFormat format, uint32_t width, uint32_t height, const void* data)
+        ImageCube* Prism_ImageCube_Constructor(const ScriptImageSpecification* specification, const void* data)
         {
-            Ref<ImageCube> result = ImageCube::Create(format, width, height, data);
+            ImageSpecification imageSpecification{};
+            imageSpecification.Format = specification->Format;
+            imageSpecification.Usage = specification->Usage;
+            imageSpecification.Width = specification->Width;
+            imageSpecification.Height = specification->Height;
+            imageSpecification.Samples = specification->Samples;
+
+            Buffer imageData;
+            if (data)
+                imageData = Buffer::Copy(data, Utils::GetImageMemorySize(specification->Format, specification->Width, specification->Height) * 6);
+
+            Ref<ImageCube> result = ImageCube::Create(imageSpecification, std::move(imageData));
             result->IncRefCount();
             return result.Raw();
         }

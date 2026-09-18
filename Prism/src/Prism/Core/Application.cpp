@@ -100,9 +100,9 @@ namespace Prism
         }
         ModelImporter::Shutdown();
         Physics::Shutdown();
-        AssetManager::Shutdown();
         PythonScriptEngine::Shutdown();
         CSharpScriptEngine::Shutdown();
+        AssetManager::Shutdown();
         
         m_RenderThread.Pump();
         m_RenderThread.Pump();

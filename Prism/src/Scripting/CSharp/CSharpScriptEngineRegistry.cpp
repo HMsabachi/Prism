@@ -156,6 +156,7 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_Image_GetHeight);
         PR_ADD_INTERNAL_CALL(Prism_Image_GetSamples);
         PR_ADD_INTERNAL_CALL(Prism_Image_GetFormat);
+        PR_ADD_INTERNAL_CALL(Prism_Image_GetUsage);
         PR_ADD_INTERNAL_CALL(Prism_Image2D_Constructor);
         PR_ADD_INTERNAL_CALL(Prism_ImageCube_Constructor);
         PR_ADD_INTERNAL_CALL(Prism_ImageCube_GenerateMipMap);

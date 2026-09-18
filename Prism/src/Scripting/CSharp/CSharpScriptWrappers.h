@@ -1,6 +1,8 @@
 ﻿#pragma once
 #include <Rolky/Array.hpp>
 
+#include "Prism/Renderer/Image.h"
+
 namespace Rolky
 {
     class String;
@@ -28,7 +30,6 @@ namespace Prism
     struct RaycastHit;
     enum class KeyCode : uint16_t;
     enum class MouseButton : uint16_t;
-    enum class ImageFormat;
     enum class CursorMode;
 
 }
@@ -116,12 +117,14 @@ namespace Prism
         Mesh* Prism_Mesh_Constructor(Rolky::String filepath);
         Mesh* Prism_MeshFactory_CreatePlane(float width, float height);
         // Image
+        struct ScriptImageSpecification { ImageFormat Format; ImageUsage Usage; uint32_t Width; uint32_t Height; uint32_t Samples; };
         uint32_t Prism_Image_GetWidth(Image* _this);
         uint32_t Prism_Image_GetHeight(Image* _this);
         uint32_t Prism_Image_GetSamples(Image* _this);
         ImageFormat Prism_Image_GetFormat(Image* _this);
-        Image2D* Prism_Image2D_Constructor(ImageFormat format, uint32_t width, uint32_t height, const void* data, uint32_t samples);
-        ImageCube* Prism_ImageCube_Constructor(ImageFormat format, uint32_t width, uint32_t height, const void* data);
+        ImageUsage Prism_Image_GetUsage(Image* _this);
+        Image2D* Prism_Image2D_Constructor(const ScriptImageSpecification* specification, const void* data);
+        ImageCube* Prism_ImageCube_Constructor(const ScriptImageSpecification* specification, const void* data);
         void Prism_ImageCube_GenerateMipMap(ImageCube* _this);
         void Prism_ImageCube_CopyTo(ImageCube* _this, ImageCube* destination);
 

@@ -59,8 +59,9 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32> Prism_Image_GetHeight;
         internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32> Prism_Image_GetSamples;
         internal static delegate* unmanaged[Cdecl]<IntPtr, ImageFormat> Prism_Image_GetFormat;
-        internal static delegate* unmanaged[Cdecl]<ImageFormat, UInt32, UInt32, IntPtr, UInt32, IntPtr> Prism_Image2D_Constructor;
-        internal static delegate* unmanaged[Cdecl]<ImageFormat, UInt32, UInt32, IntPtr, IntPtr> Prism_ImageCube_Constructor;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, ImageUsage> Prism_Image_GetUsage;
+        internal static delegate* unmanaged[Cdecl]<ImageSpecification*, IntPtr, IntPtr> Prism_Image2D_Constructor;
+        internal static delegate* unmanaged[Cdecl]<ImageSpecification*, IntPtr, IntPtr> Prism_ImageCube_Constructor;
         internal static delegate* unmanaged[Cdecl]<IntPtr, void> Prism_ImageCube_GenerateMipMap;
         internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr, void> Prism_ImageCube_CopyTo;
         // Texture

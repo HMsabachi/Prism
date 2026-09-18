@@ -27,11 +27,16 @@ namespace Prism
         {
             for (auto& format : m_Specification.Attachments.Attachments)
             {
-                Ref<Image2D> image = Image2D::Create(format.Format, m_Width, m_Height, nullptr, m_Specification.Samples);
+                ImageSpecification specification{};
+                specification.Format = format.Format;
+                specification.Usage = ImageUsage::Attachment;
+                specification.Width = m_Width;
+                specification.Height = m_Height;
+                specification.Samples = m_Specification.Samples;
+
+                Ref<Image2D> image = Image2D::Create(specification);
                 if (!IsDepthFormat(format.Format))
                 {
-                    // GL 语义下任意纹理可挂 FBO，Vulkan 需显式声明渲染目标用途
-                    image.As<VulkanImage2D>()->SetExtraUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
                     m_ColorAttachments.emplace_back(image);
                 }
                 else

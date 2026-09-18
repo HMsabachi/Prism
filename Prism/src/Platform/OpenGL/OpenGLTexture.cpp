@@ -32,7 +32,16 @@ namespace Prism {
     OpenGLTexture2D::OpenGLTexture2D(ImageFormat format, uint32_t width, uint32_t height, const void* data)
         : m_Width(width), m_Height(height)
     {
-        m_Image = Image2D::Create(format, width, height, data);
+        ImageSpecification specification{};
+        specification.Format = format;
+        specification.Width = width;
+        specification.Height = height;
+
+        if (data)
+            m_Image = Image2D::Create(specification, Buffer::Copy(data, Utils::GetImageMemorySize(format, width, height)));
+        else
+            m_Image = Image2D::Create(specification);
+
         // Allocate CPU buffer for Lock/Unlock/GetWriteableBuffer when no initial data
         // (callers Lock/Write immediately after construction, e.g. C# Texture2D wrapper)
         if (!data)
@@ -78,7 +87,12 @@ namespace Prism {
             m_Width = dds.Width;
             m_Height = dds.Height;
             m_Loaded = true;
-            m_Image = Image2D::Create(dds.Format, dds.Width, dds.Height, std::move(dds.Mips));
+
+            ImageSpecification specification{};
+            specification.Format = dds.Format;
+            specification.Width = dds.Width;
+            specification.Height = dds.Height;
+            m_Image = Image2D::Create(specification, std::move(dds.Mips));
 
             if (RenderThread::IsCurrentThreadRT())
             {
@@ -102,7 +116,11 @@ namespace Prism {
             if (!data) { PR_CORE_ERROR("Could not read image: {0}", path); return; }
             m_IsHDR = true;
             uint32_t size = width * height * 4 * sizeof(float);
-            m_Image = Image2D::Create(ImageFormat::RGBA32F, width, height, Buffer::Copy(data, size));
+            ImageSpecification specification{};
+            specification.Format = ImageFormat::RGBA32F;
+            specification.Width = width;
+            specification.Height = height;
+            m_Image = Image2D::Create(specification, Buffer::Copy(data, size));
             stbi_image_free(data);
         }
         else
@@ -113,7 +131,11 @@ namespace Prism {
             if (!data) { PR_CORE_ERROR("Could not read image: {0}", path); return; }
             ImageFormat format = srgb ? ImageFormat::RGBA8_SRGB : ImageFormat::RGBA8;
             uint32_t size = width * height * Utils::GetImageFormatBPP(format);
-            m_Image = Image2D::Create(format, width, height, Buffer::Copy(data, size));
+            ImageSpecification specification{};
+            specification.Format = format;
+            specification.Width = width;
+            specification.Height = height;
+            m_Image = Image2D::Create(specification, Buffer::Copy(data, size));
             stbi_image_free(data);
         }
 
@@ -180,7 +202,15 @@ namespace Prism {
 
     OpenGLTextureCube::OpenGLTextureCube(ImageFormat format, uint32_t width, uint32_t height, const void* data)
     {
-        m_Image = ImageCube::Create(format, width, height, data);
+        ImageSpecification specification{};
+        specification.Format = format;
+        specification.Width = width;
+        specification.Height = height;
+
+        if (data)
+            m_Image = ImageCube::Create(specification, Buffer::Copy(data, (uint64_t)Utils::GetImageFormatBPP(format) * width * height * 6));
+        else
+            m_Image = ImageCube::Create(specification);
 
         if (RenderThread::IsCurrentThreadRT())
         {
