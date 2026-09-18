@@ -51,6 +51,9 @@ namespace Prism
         void UpdateDescriptor();
         VkImageView GetOrCreateStorageImageView(uint32_t mip);
     private:
+        void InsertFinalLayoutBarrier(VkCommandBuffer cmdBuf, VkAccessFlags srcAccessMask, VkImageLayout oldImageLayout,
+            VkPipelineStageFlags srcStageMask, const VkImageSubresourceRange& subresourceRange) const;
+
         ImageSpecification m_Specification;
         TextureWrap m_Wrap = TextureWrap::Repeat;
 

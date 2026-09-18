@@ -429,4 +429,10 @@ namespace Prism
         return s_Data->EmptyShaderStorageBuffer;
     }
 
+    VkCommandBuffer VulkanRenderer::RT_GetActiveCommandBuffer()
+    {
+        PR_CORE_ASSERT(s_Data->ActiveCommandBuffer, "VulkanRenderer::RT_GetActiveCommandBuffer: 当前不在帧录制期间!");
+        return s_Data->ActiveCommandBuffer;
+    }
+
 }

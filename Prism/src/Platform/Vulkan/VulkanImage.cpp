@@ -2,6 +2,7 @@
 #include "Platform/Vulkan/VulkanImage.h"
 
 #include "Platform/Vulkan/VulkanAllocator.h"
+#include "Platform/Vulkan/VulkanBarrier.h"
 #include "Platform/Vulkan/VulkanContext.h"
 #include "Platform/Vulkan/VulkanDevice.h"
 #include "Prism/Renderer/Renderer.h"
@@ -10,39 +11,6 @@ namespace Prism
 {
     namespace Utils
     {
-        static void InsertImageMemoryBarrier(
-            VkCommandBuffer cmdbuffer,
-            VkImage image,
-            VkAccessFlags srcAccessMask,
-            VkAccessFlags dstAccessMask,
-            VkImageLayout oldImageLayout,
-            VkImageLayout newImageLayout,
-            VkPipelineStageFlags srcStageMask,
-            VkPipelineStageFlags dstStageMask,
-            VkImageSubresourceRange subresourceRange)
-        {
-            VkImageMemoryBarrier imageMemoryBarrier{};
-            imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-            imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-            imageMemoryBarrier.srcAccessMask = srcAccessMask;
-            imageMemoryBarrier.dstAccessMask = dstAccessMask;
-            imageMemoryBarrier.oldLayout = oldImageLayout;
-            imageMemoryBarrier.newLayout = newImageLayout;
-            imageMemoryBarrier.image = image;
-            imageMemoryBarrier.subresourceRange = subresourceRange;
-
-            vkCmdPipelineBarrier(
-                cmdbuffer,
-                srcStageMask,
-                dstStageMask,
-                0,
-                0, nullptr,
-                0, nullptr,
-                1, &imageMemoryBarrier);
-        }
-
         static bool IsDepthFormat(ImageFormat format)
         {
             return format == ImageFormat::DEPTH16 || format == ImageFormat::DEPTH32F ||
@@ -241,11 +209,8 @@ namespace Prism
                 mipCount,
                 regions.data());
 
-            Utils::InsertImageMemoryBarrier(copyCmd, m_Info.Image,
-                VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
-                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                allMips);
+            InsertFinalLayoutBarrier(copyCmd, VK_ACCESS_TRANSFER_WRITE_BIT,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT, allMips);
 
             device->FlushCommandBuffer(copyCmd);
 
@@ -305,22 +270,37 @@ namespace Prism
         }
         else
         {
-            VkImageLayout layout = Utils::IsDepthFormat(m_Specification.Format)
-                ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
-                : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
             VkCommandBuffer layoutCmd = device->GetCommandBuffer(true);
 
-            Utils::InsertImageMemoryBarrier(layoutCmd, m_Info.Image,
-                0, VK_ACCESS_SHADER_READ_BIT,
-                VK_IMAGE_LAYOUT_UNDEFINED, layout,
-                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                subresourceRange);
+            InsertFinalLayoutBarrier(layoutCmd, 0, VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, subresourceRange);
 
             device->FlushCommandBuffer(layoutCmd);
         }
 
         UpdateDescriptor();
+    }
+
+    void VulkanImage2D::InsertFinalLayoutBarrier(VkCommandBuffer cmdBuf, VkAccessFlags srcAccessMask,
+        VkImageLayout oldImageLayout, VkPipelineStageFlags srcStageMask, const VkImageSubresourceRange& subresourceRange) const
+    {
+        VkImageLayout newImageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        VkAccessFlags dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+        if (m_Specification.Usage == ImageUsage::Storage)
+        {
+            newImageLayout = VK_IMAGE_LAYOUT_GENERAL;
+            dstAccessMask |= VK_ACCESS_SHADER_WRITE_BIT;
+            dstStageMask |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        }
+        else if (Utils::IsDepthFormat(m_Specification.Format))
+        {
+            newImageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+        }
+
+        Utils::InsertImageMemoryBarrier(cmdBuf, m_Info.Image, srcAccessMask, dstAccessMask,
+            oldImageLayout, newImageLayout, srcStageMask, dstStageMask, subresourceRange);
     }
 
     void VulkanImage2D::Release()
@@ -411,21 +391,21 @@ namespace Prism
         subresourceRange.layerCount = 1;
         subresourceRange.levelCount = mipLevels;
 
-        Utils::InsertImageMemoryBarrier(blitCmd, m_Info.Image,
-            VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_SHADER_READ_BIT,
-            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-            subresourceRange);
+        InsertFinalLayoutBarrier(blitCmd, VK_ACCESS_TRANSFER_READ_BIT,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT, subresourceRange);
 
         device->FlushCommandBuffer(blitCmd);
     }
 
     void VulkanImage2D::UpdateDescriptor()
     {
-        if (Utils::IsDepthFormat(m_Specification.Format))
+        if (m_Specification.Usage == ImageUsage::Storage)
+            m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+        else if (Utils::IsDepthFormat(m_Specification.Format))
             m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
         else
             m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
         m_DescriptorImageInfo.imageView = m_Info.ImageView;
         m_DescriptorImageInfo.sampler = m_Info.Sampler;
     }

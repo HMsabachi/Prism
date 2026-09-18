@@ -649,7 +649,7 @@ namespace Prism::PythonScript
         void Dispatch(int32_t kernel, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ)
         {
             Ref<ComputeShader> shader = RequireComputeShader("Dispatch");
-            shader->Dispatch(kernel, groupsX, groupsY, groupsZ);
+            shader->Dispatch(kernel, groupsX, groupsY, groupsZ, true);
         }
     public:
         Ref<ComputeShader> GetComputeShader() const { return m_Ref.As<ComputeShader>(); }

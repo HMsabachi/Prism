@@ -768,7 +768,7 @@ namespace Prism {
         }
         void Prism_ComputeShader_Dispatch(ComputeShader* _this, int32_t kernel, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ)
         {
-            _this->Dispatch(kernel, groupsX, groupsY, groupsZ);
+            _this->Dispatch(kernel, groupsX, groupsY, groupsZ, true);
         }
 #pragma endregion
 

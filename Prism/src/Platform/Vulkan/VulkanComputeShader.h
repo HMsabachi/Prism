@@ -23,13 +23,13 @@ namespace Prism
         virtual void SetTextureCube(int32_t kernel, const std::string& name, Ref<ImageCube> image) override;
         virtual void SetImage2D(int32_t kernel, const std::string& name, Ref<Image2D> image, uint32_t level = 0) override;
         virtual void SetImageCube(int32_t kernel, const std::string& name, Ref<ImageCube> image, uint32_t level = 0) override;
-        virtual void Dispatch(int32_t kernel, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) override;
+        virtual void Dispatch(int32_t kernel, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ, bool force = false) override;
 
     protected:
         virtual bool IsLegalKernel(int32_t kernel) const override;
 
     private:
-        class Kernel : public RefCounted
+        class Kernel
         {
         public:
             std::string Name;
@@ -40,6 +40,8 @@ namespace Prism
             VulkanDescriptorSet Set;
         };
 
-        std::vector<Ref<Kernel>> m_Kernels;
+        void InsertDispatchBarriers(VkCommandBuffer cmdBuf, const Kernel& kernel, bool afterDispatch) const;
+
+        std::vector<Kernel> m_Kernels;
     };
 }

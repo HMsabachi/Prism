@@ -54,7 +54,7 @@ namespace Prism
         VulkanComputePipeline(WeakRef<VulkanShader> shader, VkPipelineCache pipelineCache);
         virtual ~VulkanComputePipeline();
 
-        void RT_Execute(VkDescriptorSet* sets, uint32_t setCount, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
+        void RT_Dispatch(VkCommandBuffer cmdBuf, VkDescriptorSet* sets, uint32_t setCount, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
 
     private:
         VkPipeline m_Pipeline = VK_NULL_HANDLE;

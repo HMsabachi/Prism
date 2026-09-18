@@ -45,6 +45,7 @@ namespace Prism
         static WeakRef<VulkanImageCube> RT_GetBlackImageCube();
         static WeakRef<VulkanUniformBuffer> RT_GetEmptyUniformBuffer();
         static WeakRef<VulkanShaderStorageBuffer> RT_GetEmptyShaderStorageBuffer();
+        static VkCommandBuffer RT_GetActiveCommandBuffer();
     };
 
 }

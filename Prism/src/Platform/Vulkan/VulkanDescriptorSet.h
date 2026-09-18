@@ -47,6 +47,8 @@ namespace Prism
         ~VulkanDescriptorSet();
         VulkanDescriptorSet(const VulkanDescriptorSet&) = delete;
         VulkanDescriptorSet& operator=(const VulkanDescriptorSet&) = delete;
+        VulkanDescriptorSet(VulkanDescriptorSet&& other) noexcept;
+        VulkanDescriptorSet& operator=(VulkanDescriptorSet&& other) noexcept;
 
         void SetInput(uint32_t binding, Ref<VulkanUniformBuffer> buffer);
         void SetInput(uint32_t binding, Ref<VulkanShaderStorageBuffer> buffer);
@@ -61,6 +63,8 @@ namespace Prism
 
         bool IsBaked() const { return m_IsBaked; }
         VkDescriptorSet RT_GetDescriptorSet() const { PR_CORE_ASSERT(m_IsBaked); return m_DescriptorSets[CurrentSlotIndex()]; };
+
+        const std::map<uint32_t, Binding>& GetBindings() const { return m_Bindings; }
     private:
         uint32_t CurrentSlotIndex() const;
     private:

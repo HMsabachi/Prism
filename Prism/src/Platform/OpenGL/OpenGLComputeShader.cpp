@@ -194,7 +194,7 @@ namespace Prism
         });
     }
 
-    void OpenGLComputeShader::Dispatch(int32_t kernel, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ)
+    void OpenGLComputeShader::Dispatch(int32_t kernel, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ, bool force)
     {
         if (!IsLegalKernel(kernel))
             return;
@@ -214,7 +214,7 @@ namespace Prism
             }
 
             glDispatchCompute(groupsX, groupsY, groupsZ);
-            glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+            glMemoryBarrier(GL_ALL_BARRIER_BITS);
         });
     }
 }

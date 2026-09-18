@@ -343,8 +343,6 @@ namespace Prism
 
 #pragma region VulkanComputePipeline
 
-    static VkFence s_ComputeFence = nullptr;
-
     VulkanComputePipeline::VulkanComputePipeline(WeakRef<VulkanShader> shader, VkPipelineCache pipelineCache)
     {
         m_PipelineLayout = shader->GetPipelineLayout();
@@ -368,39 +366,14 @@ namespace Prism
     }
 
 
-    void VulkanComputePipeline::RT_Execute(VkDescriptorSet* sets, uint32_t setCount, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+    void VulkanComputePipeline::RT_Dispatch(VkCommandBuffer cmdBuf, VkDescriptorSet* sets, uint32_t setCount, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
     {
-        VkDevice device = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
-        VkQueue computeQueue = VulkanContext::GetCurrentDevice()->GetComputeQueue();
-        VkCommandBuffer computeCommandBuffer = VulkanContext::GetCurrentDevice()->GetCommandBuffer(true, true);
-
-
-        vkCmdBindPipeline(computeCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_Pipeline);
+        vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_Pipeline);
         for (uint32_t i = 0; i < setCount; i++)
         {
-            vkCmdBindDescriptorSets(computeCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout, 0, 1, &sets[i], 0, 0);
-            vkCmdDispatch(computeCommandBuffer, groupCountX, groupCountY, groupCountZ);
+            vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout, 0, 1, &sets[i], 0, 0);
+            vkCmdDispatch(cmdBuf, groupCountX, groupCountY, groupCountZ);
         }
-
-        vkEndCommandBuffer(computeCommandBuffer);
-        if (!s_ComputeFence)
-        {
-            VkFenceCreateInfo fenceCreateInfo{};
-            fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-            fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-            VK_CHECK_RESULT(vkCreateFence(device, &fenceCreateInfo, nullptr, &s_ComputeFence));
-        }
-        vkWaitForFences(device, 1, &s_ComputeFence, VK_TRUE, UINT64_MAX);
-        vkResetFences(device, 1, &s_ComputeFence);
-
-        VkSubmitInfo computeSubmitInfo{};
-        computeSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        computeSubmitInfo.commandBufferCount = 1;
-        computeSubmitInfo.pCommandBuffers = &computeCommandBuffer;
-        VK_CHECK_RESULT(vkQueueSubmit(computeQueue, 1, &computeSubmitInfo, s_ComputeFence));
-        
-        vkWaitForFences(device, 1, &s_ComputeFence, VK_TRUE, UINT64_MAX);
-        
     }
 
 #pragma endregion

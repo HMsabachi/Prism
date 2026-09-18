@@ -117,7 +117,7 @@ namespace Prism
         int toCubeKernel = s_EnvironmentShader->FindKernel("CSEquirectToCube");
         s_EnvironmentShader->SetTexture2D(toCubeKernel, "u_EquirectangularTex", envEquirect->GetImage());
         s_EnvironmentShader->SetImageCube(toCubeKernel, "o_OutputCube", envUnfiltered->GetImage());
-        s_EnvironmentShader->Dispatch(toCubeKernel, cubemapSize / 32, cubemapSize / 32, 6);
+        s_EnvironmentShader->Dispatch(toCubeKernel, cubemapSize / 32, cubemapSize / 32, 6, true);
         envUnfiltered->GetImage()->GenerateMipMap();
 
         Ref<TextureCube> envFiltered = TextureCube::Create(ImageFormat::RGBA32F, cubemapSize, cubemapSize);
@@ -134,14 +134,14 @@ namespace Prism
             float roughness = level * deltaRoughness;
             mipFilterUBO->SetData(&roughness, sizeof(float));
             s_EnvironmentShader->SetUniformBuffer(mipFilter, "MipFilterParams", mipFilterUBO);
-            s_EnvironmentShader->Dispatch(mipFilter, numGroups, numGroups, 6);
+            s_EnvironmentShader->Dispatch(mipFilter, numGroups, numGroups, 6, true);
         }
 
         Ref<TextureCube> irradianceMap = TextureCube::Create(ImageFormat::RGBA32F, irradianceMapSize, irradianceMapSize);
         int irradiance = s_EnvironmentShader->FindKernel("CSIrradiance");
         s_EnvironmentShader->SetTextureCube(irradiance, "u_InputCubeMap", envFiltered->GetImage());
         s_EnvironmentShader->SetImageCube(irradiance, "o_OutputCube", irradianceMap->GetImage());
-        s_EnvironmentShader->Dispatch(irradiance, irradianceMapSize / 32, irradianceMapSize / 32, 6);
+        s_EnvironmentShader->Dispatch(irradiance, irradianceMapSize / 32, irradianceMapSize / 32, 6, true);
         irradianceMap->GetImage()->GenerateMipMap();
 
         return { envFiltered, irradianceMap };
@@ -164,7 +164,7 @@ namespace Prism
 
         s_PreethamSkyShader->SetImageCube(preethamKernel, "o_CubeMap", envUnfiltered->GetImage());
         s_PreethamSkyShader->SetUniformBuffer(preethamKernel, "PreethamParams", preethamUBO);
-        s_PreethamSkyShader->Dispatch(preethamKernel, cubemapSize / 32, cubemapSize / 32, 6);
+        s_PreethamSkyShader->Dispatch(preethamKernel, cubemapSize / 32, cubemapSize / 32, 6, true);
         envUnfiltered->GetImage()->GenerateMipMap();
 
         return envUnfiltered;
