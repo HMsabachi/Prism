@@ -11,25 +11,36 @@ namespace Example
     {
         List<Material> materials = new List<Material>();
         UInt32[] data = new UInt32[128];
-        public ComputeShader computeShader;
-        public PrismShader shader;
+        public ComputeShader ComputeShader;
+        public PrismShader Shader;
+        public MeshRendererComponent rendererComponent;
+
+
+        private readonly float[] m_Input = { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f };
+        private ComputeShader m_SquareShader;
+        private ShaderStorageBuffer m_Buffer;
+        private ShaderStorageBufferReadback? m_Request;
+        private uint m_Frame;
+        private bool m_Dispatched;
+
         public void OnCreate()
         {
             // Test: PrismShader
+            rendererComponent = GetComponent<MeshRendererComponent>();
             PrismShader shader;
             ComputeShader computeShader;
-            if (this.shader != null)
+            if (Shader != null)
             {
-                shader = this.shader;
+                shader = Shader;
             }
             else
             {
                 shader = PrismShader.GetShader("Standard/PrismPBR");
                 Log.Warn("Shader is not valid, using default shader");
             }
-            if (this.computeShader != null)
+            if (this.ComputeShader != null)
             {
-                computeShader = this.computeShader;
+                computeShader = this.ComputeShader;
             }
             else
             {
@@ -58,15 +69,54 @@ namespace Example
             image = texture.GetImage();
             Log.Trace($"Texture2D Image2D: {image.Width}x{image.Height}, Format: {image.Format}, Samples: {image.Samples}");
             Log.Trace($"ComputeShader: {computeShader.Name}");
+
+            // 平方测试
+            m_SquareShader = ComputeShader.Create("Assets/Shaders/Test.ComputeShader");
+            m_Buffer = ShaderStorageBuffer.Create((uint)(sizeof(float) * m_Input.Length), BufferUsage.Dynamic);
+            m_Buffer.SetData(m_Input);
+            Log.Info($"SquareTest: input  = [{string.Join(", ", m_Input)}], buffer = {m_Buffer.Size} bytes");
+
         }
 
         public void OnUpdate()
         {
-
+            if (!m_Dispatched)
+            {
+                int kernel = m_SquareShader.FindKernel("CSSquare");
+                m_SquareShader.SetBuffer(kernel, "u_Data", m_Buffer);
+                m_SquareShader.Dispatch(kernel, (uint)((m_Input.Length + 63) / 64), 1, 1);
+                m_Request = m_Buffer.RequestReadback();
+                m_Dispatched = true;
+                return;
+            }
+            if (m_Request == null) return;
+            m_Frame++;
+            Log.Info($"SquareTest: frame {m_Frame} dispatched, IsDone = {m_Request.IsDone}, size = {m_Request.Size}");
+            if (!m_Request.IsDone)
+            {
+                Log.Info($"SquareTest: frame {m_Frame} waiting for readback...");
+                return;
+            }
+            float[] result = new float[m_Input.Length];
+            m_Request.GetData(result);
+            Log.Info($"SquareTest: output = [{string.Join(", ", result)}] at frame {m_Frame}");
+            m_Request = null;
         }
 
         public void OnFixedUpdate()
         {
+            if (Input.IsKeyPressed(KeyCode.R))
+            {
+                Material material = rendererComponent.Material;
+
+                material.SetTexture2D("u_AlbedoTexture", Texture2D.Create(10, 10));
+                material.SetKeyword("ALBEDO_MAP", true);
+            }
+            if (Input.IsKeyPressed(KeyCode.T))
+            {
+                Material material = rendererComponent.Material;
+                material.SetKeyword("ALBEDO_MAP", false);
+            }
         }
 
  

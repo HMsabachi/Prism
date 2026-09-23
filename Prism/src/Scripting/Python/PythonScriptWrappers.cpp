@@ -514,6 +514,47 @@ namespace Prism::PythonScript
         Ref<UniformBuffer> GetUniformBuffer() const { return m_Ref.As<UniformBuffer>(); }
     };
 
+    class PythonShaderStorageBufferReadback : public PythonRefCounted
+    {
+    public:
+        PythonShaderStorageBufferReadback() = default;
+        PythonShaderStorageBufferReadback(Ref<ShaderStorageBufferReadback> request) : PythonRefCounted(std::move(request)) {}
+        virtual std::string __Repr__() override
+        {
+            Ref<ShaderStorageBufferReadback> request = GetReadback();
+            if (request)
+                return fmt::format(" <ShaderStorageBufferReadback Handle = {} Size = {}>", (uint64_t)request.Raw(), request->GetSize());
+            return fmt::format(" <ShaderStorageBufferReadback Handle = {}>", (uint64_t)m_Ref.Raw());
+        }
+        bool IsDone() const
+        {
+            Ref<ShaderStorageBufferReadback> request = GetReadback();
+            return request ? request->IsDone() : false;
+        }
+        uint32_t GetSize() const
+        {
+            Ref<ShaderStorageBufferReadback> request = GetReadback();
+            return request ? (uint32_t)request->GetSize() : 0;
+        }
+        void GetData(const py::object& data)
+        {
+            Ref<ShaderStorageBufferReadback> request = GetReadback();
+            if (!request)
+                throw std::runtime_error("ShaderStorageBufferReadback.GetData: invalid request!");
+            if (!request->IsDone())
+                throw std::runtime_error("ShaderStorageBufferReadback.GetData: readback is not done yet!");
+            PythonBufferView view(data);
+            if (!view.Valid)
+                throw std::runtime_error("ShaderStorageBufferReadback.GetData: data must support the buffer protocol!");
+            if (view.Size() < request->GetSize())
+                throw std::runtime_error(fmt::format("ShaderStorageBufferReadback.GetData: data needs at least {} bytes, got {}!"
+                    , request->GetSize(), view.Size()));
+            request->GetData(view.MutableData());
+        }
+    public:
+        Ref<ShaderStorageBufferReadback> GetReadback() const { return m_Ref.As<ShaderStorageBufferReadback>(); }
+    };
+
     class PythonShaderStorageBuffer : public PythonRefCounted
     {
     public:
@@ -543,18 +584,16 @@ namespace Prism::PythonScript
                     , offset, offset + view.Size(), buffer->GetSize()));
             buffer->SetData(view.Data(), view.Size(), offset);
         }
-        void GetData(const py::object& data, uint32_t offset, bool sync)
+        PythonShaderStorageBufferReadback RequestReadback(uint32_t offset, uint32_t size)
         {
             Ref<ShaderStorageBuffer> buffer = GetShaderStorageBuffer();
             if (!buffer)
-                throw std::runtime_error("ShaderStorageBuffer.GetData: invalid buffer!");
-            PythonBufferView view(data);
-            if (!view.Valid)
-                throw std::runtime_error("ShaderStorageBuffer.GetData: data must support the buffer protocol!");
-            if ((uint64_t)offset + view.Size() > buffer->GetSize())
-                throw std::runtime_error(fmt::format("ShaderStorageBuffer.GetData: read range [{}, {}) exceeds buffer size {}!"
-                    , offset, offset + view.Size(), buffer->GetSize()));
-            buffer->GetData(view.MutableData(), view.Size(), offset, sync);
+                throw std::runtime_error("ShaderStorageBuffer.RequestReadback: invalid buffer!");
+            Ref<ShaderStorageBufferReadback> request = buffer->RequestReadback(offset, size);
+            if (!request)
+                throw std::runtime_error(fmt::format("ShaderStorageBuffer.RequestReadback: invalid range offset = {}, size = {} for buffer size {}!"
+                    , offset, size, buffer->GetSize()));
+            return PythonShaderStorageBufferReadback(std::move(request));
         }
         uint32_t GetSize() const
         {
@@ -1535,12 +1574,19 @@ PYBIND11_MODULE(PrismEngine, m)
         .def_static("Create", &PythonUniformBuffer::Create)
         .def("__repr__", &PythonUniformBuffer::__Repr__)
         .def("SetData", &PythonUniformBuffer::SetData, py::arg("data"), py::arg("offset") = 0);
+    py::class_<PythonShaderStorageBufferReadback, PythonRefCounted>(m, "ShaderStorageBufferReadback")
+        .def(py::init<>())
+        .def("__repr__", &PythonShaderStorageBufferReadback::__Repr__)
+        .def("IsDone", &PythonShaderStorageBufferReadback::IsDone)
+        .def("GetSize", &PythonShaderStorageBufferReadback::GetSize)
+        .def("GetData", &PythonShaderStorageBufferReadback::GetData, py::arg("data"));
+
     py::class_<PythonShaderStorageBuffer, PythonRefCounted>(m, "ShaderStorageBuffer")
         .def(py::init<>())
         .def_static("Create", &PythonShaderStorageBuffer::Create, py::arg("size"), py::arg("usage") = (uint32_t)BufferUsage::Dynamic)
         .def("__repr__", &PythonShaderStorageBuffer::__Repr__)
         .def("SetData", &PythonShaderStorageBuffer::SetData, py::arg("data"), py::arg("offset") = 0)
-        .def("GetData", &PythonShaderStorageBuffer::GetData, py::arg("data"), py::arg("offset") = 0, py::arg("sync") = false)
+        .def("RequestReadback", &PythonShaderStorageBuffer::RequestReadback, py::arg("offset") = 0, py::arg("size") = 0)
         .def("GetSize", &PythonShaderStorageBuffer::GetSize);
     py::class_<PythonComputeShader, PythonAsset>(m, "ComputeShader")
         .def(py::init<>())

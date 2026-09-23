@@ -1,0 +1,16 @@
+#version 450
+
+#pragma kernel CSSquare
+
+layout(std430, binding = 0) buffer SquareData
+{
+    float u_Values[];
+} u_Data;
+
+[numthreads(64, 1, 1)]
+void CSSquare() {
+    uint index = gl_GlobalInvocationID.x;
+    if (index >= u_Data.u_Values.length()) return;
+
+    u_Data.u_Values[index] = u_Data.u_Values[index] * u_Data.u_Values[index];
+}

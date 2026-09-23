@@ -9,6 +9,33 @@ namespace Prism
         Dynamic = 2,
     };
 
+    public class ShaderStorageBufferReadback : RefCounted
+    {
+        internal ShaderStorageBufferReadback(IntPtr nativePtr) : base(nativePtr) { }
+        public bool IsDone
+        {
+            get { unsafe { return InternalCalls.Prism_ShaderStorageBufferReadback_IsDone(m_NativePtr); } }
+        }
+        public UInt32 Size
+        {
+            get { unsafe { return InternalCalls.Prism_ShaderStorageBufferReadback_GetSize(m_NativePtr); } }
+        }
+        public unsafe void GetData<T>(in T[] data) where T : unmanaged
+        {
+            fixed (T* ptr = data)
+            {
+                InternalCalls.Prism_ShaderStorageBufferReadback_GetData(m_NativePtr, (IntPtr)ptr);
+            }
+        }
+        public unsafe void GetData<T>(ref T data) where T : unmanaged
+        {
+            fixed (T* ptr = &data)
+            {
+                InternalCalls.Prism_ShaderStorageBufferReadback_GetData(m_NativePtr, (IntPtr)ptr);
+            }
+        }
+    }
+
     public class ShaderStorageBuffer : RefCounted
     {
         internal ShaderStorageBuffer(IntPtr nativePtr) : base(nativePtr) { }
@@ -38,20 +65,11 @@ namespace Prism
             }
         }
 
-        public unsafe void GetData<T>(in T[] data, UInt32 offset = 0, bool sync = false) where T : unmanaged
+        public ShaderStorageBufferReadback RequestReadback(UInt32 offset = 0, UInt32 size = 0)
         {
-            fixed (T* ptr = data)
-            {
-                InternalCalls.Prism_ShaderStorageBuffer_GetData(m_NativePtr, (IntPtr)ptr, (UInt32)(sizeof(T) * data.Length), offset, sync);
-            }
-        }
-
-        public unsafe void GetData<T>(ref T data, UInt32 offset = 0, bool sync = false) where T : unmanaged
-        {
-            fixed (T* ptr = &data)
-            {
-                InternalCalls.Prism_ShaderStorageBuffer_GetData(m_NativePtr, (IntPtr)ptr, (UInt32)sizeof(T), offset, sync);
-            }
+            IntPtr nativePtr = IntPtr.Zero;
+            unsafe { nativePtr = InternalCalls.Prism_ShaderStorageBuffer_RequestReadback(m_NativePtr, offset, size); }
+            return new ShaderStorageBufferReadback(nativePtr);
         }
     }
 }

@@ -79,8 +79,11 @@ namespace Prism
         // ShaderStorageBuffer
         internal static delegate* unmanaged[Cdecl]<UInt32, UInt32, IntPtr> Prism_ShaderStorageBuffer_Constructor;
         internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr, UInt32, UInt32, void> Prism_ShaderStorageBuffer_SetData;
-        internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr, UInt32, UInt32, Bool32, void> Prism_ShaderStorageBuffer_GetData;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32, UInt32, IntPtr> Prism_ShaderStorageBuffer_RequestReadback;
         internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32> Prism_ShaderStorageBuffer_GetSize;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, Bool32> Prism_ShaderStorageBufferReadback_IsDone;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32> Prism_ShaderStorageBufferReadback_GetSize;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr, void> Prism_ShaderStorageBufferReadback_GetData;
         // ComputeShader
         internal static delegate* unmanaged[Cdecl]<NativeString, IntPtr> Prism_ComputeShader_Constructor;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString*, void> Prism_ComputeShader_GetName;

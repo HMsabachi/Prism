@@ -20,6 +20,7 @@ namespace Prism
     class PrismShader;
     class UniformBuffer;
     class ShaderStorageBuffer;
+    class ShaderStorageBufferReadback;
     class ComputeShader;
     class Material;
     class Image;
@@ -172,8 +173,11 @@ namespace Prism
         // ShaderStorageBuffer
         ShaderStorageBuffer* Prism_ShaderStorageBuffer_Constructor(uint32_t size, uint32_t usage);
         void Prism_ShaderStorageBuffer_SetData(ShaderStorageBuffer* _this, void* data, uint32_t size, uint32_t offset);
-        void Prism_ShaderStorageBuffer_GetData(ShaderStorageBuffer* _this, void* data, uint32_t size, uint32_t offset, Rolky::Bool32 sync);
+        ShaderStorageBufferReadback* Prism_ShaderStorageBuffer_RequestReadback(ShaderStorageBuffer* _this, uint32_t offset, uint32_t size);
         uint32_t Prism_ShaderStorageBuffer_GetSize(ShaderStorageBuffer* _this);
+        Rolky::Bool32 Prism_ShaderStorageBufferReadback_IsDone(ShaderStorageBufferReadback* _this);
+        uint32_t Prism_ShaderStorageBufferReadback_GetSize(ShaderStorageBufferReadback* _this);
+        void Prism_ShaderStorageBufferReadback_GetData(ShaderStorageBufferReadback* _this, void* data);
         // ComputeShader
         ComputeShader* Prism_ComputeShader_Constructor(Rolky::String filePath);
         void Prism_ComputeShader_GetName(ComputeShader* _this, Rolky::String* outName);

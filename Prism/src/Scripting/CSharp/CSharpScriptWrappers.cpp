@@ -687,13 +687,29 @@ namespace Prism {
         {
             _this->SetData(data, size, offset);
         }
-        void Prism_ShaderStorageBuffer_GetData(ShaderStorageBuffer* _this, void* data, uint32_t size, uint32_t offset, Rolky::Bool32 sync)
+        ShaderStorageBufferReadback* Prism_ShaderStorageBuffer_RequestReadback(ShaderStorageBuffer* _this, uint32_t offset, uint32_t size)
         {
-            _this->GetData(data, size, offset, sync);
+            Ref<ShaderStorageBufferReadback> result = _this->RequestReadback(offset, size);
+            if (!result)
+                return nullptr;
+            result->IncRefCount();
+            return result.Raw();
         }
         uint32_t Prism_ShaderStorageBuffer_GetSize(ShaderStorageBuffer* _this)
         {
             return (uint32_t)_this->GetSize();
+        }
+        Rolky::Bool32 Prism_ShaderStorageBufferReadback_IsDone(ShaderStorageBufferReadback* _this)
+        {
+            return _this->IsDone();
+        }
+        uint32_t Prism_ShaderStorageBufferReadback_GetSize(ShaderStorageBufferReadback* _this)
+        {
+            return (uint32_t)_this->GetSize();
+        }
+        void Prism_ShaderStorageBufferReadback_GetData(ShaderStorageBufferReadback* _this, void* data)
+        {
+            _this->GetData(data);
         }
 #pragma endregion
 #pragma region ComputeShader

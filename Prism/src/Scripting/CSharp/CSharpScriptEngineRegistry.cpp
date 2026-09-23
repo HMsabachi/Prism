@@ -176,8 +176,11 @@ namespace Prism
         // ShaderStorageBuffer
         PR_ADD_INTERNAL_CALL(Prism_ShaderStorageBuffer_Constructor);
         PR_ADD_INTERNAL_CALL(Prism_ShaderStorageBuffer_SetData);
-        PR_ADD_INTERNAL_CALL(Prism_ShaderStorageBuffer_GetData);
+        PR_ADD_INTERNAL_CALL(Prism_ShaderStorageBuffer_RequestReadback);
         PR_ADD_INTERNAL_CALL(Prism_ShaderStorageBuffer_GetSize);
+        PR_ADD_INTERNAL_CALL(Prism_ShaderStorageBufferReadback_IsDone);
+        PR_ADD_INTERNAL_CALL(Prism_ShaderStorageBufferReadback_GetSize);
+        PR_ADD_INTERNAL_CALL(Prism_ShaderStorageBufferReadback_GetData);
         // ComputeShader
         PR_ADD_INTERNAL_CALL(Prism_ComputeShader_Constructor);
         PR_ADD_INTERNAL_CALL(Prism_ComputeShader_GetName);
