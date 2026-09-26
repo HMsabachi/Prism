@@ -7,7 +7,6 @@
 #include "Prism/Renderer/Shader/PrismShader.h"
 
 #include <PrismShaderCore/Log.h>
-#include <PrismShaderCore/Generator/IRGenerator.h>
 
 namespace Prism
 {
