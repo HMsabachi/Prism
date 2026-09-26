@@ -1016,6 +1016,7 @@ namespace Prism {
                                         {
                                             auto fieldType = field.GetManagedType();
                                             void* assetPtr = (void*)asset.Raw();
+                                            asset->IncRefCount();
                                             auto object = fieldType->CreateInstance(assetPtr);
                                             field.SetValue(object);
                                         }
@@ -1032,6 +1033,7 @@ namespace Prism {
                                         {
                                             auto fieldType = field.GetManagedType();
                                             void* assetPtr = (void*)asset.Raw();
+                                            asset->IncRefCount();
                                             auto object = fieldType->CreateInstance(assetPtr);
                                             field.SetValue(object);
                                         }
@@ -1048,6 +1050,7 @@ namespace Prism {
                                         {
                                             auto fieldType = field.GetManagedType();
                                             void* assetPtr = (void*)asset.Raw();
+                                            asset->IncRefCount();
                                             auto object = fieldType->CreateInstance(assetPtr);
                                             field.SetValue(object);
                                         }
@@ -1064,6 +1067,7 @@ namespace Prism {
                                         {
                                             auto fieldType = field.GetManagedType();
                                             void* assetPtr = (void*)asset.Raw();
+                                            asset->IncRefCount();
                                             auto object = fieldType->CreateInstance(assetPtr);
                                             field.SetValue(object);
                                         }

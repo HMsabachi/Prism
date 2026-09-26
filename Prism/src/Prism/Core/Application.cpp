@@ -154,7 +154,7 @@ namespace Prism
             m_RenderThread.BlockUntilRenderComplete();
         }
         PR_PROFILE_PLOT("App.EventQueue", (int64_t)m_EventQueue.size());
-        ProcessEvents();
+        m_Window->ProcessEvents();
         m_RenderThread.NextFrame();
         m_RenderThread.Kick();
         
@@ -165,6 +165,7 @@ namespace Prism
             Time::Update();
             Renderer::Submit([this]() { m_Window->GetRenderContext()->BeginFrame(); });
             rendererAPI->BeginFrame();
+            ProcessEvents();
             for (Layer* layer : m_LayerStack)
                 layer->OnUpdate();
             Application* app = this;
@@ -181,7 +182,6 @@ namespace Prism
     void Application::ProcessEvents()
     {
         PR_PROFILE_FUNCTION();
-        m_Window->ProcessEvents();
         std::deque<std::function<void()>> events;
         {
             std::scoped_lock<std::mutex> lock(m_EventQueueMutex);
@@ -282,13 +282,6 @@ namespace Prism
         Renderer::Submit([&window,width, height]() {
             window->GetRenderContext()->OnResize(width, height);
         });
-
-        //auto& fbs = FramebufferPool::GetGlobal()->GetAll();
-        //for (auto& fb : fbs)
-        //{
-        //    if (!fb->GetSpecification().NoResize)
-        //        fb->Resize(width, height);
-        //}
 
         m_Minimized = false;
 

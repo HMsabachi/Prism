@@ -123,6 +123,7 @@ namespace Prism
                     auto fieldType = field.GetManagedType();
                     void* assetPtr = field.GetValue<void*>();
                     if (!assetPtr) continue;
+                    ((RefCounted*)assetPtr)->IncRefCount();
                     auto object = fieldType->CreateInstance(assetPtr);
                     instance.SetFieldValue(field.GetName(), object);
                 }

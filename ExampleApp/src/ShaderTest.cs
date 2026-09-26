@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -16,10 +17,11 @@ namespace Example
         public MeshRendererComponent rendererComponent;
 
 
-        private readonly float[] m_Input = { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f };
+        private readonly float[] m_Input = new float[100];
         private ComputeShader m_SquareShader;
         private ShaderStorageBuffer m_Buffer;
         private ShaderStorageBufferReadback? m_Request;
+        private List<ShaderStorageBufferReadback> m_Readbacks = new List<ShaderStorageBufferReadback>();
         private uint m_Frame;
         private bool m_Dispatched;
 
@@ -71,24 +73,20 @@ namespace Example
             Log.Trace($"ComputeShader: {computeShader.Name}");
 
             // 平方测试
+            for (UInt32 i = 0; i < m_Input.Length; i++)
+                m_Input[i] = (float)i;
             m_SquareShader = ComputeShader.Create("Assets/Shaders/Test.ComputeShader");
             m_Buffer = ShaderStorageBuffer.Create((uint)(sizeof(float) * m_Input.Length), BufferUsage.Dynamic);
             m_Buffer.SetData(m_Input);
             Log.Info($"SquareTest: input  = [{string.Join(", ", m_Input)}], buffer = {m_Buffer.Size} bytes");
-
+            int kernel = m_SquareShader.FindKernel("CSSquare");
+            m_SquareShader.SetBuffer(kernel, "u_Data", m_Buffer);
+            m_SquareShader.Dispatch(kernel, (uint)((m_Input.Length + 63) / 64), 1, 1);
+            m_Request = m_Buffer.RequestReadback();
         }
 
         public void OnUpdate()
         {
-            if (!m_Dispatched)
-            {
-                int kernel = m_SquareShader.FindKernel("CSSquare");
-                m_SquareShader.SetBuffer(kernel, "u_Data", m_Buffer);
-                m_SquareShader.Dispatch(kernel, (uint)((m_Input.Length + 63) / 64), 1, 1);
-                m_Request = m_Buffer.RequestReadback();
-                m_Dispatched = true;
-                return;
-            }
             if (m_Request == null) return;
             m_Frame++;
             Log.Info($"SquareTest: frame {m_Frame} dispatched, IsDone = {m_Request.IsDone}, size = {m_Request.Size}");
