@@ -71,37 +71,10 @@ namespace Example
             image = texture.GetImage();
             Log.Trace($"Texture2D Image2D: {image.Width}x{image.Height}, Format: {image.Format}, Samples: {image.Samples}");
             Log.Trace($"ComputeShader: {computeShader.Name}");
-
-            // 平方测试
-            for (UInt32 i = 0; i < m_Input.Length; i++)
-                m_Input[i] = (float)i;
-            m_SquareShader = ComputeShader.Create("Assets/Shaders/Test.ComputeShader");
-            m_Buffer = ShaderStorageBuffer.Create((uint)(sizeof(float) * m_Input.Length), BufferUsage.Dynamic);
-            m_Buffer.SetData(m_Input);
-            Log.Info($"SquareTest: input  = [{string.Join(", ", m_Input)}], buffer = {m_Buffer.Size} bytes");
-            int kernel = m_SquareShader.FindKernel("CSSquare");
-            m_SquareShader.SetFloat(kernel, "u_Scale", 2.0f);
-            m_SquareShader.SetVector3(kernel, "u_Offset", new Vector3(1.0f, 0.0f, 0.0f));
-            m_SquareShader.SetInt(kernel, "u_Add", 3);
-            m_SquareShader.SetBuffer(kernel, "u_Data", m_Buffer);
-            m_SquareShader.Dispatch(kernel, (uint)((m_Input.Length + 63) / 64), 1, 1);
-            m_Request = m_Buffer.RequestReadback();
         }
 
         public void OnUpdate()
         {
-            if (m_Request == null) return;
-            m_Frame++;
-            Log.Info($"SquareTest: frame {m_Frame} dispatched, IsDone = {m_Request.IsDone}, size = {m_Request.Size}");
-            if (!m_Request.IsDone)
-            {
-                Log.Info($"SquareTest: frame {m_Frame} waiting for readback...");
-                return;
-            }
-            float[] result = new float[m_Input.Length];
-            m_Request.GetData(result);
-            Log.Info($"SquareTest: output = [{string.Join(", ", result)}] at frame {m_Frame}");
-            m_Request = null;
         }
 
         public void OnFixedUpdate()

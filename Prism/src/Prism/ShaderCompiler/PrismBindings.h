@@ -21,6 +21,7 @@ namespace Prism::Config
     constexpr uint32_t GL_UBO_BASE_FRAME = 0;
     constexpr uint32_t GL_UBO_BASE_MATERIAL = 20;
     constexpr uint32_t GL_UBO_BASE_RENDER_PASS_NEW = 24;
+    constexpr uint32_t GL_UBO_BASE_COMPUTE = 32;
 
     //---- SSBO 空间(GL_SHADER_STORAGE_BUFFER, 84 个)----
     constexpr uint32_t GL_SSBO_BASE_FRAME = 0;

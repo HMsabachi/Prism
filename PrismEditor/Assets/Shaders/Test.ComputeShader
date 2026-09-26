@@ -1,6 +1,7 @@
 #version 450
 
 #pragma kernel CSSquare
+#pragma kernel CSAdd
 
 layout(std430, binding = 0) buffer SquareData
 {
@@ -18,4 +19,11 @@ void CSSquare() {
 
     u_Data.u_Values[index] = u_Data.u_Values[index] * u_Data.u_Values[index] * u_Scale
         + u_Offset.x + float(u_Add);
+}
+
+[numthreads(64, 1, 1)]
+void CSAdd() {
+    uint index = gl_GlobalInvocationID.x;
+    if (index >= u_Data.u_Values.length()) return;
+    u_Data.u_Values[index] = u_Data.u_Values[index] + float(u_Add);
 }

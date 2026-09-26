@@ -3,6 +3,9 @@
 #include "Prism/Renderer/ComputeShader/ComputeShader.h"
 #include "VulkanDescriptorSet.h"
 
+#include <array>
+#include <cstdint>
+
 namespace Prism
 {
     class VulkanShader;
@@ -61,7 +64,13 @@ namespace Prism
             uint32_t GroupSizeY = 1;
             uint32_t GroupSizeZ = 1;
             Ref<VulkanShader> Shader;
-            VulkanDescriptorSet Set;
+
+            // 环形池容量:同一 kernel 一帧内超过该次数就会复用池位,而每帧的 VkDescriptorSet 是同一个,
+            // 复用即代表重写已被本帧命令缓冲绑定的描述符。SSR 的 PreConvolution 一帧要 1 + 2*(mipCount-1) 次
+            // (1080p 半分辨率 = 21 次),所以取 32。
+            static constexpr uint32_t MaxDispatchesPerFrame = 32;
+            std::array<VulkanDescriptorSet, MaxDispatchesPerFrame> Sets;
+            uint32_t SetCursor = 0;
 
             // 本 kernel 的 push constant 值（按 m_Compiled.Uniforms 的 Offset 排布）
             std::vector<uint8_t> UniformData;

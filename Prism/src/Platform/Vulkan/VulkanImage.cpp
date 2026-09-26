@@ -83,7 +83,7 @@ namespace Prism
             aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
 
         uint32_t mipCount = !m_Mips.empty() ? (uint32_t)m_Mips.size()
-            : m_ImageData ? Utils::CalculateMipCount(m_Specification.Width, m_Specification.Height) : 1;
+            : m_ImageData ? Utils::CalculateMipCount(m_Specification.Width, m_Specification.Height) : m_Specification.Mips;
 
         VkImageUsageFlags usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
         if (Utils::IsDepthFormat(m_Specification.Format))
@@ -282,8 +282,11 @@ namespace Prism
         {
             VkCommandBuffer layoutCmd = device->GetCommandBuffer(true);
 
+            VkImageSubresourceRange allMips = subresourceRange;
+            allMips.levelCount = mipCount;
+
             InsertFinalLayoutBarrier(layoutCmd, 0, VK_IMAGE_LAYOUT_UNDEFINED,
-                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, subresourceRange);
+                VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, allMips);
 
             device->FlushCommandBuffer(layoutCmd);
         }
@@ -324,15 +327,19 @@ namespace Prism
         VmaAllocation allocation = m_Info.MemoryAlloc;
         auto storageViews = std::move(m_StorageViews);
         m_StorageViews.clear();
+        VkImageView depthOnlyView = m_DepthOnlyView;
+        m_DepthOnlyView = VK_NULL_HANDLE;
         m_Info = {};
 
-        Renderer::SubmitResourceFree([image, imageView, sampler, allocation, storageViews]()
+        Renderer::SubmitResourceFree([image, imageView, sampler, allocation, storageViews, depthOnlyView]()
         {
             VkDevice device = VulkanContext::GetCurrentDevice()->GetVulkanDevice();
             if (sampler)
                 vkDestroySampler(device, sampler, nullptr);
             if (imageView)
                 vkDestroyImageView(device, imageView, nullptr);
+            if (depthOnlyView)
+                vkDestroyImageView(device, depthOnlyView, nullptr);
             for (auto& [mip, view] : storageViews)
                 vkDestroyImageView(device, view, nullptr);
             if (image)
@@ -416,8 +423,31 @@ namespace Prism
         else
             m_DescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-        m_DescriptorImageInfo.imageView = m_Info.ImageView;
+        m_DescriptorImageInfo.imageView = Utils::IsDepthFormat(m_Specification.Format) ? GetOrCreateDepthOnlyView() : m_Info.ImageView;
         m_DescriptorImageInfo.sampler = m_Info.Sampler;
+    }
+
+    VkImageView VulkanImage2D::GetOrCreateDepthOnlyView()
+    {
+        if (m_Specification.Format != ImageFormat::DEPTH24STENCIL8 && m_Specification.Format != ImageFormat::DEPTH32FSTENCIL8)
+            return m_Info.ImageView;
+
+        if (m_DepthOnlyView)
+            return m_DepthOnlyView;
+
+        VkImageViewCreateInfo view{};
+        view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        view.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        view.format = Utils::VulkanImageFormat(m_Specification.Format);
+        view.components = { VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G, VK_COMPONENT_SWIZZLE_B, VK_COMPONENT_SWIZZLE_A };
+        view.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+        view.subresourceRange.baseMipLevel = 0;
+        view.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+        view.subresourceRange.baseArrayLayer = 0;
+        view.subresourceRange.layerCount = 1;
+        view.image = m_Info.Image;
+        VK_CHECK_RESULT(vkCreateImageView(VulkanContext::GetCurrentDevice()->GetVulkanDevice(), &view, nullptr, &m_DepthOnlyView));
+        return m_DepthOnlyView;
     }
 
     VkImageView VulkanImage2D::GetOrCreateStorageImageView(uint32_t mip)

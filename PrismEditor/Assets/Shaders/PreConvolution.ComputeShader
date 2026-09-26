@@ -1,0 +1,65 @@
+#version 450
+
+#pragma kernel CSPreConvolution
+
+#define MODE_COPY 0
+#define MODE_HORIZONTAL_GAUSSIAN 1
+#define MODE_VERTICAL_GAUSSIAN 2
+
+#define WEIGHT0 0.1749379741597446
+#define WEIGHT1 0.16556904917484133
+#define WEIGHT2 0.14036678002195038
+#define WEIGHT3 0.106595183723336
+
+#define LOCAL_SIZE 16
+
+layout(binding = 0, rgba32f) restrict writeonly uniform image2D o_Image;
+layout(binding = 1) uniform sampler2D u_Input;
+
+uniform int u_PrevLod;
+uniform int u_Mode;
+uniform vec2 u_ImageSize;
+
+vec4 GaussianHorizontal(vec2 uv, vec2 pixelSize)
+{
+    const float lod = float(u_PrevLod);
+    vec4 color = textureLod(u_Input, uv + pixelSize.x * vec2(-3.0, 0.0), lod) * WEIGHT3;
+    color += textureLod(u_Input, uv + pixelSize.x * vec2(-2.0, 0.0), lod) * WEIGHT2;
+    color += textureLod(u_Input, uv + pixelSize.x * vec2(-1.0, 0.0), lod) * WEIGHT1;
+    color += textureLod(u_Input, uv, lod) * WEIGHT0;
+    color += textureLod(u_Input, uv + pixelSize.x * vec2(1.0, 0.0), lod) * WEIGHT1;
+    color += textureLod(u_Input, uv + pixelSize.x * vec2(2.0, 0.0), lod) * WEIGHT2;
+    color += textureLod(u_Input, uv + pixelSize.x * vec2(3.0, 0.0), lod) * WEIGHT3;
+    return color;
+}
+
+vec4 GaussianVertical(vec2 uv, vec2 pixelSize)
+{
+    const float lod = float(u_PrevLod + 1);
+    vec4 color = textureLod(u_Input, uv + pixelSize.y * vec2(0.0, -3.0), lod) * WEIGHT3;
+    color += textureLod(u_Input, uv + pixelSize.y * vec2(0.0, -2.0), lod) * WEIGHT2;
+    color += textureLod(u_Input, uv + pixelSize.y * vec2(0.0, -1.0), lod) * WEIGHT1;
+    color += textureLod(u_Input, uv, lod) * WEIGHT0;
+    color += textureLod(u_Input, uv + pixelSize.y * vec2(0.0, 1.0), lod) * WEIGHT1;
+    color += textureLod(u_Input, uv + pixelSize.y * vec2(0.0, 2.0), lod) * WEIGHT2;
+    color += textureLod(u_Input, uv + pixelSize.y * vec2(0.0, 3.0), lod) * WEIGHT3;
+    return color;
+}
+
+[numthreads(LOCAL_SIZE, LOCAL_SIZE, 1)]
+void CSPreConvolution()
+{
+    ivec2 invocID = ivec2(gl_GlobalInvocationID.xy);
+    vec2 pixelSize = 1.0 / u_ImageSize;
+    vec2 texCoords = vec2(invocID) * pixelSize + pixelSize * 0.5;
+
+    vec4 finalColor = vec4(0.0);
+    if (u_Mode == MODE_COPY)
+        finalColor = texture(u_Input, texCoords);
+    else if (u_Mode == MODE_HORIZONTAL_GAUSSIAN)
+        finalColor = GaussianHorizontal(texCoords, pixelSize);
+    else if (u_Mode == MODE_VERTICAL_GAUSSIAN)
+        finalColor = GaussianVertical(texCoords, pixelSize);
+
+    imageStore(o_Image, invocID, finalColor);
+}

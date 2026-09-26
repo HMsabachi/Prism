@@ -74,6 +74,7 @@ namespace Prism
 
     private:
         void ExecuteImpt(const FrameSnapshot& snapshot);
+        void CreateSSRTargets(uint32_t viewportWidth, uint32_t viewportHeight);
         void BeginFrame(const FrameSnapshot& snapshot);
         void UpdateShadowData(const FrameSnapshot& snapshot);
 
@@ -155,6 +156,41 @@ namespace Prism
         int32_t m_BloomHorizontalKernel = -1;
         int32_t m_BloomVerticalKernel = -1;
         int32_t m_BloomClearKernel = -1;
+
+        Ref<Image2D> m_HierarchicalDepthImage;
+        Ref<ComputeShader> m_HZBShader;
+        int32_t m_HZBKernel = -1;
+        glm::vec2 m_HZBUvFactor{ 1.0f };
+
+        Ref<Image2D> m_VisibilityImage;
+        Ref<ComputeShader> m_PreIntegrationShader;
+        int32_t m_PreIntegrationKernel = -1;
+        int32_t m_VisibilityClearKernel = -1;
+        int32_t m_SSRDepthMipCount = 0;
+
+        struct alignas(16) SSRCameraData
+        {
+            glm::mat4 ProjectionMatrix{ 1.0f };
+            glm::mat4 ViewMatrix{ 1.0f };
+            glm::vec2 NDCToViewMul{ 0.0f };
+            glm::vec2 NDCToViewAdd{ 0.0f };
+            glm::vec2 DepthUnpackConsts{ 0.0f };
+            glm::vec2 FullResolution{ 1.0f };
+            glm::vec2 InvFullResolution{ 1.0f };
+            glm::vec2 InvHalfResolution{ 1.0f };
+        };
+        static_assert(sizeof(SSRCameraData) == 176, "std140 layout mismatch with SSR.ComputeShader SSRCameraData");
+
+        SSRCameraData m_SSRCameraData;
+        Ref<UniformBuffer> m_SSRCameraUBO;
+
+        Ref<Image2D> m_PreConvolutedImage;
+        Ref<ComputeShader> m_PreConvolutionShader;
+        int32_t m_PreConvolutionKernel = -1;
+
+        Ref<Image2D> m_SSRImage;
+        Ref<ComputeShader> m_SSRShader;
+        int32_t m_SSRKernel = -1;
 
         Ref<Material> m_PostProcessMaterial;
         Ref<Material> m_EditorDebugMaterial;

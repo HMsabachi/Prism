@@ -56,27 +56,35 @@ namespace Prism
                     continue;
                 }
 
-                switch (descriptor.Kind)
+                for (uint32_t i = 0; i < VulkanComputeShader::Kernel::MaxDispatchesPerFrame; ++i)
                 {
-                case DK::UniformBuffer:
-                    kernel.Set.SetInput(descriptor.Binding, Ref<VulkanUniformBuffer>(nullptr));
-                    break;
-                case DK::StorageBuffer:
-                    kernel.Set.SetInput(descriptor.Binding, Ref<VulkanShaderStorageBuffer>(nullptr));
-                    break;
-                case DK::Sampler:
-                    kernel.Set.SetInput(descriptor.Binding, Ref<VulkanImage2D>(nullptr));
-                    break;
-                case DK::StorageImage:
-                    kernel.Set.SetInput(descriptor.Binding, Ref<VulkanImage2D>(nullptr), 0);
-                    break;
-                default:
-                    PR_CORE_ERROR("VulkanComputeShader '{}': 资源 '{}' 的类型当前不支持", m_Name, descriptor.Name);
-                    break;
+                    VulkanDescriptorSet& set = kernel.Sets[i];
+
+                    switch (descriptor.Kind)
+                    {
+                    case DK::UniformBuffer:
+                        set.SetInput(descriptor.Binding, Ref<VulkanUniformBuffer>(nullptr));
+                        break;
+                    case DK::StorageBuffer:
+                        set.SetInput(descriptor.Binding, Ref<VulkanShaderStorageBuffer>(nullptr));
+                        break;
+                    case DK::Sampler:
+                        set.SetInput(descriptor.Binding, Ref<VulkanImage2D>(nullptr));
+                        break;
+                    case DK::StorageImage:
+                        set.SetInput(descriptor.Binding, Ref<VulkanImage2D>(nullptr), 0);
+                        break;
+                    default:
+                        if (i == 0)
+                            PR_CORE_ERROR("VulkanComputeShader '{}': 资源 '{}' 的类型当前不支持", m_Name, descriptor.Name);
+                        break;
+                    }
                 }
             }
 
-            kernel.Set.Bake();
+            for (VulkanDescriptorSet& set : kernel.Sets)
+                set.Bake();
+
             m_Kernels.push_back(std::move(kernel));
         }
     }
@@ -136,7 +144,8 @@ namespace Prism
 
         Renderer::Submit([self, kernelIndex, binding, ubo]() mutable
         {
-            self->m_Kernels[kernelIndex].Set.SetInput(binding, ubo.As<VulkanUniformBuffer>());
+            for (VulkanDescriptorSet& set : self->m_Kernels[kernelIndex].Sets)
+                set.SetInput(binding, ubo.As<VulkanUniformBuffer>());
         });
     }
 
@@ -155,7 +164,8 @@ namespace Prism
 
         Renderer::Submit([self, kernelIndex, binding, ssbo]() mutable
         {
-            self->m_Kernels[kernelIndex].Set.SetInput(binding, ssbo.As<VulkanShaderStorageBuffer>());
+            for (VulkanDescriptorSet& set : self->m_Kernels[kernelIndex].Sets)
+                set.SetInput(binding, ssbo.As<VulkanShaderStorageBuffer>());
         });
     }
 
@@ -174,7 +184,8 @@ namespace Prism
 
         Renderer::Submit([self, kernelIndex, binding, image]() mutable
         {
-            self->m_Kernels[kernelIndex].Set.SetInput(binding, image.As<VulkanImage2D>());
+            for (VulkanDescriptorSet& set : self->m_Kernels[kernelIndex].Sets)
+                set.SetInput(binding, image.As<VulkanImage2D>());
         });
     }
 
@@ -193,7 +204,8 @@ namespace Prism
 
         Renderer::Submit([self, kernelIndex, binding, image]() mutable
         {
-            self->m_Kernels[kernelIndex].Set.SetInput(binding, image.As<VulkanImageCube>());
+            for (VulkanDescriptorSet& set : self->m_Kernels[kernelIndex].Sets)
+                set.SetInput(binding, image.As<VulkanImageCube>());
         });
     }
 
@@ -212,7 +224,8 @@ namespace Prism
 
         Renderer::Submit([self, kernelIndex, binding, level, image]() mutable
         {
-            self->m_Kernels[kernelIndex].Set.SetInput(binding, image.As<VulkanImage2D>(), level);
+            for (VulkanDescriptorSet& set : self->m_Kernels[kernelIndex].Sets)
+                set.SetInput(binding, image.As<VulkanImage2D>(), level);
         });
     }
 
@@ -231,7 +244,8 @@ namespace Prism
 
         Renderer::Submit([self, kernelIndex, binding, level, image]() mutable
         {
-            self->m_Kernels[kernelIndex].Set.SetInput(binding, image.As<VulkanImageCube>(), level);
+            for (VulkanDescriptorSet& set : self->m_Kernels[kernelIndex].Sets)
+                set.SetInput(binding, image.As<VulkanImageCube>(), level);
         });
     }
 
@@ -240,7 +254,7 @@ namespace Prism
         if (!IsLegalKernel(kernel))
             return;
 
-        if (!m_Kernels[kernel].Shader || !m_Kernels[kernel].Set.IsBaked())
+        if (!m_Kernels[kernel].Shader || !m_Kernels[kernel].Sets[0].IsBaked())
             return;
 
         Ref<VulkanComputeShader> self = this;
@@ -249,11 +263,14 @@ namespace Prism
         Renderer::Submit([self, kernelIndex, groupsX, groupsY, groupsZ, force]() mutable
         {
             Kernel& kernelInfo = self->m_Kernels[kernelIndex];
-            kernelInfo.Set.RT_Prepare();
+
+            VulkanDescriptorSet& set = kernelInfo.Sets[kernelInfo.SetCursor];
+            kernelInfo.SetCursor = (kernelInfo.SetCursor + 1) % Kernel::MaxDispatchesPerFrame;
+            set.RT_Prepare();
 
             WeakRef<VulkanComputePipeline> pipeline =
                 VulkanRenderer::GetPipelineCache().GetCompute(kernelInfo.Shader.Raw());
-            VkDescriptorSet descriptorSets[] = { kernelInfo.Set.RT_GetDescriptorSet() };
+            VkDescriptorSet descriptorSets[] = { set.RT_GetDescriptorSet() };
 
             Ref<VulkanDevice> device;
             VkCommandBuffer cmdBuf = VK_NULL_HANDLE;

@@ -8,6 +8,7 @@ Shader "PostProcess/PrismPostProcess"
         u_OutlineColor("描边颜色", Color) = (1.0, 0.5, 0.0, 1.0)
         u_OutlineWidth("描边宽度", Float) = 2.0
         u_Horizontal("水平模糊", Bool) = true
+        u_SSRIntensity("SSR 强度", Float) = 1.0
     }
 
     RenderCommand
@@ -89,6 +90,10 @@ Shader "PostProcess/PrismPostProcess"
 
                     vec3 color = texture(Prism_GeometryPassTexture, vs_Output.TexCoord).rgb;
                     color += texture(Prism_BloomTexture, vs_Output.TexCoord).rgb;
+
+                    vec4 ssr = texture(Prism_SSRTexture, vs_Output.TexCoord) * u_SSRIntensity;
+                    color = mix(color, ssr.rgb, ssr.a);
+
                     color *= u_Exposure;
 
                     vec3 mappedColor = ACESFilmic(color);

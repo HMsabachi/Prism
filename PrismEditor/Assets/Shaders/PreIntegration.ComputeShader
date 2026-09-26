@@ -1,0 +1,57 @@
+#version 450
+
+#pragma kernel CSPreIntegration
+#pragma kernel CSClear
+
+#define LOCAL_SIZE 8
+
+layout(r8, binding = 0) writeonly uniform image2D o_VisibilityImage;
+layout(binding = 1) uniform sampler2D u_VisibilityTex;
+layout(binding = 2) uniform sampler2D u_HZB;
+
+uniform vec2 u_HZBInvRes;
+uniform vec2 u_InvRes;
+uniform vec2 u_ProjectionParams;
+uniform int u_PrevLod;
+
+float LinearizeDepth(float d)
+{
+    return u_ProjectionParams.x * u_ProjectionParams.y /
+        (u_ProjectionParams.y - d * (u_ProjectionParams.y - u_ProjectionParams.x));
+}
+
+[numthreads(LOCAL_SIZE, LOCAL_SIZE, 1)]
+void CSPreIntegration()
+{
+    ivec2 base = ivec2(gl_GlobalInvocationID);
+    vec2 hzbUV = u_HZBInvRes * vec2(base);
+    vec2 uv = u_InvRes * vec2(base);
+
+    vec4 fineZ;
+    fineZ.x = LinearizeDepth(textureLod(u_HZB, hzbUV + u_HZBInvRes * vec2(-0.5, -0.5), float(u_PrevLod)).x);
+    fineZ.y = LinearizeDepth(textureLod(u_HZB, hzbUV + u_HZBInvRes * vec2(-0.5,  0.0), float(u_PrevLod)).x);
+    fineZ.z = LinearizeDepth(textureLod(u_HZB, hzbUV + u_HZBInvRes * vec2( 0.0, -0.5), float(u_PrevLod)).x);
+    fineZ.w = LinearizeDepth(textureLod(u_HZB, hzbUV + u_HZBInvRes * vec2( 0.5,  0.5), float(u_PrevLod)).x);
+
+    vec4 visibility;
+    visibility.x = textureLod(u_VisibilityTex, uv + u_InvRes * vec2(-0.5, -0.5), float(u_PrevLod)).r;
+    visibility.y = textureLod(u_VisibilityTex, uv + u_InvRes * vec2(-0.5,  0.0), float(u_PrevLod)).r;
+    visibility.z = textureLod(u_VisibilityTex, uv + u_InvRes * vec2( 0.0, -0.5), float(u_PrevLod)).r;
+    visibility.w = textureLod(u_VisibilityTex, uv + u_InvRes * vec2( 0.5,  0.5), float(u_PrevLod)).r;
+
+    float maxZ = max(max(fineZ.x, fineZ.y), max(fineZ.z, fineZ.w));
+    vec4 integration = (fineZ / maxZ) * visibility;
+
+    float coarseVisibility = dot(vec4(0.25), integration);
+
+    imageStore(o_VisibilityImage, base, coarseVisibility.xxxx);
+}
+
+[numthreads(LOCAL_SIZE, LOCAL_SIZE, 1)]
+void CSClear()
+{
+    ivec2 resolution = imageSize(o_VisibilityImage);
+    if (gl_GlobalInvocationID.x >= uint(resolution.x) || gl_GlobalInvocationID.y >= uint(resolution.y)) return;
+
+    imageStore(o_VisibilityImage, ivec2(gl_GlobalInvocationID.xy), vec4(1.0));
+}

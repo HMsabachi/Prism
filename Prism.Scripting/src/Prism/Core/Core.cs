@@ -22,6 +22,5 @@ namespace Prism
 			Log.Trace($"String :{typeof(string).FullName}");
 			Log.Trace($"Vector4 :{typeof(Vector4).FullName}");
 		}
-        
 	}
 }

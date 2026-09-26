@@ -82,11 +82,22 @@ namespace Prism
             }
             else
             {
-                const RendererID program = kernel->Shader->GetRendererID();
-
-                kernel->UniformLocations.reserve(m_Compiled.Uniforms.size());
+                std::vector<std::string> names;
+                names.reserve(m_Compiled.Uniforms.size());
                 for (const auto& uniform : m_Compiled.Uniforms)
-                    kernel->UniformLocations.push_back(glGetUniformLocation(program, uniform.Name.c_str()));
+                    names.push_back(uniform.Name);
+
+                Ref<Kernel> kernelRef = kernel;
+                Renderer::Submit([kernelRef, names = std::move(names)]() mutable
+                {
+                    const RendererID program = kernelRef->Shader->GetRendererID();
+                    kernelRef->UniformLocations.assign(names.size(), -1);
+                    if (program == 0)
+                        return;
+
+                    for (size_t i = 0; i < names.size(); ++i)
+                        kernelRef->UniformLocations[i] = glGetUniformLocation(program, names[i].c_str());
+                });
             }
 
             m_Kernels.push_back(std::move(kernel));

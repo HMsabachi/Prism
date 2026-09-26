@@ -48,5 +48,6 @@ namespace Prism
         float MaxShadowDistance = 200.0f;
         bool EnableBloom = true;
         float BloomThreshold = 1.5f;
+        bool EnableSSR = true;
     };
 }

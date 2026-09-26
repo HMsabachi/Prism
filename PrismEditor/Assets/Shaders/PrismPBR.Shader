@@ -284,6 +284,8 @@ Shader "Standard/PrismPBR"
                     BloomColor = brightness > 1.0 ? FragColor : vec4(0.0, 0.0, 0.0, 1.0);
                     // Normal and roughness output
                     NormalColor = vec4(normalize(m_Params.Normal) * 0.5 + 0.5, m_Params.Roughness);
+                    // Metalness and roughness output
+                    MetalnessRoughnessColor = vec4(m_Params.Metalness, m_Params.Roughness, 0.0, 1.0);
                 }
 
             }

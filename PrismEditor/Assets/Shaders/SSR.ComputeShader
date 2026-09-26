@@ -1,0 +1,338 @@
+// ---------------------------------------
+// -- Prism SSR compute shader --
+// -- 移植自 Hazel/Hazelnut/Resources/Shaders/PostProcessing/SSR.glsl --
+// ---------------------------------------
+#version 450
+
+#pragma kernel CSSSR
+
+#define LOCAL_SIZE 8
+
+// 矩阵不能作为裸 uniform(CSL 数值 uniform 不支持 mat4),相机数据走 UBO。
+// GL UBO 物理号见 PrismBindings.h GL_UBO_BASE_COMPUTE。
+layout(binding = 32, std140) uniform SSRCameraData
+{
+    mat4 ProjectionMatrix;
+    mat4 ViewMatrix;
+    vec2 NDCToViewMul;
+    vec2 NDCToViewAdd;
+    vec2 DepthUnpackConsts;
+    vec2 FullResolution;
+    vec2 InvFullResolution;
+    vec2 InvHalfResolution;
+} u_Camera;
+
+layout(binding = 1, rgba16f) restrict writeonly uniform image2D outColor;
+layout(binding = 2) uniform sampler2D u_InputColor;
+layout(binding = 3) uniform sampler2D u_Normal;
+layout(binding = 4) uniform sampler2D u_HiZBuffer;
+layout(binding = 5) uniform sampler2D u_MetalnessRoughness;
+layout(binding = 6) uniform sampler2D u_VisibilityBuffer;
+
+uniform vec2 u_HZBUVFactor;
+uniform vec2 u_FadeIn;
+uniform float u_Brightness;
+uniform float u_DepthTolerance;
+uniform float u_FacingReflectionsFading;
+uniform int u_MaxSteps;
+uniform int u_NumDepthMips;
+uniform float u_RoughnessDepthTolerance;
+uniform int u_HalfRes;
+uniform int u_EnableConeTracing;
+uniform float u_LuminanceFactor;
+
+const float M_PI = 3.14159265359;
+const float FLOAT_MAX = 3.402823466e+38;
+const int BASE_LOD = 0;
+
+///////////////////////////////////////////////////////////////////////////////////////
+// Hi-Z cone tracing
+///////////////////////////////////////////////////////////////////////////////////////
+
+float IsoscelesTriangleOpposite(float adjacentLength, float coneTheta)
+{
+    return 2.0 * tan(coneTheta) * adjacentLength;
+}
+
+float IsoscelesTriangleInRadius(float a, float h)
+{
+    float a2 = a * a;
+    float fh2 = 4.0 * h * h;
+    return (a * (sqrt(a2 + fh2) - a)) / (4.0 * h);
+}
+
+vec4 ConeSampleWeightedColor(vec2 samplePos, float mipLevel)
+{
+    // 用预卷积后的颜色与 visibility 采样
+    vec3 color = textureLod(u_InputColor, samplePos, mipLevel).rgb;
+    float visibility = textureLod(u_VisibilityBuffer, samplePos, mipLevel).r;
+    return vec4(color * visibility, visibility);
+}
+
+float IsoscelesTriangleNextAdjacent(float adjacentLength, float incircleRadius)
+{
+    // 减去内切圆直径,得到下一级圆锥的邻边
+    return adjacentLength - (incircleRadius * 2.0);
+}
+
+vec4 ConeTracing(float roughness, vec2 rayOriginSS, vec2 rayPosSS)
+{
+    float coneTheta = roughness * M_PI * 0.025;
+
+    vec2 res = u_Camera.FullResolution * (1.0 + float(1 - u_HalfRes));
+
+    // 屏幕空间用等腰三角形近似圆锥
+    vec2 deltaPos = rayPosSS - rayOriginSS;
+
+    float adjacentLength = length(deltaPos);
+    vec2 adjacentUnit = normalize(deltaPos);
+
+    vec4 reflectionColor = vec4(0.0);
+    vec2 samplePos;
+    float remainingAlpha = 1.0;
+    for (int i = 0; i < 7; ++i)
+    {
+        float oppositeLength = IsoscelesTriangleOpposite(adjacentLength, coneTheta);
+        float incircleSize = IsoscelesTriangleInRadius(oppositeLength, adjacentLength);
+
+        samplePos = rayOriginSS + adjacentUnit * (adjacentLength - incircleSize);
+
+        float mipChannel = clamp(log2(incircleSize * max(res.x, res.y)), 0.0, float(u_NumDepthMips));
+
+        vec4 newColor = ConeSampleWeightedColor(samplePos.xy, mipChannel);
+        remainingAlpha -= newColor.a;
+        if (remainingAlpha < 0.0)
+        {
+            newColor.rgb *= (1.0 - abs(remainingAlpha));
+        }
+        reflectionColor += newColor;
+
+        if (reflectionColor.a >= 1.0)
+        {
+            break;
+        }
+
+        adjacentLength = IsoscelesTriangleNextAdjacent(adjacentLength, incircleSize);
+    }
+
+    return reflectionColor;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+// Hi-Z ray tracing methods
+///////////////////////////////////////////////////////////////////////////////////////
+
+float FetchDepth(ivec2 coords, int lod)
+{
+    return texelFetch(u_HiZBuffer, coords, lod).x;
+}
+
+ivec2 GetDepthMipResolution(int mipLevel)
+{
+    return ivec2(vec2(textureSize(u_HiZBuffer, mipLevel)) * u_HZBUVFactor);
+}
+
+vec3 ComputeViewspacePosition(const vec2 screenPos, const float viewspaceDepth)
+{
+    vec3 ret;
+    ret.xy = (u_Camera.NDCToViewMul * screenPos.xy + u_Camera.NDCToViewAdd) * viewspaceDepth;
+    ret.z = -viewspaceDepth;
+    return ret;
+}
+
+float ScreenSpaceToViewSpaceDepth(const float screenDepth)
+{
+    float depthLinearizeMul = u_Camera.DepthUnpackConsts.x;
+    float depthLinearizeAdd = u_Camera.DepthUnpackConsts.y;
+    return depthLinearizeMul / (depthLinearizeAdd - screenDepth);
+}
+
+void InitialAdvanceRay(vec3 origin, vec3 direction, vec3 invDirection, vec2 currentMipResolution, vec2 currentMipResolutionInv, vec2 floorOffset, vec2 uvOffset, out vec3 position, out float currentT)
+{
+    vec2 currentMipPosition = currentMipResolution * origin.xy;
+
+    // 与背离射线原点的半盒求交
+    vec2 xyPlane = floor(currentMipPosition) + floorOffset;
+    xyPlane = xyPlane * currentMipResolutionInv + uvOffset;
+
+    // o + d * t = p' => t = (p' - o) / d
+    vec2 t = xyPlane * invDirection.xy - origin.xy * invDirection.xy;
+    currentT = min(t.x, t.y);
+    position = origin + currentT * direction;
+}
+
+void SecondAdvanceRay(vec3 origin, vec3 direction, vec3 invDirection, vec2 currentMipPosition, vec2 currentMipResolutionInv, vec2 floorOffset, vec2 uvOffset, inout vec3 position, inout float currentT)
+{
+    vec2 xyPlane = floor(currentMipPosition) + floorOffset;
+    xyPlane = xyPlane * currentMipResolutionInv + uvOffset;
+
+    vec2 t = xyPlane * invDirection.xy - origin.xy * invDirection.xy;
+    currentT = min(t.x, t.y);
+    position = origin + currentT * direction;
+}
+
+bool AdvanceRay(vec3 origin, vec3 direction, vec3 invDirection, vec2 currentMipPosition, vec2 currentMipResolutionInv, vec2 floorOffset, vec2 uvOffset, float surfaceZ, inout vec3 position, inout float currentT)
+{
+    vec2 xyPlane = floor(currentMipPosition) + floorOffset;
+    xyPlane = xyPlane * currentMipResolutionInv + uvOffset;
+    vec3 boundaryPlanes = vec3(xyPlane, surfaceZ);
+
+    // o + d * t = p' => t = (p' - o) / d
+    vec3 t = boundaryPlanes * invDirection - origin * invDirection;
+
+    // Prism 为标准深度(非 reversed-Z):z 越大越远,射线只有朝远处走才会被 z 平面截断。
+    t.z = direction.z > 0 ? t.z : FLOAT_MAX;
+
+    float tMin = min(min(t.x, t.y), t.z);
+
+    bool aboveSurface = surfaceZ > position.z;
+
+    // 用 asuint 比较规避 NaN / Inf,tMin 逐位等于 t.z 说明是被 z 平面截断。
+    bool skippedTile = floatBitsToUint(tMin) != floatBitsToUint(t.z) && aboveSurface;
+
+    currentT = aboveSurface ? tMin : currentT;
+
+    position = origin + currentT * direction;
+
+    return skippedTile;
+}
+
+// 要求 origin / direction 处于屏幕空间 [0, 1] x [0, 1]
+vec3 HierarchicalRaymarch(vec3 origin, vec3 direction, vec2 screenSize, int mostDetailedMip, int minTraversalOccupancy, int maxTraversalIntersections, out int iterations, out bool validHit)
+{
+    const vec3 invDirection = direction != vec3(0) ? 1.0 / direction : vec3(FLOAT_MAX);
+
+    int currentMip = mostDetailedMip;
+
+    vec2 currentMipResolution = vec2(GetDepthMipResolution(currentMip));
+    vec2 currentMipResolutionInv = 1.0 / currentMipResolution;
+
+    // 把包围盒 uv 空间偏移半个像素,使射线略微多走一步
+    vec2 uvOffset = 0.005 * exp2(float(mostDetailedMip)) / screenSize;
+    uvOffset.x = (direction.x < 0.0 ? -uvOffset.x : uvOffset.x);
+    uvOffset.y = (direction.y < 0.0 ? -uvOffset.y : uvOffset.y);
+
+    vec2 floorOffset;
+    floorOffset.x = (direction.x < 0.0 ? 0.0 : 1.0);
+    floorOffset.y = (direction.y < 0.0 ? 0.0 : 1.0);
+
+    float currentT;
+    vec3 position;
+    // 先推进一步,避免立即自交
+    InitialAdvanceRay(origin, direction, invDirection, currentMipResolution, currentMipResolutionInv, floorOffset, uvOffset, position, currentT);
+    vec2 currentMipPosition = currentMipResolution * position.xy;
+
+    // 抑制凹凸表面(粗糙法线)上的瑕疵
+    SecondAdvanceRay(origin, direction, invDirection, currentMipPosition, currentMipResolutionInv, floorOffset, uvOffset, position, currentT);
+
+    iterations = 0;
+    while (iterations < maxTraversalIntersections && currentMip >= mostDetailedMip)
+    {
+        currentMipPosition = currentMipResolution * position.xy;
+        float surfaceZ = FetchDepth(ivec2(currentMipPosition), currentMip);
+        bool skippedTile = AdvanceRay(origin, direction, invDirection, currentMipPosition, currentMipResolutionInv, floorOffset, uvOffset, surfaceZ, position, currentT);
+        currentMip += skippedTile ? 1 : -1;
+        currentMipResolution *= skippedTile ? 0.5 : 2.0;
+        currentMipResolutionInv *= skippedTile ? 2.0 : 0.5;
+        ++iterations;
+    }
+
+    validHit = (iterations < maxTraversalIntersections);
+
+    return position;
+}
+
+float ValidateHit(vec3 origin, vec3 ray, vec3 originPosVS, vec3 rayDirVS, float roughness)
+{
+    // 丢弃视锥外的命中
+    if (any(lessThan(ray.xy, vec2(0.0))) || any(greaterThan(ray.xy, vec2(1.0))))
+        return 0.0;
+
+    // 射线必须推进足够距离,避免自反射
+    vec2 manhattanDist = abs(ray.xy - origin.xy);
+    if (all(lessThan(manhattanDist, u_Camera.InvHalfResolution)))
+        return 0.0;
+
+    // 不从背景取辐射度(Prism 标准深度:1.0 为远平面)
+    float surfaceZ = FetchDepth(ivec2(GetDepthMipResolution(0) * ray.xy), 0);
+    if (surfaceZ == 1.0)
+        return 0.0;
+
+    float surfaceDepthVS = ScreenSpaceToViewSpaceDepth(surfaceZ);
+    vec3 surfacePosVS = ComputeViewspacePosition(ray.xy, surfaceDepthVS);
+
+    float hitDepthVS = ScreenSpaceToViewSpaceDepth(ray.z);
+    vec3 hitPositionVS = ComputeViewspacePosition(ray.xy, hitDepthVS);
+
+    float distanceTravelled = length(surfacePosVS - hitPositionVS);
+
+    float confidence = 1.0 - smoothstep(0.0, u_DepthTolerance + mix(0.0, u_RoughnessDepthTolerance, roughness), distanceTravelled);
+
+    // 屏幕边缘淡出
+    vec2 viewportSize = u_Camera.FullResolution;
+    vec2 fov = u_FadeIn * vec2(viewportSize.y / viewportSize.x, 1.0);
+    vec2 border = smoothstep(vec2(0.0), fov, ray.xy) * (1.0 - smoothstep(1.0 - fov, vec2(1.0), ray.xy));
+    float vignette = border.x * border.y;
+
+    // 朝向相机的射线淡出
+    float fadeOnMirror = clamp(max(dot(originPosVS, rayDirVS), 0.0) + u_FacingReflectionsFading, 0.0, 1.0);
+    return confidence * fadeOnMirror * vignette * (1.0 - roughness);
+}
+
+vec3 FresnelSchlickRoughness(vec3 F0, float cosTheta, float roughness)
+{
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+[numthreads(LOCAL_SIZE, LOCAL_SIZE, 1)]
+void CSSSR()
+{
+    ivec2 resolution = imageSize(outColor);
+    if (gl_GlobalInvocationID.x >= uint(resolution.x) || gl_GlobalInvocationID.y >= uint(resolution.y)) return;
+
+    const ivec2 base = ivec2(gl_GlobalInvocationID.xy);
+    const vec2 uv = u_HalfRes != 0 ? u_Camera.InvHalfResolution * (vec2(base) + 0.25) : u_Camera.InvFullResolution * (vec2(base) + 0.50);
+    const ivec2 baseDepthResolution = GetDepthMipResolution(BASE_LOD);
+    const float depth = FetchDepth(ivec2(vec2(baseDepthResolution) * uv), 0);
+
+    const vec4 albedo = texture(u_InputColor, uv);
+    const vec2 metalnessRoughness = texture(u_MetalnessRoughness, uv).xy;
+    // Prism 的 GBuffer 法线是世界空间打包值(*0.5+0.5),转到观察空间
+    const vec3 normalWS = normalize(texture(u_Normal, uv).xyz * 2.0 - 1.0);
+    const vec3 normalVS = normalize((u_Camera.ViewMatrix * vec4(normalWS, 0.0)).xyz);
+    const float depthVS = ScreenSpaceToViewSpaceDepth(depth);
+    const vec3 positionVS = ComputeViewspacePosition(uv, depthVS);
+    const vec3 toPositionVS = normalize(positionVS.xyz);
+    const vec3 reflectVS = reflect(toPositionVS, normalVS);
+    const vec4 positionPrimeSS4 = u_Camera.ProjectionMatrix * vec4(positionVS.xyz + reflectVS, 1.0);
+    vec3 positionPrimeSS = (positionPrimeSS4.xyz / positionPrimeSS4.w);
+    positionPrimeSS.xy = positionPrimeSS.xy * 0.5 + 0.5;
+    const vec3 positionSS = vec3(uv, depth);
+    const vec3 reflectSS = vec3(positionPrimeSS - positionSS);
+
+    int iterations = 0;
+    bool validHit = false;
+    vec3 ray = HierarchicalRaymarch(positionSS, reflectSS, vec2(baseDepthResolution), BASE_LOD, 4, u_MaxSteps, iterations, validHit);
+
+    vec4 totalColor;
+    if (u_EnableConeTracing != 0)
+        totalColor = ConeTracing(metalnessRoughness.g, positionSS.xy, ray.xy);
+    else
+        totalColor = texelFetch(u_InputColor, ivec2(ray.xy * vec2(textureSize(u_InputColor, 0))), 0);
+
+    vec3 F0 = mix(vec3(0.04), albedo.rgb, metalnessRoughness.r);
+
+    totalColor.rgb *= FresnelSchlickRoughness(F0, max(dot(normalVS, toPositionVS), 0.0), metalnessRoughness.g);
+
+    float confidence = validHit ? ValidateHit(positionSS, ray, toPositionVS, reflectVS, metalnessRoughness.g) : 0.0;
+
+    // 来自 CesiumJS
+    totalColor *= max(1.0, dot(totalColor.rgb, vec3(0.2125, 0.7154, 0.0721) * u_LuminanceFactor)) * u_Brightness;
+
+    // 反射遮蔽:Prism 未移植 GTAO/HBAO,ao 恒为 1
+    float ao = 1.0;
+    float roughnessFactor = mix(clamp(metalnessRoughness.r + ao, 0.0, 1.0), 0.0625, pow(metalnessRoughness.g, 4.0));
+
+    // confidence 可能为负,负值会产生多余反射,这里夹住
+    imageStore(outColor, base, vec4(roughnessFactor * totalColor.rgb, max(confidence, 0.0)));
+}

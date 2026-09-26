@@ -30,6 +30,7 @@ namespace Prism
         virtual ~RefCounted()
         {
             RefUtils::RemoveFromLiveReferences(this);
+            m_IsLive = 0;
         }
 
         void IncRefCount() const
@@ -44,8 +45,11 @@ namespace Prism
 
         uint32_t GetRefCount() const { return m_RefCount; }
 
+        bool IsLive() const { return m_IsLive == 1; }
+
     private:
         mutable std::atomic<uint32_t> m_RefCount{ 0 };
+        mutable uint32_t m_IsLive = 1;
     };
 
     template<typename T>
@@ -232,7 +236,7 @@ namespace Prism
         T& operator*() { return *m_Instance; }
         const T& operator*() const { return *m_Instance; }
 
-        bool IsValid() const { return m_Instance ? RefUtils::IsLive(m_Instance) : false; }
+        bool IsValid() const { return m_Instance ? m_Instance->IsLive() : false; }
         operator bool() const { return IsValid(); }
 
         T* Raw() { return  m_Instance; }

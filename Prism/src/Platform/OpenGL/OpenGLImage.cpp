@@ -112,8 +112,8 @@ namespace Prism {
         else
         {
             // TODO: Framebuffer 附件无 CPU 数据,单层+非mipmap filter 避免纹理 incomplete(dead sampler 未 bind)
-            glTextureStorage2D(m_RendererID, 1, internalFormat, m_Specification.Width, m_Specification.Height);
-            glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTextureStorage2D(m_RendererID, m_Specification.Mips, internalFormat, m_Specification.Width, m_Specification.Height);
+            glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, m_Specification.Mips > 1 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
             glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -122,7 +122,7 @@ namespace Prism {
         // Sampler
         // TODO: should be separate from Image2D
         glCreateSamplers(1, &m_SamplerRendererID);
-        glSamplerParameteri(m_SamplerRendererID, GL_TEXTURE_MIN_FILTER, (m_ImageData || !m_Mips.empty()) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
+        glSamplerParameteri(m_SamplerRendererID, GL_TEXTURE_MIN_FILTER, (m_ImageData || !m_Mips.empty() || m_Specification.Mips > 1) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
         glSamplerParameteri(m_SamplerRendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glSamplerParameteri(m_SamplerRendererID, GL_TEXTURE_WRAP_R, GL_REPEAT);
         glSamplerParameteri(m_SamplerRendererID, GL_TEXTURE_WRAP_S, GL_REPEAT);

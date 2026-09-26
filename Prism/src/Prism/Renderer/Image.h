@@ -118,6 +118,7 @@ namespace Prism {
         uint32_t Width = 1;
         uint32_t Height = 1;
         uint32_t Samples = 1;
+        uint32_t Mips = 1;
     };
 
     class PRISM_API Image : public RefCounted

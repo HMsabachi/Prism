@@ -53,9 +53,11 @@ namespace Prism
     private:
         void InsertFinalLayoutBarrier(VkCommandBuffer cmdBuf, VkAccessFlags srcAccessMask, VkImageLayout oldImageLayout,
             VkPipelineStageFlags srcStageMask, const VkImageSubresourceRange& subresourceRange) const;
+        VkImageView GetOrCreateDepthOnlyView();
 
         ImageSpecification m_Specification;
-        TextureWrap m_Wrap = TextureWrap::Repeat;
+        // 与 OpenGL 侧硬编码的 GL_CLAMP_TO_EDGE 对齐:计算着色器直接绑定纹理单元,不经过采样器对象
+        TextureWrap m_Wrap = TextureWrap::Clamp;
 
         Buffer m_ImageData;
         std::vector<Buffer> m_Mips; // DDS 预压缩 mip 链，含 level 0
@@ -63,6 +65,7 @@ namespace Prism
         VulkanImageInfo m_Info;
         VkDescriptorImageInfo m_DescriptorImageInfo = {};
         std::map<uint32_t, VkImageView> m_StorageViews;
+        VkImageView m_DepthOnlyView = VK_NULL_HANDLE;
     };
 
     class PRISM_API VulkanImageCube : public ImageCube

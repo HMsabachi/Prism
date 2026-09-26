@@ -17,6 +17,7 @@ PRISM_PASS_TEXTURE(6) uniform sampler2D Prism_BRDFLUT;
 layout(location = 0) out vec4 FragColor;
 layout(location = 1) out vec4 BloomColor;
 layout(location = 2) out vec4 NormalColor;
+layout(location = 3) out vec4 MetalnessRoughnessColor;
 #endif
 
 #endif

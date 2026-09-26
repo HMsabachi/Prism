@@ -43,6 +43,24 @@ namespace Prism // SceneRenderer Constants
     // Bloom
     constexpr uint32_t BLOOM_BLUR_ITERATIONS = 10;
     constexpr uint32_t BLOOM_BLUR_GROUP_SIZE = 16;
+    // HZB
+    constexpr uint32_t HZB_GROUP_SIZE = 8;
+    constexpr uint32_t HZB_MIP_BATCH_SIZE = 4;
+    constexpr const char* HZB_OUTPUT_BINDINGS[HZB_MIP_BATCH_SIZE] = { "o_HZB0", "o_HZB1", "o_HZB2", "o_HZB3" };
+    // PreIntegration
+    constexpr uint32_t PRE_INTEGRATION_GROUP_SIZE = 8;
+    // PreConvolution
+    constexpr uint32_t PRE_CONVOLUTION_GROUP_SIZE = 16;
+    // SSR
+    constexpr uint32_t SSR_GROUP_SIZE = 8;
+    constexpr bool SSR_HALF_RESOLUTION = true;
+    constexpr int32_t SSR_MAX_STEPS = 70;
+    const glm::vec2 SSR_FADE_IN{ 0.1f, 0.15f };
+    constexpr float SSR_BRIGHTNESS = 0.7f;
+    constexpr float SSR_DEPTH_TOLERANCE = 0.8f;
+    constexpr float SSR_FACING_REFLECTIONS_FADING = 0.1f;
+    constexpr float SSR_ROUGHNESS_DEPTH_TOLERANCE = 1.0f;
+    constexpr float SSR_LUMINANCE_FACTOR = 1.0f;
     // Pass Name
     constexpr uint64_t SHADER_PASS_NAME_SCENE_COMPOSITE = Hash::GenerateFNVHash64("SceneComposite");
     constexpr uint64_t SHADER_PASS_NAME_BLOOM_BLUR = Hash::GenerateFNVHash64("BloomBlur");
@@ -61,6 +79,7 @@ namespace Prism // SceneRenderer Constants
     constexpr uint32_t RENDER_PASS_INPUT_BINDING_COMPOSITE_GEOMETRY_COLOR = 0;
     constexpr uint32_t RENDER_PASS_INPUT_BINDING_COMPOSITE_OBJECT_ID = 1;
     constexpr uint32_t RENDER_PASS_INPUT_BINDING_COMPOSITE_BLOOM = 2;
+    constexpr uint32_t RENDER_PASS_INPUT_BINDING_COMPOSITE_SSR = 3;
 }
 
 namespace Prism
@@ -134,7 +153,7 @@ namespace Prism
         FramebufferSpecification geoFBSpec;
         geoFBSpec.Width = viewportWidth;
         geoFBSpec.Height = viewportHeight;
-        geoFBSpec.Attachments = { ImageFormat::RGBA16F, ImageFormat::RGBA16F, ImageFormat::RGBA16F, ImageFormat::Depth };
+        geoFBSpec.Attachments = { ImageFormat::RGBA16F, ImageFormat::RGBA16F, ImageFormat::RGBA16F, ImageFormat::RGBA16F, ImageFormat::Depth };
         geoFBSpec.ClearColor = { 0.1f, 0.1f, 0.1f, 1.0f };
         RenderPassSpecification geoRPSpec;
         geoRPSpec.TargetFramebuffer = Framebuffer::Create(geoFBSpec);
@@ -176,6 +195,22 @@ namespace Prism
         m_BloomVerticalKernel = m_BloomBlurShader->FindKernel("CSBloomBlurV");
         m_BloomClearKernel = m_BloomBlurShader->FindKernel("CSClear");
 
+        m_HZBShader = AssetManager::GetAsset<ComputeShader>("Assets/Shaders/HZB.ComputeShader");
+        m_HZBKernel = m_HZBShader->FindKernel("CSHZB");
+
+        m_PreIntegrationShader = AssetManager::GetAsset<ComputeShader>("Assets/Shaders/PreIntegration.ComputeShader");
+        m_PreIntegrationKernel = m_PreIntegrationShader->FindKernel("CSPreIntegration");
+        m_VisibilityClearKernel = m_PreIntegrationShader->FindKernel("CSClear");
+
+        m_PreConvolutionShader = AssetManager::GetAsset<ComputeShader>("Assets/Shaders/PreConvolution.ComputeShader");
+        m_PreConvolutionKernel = m_PreConvolutionShader->FindKernel("CSPreConvolution");
+
+        m_SSRShader = AssetManager::GetAsset<ComputeShader>("Assets/Shaders/SSR.ComputeShader");
+        m_SSRKernel = m_SSRShader->FindKernel("CSSSR");
+        m_SSRCameraUBO = UniformBuffer::Create(sizeof(SSRCameraData));
+
+        CreateSSRTargets(viewportWidth, viewportHeight);
+
         // Create Composite Pass
         FramebufferSpecification compFBSpec;
         compFBSpec.Width = viewportWidth;
@@ -188,6 +223,7 @@ namespace Prism
         m_CompositePass->SetInput(RENDER_PASS_INPUT_BINDING_COMPOSITE_GEOMETRY_COLOR, m_GeoPass->GetOutput(0));
         m_CompositePass->SetInput(RENDER_PASS_INPUT_BINDING_COMPOSITE_OBJECT_ID, m_IDPass->GetOutput(0));
         m_CompositePass->SetInput(RENDER_PASS_INPUT_BINDING_COMPOSITE_BLOOM, m_BloomImages[1]);
+        m_CompositePass->SetInput(RENDER_PASS_INPUT_BINDING_COMPOSITE_SSR, m_SSRImage);
         m_CompositePass->Bake();
     }
 
@@ -201,6 +237,15 @@ namespace Prism
         m_BloomImages[0].Reset();
         m_BloomImages[1].Reset();
         m_BloomBlurShader.Reset();
+        m_HierarchicalDepthImage.Reset();
+        m_HZBShader.Reset();
+        m_VisibilityImage.Reset();
+        m_PreIntegrationShader.Reset();
+        m_PreConvolutedImage.Reset();
+        m_PreConvolutionShader.Reset();
+        m_SSRImage.Reset();
+        m_SSRShader.Reset();
+        m_SSRCameraUBO.Reset();
         m_PostProcessMaterial.Reset();
         m_EditorDebugMaterial.Reset();
         m_EditorDebugAnimMaterial.Reset();
@@ -227,11 +272,13 @@ namespace Prism
             Ref<Image2D> colorImage = m_GeoPass->GetOutput(0);
             Ref<Image2D> bloomImage = m_GeoPass->GetOutput(1);
             Ref<Image2D> normalImage = m_GeoPass->GetOutput(2);
+            Ref<Image2D> metalnessRoughnessImage = m_GeoPass->GetOutput(3);
             // Ref<Image2D> depthImage = m_GeoPass->GetDepthOutput();
             float size = ImGui::GetContentRegionAvail().x;
             UI::Image(colorImage, { size, size }, { 0, 1 }, { 1, 0 });
             UI::Image(bloomImage, { size, size }, { 0, 1 }, { 1, 0 });
             UI::Image(normalImage, { size, size }, { 0, 1 }, { 1, 0 });
+            UI::Image(metalnessRoughnessImage, { size, size }, { 0, 1 }, { 1, 0 });
             // UI::Image(depthImage, { size, size }, { 0, 1 }, { 1, 0 });
             UI::EndTreeNode();
         }
@@ -268,6 +315,75 @@ namespace Prism
 
         m_BloomImages[0]->RT_Resize(width, height);
         m_BloomImages[1]->RT_Resize(width, height);
+
+        CreateSSRTargets(width, height);
+    }
+
+    void SceneRenderer::CreateSSRTargets(uint32_t viewportWidth, uint32_t viewportHeight)
+    {
+        if (!m_VisibilityImage || m_VisibilityImage->GetWidth() != viewportWidth || m_VisibilityImage->GetHeight() != viewportHeight)
+        {
+            ImageSpecification visibilitySpecification;
+            visibilitySpecification.Format = ImageFormat::R8;
+            visibilitySpecification.Usage = ImageUsage::Storage;
+            visibilitySpecification.Width = viewportWidth;
+            visibilitySpecification.Height = viewportHeight;
+            visibilitySpecification.Mips = Utils::CalculateMipCount(viewportWidth, viewportHeight);
+            m_VisibilityImage = Image2D::Create(visibilitySpecification);
+            m_VisibilityImage->Invalidate();
+        }
+
+        const uint32_t hzbWidth = 1u << (uint32_t)std::ceil(std::log2((float)viewportWidth));
+        const uint32_t hzbHeight = 1u << (uint32_t)std::ceil(std::log2((float)viewportHeight));
+        if (!m_HierarchicalDepthImage || hzbWidth != m_HierarchicalDepthImage->GetWidth() || hzbHeight != m_HierarchicalDepthImage->GetHeight())
+        {
+            ImageSpecification hzbSpecification;
+            hzbSpecification.Format = ImageFormat::R32F;
+            hzbSpecification.Usage = ImageUsage::Storage;
+            hzbSpecification.Width = hzbWidth;
+            hzbSpecification.Height = hzbHeight;
+            hzbSpecification.Mips = Utils::CalculateMipCount(hzbWidth, hzbHeight);
+            m_HierarchicalDepthImage = Image2D::Create(hzbSpecification);
+            m_HierarchicalDepthImage->Invalidate();
+
+            m_HZBUvFactor = glm::vec2((float)viewportWidth / (float)hzbWidth, (float)viewportHeight / (float)hzbHeight);
+        }
+
+        const glm::uvec2 numMips = glm::ceil(glm::log2(glm::vec2((float)viewportWidth, (float)viewportHeight)));
+        m_SSRDepthMipCount = (int32_t)glm::max(numMips.x, numMips.y);
+
+        const glm::uvec2 ssrSize = SSR_HALF_RESOLUTION ? glm::uvec2((viewportWidth + 1u) / 2u, (viewportHeight + 1u) / 2u)
+            : glm::uvec2(viewportWidth, viewportHeight);
+        if (!m_SSRImage)
+        {
+            ImageSpecification ssrSpecification;
+            ssrSpecification.Format = ImageFormat::RGBA16F;
+            ssrSpecification.Usage = ImageUsage::Storage;
+            ssrSpecification.Width = ssrSize.x;
+            ssrSpecification.Height = ssrSize.y;
+            m_SSRImage = Image2D::Create(ssrSpecification);
+            m_SSRImage->Invalidate();
+        }
+        else if (m_SSRImage->GetWidth() != ssrSize.x || m_SSRImage->GetHeight() != ssrSize.y)
+        {
+            // CompositePass 持有该图像作为输入,只能原地 resize 保持对象身份
+            m_SSRImage->RT_Resize(ssrSize.x, ssrSize.y);
+        }
+
+        const glm::uvec2 preConvolutedSize(
+            (ssrSize.x + PRE_CONVOLUTION_GROUP_SIZE - 1u) / PRE_CONVOLUTION_GROUP_SIZE * PRE_CONVOLUTION_GROUP_SIZE,
+            (ssrSize.y + PRE_CONVOLUTION_GROUP_SIZE - 1u) / PRE_CONVOLUTION_GROUP_SIZE * PRE_CONVOLUTION_GROUP_SIZE);
+        if (!m_PreConvolutedImage || preConvolutedSize.x != m_PreConvolutedImage->GetWidth() || preConvolutedSize.y != m_PreConvolutedImage->GetHeight())
+        {
+            ImageSpecification preConvolutedSpecification;
+            preConvolutedSpecification.Format = ImageFormat::RGBA32F;
+            preConvolutedSpecification.Usage = ImageUsage::Storage;
+            preConvolutedSpecification.Width = preConvolutedSize.x;
+            preConvolutedSpecification.Height = preConvolutedSize.y;
+            preConvolutedSpecification.Mips = Utils::CalculateMipCount(preConvolutedSize.x, preConvolutedSize.y);
+            m_PreConvolutedImage = Image2D::Create(preConvolutedSpecification);
+            m_PreConvolutedImage->Invalidate();
+        }
     }
 
     void SceneRenderer::Execute(const FrameSnapshot& snapshot)
@@ -421,6 +537,150 @@ namespace Prism
 
             rApi->EndRenderPass();
         }
+        if (config.EnableSSR)
+        {
+            PR_PROFILE_SCOPE("HZBPass");
+
+            Ref<Image2D> depthImage = m_GeoPass->GetDepthOutput();
+            const uint32_t hzbWidth = m_HierarchicalDepthImage->GetWidth();
+            const uint32_t hzbHeight = m_HierarchicalDepthImage->GetHeight();
+            const uint32_t hzbMipCount = Utils::CalculateMipCount(hzbWidth, hzbHeight);
+            const glm::vec2 viewportSize((float)depthImage->GetWidth(), (float)depthImage->GetHeight());
+
+            auto ReduceHZB = [&](uint32_t startDestMip, uint32_t parentMip, const glm::vec2& dispatchThreadIdToBufferUV,
+                const glm::vec2& inputViewportMaxBound, bool isFirstPass)
+            {
+                const uint32_t srcWidth = hzbWidth >> parentMip;
+                const uint32_t srcHeight = hzbHeight >> parentMip;
+                const uint32_t destWidth = hzbWidth >> startDestMip;
+                const uint32_t destHeight = hzbHeight >> startDestMip;
+
+                m_HZBShader->SetTexture2D(m_HZBKernel, "u_InputDepth", isFirstPass ? depthImage : m_HierarchicalDepthImage);
+                for (uint32_t index = 0; index < HZB_MIP_BATCH_SIZE; index++)
+                {
+                    const uint32_t level = glm::min(startDestMip + index, hzbMipCount - 1);
+                    m_HZBShader->SetImage2D(m_HZBKernel, HZB_OUTPUT_BINDINGS[index], m_HierarchicalDepthImage, level);
+                }
+
+                m_HZBShader->SetVector2(m_HZBKernel, "u_DispatchThreadIdToBufferUV", dispatchThreadIdToBufferUV);
+                m_HZBShader->SetVector2(m_HZBKernel, "u_InputViewportMaxBound", inputViewportMaxBound);
+                m_HZBShader->SetVector2(m_HZBKernel, "u_InvSize", glm::vec2(1.0f / (float)srcWidth, 1.0f / (float)srcHeight));
+                m_HZBShader->SetInt(m_HZBKernel, "u_FirstLod", (int32_t)startDestMip);
+                m_HZBShader->SetInt(m_HZBKernel, "u_IsFirstPass", isFirstPass ? 1 : 0);
+
+                m_HZBShader->Dispatch(m_HZBKernel, (destWidth + HZB_GROUP_SIZE - 1) / HZB_GROUP_SIZE,
+                    (destHeight + HZB_GROUP_SIZE - 1) / HZB_GROUP_SIZE, 1);
+            };
+
+            ReduceHZB(0, 0, 1.0f / viewportSize, (viewportSize - 0.5f) / viewportSize, true);
+            for (uint32_t startDestMip = HZB_MIP_BATCH_SIZE; startDestMip < hzbMipCount; startDestMip += HZB_MIP_BATCH_SIZE)
+            {
+                const uint32_t srcWidth = hzbWidth >> (startDestMip - 1);
+                const uint32_t srcHeight = hzbHeight >> (startDestMip - 1);
+                ReduceHZB(startDestMip, startDestMip - 1,
+                    glm::vec2(2.0f / (float)srcWidth, 2.0f / (float)srcHeight), glm::vec2(1.0f), false);
+            }
+        }
+        if (config.EnableSSR)
+        {
+            PR_PROFILE_SCOPE("PreIntegrationPass");
+
+            const glm::mat4& projection = snapshot.Camera.Projection.GetProjectionMatrix();
+            const float nearPlane = projection[3][2] / projection[2][2];
+            const float farPlane = projection[3][2] / (projection[2][2] + 1.0f);
+
+            const uint32_t visibilityWidth = m_VisibilityImage->GetWidth();
+            const uint32_t visibilityHeight = m_VisibilityImage->GetHeight();
+            const uint32_t visibilityMipCount = Utils::CalculateMipCount(visibilityWidth, visibilityHeight);
+
+            m_PreIntegrationShader->SetImage2D(m_VisibilityClearKernel, "o_VisibilityImage", m_VisibilityImage, 0);
+            m_PreIntegrationShader->Dispatch(m_VisibilityClearKernel,
+                (visibilityWidth + PRE_INTEGRATION_GROUP_SIZE - 1) / PRE_INTEGRATION_GROUP_SIZE,
+                (visibilityHeight + PRE_INTEGRATION_GROUP_SIZE - 1) / PRE_INTEGRATION_GROUP_SIZE, 1);
+
+            for (uint32_t mip = 1; mip < visibilityMipCount; mip++)
+            {
+                const uint32_t mipWidth = visibilityWidth >> mip;
+                const uint32_t mipHeight = visibilityHeight >> mip;
+                const glm::vec2 invRes(1.0f / (float)mipWidth, 1.0f / (float)mipHeight);
+
+                m_PreIntegrationShader->SetImage2D(m_PreIntegrationKernel, "o_VisibilityImage", m_VisibilityImage, mip);
+                m_PreIntegrationShader->SetTexture2D(m_PreIntegrationKernel, "u_VisibilityTex", m_VisibilityImage);
+                m_PreIntegrationShader->SetTexture2D(m_PreIntegrationKernel, "u_HZB", m_HierarchicalDepthImage);
+                m_PreIntegrationShader->SetVector2(m_PreIntegrationKernel, "u_HZBInvRes", invRes * m_HZBUvFactor);
+                m_PreIntegrationShader->SetVector2(m_PreIntegrationKernel, "u_InvRes", invRes);
+                m_PreIntegrationShader->SetVector2(m_PreIntegrationKernel, "u_ProjectionParams", glm::vec2(nearPlane, farPlane));
+                m_PreIntegrationShader->SetInt(m_PreIntegrationKernel, "u_PrevLod", (int32_t)mip - 1);
+
+                m_PreIntegrationShader->Dispatch(m_PreIntegrationKernel,
+                    (mipWidth + PRE_INTEGRATION_GROUP_SIZE - 1) / PRE_INTEGRATION_GROUP_SIZE,
+                    (mipHeight + PRE_INTEGRATION_GROUP_SIZE - 1) / PRE_INTEGRATION_GROUP_SIZE, 1);
+            }
+        }
+        if (config.EnableSSR)
+        {
+            PR_PROFILE_SCOPE("PreConvolutionPass");
+
+            const uint32_t preConvolutedWidth = m_PreConvolutedImage->GetWidth();
+            const uint32_t preConvolutedHeight = m_PreConvolutedImage->GetHeight();
+            const uint32_t preConvolutedMipCount = Utils::CalculateMipCount(preConvolutedWidth, preConvolutedHeight);
+
+            m_PreConvolutionShader->SetTexture2D(m_PreConvolutionKernel, "u_Input", m_GeoPass->GetOutput(0));
+            m_PreConvolutionShader->SetImage2D(m_PreConvolutionKernel, "o_Image", m_PreConvolutedImage, 0);
+            m_PreConvolutionShader->SetVector2(m_PreConvolutionKernel, "u_ImageSize", glm::vec2((float)preConvolutedWidth, (float)preConvolutedHeight));
+            m_PreConvolutionShader->SetInt(m_PreConvolutionKernel, "u_PrevLod", 0);
+            m_PreConvolutionShader->SetInt(m_PreConvolutionKernel, "u_Mode", 0);
+            m_PreConvolutionShader->Dispatch(m_PreConvolutionKernel,
+                (preConvolutedWidth + PRE_CONVOLUTION_GROUP_SIZE - 1) / PRE_CONVOLUTION_GROUP_SIZE,
+                (preConvolutedHeight + PRE_CONVOLUTION_GROUP_SIZE - 1) / PRE_CONVOLUTION_GROUP_SIZE, 1);
+
+            m_PreConvolutionShader->SetTexture2D(m_PreConvolutionKernel, "u_Input", m_PreConvolutedImage);
+            for (uint32_t mip = 1; mip < preConvolutedMipCount; mip++)
+            {
+                const uint32_t mipWidth = glm::max(1u, preConvolutedWidth >> mip);
+                const uint32_t mipHeight = glm::max(1u, preConvolutedHeight >> mip);
+                const uint32_t groupCountX = (mipWidth + PRE_CONVOLUTION_GROUP_SIZE - 1) / PRE_CONVOLUTION_GROUP_SIZE;
+                const uint32_t groupCountY = (mipHeight + PRE_CONVOLUTION_GROUP_SIZE - 1) / PRE_CONVOLUTION_GROUP_SIZE;
+
+                m_PreConvolutionShader->SetImage2D(m_PreConvolutionKernel, "o_Image", m_PreConvolutedImage, mip);
+                m_PreConvolutionShader->SetVector2(m_PreConvolutionKernel, "u_ImageSize", glm::vec2((float)mipWidth, (float)mipHeight));
+                m_PreConvolutionShader->SetInt(m_PreConvolutionKernel, "u_PrevLod", (int32_t)mip - 1);
+
+                m_PreConvolutionShader->SetInt(m_PreConvolutionKernel, "u_Mode", 1);
+                m_PreConvolutionShader->Dispatch(m_PreConvolutionKernel, groupCountX, groupCountY, 1);
+                m_PreConvolutionShader->SetInt(m_PreConvolutionKernel, "u_Mode", 2);
+                m_PreConvolutionShader->Dispatch(m_PreConvolutionKernel, groupCountX, groupCountY, 1);
+            }
+        }
+        if (config.EnableSSR)
+        {
+            PR_PROFILE_SCOPE("SSRPass");
+
+            const uint32_t ssrWidth = m_SSRImage->GetWidth();
+            const uint32_t ssrHeight = m_SSRImage->GetHeight();
+
+            m_SSRShader->SetUniformBuffer(m_SSRKernel, "u_Camera", m_SSRCameraUBO);
+            m_SSRShader->SetImage2D(m_SSRKernel, "outColor", m_SSRImage, 0);
+            m_SSRShader->SetTexture2D(m_SSRKernel, "u_InputColor", m_PreConvolutedImage);
+            m_SSRShader->SetTexture2D(m_SSRKernel, "u_Normal", m_GeoPass->GetOutput(2));
+            m_SSRShader->SetTexture2D(m_SSRKernel, "u_HiZBuffer", m_HierarchicalDepthImage);
+            m_SSRShader->SetTexture2D(m_SSRKernel, "u_MetalnessRoughness", m_GeoPass->GetOutput(3));
+            m_SSRShader->SetTexture2D(m_SSRKernel, "u_VisibilityBuffer", m_VisibilityImage);
+            m_SSRShader->SetVector2(m_SSRKernel, "u_HZBUVFactor", m_HZBUvFactor);
+            m_SSRShader->SetVector2(m_SSRKernel, "u_FadeIn", SSR_FADE_IN);
+            m_SSRShader->SetFloat(m_SSRKernel, "u_Brightness", SSR_BRIGHTNESS);
+            m_SSRShader->SetFloat(m_SSRKernel, "u_DepthTolerance", SSR_DEPTH_TOLERANCE);
+            m_SSRShader->SetFloat(m_SSRKernel, "u_FacingReflectionsFading", SSR_FACING_REFLECTIONS_FADING);
+            m_SSRShader->SetInt(m_SSRKernel, "u_MaxSteps", SSR_MAX_STEPS);
+            m_SSRShader->SetInt(m_SSRKernel, "u_NumDepthMips", m_SSRDepthMipCount);
+            m_SSRShader->SetFloat(m_SSRKernel, "u_RoughnessDepthTolerance", SSR_ROUGHNESS_DEPTH_TOLERANCE);
+            m_SSRShader->SetInt(m_SSRKernel, "u_HalfRes", SSR_HALF_RESOLUTION ? 1 : 0);
+            m_SSRShader->SetInt(m_SSRKernel, "u_EnableConeTracing", 1);
+            m_SSRShader->SetFloat(m_SSRKernel, "u_LuminanceFactor", SSR_LUMINANCE_FACTOR);
+
+            m_SSRShader->Dispatch(m_SSRKernel, (ssrWidth + SSR_GROUP_SIZE - 1) / SSR_GROUP_SIZE,
+                (ssrHeight + SSR_GROUP_SIZE - 1) / SSR_GROUP_SIZE, 1);
+        }
         {
             PR_PROFILE_SCOPE("IDPass");
             rApi->BeginRenderPass(m_IDPass);
@@ -462,6 +722,7 @@ namespace Prism
             rApi->BeginRenderPass(m_CompositePass);
             float exposure = 0.8f;
             m_PostProcessMaterial->SetFloat("u_Exposure", exposure);
+            m_PostProcessMaterial->SetFloat("u_SSRIntensity", config.EnableSSR ? 1.0f : 0.0f);
             int32_t passIndex = m_PostProcessMaterial->GetShader()->FindPassByName(SHADER_PASS_NAME_SCENE_COMPOSITE);
             DrawFullscreen(m_PostProcessMaterial, passIndex);
             rApi->EndRenderPass();
@@ -670,7 +931,20 @@ namespace Prism
         m_FrameData.Lights[0].Radiance = directionalLight.Radiance;
         m_FrameData.Lights[0].Multiplier = directionalLight.Multiplier;
         m_FrameUBO->SetData(&m_FrameData, sizeof(m_FrameData));
-        
+
+        const glm::mat4& projection = cam.Projection.GetProjectionMatrix();
+        const float nearPlane = projection[3][2] / projection[2][2];
+        const float farPlane = projection[3][2] / (projection[2][2] + 1.0f);
+
+        m_SSRCameraData.ProjectionMatrix = projection;
+        m_SSRCameraData.ViewMatrix = cam.ViewMatrix;
+        m_SSRCameraData.NDCToViewMul = glm::vec2(2.0f / projection[0][0], 2.0f / projection[1][1]);
+        m_SSRCameraData.NDCToViewAdd = glm::vec2(-(1.0f - projection[2][0]) / projection[0][0], -(1.0f + projection[2][1]) / projection[1][1]);
+        m_SSRCameraData.DepthUnpackConsts = glm::vec2(nearPlane * farPlane / (farPlane - nearPlane), farPlane / (farPlane - nearPlane));
+        m_SSRCameraData.FullResolution = glm::vec2((float)m_VisibilityImage->GetWidth(), (float)m_VisibilityImage->GetHeight());
+        m_SSRCameraData.InvFullResolution = 1.0f / m_SSRCameraData.FullResolution;
+        m_SSRCameraData.InvHalfResolution = m_SSRCameraData.InvFullResolution * 2.0f;
+        m_SSRCameraUBO->SetData(&m_SSRCameraData, sizeof(m_SSRCameraData));
     }
 
     void SceneRenderer::UpdateShadowData(const FrameSnapshot& snapshot)
