@@ -59,8 +59,9 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32> Prism_Image_GetHeight;
         internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32> Prism_Image_GetSamples;
         internal static delegate* unmanaged[Cdecl]<IntPtr, ImageFormat> Prism_Image_GetFormat;
-        internal static delegate* unmanaged[Cdecl]<ImageFormat, UInt32, UInt32, IntPtr, UInt32, IntPtr> Prism_Image2D_Constructor;
-        internal static delegate* unmanaged[Cdecl]<ImageFormat, UInt32, UInt32, IntPtr, IntPtr> Prism_ImageCube_Constructor;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, ImageUsage> Prism_Image_GetUsage;
+        internal static delegate* unmanaged[Cdecl]<ImageSpecification*, IntPtr, IntPtr> Prism_Image2D_Constructor;
+        internal static delegate* unmanaged[Cdecl]<ImageSpecification*, IntPtr, IntPtr> Prism_ImageCube_Constructor;
         internal static delegate* unmanaged[Cdecl]<IntPtr, void> Prism_ImageCube_GenerateMipMap;
         internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr, void> Prism_ImageCube_CopyTo;
         // Texture
@@ -75,6 +76,28 @@ namespace Prism
         // UniformBuffer
         internal static delegate* unmanaged[Cdecl]<UInt32, IntPtr> Prism_UniformBuffer_Constructor;
         internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr, UInt32, void> Prism_UniformBuffer_SetData;
+        // ShaderStorageBuffer
+        internal static delegate* unmanaged[Cdecl]<UInt32, UInt32, IntPtr> Prism_ShaderStorageBuffer_Constructor;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr, UInt32, UInt32, void> Prism_ShaderStorageBuffer_SetData;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32, UInt32, IntPtr> Prism_ShaderStorageBuffer_RequestReadback;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32> Prism_ShaderStorageBuffer_GetSize;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, Bool32> Prism_ShaderStorageBufferReadback_IsDone;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32> Prism_ShaderStorageBufferReadback_GetSize;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr, void> Prism_ShaderStorageBufferReadback_GetData;
+        // ComputeShader
+        internal static delegate* unmanaged[Cdecl]<NativeString, IntPtr> Prism_ComputeShader_Constructor;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString*, void> Prism_ComputeShader_GetName;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, UInt32> Prism_ComputeShader_GetKernelCount;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, int> Prism_ComputeShader_FindKernel;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString, Bool32> Prism_ComputeShader_HasKernel;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, int, UInt32*, UInt32*, UInt32*, void> Prism_ComputeShader_GetKernelThreadGroupSizes;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, int, NativeString, IntPtr, void> Prism_ComputeShader_SetUniformBuffer;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, int, NativeString, IntPtr, void> Prism_ComputeShader_SetBuffer;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, int, NativeString, IntPtr, void> Prism_ComputeShader_SetTexture2D;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, int, NativeString, IntPtr, void> Prism_ComputeShader_SetTextureCube;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, int, NativeString, IntPtr, UInt32, void> Prism_ComputeShader_SetImage2D;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, int, NativeString, IntPtr, UInt32, void> Prism_ComputeShader_SetImageCube;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, int, UInt32, UInt32, UInt32, Bool32, void> Prism_ComputeShader_Dispatch;
         // PrismShader
         internal static delegate* unmanaged[Cdecl]<NativeString, IntPtr> Prism_PrismShader_GetShader;
         internal static delegate* unmanaged[Cdecl]<IntPtr, NativeString*, void> Prism_PrismShader_GetName;

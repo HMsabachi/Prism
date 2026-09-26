@@ -3,6 +3,8 @@
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Image.h"
 #include "Prism/Renderer/Buffer/UniformBuffer.h"
+#include "Prism/Renderer/Buffer/ShaderStorageBuffer.h"
+#include "Prism/Renderer/ComputeShader/ComputeShader.h"
 #include "Prism/Core/Math/Noise.h"
 #include "Prism/Core/Input.h"
 #include "Prism/Physics/PXPhysicsWrappers.h"
@@ -84,6 +86,7 @@ namespace Prism::PythonScript
         PythonBufferView& operator=(const PythonBufferView&) = delete;
 
         const void* Data() const { return View.buf; }
+        void* MutableData() const { return View.buf; }
         uint32_t Size() const { return Valid ? (uint32_t)View.len : 0; }
     };
 
@@ -199,6 +202,7 @@ namespace Prism::PythonScript
         uint32_t GetHeight() const { Ref<Image> image = m_Ref.As<Image>(); return image ? image->GetHeight() : 0; }
         uint32_t GetSamples() const { Ref<Image> image = m_Ref.As<Image>(); return image ? image->GetSamples() : 0; }
         ImageFormat GetFormat() const { Ref<Image> image = m_Ref.As<Image>(); return image ? image->GetFormat() : ImageFormat::None; }
+        ImageUsage GetUsage() const { Ref<Image> image = m_Ref.As<Image>(); return image ? image->GetUsage() : ImageUsage::None; }
     public:
         Ref<Image> GetImage() const { return m_Ref.As<Image>(); }
     };
@@ -208,14 +212,21 @@ namespace Prism::PythonScript
     public:
         PythonImage2D() = default;
         PythonImage2D(Ref<Image2D> image) : PythonImage(image) {}
-        static PythonImage2D Create(ImageFormat format, uint32_t width, uint32_t height, const py::object& data, uint32_t samples)
+        static PythonImage2D Create(const ImageSpecification& specification, const py::object& data)
         {
             PythonBufferView view(data);
             if (!data.is_none() && !view.Valid)
                 throw std::runtime_error("Image2D.Create: data must support the buffer protocol!");
-            ValidatePixelData(view, format, width, height, "Image2D.Create");
-            return PythonImage2D(Image2D::Create(format, width, height, view.Data(), samples));
+            ValidatePixelData(view, specification.Format, specification.Width, specification.Height, "Image2D.Create");
+
+            Buffer imageData;
+            if (view.Data())
+                imageData = Buffer::Copy(view.Data(), Utils::GetImageMemorySize(specification.Format, specification.Width, specification.Height));
+
+            return PythonImage2D(Image2D::Create(specification, std::move(imageData)));
         }
+    public:
+        Ref<Image2D> GetImage2D() const { return m_Ref.As<Image2D>(); }
     };
 
     class PythonImageCube : public PythonImage
@@ -223,13 +234,18 @@ namespace Prism::PythonScript
     public:
         PythonImageCube() = default;
         PythonImageCube(Ref<ImageCube> image) : PythonImage(image) {}
-        static PythonImageCube Create(ImageFormat format, uint32_t width, uint32_t height, const py::object& data)
+        static PythonImageCube Create(const ImageSpecification& specification, const py::object& data)
         {
             PythonBufferView view(data);
             if (!data.is_none() && !view.Valid)
                 throw std::runtime_error("ImageCube.Create: data must support the buffer protocol!");
-            ValidatePixelData(view, format, width, height, "ImageCube.Create", 6);
-            return PythonImageCube(ImageCube::Create(format, width, height, view.Data()));
+            ValidatePixelData(view, specification.Format, specification.Width, specification.Height, "ImageCube.Create", 6);
+
+            Buffer imageData;
+            if (view.Data())
+                imageData = Buffer::Copy(view.Data(), Utils::GetImageMemorySize(specification.Format, specification.Width, specification.Height) * 6);
+
+            return PythonImageCube(ImageCube::Create(specification, std::move(imageData)));
         }
         void GenerateMipMap() { Ref<ImageCube> image = GetImageCube(); if (image) image->GenerateMipMap(); }
         void CopyTo(const PythonImageCube& target) { Ref<ImageCube> image = GetImageCube(); if (image) image->CopyTo(target.GetImageCube()); }
@@ -242,6 +258,7 @@ namespace Prism::PythonScript
     public:
         PythonTexture() = default;
         PythonTexture(Ref<Texture> texture) : PythonAsset(std::move(texture)) {}
+        Ref<Texture> GetTexture() const { return m_Ref.As<Texture>(); }
         uint32_t GetWidth() const { Ref<Texture> texture = m_Ref.As<Texture>(); return texture ? texture->GetWidth() : 0; }
         uint32_t GetHeight() const { Ref<Texture> texture = m_Ref.As<Texture>(); return texture ? texture->GetHeight() : 0; }
         ImageFormat GetFormat() const { Ref<Texture> texture = m_Ref.As<Texture>(); return texture ? texture->GetFormat() : ImageFormat::None; }
@@ -495,6 +512,194 @@ namespace Prism::PythonScript
         }
     public:
         Ref<UniformBuffer> GetUniformBuffer() const { return m_Ref.As<UniformBuffer>(); }
+    };
+
+    class PythonShaderStorageBufferReadback : public PythonRefCounted
+    {
+    public:
+        PythonShaderStorageBufferReadback() = default;
+        PythonShaderStorageBufferReadback(Ref<ShaderStorageBufferReadback> request) : PythonRefCounted(std::move(request)) {}
+        virtual std::string __Repr__() override
+        {
+            Ref<ShaderStorageBufferReadback> request = GetReadback();
+            if (request)
+                return fmt::format(" <ShaderStorageBufferReadback Handle = {} Size = {}>", (uint64_t)request.Raw(), request->GetSize());
+            return fmt::format(" <ShaderStorageBufferReadback Handle = {}>", (uint64_t)m_Ref.Raw());
+        }
+        bool IsDone() const
+        {
+            Ref<ShaderStorageBufferReadback> request = GetReadback();
+            return request ? request->IsDone() : false;
+        }
+        uint32_t GetSize() const
+        {
+            Ref<ShaderStorageBufferReadback> request = GetReadback();
+            return request ? (uint32_t)request->GetSize() : 0;
+        }
+        void GetData(const py::object& data)
+        {
+            Ref<ShaderStorageBufferReadback> request = GetReadback();
+            if (!request)
+                throw std::runtime_error("ShaderStorageBufferReadback.GetData: invalid request!");
+            if (!request->IsDone())
+                throw std::runtime_error("ShaderStorageBufferReadback.GetData: readback is not done yet!");
+            PythonBufferView view(data);
+            if (!view.Valid)
+                throw std::runtime_error("ShaderStorageBufferReadback.GetData: data must support the buffer protocol!");
+            if (view.Size() < request->GetSize())
+                throw std::runtime_error(fmt::format("ShaderStorageBufferReadback.GetData: data needs at least {} bytes, got {}!"
+                    , request->GetSize(), view.Size()));
+            request->GetData(view.MutableData());
+        }
+    public:
+        Ref<ShaderStorageBufferReadback> GetReadback() const { return m_Ref.As<ShaderStorageBufferReadback>(); }
+    };
+
+    class PythonShaderStorageBuffer : public PythonRefCounted
+    {
+    public:
+        PythonShaderStorageBuffer() = default;
+        PythonShaderStorageBuffer(Ref<ShaderStorageBuffer> buffer) : PythonRefCounted(std::move(buffer)) {}
+        static PythonShaderStorageBuffer Create(uint32_t size, uint32_t usage)
+        {
+            return PythonShaderStorageBuffer(ShaderStorageBuffer::Create(size, (BufferUsage)usage));
+        }
+        virtual std::string __Repr__() override
+        {
+            Ref<ShaderStorageBuffer> buffer = GetShaderStorageBuffer();
+            if (buffer)
+                return fmt::format(" <ShaderStorageBuffer Handle = {} Size = {}>", (uint64_t)buffer.Raw(), buffer->GetSize());
+            return fmt::format(" <ShaderStorageBuffer Handle = {}>", (uint64_t)m_Ref.Raw());
+        }
+        void SetData(const py::object& data, uint32_t offset)
+        {
+            Ref<ShaderStorageBuffer> buffer = GetShaderStorageBuffer();
+            if (!buffer)
+                throw std::runtime_error("ShaderStorageBuffer.SetData: invalid buffer!");
+            PythonBufferView view(data);
+            if (!view.Valid)
+                throw std::runtime_error("ShaderStorageBuffer.SetData: data must support the buffer protocol!");
+            if ((uint64_t)offset + view.Size() > buffer->GetSize())
+                throw std::runtime_error(fmt::format("ShaderStorageBuffer.SetData: write range [{}, {}) exceeds buffer size {}!"
+                    , offset, offset + view.Size(), buffer->GetSize()));
+            buffer->SetData(view.Data(), view.Size(), offset);
+        }
+        PythonShaderStorageBufferReadback RequestReadback(uint32_t offset, uint32_t size)
+        {
+            Ref<ShaderStorageBuffer> buffer = GetShaderStorageBuffer();
+            if (!buffer)
+                throw std::runtime_error("ShaderStorageBuffer.RequestReadback: invalid buffer!");
+            Ref<ShaderStorageBufferReadback> request = buffer->RequestReadback(offset, size);
+            if (!request)
+                throw std::runtime_error(fmt::format("ShaderStorageBuffer.RequestReadback: invalid range offset = {}, size = {} for buffer size {}!"
+                    , offset, size, buffer->GetSize()));
+            return PythonShaderStorageBufferReadback(std::move(request));
+        }
+        uint32_t GetSize() const
+        {
+            Ref<ShaderStorageBuffer> buffer = GetShaderStorageBuffer();
+            return buffer ? (uint32_t)buffer->GetSize() : 0;
+        }
+    public:
+        Ref<ShaderStorageBuffer> GetShaderStorageBuffer() const { return m_Ref.As<ShaderStorageBuffer>(); }
+    };
+
+    class PythonComputeShader : public PythonAsset
+    {
+    public:
+        PythonComputeShader() = default;
+        PythonComputeShader(Ref<ComputeShader> shader) : PythonAsset(std::move(shader)) {}
+        static PythonComputeShader Create(const char* filePath)
+        {
+            AssetHandle handle = AssetManager::GetAssetHandleFromFilePath(filePath);
+            if (!AssetManager::IsAssetHandleValid(handle))
+                throw std::runtime_error(fmt::format("ComputeShader.Create: '{}' is not a registered asset!", filePath));
+
+            Ref<ComputeShader> shader = AssetManager::GetAsset<ComputeShader>(handle);
+            if (!shader)
+                throw std::runtime_error(fmt::format("ComputeShader.Create: failed to load '{}'!", filePath));
+            return PythonComputeShader(shader);
+        }
+        virtual std::string __Repr__() override
+        {
+            Ref<ComputeShader> shader = GetComputeShader();
+            if (shader)
+                return fmt::format(" <ComputeShader Handle = {} Name = '{}'>", (uint64_t)shader.Raw(), shader->GetName());
+            return fmt::format(" <ComputeShader Handle = {}>", (uint64_t)m_Ref.Raw());
+        }
+        std::string GetName() const
+        {
+            Ref<ComputeShader> shader = GetComputeShader();
+            return shader ? shader->GetName() : "";
+        }
+        uint32_t GetKernelCount() const
+        {
+            Ref<ComputeShader> shader = GetComputeShader();
+            return shader ? (uint32_t)shader->GetKernelCount() : 0;
+        }
+        int32_t FindKernel(const char* name) const
+        {
+            Ref<ComputeShader> shader = GetComputeShader();
+            return shader ? shader->FindKernel(name) : -1;
+        }
+        bool HasKernel(const char* name) const
+        {
+            Ref<ComputeShader> shader = GetComputeShader();
+            return shader ? shader->HasKernel(name) : false;
+        }
+        py::tuple GetKernelThreadGroupSizes(int32_t kernel) const
+        {
+            uint32_t x = 1, y = 1, z = 1;
+            Ref<ComputeShader> shader = GetComputeShader();
+            if (shader)
+                shader->GetKernelThreadGroupSizes(kernel, x, y, z);
+            return py::make_tuple(x, y, z);
+        }
+        void SetUniformBuffer(int32_t kernel, const char* name, const PythonUniformBuffer& buffer)
+        {
+            Ref<ComputeShader> shader = RequireComputeShader("SetUniformBuffer");
+            shader->SetUniformBuffer(kernel, name, buffer.GetUniformBuffer());
+        }
+        void SetBuffer(int32_t kernel, const char* name, const PythonShaderStorageBuffer& buffer)
+        {
+            Ref<ComputeShader> shader = RequireComputeShader("SetBuffer");
+            shader->SetBuffer(kernel, name, buffer.GetShaderStorageBuffer());
+        }
+        void SetTexture2D(int32_t kernel, const char* name, const PythonImage2D& image)
+        {
+            Ref<ComputeShader> shader = RequireComputeShader("SetTexture2D");
+            shader->SetTexture2D(kernel, name, image.GetImage2D());
+        }
+        void SetTextureCube(int32_t kernel, const char* name, const PythonImageCube& image)
+        {
+            Ref<ComputeShader> shader = RequireComputeShader("SetTextureCube");
+            shader->SetTextureCube(kernel, name, image.GetImageCube());
+        }
+        void SetImage2D(int32_t kernel, const char* name, const PythonImage2D& image, uint32_t level)
+        {
+            Ref<ComputeShader> shader = RequireComputeShader("SetImage2D");
+            shader->SetImage2D(kernel, name, image.GetImage2D(), level);
+        }
+        void SetImageCube(int32_t kernel, const char* name, const PythonImageCube& image, uint32_t level)
+        {
+            Ref<ComputeShader> shader = RequireComputeShader("SetImageCube");
+            shader->SetImageCube(kernel, name, image.GetImageCube(), level);
+        }
+        void Dispatch(int32_t kernel, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ, bool force = false)
+        {
+            Ref<ComputeShader> shader = RequireComputeShader("Dispatch");
+            shader->Dispatch(kernel, groupsX, groupsY, groupsZ, force);
+        }
+    public:
+        Ref<ComputeShader> GetComputeShader() const { return m_Ref.As<ComputeShader>(); }
+    private:
+        Ref<ComputeShader> RequireComputeShader(const char* method) const
+        {
+            Ref<ComputeShader> shader = GetComputeShader();
+            if (!shader)
+                throw std::runtime_error(fmt::format("ComputeShader.{}: invalid compute shader!", method));
+            return shader;
+        }
     };
 
     class PythonEntity
@@ -1181,6 +1386,7 @@ PYBIND11_MODULE(PrismEngine, m)
         .value("Script", AssetType::Script)
         .value("PhysicsMat", AssetType::PhysicsMat)
         .value("Shader", AssetType::Shader)
+        .value("ComputeShader", AssetType::ComputeShader)
         .value("Directory", AssetType::Directory)
         .value("Other", AssetType::Other)
         .value("None", AssetType::None)
@@ -1262,6 +1468,18 @@ PYBIND11_MODULE(PrismEngine, m)
         .value("ASTC_6x6", ImageFormat::ASTC_6x6)
         .value("ASTC_8x8", ImageFormat::ASTC_8x8)
         .value("Depth", ImageFormat::Depth);
+    py::enum_<ImageUsage>(m, "ImageUsage")
+        .value("None", ImageUsage::None)
+        .value("Texture", ImageUsage::Texture)
+        .value("Attachment", ImageUsage::Attachment)
+        .value("Storage", ImageUsage::Storage);
+    py::class_<ImageSpecification>(m, "ImageSpecification")
+        .def(py::init<>())
+        .def_readwrite("Format", &ImageSpecification::Format)
+        .def_readwrite("Usage", &ImageSpecification::Usage)
+        .def_readwrite("Width", &ImageSpecification::Width)
+        .def_readwrite("Height", &ImageSpecification::Height)
+        .def_readwrite("Samples", &ImageSpecification::Samples);
     py::class_<PythonImage, PythonRefCounted>(m, "Image")
         .def(py::init<>())
         .def("__repr__", &PythonImage::__Repr__)
@@ -1269,19 +1487,21 @@ PYBIND11_MODULE(PrismEngine, m)
         .def_property_readonly("Height", &PythonImage::GetHeight)
         .def_property_readonly("Samples", &PythonImage::GetSamples)
         .def_property_readonly("Format", &PythonImage::GetFormat)
+        .def_property_readonly("Usage", &PythonImage::GetUsage)
         .def("GetWidth", &PythonImage::GetWidth)
         .def("GetHeight", &PythonImage::GetHeight)
         .def("GetSamples", &PythonImage::GetSamples)
-        .def("GetFormat", &PythonImage::GetFormat);
+        .def("GetFormat", &PythonImage::GetFormat)
+        .def("GetUsage", &PythonImage::GetUsage);
     py::class_<PythonImage2D, PythonImage>(m, "Image2D")
         .def(py::init<>())
         .def_static("Create", &PythonImage2D::Create,
-            py::arg("format"), py::arg("width"), py::arg("height"), py::arg("data") = py::none(), py::arg("samples") = 1)
+            py::arg("specification"), py::arg("data") = py::none())
         .def("__repr__", &PythonImage2D::__Repr__);
     py::class_<PythonImageCube, PythonImage>(m, "ImageCube")
         .def(py::init<>())
         .def_static("Create", &PythonImageCube::Create,
-            py::arg("format"), py::arg("width"), py::arg("height"), py::arg("data") = py::none())
+            py::arg("specification"), py::arg("data") = py::none())
         .def("__repr__", &PythonImageCube::__Repr__)
         .def("GenerateMipMap", &PythonImageCube::GenerateMipMap)
         .def("CopyTo", &PythonImageCube::CopyTo);
@@ -1354,6 +1574,36 @@ PYBIND11_MODULE(PrismEngine, m)
         .def_static("Create", &PythonUniformBuffer::Create)
         .def("__repr__", &PythonUniformBuffer::__Repr__)
         .def("SetData", &PythonUniformBuffer::SetData, py::arg("data"), py::arg("offset") = 0);
+    py::class_<PythonShaderStorageBufferReadback, PythonRefCounted>(m, "ShaderStorageBufferReadback")
+        .def(py::init<>())
+        .def("__repr__", &PythonShaderStorageBufferReadback::__Repr__)
+        .def("IsDone", &PythonShaderStorageBufferReadback::IsDone)
+        .def("GetSize", &PythonShaderStorageBufferReadback::GetSize)
+        .def("GetData", &PythonShaderStorageBufferReadback::GetData, py::arg("data"));
+
+    py::class_<PythonShaderStorageBuffer, PythonRefCounted>(m, "ShaderStorageBuffer")
+        .def(py::init<>())
+        .def_static("Create", &PythonShaderStorageBuffer::Create, py::arg("size"), py::arg("usage") = (uint32_t)BufferUsage::Dynamic)
+        .def("__repr__", &PythonShaderStorageBuffer::__Repr__)
+        .def("SetData", &PythonShaderStorageBuffer::SetData, py::arg("data"), py::arg("offset") = 0)
+        .def("RequestReadback", &PythonShaderStorageBuffer::RequestReadback, py::arg("offset") = 0, py::arg("size") = 0)
+        .def("GetSize", &PythonShaderStorageBuffer::GetSize);
+    py::class_<PythonComputeShader, PythonAsset>(m, "ComputeShader")
+        .def(py::init<>())
+        .def_static("Create", &PythonComputeShader::Create, py::arg("filePath"))
+        .def("__repr__", &PythonComputeShader::__Repr__)
+        .def("GetName", &PythonComputeShader::GetName)
+        .def("GetKernelCount", &PythonComputeShader::GetKernelCount)
+        .def("FindKernel", &PythonComputeShader::FindKernel, py::arg("name"))
+        .def("HasKernel", &PythonComputeShader::HasKernel, py::arg("name"))
+        .def("GetKernelThreadGroupSizes", &PythonComputeShader::GetKernelThreadGroupSizes, py::arg("kernel"))
+        .def("SetUniformBuffer", &PythonComputeShader::SetUniformBuffer, py::arg("kernel"), py::arg("name"), py::arg("buffer"))
+        .def("SetBuffer", &PythonComputeShader::SetBuffer, py::arg("kernel"), py::arg("name"), py::arg("buffer"))
+        .def("SetTexture2D", &PythonComputeShader::SetTexture2D, py::arg("kernel"), py::arg("name"), py::arg("image"))
+        .def("SetTextureCube", &PythonComputeShader::SetTextureCube, py::arg("kernel"), py::arg("name"), py::arg("image"))
+        .def("SetImage2D", &PythonComputeShader::SetImage2D, py::arg("kernel"), py::arg("name"), py::arg("image"), py::arg("level") = 0)
+        .def("SetImageCube", &PythonComputeShader::SetImageCube, py::arg("kernel"), py::arg("name"), py::arg("image"), py::arg("level") = 0)
+        .def("Dispatch", &PythonComputeShader::Dispatch, py::arg("kernel"), py::arg("groupsX"), py::arg("groupsY"), py::arg("groupsZ"), py::arg("force") = false);
     py::class_<PythonMeshFactory>(m, "MeshFactory")
         .def_static("CreatePlane", &PythonMeshFactory::CreatePlane);
 
@@ -1682,6 +1932,8 @@ namespace Prism
             s_PythonTypeCache[PYTHON_TYPE_MESHREF] = py::type::of<PythonMesh>();
             s_PythonTypeCache[PYTHON_TYPE_MATERIALREF] = py::type::of<PythonMaterial>();
             s_PythonTypeCache[PYTHON_TYPE_TEXTURE2DREF] = py::type::of<PythonTexture2D>();
+            s_PythonTypeCache[PYTHON_TYPE_PRISMSHADERREF] = py::type::of<PythonPrismShader>();
+            s_PythonTypeCache[PYTHON_TYPE_COMPUTESHADERREF] = py::type::of<PythonComputeShader>();
             s_PythonTypeCache[PYTHON_TYPE_ASSET] = py::type::of<PythonAsset>();
             s_PythonTypeCache[PYTHON_TYPE_REF] = py::type::of<PythonRefCounted>();
 

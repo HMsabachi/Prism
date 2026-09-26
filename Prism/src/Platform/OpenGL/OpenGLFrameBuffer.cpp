@@ -30,7 +30,14 @@ namespace Prism {
 
         static Ref<Image2D> CreateAndAttachColorAttachment(uint32_t samples, ImageFormat format, uint32_t width, uint32_t height, int index)
         {
-            Ref<Image2D> image = Image2D::Create(format, width, height, nullptr, samples);
+            ImageSpecification specification{};
+            specification.Format = format;
+            specification.Usage = ImageUsage::Attachment;
+            specification.Width = width;
+            specification.Height = height;
+            specification.Samples = samples;
+
+            Ref<Image2D> image = Image2D::Create(specification);
             image->Invalidate();
             Ref<OpenGLImage2D> glImage = image.As<OpenGLImage2D>();
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index, TextureTarget(samples > 1), glImage->GetRendererID(), 0);
@@ -39,7 +46,14 @@ namespace Prism {
 
         static Ref<Image2D> AttachDepthTexture(uint32_t samples, ImageFormat format, uint32_t width, uint32_t height)
         {
-            Ref<Image2D> image = Image2D::Create(format, width, height, nullptr, samples);
+            ImageSpecification specification{};
+            specification.Format = format;
+            specification.Usage = ImageUsage::Attachment;
+            specification.Width = width;
+            specification.Height = height;
+            specification.Samples = samples;
+
+            Ref<Image2D> image = Image2D::Create(specification);
             image->Invalidate();
 
             Ref<OpenGLImage2D> glImage = image.As<OpenGLImage2D>();
@@ -67,16 +81,23 @@ namespace Prism {
     {
         for (auto format : m_Specification.Attachments.Attachments)
         {
+            ImageSpecification specification{};
+            specification.Format = format.Format;
+            specification.Usage = ImageUsage::Attachment;
+            specification.Width = m_Width;
+            specification.Height = m_Height;
+            specification.Samples = m_Specification.Samples;
+
             if (!Utils::IsDepthFormat(format.Format))
             {
                 m_ColorAttachmentFormats.emplace_back(format.Format);
-                Ref<Image2D> image = Image2D::Create(format.Format, m_Width, m_Height, nullptr, m_Specification.Samples);
+                Ref<Image2D> image = Image2D::Create(specification);
                 m_ColorAttachments.emplace_back(image);
             }
             else
             {
                 m_DepthAttachmentFormat = format.Format;
-                Ref<Image2D> image = Image2D::Create(format.Format, m_Width, m_Height, nullptr, m_Specification.Samples);
+                Ref<Image2D> image = Image2D::Create(specification);
                 m_DepthAttachment = image;
             }
         }

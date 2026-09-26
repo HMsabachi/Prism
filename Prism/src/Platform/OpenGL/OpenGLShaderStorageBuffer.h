@@ -1,8 +1,26 @@
-﻿#pragma once
+#pragma once
 #include "Prism/Renderer/Buffer/ShaderStorageBuffer.h"
+
+#include <atomic>
 
 namespace Prism
 {
+    class OpenGLShaderStorageBufferReadback : public ShaderStorageBufferReadback
+    {
+    public:
+        OpenGLShaderStorageBufferReadback(size_t size);
+
+        virtual bool IsDone() const override;
+        virtual size_t GetSize() const override;
+        virtual void GetData(void* data) const override;
+
+        void RT_ReadFrom(RendererID bufferID, size_t offset);
+
+    private:
+        std::vector<uint8_t> m_Staging;
+        std::atomic<bool> m_Done{ false };
+    };
+
     class OpenGLShaderStorageBuffer : public ShaderStorageBuffer
     {
 
@@ -12,7 +30,7 @@ namespace Prism
         virtual ~OpenGLShaderStorageBuffer() override;
 
         virtual void SetData(const void* data, size_t size, size_t offset = 0) override;
-        virtual void GetData(void* data, size_t size, size_t offset = 0, bool sync = false) const override;
+        virtual Ref<ShaderStorageBufferReadback> RequestReadback(size_t offset = 0, size_t size = 0) override;
 
         void RT_Init();
 

@@ -6,6 +6,7 @@
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/SceneEnvironment.h"
 #include "Prism/Renderer/Shader/PrismShader.h"
+#include "Prism/Renderer/ComputeShader/ComputeShader.h"
 #include "ModelImporter.h"
 
 #include "yaml-cpp/yaml.h"
@@ -100,6 +101,16 @@ namespace Prism {
     {
         Ref<Asset> temp = asset;
         asset = AssetManager::GetShaderLibrary()->Load(temp->FilePath);
+        if (!asset)
+            return false;
+        CopyMetadata(temp, asset);
+        return true;
+    }
+
+    bool ComputeShaderSerializer::TryLoadData(Ref<Asset>& asset) const
+    {
+        Ref<Asset> temp = asset;
+        asset = ComputeShader::Create(temp->FilePath);
         if (!asset)
             return false;
         CopyMetadata(temp, asset);

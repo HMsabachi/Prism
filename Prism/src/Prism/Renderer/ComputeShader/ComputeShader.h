@@ -1,70 +1,65 @@
-#pragma once
+﻿#pragma once
 #include <PrismShaderCore/CompilerCompute.h>
 #include "Prism/Core/Ref.h"
+#include "Prism/Asset/Asset.h"
 
-#include <unordered_map>
+#include <string>
+#include <vector>
 
 namespace Prism
 {
-	class Shader;
-	class Texture2D;
-	class TextureCube;
-	class UniformBuffer;
-	class ShaderStorageBuffer;
-	class Texture;
+    class UniformBuffer;
+    class ShaderStorageBuffer;
+    class Image2D;
+    class ImageCube;
 
-	struct ComputeResourceBinding
-	{
-		PrismShaderCompiler::CSL::ComputeResource Resource;
-		Ref<RefCounted> res;
-		uint32_t Level = 0;
-	};
+    class ComputeShader : public Asset
+    {
+    public:
+        static Ref<ComputeShader> Create(const std::string& filePath);
+        static Ref<ComputeShader> Create(AssetHandle handle);
 
-	class ComputeShader : public RefCounted
-	{
-	public:
-		static Ref<ComputeShader> Create(const std::string& filePath);
+        virtual ~ComputeShader() = default;
 
-		ComputeShader(const std::string& filePath);
-		~ComputeShader();
+        const std::string& GetName() const { return m_Name; }
+        const std::string& GetFilePath() const { return m_FilePath; }
 
-		void Load();
+        virtual int32_t FindKernel(const std::string& name) const = 0;
+        virtual bool HasKernel(const std::string& name) const = 0;
+        virtual void GetKernelThreadGroupSizes(int32_t kernel, uint32_t& x, uint32_t& y, uint32_t& z) const = 0;
+        virtual size_t GetKernelCount() const = 0;
 
-		int32_t FindKernel(const std::string& name);
+        virtual void SetUniformBuffer(int32_t kernel, const std::string& name, Ref<UniformBuffer> ubo) = 0;
+        virtual void SetBuffer(int32_t kernel, const std::string& name, Ref<ShaderStorageBuffer> ssbo) = 0;
+        virtual void SetTexture2D(int32_t kernel, const std::string& name, Ref<Image2D> image) = 0;
+        virtual void SetTextureCube(int32_t kernel, const std::string& name, Ref<ImageCube> image) = 0;
+        virtual void SetImage2D(int32_t kernel, const std::string& name, Ref<Image2D> image, uint32_t level = 0) = 0;
+        virtual void SetImageCube(int32_t kernel, const std::string& name, Ref<ImageCube> image, uint32_t level = 0) = 0;
 
-		void SetUniformBuffer(int32_t kernel, const std::string& name, Ref<UniformBuffer> ubo);
-		void SetBuffer(int32_t kernel, const std::string& name, Ref<ShaderStorageBuffer> ssbo);
-		void SetTexture(int32_t kernel, const std::string& name, Ref<Texture> tex);
-		void SetImage(int32_t kernel, const std::string& name, Ref<Texture> tex, uint32_t level = 0);
+        virtual void Dispatch(int32_t kernel, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ, bool force = false) = 0;
 
-		void Dispatch(int32_t kernel, uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ);
+    protected:
+        ComputeShader(const std::string& filePath);
+        void Load();
 
-		Ref<Shader> GetKernelShader(int32_t kernel) const;
-		const std::vector<ComputeResourceBinding>& GetResources() const { return m_Resources; }
+        struct Slot
+        {
+            uint32_t Set = 0;
+            uint32_t Binding = 0;
+            PrismShaderCompiler::CSL::ResourceKind Kind = PrismShaderCompiler::CSL::ResourceKind::StorageBuffer;
+            bool ReadOnly = false;
+            bool WriteOnly = false;
+            std::string Name;
+        };
 
-	private:
-		int32_t FindRes(const std::string& name);
-		bool IsLegalID(int32_t kernel);
+        int32_t FindSlot(const std::string& name, PrismShaderCompiler::CSL::ResourceKind expected) const;
+        virtual bool IsLegalKernel(int32_t kernel) const = 0;
 
-		struct Kernel
-		{
-			Ref<Shader> shader;
-			std::string name;
-			uint32_t groupSizeX = 1;
-			uint32_t groupSizeY = 1;
-			uint32_t groupSizeZ = 1;
-		};
+        std::vector<Slot> m_Slots;
 
-		std::vector<Kernel> m_Kernels;
-		std::vector<ComputeResourceBinding> m_Resources;
-		std::unordered_map<std::string, int32_t> m_ResourcesMap;
+        PrismShaderCompiler::CompiledComputeShader m_Compiled;
 
-		PrismShaderCompiler::CompiledComputeShader m_Compiled;
-
-		std::string m_Name;
-		std::string m_FilePath;
-
-	public:
-		static std::vector<Ref<ComputeShader>> s_AllComputeShader;
-	};
+        std::string m_Name;
+        std::string m_FilePath;
+    };
 }

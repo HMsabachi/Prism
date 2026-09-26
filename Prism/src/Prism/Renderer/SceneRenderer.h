@@ -19,6 +19,7 @@ namespace Prism
     class Image2D;
     class UniformBuffer;
     class ShaderStorageBuffer;
+    class ComputeShader;
 
     struct RendererCamera
     {
@@ -146,8 +147,14 @@ namespace Prism
         Ref<RenderPass> m_ShadowPasses[4];
         Ref<RenderPass> m_GeoPass;
         Ref<RenderPass> m_IDPass;
-        Ref<RenderPass> m_BloomBlurPass[2];
         Ref<RenderPass> m_CompositePass;
+
+        Ref<Image2D> m_BloomImages[2];
+        Ref<ComputeShader> m_BloomBlurShader;
+        int32_t m_BloomHorizontalFirstKernel = -1;
+        int32_t m_BloomHorizontalKernel = -1;
+        int32_t m_BloomVerticalKernel = -1;
+        int32_t m_BloomClearKernel = -1;
 
         Ref<Material> m_PostProcessMaterial;
         Ref<Material> m_EditorDebugMaterial;

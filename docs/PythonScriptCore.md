@@ -162,7 +162,30 @@ tex = Texture2D(512, 512)              # 创建空纹理
 tex = Texture2D(handle)                # 从 AssetHandle 包装
 ```
 
-### 4.5 引擎核心
+### 4.5 计算着色器
+
+kernel 用 `FindKernel` 返回的裸 `int` 寻址；`Dispatch` 是入队式，帧末才真正执行，当帧读不回 SSBO 结果。
+
+```python
+from PrismEngine import ComputeShader, ShaderStorageBuffer, UniformBuffer
+
+cs = ComputeShader.Create("Assets/Shaders/Example.ComputeShader")
+kernel = cs.FindKernel("CSMain")
+if cs.HasKernel("CSMain"):
+    print(cs.GetKernelThreadGroupSizes(kernel))   # (8, 8, 1)
+
+ssbo = ShaderStorageBuffer.Create(1024)           # 默认 Dynamic；Static 传 1
+ssbo.SetData([1.0, 2.0, 3.0, 4.0])
+ubo = UniformBuffer.Create(16)
+
+cs.SetBuffer(kernel, "o_Result", ssbo)
+cs.SetTexture(kernel, "u_Input", tex)
+cs.SetImage(kernel, "o_Output", tex, 0)           # 最后一个是 mip level
+cs.SetUniformBuffer(kernel, "Params", ubo)
+cs.Dispatch(kernel, 64, 64, 1)
+```
+
+### 4.6 引擎核心
 
 ```python
 Time.DeltaTime       # float (只读)
@@ -179,7 +202,7 @@ Log.Warn("message")
 Log.Error("message")
 ```
 
-### 4.6 物理
+### 4.7 物理
 
 ```python
 Physics.Gravity = -9.81

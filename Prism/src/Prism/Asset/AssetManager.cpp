@@ -261,6 +261,7 @@ namespace Prism {
         if (extension == "cs")  return AssetType::Script;
         if (extension == "py")  return AssetType::Script;
         if (extension == "Shader") return AssetType::Shader;
+        if (extension == "ComputeShader") return AssetType::ComputeShader;
         return AssetType::None;
     }
 

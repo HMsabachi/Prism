@@ -49,4 +49,11 @@ namespace Prism {
         virtual bool TryLoadData(Ref<Asset>& asset) const override;
     };
 
+    class ComputeShaderSerializer : public AssetSerializer
+    {
+    public:
+        virtual void Serialize(const Ref<Asset>& asset) const override {}
+        virtual bool TryLoadData(Ref<Asset>& asset) const override;
+    };
+
 }

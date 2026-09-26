@@ -1,6 +1,6 @@
 Scene: Scene Name
 Environment:
-  EnvironmentMap: 2825478391973848339
+  EnvironmentMap: 8027025345057022900
   Light:
     Direction: [-0.477, -1, -0.015]
     Radiance: [1, 1, 1]
@@ -171,13 +171,6 @@ Entities:
               Name: ID
               Type: 11
               Value: 0
-        - ClassID: 11750470956922696660
-          Enabled: true
-          Fields:
-            - ID: 3048789568
-              Name: ID
-              Type: 11
-              Value: 0
     PythonScriptComponent:
       Behaviours:
         []
@@ -199,7 +192,7 @@ Entities:
         []
     DirectionalLightComponent:
       Radiance: [1, 1, 1]
-      Intensity: 0.8
+      Intensity: 1
       CastShadows: true
       SoftShadows: true
       LightSize: 0.5
@@ -588,9 +581,9 @@ Entities:
       Intensity: 0.2
       Angle: 0
       SkyboxLod: 1
-      DynamicSky: false
+      DynamicSky: true
       TurbidityAzimuthInclination: [2, 0, 0]
-      EnvironmentMap: 2825478391973848339
+      EnvironmentMap: 8027025345057022900
   - Entity: 9087946811847071748
     Parent: 0
     Children:
@@ -625,7 +618,21 @@ Entities:
       Material: 0
     CSharpScriptComponent:
       Behaviours:
-        []
+        - ClassID: 11750470956922696660
+          Enabled: true
+          Fields:
+            - ID: 3453062739
+              Name: ComputeShader
+              Type: 20
+              Value: 848699648155197565
+            - ID: 1434635752
+              Name: Shader
+              Type: 19
+              Value: 10917201513631535817
+            - ID: 3048789568
+              Name: ID
+              Type: 11
+              Value: 0
     PythonScriptComponent:
       Behaviours:
         - ClassID: 8019244560703880993

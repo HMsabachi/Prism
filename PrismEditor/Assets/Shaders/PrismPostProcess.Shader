@@ -78,19 +78,20 @@ Shader "PostProcess/PrismPostProcess"
                     return edge;
                 }
 
+                vec3 ACESFilmic(vec3 color)
+                {
+                    return clamp((color * (2.51 * color + 0.03)) / (color * (2.43 * color + 0.59) + 0.14), 0.0, 1.0);
+                }
+
                 void frag()
                 {
                     const float gamma     = 2.2;
-                    const float pureWhite = 1.0;
 
                     vec3 color = texture(Prism_GeometryPassTexture, vs_Output.TexCoord).rgb;
                     color += texture(Prism_BloomTexture, vs_Output.TexCoord).rgb;
                     color *= u_Exposure;
-                    // Reinhard tonemapping operator.
-                    float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
-                    float mappedLuminance = (luminance * (1.0 + luminance / (pureWhite * pureWhite))) / (1.0 + luminance);
 
-                    vec3 mappedColor = (mappedLuminance / luminance) * color;
+                    vec3 mappedColor = ACESFilmic(color);
 
                     vec2 texel = u_OutlineWidth / vec2(textureSize(Prism_ObjectIDTexture, 0));
                     vec3 idC = texture(Prism_ObjectIDTexture, vs_Output.TexCoord).rgb;

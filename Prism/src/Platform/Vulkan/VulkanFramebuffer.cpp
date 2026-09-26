@@ -27,11 +27,16 @@ namespace Prism
         {
             for (auto& format : m_Specification.Attachments.Attachments)
             {
-                Ref<Image2D> image = Image2D::Create(format.Format, m_Width, m_Height, nullptr, m_Specification.Samples);
+                ImageSpecification specification{};
+                specification.Format = format.Format;
+                specification.Usage = ImageUsage::Attachment;
+                specification.Width = m_Width;
+                specification.Height = m_Height;
+                specification.Samples = m_Specification.Samples;
+
+                Ref<Image2D> image = Image2D::Create(specification);
                 if (!IsDepthFormat(format.Format))
                 {
-                    // GL 语义下任意纹理可挂 FBO，Vulkan 需显式声明渲染目标用途
-                    image.As<VulkanImage2D>()->SetExtraUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
                     m_ColorAttachments.emplace_back(image);
                 }
                 else
@@ -210,6 +215,8 @@ namespace Prism
             subpassDescription.pDepthStencilAttachment = &depthAttachmentReference;
 
         // 子渲染通道依赖：颜色/深度 attachment 与下一 pass 的采样读之间的布局和内存依赖
+        // TODO: 下面两组的 srcStageMask/srcAccessMask 只有 FRAGMENT_SHADER/SHADER_READ，不含 COMPUTE_SHADER/SHADER_WRITE，
+        // 所以 compute 写 image 后由后续 pass 采样目前没有同步保证。暂未显形，出现花屏/闪帧时把这两组放宽
         StaticVector<VkSubpassDependency, 10> dependencies;
         if (!m_ColorAttachments.empty())
         {

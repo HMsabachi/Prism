@@ -10,6 +10,37 @@
 namespace Prism
 {
 
+    OpenGLShaderStorageBufferReadback::OpenGLShaderStorageBufferReadback(size_t size)
+        : m_Staging(size)
+    {
+    }
+
+    bool OpenGLShaderStorageBufferReadback::IsDone() const
+    {
+        return m_Done.load(std::memory_order_acquire);
+    }
+
+    size_t OpenGLShaderStorageBufferReadback::GetSize() const
+    {
+        return m_Staging.size();
+    }
+
+    void OpenGLShaderStorageBufferReadback::GetData(void* data) const
+    {
+        PR_CORE_ASSERT(IsDone(), "ShaderStorageBufferReadback::GetData 在 IsDone 之前被调用");
+        if (data == nullptr || m_Staging.empty())
+            return;
+        std::memcpy(data, m_Staging.data(), m_Staging.size());
+    }
+
+    void OpenGLShaderStorageBufferReadback::RT_ReadFrom(RendererID bufferID, size_t offset)
+    {
+        if (m_Staging.empty())
+            return;
+        glGetNamedBufferSubData(bufferID, static_cast<GLintptr>(offset), m_Staging.size(), m_Staging.data());
+        m_Done.store(true, std::memory_order_release);
+    }
+
     OpenGLShaderStorageBuffer::OpenGLShaderStorageBuffer(size_t size, BufferUsage usage)
         :m_Size(size), m_Usage(usage), m_RendererID(0)
     {
@@ -48,17 +79,32 @@ namespace Prism
             glNamedBufferSubData(instance->m_RendererID, static_cast<GLintptr>(offset), size, copy);
         });
     }
-    void OpenGLShaderStorageBuffer::GetData(void* data, size_t size, size_t offset, bool sync) const
+    Ref<ShaderStorageBufferReadback> OpenGLShaderStorageBuffer::RequestReadback(size_t offset, size_t size)
     {
-        Ref<const OpenGLShaderStorageBuffer> instance = this;
-        Renderer::Submit([=]() {
-            if (data == nullptr || size == 0) return;
-            glGetNamedBufferSubData(instance->m_RendererID, static_cast<GLintptr>(offset), size, data);
-        });
+        if (offset >= m_Size)
+        {
+            PR_CORE_ERROR("ShaderStorageBuffer::RequestReadback: 起始偏移 {} 超出 buffer 大小 {}", offset, m_Size);
+            return nullptr;
+        }
 
-        // TODO: MultiThreaded 下无参 WaitAndRender 在主线程执行队列且 context 不在主线程，需改用 fence/glFenceSync 同步读回
-        if(sync)
-            Renderer::WaitAndRender();
+        if (size == 0)
+        {
+            size = m_Size - offset;
+        }
+        else if (size > m_Size - offset)
+        {
+            PR_CORE_ERROR("ShaderStorageBuffer::RequestReadback: 读回范围 [{}, {}) 超出 buffer 大小 {}",
+                offset, offset + size, m_Size);
+            return nullptr;
+        }
+
+        Ref<OpenGLShaderStorageBufferReadback> request = Ref<OpenGLShaderStorageBufferReadback>::Create(size);
+        Ref<OpenGLShaderStorageBuffer> instance = this;
+        Renderer::Submit([instance, request, offset]() mutable
+        {
+            request->RT_ReadFrom(instance->m_RendererID, offset);
+        });
+        return request;
     }
 
     RendererID OpenGLShaderStorageBuffer::GetRendererID() const

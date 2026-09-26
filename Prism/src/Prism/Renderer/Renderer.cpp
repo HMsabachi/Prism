@@ -12,6 +12,7 @@
 
 #include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/ComputeShader/ComputeShader.h"
+#include "Prism/Asset/AssetManager.h"
 #include "Prism/Renderer/Buffer/UniformBuffer.h"
 #include "Camera/Camera.h"
 
@@ -109,14 +110,14 @@ namespace Prism
 
         Ref<TextureCube> envUnfiltered = TextureCube::Create(ImageFormat::RGBA32F, cubemapSize, cubemapSize);
         if (!s_EnvironmentShader)
-            s_EnvironmentShader = ComputeShader::Create("Assets/Shaders/Environment.ComputeShader");
+            s_EnvironmentShader = AssetManager::GetAsset<ComputeShader>("Assets/Shaders/Environment.ComputeShader");
         Ref<Texture2D> envEquirect = Texture2D::Create(filepath);
         PR_CORE_ASSERT(envEquirect->GetFormat() == ImageFormat::RGBA32F, "Texture is not HDR!");
 
         int toCubeKernel = s_EnvironmentShader->FindKernel("CSEquirectToCube");
-        s_EnvironmentShader->SetTexture(toCubeKernel, "u_EquirectangularTex", envEquirect);
-        s_EnvironmentShader->SetImage(toCubeKernel, "o_OutputCube", envUnfiltered);
-        s_EnvironmentShader->Dispatch(toCubeKernel, cubemapSize / 32, cubemapSize / 32, 6);
+        s_EnvironmentShader->SetTexture2D(toCubeKernel, "u_EquirectangularTex", envEquirect->GetImage());
+        s_EnvironmentShader->SetImageCube(toCubeKernel, "o_OutputCube", envUnfiltered->GetImage());
+        s_EnvironmentShader->Dispatch(toCubeKernel, cubemapSize / 32, cubemapSize / 32, 6, true);
         envUnfiltered->GetImage()->GenerateMipMap();
 
         Ref<TextureCube> envFiltered = TextureCube::Create(ImageFormat::RGBA32F, cubemapSize, cubemapSize);
@@ -124,23 +125,23 @@ namespace Prism
 
         Ref<UniformBuffer> mipFilterUBO = UniformBuffer::Create(sizeof(float));
         int mipFilter = s_EnvironmentShader->FindKernel("CSMipFilter");
-        s_EnvironmentShader->SetTexture(mipFilter, "u_InputCubeMap", envUnfiltered);
+        s_EnvironmentShader->SetTextureCube(mipFilter, "u_InputCubeMap", envUnfiltered->GetImage());
         const float deltaRoughness = 1.0f / glm::max((float)(envFiltered->GetMipLevelCount() - 1.0f), 1.0f);
         for (uint32_t level = 1, size = cubemapSize / 2; level < envFiltered->GetMipLevelCount(); level++, size /= 2)
         {
             const uint32_t numGroups = glm::max((uint32_t)1, size / 32);
-            s_EnvironmentShader->SetImage(mipFilter, "o_OutputCube", envFiltered, level);
+            s_EnvironmentShader->SetImageCube(mipFilter, "o_OutputCube", envFiltered->GetImage(), level);
             float roughness = level * deltaRoughness;
             mipFilterUBO->SetData(&roughness, sizeof(float));
             s_EnvironmentShader->SetUniformBuffer(mipFilter, "MipFilterParams", mipFilterUBO);
-            s_EnvironmentShader->Dispatch(mipFilter, numGroups, numGroups, 6);
+            s_EnvironmentShader->Dispatch(mipFilter, numGroups, numGroups, 6, true);
         }
 
         Ref<TextureCube> irradianceMap = TextureCube::Create(ImageFormat::RGBA32F, irradianceMapSize, irradianceMapSize);
         int irradiance = s_EnvironmentShader->FindKernel("CSIrradiance");
-        s_EnvironmentShader->SetTexture(irradiance, "u_InputCubeMap", envFiltered);
-        s_EnvironmentShader->SetImage(irradiance, "o_OutputCube", irradianceMap);
-        s_EnvironmentShader->Dispatch(irradiance, irradianceMapSize / 32, irradianceMapSize / 32, 6);
+        s_EnvironmentShader->SetTextureCube(irradiance, "u_InputCubeMap", envFiltered->GetImage());
+        s_EnvironmentShader->SetImageCube(irradiance, "o_OutputCube", irradianceMap->GetImage());
+        s_EnvironmentShader->Dispatch(irradiance, irradianceMapSize / 32, irradianceMapSize / 32, 6, true);
         irradianceMap->GetImage()->GenerateMipMap();
 
         return { envFiltered, irradianceMap };
@@ -153,7 +154,7 @@ namespace Prism
 
         Ref<TextureCube> envUnfiltered = TextureCube::Create(ImageFormat::RGBA32F, cubemapSize, cubemapSize);
         if (!s_PreethamSkyShader)
-            s_PreethamSkyShader = ComputeShader::Create("Assets/Shaders/PreethamSky.ComputeShader");
+            s_PreethamSkyShader = AssetManager::GetAsset<ComputeShader>("Assets/Shaders/PreethamSky.ComputeShader");
 
         int preethamKernel = s_PreethamSkyShader->FindKernel("CSPreethamSky");
 
@@ -161,9 +162,9 @@ namespace Prism
         Ref<UniformBuffer> preethamUBO = UniformBuffer::Create(sizeof(glm::vec3));
         preethamUBO->SetData(&params, sizeof(glm::vec3));
 
-        s_PreethamSkyShader->SetImage(preethamKernel, "o_CubeMap", envUnfiltered);
+        s_PreethamSkyShader->SetImageCube(preethamKernel, "o_CubeMap", envUnfiltered->GetImage());
         s_PreethamSkyShader->SetUniformBuffer(preethamKernel, "PreethamParams", preethamUBO);
-        s_PreethamSkyShader->Dispatch(preethamKernel, cubemapSize / 32, cubemapSize / 32, 6);
+        s_PreethamSkyShader->Dispatch(preethamKernel, cubemapSize / 32, cubemapSize / 32, 6, true);
         envUnfiltered->GetImage()->GenerateMipMap();
 
         return envUnfiltered;

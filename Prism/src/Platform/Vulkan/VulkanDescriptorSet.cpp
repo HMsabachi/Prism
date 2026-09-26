@@ -114,6 +114,42 @@ namespace Prism
         Reset();
     }
 
+    VulkanDescriptorSet::VulkanDescriptorSet(VulkanDescriptorSet&& other) noexcept
+        : m_Bindings(std::move(other.m_Bindings))
+        , m_DescriptorSets(other.m_DescriptorSets)
+        , m_SourcePool(other.m_SourcePool)
+        , m_DescriptorSetLayout(other.m_DescriptorSetLayout)
+        , m_IsBaked(other.m_IsBaked)
+    {
+        other.m_DescriptorSets.fill(VK_NULL_HANDLE);
+        other.m_SourcePool = VK_NULL_HANDLE;
+        other.m_DescriptorSetLayout = VK_NULL_HANDLE;
+        other.m_IsBaked = false;
+        other.m_Bindings.clear();
+    }
+
+    VulkanDescriptorSet& VulkanDescriptorSet::operator=(VulkanDescriptorSet&& other) noexcept
+    {
+        if (this == &other)
+            return *this;
+
+        Reset();
+
+        m_Bindings = std::move(other.m_Bindings);
+        m_DescriptorSets = other.m_DescriptorSets;
+        m_SourcePool = other.m_SourcePool;
+        m_DescriptorSetLayout = other.m_DescriptorSetLayout;
+        m_IsBaked = other.m_IsBaked;
+
+        other.m_DescriptorSets.fill(VK_NULL_HANDLE);
+        other.m_SourcePool = VK_NULL_HANDLE;
+        other.m_DescriptorSetLayout = VK_NULL_HANDLE;
+        other.m_IsBaked = false;
+        other.m_Bindings.clear();
+
+        return *this;
+    }
+
     void VulkanDescriptorSet::Reset()
     {
         if (m_SourcePool)

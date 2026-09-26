@@ -8,49 +8,37 @@
 
 namespace Prism {
 
-    Ref<Image2D> Image2D::Create(ImageFormat format, uint32_t width, uint32_t height, Buffer buffer, uint32_t samples)
+    Ref<Image2D> Image2D::Create(const ImageSpecification& specification, Buffer buffer)
     {
         switch (RendererAPI::Current())
         {
             case RendererAPIType::None:    return nullptr;
-            case RendererAPIType::OpenGL:  return Ref<OpenGLImage2D>::Create(format, width, height, buffer, samples);
-            case RendererAPIType::Vulkan:  return Ref<VulkanImage2D>::Create(format, width, height, buffer, samples);
+            case RendererAPIType::OpenGL:  return Ref<OpenGLImage2D>::Create(specification, std::move(buffer));
+            case RendererAPIType::Vulkan:  return Ref<VulkanImage2D>::Create(specification, std::move(buffer));
         }
         PR_CORE_ASSERT(false, "Unknown RendererAPI");
         return nullptr;
     }
 
-    Ref<Image2D> Image2D::Create(ImageFormat format, uint32_t width, uint32_t height, const void* data, uint32_t samples)
+    Ref<Image2D> Image2D::Create(const ImageSpecification& specification, std::vector<Buffer>&& mips)
     {
         switch (RendererAPI::Current())
         {
             case RendererAPIType::None:    return nullptr;
-            case RendererAPIType::OpenGL:  return Ref<OpenGLImage2D>::Create(format, width, height, data, samples);
-            case RendererAPIType::Vulkan:  return Ref<VulkanImage2D>::Create(format, width, height, data, samples);
+            case RendererAPIType::OpenGL:  return Ref<OpenGLImage2D>::Create(specification, std::move(mips));
+            case RendererAPIType::Vulkan:  return Ref<VulkanImage2D>::Create(specification, std::move(mips));
         }
         PR_CORE_ASSERT(false, "Unknown RendererAPI");
         return nullptr;
     }
 
-    Ref<Image2D> Image2D::Create(ImageFormat format, uint32_t width, uint32_t height, std::vector<Buffer>&& mips)
+    Ref<ImageCube> ImageCube::Create(const ImageSpecification& specification, Buffer buffer)
     {
         switch (RendererAPI::Current())
         {
             case RendererAPIType::None:    return nullptr;
-            case RendererAPIType::OpenGL:  return Ref<OpenGLImage2D>::Create(format, width, height, std::move(mips));
-            case RendererAPIType::Vulkan:  return Ref<VulkanImage2D>::Create(format, width, height, std::move(mips));
-        }
-        PR_CORE_ASSERT(false, "Unknown RendererAPI");
-        return nullptr;
-    }
-
-    Ref<ImageCube> ImageCube::Create(ImageFormat format, uint32_t width, uint32_t height, const void* data)
-    {
-        switch (RendererAPI::Current())
-        {
-            case RendererAPIType::None:    return nullptr;
-            case RendererAPIType::OpenGL:  return Ref<OpenGLImageCube>::Create(format, width, height, data);
-            case RendererAPIType::Vulkan:  return Ref<VulkanImageCube>::Create(format, width, height, data);
+            case RendererAPIType::OpenGL:  return Ref<OpenGLImageCube>::Create(specification, std::move(buffer));
+            case RendererAPIType::Vulkan:  return Ref<VulkanImageCube>::Create(specification, std::move(buffer));
         }
         PR_CORE_ASSERT(false, "Unknown RendererAPI");
         return nullptr;

@@ -103,6 +103,23 @@ namespace Prism {
         Depth = DEPTH24STENCIL8
     };
 
+    enum class ImageUsage
+    {
+        None = 0,
+        Texture,
+        Attachment,
+        Storage
+    };
+
+    struct ImageSpecification
+    {
+        ImageFormat Format = ImageFormat::RGBA8;
+        ImageUsage Usage = ImageUsage::Texture;
+        uint32_t Width = 1;
+        uint32_t Height = 1;
+        uint32_t Samples = 1;
+    };
+
     class PRISM_API Image : public RefCounted
     {
     public:
@@ -116,6 +133,7 @@ namespace Prism {
         virtual uint32_t GetSamples() const = 0;
 
         virtual ImageFormat GetFormat() const = 0;
+        virtual ImageUsage GetUsage() const = 0;
 
         virtual Buffer GetBuffer() const = 0;
         virtual Buffer& GetBuffer() = 0;
@@ -123,11 +141,12 @@ namespace Prism {
 
     class PRISM_API Image2D : public Image
     {
-        virtual void Resize(const uint32_t width, const uint32_t height) = 0;
     public:
-        static Ref<Image2D> Create(ImageFormat format, uint32_t width, uint32_t height, Buffer buffer, uint32_t samples = 1);
-        static Ref<Image2D> Create(ImageFormat format, uint32_t width, uint32_t height, const void* data = nullptr, uint32_t samples = 1);
-        static Ref<Image2D> Create(ImageFormat format, uint32_t width, uint32_t height, std::vector<Buffer>&& mips);
+        virtual void Resize(const uint32_t width, const uint32_t height) = 0;
+        virtual void RT_Resize(const uint32_t width, const uint32_t height) = 0;
+
+        static Ref<Image2D> Create(const ImageSpecification& specification, Buffer buffer = Buffer());
+        static Ref<Image2D> Create(const ImageSpecification& specification, std::vector<Buffer>&& mips);
     };
 
     class PRISM_API ImageCube : public Image
@@ -137,7 +156,7 @@ namespace Prism {
         virtual void CopyTo(Ref<ImageCube> destination) const = 0;
 
     public:
-        static Ref<ImageCube> Create(ImageFormat format, uint32_t width, uint32_t height, const void* data = nullptr);
+        static Ref<ImageCube> Create(const ImageSpecification& specification, Buffer buffer = Buffer());
     };
 
     namespace Utils {

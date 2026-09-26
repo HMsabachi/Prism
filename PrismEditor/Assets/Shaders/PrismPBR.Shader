@@ -99,6 +99,7 @@ Shader "Standard/PrismPBR"
 
                 const vec3 Fdielectric = vec3(0.04);
                 const float Epsilon = 0.00001;
+                const float PI = 3.141592;
 
                 // GGX/Towbridge-Reitz normal distribution function.
                 float ndfGGX(float cosLh, float roughness)
@@ -174,7 +175,7 @@ Shader "Standard/PrismPBR"
                         float G = gaSchlickGGX(cosLi, m_Params.NdotV, m_Params.Roughness);
 
                         vec3 kd = (1.0 - F) * (1.0 - m_Params.Metalness);
-                        vec3 diffuseBRDF = kd * m_Params.Albedo;
+                        vec3 diffuseBRDF = kd * m_Params.Albedo / PI;
 
                         // Cook-Torrance
                         vec3 specularBRDF = (F * D * G) / max(Epsilon, 4.0 * cosLi * m_Params.NdotV);

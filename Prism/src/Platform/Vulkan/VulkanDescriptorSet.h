@@ -47,6 +47,8 @@ namespace Prism
         ~VulkanDescriptorSet();
         VulkanDescriptorSet(const VulkanDescriptorSet&) = delete;
         VulkanDescriptorSet& operator=(const VulkanDescriptorSet&) = delete;
+        VulkanDescriptorSet(VulkanDescriptorSet&& other) noexcept;
+        VulkanDescriptorSet& operator=(VulkanDescriptorSet&& other) noexcept;
 
         void SetInput(uint32_t binding, Ref<VulkanUniformBuffer> buffer);
         void SetInput(uint32_t binding, Ref<VulkanShaderStorageBuffer> buffer);

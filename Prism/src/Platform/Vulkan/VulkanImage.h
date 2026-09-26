@@ -21,19 +21,19 @@ namespace Prism
     class PRISM_API VulkanImage2D : public Image2D
     {
     public:
-        VulkanImage2D(ImageFormat format, uint32_t width, uint32_t height, Buffer buffer, uint32_t samples = 1);
-        VulkanImage2D(ImageFormat format, uint32_t width, uint32_t height, const void* data = nullptr, uint32_t samples = 1);
-        VulkanImage2D(ImageFormat format, uint32_t width, uint32_t height, std::vector<Buffer>&& mips);
+        VulkanImage2D(const ImageSpecification& specification, Buffer buffer = Buffer());
+        VulkanImage2D(const ImageSpecification& specification, std::vector<Buffer>&& mips);
         virtual ~VulkanImage2D();
 
         virtual void Resize(const uint32_t width, const uint32_t height) override;
         virtual void Invalidate() override;
         virtual void Release() override;
 
-        virtual uint32_t GetWidth() const override { return m_Width; }
-        virtual uint32_t GetHeight() const override { return m_Height; }
-        virtual uint32_t GetSamples() const override { return m_Samples; }
-        virtual ImageFormat GetFormat() const override { return m_Format; }
+        virtual uint32_t GetWidth() const override { return m_Specification.Width; }
+        virtual uint32_t GetHeight() const override { return m_Specification.Height; }
+        virtual uint32_t GetSamples() const override { return m_Specification.Samples; }
+        virtual ImageFormat GetFormat() const override { return m_Specification.Format; }
+        virtual ImageUsage GetUsage() const override { return m_Specification.Usage; }
 
         virtual Buffer GetBuffer() const override { return m_ImageData; }
         virtual Buffer& GetBuffer() override { return m_ImageData; }
@@ -44,19 +44,18 @@ namespace Prism
         const VkDescriptorImageInfo& GetDescriptor() const { return m_DescriptorImageInfo; }
 
         void SetSamplerWrap(TextureWrap wrap) { m_Wrap = wrap; }
-        void SetExtraUsage(VkImageUsageFlags extraUsage) { m_ExtraUsage = extraUsage; }
 
-        void RT_Resize(const uint32_t width, const uint32_t height);
+        virtual void RT_Resize(const uint32_t width, const uint32_t height) override;
         void RT_Invalidate();
         void RT_GenerateMips();
         void UpdateDescriptor();
         VkImageView GetOrCreateStorageImageView(uint32_t mip);
     private:
-        ImageFormat m_Format = ImageFormat::None;
-        uint32_t m_Width = 0, m_Height = 0;
-        uint32_t m_Samples = 1;
+        void InsertFinalLayoutBarrier(VkCommandBuffer cmdBuf, VkAccessFlags srcAccessMask, VkImageLayout oldImageLayout,
+            VkPipelineStageFlags srcStageMask, const VkImageSubresourceRange& subresourceRange) const;
+
+        ImageSpecification m_Specification;
         TextureWrap m_Wrap = TextureWrap::Repeat;
-        VkImageUsageFlags m_ExtraUsage = 0;
 
         Buffer m_ImageData;
         std::vector<Buffer> m_Mips; // DDS 预压缩 mip 链，含 level 0
@@ -69,16 +68,17 @@ namespace Prism
     class PRISM_API VulkanImageCube : public ImageCube
     {
     public:
-        VulkanImageCube(ImageFormat format, uint32_t width, uint32_t height, const void* data = nullptr);
+        VulkanImageCube(const ImageSpecification& specification, Buffer buffer = Buffer());
         virtual ~VulkanImageCube();
 
         virtual void Invalidate() override;
         virtual void Release() override;
 
-        virtual uint32_t GetWidth() const override { return m_Width; }
-        virtual uint32_t GetHeight() const override { return m_Height; }
+        virtual uint32_t GetWidth() const override { return m_Specification.Width; }
+        virtual uint32_t GetHeight() const override { return m_Specification.Height; }
         virtual uint32_t GetSamples() const override { return 1; }
-        virtual ImageFormat GetFormat() const override { return m_Format; }
+        virtual ImageFormat GetFormat() const override { return m_Specification.Format; }
+        virtual ImageUsage GetUsage() const override { return m_Specification.Usage; }
 
         virtual Buffer GetBuffer() const override { return m_ImageData; }
         virtual Buffer& GetBuffer() override { return m_ImageData; }
@@ -91,12 +91,12 @@ namespace Prism
 
         const VkDescriptorImageInfo& GetDescriptor() const { return m_DescriptorImageInfo; }
 
+        void RT_Invalidate();
         void RT_GenerateMips(bool readonly = false);
         void UpdateDescriptor();
         VkImageView GetOrCreateStorageImageView(uint32_t mip);
     private:
-        ImageFormat m_Format = ImageFormat::None;
-        uint32_t m_Width = 0, m_Height = 0;
+        ImageSpecification m_Specification;
 
         Buffer m_ImageData;
 

@@ -9,6 +9,9 @@
 #include "yaml-cpp/yaml.h"
 
 #include "Prism/Renderer/MeshFactory.h"
+#include "Prism/Renderer/Texture.h"
+#include "Prism/Renderer/Shader/PrismShader.h"
+#include "Prism/Renderer/ComputeShader/ComputeShader.h"
 #include "Prism/Physics/PhysicsLayer.h"
 #include "Prism/Physics/PXPhysicsWrappers.h"
 #include "Prism/Asset/AssetManager.h"
@@ -448,6 +451,8 @@ namespace Prism {
                         case ScriptFieldType::MeshRef:
                         case ScriptFieldType::MaterialRef:
                         case ScriptFieldType::Texture2DRef:
+                        case ScriptFieldType::PrismShaderRef:
+                        case ScriptFieldType::ComputeShaderRef:
                         case ScriptFieldType::Object:
                             if (field.GetValue<Ref<Asset>>()) out << (uint64_t)field.GetValue<Ref<Asset>>()->Handle;
                             else out << 0;
@@ -536,6 +541,8 @@ namespace Prism {
                         case ScriptFieldType::MeshRef:
                         case ScriptFieldType::MaterialRef:
                         case ScriptFieldType::Texture2DRef:
+                        case ScriptFieldType::PrismShaderRef:
+                        case ScriptFieldType::ComputeShaderRef:
                         case ScriptFieldType::Object:
                             if (field.GetValue<Ref<Asset>>()) out << (uint64_t)field.GetValue<Ref<Asset>>()->Handle;
                             else out << 0;
@@ -1131,9 +1138,29 @@ namespace Prism {
                                             if (AssetManager::IsAssetHandleValid(meshHandle))
                                                 field.SetValue(AssetManager::GetAsset<Mesh>(meshHandle));
                                             break;
-                                        }   
-                                        case ScriptFieldType::MaterialRef:
-                                        case ScriptFieldType::Texture2DRef: break;
+                                        }
+                                        case ScriptFieldType::Texture2DRef:
+                                        {
+                                            uint64_t textureHandle = fieldNode["Value"].as<uint64_t>();
+                                            if (AssetManager::IsAssetHandleValid(textureHandle))
+                                                field.SetValue(AssetManager::GetAsset<Texture2D>(textureHandle));
+                                            break;
+                                        }
+                                        case ScriptFieldType::PrismShaderRef:
+                                        {
+                                            uint64_t shaderHandle = fieldNode["Value"].as<uint64_t>();
+                                            if (AssetManager::IsAssetHandleValid(shaderHandle))
+                                                field.SetValue(AssetManager::GetAsset<PrismShader>(shaderHandle));
+                                            break;
+                                        }
+                                        case ScriptFieldType::ComputeShaderRef:
+                                        {
+                                            uint64_t computeShaderHandle = fieldNode["Value"].as<uint64_t>();
+                                            if (AssetManager::IsAssetHandleValid(computeShaderHandle))
+                                                field.SetValue(AssetManager::GetAsset<ComputeShader>(computeShaderHandle));
+                                            break;
+                                        }
+                                        case ScriptFieldType::MaterialRef: break;
                                         default: break;
                                         }
                                     }
@@ -1209,8 +1236,28 @@ namespace Prism {
                                                 field.SetValue(AssetManager::GetAsset<Mesh>(meshHandle));
                                             break;
                                         }
-                                        case ScriptFieldType::MaterialRef:
                                         case ScriptFieldType::Texture2DRef:
+                                        {
+                                            uint64_t textureHandle = fieldNode["Value"].as<uint64_t>();
+                                            if (AssetManager::IsAssetHandleValid(textureHandle))
+                                                field.SetValue(AssetManager::GetAsset<Texture2D>(textureHandle));
+                                            break;
+                                        }
+                                        case ScriptFieldType::PrismShaderRef:
+                                        {
+                                            uint64_t shaderHandle = fieldNode["Value"].as<uint64_t>();
+                                            if (AssetManager::IsAssetHandleValid(shaderHandle))
+                                                field.SetValue(AssetManager::GetAsset<PrismShader>(shaderHandle));
+                                            break;
+                                        }
+                                        case ScriptFieldType::ComputeShaderRef:
+                                        {
+                                            uint64_t computeShaderHandle = fieldNode["Value"].as<uint64_t>();
+                                            if (AssetManager::IsAssetHandleValid(computeShaderHandle))
+                                                field.SetValue(AssetManager::GetAsset<ComputeShader>(computeShaderHandle));
+                                            break;
+                                        }
+                                        case ScriptFieldType::MaterialRef:
                                         case ScriptFieldType::Object: break;
                                         default: break;
                                         }

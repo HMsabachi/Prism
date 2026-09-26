@@ -40,6 +40,9 @@ namespace Prism // SceneRenderer Constants
     constexpr uint32_t RENDER_QUEUE_ALPHA_TEST = 2450;
     constexpr uint32_t RENDER_QUEUE_TRANSPARENT = 3000;
     constexpr uint32_t RENDER_QUEUE_OVERLAY = 4000;
+    // Bloom
+    constexpr uint32_t BLOOM_BLUR_ITERATIONS = 10;
+    constexpr uint32_t BLOOM_BLUR_GROUP_SIZE = 16;
     // Pass Name
     constexpr uint64_t SHADER_PASS_NAME_SCENE_COMPOSITE = Hash::GenerateFNVHash64("SceneComposite");
     constexpr uint64_t SHADER_PASS_NAME_BLOOM_BLUR = Hash::GenerateFNVHash64("BloomBlur");
@@ -55,7 +58,6 @@ namespace Prism // SceneRenderer Constants
     constexpr uint32_t RENDER_PASS_INPUT_BINDING_GEOMETRY_ENV_RADIANCE = 4;
     constexpr uint32_t RENDER_PASS_INPUT_BINDING_GEOMETRY_ENV_IRRADIANCE = 5;
     constexpr uint32_t RENDER_PASS_INPUT_BINDING_GEOMETRY_ENV_BRDF_LUT = 6;
-    constexpr uint32_t RENDER_PASS_INPUT_BINDING_BLOOM_BLUR_INPUT = 0;
     constexpr uint32_t RENDER_PASS_INPUT_BINDING_COMPOSITE_GEOMETRY_COLOR = 0;
     constexpr uint32_t RENDER_PASS_INPUT_BINDING_COMPOSITE_OBJECT_ID = 1;
     constexpr uint32_t RENDER_PASS_INPUT_BINDING_COMPOSITE_BLOOM = 2;
@@ -157,21 +159,22 @@ namespace Prism
         m_IDPass = RenderPass::Create(idRPSpec);
         m_IDPass->Bake();
 
-        // Create Bloom Blur Passes
-        FramebufferSpecification bloomBlurFBSpec;
-        bloomBlurFBSpec.Width = viewportWidth;
-        bloomBlurFBSpec.Height = viewportHeight;
-        bloomBlurFBSpec.Attachments = { ImageFormat::RGBA16F };
-        bloomBlurFBSpec.ClearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
-        RenderPassSpecification bloomBlurRPSpec;
-        bloomBlurRPSpec.TargetFramebuffer = Framebuffer::Create(bloomBlurFBSpec);
-        m_BloomBlurPass[0] = RenderPass::Create(bloomBlurRPSpec);
-        bloomBlurRPSpec.TargetFramebuffer = Framebuffer::Create(bloomBlurFBSpec);
-        m_BloomBlurPass[1] = RenderPass::Create(bloomBlurRPSpec);
-        m_BloomBlurPass[0]->SetInput(RENDER_PASS_INPUT_BINDING_BLOOM_BLUR_INPUT, m_GeoPass->GetOutput(1));
-        m_BloomBlurPass[1]->SetInput(RENDER_PASS_INPUT_BINDING_BLOOM_BLUR_INPUT, m_GeoPass->GetOutput(1));
-        m_BloomBlurPass[0]->Bake();
-        m_BloomBlurPass[1]->Bake();
+        // Create Bloom Images
+        ImageSpecification bloomImageSpecification;
+        bloomImageSpecification.Format = ImageFormat::RGBA16F;
+        bloomImageSpecification.Usage = ImageUsage::Storage;
+        bloomImageSpecification.Width = viewportWidth;
+        bloomImageSpecification.Height = viewportHeight;
+        m_BloomImages[0] = Image2D::Create(bloomImageSpecification);
+        m_BloomImages[1] = Image2D::Create(bloomImageSpecification);
+        for (Ref<Image2D>& bloomImage : m_BloomImages)
+            bloomImage->Invalidate();
+
+        m_BloomBlurShader = AssetManager::GetAsset<ComputeShader>("Assets/Shaders/BloomBlur.ComputeShader");
+        m_BloomHorizontalFirstKernel = m_BloomBlurShader->FindKernel("CSBloomBlurHFirst");
+        m_BloomHorizontalKernel = m_BloomBlurShader->FindKernel("CSBloomBlurH");
+        m_BloomVerticalKernel = m_BloomBlurShader->FindKernel("CSBloomBlurV");
+        m_BloomClearKernel = m_BloomBlurShader->FindKernel("CSClear");
 
         // Create Composite Pass
         FramebufferSpecification compFBSpec;
@@ -184,7 +187,7 @@ namespace Prism
         m_CompositePass = RenderPass::Create(compRPSpec);
         m_CompositePass->SetInput(RENDER_PASS_INPUT_BINDING_COMPOSITE_GEOMETRY_COLOR, m_GeoPass->GetOutput(0));
         m_CompositePass->SetInput(RENDER_PASS_INPUT_BINDING_COMPOSITE_OBJECT_ID, m_IDPass->GetOutput(0));
-        m_CompositePass->SetInput(RENDER_PASS_INPUT_BINDING_COMPOSITE_BLOOM, m_BloomBlurPass[1]->GetOutput(0));
+        m_CompositePass->SetInput(RENDER_PASS_INPUT_BINDING_COMPOSITE_BLOOM, m_BloomImages[1]);
         m_CompositePass->Bake();
     }
 
@@ -195,8 +198,9 @@ namespace Prism
         m_CompositePass.Reset();
         for (int i = 0; i < 4; i++)
             m_ShadowPasses[i].Reset();
-        m_BloomBlurPass[0].Reset();
-        m_BloomBlurPass[1].Reset();
+        m_BloomImages[0].Reset();
+        m_BloomImages[1].Reset();
+        m_BloomBlurShader.Reset();
         m_PostProcessMaterial.Reset();
         m_EditorDebugMaterial.Reset();
         m_EditorDebugAnimMaterial.Reset();
@@ -233,8 +237,8 @@ namespace Prism
         }
         if (UI::BeginTreeNode(TR("Bloom Blur Pass"), true))
         {
-            Ref<Image2D> blurImage1 = m_BloomBlurPass[1]->GetOutput(0);
-            Ref<Image2D> blurImage0 = m_BloomBlurPass[0]->GetOutput(0);
+            Ref<Image2D> blurImage1 = m_BloomImages[1];
+            Ref<Image2D> blurImage0 = m_BloomImages[0];
             float size = ImGui::GetContentRegionAvail().x;
             UI::Image(blurImage1, { size, size }, { 0, 1 }, { 1, 0 });
             UI::EndTreeNode();
@@ -261,8 +265,9 @@ namespace Prism
         m_GeoPass->GetSpecification().TargetFramebuffer->RT_Resize(width, height);
         m_IDPass->GetSpecification().TargetFramebuffer->RT_Resize(width, height);
         m_CompositePass->GetSpecification().TargetFramebuffer->RT_Resize(width, height);
-        m_BloomBlurPass[0]->GetSpecification().TargetFramebuffer->RT_Resize(width, height);
-        m_BloomBlurPass[1]->GetSpecification().TargetFramebuffer->RT_Resize(width, height);
+
+        m_BloomImages[0]->RT_Resize(width, height);
+        m_BloomImages[1]->RT_Resize(width, height);
     }
 
     void SceneRenderer::Execute(const FrameSnapshot& snapshot)
@@ -426,29 +431,31 @@ namespace Prism
             }
             rApi->EndRenderPass();
         }
-        if (config.EnableBloom)
         {
-            //PR_PROFILE_SCOPE("BloomPass");
-            //auto* rApi = Renderer::GetAPI();
-            //int32_t passIndex = m_PostProcessMaterial->GetShader()->FindPassByName(SHADER_PASS_NAME_BLOOM_BLUR);
-            //int index = 0;
-            //for (int i = 0; i < 10; i++)
-            //{
-            //    index = i % 2;
-            //    if (i == 0)
-            //        m_BloomBlurPass[0]->SetInput(RENDER_PASS_INPUT_BINDING_BLOOM_BLUR_INPUT, m_GeoPass->GetOutput(1));
-            //    else
-            //        m_BloomBlurPass[index]->SetInput(RENDER_PASS_INPUT_BINDING_BLOOM_BLUR_INPUT, m_BloomBlurPass[1 - index]->GetOutput(0));
-            //    rApi->BeginRenderPass(m_BloomBlurPass[index]);
-            //    m_PostProcessMaterial->SetBool("u_Horizontal", index == 0);
-            //    DrawFullscreen(m_PostProcessMaterial, passIndex);
-            //    rApi->EndRenderPass();
-            //}
-        }
-        else
-        {
-            rApi->BeginRenderPass(m_BloomBlurPass[1]);
-            rApi->EndRenderPass();
+            PR_PROFILE_SCOPE("BloomPass");
+            uint32_t groupCountX = (m_BloomImages[0]->GetWidth() + BLOOM_BLUR_GROUP_SIZE - 1) / BLOOM_BLUR_GROUP_SIZE;
+            uint32_t groupCountY = (m_BloomImages[0]->GetHeight() + BLOOM_BLUR_GROUP_SIZE - 1) / BLOOM_BLUR_GROUP_SIZE;
+            if (config.EnableBloom)
+            {
+                m_BloomBlurShader->SetTexture2D(m_BloomHorizontalFirstKernel, "u_Input", m_GeoPass->GetOutput(1));
+                m_BloomBlurShader->SetImage2D(m_BloomHorizontalFirstKernel, "o_Output", m_BloomImages[0]);
+                m_BloomBlurShader->SetTexture2D(m_BloomHorizontalKernel, "u_Input", m_BloomImages[1]);
+                m_BloomBlurShader->SetImage2D(m_BloomHorizontalKernel, "o_Output", m_BloomImages[0]);
+                m_BloomBlurShader->SetTexture2D(m_BloomVerticalKernel, "u_Input", m_BloomImages[0]);
+                m_BloomBlurShader->SetImage2D(m_BloomVerticalKernel, "o_Output", m_BloomImages[1]);
+
+                m_BloomBlurShader->Dispatch(m_BloomHorizontalFirstKernel, groupCountX, groupCountY, 1);
+                for (uint32_t i = 1; i < BLOOM_BLUR_ITERATIONS; i++)
+                {
+                    int32_t kernel = (i % 2) == 1 ? m_BloomVerticalKernel : m_BloomHorizontalKernel;
+                    m_BloomBlurShader->Dispatch(kernel, groupCountX, groupCountY, 1);
+                }
+            }
+            else
+            {
+                m_BloomBlurShader->SetImage2D(m_BloomClearKernel, "o_Output", m_BloomImages[1]);
+                m_BloomBlurShader->Dispatch(m_BloomClearKernel, groupCountX, groupCountY, 1);
+            }
         }
         {
             PR_PROFILE_SCOPE("CompositePass");

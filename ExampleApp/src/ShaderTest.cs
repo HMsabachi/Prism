@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -11,10 +12,44 @@ namespace Example
     {
         List<Material> materials = new List<Material>();
         UInt32[] data = new UInt32[128];
+        public ComputeShader ComputeShader;
+        public PrismShader Shader;
+        public MeshRendererComponent rendererComponent;
+
+
+        private readonly float[] m_Input = new float[100];
+        private ComputeShader m_SquareShader;
+        private ShaderStorageBuffer m_Buffer;
+        private ShaderStorageBufferReadback? m_Request;
+        private List<ShaderStorageBufferReadback> m_Readbacks = new List<ShaderStorageBufferReadback>();
+        private uint m_Frame;
+        private bool m_Dispatched;
+
         public void OnCreate()
         {
             // Test: PrismShader
-            var shader = PrismShader.GetShader("Standard/PrismPBR");
+            rendererComponent = GetComponent<MeshRendererComponent>();
+            PrismShader shader;
+            ComputeShader computeShader;
+            if (Shader != null)
+            {
+                shader = Shader;
+            }
+            else
+            {
+                shader = PrismShader.GetShader("Standard/PrismPBR");
+                Log.Warn("Shader is not valid, using default shader");
+            }
+            if (this.ComputeShader != null)
+            {
+                computeShader = this.ComputeShader;
+            }
+            else
+            {
+                computeShader = ComputeShader.Create("Assets/Shaders/Environment.ComputeShader");
+                Log.Warn("ComputeShader is not valid, using default compute shader");
+            }
+
             Log.Trace($"Shader Name: {shader.Name}");
             Log.Trace($"Shader FilePath: {shader.FilePath}");
             Log.Trace($"Shader FileName: {shader.FileName}");
@@ -28,22 +63,58 @@ namespace Example
                 Vector3 uniformValue = shader.GetUniformDefaultValue<Vector3>(i);
                 Log.Trace($"Uniform {i}: {uniformName}, {uniformDisplayName}, Type: {uniformType}, Value: {uniformValue}");
             }
-            Image2D image = Image2D.Create<UInt32>(ImageFormat.RGB8, 8, 8, data, 1);
+            ImageSpecification specification = new ImageSpecification { Format = ImageFormat.RGB8, Width = 8, Height = 8 };
+            Image2D image = Image2D.Create<UInt32>(specification, data);
             Log.Trace($"Image2D: {image.Width}x{image.Height}, Format: {image.Format}, Samples: {image.Samples}");
             Texture2D texture = Texture2D.Create(10, 10);
             Log.Trace($"Texture2D: {texture.Width}x{texture.Height}, Format: {texture.Format}");
             image = texture.GetImage();
             Log.Trace($"Texture2D Image2D: {image.Width}x{image.Height}, Format: {image.Format}, Samples: {image.Samples}");
+            Log.Trace($"ComputeShader: {computeShader.Name}");
 
+            // 平方测试
+            for (UInt32 i = 0; i < m_Input.Length; i++)
+                m_Input[i] = (float)i;
+            m_SquareShader = ComputeShader.Create("Assets/Shaders/Test.ComputeShader");
+            m_Buffer = ShaderStorageBuffer.Create((uint)(sizeof(float) * m_Input.Length), BufferUsage.Dynamic);
+            m_Buffer.SetData(m_Input);
+            Log.Info($"SquareTest: input  = [{string.Join(", ", m_Input)}], buffer = {m_Buffer.Size} bytes");
+            int kernel = m_SquareShader.FindKernel("CSSquare");
+            m_SquareShader.SetBuffer(kernel, "u_Data", m_Buffer);
+            m_SquareShader.Dispatch(kernel, (uint)((m_Input.Length + 63) / 64), 1, 1);
+            m_Request = m_Buffer.RequestReadback();
         }
 
         public void OnUpdate()
         {
-
+            if (m_Request == null) return;
+            m_Frame++;
+            Log.Info($"SquareTest: frame {m_Frame} dispatched, IsDone = {m_Request.IsDone}, size = {m_Request.Size}");
+            if (!m_Request.IsDone)
+            {
+                Log.Info($"SquareTest: frame {m_Frame} waiting for readback...");
+                return;
+            }
+            float[] result = new float[m_Input.Length];
+            m_Request.GetData(result);
+            Log.Info($"SquareTest: output = [{string.Join(", ", result)}] at frame {m_Frame}");
+            m_Request = null;
         }
 
         public void OnFixedUpdate()
         {
+            if (Input.IsKeyPressed(KeyCode.R))
+            {
+                Material material = rendererComponent.Material;
+
+                material.SetTexture2D("u_AlbedoTexture", Texture2D.Create(10, 10));
+                material.SetKeyword("ALBEDO_MAP", true);
+            }
+            if (Input.IsKeyPressed(KeyCode.T))
+            {
+                Material material = rendererComponent.Material;
+                material.SetKeyword("ALBEDO_MAP", false);
+            }
         }
 
  

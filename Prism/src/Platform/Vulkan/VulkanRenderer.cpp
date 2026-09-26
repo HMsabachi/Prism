@@ -130,10 +130,19 @@ namespace Prism
         s_Data->FullscreenQuadIB = IndexBuffer::Create(indices, 6 * sizeof(uint32_t)).As<VulkanIndexBuffer>();
 
         float blackPixel[16] = { 0.0f };
-        s_Data->BlackImage2D = Image2D::Create(ImageFormat::RGBA8, 1, 1, blackPixel).As<VulkanImage2D>();
-        s_Data->BlackImage2D->SetExtraUsage(VK_IMAGE_USAGE_STORAGE_BIT);
+        uint64_t blackPixelSize = Utils::GetImageMemorySize(ImageFormat::RGBA8, 1, 1);
+
+        ImageSpecification blackSpecification{};
+        blackSpecification.Format = ImageFormat::RGBA8;
+        blackSpecification.Width = 1;
+        blackSpecification.Height = 1;
+
+        blackSpecification.Usage = ImageUsage::Storage;
+        s_Data->BlackImage2D = Image2D::Create(blackSpecification, Buffer::Copy(blackPixel, blackPixelSize)).As<VulkanImage2D>();
         s_Data->BlackImage2D->Invalidate();
-        s_Data->BlackImageCube = ImageCube::Create(ImageFormat::RGBA8, 1, 1, blackPixel).As<VulkanImageCube>();
+
+        blackSpecification.Usage = ImageUsage::Texture;
+        s_Data->BlackImageCube = ImageCube::Create(blackSpecification, Buffer::Copy(blackPixel, blackPixelSize * 6)).As<VulkanImageCube>();
         s_Data->BlackImageCube->Invalidate();
         s_Data->BlackTexture2D = Texture2D::Create(ImageFormat::RGBA8, 1, 1, blackPixel).As<VulkanTexture2D>();
         s_Data->BlackTextureCube = TextureCube::Create(ImageFormat::RGBA8, 1, 1, blackPixel).As<VulkanTextureCube>();
@@ -309,7 +318,9 @@ namespace Prism
     {
         Renderer::Submit([]()
         {
+            PR_CORE_ASSERT(s_Data->ActiveRenderPass, "没有活动的渲染通道！您是否调用了两次 Renderer::EndRenderPass？");
             vkCmdEndRenderPass(s_Data->ActiveCommandBuffer);
+            s_Data->ActiveRenderPass = nullptr;
         });
     }
 
@@ -399,75 +410,6 @@ namespace Prism
         SubmitFullscreenQuad(material, passIndex, drawIndex);
     }
 
-    void VulkanRenderer::DispatchCompute(Ref<ComputeShader> computeShader, int32_t kernel,
-        uint32_t numGroupsX, uint32_t numGroupsY, uint32_t numGroupsZ)
-    {
-        Ref<Shader> kernelShader = computeShader->GetKernelShader(kernel);
-        if (!kernelShader)
-            return;
-        std::vector<ComputeResourceBinding> captured = computeShader->GetResources();
-        Ref<VulkanShader> vkShader = kernelShader.As<VulkanShader>();
-
-        Renderer::Submit([=]() mutable {
-            VulkanDescriptorSet tempSet;
-            using DK = PrismShaderCompiler::DescriptorKind;
-            for (const auto& binding : captured)
-            {
-                Ref<RefCounted> res = binding.res;
-                uint32_t set = binding.Resource.Set;
-                uint32_t bindingIndex = binding.Resource.Binding;
-                switch (binding.Resource.Kind)
-                {
-                case PrismShaderCompiler::CSL::ResourceKind::StorageBuffer:
-                {
-                    tempSet.SetInput(bindingIndex, res.As<VulkanShaderStorageBuffer>());
-                    break;
-                }
-                case PrismShaderCompiler::CSL::ResourceKind::UniformBuffer:
-                {
-                    tempSet.SetInput(bindingIndex, res.As<VulkanUniformBuffer>());
-                    break;
-                }
-                case PrismShaderCompiler::CSL::ResourceKind::Sampler2D:
-                {
-                    Ref<VulkanImage2D> image = res ? res.As<VulkanTexture2D>()->GetImage().As<VulkanImage2D>() : nullptr;
-                    tempSet.SetInput(bindingIndex, image);
-                    break;
-                }
-                case PrismShaderCompiler::CSL::ResourceKind::SamplerCube:
-                {
-                    Ref<VulkanImageCube> image = res ? res.As<VulkanTextureCube>()->GetImage().As<VulkanImageCube>() : nullptr;
-                    tempSet.SetInput(bindingIndex, image);
-                    break;
-                }
-                case PrismShaderCompiler::CSL::ResourceKind::Image2D:
-                {
-                    Ref<VulkanImage2D> image = res ? res.As<VulkanTexture2D>()->GetImage().As<VulkanImage2D>() : nullptr;
-                    tempSet.SetInput(bindingIndex, image, binding.Level);
-                    break;
-                }
-                case PrismShaderCompiler::CSL::ResourceKind::ImageCube:
-                {
-                    Ref<VulkanImageCube> image = res ? res.As<VulkanTextureCube>()->GetImage().As<VulkanImageCube>() : nullptr;
-                    tempSet.SetInput(bindingIndex, image, binding.Level);
-                    break;
-                }
-                default:
-                    PR_CORE_ASSERT(false, "VulkanRenderer::DispatchCompute: 未知的 ResourceKind!");
-                    break;
-
-                }
-            }
-            tempSet.Bake();
-            tempSet.RT_Prepare();
-            WeakRef<VulkanComputePipeline> pipeline = s_Data->PipelineCache.GetCompute(vkShader.Raw());
-            VkDescriptorSet descriptorSets[] = { tempSet.RT_GetDescriptorSet() };
-            pipeline->RT_Execute(descriptorSets, 1, numGroupsX, numGroupsY, numGroupsZ);
-        });
-    }
-
-
-
     WeakRef<VulkanImage2D> VulkanRenderer::RT_GetBlackImage2D()
     {
         return s_Data->BlackImage2D;
@@ -487,6 +429,12 @@ namespace Prism
     WeakRef<VulkanShaderStorageBuffer> VulkanRenderer::RT_GetEmptyShaderStorageBuffer()
     {
         return s_Data->EmptyShaderStorageBuffer;
+    }
+
+    VkCommandBuffer VulkanRenderer::RT_GetActiveCommandBuffer()
+    {
+        PR_CORE_ASSERT(s_Data->ActiveCommandBuffer, "VulkanRenderer::RT_GetActiveCommandBuffer: 当前不在帧录制期间!");
+        return s_Data->ActiveCommandBuffer;
     }
 
 }
