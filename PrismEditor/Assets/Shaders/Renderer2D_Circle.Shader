@@ -37,7 +37,7 @@ Shader "Prism/Renderer2D_Circle"
                     vec4 Color;
                 } vs_Output;
 
-                void main()
+                void vert()
                 {
                     vs_Output.LocalPosition = a_LocalPosition;
                     vs_Output.Thickness    = a_Thickness;

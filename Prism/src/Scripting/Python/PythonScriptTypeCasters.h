@@ -7,26 +7,33 @@ namespace Prism::PythonScript {
 
 inline pybind11::object& get_pyglm_module()
 {
-    static pybind11::object mod = pybind11::module::import("glm");
+    static pybind11::object mod = pybind11::module::import("pyglm.glm");
     return mod;
 }
 
 template <typename T, int N>
 inline bool load_vecN_via_buffer(pybind11::handle src, T& out)
 {
+    using Component = typename T::value_type;
+
     if (!PyObject_CheckBuffer(src.ptr()))
         return false;
+
     Py_buffer view;
     if (PyObject_GetBuffer(src.ptr(), &view, PyBUF_SIMPLE) != 0)
         return false;
-    bool ok = (view.len >= (Py_ssize_t)(N * sizeof(float))) && (view.itemsize == sizeof(float));
+
+    const bool ok = (view.itemsize == (Py_ssize_t)sizeof(Component))
+                 && (view.len >= (Py_ssize_t)(N * sizeof(Component)));
+
     if (ok)
     {
-        float* f = static_cast<float*>(view.buf);
-        float* outPtr = glm::value_ptr(out);
+        const Component* srcPtr = static_cast<const Component*>(view.buf);
+        Component* outPtr = glm::value_ptr(out);
         for (int i = 0; i < N; ++i)
-            outPtr[i] = f[i];
+            outPtr[i] = srcPtr[i];
     }
+
     PyBuffer_Release(&view);
     return ok;
 }
@@ -96,6 +103,35 @@ struct type_caster<glm::mat4>
         return result.release();
     }
 };
+
+#define PRISM_GLM_VEC_CASTER(GLM_TYPE, PY_NAME, N, ...)                                  \
+    template <>                                                                          \
+    struct type_caster<GLM_TYPE>                                                         \
+    {                                                                                    \
+        PYBIND11_TYPE_CASTER(GLM_TYPE, const_name(PY_NAME));                             \
+        bool load(handle src, bool)                                                      \
+        {                                                                                \
+            return Prism::PythonScript::load_vecN_via_buffer<GLM_TYPE, N>(src, value);   \
+        }                                                                                \
+        static handle cast(const GLM_TYPE& src, return_value_policy, handle)             \
+        {                                                                                \
+            return Prism::PythonScript::get_pyglm_module().attr(PY_NAME)(__VA_ARGS__).release(); \
+        }                                                                                \
+    };
+
+PRISM_GLM_VEC_CASTER(glm::ivec2, "ivec2", 2, src.x, src.y)
+PRISM_GLM_VEC_CASTER(glm::ivec3, "ivec3", 3, src.x, src.y, src.z)
+PRISM_GLM_VEC_CASTER(glm::ivec4, "ivec4", 4, src.x, src.y, src.z, src.w)
+
+PRISM_GLM_VEC_CASTER(glm::uvec2, "uvec2", 2, src.x, src.y)
+PRISM_GLM_VEC_CASTER(glm::uvec3, "uvec3", 3, src.x, src.y, src.z)
+PRISM_GLM_VEC_CASTER(glm::uvec4, "uvec4", 4, src.x, src.y, src.z, src.w)
+
+PRISM_GLM_VEC_CASTER(glm::bvec2, "bvec2", 2, src.x, src.y)
+PRISM_GLM_VEC_CASTER(glm::bvec3, "bvec3", 3, src.x, src.y, src.z)
+PRISM_GLM_VEC_CASTER(glm::bvec4, "bvec4", 4, src.x, src.y, src.z, src.w)
+
+#undef PRISM_GLM_VEC_CASTER
 
 } // namespace detail
 } // namespace pybind11

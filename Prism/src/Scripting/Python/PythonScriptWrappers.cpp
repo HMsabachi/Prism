@@ -690,6 +690,86 @@ namespace Prism::PythonScript
             Ref<ComputeShader> shader = RequireComputeShader("Dispatch");
             shader->Dispatch(kernel, groupsX, groupsY, groupsZ, force);
         }
+        void SetBool(int32_t kernel, const char* name, bool value)
+        {
+            Ref<ComputeShader> shader = RequireComputeShader("SetBool");
+            shader->SetBool(kernel, name, value);
+        }
+        void SetInt(int32_t kernel, const char* name, int32_t value)
+        {
+            Ref<ComputeShader> shader = RequireComputeShader("SetInt");
+            shader->SetInt(kernel, name, value);
+        }
+        void SetUInt(int32_t kernel, const char* name, uint32_t value)
+        {
+            Ref<ComputeShader> shader = RequireComputeShader("SetUInt");
+            shader->SetUInt(kernel, name, value);
+        }
+        void SetFloat(int32_t kernel, const char* name, float value)
+        {
+            Ref<ComputeShader> shader = RequireComputeShader("SetFloat");
+            shader->SetFloat(kernel, name, value);
+        }
+        void SetVector2(int32_t kernel, const char* name, const glm::vec2& value)
+        {
+            Ref<ComputeShader> shader = RequireComputeShader("SetVector2");
+            shader->SetVector2(kernel, name, value);
+        }
+        void SetVector3(int32_t kernel, const char* name, const glm::vec3& value)
+        {
+            Ref<ComputeShader> shader = RequireComputeShader("SetVector3");
+            shader->SetVector3(kernel, name, value);
+        }
+        void SetVector4(int32_t kernel, const char* name, const glm::vec4& value)
+        {
+            Ref<ComputeShader> shader = RequireComputeShader("SetVector4");
+            shader->SetVector4(kernel, name, value);
+        }
+        void SetIntVector2(int32_t kernel, const char* name, const glm::ivec2& value)
+        {
+            Ref<ComputeShader> shader = RequireComputeShader("SetIntVector2");
+            shader->SetIntVector2(kernel, name, value);
+        }
+        void SetIntVector3(int32_t kernel, const char* name, const glm::ivec3& value)
+        {
+            Ref<ComputeShader> shader = RequireComputeShader("SetIntVector3");
+            shader->SetIntVector3(kernel, name, value);
+        }
+        void SetIntVector4(int32_t kernel, const char* name, const glm::ivec4& value)
+        {
+            Ref<ComputeShader> shader = RequireComputeShader("SetIntVector4");
+            shader->SetIntVector4(kernel, name, value);
+        }
+        void SetUIntVector2(int32_t kernel, const char* name, const glm::uvec2& value)
+        {
+            Ref<ComputeShader> shader = RequireComputeShader("SetUIntVector2");
+            shader->SetUIntVector2(kernel, name, value);
+        }
+        void SetUIntVector3(int32_t kernel, const char* name, const glm::uvec3& value)
+        {
+            Ref<ComputeShader> shader = RequireComputeShader("SetUIntVector3");
+            shader->SetUIntVector3(kernel, name, value);
+        }
+        void SetUIntVector4(int32_t kernel, const char* name, const glm::uvec4& value)
+        {
+            Ref<ComputeShader> shader = RequireComputeShader("SetUIntVector4");
+            shader->SetUIntVector4(kernel, name, value);
+        }
+        void SetBoolVector2(int32_t kernel, const char* name, const glm::bvec2& value)
+        {
+            Ref<ComputeShader> shader = RequireComputeShader("SetBoolVector2");
+            shader->SetBoolVector2(kernel, name, value);
+        }
+        void SetBoolVector3(int32_t kernel, const char* name, const glm::bvec3& value)
+        {
+            Ref<ComputeShader> shader = RequireComputeShader("SetBoolVector3");
+            shader->SetBoolVector3(kernel, name, value);
+        }
+        void SetBoolVector4(int32_t kernel, const char* name, const glm::bvec4& value)
+        {
+            Ref<ComputeShader> shader = RequireComputeShader("SetBoolVector4");
+            shader->SetBoolVector4(kernel, name, value);
+        }
     public:
         Ref<ComputeShader> GetComputeShader() const { return m_Ref.As<ComputeShader>(); }
     private:
@@ -1603,7 +1683,23 @@ PYBIND11_MODULE(PrismEngine, m)
         .def("SetTextureCube", &PythonComputeShader::SetTextureCube, py::arg("kernel"), py::arg("name"), py::arg("image"))
         .def("SetImage2D", &PythonComputeShader::SetImage2D, py::arg("kernel"), py::arg("name"), py::arg("image"), py::arg("level") = 0)
         .def("SetImageCube", &PythonComputeShader::SetImageCube, py::arg("kernel"), py::arg("name"), py::arg("image"), py::arg("level") = 0)
-        .def("Dispatch", &PythonComputeShader::Dispatch, py::arg("kernel"), py::arg("groupsX"), py::arg("groupsY"), py::arg("groupsZ"), py::arg("force") = false);
+        .def("Dispatch", &PythonComputeShader::Dispatch, py::arg("kernel"), py::arg("groupsX"), py::arg("groupsY"), py::arg("groupsZ"), py::arg("force") = false)
+        .def("SetBool", &PythonComputeShader::SetBool, py::arg("kernel"), py::arg("name"), py::arg("value"))
+        .def("SetInt", &PythonComputeShader::SetInt, py::arg("kernel"), py::arg("name"), py::arg("value"))
+        .def("SetUInt", &PythonComputeShader::SetUInt, py::arg("kernel"), py::arg("name"), py::arg("value"))
+        .def("SetFloat", &PythonComputeShader::SetFloat, py::arg("kernel"), py::arg("name"), py::arg("value"))
+        .def("SetVector2", &PythonComputeShader::SetVector2, py::arg("kernel"), py::arg("name"), py::arg("value"))
+        .def("SetVector3", &PythonComputeShader::SetVector3, py::arg("kernel"), py::arg("name"), py::arg("value"))
+        .def("SetVector4", &PythonComputeShader::SetVector4, py::arg("kernel"), py::arg("name"), py::arg("value"))
+        .def("SetIntVector2", &PythonComputeShader::SetIntVector2, py::arg("kernel"), py::arg("name"), py::arg("value"))
+        .def("SetIntVector3", &PythonComputeShader::SetIntVector3, py::arg("kernel"), py::arg("name"), py::arg("value"))
+        .def("SetIntVector4", &PythonComputeShader::SetIntVector4, py::arg("kernel"), py::arg("name"), py::arg("value"))
+        .def("SetUIntVector2", &PythonComputeShader::SetUIntVector2, py::arg("kernel"), py::arg("name"), py::arg("value"))
+        .def("SetUIntVector3", &PythonComputeShader::SetUIntVector3, py::arg("kernel"), py::arg("name"), py::arg("value"))
+        .def("SetUIntVector4", &PythonComputeShader::SetUIntVector4, py::arg("kernel"), py::arg("name"), py::arg("value"))
+        .def("SetBoolVector2", &PythonComputeShader::SetBoolVector2, py::arg("kernel"), py::arg("name"), py::arg("value"))
+        .def("SetBoolVector3", &PythonComputeShader::SetBoolVector3, py::arg("kernel"), py::arg("name"), py::arg("value"))
+        .def("SetBoolVector4", &PythonComputeShader::SetBoolVector4, py::arg("kernel"), py::arg("name"), py::arg("value"));
     py::class_<PythonMeshFactory>(m, "MeshFactory")
         .def_static("CreatePlane", &PythonMeshFactory::CreatePlane);
 

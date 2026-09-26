@@ -110,10 +110,11 @@ namespace Prism
                 entry.KeyHash = keyHash; entry.Backend = static_cast<uint64_t>(RendererAPIType::Vulkan);
                 entry.Source_1 = { (const uint8_t*)out.Spirv.data(), out.Spirv.size() * sizeof(uint32_t) };
                 entry.Reflection = out.Reflection.Descriptors;
+                entry.PushConstantSize = out.Reflection.PushConstantSize;
                 cache.AddEntry(entry);
                 cache.FindEntry(keyHash, &entry);
             }
-            return Ref<Shader>(new VulkanShader(entry.Source_1, entry.Reflection));
+            return Ref<Shader>(new VulkanShader(entry.Source_1, entry.Reflection, entry.PushConstantSize));
             break;
         }
         default:

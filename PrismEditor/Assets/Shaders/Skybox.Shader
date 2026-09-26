@@ -35,7 +35,7 @@ Shader "Custom/Skybox"
                     vec3 Position;
                 } vs_Output;
 
-                void main()
+                void vert()
                 {
                     vec4 position = vec4(a_Position.xy, 1.0, 1.0);
                     gl_Position = position;

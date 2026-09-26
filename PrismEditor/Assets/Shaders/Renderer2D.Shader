@@ -41,7 +41,7 @@ Shader "Prism/Renderer2D"
                     float TilingFactor;
                 } vs_Output;
 
-                void main()
+                void vert()
                 {
                     vs_Output.Color        = a_Color;
                     vs_Output.TexCoord     = a_TexCoord;

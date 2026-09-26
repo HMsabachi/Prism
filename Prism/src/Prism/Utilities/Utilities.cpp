@@ -132,10 +132,7 @@ namespace Prism
             std::ifstream in(filePath, std::ios::in | std::ios::binary);
 
             if (!in)
-            {
-                PR_CORE_WARN("Could not open file '{0}'", filePath);
                 return {};
-            }
 
 
             in.seekg(0, std::ios::end);

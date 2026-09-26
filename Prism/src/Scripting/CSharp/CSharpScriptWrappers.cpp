@@ -782,6 +782,61 @@ namespace Prism {
             Rolky::ScopedString resourceName(name);
             _this->SetImageCube(kernel, resourceName, Ref<ImageCube>(image), level);
         }
+        static uint32_t UniformTypeSize(PrismShaderCompiler::GLSLType type)
+        {
+            using T = PrismShaderCompiler::GLSLType;
+            switch (type)
+            {
+            case T::Bool: case T::Int: case T::UInt: case T::Float:    return 4;
+            case T::BVec2: case T::IVec2: case T::UVec2: case T::Vec2: return 8;
+            case T::BVec3: case T::IVec3: case T::UVec3: case T::Vec3: return 12;
+            case T::BVec4: case T::IVec4: case T::UVec4: case T::Vec4: return 16;
+            default:                                                   return 0;
+            }
+        }
+
+        // C# 只有这一个入口，按 type 分派到基类的 16 个虚 setter
+        void Prism_ComputeShader_SetUniformData(ComputeShader* _this, int32_t kernel, Rolky::String name,
+                                                int32_t type, const void* data, uint32_t size)
+        {
+            using T = PrismShaderCompiler::GLSLType;
+
+            if (UniformTypeSize((T)type) != size)
+            {
+                PR_CORE_ERROR("Prism_ComputeShader_SetUniformData: 类型 {} 与 {} 字节不符", type, size);
+                return;
+            }
+
+            Rolky::ScopedString uniformName(name);
+            const int32_t* iv = static_cast<const int32_t*>(data);
+            const uint32_t* uv = static_cast<const uint32_t*>(data);
+            const float* fv = static_cast<const float*>(data);
+
+            switch ((T)type)
+            {
+            case T::Bool:  _this->SetBool(kernel, uniformName, iv[0] != 0); break;
+            case T::Int:   _this->SetInt(kernel, uniformName, iv[0]); break;
+            case T::UInt:  _this->SetUInt(kernel, uniformName, uv[0]); break;
+            case T::Float: _this->SetFloat(kernel, uniformName, fv[0]); break;
+
+            case T::BVec2: _this->SetBoolVector2(kernel, uniformName, glm::bvec2(iv[0] != 0, iv[1] != 0)); break;
+            case T::IVec2: _this->SetIntVector2(kernel, uniformName, glm::ivec2(iv[0], iv[1])); break;
+            case T::UVec2: _this->SetUIntVector2(kernel, uniformName, glm::uvec2(uv[0], uv[1])); break;
+            case T::Vec2:  _this->SetVector2(kernel, uniformName, glm::vec2(fv[0], fv[1])); break;
+
+            case T::BVec3: _this->SetBoolVector3(kernel, uniformName, glm::bvec3(iv[0] != 0, iv[1] != 0, iv[2] != 0)); break;
+            case T::IVec3: _this->SetIntVector3(kernel, uniformName, glm::ivec3(iv[0], iv[1], iv[2])); break;
+            case T::UVec3: _this->SetUIntVector3(kernel, uniformName, glm::uvec3(uv[0], uv[1], uv[2])); break;
+            case T::Vec3:  _this->SetVector3(kernel, uniformName, glm::vec3(fv[0], fv[1], fv[2])); break;
+
+            case T::BVec4: _this->SetBoolVector4(kernel, uniformName, glm::bvec4(iv[0] != 0, iv[1] != 0, iv[2] != 0, iv[3] != 0)); break;
+            case T::IVec4: _this->SetIntVector4(kernel, uniformName, glm::ivec4(iv[0], iv[1], iv[2], iv[3])); break;
+            case T::UVec4: _this->SetUIntVector4(kernel, uniformName, glm::uvec4(uv[0], uv[1], uv[2], uv[3])); break;
+            case T::Vec4:  _this->SetVector4(kernel, uniformName, glm::vec4(fv[0], fv[1], fv[2], fv[3])); break;
+
+            default: break;
+            }
+        }
         void Prism_ComputeShader_Dispatch(ComputeShader* _this, int32_t kernel, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ, Rolky::Bool32 force)
         {
             _this->Dispatch(kernel, groupsX, groupsY, groupsZ, force);

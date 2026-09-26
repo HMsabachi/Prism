@@ -34,7 +34,7 @@ Shader "Prism/Renderer2D_Line"
                     vec4 Color;
                 } vs_Output;
 
-                void main()
+                void vert()
                 {
                     vs_Output.Color = a_Color;
                     gl_Position = Prism_ViewProjection * vec4(a_Position, 1.0);

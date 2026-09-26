@@ -7,10 +7,15 @@ layout(std430, binding = 0) buffer SquareData
     float u_Values[];
 } u_Data;
 
+uniform float u_Scale;
+uniform vec3 u_Offset;
+uniform int u_Add;
+
 [numthreads(64, 1, 1)]
 void CSSquare() {
     uint index = gl_GlobalInvocationID.x;
     if (index >= u_Data.u_Values.length()) return;
 
-    u_Data.u_Values[index] = u_Data.u_Values[index] * u_Data.u_Values[index];
+    u_Data.u_Values[index] = u_Data.u_Values[index] * u_Data.u_Values[index] * u_Scale
+        + u_Offset.x + float(u_Add);
 }

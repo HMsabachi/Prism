@@ -334,9 +334,11 @@ namespace Prism
         vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_GRAPHICS,
             m_PipelineLayout, Config::PRISM_VULKAN_SET_MATERIAL, 1, &set, 0, nullptr);
     }
-    void VulkanPipeline::RT_BindPushConstant(VkCommandBuffer cmdBuf, uint32_t offset, uint32_t size, const void* data) const
+    void VulkanPipeline::RT_BindPushConstant(VkCommandBuffer cmdBuf,
+        uint32_t offset, uint32_t size, const void* data) const
     {
-        vkCmdPushConstants(cmdBuf, m_PipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, offset, size, data);
+        vkCmdPushConstants(cmdBuf, m_PipelineLayout,
+            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, offset, size, data);
     }
 
 #pragma endregion
@@ -366,11 +368,20 @@ namespace Prism
     }
 
 
-    void VulkanComputePipeline::RT_Dispatch(VkCommandBuffer cmdBuf, VkDescriptorSet* sets, uint32_t setCount, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+    void VulkanComputePipeline::RT_Bind(VkCommandBuffer cmdBuf, VkDescriptorSet* sets, uint32_t setCount)
     {
         vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_Pipeline);
         vkCmdBindDescriptorSets(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, m_PipelineLayout, 0, setCount, sets, 0, 0);
+    }
+
+    void VulkanComputePipeline::RT_Dispatch(VkCommandBuffer cmdBuf, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ)
+    {
         vkCmdDispatch(cmdBuf, groupCountX, groupCountY, groupCountZ);
+    }
+
+    void VulkanComputePipeline::RT_BindPushConstant(VkCommandBuffer cmdBuf, uint32_t offset, uint32_t size, const void* data) const
+    {
+        vkCmdPushConstants(cmdBuf, m_PipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, offset, size, data);
     }
 
 #pragma endregion

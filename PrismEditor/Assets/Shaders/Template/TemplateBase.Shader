@@ -35,7 +35,7 @@ Shader "Standard/TemplateBase"
                     vec2 TexCoord;
                 } vs_Output;
 
-                void main()
+                void vert()
                 {
                     gl_Position = Prism_ViewProjection * Prism_ObjectToWorld * vec4(a_Position, 1.0);
                     vs_Output.TexCoord = a_TexCoord;

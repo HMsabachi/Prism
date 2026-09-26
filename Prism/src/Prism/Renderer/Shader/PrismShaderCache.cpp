@@ -24,6 +24,7 @@ namespace Prism
     //[Entries]  数据块，length - prefixed 连续内存   // 加载后整块保留
     //每条目（按 IndexTable.Offset 定位）：
     //u64   Backend          // 1=OpenGL 2=Vulkan；加载时靠它区分 GLSL / SPIR-V
+    //u32   PushConstantSize // Vulkan compute 用，来自反射
     //u64  VertexSize + VertexSize 字节
     //u64  FragmentSize + FragmentSize 字节
     //u64  ReflectionSize + ReflectionSize 字节
@@ -31,7 +32,7 @@ namespace Prism
     // ===== 磁盘格式常量 =====
 
     constexpr char SHADER_CACHE_MAGIC[8] = { 'P', 'S', 'H', 'A', 'D', 'E', 'R', 'C' };
-    constexpr uint32_t SHADER_CACHE_FORMAT_VERSION = 0x00000100U; // 0.0.1.0
+    constexpr uint32_t SHADER_CACHE_FORMAT_VERSION = 0x00000101U; // 0.0.1.1
 
     constexpr uint64_t SHADER_CACHE_FNV_OFFSET_BASIS = 14695981039346656037ULL;
     constexpr uint64_t SHADER_CACHE_FNV_PRIME = 1099511628211ULL;
@@ -161,7 +162,7 @@ namespace Prism
     void PrismShaderCache::AddEntry(const ShaderCacheEntry& entry)
     {
         if (entry.KeyHash == 0) return;
-        uint64_t totalSize = sizeof(entry.KeyHash) + sizeof(entry.Backend)
+        uint64_t totalSize = sizeof(entry.KeyHash) + sizeof(entry.Backend) + sizeof(entry.PushConstantSize)
             + sizeof(uint64_t) + entry.Source_1.size_bytes()
             + sizeof(uint64_t) + entry.Source_2.size_bytes()
             + sizeof(uint64_t) + entry.Reflection.size_bytes();
@@ -171,6 +172,7 @@ namespace Prism
         uint8_t* p = m_EntryData.data() + oldSize / sizeof(uint8_t);
         std::memcpy(p, &entry.KeyHash, sizeof(entry.KeyHash)); p += sizeof(entry.KeyHash);
         std::memcpy(p, &entry.Backend, sizeof(entry.Backend)); p += sizeof(entry.Backend);
+        std::memcpy(p, &entry.PushConstantSize, sizeof(entry.PushConstantSize)); p += sizeof(entry.PushConstantSize);
         uint64_t size = entry.Source_1.size_bytes();
         std::memcpy(p, &size, sizeof(size)); p += sizeof(size);
         std::memcpy(p, entry.Source_1.data(), size); p += size;
@@ -194,6 +196,7 @@ namespace Prism
         if (keyHash != hash) return false;
         outEntry->KeyHash = keyHash;
         outEntry->Backend = *reinterpret_cast<const uint64_t*>(p); p += sizeof(uint64_t);
+        outEntry->PushConstantSize = *reinterpret_cast<const uint32_t*>(p); p += sizeof(uint32_t);
         uint64_t size = *reinterpret_cast<const uint64_t*>(p); p += sizeof(uint64_t);
         outEntry->Source_1 = { p, size / sizeof(uint8_t) }; p += size;
         size = *reinterpret_cast<const uint64_t*>(p); p += sizeof(uint64_t);

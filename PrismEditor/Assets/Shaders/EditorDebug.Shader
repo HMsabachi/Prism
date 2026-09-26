@@ -52,7 +52,7 @@ Shader "Hidden/EditorDebug"
                     vec3(0.0, 1.0, 0.5)  // 青绿
                 );
 
-                void main()
+                void vert()
                 {
                 #ifdef SKINNED
                     mat4 boneTransform = Prism_GetBoneMatrix(a_BoneIndices[0]) * a_BoneWeights[0];
@@ -99,7 +99,7 @@ Shader "Hidden/EditorDebug"
                     vec2 TexCoord;
                 } vs_Output;
 
-                void main()
+                void vert()
                 {
                     mat4 u_MVP = Prism_ViewProjection * Prism_ObjectToWorld;
                     vec4 position = u_MVP * vec4(a_Position, 1.0);
@@ -146,7 +146,7 @@ Shader "Hidden/EditorDebug"
 
                 attribute vec3 a_Position : POSITION;
 
-                void main()
+                void vert()
                 {
                     gl_Position = Prism_ViewProjection * Prism_ObjectToWorld * vec4(a_Position, 1.0);
                 }

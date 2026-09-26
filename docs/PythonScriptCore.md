@@ -169,10 +169,10 @@ kernel 用 `FindKernel` 返回的裸 `int` 寻址；`Dispatch` 是入队式，�
 ```python
 from PrismEngine import ComputeShader, ShaderStorageBuffer, UniformBuffer
 
-cs = ComputeShader.Create("Assets/Shaders/Example.ComputeShader")
-kernel = cs.FindKernel("CSMain")
-if cs.HasKernel("CSMain"):
-    print(cs.GetKernelThreadGroupSizes(kernel))   # (8, 8, 1)
+cs = ComputeShader.Create("Assets/Shaders/Test.ComputeShader")
+kernel = cs.FindKernel("CSSquare")
+if cs.HasKernel("CSSquare"):
+    print(cs.GetKernelThreadGroupSizes(kernel))   # (64, 1, 1)
 
 ssbo = ShaderStorageBuffer.Create(1024)           # 默认 Dynamic；Static 传 1
 ssbo.SetData([1.0, 2.0, 3.0, 4.0])

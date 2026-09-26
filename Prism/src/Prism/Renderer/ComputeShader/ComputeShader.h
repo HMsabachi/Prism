@@ -3,6 +3,9 @@
 #include "Prism/Core/Ref.h"
 #include "Prism/Asset/Asset.h"
 
+#include <glm/glm.hpp>
+
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -38,6 +41,27 @@ namespace Prism
 
         virtual void Dispatch(int32_t kernel, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ, bool force = false) = 0;
 
+        virtual void SetBool(int32_t kernel, const std::string& name, bool value) = 0;
+        virtual void SetInt(int32_t kernel, const std::string& name, int32_t value) = 0;
+        virtual void SetUInt(int32_t kernel, const std::string& name, uint32_t value) = 0;
+        virtual void SetFloat(int32_t kernel, const std::string& name, float value) = 0;
+
+        virtual void SetVector2(int32_t kernel, const std::string& name, const glm::vec2& value) = 0;
+        virtual void SetVector3(int32_t kernel, const std::string& name, const glm::vec3& value) = 0;
+        virtual void SetVector4(int32_t kernel, const std::string& name, const glm::vec4& value) = 0;
+
+        virtual void SetIntVector2(int32_t kernel, const std::string& name, const glm::ivec2& value) = 0;
+        virtual void SetIntVector3(int32_t kernel, const std::string& name, const glm::ivec3& value) = 0;
+        virtual void SetIntVector4(int32_t kernel, const std::string& name, const glm::ivec4& value) = 0;
+
+        virtual void SetUIntVector2(int32_t kernel, const std::string& name, const glm::uvec2& value) = 0;
+        virtual void SetUIntVector3(int32_t kernel, const std::string& name, const glm::uvec3& value) = 0;
+        virtual void SetUIntVector4(int32_t kernel, const std::string& name, const glm::uvec4& value) = 0;
+
+        virtual void SetBoolVector2(int32_t kernel, const std::string& name, const glm::bvec2& value) = 0;
+        virtual void SetBoolVector3(int32_t kernel, const std::string& name, const glm::bvec3& value) = 0;
+        virtual void SetBoolVector4(int32_t kernel, const std::string& name, const glm::bvec4& value) = 0;
+
     protected:
         ComputeShader(const std::string& filePath);
         void Load();
@@ -53,6 +77,7 @@ namespace Prism
         };
 
         int32_t FindSlot(const std::string& name, PrismShaderCompiler::CSL::ResourceKind expected) const;
+        int32_t FindUniform(const std::string& name) const;
         virtual bool IsLegalKernel(int32_t kernel) const = 0;
 
         std::vector<Slot> m_Slots;

@@ -22,10 +22,11 @@ namespace Prism
     }
 
     VulkanShader::VulkanShader(std::span<const uint8_t> spirvCompute,
-        std::span<const PrismShaderCompiler::DescriptorInfo> reflection)
+        std::span<const PrismShaderCompiler::DescriptorInfo> reflection, uint32_t pushConstantSize)
         : m_Reflection{}, m_IsCompute(true)
     {
         m_Reflection.Descriptors.assign(reflection.begin(), reflection.end());
+        m_Reflection.PushConstantSize = pushConstantSize;
         CreateShaderStage(VK_SHADER_STAGE_COMPUTE_BIT, spirvCompute);
         CreateDescriptorSetLayouts();
         CreatePipelineLayout();
@@ -142,13 +143,23 @@ namespace Prism
         layoutInfo.setLayoutCount = static_cast<uint32_t>(m_DescriptorSetLayouts.size());
         layoutInfo.pSetLayouts = m_DescriptorSetLayouts.data();
 
-        if (!m_IsCompute)
+        VkPushConstantRange pushConstantRange{};
+
+        if (m_IsCompute)
+        {
+            pushConstantRange.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+            pushConstantRange.size = m_Reflection.PushConstantSize;
+        }
+        else
         {
             // PrismDrawIndexPC{int}：
-            VkPushConstantRange pushConstantRange{};
             pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-            pushConstantRange.offset = 0;
             pushConstantRange.size = sizeof(int32_t);
+        }
+
+        if (pushConstantRange.size > 0)
+        {
+            pushConstantRange.offset = 0;
             layoutInfo.pushConstantRangeCount = 1;
             layoutInfo.pPushConstantRanges = &pushConstantRange;
         }

@@ -90,7 +90,8 @@ namespace Prism
             m_Slots.push_back(std::move(slot));
         }
 
-        PR_CORE_INFO("CSL parsed '{}': {} kernels, {} resources", m_Name, m_Compiled.Kernels.size(), m_Slots.size());
+        PR_CORE_INFO("CSL parsed '{}': {} kernels, {} resources, {} bytes uniforms",
+            m_Name, m_Compiled.Kernels.size(), m_Slots.size(), m_Compiled.UniformBlockSize);
     }
 
     int32_t ComputeShader::FindSlot(const std::string& name, PrismShaderCompiler::CSL::ResourceKind expected) const
@@ -111,6 +112,18 @@ namespace Prism
         }
 
         PR_CORE_ERROR("ComputeShader '{}': 找不到资源 '{}'", m_Name, name);
+        return -1;
+    }
+
+    int32_t ComputeShader::FindUniform(const std::string& name) const
+    {
+        for (size_t i = 0; i < m_Compiled.Uniforms.size(); ++i)
+        {
+            if (m_Compiled.Uniforms[i].Name == name)
+                return (int32_t)i;
+        }
+
+        PR_CORE_ERROR("ComputeShader '{}': 找不到数值 uniform '{}'", m_Name, name);
         return -1;
     }
 }

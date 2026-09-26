@@ -29,7 +29,7 @@ Shader "Custom/MyFirstShader"
                     vec2 UV;
                     vec3 Normal;
                 } vs_Output;
-                void main()
+                void vert()
                 {
                     gl_Position = Prism_ViewProjection * Prism_ObjectToWorld * vec4(aPos, 1.0);
                     vs_Output.UV = aUV;

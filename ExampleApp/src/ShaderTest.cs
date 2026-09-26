@@ -80,6 +80,9 @@ namespace Example
             m_Buffer.SetData(m_Input);
             Log.Info($"SquareTest: input  = [{string.Join(", ", m_Input)}], buffer = {m_Buffer.Size} bytes");
             int kernel = m_SquareShader.FindKernel("CSSquare");
+            m_SquareShader.SetFloat(kernel, "u_Scale", 2.0f);
+            m_SquareShader.SetVector3(kernel, "u_Offset", new Vector3(1.0f, 0.0f, 0.0f));
+            m_SquareShader.SetInt(kernel, "u_Add", 3);
             m_SquareShader.SetBuffer(kernel, "u_Data", m_Buffer);
             m_SquareShader.Dispatch(kernel, (uint)((m_Input.Length + 63) / 64), 1, 1);
             m_Request = m_Buffer.RequestReadback();

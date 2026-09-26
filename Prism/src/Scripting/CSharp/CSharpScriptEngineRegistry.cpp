@@ -194,6 +194,7 @@ namespace Prism
         PR_ADD_INTERNAL_CALL(Prism_ComputeShader_SetTextureCube);
         PR_ADD_INTERNAL_CALL(Prism_ComputeShader_SetImage2D);
         PR_ADD_INTERNAL_CALL(Prism_ComputeShader_SetImageCube);
+        PR_ADD_INTERNAL_CALL(Prism_ComputeShader_SetUniformData);
         PR_ADD_INTERNAL_CALL(Prism_ComputeShader_Dispatch);
         // PrismShader
         PR_ADD_INTERNAL_CALL(Prism_PrismShader_GetShader);

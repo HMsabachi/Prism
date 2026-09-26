@@ -15,6 +15,9 @@
 #include "Prism/Renderer/Buffer/UniformBuffer.h"
 #include "Prism/Renderer/Buffer/ShaderStorageBuffer.h"
 
+#include <array>
+#include <cstring>
+
 namespace Prism
 {
     using K = PrismShaderCompiler::CSL::ResourceKind;
@@ -41,6 +44,8 @@ namespace Prism
                 m_Kernels.push_back(std::move(kernel));
                 continue;
             }
+
+            kernel.UniformData.assign(kernel.Shader->GetReflection().PushConstantSize, 0);
 
             for (const auto& descriptor : kernel.Shader->GetReflection().Descriptors)
             {
@@ -262,11 +267,136 @@ namespace Prism
                 cmdBuf = VulkanRenderer::RT_GetActiveCommandBuffer();
             }
 
-            pipeline->RT_Dispatch(cmdBuf, descriptorSets, 1, groupsX, groupsY, groupsZ);
+            pipeline->RT_Bind(cmdBuf, descriptorSets, 1);
+
+            const uint32_t uniformSize = static_cast<uint32_t>(kernelInfo.UniformData.size());
+            if (uniformSize > 0)
+            {
+                pipeline->RT_BindPushConstant(cmdBuf, 0, uniformSize, kernelInfo.UniformData.data());
+            }
+
+            pipeline->RT_Dispatch(cmdBuf, groupsX, groupsY, groupsZ);
 
             if (device)
                 device->FlushCommandBuffer(cmdBuf);
         });
+    }
+
+    void VulkanComputeShader::WriteUniform(int32_t kernel, const std::string& name,
+                                           PrismShaderCompiler::GLSLType type, const void* data, uint32_t size)
+    {
+        if (!IsLegalKernel(kernel))
+            return;
+
+        const int32_t index = FindUniform(name);
+        if (index < 0)
+            return;
+
+        const PrismShaderCompiler::CSL::ComputeUniform& uniform = m_Compiled.Uniforms[index];
+
+        if (uniform.Type != type || uniform.Size != size)
+        {
+            PR_CORE_ERROR("ComputeShader '{}': uniform '{}' 声明为 {}（{} 字节），按 {}（{} 字节）写入",
+                m_Name, name, PrismShaderCompiler::GLSLTypeUtil::ToString(uniform.Type), uniform.Size,
+                PrismShaderCompiler::GLSLTypeUtil::ToString(type), size);
+            return;
+        }
+
+        std::array<uint8_t, 16> bytes{};
+        std::memcpy(bytes.data(), data, size);
+
+        Ref<VulkanComputeShader> self = this;
+        uint32_t kernelIndex = (uint32_t)kernel;
+        uint32_t offset = uniform.Offset;
+
+        Renderer::Submit([self, kernelIndex, offset, bytes, size]() mutable
+        {
+            std::memcpy(self->m_Kernels[kernelIndex].UniformData.data() + offset, bytes.data(), size);
+        });
+    }
+
+    void VulkanComputeShader::SetBool(int32_t kernel, const std::string& name, bool value)
+    {
+        const int32_t packed = value ? 1 : 0;
+        WriteUniform(kernel, name, PrismShaderCompiler::GLSLType::Bool, &packed, sizeof(packed));
+    }
+
+    void VulkanComputeShader::SetInt(int32_t kernel, const std::string& name, int32_t value)
+    {
+        WriteUniform(kernel, name, PrismShaderCompiler::GLSLType::Int, &value, sizeof(value));
+    }
+
+    void VulkanComputeShader::SetUInt(int32_t kernel, const std::string& name, uint32_t value)
+    {
+        WriteUniform(kernel, name, PrismShaderCompiler::GLSLType::UInt, &value, sizeof(value));
+    }
+
+    void VulkanComputeShader::SetFloat(int32_t kernel, const std::string& name, float value)
+    {
+        WriteUniform(kernel, name, PrismShaderCompiler::GLSLType::Float, &value, sizeof(value));
+    }
+
+    void VulkanComputeShader::SetVector2(int32_t kernel, const std::string& name, const glm::vec2& value)
+    {
+        WriteUniform(kernel, name, PrismShaderCompiler::GLSLType::Vec2, &value.x, 2 * sizeof(float));
+    }
+
+    void VulkanComputeShader::SetVector3(int32_t kernel, const std::string& name, const glm::vec3& value)
+    {
+        WriteUniform(kernel, name, PrismShaderCompiler::GLSLType::Vec3, &value.x, 3 * sizeof(float));
+    }
+
+    void VulkanComputeShader::SetVector4(int32_t kernel, const std::string& name, const glm::vec4& value)
+    {
+        WriteUniform(kernel, name, PrismShaderCompiler::GLSLType::Vec4, &value.x, 4 * sizeof(float));
+    }
+
+    void VulkanComputeShader::SetIntVector2(int32_t kernel, const std::string& name, const glm::ivec2& value)
+    {
+        WriteUniform(kernel, name, PrismShaderCompiler::GLSLType::IVec2, &value.x, 2 * sizeof(int32_t));
+    }
+
+    void VulkanComputeShader::SetIntVector3(int32_t kernel, const std::string& name, const glm::ivec3& value)
+    {
+        WriteUniform(kernel, name, PrismShaderCompiler::GLSLType::IVec3, &value.x, 3 * sizeof(int32_t));
+    }
+
+    void VulkanComputeShader::SetIntVector4(int32_t kernel, const std::string& name, const glm::ivec4& value)
+    {
+        WriteUniform(kernel, name, PrismShaderCompiler::GLSLType::IVec4, &value.x, 4 * sizeof(int32_t));
+    }
+
+    void VulkanComputeShader::SetUIntVector2(int32_t kernel, const std::string& name, const glm::uvec2& value)
+    {
+        WriteUniform(kernel, name, PrismShaderCompiler::GLSLType::UVec2, &value.x, 2 * sizeof(uint32_t));
+    }
+
+    void VulkanComputeShader::SetUIntVector3(int32_t kernel, const std::string& name, const glm::uvec3& value)
+    {
+        WriteUniform(kernel, name, PrismShaderCompiler::GLSLType::UVec3, &value.x, 3 * sizeof(uint32_t));
+    }
+
+    void VulkanComputeShader::SetUIntVector4(int32_t kernel, const std::string& name, const glm::uvec4& value)
+    {
+        WriteUniform(kernel, name, PrismShaderCompiler::GLSLType::UVec4, &value.x, 4 * sizeof(uint32_t));
+    }
+
+    void VulkanComputeShader::SetBoolVector2(int32_t kernel, const std::string& name, const glm::bvec2& value)
+    {
+        const int32_t packed[2] = { value.x, value.y };
+        WriteUniform(kernel, name, PrismShaderCompiler::GLSLType::BVec2, packed, sizeof(packed));
+    }
+
+    void VulkanComputeShader::SetBoolVector3(int32_t kernel, const std::string& name, const glm::bvec3& value)
+    {
+        const int32_t packed[3] = { value.x, value.y, value.z };
+        WriteUniform(kernel, name, PrismShaderCompiler::GLSLType::BVec3, packed, sizeof(packed));
+    }
+
+    void VulkanComputeShader::SetBoolVector4(int32_t kernel, const std::string& name, const glm::bvec4& value)
+    {
+        const int32_t packed[4] = { value.x, value.y, value.z, value.w };
+        WriteUniform(kernel, name, PrismShaderCompiler::GLSLType::BVec4, packed, sizeof(packed));
     }
 
 }

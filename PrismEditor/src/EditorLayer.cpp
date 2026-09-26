@@ -615,13 +615,16 @@ namespace Prism
             auto viewportSize = ImGui::GetContentRegionAvail();
             //viewportSize.x *= 2;
             //viewportSize.y *= 2;
-            SceneRenderer::Get().RT_Resize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
-            m_EditorCamera.SetProjectionMatrix(glm::perspectiveFov(glm::radians(45.0f), viewportSize.x, viewportSize.y, 0.1f, 10000.0f));
-            m_EditorCamera.SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
-            //viewportSize.x *= 0.5;
-            //viewportSize.y *= 0.5;
+            if (viewportSize.x >= 1.0f && viewportSize.y >= 1.0f)
+            {
+                SceneRenderer::Get().RT_Resize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
+                m_EditorCamera.SetProjectionMatrix(glm::perspectiveFov(glm::radians(45.0f), viewportSize.x, viewportSize.y, 0.1f, 10000.0f));
+                m_EditorCamera.SetViewportSize((uint32_t)viewportSize.x, (uint32_t)viewportSize.y);
+                //viewportSize.x *= 0.5;
+                //viewportSize.y *= 0.5;
 
-            UI::Image(SceneRenderer::Get().GetFinalImage(), viewportSize, { 0, 1 }, { 1, 0 });
+                UI::Image(SceneRenderer::Get().GetFinalImage(), viewportSize, { 0, 1 }, { 1, 0 });
+            }
 
             if (ImGui::BeginDragDropTarget())
             {
