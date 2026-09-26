@@ -103,6 +103,7 @@ namespace Prism
         PythonScriptEngine::Shutdown();
         CSharpScriptEngine::Shutdown();
         AssetManager::Shutdown();
+        ProcessEvents();
         
         m_RenderThread.Pump();
         m_RenderThread.Pump();

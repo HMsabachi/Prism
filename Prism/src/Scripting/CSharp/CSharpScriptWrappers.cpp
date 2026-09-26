@@ -5,6 +5,7 @@
 #include "Prism/Core/Math/Noise.h"
 
 #include "Prism/Core/Input.h"
+#include "Prism/Core/Application.h"
 #include "Prism/Physics/PXPhysicsWrappers.h"
 #include "Prism/Physics/Physics.h"
 #include "Prism/Physics/PhysicsActor.h"
@@ -55,8 +56,11 @@ namespace Prism {
 
         void Prism_RefCounted_Destructor(RefCounted* nativePtr)
         {
-            nativePtr->DecRefCount();
-            if (nativePtr->GetRefCount() == 0) delete nativePtr;
+            Application::Get().QueueEvent([nativePtr]()
+            {
+                nativePtr->DecRefCount();
+                if (nativePtr->GetRefCount() == 0) delete nativePtr;
+            });
         }
 #pragma endregion
 

@@ -313,8 +313,11 @@ namespace Prism
         m_IDPass->GetSpecification().TargetFramebuffer->RT_Resize(width, height);
         m_CompositePass->GetSpecification().TargetFramebuffer->RT_Resize(width, height);
 
-        m_BloomImages[0]->RT_Resize(width, height);
-        m_BloomImages[1]->RT_Resize(width, height);
+        for (Ref<Image2D>& bloomImage : m_BloomImages)
+        {
+            if (bloomImage->GetWidth() != width || bloomImage->GetHeight() != height)
+                bloomImage->RT_Resize(width, height);
+        }
 
         CreateSSRTargets(width, height);
     }
