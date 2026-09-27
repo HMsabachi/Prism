@@ -141,8 +141,7 @@ namespace Prism
                 if (IsSubClassOf(*fieldType, *GetPythonType(PYTHON_TYPE_REF)))
                 {
                     uint64_t assetPtr = field.GetBuffer().Read<uint64_t>();
-                    auto object = instantiateClass(*fieldType);
-                    object.attr("SetRef")(assetPtr);
+                    auto object = instantiateClass(*fieldType, assetPtr);
                     instance.attr(field.GetName().c_str()) = object;
                 }
                 field.SetInstance(&instance);

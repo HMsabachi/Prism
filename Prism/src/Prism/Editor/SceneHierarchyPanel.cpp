@@ -1234,8 +1234,7 @@ namespace Prism {
                                         if (field.IsRuntime())
                                         {
                                             pybind11::gil_scoped_acquire gilAcquire;
-                                            auto object = (*field.GetPyType())();
-                                            object.attr("SetRef")((uint64_t)asset.Raw());
+                                            auto object = (*field.GetPyType())((uint64_t)asset.Raw());
                                             field.SetValue(object);
                                         }
                                     }
@@ -1250,8 +1249,7 @@ namespace Prism {
                                         if (field.IsRuntime())
                                         {
                                             pybind11::gil_scoped_acquire gilAcquire;
-                                            auto object = (*field.GetPyType())();
-                                            object.attr("SetRef")((uint64_t)asset.Raw());
+                                            auto object = (*field.GetPyType())((uint64_t)asset.Raw());
                                             field.SetValue(object);
                                         }
                                     }
@@ -1266,8 +1264,7 @@ namespace Prism {
                                         if (field.IsRuntime())
                                         {
                                             pybind11::gil_scoped_acquire gilAcquire;
-                                            auto object = (*field.GetPyType())();
-                                            object.attr("SetRef")((uint64_t)asset.Raw());
+                                            auto object = (*field.GetPyType())((uint64_t)asset.Raw());
                                             field.SetValue(object);
                                         }
                                     }
@@ -1282,8 +1279,7 @@ namespace Prism {
                                         if (field.IsRuntime())
                                         {
                                             pybind11::gil_scoped_acquire gilAcquire;
-                                            auto object = (*field.GetPyType())();
-                                            object.attr("SetRef")((uint64_t)asset.Raw());
+                                            auto object = (*field.GetPyType())((uint64_t)asset.Raw());
                                             field.SetValue(object);
                                         }
                                     }

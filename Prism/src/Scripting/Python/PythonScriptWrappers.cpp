@@ -151,9 +151,8 @@ namespace Prism::PythonScript
     protected:
         Ref<RefCounted> m_Ref;
     public:
-        PythonRefCounted() = default;
+        PythonRefCounted(uint64_t refPtr) : m_Ref(reinterpret_cast<RefCounted*>(refPtr)) {}
         PythonRefCounted(Ref<RefCounted> ref) : m_Ref(std::move(ref)) {}
-        void SetRef(uint64_t refPtr) { m_Ref = reinterpret_cast<RefCounted*>(refPtr); }
         virtual ~PythonRefCounted() = default;
         virtual std::string __Repr__() { return fmt::format(" <Ref Handle = {}>", (uint64_t)m_Ref.Raw()); }
     };
@@ -161,9 +160,8 @@ namespace Prism::PythonScript
     class PythonAsset : public PythonRefCounted
     {
     public:
-        PythonAsset() = default;
+        PythonAsset(uint64_t handle) : PythonRefCounted(handle) {}
         PythonAsset(Ref<Asset> asset) : PythonRefCounted(std::move(asset)) {}
-        void SetAsset(uint64_t assetPtr) { m_Ref = reinterpret_cast<Asset*>(assetPtr); }
         virtual ~PythonAsset() = default;
         virtual std::string __Repr__() { return fmt::format(" <Asset Handle = {}>", (uint64_t)m_Ref.Raw()); }
 
@@ -177,7 +175,7 @@ namespace Prism::PythonScript
     class PythonMesh : public PythonAsset
     {
     public:
-        PythonMesh() = default;
+        PythonMesh(uint64_t handle) : PythonAsset(handle) {}
         PythonMesh(Ref<Mesh> mesh) : PythonAsset(mesh) {}
         PythonMesh(const char* filepath) : PythonAsset(ModelImporter::Import(filepath).Mesh) {}
         virtual std::string __Repr__() override { return fmt::format(" <Mesh Handle = {}>", (uint64_t)m_Ref.Raw()); }
@@ -188,7 +186,7 @@ namespace Prism::PythonScript
     class PythonImage : public PythonRefCounted
     {
     public:
-        PythonImage() = default;
+        PythonImage(uint64_t handle) : PythonRefCounted(handle) {}
         PythonImage(Ref<Image> image) : PythonRefCounted(std::move(image)) {}
         virtual std::string __Repr__() override
         {
@@ -210,7 +208,7 @@ namespace Prism::PythonScript
     class PythonImage2D : public PythonImage
     {
     public:
-        PythonImage2D() = default;
+        PythonImage2D(uint64_t handle) : PythonImage(handle) {}
         PythonImage2D(Ref<Image2D> image) : PythonImage(image) {}
         static PythonImage2D Create(const ImageSpecification& specification, const py::object& data)
         {
@@ -232,7 +230,7 @@ namespace Prism::PythonScript
     class PythonImageCube : public PythonImage
     {
     public:
-        PythonImageCube() = default;
+        PythonImageCube(uint64_t handle) : PythonImage(handle) {}
         PythonImageCube(Ref<ImageCube> image) : PythonImage(image) {}
         static PythonImageCube Create(const ImageSpecification& specification, const py::object& data)
         {
@@ -256,7 +254,7 @@ namespace Prism::PythonScript
     class PythonTexture : public PythonAsset
     {
     public:
-        PythonTexture() = default;
+        PythonTexture(uint64_t handle) : PythonAsset(handle) {}
         PythonTexture(Ref<Texture> texture) : PythonAsset(std::move(texture)) {}
         Ref<Texture> GetTexture() const { return m_Ref.As<Texture>(); }
         uint32_t GetWidth() const { Ref<Texture> texture = m_Ref.As<Texture>(); return texture ? texture->GetWidth() : 0; }
@@ -267,7 +265,7 @@ namespace Prism::PythonScript
     class PythonTexture2D : public PythonTexture
     {
     public:
-        PythonTexture2D() = default;
+        PythonTexture2D(uint64_t handle) : PythonTexture(handle) {}
         PythonTexture2D(Ref<Texture2D> texture) : PythonTexture(texture) {}
         static PythonTexture2D Create(const TextureSpecification& specification)
         {
@@ -315,7 +313,7 @@ namespace Prism::PythonScript
         PythonImage2D GetImage() const
         {
             Ref<Texture2D> texture = GetTexture();
-            return texture ? PythonImage2D(texture->GetImage()) : PythonImage2D();
+            return texture ? PythonImage2D(texture->GetImage()) : PythonImage2D(Ref<Image2D>());
         }
     public:
         Ref<Texture2D> GetTexture() const { return m_Ref.As<Texture2D>(); }
@@ -324,7 +322,7 @@ namespace Prism::PythonScript
     class PythonTextureCube : public PythonTexture
     {
     public:
-        PythonTextureCube() = default;
+        PythonTextureCube(uint64_t handle) : PythonTexture(handle) {}
         PythonTextureCube(Ref<TextureCube> texture) : PythonTexture(texture) {}
         static PythonTextureCube Create(const TextureSpecification& specification, const py::object& data)
         {
@@ -351,7 +349,7 @@ namespace Prism::PythonScript
         PythonImageCube GetImage() const
         {
             Ref<TextureCube> texture = GetTextureCube();
-            return texture ? PythonImageCube(texture->GetImage()) : PythonImageCube();
+            return texture ? PythonImageCube(texture->GetImage()) : PythonImageCube(Ref<ImageCube>());
         }
     public:
         Ref<TextureCube> GetTextureCube() const { return m_Ref.As<TextureCube>(); }
@@ -360,7 +358,7 @@ namespace Prism::PythonScript
     class PythonPrismShader : public PythonAsset
     {
     public:
-        PythonPrismShader() = default;
+        PythonPrismShader(uint64_t handle) : PythonAsset(handle) {}
         PythonPrismShader(Ref<PrismShader> shader) : PythonAsset(shader) {}
         static PythonPrismShader GetShader(const char* name)
         {
@@ -463,7 +461,7 @@ namespace Prism::PythonScript
     class PythonMaterial : public PythonRefCounted
     {
     public:
-        PythonMaterial() = default;
+        PythonMaterial(uint64_t handle) : PythonRefCounted(handle) {}
         PythonMaterial(Ref<Material> material) : PythonRefCounted(std::move(material)) {}
         PythonMaterial(const PythonPrismShader& shader)
             : PythonRefCounted(Material::Create(shader.GetShaderRef())) {}
@@ -497,7 +495,7 @@ namespace Prism::PythonScript
     class PythonUniformBuffer : public PythonRefCounted
     {
     public:
-        PythonUniformBuffer() = default;
+        PythonUniformBuffer(uint64_t handle) : PythonRefCounted(handle) {}
         PythonUniformBuffer(Ref<UniformBuffer> buffer) : PythonRefCounted(std::move(buffer)) {}
         static PythonUniformBuffer Create(uint32_t size)
         {
@@ -530,7 +528,7 @@ namespace Prism::PythonScript
     class PythonShaderStorageBufferReadback : public PythonRefCounted
     {
     public:
-        PythonShaderStorageBufferReadback() = default;
+        PythonShaderStorageBufferReadback(uint64_t handle) : PythonRefCounted(handle) {}
         PythonShaderStorageBufferReadback(Ref<ShaderStorageBufferReadback> request) : PythonRefCounted(std::move(request)) {}
         virtual std::string __Repr__() override
         {
@@ -571,7 +569,7 @@ namespace Prism::PythonScript
     class PythonShaderStorageBuffer : public PythonRefCounted
     {
     public:
-        PythonShaderStorageBuffer() = default;
+        PythonShaderStorageBuffer(uint64_t handle) : PythonRefCounted(handle) {}
         PythonShaderStorageBuffer(Ref<ShaderStorageBuffer> buffer) : PythonRefCounted(std::move(buffer)) {}
         static PythonShaderStorageBuffer Create(uint32_t size, uint32_t usage)
         {
@@ -620,7 +618,7 @@ namespace Prism::PythonScript
     class PythonComputeShader : public PythonAsset
     {
     public:
-        PythonComputeShader() = default;
+        PythonComputeShader(uint64_t handle) : PythonAsset(handle) {}
         PythonComputeShader(Ref<ComputeShader> shader) : PythonAsset(std::move(shader)) {}
         static PythonComputeShader Create(const char* filePath)
         {
@@ -1155,7 +1153,7 @@ namespace Prism::PythonScript
             auto& mc = e.GetComponent<MeshRendererComponent>();
             if (!mc.Materials.empty() && mc.Materials[index])
                 return PythonMaterial(mc.Materials[index]);
-            return PythonMaterial();
+            return PythonMaterial(Ref<Material>());
         }
         void SetMaterial(const PythonMaterial& material, uint32_t index = 0)
         {
@@ -1469,8 +1467,7 @@ PYBIND11_MODULE(PrismEngine, m)
         .def_static("Critical", &PythonLog::Critical);
 
     py::class_<PythonRefCounted>(m, "Ref")
-        .def(py::init<>())
-        .def("SetRef", &PythonRefCounted::SetRef)
+        .def(py::init<uint64_t>(), py::arg("handle"))
         .def("__repr__", &PythonRefCounted::__Repr__);
     py::enum_<AssetType>(m, "AssetType")
         .value("Scene", AssetType::Scene)
@@ -1487,7 +1484,7 @@ PYBIND11_MODULE(PrismEngine, m)
         .value("None", AssetType::None)
         .value("Missing", AssetType::Missing);
     py::class_<PythonAsset, PythonRefCounted>(m, "Asset")
-        .def(py::init<>())
+        .def(py::init<uint64_t>(), py::arg("handle"))
         .def("__repr__", &PythonAsset::__Repr__)
         .def_property_readonly("Type", &PythonAsset::GetType)
         .def_property_readonly("Handle", &PythonAsset::GetHandle)
@@ -1495,7 +1492,7 @@ PYBIND11_MODULE(PrismEngine, m)
         .def_property_readonly("FileName", &PythonAsset::GetFileName)
         .def_property_readonly("Extension", &PythonAsset::GetExtension);
     py::class_<PythonMesh, PythonAsset>(m, "Mesh")
-        .def(py::init<>())
+        .def(py::init<uint64_t>(), py::arg("handle"))
         .def(py::init<const char*>())
         .def("__repr__", &PythonMesh::__Repr__);
     py::enum_<ImageFormat>(m, "ImageFormat")
@@ -1592,7 +1589,7 @@ PYBIND11_MODULE(PrismEngine, m)
         .def_readwrite("Height", &ImageSpecification::Height)
         .def_readwrite("Samples", &ImageSpecification::Samples);
     py::class_<PythonImage, PythonRefCounted>(m, "Image")
-        .def(py::init<>())
+        .def(py::init<uint64_t>(), py::arg("handle"))
         .def("__repr__", &PythonImage::__Repr__)
         .def_property_readonly("Width", &PythonImage::GetWidth)
         .def_property_readonly("Height", &PythonImage::GetHeight)
@@ -1605,19 +1602,19 @@ PYBIND11_MODULE(PrismEngine, m)
         .def("GetFormat", &PythonImage::GetFormat)
         .def("GetUsage", &PythonImage::GetUsage);
     py::class_<PythonImage2D, PythonImage>(m, "Image2D")
-        .def(py::init<>())
+        .def(py::init<uint64_t>(), py::arg("handle"))
         .def_static("Create", &PythonImage2D::Create,
             py::arg("specification"), py::arg("data") = py::none())
         .def("__repr__", &PythonImage2D::__Repr__);
     py::class_<PythonImageCube, PythonImage>(m, "ImageCube")
-        .def(py::init<>())
+        .def(py::init<uint64_t>(), py::arg("handle"))
         .def_static("Create", &PythonImageCube::Create,
             py::arg("specification"), py::arg("data") = py::none())
         .def("__repr__", &PythonImageCube::__Repr__)
         .def("GenerateMipMap", &PythonImageCube::GenerateMipMap)
         .def("CopyTo", &PythonImageCube::CopyTo);
     py::class_<PythonTexture, PythonAsset>(m, "Texture")
-        .def(py::init<>())
+        .def(py::init<uint64_t>(), py::arg("handle"))
         .def_property_readonly("Width", &PythonTexture::GetWidth)
         .def_property_readonly("Height", &PythonTexture::GetHeight)
         .def_property_readonly("Format", &PythonTexture::GetFormat)
@@ -1625,7 +1622,7 @@ PYBIND11_MODULE(PrismEngine, m)
         .def("GetHeight", &PythonTexture::GetHeight)
         .def("GetFormat", &PythonTexture::GetFormat);
     py::class_<PythonTexture2D, PythonTexture>(m, "Texture2D")
-        .def(py::init<>())
+        .def(py::init<uint64_t>(), py::arg("handle"))
         .def_static("Create", py::overload_cast<const TextureSpecification&>(&PythonTexture2D::Create),
             py::arg("specification") = TextureSpecification())
         .def_static("Create", py::overload_cast<uint32_t, uint32_t>(&PythonTexture2D::Create),
@@ -1634,7 +1631,7 @@ PYBIND11_MODULE(PrismEngine, m)
         .def("SetData", &PythonTexture2D::SetData)
         .def("GetImage", &PythonTexture2D::GetImage);
     py::class_<PythonTextureCube, PythonTexture>(m, "TextureCube")
-        .def(py::init<>())
+        .def(py::init<uint64_t>(), py::arg("handle"))
         .def_static("Create", &PythonTextureCube::Create,
             py::arg("specification") = TextureSpecification(), py::arg("data") = py::none())
         .def("__repr__", &PythonTextureCube::__Repr__)
@@ -1657,7 +1654,7 @@ PYBIND11_MODULE(PrismEngine, m)
         .value("TextureCube", PrismShaderCompiler::PropertyType::TextureCube)
         .value("Enum", PrismShaderCompiler::PropertyType::Enum);
     py::class_<PythonPrismShader, PythonAsset>(m, "PrismShader")
-        .def(py::init<>())
+        .def(py::init<uint64_t>(), py::arg("handle"))
         .def_static("GetShader", &PythonPrismShader::GetShader)
         .def("__repr__", &PythonPrismShader::__Repr__)
         .def_property_readonly("Name", &PythonPrismShader::GetName)
@@ -1668,7 +1665,7 @@ PYBIND11_MODULE(PrismEngine, m)
         .def("GetUniformDisplayName", &PythonPrismShader::GetUniformDisplayName)
         .def("GetUniformDefaultValue", &PythonPrismShader::GetUniformDefaultValue);
     py::class_<PythonMaterial, PythonRefCounted>(m, "Material")
-        .def(py::init<>())
+        .def(py::init<uint64_t>(), py::arg("handle"))
         .def(py::init<const PythonPrismShader&>())
         .def("__repr__", &PythonMaterial::__Repr__)
         .def("SetFloat", &PythonMaterial::SetFloat)
@@ -1684,26 +1681,26 @@ PYBIND11_MODULE(PrismEngine, m)
         .def("SetKeyword", &PythonMaterial::SetKeyword)
         .def("IsKeywordEnabled", &PythonMaterial::IsKeywordEnabled);
     py::class_<PythonUniformBuffer, PythonRefCounted>(m, "UniformBuffer")
-        .def(py::init<>())
+        .def(py::init<uint64_t>(), py::arg("handle"))
         .def_static("Create", &PythonUniformBuffer::Create)
         .def("__repr__", &PythonUniformBuffer::__Repr__)
         .def("SetData", &PythonUniformBuffer::SetData, py::arg("data"), py::arg("offset") = 0);
     py::class_<PythonShaderStorageBufferReadback, PythonRefCounted>(m, "ShaderStorageBufferReadback")
-        .def(py::init<>())
+        .def(py::init<uint64_t>(), py::arg("handle"))
         .def("__repr__", &PythonShaderStorageBufferReadback::__Repr__)
         .def("IsDone", &PythonShaderStorageBufferReadback::IsDone)
         .def("GetSize", &PythonShaderStorageBufferReadback::GetSize)
         .def("GetData", &PythonShaderStorageBufferReadback::GetData, py::arg("data"));
 
     py::class_<PythonShaderStorageBuffer, PythonRefCounted>(m, "ShaderStorageBuffer")
-        .def(py::init<>())
+        .def(py::init<uint64_t>(), py::arg("handle"))
         .def_static("Create", &PythonShaderStorageBuffer::Create, py::arg("size"), py::arg("usage") = (uint32_t)BufferUsage::Dynamic)
         .def("__repr__", &PythonShaderStorageBuffer::__Repr__)
         .def("SetData", &PythonShaderStorageBuffer::SetData, py::arg("data"), py::arg("offset") = 0)
         .def("RequestReadback", &PythonShaderStorageBuffer::RequestReadback, py::arg("offset") = 0, py::arg("size") = 0)
         .def("GetSize", &PythonShaderStorageBuffer::GetSize);
     py::class_<PythonComputeShader, PythonAsset>(m, "ComputeShader")
-        .def(py::init<>())
+        .def(py::init<uint64_t>(), py::arg("handle"))
         .def_static("Create", &PythonComputeShader::Create, py::arg("filePath"))
         .def("__repr__", &PythonComputeShader::__Repr__)
         .def("GetName", &PythonComputeShader::GetName)

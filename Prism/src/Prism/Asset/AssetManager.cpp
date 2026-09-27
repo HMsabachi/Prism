@@ -409,7 +409,7 @@ namespace Prism {
             sortedVec.push_back(std::make_pair(filename, asset));
         }
 
-        std::sort(sortedVec.begin(), sortedVec.end());
+        std::sort(sortedVec.begin(), sortedVec.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
         s_LoadedAssets.clear();
 
         for (auto& p : sortedVec)
