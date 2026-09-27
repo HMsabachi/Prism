@@ -797,6 +797,16 @@ namespace Prism {
             Rolky::ScopedString resourceName(name);
             _this->SetTextureCube(kernel, resourceName, Ref<ImageCube>(image));
         }
+        void Prism_ComputeShader_SetSampledTexture2D(ComputeShader* _this, int32_t kernel, Rolky::String name, Texture2D* texture)
+        {
+            Rolky::ScopedString resourceName(name);
+            _this->SetTexture2D(kernel, resourceName, Ref<Texture2D>(texture));
+        }
+        void Prism_ComputeShader_SetSampledTextureCube(ComputeShader* _this, int32_t kernel, Rolky::String name, TextureCube* texture)
+        {
+            Rolky::ScopedString resourceName(name);
+            _this->SetTextureCube(kernel, resourceName, Ref<TextureCube>(texture));
+        }
         void Prism_ComputeShader_SetImage2D(ComputeShader* _this, int32_t kernel, Rolky::String name, Image2D* image, uint32_t level)
         {
             Rolky::ScopedString resourceName(name);

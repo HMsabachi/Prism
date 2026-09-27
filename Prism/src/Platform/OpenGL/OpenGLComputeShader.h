@@ -20,6 +20,8 @@ namespace Prism
         virtual void SetBuffer(int32_t kernel, const std::string& name, Ref<ShaderStorageBuffer> ssbo) override;
         virtual void SetTexture2D(int32_t kernel, const std::string& name, Ref<Image2D> image) override;
         virtual void SetTextureCube(int32_t kernel, const std::string& name, Ref<ImageCube> image) override;
+        virtual void SetTexture2D(int32_t kernel, const std::string& name, Ref<Texture2D> texture) override;
+        virtual void SetTextureCube(int32_t kernel, const std::string& name, Ref<TextureCube> texture) override;
         virtual void SetImage2D(int32_t kernel, const std::string& name, Ref<Image2D> image, uint32_t level = 0) override;
         virtual void SetImageCube(int32_t kernel, const std::string& name, Ref<ImageCube> image, uint32_t level = 0) override;
         virtual void Dispatch(int32_t kernel, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ, bool force = false) override;

@@ -670,129 +670,131 @@ namespace Prism::PythonScript
         }
         void SetUniformBuffer(int32_t kernel, const char* name, const PythonUniformBuffer& buffer)
         {
-            Ref<ComputeShader> shader = RequireComputeShader("SetUniformBuffer");
+            Ref<ComputeShader> shader = GetComputeShader();
             shader->SetUniformBuffer(kernel, name, buffer.GetUniformBuffer());
         }
         void SetBuffer(int32_t kernel, const char* name, const PythonShaderStorageBuffer& buffer)
         {
-            Ref<ComputeShader> shader = RequireComputeShader("SetBuffer");
+            Ref<ComputeShader> shader = GetComputeShader();
             shader->SetBuffer(kernel, name, buffer.GetShaderStorageBuffer());
         }
         void SetTexture2D(int32_t kernel, const char* name, const PythonImage2D& image)
         {
-            Ref<ComputeShader> shader = RequireComputeShader("SetTexture2D");
+            Ref<ComputeShader> shader = GetComputeShader();
             shader->SetTexture2D(kernel, name, image.GetImage2D());
         }
         void SetTextureCube(int32_t kernel, const char* name, const PythonImageCube& image)
         {
-            Ref<ComputeShader> shader = RequireComputeShader("SetTextureCube");
+            Ref<ComputeShader> shader = GetComputeShader();
             shader->SetTextureCube(kernel, name, image.GetImageCube());
+        }
+        void SetTexture2D(int32_t kernel, const char* name, const PythonTexture2D& texture)
+        {
+            Ref<ComputeShader> shader = GetComputeShader();
+            shader->SetTexture2D(kernel, name, texture.GetTexture());
+        }
+        void SetTextureCube(int32_t kernel, const char* name, const PythonTextureCube& texture)
+        {
+            Ref<ComputeShader> shader = GetComputeShader();
+            shader->SetTextureCube(kernel, name, texture.GetTextureCube());
         }
         void SetImage2D(int32_t kernel, const char* name, const PythonImage2D& image, uint32_t level)
         {
-            Ref<ComputeShader> shader = RequireComputeShader("SetImage2D");
+            Ref<ComputeShader> shader = GetComputeShader();
             shader->SetImage2D(kernel, name, image.GetImage2D(), level);
         }
         void SetImageCube(int32_t kernel, const char* name, const PythonImageCube& image, uint32_t level)
         {
-            Ref<ComputeShader> shader = RequireComputeShader("SetImageCube");
+            Ref<ComputeShader> shader = GetComputeShader();
             shader->SetImageCube(kernel, name, image.GetImageCube(), level);
         }
         void Dispatch(int32_t kernel, uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ, bool force = false)
         {
-            Ref<ComputeShader> shader = RequireComputeShader("Dispatch");
+            Ref<ComputeShader> shader = GetComputeShader();
             shader->Dispatch(kernel, groupsX, groupsY, groupsZ, force);
         }
         void SetBool(int32_t kernel, const char* name, bool value)
         {
-            Ref<ComputeShader> shader = RequireComputeShader("SetBool");
+            Ref<ComputeShader> shader = GetComputeShader();
             shader->SetBool(kernel, name, value);
         }
         void SetInt(int32_t kernel, const char* name, int32_t value)
         {
-            Ref<ComputeShader> shader = RequireComputeShader("SetInt");
+            Ref<ComputeShader> shader = GetComputeShader();
             shader->SetInt(kernel, name, value);
         }
         void SetUInt(int32_t kernel, const char* name, uint32_t value)
         {
-            Ref<ComputeShader> shader = RequireComputeShader("SetUInt");
+            Ref<ComputeShader> shader = GetComputeShader();
             shader->SetUInt(kernel, name, value);
         }
         void SetFloat(int32_t kernel, const char* name, float value)
         {
-            Ref<ComputeShader> shader = RequireComputeShader("SetFloat");
+            Ref<ComputeShader> shader = GetComputeShader();
             shader->SetFloat(kernel, name, value);
         }
         void SetVector2(int32_t kernel, const char* name, const glm::vec2& value)
         {
-            Ref<ComputeShader> shader = RequireComputeShader("SetVector2");
+            Ref<ComputeShader> shader = GetComputeShader();
             shader->SetVector2(kernel, name, value);
         }
         void SetVector3(int32_t kernel, const char* name, const glm::vec3& value)
         {
-            Ref<ComputeShader> shader = RequireComputeShader("SetVector3");
+            Ref<ComputeShader> shader = GetComputeShader();
             shader->SetVector3(kernel, name, value);
         }
         void SetVector4(int32_t kernel, const char* name, const glm::vec4& value)
         {
-            Ref<ComputeShader> shader = RequireComputeShader("SetVector4");
+            Ref<ComputeShader> shader = GetComputeShader();
             shader->SetVector4(kernel, name, value);
         }
         void SetIntVector2(int32_t kernel, const char* name, const glm::ivec2& value)
         {
-            Ref<ComputeShader> shader = RequireComputeShader("SetIntVector2");
+            Ref<ComputeShader> shader = GetComputeShader();
             shader->SetIntVector2(kernel, name, value);
         }
         void SetIntVector3(int32_t kernel, const char* name, const glm::ivec3& value)
         {
-            Ref<ComputeShader> shader = RequireComputeShader("SetIntVector3");
+            Ref<ComputeShader> shader = GetComputeShader();
             shader->SetIntVector3(kernel, name, value);
         }
         void SetIntVector4(int32_t kernel, const char* name, const glm::ivec4& value)
         {
-            Ref<ComputeShader> shader = RequireComputeShader("SetIntVector4");
+            Ref<ComputeShader> shader = GetComputeShader();
             shader->SetIntVector4(kernel, name, value);
         }
         void SetUIntVector2(int32_t kernel, const char* name, const glm::uvec2& value)
         {
-            Ref<ComputeShader> shader = RequireComputeShader("SetUIntVector2");
+            Ref<ComputeShader> shader = GetComputeShader();
             shader->SetUIntVector2(kernel, name, value);
         }
         void SetUIntVector3(int32_t kernel, const char* name, const glm::uvec3& value)
         {
-            Ref<ComputeShader> shader = RequireComputeShader("SetUIntVector3");
+            Ref<ComputeShader> shader = GetComputeShader();
             shader->SetUIntVector3(kernel, name, value);
         }
         void SetUIntVector4(int32_t kernel, const char* name, const glm::uvec4& value)
         {
-            Ref<ComputeShader> shader = RequireComputeShader("SetUIntVector4");
+            Ref<ComputeShader> shader = GetComputeShader();
             shader->SetUIntVector4(kernel, name, value);
         }
         void SetBoolVector2(int32_t kernel, const char* name, const glm::bvec2& value)
         {
-            Ref<ComputeShader> shader = RequireComputeShader("SetBoolVector2");
+            Ref<ComputeShader> shader = GetComputeShader();
             shader->SetBoolVector2(kernel, name, value);
         }
         void SetBoolVector3(int32_t kernel, const char* name, const glm::bvec3& value)
         {
-            Ref<ComputeShader> shader = RequireComputeShader("SetBoolVector3");
+            Ref<ComputeShader> shader = GetComputeShader();
             shader->SetBoolVector3(kernel, name, value);
         }
         void SetBoolVector4(int32_t kernel, const char* name, const glm::bvec4& value)
         {
-            Ref<ComputeShader> shader = RequireComputeShader("SetBoolVector4");
+            Ref<ComputeShader> shader = GetComputeShader();
             shader->SetBoolVector4(kernel, name, value);
         }
     public:
         Ref<ComputeShader> GetComputeShader() const { return m_Ref.As<ComputeShader>(); }
-    private:
-        Ref<ComputeShader> RequireComputeShader(const char* method) const
-        {
-            Ref<ComputeShader> shader = GetComputeShader();
-            if (!shader)
-                throw std::runtime_error(fmt::format("ComputeShader.{}: invalid compute shader!", method));
-            return shader;
-        }
     };
 
     class PythonEntity
@@ -1711,8 +1713,10 @@ PYBIND11_MODULE(PrismEngine, m)
         .def("GetKernelThreadGroupSizes", &PythonComputeShader::GetKernelThreadGroupSizes, py::arg("kernel"))
         .def("SetUniformBuffer", &PythonComputeShader::SetUniformBuffer, py::arg("kernel"), py::arg("name"), py::arg("buffer"))
         .def("SetBuffer", &PythonComputeShader::SetBuffer, py::arg("kernel"), py::arg("name"), py::arg("buffer"))
-        .def("SetTexture2D", &PythonComputeShader::SetTexture2D, py::arg("kernel"), py::arg("name"), py::arg("image"))
-        .def("SetTextureCube", &PythonComputeShader::SetTextureCube, py::arg("kernel"), py::arg("name"), py::arg("image"))
+        .def("SetTexture2D", py::overload_cast<int32_t, const char*, const PythonImage2D&>(&PythonComputeShader::SetTexture2D), py::arg("kernel"), py::arg("name"), py::arg("image"))
+        .def("SetTexture2D", py::overload_cast<int32_t, const char*, const PythonTexture2D&>(&PythonComputeShader::SetTexture2D), py::arg("kernel"), py::arg("name"), py::arg("texture"))
+        .def("SetTextureCube", py::overload_cast<int32_t, const char*, const PythonImageCube&>(&PythonComputeShader::SetTextureCube), py::arg("kernel"), py::arg("name"), py::arg("image"))
+        .def("SetTextureCube", py::overload_cast<int32_t, const char*, const PythonTextureCube&>(&PythonComputeShader::SetTextureCube), py::arg("kernel"), py::arg("name"), py::arg("texture"))
         .def("SetImage2D", &PythonComputeShader::SetImage2D, py::arg("kernel"), py::arg("name"), py::arg("image"), py::arg("level") = 0)
         .def("SetImageCube", &PythonComputeShader::SetImageCube, py::arg("kernel"), py::arg("name"), py::arg("image"), py::arg("level") = 0)
         .def("Dispatch", &PythonComputeShader::Dispatch, py::arg("kernel"), py::arg("groupsX"), py::arg("groupsY"), py::arg("groupsZ"), py::arg("force") = false)

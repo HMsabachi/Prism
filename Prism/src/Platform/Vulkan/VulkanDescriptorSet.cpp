@@ -203,6 +203,16 @@ namespace Prism
         m_Bindings[binding] = bd;
     }
 
+    void VulkanDescriptorSet::SetInput(uint32_t binding, Ref<VulkanTexture2D> texture)
+    {
+        SetInput(binding, texture ? texture->GetImage().As<VulkanImage2D>() : Ref<VulkanImage2D>());
+    }
+
+    void VulkanDescriptorSet::SetInput(uint32_t binding, Ref<VulkanTextureCube> texture)
+    {
+        SetInput(binding, texture ? texture->GetImage().As<VulkanImageCube>() : Ref<VulkanImageCube>());
+    }
+
     void VulkanDescriptorSet::SetInput(uint32_t binding, Ref<VulkanImage2D> image, uint32_t level)
     {
         Binding bd = {};

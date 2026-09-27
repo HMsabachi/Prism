@@ -9,9 +9,11 @@
 #include "VulkanShader.h"
 #include "VulkanUniformBuffer.h"
 #include "VulkanShaderStorageBuffer.h"
+#include "VulkanTexture.h"
 
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Shader.h"
+#include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Buffer/UniformBuffer.h"
 #include "Prism/Renderer/Buffer/ShaderStorageBuffer.h"
 
@@ -206,6 +208,46 @@ namespace Prism
         {
             for (VulkanDescriptorSet& set : self->m_Kernels[kernelIndex].Sets)
                 set.SetInput(binding, image.As<VulkanImageCube>());
+        });
+    }
+
+    void VulkanComputeShader::SetTexture2D(int32_t kernel, const std::string& name, Ref<Texture2D> texture)
+    {
+        if (!IsLegalKernel(kernel))
+            return;
+
+        int32_t slot = FindSlot(name, K::Sampler2D);
+        if (slot < 0 || !texture)
+            return;
+
+        Ref<VulkanComputeShader> self = this;
+        uint32_t kernelIndex = (uint32_t)kernel;
+        uint32_t binding = m_Slots[slot].Binding;
+
+        Renderer::Submit([self, kernelIndex, binding, texture]() mutable
+        {
+            for (VulkanDescriptorSet& set : self->m_Kernels[kernelIndex].Sets)
+                set.SetInput(binding, texture.As<VulkanTexture2D>());
+        });
+    }
+
+    void VulkanComputeShader::SetTextureCube(int32_t kernel, const std::string& name, Ref<TextureCube> texture)
+    {
+        if (!IsLegalKernel(kernel))
+            return;
+
+        int32_t slot = FindSlot(name, K::SamplerCube);
+        if (slot < 0 || !texture)
+            return;
+
+        Ref<VulkanComputeShader> self = this;
+        uint32_t kernelIndex = (uint32_t)kernel;
+        uint32_t binding = m_Slots[slot].Binding;
+
+        Renderer::Submit([self, kernelIndex, binding, texture]() mutable
+        {
+            for (VulkanDescriptorSet& set : self->m_Kernels[kernelIndex].Sets)
+                set.SetInput(binding, texture.As<VulkanTextureCube>());
         });
     }
 

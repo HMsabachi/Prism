@@ -15,6 +15,8 @@ namespace Prism
     class ShaderStorageBuffer;
     class Image2D;
     class ImageCube;
+    class Texture2D;
+    class TextureCube;
 
     class ComputeShader : public Asset
     {
@@ -36,6 +38,8 @@ namespace Prism
         virtual void SetBuffer(int32_t kernel, const std::string& name, Ref<ShaderStorageBuffer> ssbo) = 0;
         virtual void SetTexture2D(int32_t kernel, const std::string& name, Ref<Image2D> image) = 0;
         virtual void SetTextureCube(int32_t kernel, const std::string& name, Ref<ImageCube> image) = 0;
+        virtual void SetTexture2D(int32_t kernel, const std::string& name, Ref<Texture2D> texture) = 0;
+        virtual void SetTextureCube(int32_t kernel, const std::string& name, Ref<TextureCube> texture) = 0;
         virtual void SetImage2D(int32_t kernel, const std::string& name, Ref<Image2D> image, uint32_t level = 0) = 0;
         virtual void SetImageCube(int32_t kernel, const std::string& name, Ref<ImageCube> image, uint32_t level = 0) = 0;
 

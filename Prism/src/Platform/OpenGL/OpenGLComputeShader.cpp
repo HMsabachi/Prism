@@ -8,6 +8,7 @@
 
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Shader.h"
+#include "Prism/Renderer/Texture.h"
 #include "Prism/Renderer/Buffer/UniformBuffer.h"
 #include "Prism/Renderer/Buffer/ShaderStorageBuffer.h"
 
@@ -209,6 +210,40 @@ namespace Prism
         Renderer::Submit([binding, image]()
         {
             glBindTextureUnit(binding, image.As<OpenGLImageCube>()->GetRendererID());
+        });
+    }
+
+    void OpenGLComputeShader::SetTexture2D(int32_t kernel, const std::string& name, Ref<Texture2D> texture)
+    {
+        if (!IsLegalKernel(kernel))
+            return;
+
+        int32_t slot = FindSlot(name, K::Sampler2D);
+        if (slot < 0 || !texture)
+            return;
+
+        uint32_t binding = m_Slots[slot].Binding;
+
+        Renderer::Submit([binding, texture]()
+        {
+            glBindTextureUnit(binding, texture->GetImage().As<OpenGLImage2D>()->GetRendererID());
+        });
+    }
+
+    void OpenGLComputeShader::SetTextureCube(int32_t kernel, const std::string& name, Ref<TextureCube> texture)
+    {
+        if (!IsLegalKernel(kernel))
+            return;
+
+        int32_t slot = FindSlot(name, K::SamplerCube);
+        if (slot < 0 || !texture)
+            return;
+
+        uint32_t binding = m_Slots[slot].Binding;
+
+        Renderer::Submit([binding, texture]()
+        {
+            glBindTextureUnit(binding, texture->GetImage().As<OpenGLImageCube>()->GetRendererID());
         });
     }
 

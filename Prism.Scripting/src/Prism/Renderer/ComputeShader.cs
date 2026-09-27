@@ -75,6 +75,16 @@ namespace Prism
             unsafe { InternalCalls.Prism_ComputeShader_SetTextureCube(m_NativePtr, kernel, name, image.GetNativePtr()); }
         }
 
+        public void SetTexture2D(int kernel, string name, Texture2D texture)
+        {
+            unsafe { InternalCalls.Prism_ComputeShader_SetSampledTexture2D(m_NativePtr, kernel, name, texture.GetNativePtr()); }
+        }
+
+        public void SetTextureCube(int kernel, string name, TextureCube texture)
+        {
+            unsafe { InternalCalls.Prism_ComputeShader_SetSampledTextureCube(m_NativePtr, kernel, name, texture.GetNativePtr()); }
+        }
+
         public void SetImage2D(int kernel, string name, Image2D image, UInt32 level = 0)
         {
             unsafe { InternalCalls.Prism_ComputeShader_SetImage2D(m_NativePtr, kernel, name, image.GetNativePtr(), level); }

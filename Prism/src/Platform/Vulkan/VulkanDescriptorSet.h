@@ -9,6 +9,8 @@ namespace Prism
     class VulkanShaderStorageBuffer;
     class VulkanImage2D;
     class VulkanImageCube;
+    class VulkanTexture2D;
+    class VulkanTextureCube;
 
     enum class RenderResourceType : uint16_t
     {
@@ -54,6 +56,8 @@ namespace Prism
         void SetInput(uint32_t binding, Ref<VulkanShaderStorageBuffer> buffer);
         void SetInput(uint32_t binding, Ref<VulkanImage2D> image);
         void SetInput(uint32_t binding, Ref<VulkanImageCube> image);
+        void SetInput(uint32_t binding, Ref<VulkanTexture2D> texture);
+        void SetInput(uint32_t binding, Ref<VulkanTextureCube> texture);
         void SetInput(uint32_t binding, Ref<VulkanImage2D> image, uint32_t level);
         void SetInput(uint32_t binding, Ref<VulkanImageCube> image, uint32_t level);
 

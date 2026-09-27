@@ -95,6 +95,8 @@ namespace Prism
         internal static delegate* unmanaged[Cdecl]<IntPtr, int, NativeString, IntPtr, void> Prism_ComputeShader_SetBuffer;
         internal static delegate* unmanaged[Cdecl]<IntPtr, int, NativeString, IntPtr, void> Prism_ComputeShader_SetTexture2D;
         internal static delegate* unmanaged[Cdecl]<IntPtr, int, NativeString, IntPtr, void> Prism_ComputeShader_SetTextureCube;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, int, NativeString, IntPtr, void> Prism_ComputeShader_SetSampledTexture2D;
+        internal static delegate* unmanaged[Cdecl]<IntPtr, int, NativeString, IntPtr, void> Prism_ComputeShader_SetSampledTextureCube;
         internal static delegate* unmanaged[Cdecl]<IntPtr, int, NativeString, IntPtr, UInt32, void> Prism_ComputeShader_SetImage2D;
         internal static delegate* unmanaged[Cdecl]<IntPtr, int, NativeString, IntPtr, UInt32, void> Prism_ComputeShader_SetImageCube;
         internal static delegate* unmanaged[Cdecl]<IntPtr, int, NativeString, int, void*, UInt32, void> Prism_ComputeShader_SetUniformData;
