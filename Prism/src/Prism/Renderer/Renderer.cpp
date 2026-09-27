@@ -108,7 +108,7 @@ namespace Prism
         const uint32_t cubemapSize = 2048;
         const uint32_t irradianceMapSize = 32;
 
-        Ref<TextureCube> envUnfiltered = TextureCube::Create(ImageFormat::RGBA32F, cubemapSize, cubemapSize);
+        Ref<TextureCube> envUnfiltered = TextureCube::Create({ ImageFormat::RGBA32F, cubemapSize, cubemapSize });
         if (!s_EnvironmentShader)
             s_EnvironmentShader = AssetManager::GetAsset<ComputeShader>("Assets/Shaders/Environment.ComputeShader");
         Ref<Texture2D> envEquirect = Texture2D::Create(filepath);
@@ -120,7 +120,7 @@ namespace Prism
         s_EnvironmentShader->Dispatch(toCubeKernel, cubemapSize / 32, cubemapSize / 32, 6, true);
         envUnfiltered->GetImage()->GenerateMipMap();
 
-        Ref<TextureCube> envFiltered = TextureCube::Create(ImageFormat::RGBA32F, cubemapSize, cubemapSize);
+        Ref<TextureCube> envFiltered = TextureCube::Create({ ImageFormat::RGBA32F, cubemapSize, cubemapSize });
         envUnfiltered->GetImage()->CopyTo(envFiltered->GetImage());
 
         Ref<UniformBuffer> mipFilterUBO = UniformBuffer::Create(sizeof(float));
@@ -137,7 +137,7 @@ namespace Prism
             s_EnvironmentShader->Dispatch(mipFilter, numGroups, numGroups, 6, true);
         }
 
-        Ref<TextureCube> irradianceMap = TextureCube::Create(ImageFormat::RGBA32F, irradianceMapSize, irradianceMapSize);
+        Ref<TextureCube> irradianceMap = TextureCube::Create({ ImageFormat::RGBA32F, irradianceMapSize, irradianceMapSize });
         int irradiance = s_EnvironmentShader->FindKernel("CSIrradiance");
         s_EnvironmentShader->SetTextureCube(irradiance, "u_InputCubeMap", envFiltered->GetImage());
         s_EnvironmentShader->SetImageCube(irradiance, "o_OutputCube", irradianceMap->GetImage());
@@ -152,7 +152,7 @@ namespace Prism
         PR_PROFILE_FUNCTION();
         const uint32_t cubemapSize = 2048;
 
-        Ref<TextureCube> envUnfiltered = TextureCube::Create(ImageFormat::RGBA32F, cubemapSize, cubemapSize);
+        Ref<TextureCube> envUnfiltered = TextureCube::Create({ ImageFormat::RGBA32F, cubemapSize, cubemapSize });
         if (!s_PreethamSkyShader)
             s_PreethamSkyShader = AssetManager::GetAsset<ComputeShader>("Assets/Shaders/PreethamSky.ComputeShader");
 

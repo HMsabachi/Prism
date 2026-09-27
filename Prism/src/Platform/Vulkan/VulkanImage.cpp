@@ -131,23 +131,25 @@ namespace Prism
             return;
         }
 
-        VkSamplerCreateInfo sampler{};
-        sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        sampler.magFilter = VK_FILTER_LINEAR;
-        sampler.minFilter = VK_FILTER_LINEAR;
-        sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        VkSamplerAddressMode wrapMode = m_Wrap == TextureWrap::Clamp ? VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE : VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        sampler.addressModeU = wrapMode;
-        sampler.addressModeV = wrapMode;
-        sampler.addressModeW = wrapMode;
-        sampler.mipLodBias = 0.0f;
-        sampler.compareOp = VK_COMPARE_OP_NEVER;
-        sampler.minLod = 0.0f;
-        sampler.maxLod = (float)mipCount;
-        sampler.maxAnisotropy = 1.0f;
-        sampler.anisotropyEnable = VK_FALSE;
-        sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-        VK_CHECK_RESULT(vkCreateSampler(vulkanDevice, &sampler, nullptr, &m_Info.Sampler));
+        if (m_Specification.CreateSampler)
+        {
+            VkSamplerCreateInfo sampler{};
+            sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+            sampler.magFilter = Utils::VulkanSamplerFilter(TextureFilter::Linear);
+            sampler.minFilter = Utils::VulkanSamplerFilter(TextureFilter::Linear);
+            sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+            sampler.addressModeU = Utils::VulkanSamplerWrap(TextureWrap::Clamp);
+            sampler.addressModeV = Utils::VulkanSamplerWrap(TextureWrap::Clamp);
+            sampler.addressModeW = Utils::VulkanSamplerWrap(TextureWrap::Clamp);
+            sampler.mipLodBias = 0.0f;
+            sampler.compareOp = VK_COMPARE_OP_NEVER;
+            sampler.minLod = 0.0f;
+            sampler.maxLod = (float)mipCount;
+            sampler.maxAnisotropy = 1.0f;
+            sampler.anisotropyEnable = VK_FALSE;
+            sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+            VK_CHECK_RESULT(vkCreateSampler(vulkanDevice, &sampler, nullptr, &m_Info.Sampler));
+        }
 
         VkImageSubresourceRange subresourceRange = {};
         subresourceRange.aspectMask = aspectMask;
@@ -600,22 +602,25 @@ namespace Prism
 
         device->FlushCommandBuffer(layoutCmd);
 
-        VkSamplerCreateInfo sampler{};
-        sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-        sampler.magFilter = VK_FILTER_LINEAR;
-        sampler.minFilter = VK_FILTER_LINEAR;
-        sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        sampler.mipLodBias = 0.0f;
-        sampler.compareOp = VK_COMPARE_OP_NEVER;
-        sampler.minLod = 0.0f;
-        sampler.maxLod = (float)mipCount;
-        sampler.maxAnisotropy = 1.0f;
-        sampler.anisotropyEnable = VK_FALSE;
-        sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-        VK_CHECK_RESULT(vkCreateSampler(vulkanDevice, &sampler, nullptr, &m_Info.Sampler));
+        if (m_Specification.CreateSampler)
+        {
+            VkSamplerCreateInfo sampler{};
+            sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+            sampler.magFilter = Utils::VulkanSamplerFilter(TextureFilter::Linear);
+            sampler.minFilter = Utils::VulkanSamplerFilter(TextureFilter::Linear);
+            sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+            sampler.addressModeU = Utils::VulkanSamplerWrap(TextureWrap::Clamp);
+            sampler.addressModeV = Utils::VulkanSamplerWrap(TextureWrap::Clamp);
+            sampler.addressModeW = Utils::VulkanSamplerWrap(TextureWrap::Clamp);
+            sampler.mipLodBias = 0.0f;
+            sampler.compareOp = VK_COMPARE_OP_NEVER;
+            sampler.minLod = 0.0f;
+            sampler.maxLod = (float)mipCount;
+            sampler.maxAnisotropy = 1.0f;
+            sampler.anisotropyEnable = VK_FALSE;
+            sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+            VK_CHECK_RESULT(vkCreateSampler(vulkanDevice, &sampler, nullptr, &m_Info.Sampler));
+        }
 
         VkImageViewCreateInfo view{};
         view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -904,6 +909,28 @@ namespace Prism
             }
             PR_CORE_ASSERT(false, "Unknown image format");
             return VK_FORMAT_UNDEFINED;
+        }
+
+        VkSamplerAddressMode VulkanSamplerWrap(TextureWrap wrap)
+        {
+            switch (wrap)
+            {
+                case TextureWrap::Clamp:   return VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+                case TextureWrap::Repeat:  return VK_SAMPLER_ADDRESS_MODE_REPEAT;
+            }
+            PR_CORE_ASSERT(false, "Unknown wrap mode");
+            return (VkSamplerAddressMode)0;
+        }
+
+        VkFilter VulkanSamplerFilter(TextureFilter filter)
+        {
+            switch (filter)
+            {
+                case TextureFilter::Linear:   return VK_FILTER_LINEAR;
+                case TextureFilter::Nearest:  return VK_FILTER_NEAREST;
+            }
+            PR_CORE_ASSERT(false, "Unknown filter");
+            return (VkFilter)0;
         }
     }
 }

@@ -490,9 +490,17 @@ namespace Prism {
         uint32_t Prism_Texture_GetWidth(Texture* _this) { return _this->GetWidth(); }
         uint32_t Prism_Texture_GetHeight(Texture* _this) { return _this->GetHeight(); }
         ImageFormat Prism_Texture_GetFormat(Texture* _this) { return _this->GetFormat(); }
-        Texture2D* Prism_Texture2D_Constructor(uint32_t width, uint32_t height)
+        Texture2D* Prism_Texture2D_Constructor(const ScriptTextureSpecification* specification)
         {
-            Ref<Texture2D> result = Texture2D::Create(ImageFormat::RGBA8, width, height);
+            TextureSpecification textureSpecification{};
+            textureSpecification.Format = specification->Format;
+            textureSpecification.Width = specification->Width;
+            textureSpecification.Height = specification->Height;
+            textureSpecification.SamplerWrap = specification->SamplerWrap;
+            textureSpecification.SamplerFilter = specification->SamplerFilter;
+            textureSpecification.GenerateMips = specification->GenerateMips != 0;
+
+            Ref<Texture2D> result = Texture2D::Create(textureSpecification);
             result->IncRefCount();
             return result.Raw();
         }
@@ -522,9 +530,22 @@ namespace Prism {
             image->IncRefCount();
             return image.Raw();
         }
-        TextureCube* Prism_TextureCube_Constructor(ImageFormat format, uint32_t width, uint32_t height, const void* data)
+        TextureCube* Prism_TextureCube_Constructor(const ScriptTextureSpecification* specification, const void* data)
         {
-            Ref<TextureCube> result = TextureCube::Create(format, width, height, data);
+            TextureSpecification textureSpecification{};
+            textureSpecification.Format = specification->Format;
+            textureSpecification.Width = specification->Width;
+            textureSpecification.Height = specification->Height;
+            textureSpecification.SamplerWrap = specification->SamplerWrap;
+            textureSpecification.SamplerFilter = specification->SamplerFilter;
+            textureSpecification.GenerateMips = specification->GenerateMips != 0;
+
+            // C# 侧传的是 pinned 数组指针,不能交给 Buffer 接管所有权,必须拷贝
+            Buffer imageData;
+            if (data)
+                imageData = Buffer::Copy(data, Utils::GetImageMemorySize(textureSpecification.Format, textureSpecification.Width, textureSpecification.Height) * 6);
+
+            Ref<TextureCube> result = TextureCube::Create(textureSpecification, std::move(imageData));
             result->IncRefCount();
             return result.Raw();
         }

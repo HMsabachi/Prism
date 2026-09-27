@@ -111,6 +111,20 @@ namespace Prism {
         Storage
     };
 
+    enum class PRISM_API TextureWrap
+    {
+        None = 0,
+        Clamp = 1,
+        Repeat = 2
+    };
+
+    enum class PRISM_API TextureFilter
+    {
+        None = 0,
+        Linear = 1,
+        Nearest = 2
+    };
+
     struct ImageSpecification
     {
         ImageFormat Format = ImageFormat::RGBA8;
@@ -119,6 +133,7 @@ namespace Prism {
         uint32_t Height = 1;
         uint32_t Samples = 1;
         uint32_t Mips = 1;
+        bool CreateSampler = true;
     };
 
     class PRISM_API Image : public RefCounted
@@ -165,6 +180,25 @@ namespace Prism {
         inline bool IsCompressedFormat(ImageFormat format)
         {
             return format >= ImageFormat::BC1;
+        }
+
+        inline bool IsSRGBFormat(ImageFormat format)
+        {
+            switch (format)
+            {
+                case ImageFormat::R8_SRGB:
+                case ImageFormat::RG8_SRGB:
+                case ImageFormat::RGB8_SRGB:
+                case ImageFormat::RGBA8_SRGB:
+                case ImageFormat::BC1_SRGB:
+                case ImageFormat::BC2_SRGB:
+                case ImageFormat::BC3_SRGB:
+                case ImageFormat::BC7_SRGB:
+                case ImageFormat::ETC2_RGB8_SRGB:
+                case ImageFormat::ETC2_RGBA8_SRGB:
+                    return true;
+            }
+            return false;
         }
 
         inline uint32_t GetCompressedBlockSize(ImageFormat format)

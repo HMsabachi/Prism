@@ -12,15 +12,15 @@ namespace Prism
     class PRISM_API VulkanTexture2D : public Texture2D
     {
     public:
-        VulkanTexture2D(const std::string& path, bool srgb = false);
-        VulkanTexture2D(ImageFormat format, uint32_t width, uint32_t height, const void* data, TextureWrap wrap = TextureWrap::Clamp);
+        VulkanTexture2D(const TextureSpecification& specification, Buffer imageData = Buffer());
+        VulkanTexture2D(const TextureSpecification& specification, const std::string& path);
         virtual ~VulkanTexture2D();
 
         void Invalidate();
 
-        virtual ImageFormat GetFormat() const override { return m_Format; }
-        virtual uint32_t GetWidth() const override { return m_Width; }
-        virtual uint32_t GetHeight() const override { return m_Height; }
+        virtual ImageFormat GetFormat() const override { return m_Specification.Format; }
+        virtual uint32_t GetWidth() const override { return m_Specification.Width; }
+        virtual uint32_t GetHeight() const override { return m_Specification.Height; }
         virtual uint32_t GetMipLevelCount() const override;
 
         virtual Ref<Image2D> GetImage() const override { return m_Image; }
@@ -37,26 +37,24 @@ namespace Prism
         const VkDescriptorImageInfo& GetVulkanDescriptorInfo() const { return m_Image.As<VulkanImage2D>()->GetDescriptor(); }
     private:
         std::string m_Path;
-        uint32_t m_Width = 0, m_Height = 0;
-        TextureWrap m_Wrap = TextureWrap::Clamp;
+        TextureSpecification m_Specification;
 
         Ref<Image2D> m_Image;
 
-        ImageFormat m_Format = ImageFormat::None;
         bool m_Loaded = false;
     };
 
     class PRISM_API VulkanTextureCube : public TextureCube
     {
     public:
-        VulkanTextureCube(ImageFormat format, uint32_t width, uint32_t height, const void* data = nullptr);
+        VulkanTextureCube(const TextureSpecification& specification, Buffer imageData = Buffer());
         virtual ~VulkanTextureCube();
 
         virtual const std::string& GetPath() const override { return m_Path; }
 
-        virtual ImageFormat GetFormat() const override { return m_Format; }
-        virtual uint32_t GetWidth() const override { return m_Width; }
-        virtual uint32_t GetHeight() const override { return m_Height; }
+        virtual ImageFormat GetFormat() const override { return m_Specification.Format; }
+        virtual uint32_t GetWidth() const override { return m_Specification.Width; }
+        virtual uint32_t GetHeight() const override { return m_Specification.Height; }
         virtual uint32_t GetMipLevelCount() const override;
 
         virtual Ref<ImageCube> GetImage() const override { return m_Image; }
@@ -67,8 +65,7 @@ namespace Prism
         void Invalidate();
     private:
         std::string m_Path;
-        ImageFormat m_Format = ImageFormat::None;
-        uint32_t m_Width = 0, m_Height = 0;
+        TextureSpecification m_Specification;
 
         Ref<ImageCube> m_Image;
     };

@@ -297,9 +297,7 @@ void CSSSR()
 
     const vec4 albedo = texture(u_InputColor, uv);
     const vec2 metalnessRoughness = texture(u_MetalnessRoughness, uv).xy;
-    // Prism 的 GBuffer 法线是世界空间打包值(*0.5+0.5),转到观察空间
-    const vec3 normalWS = normalize(texture(u_Normal, uv).xyz * 2.0 - 1.0);
-    const vec3 normalVS = normalize((u_Camera.ViewMatrix * vec4(normalWS, 0.0)).xyz);
+    const vec3 normalVS = texture(u_Normal, uv).xyz;
     const float depthVS = ScreenSpaceToViewSpaceDepth(depth);
     const vec3 positionVS = ComputeViewspacePosition(uv, depthVS);
     const vec3 toPositionVS = normalize(positionVS.xyz);

@@ -116,7 +116,9 @@ namespace Prism
         rApi->BakeGlobalInputs();
 
         // Load BRDF LUT
-        m_BRDFLUT = Texture2D::Create("Assets/Textures/BRDF_LUT.tga");
+        TextureSpecification brdfLutSpecification;
+        brdfLutSpecification.SamplerWrap = TextureWrap::Clamp;
+        m_BRDFLUT = Texture2D::Create("Assets/Textures/BRDF_LUT.tga", brdfLutSpecification);
 
         // Create Scene Renderer Materials
         auto postProcessShader = AssetManager::GetShaderLibrary()->Get("PostProcess/PrismPostProcess");

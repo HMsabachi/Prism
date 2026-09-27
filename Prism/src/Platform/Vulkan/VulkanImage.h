@@ -1,7 +1,6 @@
 ﻿#pragma once
 
 #include "Prism/Renderer/Image.h"
-#include "Prism/Renderer/Texture.h"
 #include "Platform/Vulkan/Vulkan.h"
 
 #include "VulkanMemoryAllocator/vk_mem_alloc.h"
@@ -43,8 +42,6 @@ namespace Prism
 
         const VkDescriptorImageInfo& GetDescriptor() const { return m_DescriptorImageInfo; }
 
-        void SetSamplerWrap(TextureWrap wrap) { m_Wrap = wrap; }
-
         virtual void RT_Resize(const uint32_t width, const uint32_t height) override;
         void RT_Invalidate();
         void RT_GenerateMips();
@@ -56,8 +53,6 @@ namespace Prism
         VkImageView GetOrCreateDepthOnlyView();
 
         ImageSpecification m_Specification;
-        // 与 OpenGL 侧硬编码的 GL_CLAMP_TO_EDGE 对齐:计算着色器直接绑定纹理单元,不经过采样器对象
-        TextureWrap m_Wrap = TextureWrap::Clamp;
 
         Buffer m_ImageData;
         std::vector<Buffer> m_Mips; // DDS 预压缩 mip 链，含 level 0
@@ -100,7 +95,6 @@ namespace Prism
         VkImageView GetOrCreateStorageImageView(uint32_t mip);
     private:
         ImageSpecification m_Specification;
-
         Buffer m_ImageData;
 
         VulkanImageInfo m_Info;
@@ -111,5 +105,7 @@ namespace Prism
     namespace Utils
     {
         VkFormat VulkanImageFormat(ImageFormat format);
+        VkSamplerAddressMode VulkanSamplerWrap(TextureWrap wrap);
+        VkFilter VulkanSamplerFilter(TextureFilter filter);
     }
 }

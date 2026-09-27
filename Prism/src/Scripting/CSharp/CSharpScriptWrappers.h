@@ -130,13 +130,14 @@ namespace Prism
         void Prism_ImageCube_CopyTo(ImageCube* _this, ImageCube* destination);
 
         // Texture2D
+        struct ScriptTextureSpecification { ImageFormat Format; uint32_t Width; uint32_t Height; TextureWrap SamplerWrap; TextureFilter SamplerFilter; Rolky::Bool32 GenerateMips; };
         uint32_t Prism_Texture_GetWidth(Texture* _this);
         uint32_t Prism_Texture_GetHeight(Texture* _this);
         ImageFormat Prism_Texture_GetFormat(Texture* _this);
-        Texture2D* Prism_Texture2D_Constructor(uint32_t width, uint32_t height);
+        Texture2D* Prism_Texture2D_Constructor(const ScriptTextureSpecification* specification);
         void Prism_Texture2D_SetData(Texture2D* _this, Rolky::Array<glm::vec4> inData, int32_t count);
         Image2D* Prism_Texture2D_GetImage(Texture2D* _this);
-        TextureCube* Prism_TextureCube_Constructor(ImageFormat format, uint32_t width, uint32_t height, const void* data);
+        TextureCube* Prism_TextureCube_Constructor(const ScriptTextureSpecification* specification, const void* data);
         ImageCube* Prism_TextureCube_GetImage(TextureCube* _this);
 
         // RigidBody2DComponent

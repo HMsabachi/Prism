@@ -7,50 +7,56 @@
 
 namespace Prism {
 
-    uint32_t Texture::CalculateMipMapCount(uint32_t width, uint32_t height)
-    {
-        uint32_t levels = 1;
-        while ((width | height) >> levels)
-            levels++;
-
-        return levels;
-    }
-
-
-
     uint32_t Texture::GetBPP(ImageFormat format)
     {
         return Utils::GetImageFormatBPP(format);
     }
 
-    Ref<Texture2D> Texture2D::Create(ImageFormat format, unsigned int width, unsigned int height, const void* data)
+    Ref<Texture2D> Texture2D::Create(const TextureSpecification& specification)
     {
         switch (RendererAPI::Current())
         {
         case RendererAPIType::None: return nullptr;
-        case RendererAPIType::OpenGL: return Ref<OpenGLTexture2D>::Create(format, width, height, data);
-        case RendererAPIType::Vulkan: return Ref<VulkanTexture2D>::Create(format, width, height, data);
-        }
-        return nullptr;
-    }
-    Ref<Texture2D> Texture2D::Create(const std::string& path, bool srgb)
-    {
-        switch (RendererAPI::Current())
-        {
-        case RendererAPIType::None: return nullptr;
-        case RendererAPIType::OpenGL: return Ref<OpenGLTexture2D>::Create(path, srgb);
-        case RendererAPIType::Vulkan: return Ref<VulkanTexture2D>::Create(path, srgb);
+        case RendererAPIType::OpenGL: return Ref<OpenGLTexture2D>::Create(specification);
+        case RendererAPIType::Vulkan: return Ref<VulkanTexture2D>::Create(specification);
         }
         return nullptr;
     }
 
-    Ref<TextureCube> TextureCube::Create(ImageFormat format, uint32_t width, uint32_t height, const void* data)
+    Ref<Texture2D> Texture2D::Create(const TextureSpecification& specification, Buffer imageData)
     {
         switch (RendererAPI::Current())
         {
         case RendererAPIType::None: return nullptr;
-        case RendererAPIType::OpenGL: return Ref<OpenGLTextureCube>::Create(format, width, height, data);
-        case RendererAPIType::Vulkan: return Ref<VulkanTextureCube>::Create(format, width, height, data);
+        case RendererAPIType::OpenGL: return Ref<OpenGLTexture2D>::Create(specification, std::move(imageData));
+        case RendererAPIType::Vulkan: return Ref<VulkanTexture2D>::Create(specification, std::move(imageData));
+        }
+        return nullptr;
+    }
+
+    Ref<Texture2D> Texture2D::Create(const TextureSpecification& specification, const std::string& path)
+    {
+        switch (RendererAPI::Current())
+        {
+        case RendererAPIType::None: return nullptr;
+        case RendererAPIType::OpenGL: return Ref<OpenGLTexture2D>::Create(specification, path);
+        case RendererAPIType::Vulkan: return Ref<VulkanTexture2D>::Create(specification, path);
+        }
+        return nullptr;
+    }
+
+    Ref<Texture2D> Texture2D::Create(const std::string& path, TextureSpecification specification)
+    {
+        return Create(specification, path);
+    }
+
+    Ref<TextureCube> TextureCube::Create(const TextureSpecification& specification, Buffer imageData)
+    {
+        switch (RendererAPI::Current())
+        {
+        case RendererAPIType::None: return nullptr;
+        case RendererAPIType::OpenGL: return Ref<OpenGLTextureCube>::Create(specification, std::move(imageData));
+        case RendererAPIType::Vulkan: return Ref<VulkanTextureCube>::Create(specification, std::move(imageData));
         }
         return nullptr;
     }

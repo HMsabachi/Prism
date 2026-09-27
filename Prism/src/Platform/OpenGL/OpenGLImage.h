@@ -33,12 +33,8 @@ namespace Prism {
         RendererID& GetRendererID() { return m_RendererID; }
         RendererID GetRendererID() const { return m_RendererID; }
 
-        RendererID& GetSamplerRendererID() { return m_SamplerRendererID; }
-        RendererID GetSamplerRendererID() const { return m_SamplerRendererID; }
-
     private:
         RendererID m_RendererID = 0;
-        RendererID m_SamplerRendererID = 0;
         ImageSpecification m_Specification;
 
         Buffer m_ImageData;
@@ -377,6 +373,29 @@ namespace Prism {
                 case ImageFormat::DEPTH32FSTENCIL8: return P_GL_FLOAT_32_UNSIGNED_INT_24_8_REV;
             }
             PR_CORE_ASSERT(false, "Unknown image format");
+            return 0;
+        }
+
+        inline GLenum OpenGLSamplerWrap(TextureWrap wrap)
+        {
+            switch (wrap)
+            {
+                case TextureWrap::Clamp:   return GL_CLAMP_TO_EDGE;
+                case TextureWrap::Repeat:  return GL_REPEAT;
+            }
+            PR_CORE_ASSERT(false, "Unknown wrap mode");
+            return 0;
+        }
+
+        // Note: should always be called with mipmap = false for magnification filtering
+        inline GLenum OpenGLSamplerFilter(TextureFilter filter, bool mipmap)
+        {
+            switch (filter)
+            {
+                case TextureFilter::Linear:   return mipmap ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR;
+                case TextureFilter::Nearest:  return mipmap ? GL_NEAREST_MIPMAP_NEAREST : GL_NEAREST;
+            }
+            PR_CORE_ASSERT(false, "Unknown filter");
             return 0;
         }
 

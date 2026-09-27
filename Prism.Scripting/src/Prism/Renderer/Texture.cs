@@ -1,9 +1,30 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 using Rolky.Managed.Interop;
 namespace Prism
 {
+    [StructLayout(LayoutKind.Sequential)]
+    public struct TextureSpecification
+    {
+        public ImageFormat Format;
+        public UInt32 Width;
+        public UInt32 Height;
+        public TextureWrap SamplerWrap;
+        public TextureFilter SamplerFilter;
+        public Bool32 GenerateMips;
+
+        public TextureSpecification()
+        {
+            Format = ImageFormat.RGBA8;
+            Width = 1;
+            Height = 1;
+            SamplerWrap = TextureWrap.Repeat;
+            SamplerFilter = TextureFilter.Linear;
+            GenerateMips = true;
+        }
+    }
     public class Texture : Asset
     {
         internal Texture(IntPtr nativePtr) : base(nativePtr) { }
@@ -19,8 +40,14 @@ namespace Prism
         internal Texture2D(IntPtr nativePtr) : base(nativePtr) { }
         public static Texture2D Create(uint width, uint height)
         {
-            IntPtr nativePtr = IntPtr.Zero;
-            unsafe { nativePtr = InternalCalls.Prism_Texture2D_Constructor(width, height); }
+            TextureSpecification specification = new TextureSpecification();
+            specification.Width = width;
+            specification.Height = height;
+            return Create(specification);
+        }
+        public static unsafe Texture2D Create(TextureSpecification specification)
+        {
+            IntPtr nativePtr = InternalCalls.Prism_Texture2D_Constructor(&specification);
             return new Texture2D(nativePtr);
         }
 
@@ -39,13 +66,22 @@ namespace Prism
     public class TextureCube : Texture
     {
         internal TextureCube(IntPtr nativePtr) : base(nativePtr) { }
-        public static unsafe TextureCube Create<T>(ImageFormat format, UInt32 width, UInt32 height, in T[] data)
+        public static TextureCube Create<T>(ImageFormat format, UInt32 width, UInt32 height, in T[] data)
+            where T : unmanaged
+        {
+            TextureSpecification specification = new TextureSpecification();
+            specification.Format = format;
+            specification.Width = width;
+            specification.Height = height;
+            return Create(specification, data);
+        }
+        public static unsafe TextureCube Create<T>(TextureSpecification specification, in T[] data)
             where T : unmanaged
         {
             IntPtr nativePtr = IntPtr.Zero;
             fixed (T* ptr = data)
             {
-                nativePtr = InternalCalls.Prism_TextureCube_Constructor(format, width, height, (IntPtr)ptr);
+                nativePtr = InternalCalls.Prism_TextureCube_Constructor(&specification, (IntPtr)ptr);
             }
             return new TextureCube(nativePtr);
         }

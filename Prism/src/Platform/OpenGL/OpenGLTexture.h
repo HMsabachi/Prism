@@ -9,14 +9,13 @@ namespace Prism {
     class PRISM_API OpenGLTexture2D : public Texture2D
     {
     public:
-        OpenGLTexture2D(ImageFormat format, uint32_t width, uint32_t height, const void* data = nullptr);
-
-        OpenGLTexture2D(const std::string& path, bool srgb);
+        OpenGLTexture2D(const TextureSpecification& specification, Buffer imageData = Buffer());
+        OpenGLTexture2D(const TextureSpecification& specification, const std::string& path);
         virtual ~OpenGLTexture2D();
 
-        virtual ImageFormat GetFormat() const override { return m_Image->GetFormat(); }
-        virtual uint32_t GetWidth() const override { return m_Width; }
-        virtual uint32_t GetHeight() const override { return m_Height; }
+        virtual ImageFormat GetFormat() const override { return m_Specification.Format; }
+        virtual uint32_t GetWidth() const override { return m_Specification.Width; }
+        virtual uint32_t GetHeight() const override { return m_Specification.Height; }
         // This function currently returns the expected number of mips based on image size,
         // not present mips in data
         virtual uint32_t GetMipLevelCount() const override;
@@ -32,7 +31,7 @@ namespace Prism {
         virtual Ref<Image2D> GetImage() const override { return m_Image; }
 
         void RT_Bind(uint32_t slot) const;
-        void RT_Init(bool mipmapSampler);
+        void RT_Init();
 
         RendererID GetRendererID() const { return m_Image.As<OpenGLImage2D>()->GetRendererID(); }
         uint32_t GetBinding() const { return m_BindSlot; }
@@ -42,8 +41,7 @@ namespace Prism {
     private:
         Ref<Image2D> m_Image;
         mutable uint32_t m_BindSlot = 0;
-        TextureWrap m_Wrap = TextureWrap::Clamp;
-        uint32_t m_Width = 0, m_Height = 0;
+        TextureSpecification m_Specification;
 
         bool m_IsHDR = false;
 
@@ -55,23 +53,25 @@ namespace Prism {
     class PRISM_API OpenGLTextureCube : public TextureCube
     {
     public:
-        OpenGLTextureCube(ImageFormat format, uint32_t width, uint32_t height, const void* data = nullptr);
+        OpenGLTextureCube(const TextureSpecification& specification, Buffer imageData = Buffer());
         virtual ~OpenGLTextureCube();
 
-        virtual ImageFormat GetFormat() const override { return m_Image->GetFormat(); }
-        virtual uint32_t GetWidth() const override { return m_Image->GetWidth(); }
-        virtual uint32_t GetHeight() const override { return m_Image->GetHeight(); }
+        virtual ImageFormat GetFormat() const override { return m_Specification.Format; }
+        virtual uint32_t GetWidth() const override { return m_Specification.Width; }
+        virtual uint32_t GetHeight() const override { return m_Specification.Height; }
         virtual uint32_t GetMipLevelCount() const override;
 
         virtual const std::string& GetPath() const override { return FilePath; }
         virtual Ref<ImageCube> GetImage() const override { return m_Image; }
 
         void RT_Bind(uint32_t slot) const;
+        void RT_Init();
 
         RendererID GetRendererID() const { return m_Image.As<OpenGLImageCube>()->GetRendererID(); }
         uint32_t GetBinding() const { return m_BindSlot; }
     private:
         Ref<ImageCube> m_Image;
         mutable uint32_t m_BindSlot = 0;
+        TextureSpecification m_Specification;
     };
 }

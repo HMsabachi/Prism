@@ -364,7 +364,11 @@ namespace Prism
                     Application::Get().QueueEvent([material, name]() mutable {
                         std::string filename = Application::Get().OpenFile("");
                         if (!filename.empty())
-                            material->SetTexture(name, Texture2D::Create(filename));
+                        {
+                            TextureSpecification specification;
+                            specification.Format = ImageFormat::RGBA8_SRGB;
+                            material->SetTexture(name, Texture2D::Create(filename, specification));
+                        }
                     });
                 }
                 break;

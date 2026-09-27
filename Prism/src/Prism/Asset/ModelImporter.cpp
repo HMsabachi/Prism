@@ -234,7 +234,9 @@ namespace Prism
                 aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &aiTexPath) == AI_SUCCESS)
             {
                 auto texPath = (parentDir / std::string(aiTexPath.data)).string();
-                auto texture = Texture2D::Create(texPath, true);
+                TextureSpecification albedoSpecification;
+                albedoSpecification.Format = ImageFormat::RGBA8_SRGB;
+                auto texture = Texture2D::Create(texPath, albedoSpecification);
                 if (texture->Loaded())
                 {
                     material->SetTexture("u_AlbedoTexture", texture);
@@ -295,7 +297,7 @@ namespace Prism
                 if (!std::filesystem::exists(cachePath))
                     PackOrmTexture(ormSources, cachePath.string());
 
-                auto ormTexture = Texture2D::Create(cachePath.string(), false);
+                auto ormTexture = Texture2D::Create(cachePath.string());
                 if (ormTexture->Loaded())
                 {
                     material->SetTexture("u_OrmTexture", ormTexture);
@@ -319,7 +321,9 @@ namespace Prism
             if (aiMat->GetTexture(aiTextureType_EMISSIVE, 0, &aiTexPath) == AI_SUCCESS)
             {
                 auto texPath = (parentDir / std::string(aiTexPath.data)).string();
-                auto texture = Texture2D::Create(texPath, true);
+                TextureSpecification emissiveSpecification;
+                emissiveSpecification.Format = ImageFormat::RGBA8_SRGB;
+                auto texture = Texture2D::Create(texPath, emissiveSpecification);
                 if (texture->Loaded())
                 {
                     material->SetTexture("u_EmissiveTexture", texture);

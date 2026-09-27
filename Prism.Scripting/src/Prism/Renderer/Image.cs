@@ -103,6 +103,18 @@ namespace Prism
         Attachment,
         Storage
     }
+    public enum TextureWrap
+    {
+        None = 0,
+        Clamp = 1,
+        Repeat = 2
+    }
+    public enum TextureFilter
+    {
+        None = 0,
+        Linear = 1,
+        Nearest = 2
+    }
     [StructLayout(LayoutKind.Sequential)]
     public struct ImageSpecification
     {

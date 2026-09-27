@@ -269,9 +269,16 @@ namespace Prism::PythonScript
     public:
         PythonTexture2D() = default;
         PythonTexture2D(Ref<Texture2D> texture) : PythonTexture(texture) {}
+        static PythonTexture2D Create(const TextureSpecification& specification)
+        {
+            return PythonTexture2D(Texture2D::Create(specification));
+        }
         static PythonTexture2D Create(uint32_t width, uint32_t height)
         {
-            return PythonTexture2D(Texture2D::Create(ImageFormat::RGBA8, width, height));
+            TextureSpecification specification;
+            specification.Width = width;
+            specification.Height = height;
+            return PythonTexture2D(Texture2D::Create(specification));
         }
         virtual std::string __Repr__() override
         {
@@ -319,13 +326,19 @@ namespace Prism::PythonScript
     public:
         PythonTextureCube() = default;
         PythonTextureCube(Ref<TextureCube> texture) : PythonTexture(texture) {}
-        static PythonTextureCube Create(ImageFormat format, uint32_t width, uint32_t height, const py::object& data)
+        static PythonTextureCube Create(const TextureSpecification& specification, const py::object& data)
         {
             PythonBufferView view(data);
             if (!data.is_none() && !view.Valid)
                 throw std::runtime_error("TextureCube.Create: data must support the buffer protocol!");
-            ValidatePixelData(view, format, width, height, "TextureCube.Create", 6);
-            return PythonTextureCube(TextureCube::Create(format, width, height, view.Data()));
+            ValidatePixelData(view, specification.Format, specification.Width, specification.Height, "TextureCube.Create", 6);
+
+            // Python buffer 指针不能交给 Buffer 接管所有权,必须拷贝
+            Buffer imageData;
+            if (!data.is_none())
+                imageData = Buffer::Copy(view.Data(), GetExpectedPixelDataSize(specification.Format, specification.Width, specification.Height, 6));
+
+            return PythonTextureCube(TextureCube::Create(specification, std::move(imageData)));
         }
         virtual std::string __Repr__() override
         {
@@ -1553,6 +1566,22 @@ PYBIND11_MODULE(PrismEngine, m)
         .value("Texture", ImageUsage::Texture)
         .value("Attachment", ImageUsage::Attachment)
         .value("Storage", ImageUsage::Storage);
+    py::enum_<TextureWrap>(m, "TextureWrap")
+        .value("None", TextureWrap::None)
+        .value("Clamp", TextureWrap::Clamp)
+        .value("Repeat", TextureWrap::Repeat);
+    py::enum_<TextureFilter>(m, "TextureFilter")
+        .value("None", TextureFilter::None)
+        .value("Linear", TextureFilter::Linear)
+        .value("Nearest", TextureFilter::Nearest);
+    py::class_<TextureSpecification>(m, "TextureSpecification")
+        .def(py::init<>())
+        .def_readwrite("Format", &TextureSpecification::Format)
+        .def_readwrite("Width", &TextureSpecification::Width)
+        .def_readwrite("Height", &TextureSpecification::Height)
+        .def_readwrite("SamplerWrap", &TextureSpecification::SamplerWrap)
+        .def_readwrite("SamplerFilter", &TextureSpecification::SamplerFilter)
+        .def_readwrite("GenerateMips", &TextureSpecification::GenerateMips);
     py::class_<ImageSpecification>(m, "ImageSpecification")
         .def(py::init<>())
         .def_readwrite("Format", &ImageSpecification::Format)
@@ -1595,14 +1624,17 @@ PYBIND11_MODULE(PrismEngine, m)
         .def("GetFormat", &PythonTexture::GetFormat);
     py::class_<PythonTexture2D, PythonTexture>(m, "Texture2D")
         .def(py::init<>())
-        .def_static("Create", &PythonTexture2D::Create, py::arg("width"), py::arg("height"))
+        .def_static("Create", py::overload_cast<const TextureSpecification&>(&PythonTexture2D::Create),
+            py::arg("specification") = TextureSpecification())
+        .def_static("Create", py::overload_cast<uint32_t, uint32_t>(&PythonTexture2D::Create),
+            py::arg("width"), py::arg("height"))
         .def("__repr__", &PythonTexture2D::__Repr__)
         .def("SetData", &PythonTexture2D::SetData)
         .def("GetImage", &PythonTexture2D::GetImage);
     py::class_<PythonTextureCube, PythonTexture>(m, "TextureCube")
         .def(py::init<>())
         .def_static("Create", &PythonTextureCube::Create,
-            py::arg("format"), py::arg("width"), py::arg("height"), py::arg("data") = py::none())
+            py::arg("specification") = TextureSpecification(), py::arg("data") = py::none())
         .def("__repr__", &PythonTextureCube::__Repr__)
         .def("GetImage", &PythonTextureCube::GetImage);
     py::enum_<PrismShaderCompiler::PropertyType>(m, "UniformType")
