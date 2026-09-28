@@ -64,8 +64,10 @@ namespace Prism {
     {
         m_Image->Invalidate();
 
-        RendererID rid = m_Image.As<OpenGLImage2D>()->GetRendererID();
-        glTextureParameteri(rid, GL_TEXTURE_MIN_FILTER, Utils::OpenGLSamplerFilter(m_Specification.SamplerFilter, m_Specification.GenerateMips));
+        Ref<OpenGLImage2D> image = m_Image.As<OpenGLImage2D>();
+        RendererID rid = image->GetRendererID();
+        bool mipmapSampler = m_Specification.GenerateMips && image->GetMipLevelCount() > 1;
+        glTextureParameteri(rid, GL_TEXTURE_MIN_FILTER, Utils::OpenGLSamplerFilter(m_Specification.SamplerFilter, mipmapSampler));
         glTextureParameteri(rid, GL_TEXTURE_MAG_FILTER, Utils::OpenGLSamplerFilter(m_Specification.SamplerFilter, false));
         glTextureParameteri(rid, GL_TEXTURE_WRAP_S, Utils::OpenGLSamplerWrap(m_Specification.SamplerWrap));
         glTextureParameteri(rid, GL_TEXTURE_WRAP_T, Utils::OpenGLSamplerWrap(m_Specification.SamplerWrap));

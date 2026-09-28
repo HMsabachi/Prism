@@ -74,13 +74,13 @@ namespace Prism
     {
         m_RootPath = std::string(rootPath);
         m_SourceSetFingerprint = GenerateSourceSetFingerprint(rootPath);
-        ReadCacheFile("DataCache/PrismShaderData.cache");
+        ReadCacheFile("Assets/cache/PrismShaderData.cache");
         PR_CORE_INFO("PrismShaderCache::Init - root '{}', fingerprint 0x{:016x}", m_RootPath, m_SourceSetFingerprint);
     }
 
     void PrismShaderCache::Shutdown()
     {
-        WriteCacheFile("DataCache/PrismShaderData.cache");
+        WriteCacheFile("Assets/cache/PrismShaderData.cache");
         m_EntryData.clear();
         m_EntryIndex.clear();
     }

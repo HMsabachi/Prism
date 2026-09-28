@@ -60,7 +60,7 @@ namespace Prism
             UI::BeginPropertyGrid();
             UI::Property("Enable Bloom", m_Config.EnableBloom);
             UI::Property("Bloom Threshold", m_Config.BloomThreshold, 0.1f, 0.0f, 10.0f);
-            UI::Property("Enable SSR", m_Config.EnableSSR);
+            UI::Property("Enable SSR(Beta)", m_Config.EnableSSR);
 
             UI::EndPropertyGrid();
             UI::EndTreeNode();

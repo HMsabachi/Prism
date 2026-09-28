@@ -118,20 +118,13 @@ namespace Prism
     [StructLayout(LayoutKind.Sequential)]
     public struct ImageSpecification
     {
-        public ImageFormat Format;
-        public ImageUsage Usage;
-        public UInt32 Width;
-        public UInt32 Height;
-        public UInt32 Samples;
+        public ImageFormat Format = ImageFormat.RGBA8;
+        public ImageUsage Usage = ImageUsage.Texture;
+        public UInt32 Width = 1;
+        public UInt32 Height = 1;
+        public UInt32 Samples = 1;
 
-        public ImageSpecification()
-        {
-            Format = ImageFormat.RGBA8;
-            Usage = ImageUsage.Texture;
-            Width = 1;
-            Height = 1;
-            Samples = 1;
-        }
+        public ImageSpecification() { }
     }
     public class Image : RefCounted
     {

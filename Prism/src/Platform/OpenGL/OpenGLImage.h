@@ -33,6 +33,12 @@ namespace Prism {
         RendererID& GetRendererID() { return m_RendererID; }
         RendererID GetRendererID() const { return m_RendererID; }
 
+        uint32_t GetMipLevelCount() const
+        {
+            return !m_Mips.empty() ? (uint32_t)m_Mips.size()
+                : m_ImageData ? Utils::CalculateMipCount(m_Specification.Width, m_Specification.Height) : m_Specification.Mips;
+        }
+
     private:
         RendererID m_RendererID = 0;
         ImageSpecification m_Specification;

@@ -8,6 +8,21 @@
 
 namespace Prism {
 
+    namespace Utils {
+
+        static const char* GetCacheDirectory()
+        {
+            return "Assets/cache/colliders/";
+        }
+
+        static void CreateCacheDirectoryIfNeeded()
+        {
+            std::string cacheDirectory = GetCacheDirectory();
+            if (!std::filesystem::exists(cacheDirectory))
+                std::filesystem::create_directories(cacheDirectory);
+        }
+    }
+
     physx::PxTransform ToPhysXTransform(const glm::vec3& position, const glm::quat& rotation)
     {
         physx::PxQuat r = ToPhysXQuat(glm::normalize(rotation));
@@ -92,8 +107,10 @@ namespace Prism {
 
     static std::string GetCachePath(const std::string& filepath)
     {
+        Utils::CreateCacheDirectoryIfNeeded();
+
         std::filesystem::path path = filepath;
-        return "DataCache/Colliders/" + path.filename().string() + ".pxm";
+        return Utils::GetCacheDirectory() + path.filename().string() + ".pxm";
     }
 
     void ConvexMeshSerializer::DeleteIfSerializedAndInvalidated(const std::string& filepath)

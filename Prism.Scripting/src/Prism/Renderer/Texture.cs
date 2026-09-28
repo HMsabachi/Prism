@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -8,22 +8,15 @@ namespace Prism
     [StructLayout(LayoutKind.Sequential)]
     public struct TextureSpecification
     {
-        public ImageFormat Format;
-        public UInt32 Width;
-        public UInt32 Height;
-        public TextureWrap SamplerWrap;
-        public TextureFilter SamplerFilter;
-        public Bool32 GenerateMips;
+        public ImageFormat Format = ImageFormat.RGBA8;
+        public UInt32 Width = 1;
+        public UInt32 Height = 1;
+        public TextureWrap SamplerWrap = TextureWrap.Repeat;
+        public TextureFilter SamplerFilter = TextureFilter.Linear;
+        public Bool32 GenerateMips = true;
 
-        public TextureSpecification()
-        {
-            Format = ImageFormat.RGBA8;
-            Width = 1;
-            Height = 1;
-            SamplerWrap = TextureWrap.Repeat;
-            SamplerFilter = TextureFilter.Linear;
-            GenerateMips = true;
-        }
+        public TextureSpecification() { }
+
     }
     public class Texture : Asset
     {

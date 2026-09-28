@@ -33,6 +33,7 @@ Shader "Custom/Skybox"
                 varying VertexOutput
                 {
                     vec3 Position;
+                    vec3 Normal;
                 } vs_Output;
 
                 void vert()
@@ -40,6 +41,7 @@ Shader "Custom/Skybox"
                     vec4 position = vec4(a_Position.xy, 1.0, 1.0);
                     gl_Position = position;
                     vs_Output.Position = (Prism_InverseViewProjection * position).xyz;
+                    vs_Output.Normal = normalize(vs_Output.Position);
                 }
 
                 void frag()
@@ -47,7 +49,7 @@ Shader "Custom/Skybox"
                     vec3 color = textureLod(u_Texture, vs_Output.Position, u_TextureLod).rgb * u_SkyIntensity;
                     FragColor = vec4(color, 1.0);
                     BloomColor = vec4(0.0, 0.0, 0.0, 1.0);
-                    NormalColor = vec4(0.0, 0.0, 0.0, 0.0);
+                    NormalColor = vec4(vs_Output.Normal, 1.0);
                 }
             }
         }

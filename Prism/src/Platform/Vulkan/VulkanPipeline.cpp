@@ -397,7 +397,7 @@ namespace Prism
     {
         // TODO: 磁盘持久化
         bool hasCacheFile = false;
-        std::ifstream cacheFile("DataCache/VulkanPipeline.cache", std::ios::binary);
+        std::ifstream cacheFile("Assets/cache/VulkanPipeline.cache", std::ios::binary);
         if (cacheFile.is_open())
         {
             VulkanPipelineCacheHeader header;
@@ -433,7 +433,7 @@ namespace Prism
         vkGetPipelineCacheData(device, m_VkPipelineCache, &header.DataSize, nullptr);
         std::vector<uint8_t> cacheData(header.DataSize);
         vkGetPipelineCacheData(device, m_VkPipelineCache, &header.DataSize, cacheData.data());
-        std::ofstream cacheFile("DataCache/VulkanPipeline.cache", std::ios::binary);
+        std::ofstream cacheFile("Assets/cache/VulkanPipeline.cache", std::ios::binary);
         if (cacheFile.is_open())
         {
             cacheFile.write(reinterpret_cast<const char*>(&header), sizeof(VulkanPipelineCache));

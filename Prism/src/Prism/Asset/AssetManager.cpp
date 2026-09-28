@@ -19,8 +19,8 @@ namespace Prism {
     {
         PrismShaderCache::Get().Init("Assets/Shaders");
         s_ShaderLibrary = Ref<ShaderLibrary>::Create();
-        if (!FileSystem::Exists("DataCache"))
-            FileSystem::CreateFolder("DataCache");
+        if (!FileSystem::Exists("Assets/cache"))
+            FileSystem::CreateFolder("Assets/cache");
         AssetImporter::Init();
         LoadAssetRegistry();
         FileSystem::SetChangeCallback(AssetManager::OnFileSystemChanged);
@@ -267,10 +267,10 @@ namespace Prism {
 
     void AssetManager::LoadAssetRegistry()
     {
-        if (!FileSystem::Exists("DataCache/AssetRegistryCache.par"))
+        if (!FileSystem::Exists("Assets/cache/AssetRegistryCache.par"))
             return;
 
-        std::ifstream stream("DataCache/AssetRegistryCache.par");
+        std::ifstream stream("Assets/cache/AssetRegistryCache.par");
         PR_CORE_ASSERT(stream);
         std::stringstream strStream;
         strStream << stream.rdbuf();
@@ -446,7 +446,7 @@ namespace Prism {
         out << YAML::EndSeq;
         out << YAML::EndMap;
 
-        std::ofstream fout("DataCache/AssetRegistryCache.par");
+        std::ofstream fout("Assets/cache/AssetRegistryCache.par");
         fout << out.c_str();
     }
 
