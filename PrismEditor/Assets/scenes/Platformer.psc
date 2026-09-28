@@ -192,7 +192,14 @@ Entities:
       Rotation: [-1.535, 0, 0]
       Scale: [1, 1, 1]
     CameraComponent:
-      Camera: some camera data...
+      Camera:
+        ProjectionType: 0
+        PerspectiveFOV: 45
+        PerspectiveNear: 0.01
+        PerspectiveFar: 10000
+        OrthographicSize: 10
+        OrthographicNear: -1
+        OrthographicFar: 1
       Primary: true
     CSharpScriptComponent:
       Behaviours:

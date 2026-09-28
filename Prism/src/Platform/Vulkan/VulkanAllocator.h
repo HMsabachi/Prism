@@ -8,6 +8,12 @@ namespace Prism
 {
     class VulkanDevice;
 
+    struct GPUMemoryStats
+    {
+        uint64_t Used = 0;
+        uint64_t Free = 0;
+    };
+
     class VulkanAllocator
     {
     public:
@@ -33,6 +39,8 @@ namespace Prism
         }
 
         static void UnmapMemory(VmaAllocation allocation);
+
+        static GPUMemoryStats GetStats();
 
     private:
         inline static VmaAllocator s_Allocator = VK_NULL_HANDLE;

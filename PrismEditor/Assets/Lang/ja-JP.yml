@@ -109,5 +109,7 @@ translations:
   World Bounds (Min): "ワールド境界 (最小)"
   World Bounds (Max): "ワールド境界 (最大)"
   Grid Subdivisions: グリッド分割
+  Solver Iterations: ソルバー反復回数
+  Solver Velocity Iterations: ソルバー速度反復回数
   # ===== スクリプトプロパティ =====
   Module Name: モジュール名

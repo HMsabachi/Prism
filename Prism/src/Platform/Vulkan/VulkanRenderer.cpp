@@ -1,6 +1,7 @@
 ﻿#include "prpch.h"
 #include "VulkanRenderer.h"
 
+#include "VulkanAllocator.h"
 #include "VulkanContext.h"
 #include "VulkanSwapChain.h"
 #include "VulkanDescriptorSet.h"
@@ -16,6 +17,7 @@
 #include "VulkanIndexBuffer.h"
 #include "VulkanTexture.h"
 
+#include "Prism/Core/Utils.h"
 #include "Prism/Renderer/Renderer.h"
 #include "Prism/Renderer/Material.h"
 #include "Prism/Renderer/Mesh.h"
@@ -190,6 +192,12 @@ namespace Prism
         ImGui::Text("MaxSamples: %d", caps.MaxSamples);
         ImGui::Text("MaxTextureUnits: %d", caps.MaxTextureUnits);
         ImGui::Text("PipelineCache: %d", pipelineCount);
+
+        GPUMemoryStats memoryStats = VulkanAllocator::GetStats();
+        std::string used = Utils::BytesToString(memoryStats.Used);
+        std::string free = Utils::BytesToString(memoryStats.Free);
+        ImGui::Text("Used VRAM: %s", used.c_str());
+        ImGui::Text("Free VRAM: %s", free.c_str());
 	}
 
 	void VulkanRenderer::BeginFrame()

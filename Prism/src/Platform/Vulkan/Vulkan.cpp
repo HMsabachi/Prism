@@ -45,4 +45,15 @@ namespace Prism::Utils
         RetrieveQueueCheckpoints(device->GetComputeQueue(), "Compute Queue");
         __debugbreak();
     }
+
+    void VulkanCheckResult(VkResult result)
+    {
+        if (result != VK_SUCCESS)
+        {
+            PR_CORE_ERROR("VkResult is '{0}' in {1}:{2}", ::Prism::Utils::VKResultToString(result), __FILE__, __LINE__);
+            if (result == VK_ERROR_DEVICE_LOST)
+                ::Prism::Utils::RetrieveDiagnosticCheckpoints();
+            PR_CORE_ASSERT(result == VK_SUCCESS);
+        }
+    }
 }

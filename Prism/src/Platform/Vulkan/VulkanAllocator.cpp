@@ -72,4 +72,12 @@ namespace Prism
     {
         vmaUnmapMemory(s_Allocator, allocation);
     }
+
+    GPUMemoryStats VulkanAllocator::GetStats()
+    {
+        VmaStats stats;
+        vmaCalculateStats(s_Allocator, &stats);
+
+        return { stats.total.usedBytes, stats.total.unusedBytes };
+    }
 }

@@ -52,6 +52,9 @@ namespace Prism {
             UI::Property(TR("World Bounds (Max)"), settings.WorldBoundsMax);
             UI::Property(TR("Grid Subdivisions"), settings.WorldBoundsSubdivisions, 1u, 10000u);
         }
+
+        UI::Property(TR("Solver Iterations"), settings.SolverIterations, 1u, 32u);
+        UI::Property(TR("Solver Velocity Iterations"), settings.SolverVelocityIterations, 1u, 32u);
     }
 
     void PhysicsSettingsWindow::RenderLayerList()

@@ -851,10 +851,18 @@ namespace Prism {
             s_PVD = nullptr;
         }
         s_PvdTransport = nullptr;
-        s_Physics->release();
-        s_Physics = nullptr;
-        s_Foundation->release();
-        s_Foundation = nullptr;
+
+        if (s_Physics)
+        {
+            s_Physics->release();
+            s_Physics = nullptr;
+        }
+
+        if (s_Foundation)
+        {
+            s_Foundation->release();
+            s_Foundation = nullptr;
+        }
     }
 
 }

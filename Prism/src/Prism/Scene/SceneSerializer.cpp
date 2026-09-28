@@ -238,7 +238,17 @@ namespace Prism {
             out << YAML::BeginMap; // CameraComponent
 
             auto& cameraComponent = entity.GetComponent<CameraComponent>();
-            out << YAML::Key << "Camera" << YAML::Value << "some camera data...";
+            auto& camera = cameraComponent.Camera;
+            out << YAML::Key << "Camera" << YAML::Value;
+            out << YAML::BeginMap; // Camera
+            out << YAML::Key << "ProjectionType" << YAML::Value << (int)camera.GetProjectionType();
+            out << YAML::Key << "PerspectiveFOV" << YAML::Value << camera.GetPerspectiveVerticalFOV();
+            out << YAML::Key << "PerspectiveNear" << YAML::Value << camera.GetPerspectiveNearClip();
+            out << YAML::Key << "PerspectiveFar" << YAML::Value << camera.GetPerspectiveFarClip();
+            out << YAML::Key << "OrthographicSize" << YAML::Value << camera.GetOrthographicSize();
+            out << YAML::Key << "OrthographicNear" << YAML::Value << camera.GetOrthographicNearClip();
+            out << YAML::Key << "OrthographicFar" << YAML::Value << camera.GetOrthographicFarClip();
+            out << YAML::EndMap; // Camera
             out << YAML::Key << "Primary" << YAML::Value << cameraComponent.Primary;
 
             out << YAML::EndMap; // CameraComponent
@@ -866,10 +876,26 @@ namespace Prism {
                 if (cameraComponent)
                 {
                     auto& component = deserializedEntity.AddComponent<CameraComponent>();
-                    component.Camera = SceneCamera();
-                    component.Primary = cameraComponent["Primary"].as<bool>();
+                    const auto& cameraNode = cameraComponent["Camera"];
 
-                    PR_CORE_INFO("  Primary Camera: {0}", component.Primary);
+                    component.Camera = SceneCamera();
+                    auto& camera = component.Camera;
+                    if (cameraNode["ProjectionType"])
+                        camera.SetProjectionType((SceneCamera::ProjectionType)cameraNode["ProjectionType"].as<int>());
+                    if (cameraNode["PerspectiveFOV"])
+                        camera.SetPerspectiveVerticalFOV(cameraNode["PerspectiveFOV"].as<float>());
+                    if (cameraNode["PerspectiveNear"])
+                        camera.SetPerspectiveNearClip(cameraNode["PerspectiveNear"].as<float>());
+                    if (cameraNode["PerspectiveFar"])
+                        camera.SetPerspectiveFarClip(cameraNode["PerspectiveFar"].as<float>());
+                    if (cameraNode["OrthographicSize"])
+                        camera.SetOrthographicSize(cameraNode["OrthographicSize"].as<float>());
+                    if (cameraNode["OrthographicNear"])
+                        camera.SetOrthographicNearClip(cameraNode["OrthographicNear"].as<float>());
+                    if (cameraNode["OrthographicFar"])
+                        camera.SetOrthographicFarClip(cameraNode["OrthographicFar"].as<float>());
+
+                    component.Primary = cameraComponent["Primary"].as<bool>();
                 }
 
                 auto spriteRendererComponent = entity["SpriteRendererComponent"];

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <vulkan/vulkan.h>
 
@@ -62,17 +62,13 @@ namespace Prism
         };
 
         void RetrieveDiagnosticCheckpoints();
+
+        void VulkanCheckResult(VkResult result);
     }
 }
 
 #define VK_CHECK_RESULT(f)                                                              \
 {                                                                                       \
     VkResult res = (f);                                                                 \
-    if (res != VK_SUCCESS)                                                              \
-    {                                                                                   \
-        PR_CORE_ERROR("VkResult is '{0}' in {1}:{2}", ::Prism::Utils::VKResultToString(res), __FILE__, __LINE__); \
-        if (res == VK_ERROR_DEVICE_LOST)                                                \
-            ::Prism::Utils::RetrieveDiagnosticCheckpoints();                            \
-        PR_CORE_ASSERT(res == VK_SUCCESS);                                              \
-    }                                                                                   \
+    ::Prism::Utils::VulkanCheckResult(res);                                             \
 }

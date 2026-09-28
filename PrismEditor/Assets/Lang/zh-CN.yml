@@ -109,5 +109,7 @@ translations:
   World Bounds (Min): 世界边界 (最小)
   World Bounds (Max): 世界边界 (最大)
   Grid Subdivisions: 网格细分
+  Solver Iterations: 解算迭代次数
+  Solver Velocity Iterations: 解算速度迭代次数
   # ===== 脚本属性 =====
   Module Name: 模块名称
